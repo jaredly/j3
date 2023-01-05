@@ -51,7 +51,7 @@ tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [a-zA-Z0-9_<>!='$%*/+~&.|-]+
+idtext = [a-zA-Z0-9_<>!='$%*/+~&.|,-]+
 
 newline = "\n"
 _nonnewline = [ \t\r]* (comment [ \t\r]*)*

@@ -194,7 +194,7 @@ function peg$parse(input, options) {
 
   var peg$r0 = /^[0-9]/;
   var peg$r1 = /^[^"\\]/;
-  var peg$r2 = /^[a-zA-Z0-9_<>!='$%*\/+~&.|\-]/;
+  var peg$r2 = /^[a-zA-Z0-9_<>!='$%*\/+~&.|,\-]/;
   var peg$r3 = /^[ \t\r]/;
   var peg$r4 = /^[ \t\n\r]/;
 
@@ -215,7 +215,7 @@ function peg$parse(input, options) {
   var peg$e14 = peg$classExpectation(["\"", "\\"], true, false);
   var peg$e15 = peg$literalExpectation("\\", false);
   var peg$e16 = peg$anyExpectation();
-  var peg$e17 = peg$classExpectation([["a", "z"], ["A", "Z"], ["0", "9"], "_", "<", ">", "!", "=", "'", "$", "%", "*", "/", "+", "~", "&", ".", "|", "-"], false, false);
+  var peg$e17 = peg$classExpectation([["a", "z"], ["A", "Z"], ["0", "9"], "_", "<", ">", "!", "=", "'", "$", "%", "*", "/", "+", "~", "&", ".", "|", ",", "-"], false, false);
   var peg$e18 = peg$literalExpectation("\n", false);
   var peg$e19 = peg$classExpectation([" ", "\t", "\r"], false, false);
   var peg$e20 = peg$otherExpectation("whitespace");
