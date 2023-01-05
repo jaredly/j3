@@ -4,4 +4,4 @@ import { parse } from './grammar';
 
 import fs from 'fs';
 
-console.log(parse(fs.readFileSync('./examples/records.clj', 'utf8')));
+console.log(parse(fs.readFileSync('./examples/eff-paper.clj', 'utf8')));
