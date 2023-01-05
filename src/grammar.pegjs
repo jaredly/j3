@@ -42,7 +42,7 @@ tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\])
 escapedChar = "\\" .
 
-idtext = [a-zA-Z0-9_]+
+idtext = [a-zA-Z0-9_<>!='$%*/+~]+
 
 // _ = $([ \t\n\r]*)
 
