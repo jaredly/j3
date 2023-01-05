@@ -21,12 +21,13 @@ export type NodeContents =
       }
     | {
           type: 'number'; // 12.32
-          value: number;
+          raw: string;
       }
     | {
           type: 'list'; // eh this should be cons & nil, right?
           values: Node[];
       }
+    | { type: 'record'; items: Node[] }
     | {
           type: 'array';
           values: Node[];

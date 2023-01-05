@@ -8,15 +8,21 @@
 	}});
 }
 
-Form = inner:FormInner decorators:(@Decorator _)* {
+File = _ contents:(@Form _)* { return contents}
+
+Form = inner:FormInner decorators:(_ @Decorator _)* {
 	decorators.forEach(dec => {
 		inner.decorators[dec.name] = dec
 	})
 	return inner
 }
-FormInner = tag / number / list / array / comment / spread / string / identifier / macro
+FormInner = tag / number / list / array / comment / spread / string / identifier / macro / record
 
-Decorator = "@" "(" _ name:$idtext args:(_ @Form)* _ ")" { return {name, args} }
+record = "{" _ items:(@Form _)* "}" { return wrap({type: 'record', items})}
+
+TypeDec = ":" form:Form { return {name: 'type', args:[form]} }
+FullDecorator = "@" "(" _ name:$idtext args:(_ @Form)* _ ")" { return {name, args} }
+Decorator = FullDecorator / TypeDec
 
 macro = "@" name:$idtext { return wrap({type: 'macro', name})}
 
@@ -24,9 +30,9 @@ tag = "`" text:$idtext { return wrap({type: 'tag', text })}
 
 number = [0-9]+ ("." [0-9]*)? {return wrap({type: 'number', raw: text()})}
 
-list = "(" _ values:(@Form _)+ ")"  {return wrap({type: 'list', values})}
+list = "(" _ values:(@Form _)* ")"  {return wrap({type: 'list', values})}
 
-array = "[" _ values:(@Form _)+ "]"  {return wrap({type: 'list', values})}
+array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'list', values})}
 
 comment = text:$commenttext {return wrap({type: 'comment', text})}
 
@@ -39,12 +45,10 @@ identifier = text:$idtext {return wrap({type: 'identifier', text})}
 TemplatePair = expr:TemplateWrap suffix:$tplStringChars {return {expr, suffix}}
 TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 0 ? wrap({type: 'list', values: forms}) : forms[0]}
 tplStringChars = $(!"\${" stringChar)*
-stringChar = $( escapedChar / [^"\\])
+stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [a-zA-Z0-9_<>!='$%*/+~]+
-
-// _ = $([ \t\n\r]*)
+idtext = [a-zA-Z0-9_<>!='$%*/+~-]+
 
 newline = "\n"
 _nonnewline = [ \t\r]* (comment [ \t\r]*)*

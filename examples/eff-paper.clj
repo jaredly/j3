@@ -80,6 +80,7 @@ ok I'll just do the normal thing. It's fine.
 	)
 ] (== v "hi and hi\nend"))
 
+(*
 let reverse: (t: Task<Write, ()>) => Task<Write, ()> = (task: Task<Write, ()>) => switch task {
     `Return(v) => `Return(v);
     `Write(v, k) => (() => {
@@ -171,3 +172,4 @@ let backtrack: <T>(Task<[Decide | Fail], T>, () => T) => T = <T>(
 let backtrackPythag = (m: int, n: int) => backtrack<(int, int)>(pythagorean(m, n), () => (0, 0))
 backtrackPythag(4, 15) == (5, 12)
 backtrackPythag(7, 10) == (0, 0)
+*)
