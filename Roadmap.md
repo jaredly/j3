@@ -1,6 +1,7 @@
 
-- [ ] come up with a syntax that can handle things
+- [x] come up with a syntax that can handle things
 - [x] make a tight grammar (text -> CST)
+- [x] see if it can handle glsl? hmm yeah I think so
 - [ ] see if I can speedrun simple parsing and evaluation (CST -> AST -> TS)
 	because, lets have something we can play with ya know
 	- we'll gloss over type inference for now

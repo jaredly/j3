@@ -28,7 +28,10 @@ macro = "@" name:$idtext { return wrap({type: 'macro', name})}
 
 tag = "`" text:$idtext { return wrap({type: 'tag', text })}
 
-number = [0-9]+ ("." [0-9]*)? {return wrap({type: 'number', raw: text()})}
+number = raw:$(dotStart / dotEnd) {return wrap({type: 'number', raw})}
+
+dotStart = "." [0-9]+
+dotEnd = [0-9]+ ("." [0-9]*)
 
 list = "(" _ values:(@Form _)* ")"  {return wrap({type: 'list', values})}
 
@@ -48,7 +51,7 @@ tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [a-zA-Z0-9_<>!='$%*/+~-]+
+idtext = [a-zA-Z0-9_<>!='$%*/+~&.|-]+
 
 newline = "\n"
 _nonnewline = [ \t\r]* (comment [ \t\r]*)*
