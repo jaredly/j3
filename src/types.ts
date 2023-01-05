@@ -145,6 +145,7 @@ export type Type =
           form: Node;
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
+    | { type: 'fn'; name?: string; args: Type[]; body: Type; form: Node }
     | {
           type: 'union';
           items: Type[];
