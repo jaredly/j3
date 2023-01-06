@@ -52,11 +52,14 @@ export const Node = ({
     path: Path[];
 }) => {
     const item = useStore(store, idx);
+    if (!item) {
+        return null;
+    }
     const text = idText(item.contents);
 
     const decs = Object.entries(item.decorators);
 
-    if (text) {
+    if (text != null) {
         return (
             <>
                 <IdentifierLike

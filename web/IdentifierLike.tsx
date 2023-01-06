@@ -1,14 +1,15 @@
 import * as React from 'react';
-import { Map, MNodeContents, toMCST } from '../src/types/mcst';
+import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
 import { Path, setSelection, Store, updateStore } from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 
 export const IdentifierLike = ({
+    idx,
     type,
     text,
     store,
-    idx,
+    path,
 }: {
     type: MNodeContents['type'];
     text: string;
@@ -27,8 +28,14 @@ export const IdentifierLike = ({
     edit = edit == null ? text : edit;
 
     React.useLayoutEffect(() => {
+        if (!ref.current) {
+            return;
+        }
         if (editing) {
-            ref.current!.textContent = text;
+            ref.current.textContent = text;
+            if (ref.current !== document.activeElement) {
+                ref.current.focus();
+            }
         }
     }, [editing, text]);
 
@@ -97,6 +104,36 @@ export const IdentifierLike = ({
                     // commit();
                     return;
                 }
+                if (evt.key === ' ') {
+                    console.log(path);
+                    for (let i = path.length - 1; i >= 0; i--) {
+                        const parent = path[i];
+                        if (parent.child.type !== 'child') {
+                            continue;
+                        }
+                        const nw = parse('_')[0];
+                        nw.contents = { type: 'identifier', text: '' };
+                        const mp: Map = {};
+                        const nidx = toMCST(nw, mp);
+                        const pnode = store.map[parent.idx];
+                        mp[parent.idx] = {
+                            ...pnode,
+                            contents: addChild(
+                                pnode.contents,
+                                parent.child.at + 1,
+                                nidx,
+                            ),
+                        };
+                        updateStore(store, {
+                            map: mp,
+                            selection: {
+                                idx: nidx,
+                            },
+                        });
+                        evt.preventDefault();
+                        return;
+                    }
+                }
                 // if (keyHandlers[evt.key]) {
                 //     const res = handleKey(
                 //         store,
@@ -140,6 +177,21 @@ export const IdentifierLike = ({
             }}
         />
     );
+};
+
+const addChild = (node: MNodeContents, at: number, idx: number) => {
+    switch (node.type) {
+        case 'array':
+        case 'list':
+            const values = node.values.slice();
+            values.splice(at, 0, idx);
+            return { ...node, values };
+        case 'record':
+            const items = node.items.slice();
+            items.splice(at, 0, idx);
+            return { ...node, items };
+    }
+    return node;
 };
 
 export const colors: {
