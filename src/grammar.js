@@ -229,7 +229,7 @@ function peg$parse(input, options) {
   var peg$f0 = function(contents) { return contents};
   var peg$f1 = function(inner, decorators) {
 	decorators.forEach(dec => {
-		inner.decorators[dec.name] = dec
+		inner.decorators[dec.name] = dec.args
 	})
 	return inner
 };
@@ -240,7 +240,7 @@ function peg$parse(input, options) {
   var peg$f6 = function(text) { return wrap({type: 'tag', text })};
   var peg$f7 = function(raw) {return wrap({type: 'number', raw})};
   var peg$f8 = function(values) {return wrap({type: 'list', values})};
-  var peg$f9 = function(values) {return wrap({type: 'list', values})};
+  var peg$f9 = function(values) {return wrap({type: 'array', values})};
   var peg$f10 = function(text) {return wrap({type: 'comment', text})};
   var peg$f11 = function(contents) {return wrap({type: 'spread', contents})};
   var peg$f12 = function(first, templates) {return wrap({type: 'string', first, templates})};
@@ -888,13 +888,11 @@ function peg$parse(input, options) {
         peg$currPos = s2;
         s2 = peg$FAILED;
       }
-      if (s2 !== peg$FAILED) {
-        s1 = [s1, s2];
-        s0 = s1;
-      } else {
-        peg$currPos = s0;
-        s0 = peg$FAILED;
+      if (s2 === peg$FAILED) {
+        s2 = null;
       }
+      s1 = [s1, s2];
+      s0 = s1;
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;

@@ -2,13 +2,14 @@
 
 import { Node } from '../types/cst';
 import { Expr, Pattern, Term, TVar, Type } from '../types/ast';
+import objectHash from 'object-hash';
 
 export type Global = {
     builtins: {
-        terms: { [hash: string]: Type };
-        types: { [hash: string]: TVar[] };
+        terms: { [name: string]: Type };
+        types: { [name: string]: TVar[] };
     };
-    terms: { [hash: string]: Term };
+    terms: { [hash: string]: Expr };
     names: { [name: string]: string[] };
     types: { [hash: string]: Type };
     typeNames: { [name: string]: string[] };
@@ -21,6 +22,73 @@ export type Local = {
 
 export type Ctx = { sym: { current: number }; global: Global; local: Local };
 
+export const blank: Node = {
+    contents: { type: 'blank' },
+    decorators: {},
+    loc: { start: -1, end: -1, idx: -1 },
+};
+
+export const btype = (v: string): Type => ({
+    type: 'builtin',
+    form: blank,
+    name: v,
+});
+
+export const basicBuiltins: Global['builtins'] = {
+    types: {
+        uint: [],
+        int: [],
+        float: [],
+        bool: [],
+        string: [],
+        Array: [
+            { sym: 0, form: blank },
+            {
+                sym: 1,
+                form: blank,
+                default_: {
+                    type: 'builtin',
+                    name: 'uint',
+                    form: blank,
+                },
+            },
+        ],
+    },
+    terms: {
+        // ooops ok with multiple dispatch on builtins,
+        // we'll need to identify by hash as welllllll
+        '+': {
+            type: 'fn',
+            args: [btype('int'), btype('int')],
+            form: blank,
+            body: btype('int'),
+        },
+        '==': {
+            type: 'fn',
+            args: [btype('int'), btype('int')],
+            form: blank,
+            body: btype('int'),
+        },
+    },
+};
+
+export const emptyLocal: Local = { terms: [], types: [] };
+export const initialGlobal: Global = {
+    builtins: basicBuiltins,
+    terms: {},
+    names: {},
+    types: {},
+    typeNames: {},
+};
+
+export const newCtx = () => {
+    return {
+        sym: { current: 0 },
+        global: initialGlobal,
+        local: emptyLocal,
+    };
+};
+
 export const nil: Expr = {
     type: 'record',
     entries: [],
@@ -30,43 +98,102 @@ export const nil: Expr = {
         loc: { start: -1, end: -1, idx: -1 },
     },
 };
-export const blank: Node = {
-    contents: { type: 'blank' },
-    decorators: {},
-    loc: { start: -1, end: -1, idx: -1 },
+
+export const nilt: Type = {
+    type: 'record',
+    entries: [],
+    open: false,
+    form: {
+        contents: { type: 'list', values: [] },
+        decorators: {},
+        loc: { start: -1, end: -1, idx: -1 },
+    },
+};
+
+export const resolveExpr = (
+    text: string,
+    hash: string | undefined,
+    ctx: Ctx,
+    form: Node,
+): Expr => {
+    if (hash) {
+        if (hash === '#builtin') {
+            return {
+                type: 'builtin',
+                name: text,
+                form,
+            };
+        }
+    }
+    const local = ctx.local.terms.find((t) => t.name === text);
+    if (local) {
+        return { type: 'local', sym: local.sym, form };
+    }
+    if (ctx.global.names[text]) {
+        return {
+            type: 'global',
+            hash: ctx.global.names[text][0],
+            form,
+        };
+    }
+    if (ctx.global.builtins.terms[text]) {
+        return { type: 'builtin', name: text, form };
+    }
+    return {
+        type: 'unresolved',
+        form,
+        reason: 'id not resolved ' + text,
+    };
+};
+
+export const resolveType = (
+    text: string,
+    hash: string | undefined,
+    ctx: Ctx,
+    form: Node,
+): Type => {
+    if (hash) {
+        if (hash === '#builtin') {
+            return {
+                type: 'builtin',
+                name: text,
+                form,
+            };
+        }
+    }
+    const local = ctx.local.types.find((t) => t.name === text);
+    if (local) {
+        return { type: 'local', sym: local.sym, form };
+    }
+    if (ctx.global.typeNames[text]) {
+        return {
+            type: 'global',
+            hash: ctx.global.typeNames[text][0],
+            form,
+        };
+    }
+    if (ctx.global.builtins.types[text]) {
+        return { type: 'builtin', name: text, form };
+    }
+    return {
+        type: 'unresolved',
+        form,
+        reason: 'id not resolved ' + text,
+    };
 };
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
     switch (form.contents.type) {
         case 'identifier': {
-            const { hash, text } = form.contents;
-            if (hash) {
-                if (hash === '#builtin') {
-                    return {
-                        type: 'builtin',
-                        name: text,
-                        form,
-                    };
-                }
-            }
-            const local = ctx.local.types.find((t) => t.name === text);
-            if (local) {
-                return { type: 'local', sym: local.sym, form };
-            }
-            if (ctx.global.typeNames[text]) {
-                return {
-                    type: 'global',
-                    hash: ctx.global.typeNames[text][0],
-                    form,
-                };
-            }
-            if (ctx.global.builtins.types[text]) {
-                return { type: 'builtin', name: text, form };
-            }
-            return { type: 'unresolved', form };
+            return resolveType(
+                form.contents.text,
+                form.contents.hash,
+                ctx,
+                form,
+            );
         }
     }
-    return { type: 'unresolved', form };
+    return { type: 'unresolved', form, reason: 'not impl type' };
 };
 
 export const nextSym = (ctx: Ctx) => ctx.sym.current++;
@@ -92,7 +219,7 @@ export const nodeToPattern = (
             };
         }
     }
-    return { type: 'unresolved', form: form };
+    return { type: 'unresolved', form: form, reason: 'not impl pat' };
 };
 
 export const specials: {
@@ -107,23 +234,36 @@ export const specials: {
                 form,
             };
         }
+        console.log('A FB', contents);
         if (contents[0].contents.type === 'array') {
             let args: { pattern: Pattern; type?: Type }[] = [];
-            let bindings: Local['terms'] = [];
+            let locals: Local['terms'] = [];
             contents[0].contents.values.forEach((arg) => {
-                const t: Type = arg.decorators.type
-                    ? nodeToType(arg.decorators.type, ctx)
-                    : { type: 'unresolved', form: nil.form };
+                const t: Type =
+                    arg.decorators.type && arg.decorators.type.length
+                        ? nodeToType(arg.decorators.type[0], ctx)
+                        : {
+                              type: 'unresolved',
+                              form: nil.form,
+                              reason: 'not provided type',
+                          };
                 args.push({
-                    pattern: nodeToPattern(arg, t, ctx, bindings),
+                    pattern: nodeToPattern(arg, t, ctx, locals),
                     type: t,
                 });
             });
+            const ct2: Ctx = {
+                ...ctx,
+                local: {
+                    ...ctx.local,
+                    terms: [...locals, ...ctx.local.terms],
+                },
+            };
             // parse fn args
             return {
                 type: 'fn',
                 args,
-                body: contents.slice(1).map((child) => nodeToExpr(child, ctx)),
+                body: contents.slice(1).map((child) => nodeToExpr(child, ct2)),
                 form,
             };
         }
@@ -136,7 +276,7 @@ export const specials: {
     },
     def: (form, contents, ctx): Expr => {
         if (!contents.length) {
-            return { type: 'unresolved', form };
+            return { type: 'unresolved', form, reason: 'no contents' };
         }
         const first = contents[0].contents;
         if (first.type !== 'identifier') {
@@ -156,7 +296,7 @@ export const specials: {
     let: (form, contents, ctx): Expr => {
         const first = contents[0];
         if (!first || first.contents.type !== 'array') {
-            return { type: 'unresolved', form };
+            return { type: 'unresolved', form, reason: 'first not array' };
         }
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
@@ -222,11 +362,8 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 value.form,
             );
         }
-        case 'constant': {
-            if (value.form.contents.type === 'number') {
-                return { type: 'builtin', name: 'int', form: blank };
-            }
-            break;
+        case 'number': {
+            return { type: 'builtin', name: value.kind, form: blank };
         }
         case 'builtin':
             return (
@@ -247,29 +384,55 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 reason: 'apply a non-function',
             };
         }
+        case 'def': {
+            return nilt;
+        }
+        case 'fn': {
+            return {
+                type: 'fn',
+                args: value.args.map((arg) => arg.type ?? nilt),
+                body: value.body.length
+                    ? typeForExpr(value.body[value.body.length - 1], ctx)
+                    : nilt,
+                form: value.form,
+            };
+        }
     }
-    return { type: 'unresolved', form: value.form, reason: 'not impl' };
+    return {
+        type: 'unresolved',
+        form: value.form,
+        reason: 'not impl ' + value.type,
+    };
 };
 
 export const nodeToExpr = (node: Node, ctx: Ctx): Expr => {
     const { contents, decorators, loc } = node;
     // todo decorators
     switch (contents.type) {
+        case 'identifier': {
+            return resolveExpr(contents.text, contents.hash, ctx, node);
+        }
         case 'tag':
             return { type: 'tag', name: contents.text, form: node };
         case 'number':
-            return { type: 'constant', form: node };
+            return {
+                type: 'number',
+                form: node,
+                value: +contents.raw,
+                kind: contents.raw.includes('.') ? 'float' : 'int',
+            };
         case 'list': {
             if (!contents.values.length) {
                 return { type: 'record', entries: [], form: node };
             }
             const first = contents.values[0];
             if (first.contents.type === 'identifier') {
-                switch (first.contents.text) {
-                    case 'fn':
-                    case 'def':
-                    case 'defn':
-                    case 'let':
+                if (specials[first.contents.text]) {
+                    return specials[first.contents.text](
+                        node,
+                        contents.values.slice(1),
+                        ctx,
+                    );
                 }
             }
             const [target, ...args] = contents.values.map((child) =>
@@ -283,5 +446,46 @@ export const nodeToExpr = (node: Node, ctx: Ctx): Expr => {
             };
         }
     }
-    return { type: 'unresolved', form: node };
+    return {
+        type: 'unresolved',
+        form: node,
+        reason: 'not impl ' + contents.type,
+    };
+};
+
+export const noForm = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(noForm);
+    }
+    if (typeof obj === 'object') {
+        const res: any = {};
+        Object.keys(obj).forEach((k) => {
+            if (k !== 'form') {
+                res[k] = noForm(obj[k]);
+            }
+        });
+        return res;
+    }
+    return obj;
+};
+
+export const addDef = (res: Expr, ctx: Ctx) => {
+    if (res.type === 'def') {
+        const hash = objectHash(noForm(res.value));
+        return {
+            ...ctx,
+            global: {
+                ...ctx.global,
+                terms: {
+                    ...ctx.global.terms,
+                    [hash]: res,
+                },
+                names: {
+                    ...ctx.global.names,
+                    [res.name]: [hash, ...(ctx.global.names[res.name] || [])],
+                },
+            },
+        };
+    }
+    return ctx;
 };

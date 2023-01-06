@@ -8,7 +8,7 @@ export type Loc = {
 
 export type Node = {
     contents: NodeContents;
-    decorators: { [key: string]: Node };
+    decorators: { [key: string]: Node[] };
     loc: Loc;
 };
 

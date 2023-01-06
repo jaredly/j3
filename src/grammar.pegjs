@@ -12,7 +12,7 @@ File = _ contents:(@Form _)* { return contents}
 
 Form = inner:FormInner decorators:(_ @Decorator _)* {
 	decorators.forEach(dec => {
-		inner.decorators[dec.name] = dec
+		inner.decorators[dec.name] = dec.args
 	})
 	return inner
 }
@@ -31,11 +31,11 @@ tag = "`" text:$idtext { return wrap({type: 'tag', text })}
 number = raw:$(dotStart / dotEnd) {return wrap({type: 'number', raw})}
 
 dotStart = "." [0-9]+
-dotEnd = [0-9]+ ("." [0-9]*)
+dotEnd = [0-9]+ ("." [0-9]*)?
 
 list = "(" _ values:(@Form _)* ")"  {return wrap({type: 'list', values})}
 
-array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'list', values})}
+array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'array', values})}
 
 comment = text:$commenttext {return wrap({type: 'comment', text})}
 

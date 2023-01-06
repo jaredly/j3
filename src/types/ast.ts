@@ -5,16 +5,21 @@ export type Term = {
     types: { [sym: number]: Type };
 };
 
+export type NumberKind = 'int' | 'uint' | 'float';
+
+export type Number = {
+    type: 'number';
+    form: Node;
+    kind: NumberKind;
+    value: number;
+};
 export type Pattern =
     | {
           type: 'local';
           sym: number;
           form: Node;
       }
-    | {
-          type: 'constant';
-          form: Node;
-      }
+    | Number
     | { type: 'unresolved'; form: Node; reason?: string }
     | { type: 'tag'; name: string; args: Pattern[] };
 
@@ -95,10 +100,7 @@ export type Shared =
           sym: number;
           form: Node;
       }
-    | {
-          type: 'constant';
-          form: Node;
-      }
+    | Number
     | { type: 'unresolved'; form: Node; reason?: string }
     | {
           type: 'builtin';
