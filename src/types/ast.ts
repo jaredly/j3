@@ -25,6 +25,11 @@ export type Pattern =
 
 export type Expr =
     | Shared
+    | {
+          type: 'builtin';
+          hash: string;
+          form: Node;
+      }
     | { type: 'def'; name: string; value: Expr; form: Node }
     | {
           type: 'string';
@@ -101,15 +106,15 @@ export type Shared =
           form: Node;
       }
     | Number
-    | { type: 'unresolved'; form: Node; reason?: string }
+    | { type: 'unresolved'; form: Node; reason?: string };
+
+export type Type =
+    | Shared
     | {
           type: 'builtin';
           name: string;
           form: Node;
-      };
-
-export type Type =
-    | Shared
+      }
     | {
           type: 'apply';
           target: Type;

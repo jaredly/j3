@@ -6,7 +6,9 @@ import objectHash from 'object-hash';
 
 export type Global = {
     builtins: {
-        terms: { [name: string]: Type };
+        terms: { [hash: string]: Type };
+        names: { [name: string]: string[] };
+        namesBack: { [hash: string]: string };
         types: { [name: string]: TVar[] };
     };
     terms: { [hash: string]: Expr };
@@ -54,23 +56,51 @@ export const basicBuiltins: Global['builtins'] = {
             },
         ],
     },
-    terms: {
-        // ooops ok with multiple dispatch on builtins,
-        // we'll need to identify by hash as welllllll
-        '+': {
-            type: 'fn',
-            args: [btype('int'), btype('int')],
-            form: blank,
-            body: btype('int'),
-        },
-        '==': {
-            type: 'fn',
-            args: [btype('int'), btype('int')],
-            form: blank,
-            body: btype('int'),
-        },
-    },
+    names: {},
+    namesBack: {},
+    terms: {},
 };
+
+export const noForm = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(noForm);
+    }
+    if (typeof obj === 'object') {
+        const res: any = {};
+        Object.keys(obj).forEach((k) => {
+            if (k !== 'form') {
+                res[k] = noForm(obj[k]);
+            }
+        });
+        return res;
+    }
+    return obj;
+};
+
+export const addBuiltin = (
+    builtins: Global['builtins'],
+    name: string,
+    type: Type,
+) => {
+    const hash = objectHash(name + ' ' + noForm(type));
+    builtins.names[name] = [hash].concat(builtins.names[name] ?? []);
+    builtins.terms[hash] = type;
+    builtins.namesBack[hash] = name;
+};
+
+addBuiltin(basicBuiltins, '+', {
+    type: 'fn',
+    args: [btype('int'), btype('int')],
+    form: blank,
+    body: btype('int'),
+});
+
+addBuiltin(basicBuiltins, '==', {
+    type: 'fn',
+    args: [btype('int'), btype('int')],
+    form: blank,
+    body: btype('int'),
+});
 
 export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {
@@ -117,13 +147,13 @@ export const resolveExpr = (
     form: Node,
 ): Expr => {
     if (hash) {
-        if (hash === '#builtin') {
-            return {
-                type: 'builtin',
-                name: text,
-                form,
-            };
-        }
+        // if (hash === '#builtin') {
+        //     return {
+        //         type: 'builtin',
+        //         hash: text,
+        //         form,
+        //     };
+        // }
     }
     const local = ctx.local.terms.find((t) => t.name === text);
     if (local) {
@@ -136,8 +166,12 @@ export const resolveExpr = (
             form,
         };
     }
-    if (ctx.global.builtins.terms[text]) {
-        return { type: 'builtin', name: text, form };
+    if (ctx.global.builtins.names[text]) {
+        return {
+            type: 'builtin',
+            hash: ctx.global.builtins.names[text][0],
+            form,
+        };
     }
     return {
         type: 'unresolved',
@@ -367,10 +401,10 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
         }
         case 'builtin':
             return (
-                ctx.global.builtins.terms[value.name] ?? {
+                ctx.global.builtins.terms[value.hash] ?? {
                     type: 'unresolved',
                     form: value.form,
-                    reason: 'unknown builtin ' + value.name,
+                    reason: 'unknown builtin ' + value.hash,
                 }
             );
         case 'apply': {
@@ -451,22 +485,6 @@ export const nodeToExpr = (node: Node, ctx: Ctx): Expr => {
         form: node,
         reason: 'not impl ' + contents.type,
     };
-};
-
-export const noForm = (obj: any): any => {
-    if (Array.isArray(obj)) {
-        return obj.map(noForm);
-    }
-    if (typeof obj === 'object') {
-        const res: any = {};
-        Object.keys(obj).forEach((k) => {
-            if (k !== 'form') {
-                res[k] = noForm(obj[k]);
-            }
-        });
-        return res;
-    }
-    return obj;
 };
 
 export const addDef = (res: Expr, ctx: Ctx) => {

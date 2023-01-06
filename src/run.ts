@@ -11,6 +11,7 @@ import {
     typeForExpr,
 } from './to-ast/to-ast';
 import { Node } from './types/cst';
+import { toTs } from './to-ast/to-ts';
 
 const [_, __, fname] = process.argv;
 
@@ -34,3 +35,5 @@ exprs.forEach((expr) => {
     console.log(JSON.stringify(noForm(expr)));
     console.log(typeForExpr(expr, ctx));
 });
+
+console.log(toTs(exprs, ctx));

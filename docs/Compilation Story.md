@@ -1,4 +1,37 @@
 
+# Now that I have some story
+
+- [x] peggy (text -> CST)
+- [x] to-ast (CST -> AST)
+	- it would be pretty cool to have these implemented
+		with like a query syntax, so "fn literal with an array next to it" would be a thing. idk how to prioritize tho
+- [x] fix it so there can be multiple builtin exprs w/ the same name, for fn multi dispatch
+- [ ] macro, expansion? and such. type inference comes here as well, to some extent, I believe.
+- [ ] java to the script! (AST -> TS)
+
+
+
+So, for full constraint solvey madness
+we need to be able to express
+
+(this type) is a locally or globally available function,
+whose arguments agree with (these potentially blank types)
+
+as well as 
+
+(this type) is the return value for (this type expression)
+
+as like an ... operation?
+Is that a type macro? is that how we want to be rollin?
+I meeeeean I do like me a good macro.
+
+`(@ret something)` sounds coolio
+`(@resolve "+" int 'k)` feels ... um quite dicey?
+
+backing up to remind myself that I can probably be a little simple about this, because of the structured editor bits.
+
+
+
 # So
 
 what's the story?
