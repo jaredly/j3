@@ -3,13 +3,9 @@
 import { parse } from './grammar';
 
 import fs from 'fs';
-import {
-    addDef,
-    newCtx,
-    nodeToExpr,
-    noForm,
-    typeForExpr,
-} from './to-ast/to-ast';
+import { addDef, newCtx, noForm } from './to-ast/to-ast';
+import { nodeToExpr } from './to-ast/nodeToExpr';
+import { typeForExpr } from './to-ast/typeForExpr';
 import { Node } from './types/cst';
 import { toTs } from './to-ast/to-ts';
 

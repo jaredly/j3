@@ -1,7 +1,8 @@
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { Expr, Pattern, Record } from '../types/ast';
-import { Ctx, nodeToExpr } from './to-ast';
+import { Ctx } from './to-ast';
+import { nodeToExpr } from './nodeToExpr';
 
 export const patternToTs = (
     pattern: Pattern,
