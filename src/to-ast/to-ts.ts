@@ -33,7 +33,7 @@ export const stmtToTs = (expr: Expr, ctx: Ctx): t.Statement[] => {
             return [
                 t.variableDeclaration('const', [
                     t.variableDeclarator(
-                        t.identifier(expr.name),
+                        t.identifier('h' + expr.hash),
                         exprToTs(expr.value, ctx),
                     ),
                 ]),
@@ -54,6 +54,22 @@ export const stmtToTs = (expr: Expr, ctx: Ctx): t.Statement[] => {
         default:
             return [t.expressionStatement(exprToTs(expr, ctx))];
     }
+};
+
+export const bodyToTs = (
+    exprs: Expr[],
+    ctx: Ctx,
+): t.BlockStatement | t.Expression => {
+    const res = exprs.flatMap((expr) => stmtToTs(expr, ctx));
+    if (res.length === 1 && res[0].type === 'ExpressionStatement') {
+        return res[0].expression;
+    }
+    const idx = res.length - 1;
+    const last = res[idx];
+    if (last.type === 'ExpressionStatement') {
+        res[idx] = t.returnStatement(last.expression);
+    }
+    return t.blockStatement(res);
 };
 
 export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
@@ -84,11 +100,14 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
         }
         case 'let': {
             return t.callExpression(
-                t.arrowFunctionExpression(
-                    [],
-                    t.blockStatement(stmtToTs(expr, ctx)),
-                ),
+                t.arrowFunctionExpression([], bodyToTs([expr], ctx)),
                 [],
+            );
+        }
+        case 'fn': {
+            return t.arrowFunctionExpression(
+                expr.args.map((arg) => patternToTs(arg.pattern, ctx)),
+                bodyToTs(expr.body, ctx),
             );
         }
     }

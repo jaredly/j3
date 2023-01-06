@@ -320,10 +320,12 @@ export const specials: {
                 reason: 'first arg must be an identifier',
             };
         }
+        const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
         return {
             type: 'def',
             name: first.text,
-            value: contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil,
+            hash: objectHash(noForm(value)),
+            value,
             form,
         };
     },
@@ -489,18 +491,20 @@ export const nodeToExpr = (node: Node, ctx: Ctx): Expr => {
 
 export const addDef = (res: Expr, ctx: Ctx) => {
     if (res.type === 'def') {
-        const hash = objectHash(noForm(res.value));
         return {
             ...ctx,
             global: {
                 ...ctx.global,
                 terms: {
                     ...ctx.global.terms,
-                    [hash]: res,
+                    [res.hash]: res,
                 },
                 names: {
                     ...ctx.global.names,
-                    [res.name]: [hash, ...(ctx.global.names[res.name] || [])],
+                    [res.name]: [
+                        res.hash,
+                        ...(ctx.global.names[res.name] || []),
+                    ],
                 },
             },
         };

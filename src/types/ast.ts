@@ -30,7 +30,7 @@ export type Expr =
           hash: string;
           form: Node;
       }
-    | { type: 'def'; name: string; value: Expr; form: Node }
+    | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
     | {
           type: 'string';
           first: string;
