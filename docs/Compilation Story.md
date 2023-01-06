@@ -55,10 +55,11 @@ I'll just want to have annotations that can get me back to the beginning?
 hmmmm.
 
 wait
-but then, what do you do when you do an operation to the AST?
+but then, what do you do when you do an operation to the (T)AST?
 oh I guess that's when you print it back? maintaining cursor position?
 hmmm I guess so.
 
 Ok, and comments? I think we'll only have delimited, inlineable comments.
+they'll be nabbed out of the CST, and plopped back in again? Info being "next to X node"
 
 

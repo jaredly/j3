@@ -39,3 +39,6 @@ make some changes, and then do "do a diff between this and that,
 and give me a toplevel toggle between the two"? hmmm.
 
 globallllll config vbls
+I think
+
+maybe, idk. I might like want a way to say "this whole blob, it's now a function that you can pass initial variables to" or something.

@@ -3,7 +3,13 @@
 import { parse } from './grammar';
 
 import fs from 'fs';
-import { addDef, newCtx, nodeToExpr, noForm, typeForExpr } from './to-ast';
+import {
+    addDef,
+    newCtx,
+    nodeToExpr,
+    noForm,
+    typeForExpr,
+} from './to-ast/to-ast';
 import { Node } from './types/cst';
 
 const [_, __, fname] = process.argv;
