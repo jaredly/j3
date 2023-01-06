@@ -4,7 +4,7 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { Expr } from '../src/types/ast';
 import { Node } from './Nodes';
-import { initialStore } from './store';
+import { initialStore, setSelection } from './store';
 
 const init = `(== 5 (+ 2 3))
 (== 5 5)
@@ -21,6 +21,8 @@ const init = `(== 5 (+ 2 3))
 (\`Hello 10)
 (\`What)
 \`Yea
+Thing
+3
 (let [(\`Ok x) (\`Ok 20)] (+ x 23))
 
 (defn add2 [x :int] (+ x 2))
@@ -63,9 +65,31 @@ export const App = () => {
     return (
         <div style={{ margin: 24 }}>
             {/* <button onClick={() => setState(getInitialState())}>Ok</button> */}
-            {store.roots.map((root) => (
+            {store.roots.map((root, i) => (
                 <div key={root} style={{ marginBottom: 8 }}>
-                    <Node idx={root} store={store} path={[]} />
+                    <Node
+                        idx={root}
+                        store={store}
+                        path={[]}
+                        events={{
+                            onLeft() {
+                                if (i > 0) {
+                                    setSelection(store, {
+                                        idx: store.roots[i - 1],
+                                        side: 'end',
+                                    });
+                                }
+                            },
+                            onRight() {
+                                if (i < store.roots.length - 1) {
+                                    setSelection(store, {
+                                        idx: store.roots[i + 1],
+                                        side: 'start',
+                                    });
+                                }
+                            },
+                        }}
+                    />
                 </div>
             ))}
             <textarea
