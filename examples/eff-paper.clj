@@ -8,14 +8,14 @@
 (def read (`Read () (fn [v :string] (`Return v))))
 
 (def alwaysRead (<> [Inner :task R]
-	(fn [readResponse :string task :(Task [Read Inner] R)] :(Task [Inner] R)
+	(fn [readResponse :string task :(@Task [Read Inner] R)] :(@Task [Inner] R)
 		(switch task
 		(`Return result) (`Return result)
 		(`Read _ k) ((>< alwaysRead Inner R) readResponse (k readResponse))
 		otherwise ((>< withHandler [Inner] R [Read] R) otherwise (fn [task] ((>< alwaysRead Inner R) readResponse task))))
 )))
 
-(def collect (<> [Inner :task] (fn [task :(Task [Write Inner] ())] :(Task Inner string)
+(def collect (<> [Inner :task] (fn [task :(@Task [Write Inner] ())] :(@Task Inner string)
 	(switch task
 		(`Return ()) (`Return "end")
 		(`Write v k) (
