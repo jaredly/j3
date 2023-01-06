@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
 import { IdentifierLike } from './IdentifierLike';
-import { Path, Store, useStore } from './store';
+import { Path, setSelection, Store, useStore } from './store';
 
 // ListLike
 // array, list, record
@@ -47,10 +47,12 @@ export const Node = ({
     idx,
     store,
     path,
+    events,
 }: {
     idx: number;
     store: Store;
     path: Path[];
+    events: Events;
 }) => {
     const item = useStore(store, idx);
     if (!item) {
@@ -69,83 +71,16 @@ export const Node = ({
                     store={store}
                     idx={idx}
                     path={path}
-                    events={{
-                        onLeft() {},
-                        onRight() {},
-                    }}
+                    events={events}
                 />
-                {decs.map(([key, args]) =>
-                    key === 'type' ? (
-                        <span key={key} style={{ marginLeft: 8 }}>
-                            :
-                            {args.length === 1 ? (
-                                <Node
-                                    idx={args[0]}
-                                    store={store}
-                                    path={path.concat([
-                                        {
-                                            idx,
-                                            child: {
-                                                type: 'decorator',
-                                                key,
-                                                at: 1,
-                                            },
-                                        },
-                                    ])}
-                                />
-                            ) : (
-                                <>
-                                    (
-                                    {args.map((arg, i) => (
-                                        <span
-                                            key={arg}
-                                            style={{ marginLeft: 8 }}
-                                        >
-                                            <Node
-                                                idx={arg}
-                                                store={store}
-                                                path={path.concat([
-                                                    {
-                                                        idx,
-                                                        child: {
-                                                            type: 'decorator',
-                                                            key,
-                                                            at: 1 + i,
-                                                        },
-                                                    },
-                                                ])}
-                                            />
-                                        </span>
-                                    ))}
-                                    )
-                                </>
-                            )}
-                        </span>
-                    ) : (
-                        <span key={key} style={{ marginLeft: 8 }}>
-                            @({key}
-                            {args.map((arg, i) => (
-                                <span key={arg} style={{ marginLeft: 8 }}>
-                                    <Node
-                                        idx={arg}
-                                        store={store}
-                                        path={path.concat([
-                                            {
-                                                idx,
-                                                child: {
-                                                    type: 'decorator',
-                                                    key,
-                                                    at: 1 + i,
-                                                },
-                                            },
-                                        ])}
-                                    />
-                                </span>
-                            ))}
-                            )
-                        </span>
-                    ),
-                )}
+                {decs.length ? (
+                    <Decorators
+                        decs={decs}
+                        store={store}
+                        path={path}
+                        idx={idx}
+                    />
+                ) : null}
             </>
         );
     }
@@ -172,6 +107,24 @@ export const Node = ({
                                 },
                             })}
                             store={store}
+                            events={{
+                                onLeft() {
+                                    if (i > 0) {
+                                        setSelection(store, {
+                                            idx: children[i - 1],
+                                            side: 'end',
+                                        });
+                                    }
+                                },
+                                onRight() {
+                                    if (i < children.length - 1) {
+                                        setSelection(store, {
+                                            idx: children[i + 1],
+                                            side: 'start',
+                                        });
+                                    }
+                                },
+                            }}
                         />
                     </span>
                 ))}
@@ -182,6 +135,97 @@ export const Node = ({
     return <span>{JSON.stringify(item.contents)}</span>;
 };
 
+function Decorators({
+    decs,
+    store,
+    path,
+    idx,
+}: {
+    decs: [string, number[]][];
+    store: Store;
+    path: Path[];
+    idx: number;
+}) {
+    return (
+        <>
+            {decs.map(([key, args]) =>
+                key === 'type' ? (
+                    <span key={key} style={{ marginLeft: 8 }}>
+                        :
+                        {args.length === 1 ? (
+                            <Node
+                                idx={args[0]}
+                                store={store}
+                                events={{ onLeft() {}, onRight() {} }}
+                                path={path.concat([
+                                    {
+                                        idx,
+                                        child: {
+                                            type: 'decorator',
+                                            key,
+                                            at: 1,
+                                        },
+                                    },
+                                ])}
+                            />
+                        ) : (
+                            <>
+                                (
+                                {args.map((arg, i) => (
+                                    <span key={arg} style={{ marginLeft: 8 }}>
+                                        <Node
+                                            idx={arg}
+                                            store={store}
+                                            events={{
+                                                onLeft() {},
+                                                onRight() {},
+                                            }}
+                                            path={path.concat([
+                                                {
+                                                    idx,
+                                                    child: {
+                                                        type: 'decorator',
+                                                        key,
+                                                        at: 1 + i,
+                                                    },
+                                                },
+                                            ])}
+                                        />
+                                    </span>
+                                ))}
+                                )
+                            </>
+                        )}
+                    </span>
+                ) : (
+                    <span key={key} style={{ marginLeft: 8 }}>
+                        @({key}
+                        {args.map((arg, i) => (
+                            <span key={arg} style={{ marginLeft: 8 }}>
+                                <Node
+                                    idx={arg}
+                                    store={store}
+                                    events={{ onLeft() {}, onRight() {} }}
+                                    path={path.concat([
+                                        {
+                                            idx,
+                                            child: {
+                                                type: 'decorator',
+                                                key,
+                                                at: 1 + i,
+                                            },
+                                        },
+                                    ])}
+                                />
+                            </span>
+                        ))}
+                        )
+                    </span>
+                ),
+            )}
+        </>
+    );
+}
 // Spread is weird, let's wait to support it?
 // String is special too
 

@@ -11,6 +11,7 @@ export type Node = {
     decorators: { [key: string]: Node[] };
     loc: Loc;
 };
+export type NodeList = { type: 'list'; values: Node[] };
 
 export type NodeContents =
     // identifier-like
@@ -24,7 +25,7 @@ export type NodeContents =
     | { type: 'number'; raw: string }
 
     // list-like
-    | { type: 'list'; values: Node[] }
+    | NodeList
     | { type: 'record'; items: Node[] }
     | { type: 'array'; values: Node[] }
 
