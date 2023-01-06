@@ -259,6 +259,57 @@ export const nodeToPattern = (
                 sym,
             };
         }
+        case 'list': {
+            const [{ contents: first }, ...rest] = form.contents.values;
+            if (first.type === 'identifier' && first.text === ',') {
+                const prm =
+                    t.type === 'record'
+                        ? t.entries.reduce((map, item) => {
+                              map[item.name] = item.value;
+                              return map;
+                          }, {} as { [key: string]: Type })
+                        : null;
+                return {
+                    type: 'record',
+                    form,
+                    entries: rest.map((item, i) => ({
+                        name: i.toString(),
+                        value: nodeToPattern(
+                            item,
+                            prm
+                                ? prm[i.toString()]
+                                : {
+                                      type: 'unresolved',
+                                      form: t.form,
+                                      reason: 'type isnt a record',
+                                  },
+                            ctx,
+                            bindings,
+                        ),
+                    })),
+                };
+            }
+            if (first.type === 'tag') {
+                const argt = t.type === 'tag' ? t.args : null;
+                return {
+                    type: 'tag',
+                    name: first.text,
+                    form,
+                    args: rest.map((p, i) =>
+                        nodeToPattern(
+                            p,
+                            (argt && argt[i]) ?? {
+                                type: 'unresolved',
+                                form: t.form,
+                                reason: `not a tag`,
+                            },
+                            ctx,
+                            bindings,
+                        ),
+                    ),
+                };
+            }
+        }
     }
     return { type: 'unresolved', form: form, reason: 'not impl pat' };
 };
@@ -436,7 +487,22 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                     reason: 'unknown builtin ' + value.hash,
                 }
             );
+        case 'tag':
+            return {
+                type: 'tag',
+                name: value.name,
+                args: [],
+                form: value.form,
+            };
         case 'apply': {
+            if (value.target.type === 'tag') {
+                return {
+                    type: 'tag',
+                    name: value.target.name,
+                    args: value.args.map((arg) => typeForExpr(arg, ctx)),
+                    form: value.form,
+                };
+            }
             const inner = typeForExpr(value.target, ctx);
             if (inner.type === 'fn') {
                 return inner.body;

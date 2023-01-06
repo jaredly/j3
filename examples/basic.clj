@@ -10,3 +10,7 @@
 	)
 	5
 )
+(`Hello 10)
+(`What)
+`Yea
+(let [(`Ok x) (`Ok 20)] (+ x 23))

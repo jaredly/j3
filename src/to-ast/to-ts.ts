@@ -23,28 +23,42 @@ export const patternToTs = (
                         : patternToTs(pattern.args[0], ctx),
                 ),
             ]);
+        case 'unresolved':
+            return t.identifier('pat_un_' + pattern.reason);
+        case 'record':
+            const items = tupleRecord(pattern.entries);
+            if (items) {
+                return t.arrayPattern(
+                    items.map((item) => patternToTs(item, ctx)),
+                );
+            }
+            return t.objectPattern(
+                pattern.entries.map((entry) =>
+                    t.objectProperty(
+                        t.identifier(entry.name),
+                        patternToTs(entry.value, ctx),
+                    ),
+                ),
+            );
     }
-    return t.identifier('pat_' + pattern.type);
 };
 
 export const stmtToTs = (
     expr: Expr,
     ctx: Ctx,
     shouldReturn: boolean,
-): t.Statement[] => {
+): t.Statement => {
     switch (expr.type) {
         case 'def':
-            return [
-                t.variableDeclaration('const', [
-                    t.variableDeclarator(
-                        t.identifier('h' + expr.hash),
-                        exprToTs(expr.value, ctx),
-                    ),
-                ]),
-            ];
+            return t.variableDeclaration('const', [
+                t.variableDeclarator(
+                    t.identifier('h' + expr.hash),
+                    exprToTs(expr.value, ctx),
+                ),
+            ]);
         case 'let':
             const last = expr.body.length - 1;
-            return [
+            return t.blockStatement([
                 t.variableDeclaration(
                     'const',
                     expr.bindings.map((binding) =>
@@ -57,22 +71,18 @@ export const stmtToTs = (
                 ...expr.body.flatMap((expr, i) =>
                     stmtToTs(expr, ctx, shouldReturn && i === last),
                 ),
-            ];
+            ]);
         case 'if':
-            return [
-                t.ifStatement(
-                    exprToTs(expr.cond, ctx),
-                    t.blockStatement(stmtToTs(expr.yes, ctx, shouldReturn)),
-                    t.blockStatement(stmtToTs(expr.no, ctx, shouldReturn)),
-                ),
-            ];
+            return t.ifStatement(
+                exprToTs(expr.cond, ctx),
+                stmtToTs(expr.yes, ctx, shouldReturn),
+                stmtToTs(expr.no, ctx, shouldReturn),
+            );
         default:
             const bex = exprToTs(expr, ctx);
-            return [
-                shouldReturn
-                    ? t.returnStatement(bex)
-                    : t.expressionStatement(bex),
-            ];
+            return shouldReturn
+                ? t.returnStatement(bex)
+                : t.expressionStatement(bex);
     }
 };
 
@@ -86,11 +96,11 @@ export const bodyToTs = (
     if (res.length === 1 && res[0].type === 'ReturnStatement') {
         return res[0].argument!;
     }
-    // const idx = res.length - 1;
-    // const last = res[idx];
-    // if (last.type === 'ExpressionStatement') {
-    //     res[idx] = t.returnStatement(last.expression);
-    // }
+    const last = res[res.length - 1];
+    if (last.type === 'BlockStatement') {
+        res.pop();
+        res.push(...last.body);
+    }
     return t.blockStatement(res);
 };
 
@@ -109,11 +119,32 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                     );
                 }
             }
+            if (expr.target.type === 'tag') {
+                if (expr.args.length === 0) {
+                    return t.stringLiteral(expr.target.name);
+                }
+                return t.objectExpression([
+                    t.objectProperty(
+                        t.identifier('type'),
+                        t.stringLiteral(expr.target.name),
+                    ),
+                    t.objectProperty(
+                        t.identifier('payload'),
+                        expr.args.length === 1
+                            ? exprToTs(expr.args[0], ctx)
+                            : t.arrayExpression(
+                                  expr.args.map((arg) => exprToTs(arg, ctx)),
+                              ),
+                    ),
+                ]);
+            }
             return t.callExpression(
                 exprToTs(expr.target, ctx),
                 expr.args.map((arg) => exprToTs(arg, ctx)),
             );
         }
+        case 'tag':
+            return t.stringLiteral(expr.name);
         case 'local': {
             return t.identifier('s' + expr.sym);
         }
@@ -133,7 +164,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             );
         }
         case 'record': {
-            const items = tupleRecord(expr);
+            const items = tupleRecord(expr.entries);
             if (items) {
                 return t.arrayExpression(
                     items.map((item) => exprToTs(item, ctx)),
@@ -163,11 +194,11 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
     return t.stringLiteral('Not impl expr ' + expr.type);
 };
 
-export const tupleRecord = (t: Record) => {
-    const items: Expr[] = [];
-    const map: { [key: string]: Expr } = {};
-    t.entries.forEach(({ name, value }) => (map[name] = value));
-    for (let i = 0; i < t.entries.length; i++) {
+export const tupleRecord = <T>(entries: { name: string; value: T }[]) => {
+    const items: T[] = [];
+    const map: { [key: string]: T } = {};
+    entries.forEach(({ name, value }) => (map[name] = value));
+    for (let i = 0; i < entries.length; i++) {
         if (map[i] == null) {
             return null;
         }

@@ -20,8 +20,16 @@ export type Pattern =
           form: Node;
       }
     | Number
+    | {
+          type: 'record';
+          form: Node;
+          entries: {
+              name: string;
+              value: Pattern;
+          }[];
+      }
     | { type: 'unresolved'; form: Node; reason?: string }
-    | { type: 'tag'; name: string; args: Pattern[] };
+    | { type: 'tag'; name: string; args: Pattern[]; form: Node };
 
 export type Expr =
     | Shared
