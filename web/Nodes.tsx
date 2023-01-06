@@ -21,6 +21,7 @@ export const idText = (node: MNodeContents) => {
         case 'identifier':
             return node.text;
         case 'number':
+        case 'unparsed':
             return node.raw;
         case 'tag':
             return '`' + node.text;

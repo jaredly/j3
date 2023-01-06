@@ -1,13 +1,14 @@
 
 {{
-	let idx = 0
+	let idx = 0;
+	export const nidx = () => idx++;
 }}
 
 {
 	const wrap = (contents, loc) => ({contents, decorators: [], loc: {
 		start: location().start.offset,
 		end: location().end.offset,
-		idx: idx++,
+		idx: nidx()
 	}});
 }
 

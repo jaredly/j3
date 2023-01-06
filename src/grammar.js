@@ -3,7 +3,8 @@
 // https://peggyjs.org/
 
 
-	let idx = 0
+	let idx = 0;
+	export const nidx = () => idx++;
 
 function peg$subclass(child, parent) {
   function C() { this.constructor = child; }
@@ -2023,7 +2024,7 @@ function peg$parse(input, options) {
 	const wrap = (contents, loc) => ({contents, decorators: [], loc: {
 		start: location().start.offset,
 		end: location().end.offset,
-		idx: idx++,
+		idx: nidx()
 	}});
 
   peg$result = peg$startRuleFunction();

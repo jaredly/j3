@@ -14,5 +14,9 @@
 - [x] render basic.clj
 - [x] click to select
 - [x] basic atom edit
-- [ ] basic space to next atom add tx
-- [ ] BUG putting a '-' in the middle of a number chops things to pieces
+- [x] basic space to next atom add tx
+- [ ] space in middle should split ty
+- [ ] '(' should make a list, '[' array, '{' record
+- [x] backspace should deleteeeee
+- [ ] backspace should joiiiin
+- [x] invalid syntax should be allowwwwwed (made a new kind of node, a "badsyntax" or sth)

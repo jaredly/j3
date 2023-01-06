@@ -47,4 +47,5 @@ export type NodeContents =
           first: string;
           templates: { expr: Node; suffix: string }[];
       }
-    | { type: 'blank' };
+    | { type: 'blank' }
+    | { type: 'unparsed'; raw: string };

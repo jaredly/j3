@@ -13,6 +13,7 @@ export type Atom =
           text: string;
           hash?: string;
       }
+    | { type: 'unparsed'; raw: string }
     // `LikeThis
     | { type: 'tag'; text: string }
     | { type: 'number'; raw: string };

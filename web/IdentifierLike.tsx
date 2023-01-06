@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
-import { Path, setSelection, Store, updateStore } from './store';
+import { Path, setSelection, Store, UpdateMap, updateStore } from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
+import { Node } from '../src/types/cst';
 
 export const IdentifierLike = ({
     idx,
@@ -35,6 +36,25 @@ export const IdentifierLike = ({
             ref.current.textContent = text;
             if (ref.current !== document.activeElement) {
                 ref.current.focus();
+                switch (store.selection!.side) {
+                    case 'end': {
+                        const sel = window.getSelection()!;
+                        sel.selectAllChildren(ref.current);
+                        sel.collapseToEnd();
+                        break;
+                    }
+                    case 'start': {
+                        const sel = window.getSelection()!;
+                        sel.selectAllChildren(ref.current);
+                        sel.collapseToStart();
+                        break;
+                    }
+                    case 'change': {
+                        const sel = window.getSelection()!;
+                        sel.selectAllChildren(ref.current);
+                        break;
+                    }
+                }
             }
         }
     }, [editing, text]);
@@ -86,7 +106,17 @@ export const IdentifierLike = ({
                         // and like update the parent pls
                     }
                 } catch (err) {
-                    console.warn(err);
+                    const nw: Node = {
+                        contents: {
+                            type: 'unparsed',
+                            raw: text,
+                        },
+                        decorators: {},
+                        loc: { start: 0, end: text.length, idx },
+                    };
+                    const mp: Map = {};
+                    toMCST(nw, mp);
+                    updateStore(store, { map: mp });
                 }
             }}
             onBlur={() => {
@@ -104,8 +134,35 @@ export const IdentifierLike = ({
                     // commit();
                     return;
                 }
+                if (evt.key === 'Backspace') {
+                    if (evt.currentTarget.textContent === '') {
+                        const parent = path[path.length - 1];
+                        if (parent.child.type === 'child') {
+                            const mp: UpdateMap = {};
+                            const pnode = store.map[parent.idx];
+                            const { contents, nidx } = rmChild(
+                                pnode.contents,
+                                parent.child.at,
+                            );
+                            mp[parent.idx] = {
+                                ...pnode,
+                                contents,
+                            };
+                            updateStore(store, {
+                                map: mp,
+                                selection:
+                                    nidx != null
+                                        ? {
+                                              idx: nidx,
+                                              side: 'end',
+                                          }
+                                        : null,
+                            });
+                            evt.preventDefault();
+                        }
+                    }
+                }
                 if (evt.key === ' ') {
-                    console.log(path);
                     for (let i = path.length - 1; i >= 0; i--) {
                         const parent = path[i];
                         if (parent.child.type !== 'child') {
@@ -194,12 +251,35 @@ const addChild = (node: MNodeContents, at: number, idx: number) => {
     return node;
 };
 
+const rmChild = (
+    node: MNodeContents,
+    at: number,
+): { contents: MNodeContents; nidx: number | null } => {
+    switch (node.type) {
+        case 'array':
+        case 'list': {
+            const values = node.values.slice();
+            values.splice(at, 1);
+            const nidx = values.length > 0 ? values[Math.max(0, at - 1)] : null;
+            return { contents: { ...node, values }, nidx };
+        }
+        case 'record': {
+            const items = node.items.slice();
+            items.splice(at, 1);
+            const nidx = items.length > 0 ? items[Math.max(0, at - 1)] : null;
+            return { contents: { ...node, items }, nidx };
+        }
+    }
+    return { contents: node, nidx: null };
+};
+
 export const colors: {
     [key in MNodeContents['type']]: string;
 } = {
     identifier: '#5bb6b7',
     tag: '#82f682',
     number: '#4848a5',
+    unparsed: 'red',
     // lol
     ...({} as any),
 };
