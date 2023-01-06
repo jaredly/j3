@@ -15,3 +15,4 @@
 - [x] click to select
 - [x] basic atom edit
 - [ ] basic space to next atom add tx
+- [ ] BUG putting a '-' in the middle of a number chops things to pieces

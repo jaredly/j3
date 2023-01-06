@@ -11,7 +11,7 @@
 	}});
 }
 
-File = _ contents:(@Form _)* { return contents}
+File = _ contents:(@Form _)* _ { return contents}
 
 Form = inner:FormInner decorators:(_ @Decorator _)* {
 	decorators.forEach(dec => {
