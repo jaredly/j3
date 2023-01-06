@@ -21,6 +21,7 @@
     },
     "scripts": {
         "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
-        "gram": "peggy src/grammar.pegjs"
+        "web": "vite web --port 8221",
+        "gram": "peggy --format es src/grammar.pegjs"
     }
 }

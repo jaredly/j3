@@ -1,5 +1,4 @@
 // ok?
-// @ts-ignore
 import { parse } from './grammar';
 
 import fs from 'fs';
@@ -20,7 +19,7 @@ if (!fs.existsSync(fname)) {
     process.exit(1);
 }
 
-const cst: Node[] = parse(fs.readFileSync(fname, 'utf8'));
+const cst = parse(fs.readFileSync(fname, 'utf8'));
 let ctx = newCtx();
 const exprs = cst.map((node) => {
     const res = nodeToExpr(node, ctx);

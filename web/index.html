@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>j2 fixtures</title>
+        <link rel="favorite icon" href="favicon.png" />
+        <style>
+            ::selection {
+                background-color: rgba(255, 255, 200, 0.3);
+            }
+            @font-face {
+                font-family: 'Fira Code VF';
+                src: url('./FiraCode-VF.woff2') format('woff2-variations');
+                font-weight: 100 900;
+                font-style: normal;
+            }
+            @font-face {
+                font-family: 'Jet Brains';
+                src: url('./JetBrainsMono.ttf');
+                font-weight: 100 900;
+                font-style: normal;
+            }
+            @font-face {
+                font-family: 'Monoid';
+                src: url('./Monoid-Retina.ttf');
+                /* font-weight: 100 900; */
+                /* font-style: normal; */
+            }
+            html,
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: black;
+                font-family: 'Jet Brains' !important;
+                font-variation-settings: 'wght' 100, 'wdth' 100;
+                color: white;
+                /* font-family: 'Monoid' !important; */
+                /* font-family: monospace !important; */
+                /* font-variation-settings: 'wght' 100, 'wdth' 100; */
+            }
+            [data-prefix]::before {
+                content: attr(data-prefix);
+                padding-right: 4px;
+                font-size: 80%;
+            }
+            [data-message]::before {
+                cursor: pointer;
+            }
+            [data-suffix]::after {
+                content: attr(data-suffix);
+                padding-right: 4px;
+                font-size: 80%;
+                opacity: 0.5;
+            }
+            [data-suffix-message]::after {
+                cursor: pointer;
+            }
+            .hover {
+                border-bottom: 2px solid transparent;
+            }
+            .hover:hover {
+                border-bottom-color: rgba(255, 0, 200, 0.2);
+            }
+            span:empty {
+                /* min-width: 0.5em; */
+                min-height: 1.5em;
+                vertical-align: bottom;
+                display: inline-block;
+                /* text-decoration-line: 1px solid magenta; */
+                /* outline: 1px solid magenta !important; */
+            }
+            span[contenteditable]:empty {
+                min-width: 0;
+                outline: none !important;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="./run.tsx" type="module"></script>
+    </body>
+</html>

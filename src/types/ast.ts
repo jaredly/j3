@@ -107,7 +107,7 @@ export type TVar = {
     form: Node;
 };
 
-export type Shared =
+export type Identifier =
     | {
           type: 'global';
           hash: string;
@@ -117,7 +117,10 @@ export type Shared =
           type: 'local';
           sym: number;
           form: Node;
-      }
+      };
+
+export type Shared =
+    | Identifier
     | Number
     | { type: 'unresolved'; form: Node; reason?: string };
 
