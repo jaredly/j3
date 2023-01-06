@@ -29,11 +29,9 @@ let ctx = newCtx();
 const exprs = cst.map((node) => {
     const res = nodeToExpr(node, ctx);
     ctx = addDef(res, ctx);
+    console.log(JSON.stringify(noForm(res)));
+    console.log(typeForExpr(res, ctx));
     return res;
-});
-exprs.forEach((expr) => {
-    console.log(JSON.stringify(noForm(expr)));
-    console.log(typeForExpr(expr, ctx));
 });
 
 console.log(toTs(exprs, ctx));

@@ -95,6 +95,13 @@ addBuiltin(basicBuiltins, '+', {
     body: btype('int'),
 });
 
+addBuiltin(basicBuiltins, '<', {
+    type: 'fn',
+    args: [btype('int'), btype('int')],
+    form: blank,
+    body: btype('bool'),
+});
+
 addBuiltin(basicBuiltins, '==', {
     type: 'fn',
     args: [btype('int'), btype('int')],
@@ -362,6 +369,26 @@ export const specials: {
             bindings,
             form,
             body: contents.slice(1).map((child) => nodeToExpr(child, ct2)),
+        };
+    },
+    if: (form, contents, ctx): Expr => {
+        const [cond, yes, no] = contents;
+        return {
+            type: 'if',
+            cond: cond ? nodeToExpr(cond, ctx) : nil,
+            yes: yes ? nodeToExpr(yes, ctx) : nil,
+            no: no ? nodeToExpr(no, ctx) : nil,
+            form,
+        };
+    },
+    ',': (form, contents, ctx): Expr => {
+        return {
+            type: 'record',
+            form,
+            entries: contents.map((item, i) => ({
+                name: i.toString(),
+                value: nodeToExpr(item, ctx),
+            })),
         };
     },
 };

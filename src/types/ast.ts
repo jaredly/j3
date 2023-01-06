@@ -85,7 +85,12 @@ export type Expr =
           body: Expr[];
       }
     | { type: 'tag'; name: string; form: Node } // by itself, this is a constructor function
-    | { type: 'record'; entries: { name: string; value: Expr }[]; form: Node };
+    | Record;
+export type Record = {
+    type: 'record';
+    entries: { name: string; value: Expr }[];
+    form: Node;
+};
 
 export type TVar = {
     sym: number;

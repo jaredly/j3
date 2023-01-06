@@ -1,7 +1,7 @@
 import generate from '@babel/generator';
 import * as t from '@babel/types';
-import { Expr, Pattern } from '../types/ast';
-import { Ctx } from './to-ast';
+import { Expr, Pattern, Record } from '../types/ast';
+import { Ctx, nodeToExpr } from './to-ast';
 
 export const patternToTs = (
     pattern: Pattern,
@@ -27,7 +27,11 @@ export const patternToTs = (
     return t.identifier('pat_' + pattern.type);
 };
 
-export const stmtToTs = (expr: Expr, ctx: Ctx): t.Statement[] => {
+export const stmtToTs = (
+    expr: Expr,
+    ctx: Ctx,
+    shouldReturn: boolean,
+): t.Statement[] => {
     switch (expr.type) {
         case 'def':
             return [
@@ -39,6 +43,7 @@ export const stmtToTs = (expr: Expr, ctx: Ctx): t.Statement[] => {
                 ]),
             ];
         case 'let':
+            const last = expr.body.length - 1;
             return [
                 t.variableDeclaration(
                     'const',
@@ -49,10 +54,25 @@ export const stmtToTs = (expr: Expr, ctx: Ctx): t.Statement[] => {
                         ),
                     ),
                 ),
-                ...expr.body.flatMap((expr) => stmtToTs(expr, ctx)),
+                ...expr.body.flatMap((expr, i) =>
+                    stmtToTs(expr, ctx, shouldReturn && i === last),
+                ),
+            ];
+        case 'if':
+            return [
+                t.ifStatement(
+                    exprToTs(expr.cond, ctx),
+                    t.blockStatement(stmtToTs(expr.yes, ctx, shouldReturn)),
+                    t.blockStatement(stmtToTs(expr.no, ctx, shouldReturn)),
+                ),
             ];
         default:
-            return [t.expressionStatement(exprToTs(expr, ctx))];
+            const bex = exprToTs(expr, ctx);
+            return [
+                shouldReturn
+                    ? t.returnStatement(bex)
+                    : t.expressionStatement(bex),
+            ];
     }
 };
 
@@ -60,15 +80,17 @@ export const bodyToTs = (
     exprs: Expr[],
     ctx: Ctx,
 ): t.BlockStatement | t.Expression => {
-    const res = exprs.flatMap((expr) => stmtToTs(expr, ctx));
-    if (res.length === 1 && res[0].type === 'ExpressionStatement') {
-        return res[0].expression;
+    const res = exprs.flatMap((expr, i) =>
+        stmtToTs(expr, ctx, i === exprs.length - 1),
+    );
+    if (res.length === 1 && res[0].type === 'ReturnStatement') {
+        return res[0].argument!;
     }
-    const idx = res.length - 1;
-    const last = res[idx];
-    if (last.type === 'ExpressionStatement') {
-        res[idx] = t.returnStatement(last.expression);
-    }
+    // const idx = res.length - 1;
+    // const last = res[idx];
+    // if (last.type === 'ExpressionStatement') {
+    //     res[idx] = t.returnStatement(last.expression);
+    // }
     return t.blockStatement(res);
 };
 
@@ -110,11 +132,51 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 bodyToTs(expr.body, ctx),
             );
         }
+        case 'record': {
+            const items = tupleRecord(expr);
+            if (items) {
+                return t.arrayExpression(
+                    items.map((item) => exprToTs(item, ctx)),
+                );
+            }
+            return t.objectExpression(
+                expr.entries.map((entry) =>
+                    t.objectProperty(
+                        t.identifier(entry.name),
+                        exprToTs(entry.value, ctx),
+                    ),
+                ),
+            );
+        }
+        case 'if': {
+            return t.conditionalExpression(
+                exprToTs(expr.cond, ctx),
+                exprToTs(expr.yes, ctx),
+                exprToTs(expr.no, ctx),
+            );
+        }
+        case 'unresolved':
+            return t.callExpression(t.identifier('fail'), [
+                t.stringLiteral('unresolved ' + expr.reason),
+            ]);
     }
     return t.stringLiteral('Not impl expr ' + expr.type);
 };
 
+export const tupleRecord = (t: Record) => {
+    const items: Expr[] = [];
+    const map: { [key: string]: Expr } = {};
+    t.entries.forEach(({ name, value }) => (map[name] = value));
+    for (let i = 0; i < t.entries.length; i++) {
+        if (map[i] == null) {
+            return null;
+        }
+        items.push(map[i]);
+    }
+    return items;
+};
+
 export const toTs = (exprs: Expr[], ctx: Ctx): string => {
-    const nodes = exprs.flatMap((expr) => stmtToTs(expr, ctx));
+    const nodes = exprs.flatMap((expr) => stmtToTs(expr, ctx, false));
     return generate(t.file(t.program(nodes))).code;
 };
