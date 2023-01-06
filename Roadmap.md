@@ -7,4 +7,11 @@
 	- we'll gloss over type inference for now
 	- and also maybe type checking? like idk. can we just ... check types, and see if they check out?
 	- [ ] so like I dont have generics yet, and such. but I think it's pretty good.
-- [ ] thennn we're on to a structured editor! All day. (UI <-> CST)
+- [-] thennn we're on to a structured editor! All day. (UI <-> CST)
+
+# Structure Editor
+
+- [x] render basic.clj
+- [x] click to select
+- [x] basic atom edit
+- [ ] basic space to next atom add tx

@@ -1,6 +1,9 @@
 
-{
+{{
 	let idx = 0
+}}
+
+{
 	const wrap = (contents, loc) => ({contents, decorators: [], loc: {
 		start: location().start.offset,
 		end: location().end.offset,

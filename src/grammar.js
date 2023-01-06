@@ -2,6 +2,9 @@
 //
 // https://peggyjs.org/
 
+
+	let idx = 0
+
 function peg$subclass(child, parent) {
   function C() { this.constructor = child; }
   C.prototype = parent.prototype;
@@ -2016,7 +2019,6 @@ function peg$parse(input, options) {
   }
 
 
-	let idx = 0
 	const wrap = (contents, loc) => ({contents, decorators: [], loc: {
 		start: location().start.offset,
 		end: location().end.offset,

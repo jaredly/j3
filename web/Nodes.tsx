@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
-import { Path, setSelection, Store, useStore } from './store';
+import { IdentifierLike } from './IdentifierLike';
+import { Path, Store, useStore } from './store';
 
 // ListLike
 // array, list, record
@@ -9,123 +10,10 @@ import { Path, setSelection, Store, useStore } from './store';
 //   lists need to know the nature of the first item
 //   and arrays, when the second item of a dealio, will as well
 
-type Events = {
+export type Events = {
     onRight: () => void;
     onLeft: () => void;
     // other things? idk
-};
-
-export const IdentifierLike = ({
-    type,
-    text,
-    store,
-    idx,
-}: {
-    type: MNodeContents['type'];
-    text: string;
-    idx: number;
-    store: Store;
-    path: Path[];
-    events: Events;
-}) => {
-    const editing = store.selection?.idx === idx;
-    let [edit, setEdit] = React.useState(null as null | string);
-
-    edit = edit == null ? text : edit;
-
-    React.useLayoutEffect(() => {
-        if (editing) {
-            ref.current!.textContent = text;
-        }
-    }, [editing, text]);
-
-    const ref = React.useRef(null as null | HTMLSpanElement);
-    if (!editing) {
-        return (
-            <span
-                className="hover"
-                style={{
-                    // color: pathColor(
-                    //     path.concat([{ idx, cid: 0, punct: 0 }]),
-                    //     store,
-                    // ),
-                    minHeight: '1.5em',
-                    // backgroundColor: 'rgba(255, 255, 0, 0.05)',
-                }}
-                onMouseDown={(evt) => {
-                    setEdit(text);
-                    setSelection(store, { idx });
-                }}
-            >
-                {text}
-            </span>
-        );
-    }
-    return (
-        <span
-            data-idx={idx}
-            contentEditable
-            ref={ref}
-            onInput={(evt) => setEdit(evt.currentTarget.textContent!)}
-            onBlur={() => {
-                // commit();
-                setEdit(null);
-                setSelection(store, null);
-            }}
-            style={{
-                // color: parsed ? colors[parsed.type] : 'red',
-                outline: 'none',
-                minHeight: '1.5em',
-            }}
-            onKeyDown={(evt) => {
-                if (evt.key === 'Enter') {
-                    evt.preventDefault();
-                    // commit();
-                    return;
-                }
-                // if (keyHandlers[evt.key]) {
-                //     const res = handleKey(
-                //         store,
-                //         path.concat([{ idx, cid: 0, punct: 0 }]),
-                //         evt.key,
-                //         evt.currentTarget.textContent!,
-                //     );
-                //     if (res !== false) {
-                //         evt.preventDefault();
-                //         evt.stopPropagation();
-                //     }
-                //     return;
-                // }
-                // if (
-                //     evt.key === 'ArrowRight' &&
-                //     getSelection()?.toString() === '' &&
-                //     getPos(evt.currentTarget) ===
-                //         evt.currentTarget.textContent!.length
-                // ) {
-                //     evt.preventDefault();
-                //     evt.stopPropagation();
-                //     const right = goRight(store, path);
-                //     // console.log(`going right`, right);
-                //     if (right) {
-                //         setSelection(store, right.sel);
-                //     }
-                // }
-                // if (
-                //     evt.key === 'ArrowLeft' &&
-                //     getSelection()?.toString() === '' &&
-                //     getPos(evt.currentTarget) === 0
-                // ) {
-                //     evt.preventDefault();
-                //     evt.stopPropagation();
-                //     const left = goLeft(store, path);
-                //     // console.log(`going left`, left);
-                //     if (left) {
-                //         setSelection(store, left.sel);
-                //     }
-                // }
-            }}
-        />
-    );
 };
 
 export const idText = (node: MNodeContents) => {
@@ -176,7 +64,7 @@ export const Node = ({
                     type={item.contents.type}
                     store={store}
                     idx={idx}
-                    path={[]}
+                    path={path}
                     events={{
                         onLeft() {},
                         onRight() {},
@@ -187,11 +75,24 @@ export const Node = ({
                         <span key={key} style={{ marginLeft: 8 }}>
                             :
                             {args.length === 1 ? (
-                                <Node idx={args[0]} store={store} path={[]} />
+                                <Node
+                                    idx={args[0]}
+                                    store={store}
+                                    path={path.concat([
+                                        {
+                                            idx,
+                                            child: {
+                                                type: 'decorator',
+                                                key,
+                                                at: 1,
+                                            },
+                                        },
+                                    ])}
+                                />
                             ) : (
                                 <>
                                     (
-                                    {args.map((arg) => (
+                                    {args.map((arg, i) => (
                                         <span
                                             key={arg}
                                             style={{ marginLeft: 8 }}
@@ -199,7 +100,16 @@ export const Node = ({
                                             <Node
                                                 idx={arg}
                                                 store={store}
-                                                path={[]}
+                                                path={path.concat([
+                                                    {
+                                                        idx,
+                                                        child: {
+                                                            type: 'decorator',
+                                                            key,
+                                                            at: 1 + i,
+                                                        },
+                                                    },
+                                                ])}
                                             />
                                         </span>
                                     ))}
@@ -210,9 +120,22 @@ export const Node = ({
                     ) : (
                         <span key={key} style={{ marginLeft: 8 }}>
                             @({key}
-                            {args.map((arg) => (
+                            {args.map((arg, i) => (
                                 <span key={arg} style={{ marginLeft: 8 }}>
-                                    <Node idx={arg} store={store} path={[]} />
+                                    <Node
+                                        idx={arg}
+                                        store={store}
+                                        path={path.concat([
+                                            {
+                                                idx,
+                                                child: {
+                                                    type: 'decorator',
+                                                    key,
+                                                    at: 1 + i,
+                                                },
+                                            },
+                                        ])}
+                                    />
                                 </span>
                             ))}
                             )
@@ -238,9 +161,11 @@ export const Node = ({
                         <Node
                             idx={cidx}
                             path={path.concat({
-                                cid: cidx,
                                 idx,
-                                punct: 0,
+                                child: {
+                                    type: 'child',
+                                    at: i,
+                                },
                             })}
                             store={store}
                         />
