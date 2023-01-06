@@ -16,6 +16,7 @@ export type NodeContents =
     | {
           type: 'identifier'; // likeThis
           text: string;
+          hash?: string;
       }
     | {
           type: 'tag'; // `LikeThis

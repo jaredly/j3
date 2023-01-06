@@ -15,17 +15,19 @@ export type Pattern =
           type: 'constant';
           form: Node;
       }
-    | { type: 'unresolved'; form: Node }
+    | { type: 'unresolved'; form: Node; reason?: string }
     | { type: 'tag'; name: string; args: Pattern[] };
 
 export type Expr =
     | Shared
+    | { type: 'def'; name: string; value: Expr; form: Node }
     | {
           type: 'string';
           first: string;
           templates: { expr: Expr; suffix: string }[];
           form: Node;
       }
+    | { type: 'if'; cond: Expr; yes: Expr; no: Expr; form: Node }
     | {
           type: 'switch';
           target: Expr;
@@ -37,7 +39,7 @@ export type Expr =
           type: 'fn';
           name?: string;
           args: { pattern: Pattern; type?: Type }[];
-          body: Expr;
+          body: Expr[];
           form: Node;
       }
     | { type: 'recur'; depth: number; form: Node }
@@ -55,19 +57,32 @@ export type Expr =
           form: Node;
       }
     | {
+          type: 'type-fn';
+          target: Expr;
+          args: { name: string; bound?: Type }[];
+          form: Node;
+      }
+    | {
           type: 'let-type';
           bindings: { name: string; type: Type }[];
-          body: Expr;
+          body: Expr[];
           form: Node;
       }
     | {
           type: 'let';
           bindings: { pattern: Pattern; value: Expr; type?: Type }[];
           form: Node;
-          body: Expr;
+          body: Expr[];
       }
     | { type: 'tag'; name: string; form: Node } // by itself, this is a constructor function
     | { type: 'record'; entries: { name: string; value: Expr }[]; form: Node };
+
+export type TVar = {
+    sym: number;
+    bound?: Type;
+    default_?: Type;
+    form: Node;
+};
 
 export type Shared =
     | {
@@ -84,7 +99,7 @@ export type Shared =
           type: 'constant';
           form: Node;
       }
-    | { type: 'unresolved'; form: Node }
+    | { type: 'unresolved'; form: Node; reason?: string }
     | {
           type: 'builtin';
           name: string;

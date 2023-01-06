@@ -43,7 +43,7 @@ spread = "..." contents:Form {return wrap({type: 'spread', contents})}
 
 string = "\"" first:$tplStringChars templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
 
-identifier = text:$idtext {return wrap({type: 'identifier', text})}
+identifier = text:$idtext hash:$("#" idtext)? {return wrap({type: 'identifier', text, hash})}
 
 TemplatePair = expr:TemplateWrap suffix:$tplStringChars {return {expr, suffix}}
 TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 0 ? wrap({type: 'list', values: forms}) : forms[0]}
