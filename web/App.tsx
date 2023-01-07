@@ -11,12 +11,7 @@ const init = `(== 5 (+ 2 3))
 
 ; let's get this going
 
-(a comment
-    ; inside the story
-    (* and more *)
-    )
-
-(empties [] one () two {} hello folks)
+; (empties [] one () two {} hello folks)
 
 (fn [v :int] (+ v 1))
 (def hello 10)

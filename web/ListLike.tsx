@@ -71,7 +71,17 @@ export const ListLike = ({
             }}
         >
             {nodes.map((node, i) => (
-                <div key={children[i]}>{node}</div>
+                <div
+                    key={children[i]}
+                    className="hover"
+                    onMouseDown={(evt) => {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        setSelection(store, { idx: children[i], side: 'end' });
+                    }}
+                >
+                    {node}
+                </div>
             ))}
         </div>
     ) : layout?.type === 'multiline' ? (

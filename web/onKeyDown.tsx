@@ -126,13 +126,9 @@ export const onKeyDown = (
         }
     }
 
-    if (evt.key === ' ' || evt.key === 'Enter') {
-        if (
-            store.map[idx].node.contents.type === 'comment' &&
-            evt.key === ' '
-        ) {
-            return;
-        }
+    const isComment = store.map[idx].node.contents.type === 'comment';
+
+    if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         const parent = path[path.length - 1];
         if (parent.child.type === 'start') {
             const gp = path[path.length - 2];

@@ -50,6 +50,7 @@ export const IdentifierLike = ({
                 style={{
                     color: nodeColor(edit, type),
                     minHeight: '1.3em',
+                    whiteSpace: 'pre-wrap',
                 }}
                 onMouseDown={(evt) => {
                     evt.stopPropagation();
@@ -76,6 +77,7 @@ export const IdentifierLike = ({
             }}
             style={{
                 color: nodeColor(edit, type),
+                whiteSpace: 'pre-wrap',
                 outline: 'none',
                 minHeight: '1.3em',
             }}
