@@ -37,4 +37,5 @@ so good
 - [x] left & right outside of a list
   - [x] this means we need the concept of focusing the start / end of a listylisty (and a non-idx IdentifierLike)
 
+- [x] backspace inside/start/end of listlike works!
 - [ ] typing normal things in a blank creates a new thing

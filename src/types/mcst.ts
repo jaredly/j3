@@ -18,13 +18,16 @@ export type Atom =
     | { type: 'tag'; text: string }
     | { type: 'number'; raw: string };
 
-export type MNodeContents =
-    | Atom
-
-    // list-like
+export type ListLikeContents =
     | { type: 'list'; values: number[] }
     | { type: 'record'; values: number[] }
-    | { type: 'array'; values: number[] }
+    | { type: 'array'; values: number[] };
+
+export type MNodeContents =
+    | Atom
+    | ListLikeContents
+
+    // list-like
     | { type: 'comment'; text: string }
 
     // random stuff

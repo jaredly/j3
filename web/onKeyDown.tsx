@@ -1,5 +1,10 @@
 import * as React from 'react';
-import { Map, MNodeContents, toMCST } from '../src/types/mcst';
+import {
+    ListLikeContents,
+    Map,
+    MNodeContents,
+    toMCST,
+} from '../src/types/mcst';
 import { Path, setSelection, Store, UpdateMap, updateStore } from './store';
 import { parse } from '../src/grammar';
 import { NodeContents, NodeList } from '../src/types/cst';
@@ -21,13 +26,54 @@ export const onKeyDown = (
     if (evt.key === 'Backspace') {
         if (evt.currentTarget.textContent === '') {
             const parent = path[path.length - 1];
+            if (parent.child.type === 'inside' || parent.child.type === 'end') {
+                // change the thing to an empty identifier prolly
+                const mp: Map = {
+                    [idx]: {
+                        ...store.map[idx],
+                        node: {
+                            ...store.map[idx].node,
+                            contents: { type: 'identifier', text: '' },
+                        },
+                    },
+                };
+                updateStore(store, { map: mp }, [path]);
+                evt.preventDefault();
+                return;
+            }
+            if (parent.child.type === 'start') {
+                evt.preventDefault();
+                events.onLeft();
+                return;
+            }
             if (parent.child.type === 'child') {
                 const mp: UpdateMap = {};
                 const pnode = store.map[parent.idx];
-                const { contents, nidx } = rmChild(
-                    pnode.node.contents,
-                    parent.child.at,
-                );
+                const res = rmChild(pnode.node.contents, parent.child.at);
+                if (!res) {
+                    return;
+                }
+                const { contents, nidx } = res;
+                if (contents.values.length === 0) {
+                    mp[parent.idx] = {
+                        node: {
+                            ...pnode.node,
+                            contents: { type: 'identifier', text: '' },
+                        },
+                    };
+                    updateStore(
+                        store,
+                        {
+                            map: mp,
+                            selection: {
+                                idx: parent.idx,
+                            },
+                        },
+                        [path],
+                    );
+                    evt.preventDefault();
+                    return;
+                }
                 mp[parent.idx] = { node: { ...pnode.node, contents } };
                 updateStore(
                     store,
@@ -202,7 +248,7 @@ export const modChildren = (
 export const rmChild = (
     node: MNodeContents,
     at: number,
-): { contents: MNodeContents; nidx: number | null } => {
+): { contents: ListLikeContents; nidx: number | null } | null => {
     switch (node.type) {
         case 'record':
         case 'array':
@@ -213,5 +259,5 @@ export const rmChild = (
             return { contents: { ...node, values }, nidx };
         }
     }
-    return { contents: node, nidx: null };
+    return null;
 };
