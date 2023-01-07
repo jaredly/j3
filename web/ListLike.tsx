@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Map } from '../src/types/mcst';
 import { Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
+import { onKeyDown } from './onKeyDown';
 
 export const ListLike = ({
     left,
@@ -117,6 +118,9 @@ export const ListLike = ({
             {store.selection?.idx === idx &&
             store.selection.side === 'start' ? (
                 <Blinker
+                    idx={idx}
+                    store={store}
+                    path={path}
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
                         onLeft() {
@@ -165,6 +169,9 @@ export const ListLike = ({
             {store.selection?.idx === idx &&
             store.selection.side === 'inside' ? (
                 <Blinker
+                    idx={idx}
+                    store={store}
+                    path={path}
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
                         onLeft() {
@@ -206,6 +213,9 @@ export const ListLike = ({
             </span>
             {store.selection?.idx === idx && store.selection.side === 'end' ? (
                 <Blinker
+                    idx={idx}
+                    store={store}
+                    path={path}
                     style={{
                         color: rainbow[path.length % rainbow.length],
                         alignSelf: 'flex-end',
@@ -235,9 +245,15 @@ export const ListLike = ({
 export const Blinker = ({
     events,
     style,
+    idx,
+    path,
+    store,
 }: {
     events: Events;
     style: React.CSSProperties;
+    idx: number;
+    path: Path[];
+    store: Store;
 }) => {
     const ref = React.useRef<HTMLSpanElement>(null);
 
@@ -251,14 +267,15 @@ export const Blinker = ({
             ref={ref}
             style={style}
             onKeyDown={(evt) => {
-                switch (evt.key) {
-                    case 'ArrowLeft':
-                        evt.preventDefault();
-                        return events.onLeft();
-                    case 'ArrowRight':
-                        evt.preventDefault();
-                        return events.onRight();
-                }
+                // switch (evt.key) {
+                //     case 'ArrowLeft':
+                //         evt.preventDefault();
+                //         return events.onLeft();
+                //     case 'ArrowRight':
+                //         evt.preventDefault();
+                //         return events.onRight();
+                // }
+                onKeyDown(evt, idx, path, events, store);
             }}
         />
     );

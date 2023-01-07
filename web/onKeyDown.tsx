@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Map, MNodeContents, toMCST } from '../src/types/mcst';
-import { Path, Store, UpdateMap, updateStore } from './store';
+import { Path, setSelection, Store, UpdateMap, updateStore } from './store';
 import { parse } from '../src/grammar';
 import { NodeContents, NodeList } from '../src/types/cst';
 import { Events } from './Nodes';
@@ -28,22 +28,14 @@ export const onKeyDown = (
                     pnode.node.contents,
                     parent.child.at,
                 );
-                mp[parent.idx] = {
-                    node: {
-                        ...pnode.node,
-                        contents,
-                    },
-                };
+                mp[parent.idx] = { node: { ...pnode.node, contents } };
                 updateStore(
                     store,
                     {
                         map: mp,
                         selection:
                             nidx != null
-                                ? {
-                                      idx: nidx,
-                                      side: 'end',
-                                  }
+                                ? { idx: nidx, side: 'end' }
                                 : { idx: parent.idx, side: 'start' },
                     },
                     [path],
@@ -72,23 +64,53 @@ export const onKeyDown = (
                     }),
                 },
             };
-            updateStore(
-                store,
-                {
-                    map: mp,
-                    selection: {
-                        idx: nidx,
-                    },
-                },
-                [path],
-            );
+            updateStore(store, { map: mp, selection: { idx: nidx } }, [path]);
             evt.preventDefault();
             return;
         }
     }
 
-    // if (evt.key === ')') {
-    // }
+    if (evt.key === ')') {
+        evt.preventDefault();
+        for (let i = path.length - 1; i >= 0; i--) {
+            const parent = path[i];
+            const node = store.map[parent.idx].node;
+            if (node.contents.type === 'list') {
+                return setSelection(store, {
+                    idx: parent.idx,
+                    side: 'end',
+                });
+            }
+        }
+    }
+
+    if (evt.key === ']') {
+        evt.preventDefault();
+        for (let i = path.length - 1; i >= 0; i--) {
+            const parent = path[i];
+            const node = store.map[parent.idx].node;
+            if (node.contents.type === 'array') {
+                return setSelection(store, {
+                    idx: parent.idx,
+                    side: 'end',
+                });
+            }
+        }
+    }
+
+    if (evt.key === '}') {
+        evt.preventDefault();
+        for (let i = path.length - 1; i >= 0; i--) {
+            const parent = path[i];
+            const node = store.map[parent.idx].node;
+            if (node.contents.type === 'record') {
+                return setSelection(store, {
+                    idx: parent.idx,
+                    side: 'end',
+                });
+            }
+        }
+    }
 
     if (evt.key === '(' || evt.key === '[' || evt.key === '{') {
         for (let i = path.length - 1; i >= 0; i--) {
