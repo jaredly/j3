@@ -16,7 +16,13 @@
 - [x] basic atom edit
 - [x] basic space to next atom add tx
 - [ ] space in middle should split ty
-- [ ] '(' should make a list, '[' array, '{' record
+- [x] '(' should make a list, '[' array, '{' record
 - [x] backspace should deleteeeee
 - [ ] backspace should joiiiin
 - [x] invalid syntax should be allowwwwwed (made a new kind of node, a "badsyntax" or sth)
+- [x] basic left & rightttt
+- [ ] left & right outside of a list
+  - [ ] this means we need the concept of focusing the start / end of a listylisty (and a non-idx IdentifierLike)
+
+Ok but let's do prettier.
+so updateStore should include a list of paths, so we know who to recalculate.

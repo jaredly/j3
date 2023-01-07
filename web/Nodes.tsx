@@ -54,10 +54,11 @@ export const Node = ({
     path: Path[];
     events: Events;
 }) => {
-    const item = useStore(store, idx);
-    if (!item) {
+    const both = useStore(store, idx);
+    if (!both) {
         return null;
     }
+    const { node: item, layout } = both;
     const text = idText(item.contents);
 
     const decs = Object.entries(item.decorators);
@@ -89,45 +90,120 @@ export const Node = ({
 
     if (arr) {
         const [left, right, children] = arr;
+
+        const nodes = children.map((cidx, i) => (
+            <Node
+                idx={cidx}
+                key={cidx}
+                path={path.concat({
+                    idx,
+                    child: {
+                        type: 'child',
+                        at: i,
+                    },
+                })}
+                store={store}
+                events={{
+                    onLeft() {
+                        if (i > 0) {
+                            setSelection(store, {
+                                idx: children[i - 1],
+                                side: 'end',
+                            });
+                        }
+                    },
+                    onRight() {
+                        if (i < children.length - 1) {
+                            setSelection(store, {
+                                idx: children[i + 1],
+                                side: 'start',
+                            });
+                        }
+                    },
+                }}
+            />
+        ));
+
+        if (layout?.type !== 'multiline') {
+            return (
+                <span
+                    className="hover"
+                    style={{
+                        display: 'flex',
+                        // flexDirection:
+                        //     layout?.type === 'multiline' ? 'column' : 'row',
+                    }}
+                >
+                    {left}
+                    {nodes.map((node, i) => (
+                        <span
+                            key={children[i]}
+                            style={{ marginLeft: i === 0 ? 0 : 8 }}
+                        >
+                            {node}
+                        </span>
+                    ))}
+                    {right}
+                </span>
+            );
+        }
+
+        // const childrens: JSX.Element[] = []
+        // const {pairs} = layout
+
+        // for (let i=layout.tightFirst; i<nodes.length; i+=(pairs ? 2 : 1)) {
+        // }
+
         return (
-            <span className="hover">
-                {left}
-                {children.map((cidx, i) => (
-                    <span
-                        key={cidx}
-                        style={i !== 0 ? { marginLeft: 8 } : undefined}
-                    >
-                        <Node
-                            idx={cidx}
-                            path={path.concat({
-                                idx,
-                                child: {
-                                    type: 'child',
-                                    at: i,
-                                },
-                            })}
-                            store={store}
-                            events={{
-                                onLeft() {
-                                    if (i > 0) {
-                                        setSelection(store, {
-                                            idx: children[i - 1],
-                                            side: 'end',
-                                        });
-                                    }
-                                },
-                                onRight() {
-                                    if (i < children.length - 1) {
-                                        setSelection(store, {
-                                            idx: children[i + 1],
-                                            side: 'start',
-                                        });
-                                    }
-                                },
+            <span
+                className="hover"
+                style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'flex-end',
+                }}
+            >
+                <span style={{ alignSelf: 'flex-start' }}>{left}</span>
+                <span
+                    style={
+                        layout.pairs
+                            ? {
+                                  display: 'grid',
+                                  gridTemplateColumns: '1fr 1fr',
+                                  gap: '0 8px',
+                              }
+                            : { display: 'flex', flexDirection: 'column' }
+                    }
+                >
+                    {layout.tightFirst ? (
+                        <span style={{ display: 'flex' }}>
+                            {nodes
+                                .slice(0, layout.tightFirst)
+                                .map((node, i) => (
+                                    <span
+                                        key={children[i]}
+                                        style={{ marginLeft: i === 0 ? 0 : 8 }}
+                                    >
+                                        {node}
+                                    </span>
+                                ))}
+                        </span>
+                    ) : null}
+
+                    {nodes.slice(layout.tightFirst).map((node, i) => (
+                        <span
+                            key={children[layout.tightFirst + i]}
+                            style={{
+                                marginLeft: layout.tightFirst ? 30 : 0,
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'flex-end',
                             }}
-                        />
-                    </span>
-                ))}
+                        >
+                            {node}
+                        </span>
+                    ))}
+                </span>
                 {right}
             </span>
         );

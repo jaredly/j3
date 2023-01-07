@@ -38,7 +38,7 @@ export const initialStore = (nodes: Node[]): Store => {
     };
 };
 
-export const useStore = (store: Store, key: number): MNode => {
+export const useStore = (store: Store, key: number): Map[0] => {
     const [_tick, setValue] = useState(0);
     useEffect(() => {
         const fn = () => {
@@ -83,7 +83,7 @@ export const setSelection = (
     return old;
 };
 
-export type UpdateMap = { [key: string]: null | MNode };
+export type UpdateMap = { [key: string]: null | Map[0] };
 export type StoreUpdate = {
     map: UpdateMap;
     selection?: Store['selection'] | null;

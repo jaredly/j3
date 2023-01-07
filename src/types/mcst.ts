@@ -37,7 +37,20 @@ export type MNodeContents =
     | { type: 'blank' };
 
 export type Map = {
-    [key: number]: MNode;
+    [key: number]: {
+        node: MNode;
+        layout?:
+            | {
+                  type: 'flat';
+                  width: number;
+              }
+            | {
+                  type: 'multiline';
+                  pairs?: boolean;
+                  tightFirst: number;
+                  // umm I can't remember. do we need something here?
+              };
+    };
 };
 
 export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
@@ -77,9 +90,26 @@ export const toMCST = (node: Node, map: Map): number => {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
     map[node.loc.idx] = {
-        ...node,
-        contents: toMNode(node.contents, map),
-        decorators,
+        node: {
+            ...node,
+            contents: toMNode(node.contents, map),
+            decorators,
+        },
+        layout: {
+            type: 'multiline',
+            pairs:
+                node.contents.type === 'record' &&
+                node.contents.items.length > 1,
+            tightFirst:
+                node.contents.type === 'list'
+                    ? node.contents.values[0].contents.type === 'identifier'
+                        ? tightFirsts[node.contents.values[0].contents.text] ??
+                          1
+                        : 1
+                    : 0,
+        },
     };
     return node.loc.idx;
 };
+
+const tightFirsts: { [key: string]: number } = { fn: 2, def: 2, defn: 3 };

@@ -24,12 +24,14 @@ export const onKeyDown = (
                 const mp: UpdateMap = {};
                 const pnode = store.map[parent.idx];
                 const { contents, nidx } = rmChild(
-                    pnode.contents,
+                    pnode.node.contents,
                     parent.child.at,
                 );
                 mp[parent.idx] = {
-                    ...pnode,
-                    contents,
+                    node: {
+                        ...pnode.node,
+                        contents,
+                    },
                 };
                 updateStore(store, {
                     map: mp,
@@ -57,10 +59,12 @@ export const onKeyDown = (
             const nidx = toMCST(nw, mp);
             const pnode = store.map[parent.idx];
             mp[parent.idx] = {
-                ...pnode,
-                contents: modChildren(pnode.contents, (items) => {
-                    items.splice(parent.child.at + 1, 0, nidx);
-                }),
+                node: {
+                    ...pnode.node,
+                    contents: modChildren(pnode.node.contents, (items) => {
+                        items.splice(parent.child.at + 1, 0, nidx);
+                    }),
+                },
             };
             updateStore(store, {
                 map: mp,
@@ -100,15 +104,17 @@ export const onKeyDown = (
             toMCST(nw, mp);
             const pnode = store.map[parent.idx];
             mp[parent.idx] = {
-                ...pnode,
-                contents: modChildren(pnode.contents, (items) => {
-                    if (idx === nw.loc.idx) {
-                        items[parent.child.at] = nw.loc.idx;
-                    } else {
-                        items.splice(parent.child.at + 1, 0, nw.loc.idx);
-                    }
-                    return items;
-                }),
+                node: {
+                    ...pnode.node,
+                    contents: modChildren(pnode.node.contents, (items) => {
+                        if (idx === nw.loc.idx) {
+                            items[parent.child.at] = nw.loc.idx;
+                        } else {
+                            items.splice(parent.child.at + 1, 0, nw.loc.idx);
+                        }
+                        return items;
+                    }),
+                },
             };
             updateStore(store, {
                 map: mp,
