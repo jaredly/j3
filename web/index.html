@@ -63,6 +63,22 @@
             .hover:hover {
                 outline-color: rgba(255, 0, 200, 0.2);
             }
+            span.idlike:empty {
+                position: relative;
+            }
+            span.idlike:empty::after {
+                content: '';
+                width: 4px;
+                height: 4px;
+                background-color: currentColor;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -2px;
+                margin-top: -2px;
+                opacity: 0.3;
+                border-radius: 2px;
+            }
             span:empty {
                 /* min-width: 0.5em; */
                 min-height: 1.3em;

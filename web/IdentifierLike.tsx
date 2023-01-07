@@ -46,7 +46,7 @@ export const IdentifierLike = ({
     if (!editing) {
         return (
             <span
-                className="hover"
+                className="hover idlike"
                 style={{
                     color: colors[edit] ?? colors[type],
                     minHeight: '1.3em',
@@ -65,7 +65,7 @@ export const IdentifierLike = ({
             data-idx={idx}
             contentEditable
             ref={ref}
-            className="hover"
+            className="hover idlike"
             onInput={(evt) => {
                 onInput(evt, setEdit, idx, path, store);
             }}
@@ -149,10 +149,13 @@ function onInput(
         }
     } catch (err) {
         const nw: Node = {
-            contents: {
-                type: 'unparsed',
-                raw: text,
-            },
+            contents:
+                text.length === 0
+                    ? { type: 'identifier', text: '' }
+                    : {
+                          type: 'unparsed',
+                          raw: text,
+                      },
             decorators: {},
             loc: { start: 0, end: text.length, idx },
         };
