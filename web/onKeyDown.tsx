@@ -24,29 +24,31 @@ export const onKeyDown = (
     }
 
     if (evt.key === 'Backspace') {
-        if (evt.currentTarget.textContent === '') {
-            const parent = path[path.length - 1];
-            if (parent.child.type === 'inside' || parent.child.type === 'end') {
-                // change the thing to an empty identifier prolly
-                const mp: Map = {
-                    [idx]: {
-                        ...store.map[idx],
-                        node: {
-                            ...store.map[idx].node,
-                            contents: { type: 'identifier', text: '' },
-                        },
+        const parent = path[path.length - 1];
+        if (parent.child.type === 'start') {
+            evt.preventDefault();
+            events.onLeft();
+            return;
+        }
+
+        if (parent.child.type === 'inside' || parent.child.type === 'end') {
+            // change the thing to an empty identifier prolly
+            const mp: Map = {
+                [idx]: {
+                    ...store.map[idx],
+                    node: {
+                        ...store.map[idx].node,
+                        contents: { type: 'identifier', text: '' },
                     },
-                };
-                updateStore(store, { map: mp }, [path]);
-                evt.preventDefault();
-                return;
-            }
-            if (parent.child.type === 'start') {
-                evt.preventDefault();
-                events.onLeft();
-                return;
-            }
-            if (parent.child.type === 'child') {
+                },
+            };
+            updateStore(store, { map: mp }, [path]);
+            evt.preventDefault();
+            return;
+        }
+
+        if (parent.child.type === 'child') {
+            if (evt.currentTarget.textContent === '') {
                 const mp: UpdateMap = {};
                 const pnode = store.map[parent.idx];
                 const res = rmChild(pnode.node.contents, parent.child.at);
@@ -86,6 +88,11 @@ export const onKeyDown = (
                     },
                     [path],
                 );
+                evt.preventDefault();
+            } else if (isAtStart(evt.currentTarget)) {
+                // Can we merge with the previous child?
+                // if so, go for it, otherwise just goLeft
+                events.onLeft();
                 evt.preventDefault();
             }
         }
