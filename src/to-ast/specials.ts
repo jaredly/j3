@@ -18,21 +18,41 @@ export const specials: {
                 form,
             };
         }
-        console.log('A FB', contents);
         if (contents[0].contents.type === 'array') {
             let args: { pattern: Pattern; type?: Type }[] = [];
             let locals: Local['terms'] = [];
+
+            let pairs: { pat: Node; type?: Node }[] = [];
+
             contents[0].contents.values.forEach((arg) => {
-                const t: Type =
-                    arg.decorators.type && arg.decorators.type.length
-                        ? nodeToType(arg.decorators.type[0], ctx)
-                        : {
-                              type: 'unresolved',
-                              form: nil.form,
-                              reason: 'not provided type',
-                          };
+                if (
+                    arg.contents.type === 'identifier' &&
+                    arg.contents.text.startsWith(':')
+                ) {
+                    if (pairs.length) {
+                        pairs[pairs.length - 1].type = {
+                            ...arg,
+                            contents: {
+                                ...arg.contents,
+                                text: arg.contents.text.slice(1),
+                            },
+                        };
+                    }
+                } else {
+                    pairs.push({ pat: arg });
+                }
+            });
+
+            pairs.forEach(({ pat, type }) => {
+                const t: Type = type
+                    ? nodeToType(type, ctx)
+                    : {
+                          type: 'unresolved',
+                          form: nil.form,
+                          reason: 'not provided type',
+                      };
                 args.push({
-                    pattern: nodeToPattern(arg, t, ctx, locals),
+                    pattern: nodeToPattern(pat, t, ctx, locals),
                     type: t,
                 });
             });

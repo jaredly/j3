@@ -26,7 +26,6 @@ export type Ctx = { sym: { current: number }; global: Global; local: Local };
 
 export const blank: Node = {
     contents: { type: 'blank' },
-    decorators: {},
     loc: { start: -1, end: -1, idx: -1 },
 };
 
@@ -133,7 +132,6 @@ export const nil: Expr = {
     entries: [],
     form: {
         contents: { type: 'list', values: [] },
-        decorators: {},
         loc: { start: -1, end: -1, idx: -1 },
     },
 };
@@ -144,7 +142,6 @@ export const nilt: Type = {
     open: false,
     form: {
         contents: { type: 'list', values: [] },
-        decorators: {},
         loc: { start: -1, end: -1, idx: -1 },
     },
 };

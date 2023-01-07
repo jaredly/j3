@@ -58,14 +58,19 @@ I think, to simplify things, we say that inside *every* template literal is just
 and if it's a single-element list, then it's not treated as a list. but otherwise it is.
 and an empty list is fine, it's just empty.
 
+# OK I think I can input everything at this point,
+it's annoying that I can't do up/down arrows, but not prohibitive.
+
+well, ok so decorators aren't really there yet. or complex type annotations.
+
+but now let's try a little compile.?
 
 
 ## SELECTION
 
-- [ ] clicking the deadspace should do something reasonably my goodness
+- [x] clicking the deadspace should do something reasonably my goodness
 	- [x] inline deadspace fixed!
-
-gotta do a bunch
+	- [x] and all of it, i guess it's ok
 
 ### Mouse Selection
 
