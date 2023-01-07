@@ -17,11 +17,11 @@ export const onKeyDown = (
     events: Events,
     store: Store,
 ) => {
-    if (evt.key === 'Enter') {
-        evt.preventDefault();
-        // TODO decide what to do here
-        return;
-    }
+    // if (evt.key === 'Enter') {
+    //     evt.preventDefault();
+    //     // TODO decide what to do here
+    //     return;
+    // }
 
     if (evt.key === 'Backspace' && path.length) {
         const parent = path[path.length - 1];
@@ -126,7 +126,13 @@ export const onKeyDown = (
         }
     }
 
-    if (evt.key === ' ') {
+    if (evt.key === ' ' || evt.key === 'Enter') {
+        if (
+            store.map[idx].node.contents.type === 'comment' &&
+            evt.key === ' '
+        ) {
+            return;
+        }
         const parent = path[path.length - 1];
         if (parent.child.type === 'start') {
             const gp = path[path.length - 2];

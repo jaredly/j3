@@ -32,6 +32,7 @@ export type Events = {
 export const idText = (node: MNodeContents) => {
     switch (node.type) {
         case 'identifier':
+        case 'comment':
             return node.text;
         case 'number':
         case 'unparsed':

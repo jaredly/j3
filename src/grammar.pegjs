@@ -41,7 +41,7 @@ list = "(" _ values:(@Form _)* ")"  {return wrap({type: 'list', values})}
 
 array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'array', values})}
 
-comment = text:$commenttext {return wrap({type: 'comment', text})}
+comment = text:$(commenttext / finalLineComment) {return wrap({type: 'comment', text})}
 
 spread = "..." contents:Form {return wrap({type: 'spread', contents})}
 
@@ -57,9 +57,9 @@ escapedChar = "\\" .
 
 idtext = [@:a-zA-Z0-9_<>!='$%*/+~&.|,-]+
 
-newline = "\n"
-_nonnewline = [ \t\r]* (comment [ \t\r]*)*
-__nonnewline = [ \t\r]+ (comment [ \t\r]*)*
+// newline = "\n"
+// _nonnewline = [ \t\r]* (comment [ \t\r]*)*
+// __nonnewline = [ \t\r]+ (comment [ \t\r]*)*
 _ "whitespace"
   = [ \t\n\r]*
 __ "whitespace"

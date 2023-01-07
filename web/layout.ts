@@ -10,6 +10,7 @@ export const calculateLayout = (
 ): Map[0]['layout'] => {
     switch (node.type) {
         case 'identifier':
+        case 'comment':
             return { type: 'flat', width: node.text.length, pos };
         case 'unparsed':
         case 'number':

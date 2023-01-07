@@ -90,6 +90,7 @@ export const colors: {
     [key: string]: string;
 } = {
     identifier: '#5bb6b7',
+    comment: '#616162',
     tag: '#82f682',
     number: '#4848a5',
     unparsed: 'red',

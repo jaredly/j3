@@ -49,6 +49,10 @@ I want to be able to write an actual program
 - [ ] so, I'm thinking the grammar shouldn't care about type annotations and decorators and whatnot?
 
 
+OH soooo what if there's this thing we're doing.
+and it is, that lists can have a prefix?
+like `@` or `:`. or even `;` if we really want.
+
 
 
 
