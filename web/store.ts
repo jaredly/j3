@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';
+import { layout } from './layout';
 
 export type Store = {
     selection: { idx: number; side?: 'start' | 'end' | 'change' } | null;
@@ -30,6 +31,7 @@ export type Path = { idx: number; child: PathChild };
 export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
     const roots = nodes.map((node) => toMCST(node, map));
+    roots.forEach((id) => layout(id, 0, map, true));
     return {
         selection: { idx: roots[0], side: 'start' },
         roots,
