@@ -2,7 +2,7 @@ import { Loc, Node, NodeContents } from './cst';
 
 export type MNode = {
     contents: MNodeContents;
-    decorators: { [key: string]: number[] };
+    // decorators: { [key: string]: number[] };
     loc: Loc;
 };
 
@@ -83,10 +83,10 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
 };
 
 export const toMCST = (node: Node, map: Map): number => {
-    const decorators: MNode['decorators'] = {};
-    Object.entries(node.decorators).forEach(([key, value]) => {
-        decorators[key] = value.map((node) => toMCST(node, map));
-    });
+    // const decorators: MNode['decorators'] = {};
+    // Object.entries(node.decorators).forEach(([key, value]) => {
+    //     decorators[key] = value.map((node) => toMCST(node, map));
+    // });
     if (map[node.loc.idx]) {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
@@ -94,7 +94,7 @@ export const toMCST = (node: Node, map: Map): number => {
         node: {
             ...node,
             contents: toMNode(node.contents, map),
-            decorators,
+            // decorators,
         },
         // layout: {
         //     type: 'multiline',

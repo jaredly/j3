@@ -19,6 +19,7 @@ export type Store = {
 // decorator (key) [tag or arg]
 
 export type PathChild =
+    | { type: 'root'; at: number }
     | {
           type: 'child';
           at: number;

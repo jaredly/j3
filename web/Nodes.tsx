@@ -74,7 +74,7 @@ export const Node = ({
     const { node: item, layout } = both;
     const text = idText(item.contents);
 
-    const decs = Object.entries(item.decorators);
+    // const decs = Object.entries(item.decorators);
 
     if (text != null) {
         return (
@@ -87,14 +87,14 @@ export const Node = ({
                     path={path}
                     events={events}
                 />
-                {decs.length ? (
+                {/* {decs.length ? (
                     <Decorators
                         decs={decs}
                         store={store}
                         path={path}
                         idx={idx}
                     />
-                ) : null}
+                ) : null} */}
             </>
         );
     }

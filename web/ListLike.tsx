@@ -67,7 +67,7 @@ export const ListLike = ({
                     layout.pairs
                         ? {
                               display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
+                              gridTemplateColumns: 'min-content min-content',
                               gap: '0 8px',
                           }
                         : { display: 'flex', flexDirection: 'column' }
@@ -129,9 +129,15 @@ export const ListLike = ({
 
     return (
         <span
-            className="hover"
             style={{
                 display: 'flex',
+                cursor: 'text',
+            }}
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+                setSelection(store, { idx, side: 'end' });
+                console.log('OK');
             }}
         >
             {store.selection?.idx === idx &&
@@ -265,6 +271,7 @@ export const sideClick =
     (fn: (left: boolean) => void) =>
     (evt: React.MouseEvent<HTMLSpanElement>) => {
         evt.preventDefault();
+        evt.stopPropagation();
         const rect = evt.currentTarget.getBoundingClientRect();
         const x = evt.clientX - rect.left;
         fn(x < rect.width / 2);

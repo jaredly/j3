@@ -41,6 +41,17 @@ so good
 - [x] backspace from start w/ empty before, deletes it
 - [x] typing normal things in a blank creates a new thing
 
+
+# Getting Full Input, because that would be nice
+
+I want to be able to write an actual program
+
+- [ ] so, I'm thinking the grammar shouldn't care about type annotations and decorators and whatnot?
+
+
+
+
+
 ## SELECTION
 
 - [ ] clicking the deadspace should do something reasonably my goodness

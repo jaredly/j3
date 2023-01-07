@@ -46,12 +46,13 @@ export const IdentifierLike = ({
     if (!editing) {
         return (
             <span
-                className="hover idlike"
+                className="idlike"
                 style={{
                     color: colors[edit] ?? colors[type],
                     minHeight: '1.3em',
                 }}
                 onMouseDown={(evt) => {
+                    evt.stopPropagation();
                     setEdit(text);
                     setSelection(store, { idx });
                 }}
@@ -65,7 +66,7 @@ export const IdentifierLike = ({
             data-idx={idx}
             contentEditable
             ref={ref}
-            className="hover idlike"
+            className="idlike"
             onInput={(evt) => {
                 onInput(evt, setEdit, idx, path, store);
             }}
@@ -156,7 +157,7 @@ function onInput(
                           type: 'unparsed',
                           raw: text,
                       },
-            decorators: {},
+            // decorators: {},
             loc: { start: 0, end: text.length, idx },
         };
         const mp: Map = {};

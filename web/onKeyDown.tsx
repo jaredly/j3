@@ -23,7 +23,7 @@ export const onKeyDown = (
         return;
     }
 
-    if (evt.key === 'Backspace') {
+    if (evt.key === 'Backspace' && path.length) {
         const parent = path[path.length - 1];
         if (parent.child.type === 'start') {
             const gp = path[path.length - 2];
@@ -191,6 +191,31 @@ export const onKeyDown = (
                 });
             }
         }
+    }
+
+    if (evt.key === '·' || (evt.key === '(' && evt.altKey)) {
+        evt.preventDefault();
+        const parent = path[path.length - 1];
+        if (parent.child.type === 'child') {
+            const child = parent.child;
+            const nw = parse('()')[0];
+            const mp: Map = {};
+            const nidx = toMCST(nw, mp);
+            (mp[nw.loc.idx].node.contents as ListLikeContents).values.push(idx);
+            const pnode = store.map[parent.idx];
+            mp[parent.idx] = {
+                node: {
+                    ...pnode.node,
+                    contents: modChildren(pnode.node.contents, (items) => {
+                        items.splice(child.at, 1, nidx);
+                    }),
+                },
+            };
+            updateStore(store, { map: mp, selection: { idx, side: 'end' } }, [
+                path,
+            ]);
+        }
+        return;
     }
 
     if (evt.key === '(' || evt.key === '[' || evt.key === '{') {

@@ -58,15 +58,10 @@ export const getInitialState = () => {
 };
 
 export const App = () => {
-    // const [state, setState] = useLocalStorage<{ exprs: Expr[]; ctx: Ctx }>(
-    //     'j3:test',
-    //     getInitialState,
-    // );
     const store = React.useMemo(() => initialStore(parse(init)), []);
 
     return (
         <div style={{ margin: 24 }}>
-            {/* <button onClick={() => setState(getInitialState())}>Ok</button> */}
             {store.roots.map((root, i) => (
                 <div key={root} style={{ marginBottom: 8 }}>
                     <Node

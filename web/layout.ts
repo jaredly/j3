@@ -16,6 +16,13 @@ export const calculateLayout = (
             return { type: 'flat', width: node.raw.length, pos };
         case 'tag':
             return { type: 'flat', width: node.text.length + 1, pos };
+        case 'record': {
+            const cw = childWidth(node.values, recursive, pos, map);
+            if (cw === false || cw > maxWidth) {
+                return { type: 'multiline', tightFirst: 0, pos, pairs: true };
+            }
+            return { type: 'flat', width: cw, pos };
+        }
         case 'array': {
             const cw = childWidth(node.values, recursive, pos, map);
             if (cw === false || cw > maxWidth) {
