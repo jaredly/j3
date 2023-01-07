@@ -32,14 +32,14 @@ export const nodeToPattern = (
                       }, {} as { [key: string]: Type })
                     : null;
             if (
-                form.contents.items.length === 1 &&
-                form.contents.items[0].contents.type === 'identifier'
+                form.contents.values.length === 1 &&
+                form.contents.values[0].contents.type === 'identifier'
             ) {
-                const name = form.contents.items[0].contents.text;
+                const name = form.contents.values[0].contents.text;
                 entries.push({
                     name,
                     value: nodeToPattern(
-                        form.contents.items[0],
+                        form.contents.values[0],
                         prm
                             ? prm[name] ?? {
                                   type: 'unresolved',

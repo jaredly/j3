@@ -23,7 +23,7 @@ export type MNodeContents =
 
     // list-like
     | { type: 'list'; values: number[] }
-    | { type: 'record'; items: number[] }
+    | { type: 'record'; values: number[] }
     | { type: 'array'; values: number[] }
     | { type: 'comment'; text: string }
 
@@ -59,14 +59,10 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
     switch (node.type) {
         case 'list':
         case 'array':
-            return {
-                ...node,
-                values: node.values.map((child) => toMCST(child, map)),
-            };
         case 'record':
             return {
                 ...node,
-                items: node.items.map((child) => toMCST(child, map)),
+                values: node.values.map((child) => toMCST(child, map)),
             };
         case 'string':
             return {

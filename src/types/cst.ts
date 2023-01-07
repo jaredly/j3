@@ -26,7 +26,7 @@ export type NodeContents =
 
     // list-like
     | NodeList
-    | { type: 'record'; items: Node[] }
+    | { type: 'record'; values: Node[] }
     | { type: 'array'; values: Node[] }
 
     // Ok so the plan is to convert comments to

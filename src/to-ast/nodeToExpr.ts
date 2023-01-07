@@ -22,18 +22,18 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'record': {
             const entries: Record['entries'] = [];
             if (
-                contents.items.length === 1 &&
-                contents.items[0].contents.type === 'identifier'
+                contents.values.length === 1 &&
+                contents.values[0].contents.type === 'identifier'
             ) {
                 entries.push({
-                    name: contents.items[0].contents.text,
-                    value: nodeToExpr(contents.items[0], ctx),
+                    name: contents.values[0].contents.text,
+                    value: nodeToExpr(contents.values[0], ctx),
                 });
             } else if (
-                contents.items[0].contents.type === 'identifier' &&
-                contents.items[0].contents.text === '$'
+                contents.values[0].contents.type === 'identifier' &&
+                contents.values[0].contents.text === '$'
             ) {
-                contents.items.slice(1).forEach((item) => {
+                contents.values.slice(1).forEach((item) => {
                     if (item.contents.type === 'identifier') {
                         entries.push({
                             name: item.contents.text,
@@ -51,9 +51,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                for (let i = 0; i < contents.items.length; i += 2) {
-                    const name = contents.items[i];
-                    const value = contents.items[i + 1];
+                for (let i = 0; i < contents.values.length; i += 2) {
+                    const name = contents.values[i];
+                    const value = contents.values[i + 1];
                     entries.push({
                         name:
                             name.contents.type === 'identifier'

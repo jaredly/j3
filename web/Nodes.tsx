@@ -50,7 +50,7 @@ const arrayItems = (
         case 'list':
             return ['(', ')', node.values];
         case 'record':
-            return ['{', '}', node.items];
+            return ['{', '}', node.values];
     }
 };
 
