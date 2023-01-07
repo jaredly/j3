@@ -9,6 +9,8 @@ import { initialStore, setSelection } from './store';
 const init = `(== 5 (+ 2 3))
 (== 5 5)
 
+(empties [] one () two {} hello folks)
+
 (fn [v :int] (+ v 1))
 (def hello 10)
 (== hello 10)

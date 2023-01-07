@@ -51,6 +51,7 @@ export const onKeyDown = (
             if (parent.child.type !== 'child') {
                 continue;
             }
+            const child = parent.child;
             const nw = parse('_')[0];
             nw.contents = { type: 'identifier', text: '' };
             const mp: Map = {};
@@ -60,7 +61,7 @@ export const onKeyDown = (
                 node: {
                     ...pnode.node,
                     contents: modChildren(pnode.node.contents, (items) => {
-                        items.splice(parent.child.at + 1, 0, nidx);
+                        items.splice(child.at + 1, 0, nidx);
                     }),
                 },
             };
@@ -70,40 +71,16 @@ export const onKeyDown = (
         }
     }
 
-    if (evt.key === ')') {
+    if (evt.key === ')' || evt.key === ']' || evt.key === '}') {
         evt.preventDefault();
+        const looking = { ')': 'list', ']': 'array', '}': 'record' }[evt.key];
         for (let i = path.length - 1; i >= 0; i--) {
             const parent = path[i];
-            const node = store.map[parent.idx].node;
-            if (node.contents.type === 'list') {
-                return setSelection(store, {
-                    idx: parent.idx,
-                    side: 'end',
-                });
+            if (parent.child.type === 'end') {
+                continue;
             }
-        }
-    }
-
-    if (evt.key === ']') {
-        evt.preventDefault();
-        for (let i = path.length - 1; i >= 0; i--) {
-            const parent = path[i];
             const node = store.map[parent.idx].node;
-            if (node.contents.type === 'array') {
-                return setSelection(store, {
-                    idx: parent.idx,
-                    side: 'end',
-                });
-            }
-        }
-    }
-
-    if (evt.key === '}') {
-        evt.preventDefault();
-        for (let i = path.length - 1; i >= 0; i--) {
-            const parent = path[i];
-            const node = store.map[parent.idx].node;
-            if (node.contents.type === 'record') {
+            if (node.contents.type === looking) {
                 return setSelection(store, {
                     idx: parent.idx,
                     side: 'end',
@@ -113,16 +90,25 @@ export const onKeyDown = (
     }
 
     if (evt.key === '(' || evt.key === '[' || evt.key === '{') {
+        const overwrite =
+            evt.currentTarget.textContent === '' &&
+            path[path.length - 1].child.type === 'child';
+
         for (let i = path.length - 1; i >= 0; i--) {
             const parent = path[i];
-            if (parent.child.type !== 'child') {
+
+            if (
+                parent.child.type !== 'child' &&
+                parent.child.type !== 'inside'
+            ) {
                 continue;
             }
+            const child = parent.child;
             const nw = parse(
                 evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',
             )[0];
 
-            if (evt.currentTarget.textContent === '') {
+            if (overwrite) {
                 nw.loc.idx = idx;
             }
 
@@ -133,10 +119,14 @@ export const onKeyDown = (
                 node: {
                     ...pnode.node,
                     contents: modChildren(pnode.node.contents, (items) => {
-                        if (idx === nw.loc.idx) {
-                            items[parent.child.at] = nw.loc.idx;
+                        if (overwrite && child.type === 'child') {
+                            items[child.at] = nw.loc.idx;
                         } else {
-                            items.splice(parent.child.at + 1, 0, nw.loc.idx);
+                            items.splice(
+                                child.type === 'child' ? child.at + 1 : 0,
+                                0,
+                                nw.loc.idx,
+                            );
                         }
                         return items;
                     }),
@@ -144,10 +134,7 @@ export const onKeyDown = (
             };
             updateStore(
                 store,
-                {
-                    map: mp,
-                    selection: { idx: nw.loc.idx, side: 'inside' },
-                },
+                { map: mp, selection: { idx: nw.loc.idx, side: 'inside' } },
                 [path],
             );
             evt.preventDefault();

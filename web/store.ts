@@ -23,6 +23,7 @@ export type PathChild =
           type: 'child';
           at: number;
       }
+    | { type: 'inside' | 'start' | 'end' }
     | {
           type: 'decorator';
           key: string;

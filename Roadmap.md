@@ -34,5 +34,7 @@ so good
 
 ## More nav and stuff
 
-- [ ] left & right outside of a list
-  - [ ] this means we need the concept of focusing the start / end of a listylisty (and a non-idx IdentifierLike)
+- [x] left & right outside of a list
+  - [x] this means we need the concept of focusing the start / end of a listylisty (and a non-idx IdentifierLike)
+
+- [ ] typing normal things in a blank creates a new thing
