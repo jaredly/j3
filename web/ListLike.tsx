@@ -23,6 +23,8 @@ export const ListLike = ({
     events: Events;
     idx: number;
 }) => {
+    const isRoot = idx === store.root;
+
     const nodes = children.map((cidx, i) => (
         <Node
             idx={cidx}
@@ -60,72 +62,104 @@ export const ListLike = ({
         />
     ));
 
-    const contents =
-        layout?.type === 'multiline' ? (
-            <span
-                style={
-                    layout.pairs
-                        ? {
-                              display: 'grid',
-                              gridTemplateColumns: 'min-content min-content',
-                              gap: '0 8px',
-                          }
-                        : { display: 'flex', flexDirection: 'column' }
-                }
-            >
-                {layout.tightFirst ? (
-                    <span style={{ display: 'flex' }}>
-                        {nodes.slice(0, layout.tightFirst).map((node, i) => (
-                            <span
-                                key={children[i]}
-                                style={{ marginLeft: i === 0 ? 0 : 8 }}
-                            >
-                                {node}
-                            </span>
-                        ))}
+    const contents = isRoot ? (
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                // alignItems: 'flex-start',
+            }}
+        >
+            {nodes.map((node, i) => (
+                <div key={children[i]}>{node}</div>
+            ))}
+        </div>
+    ) : layout?.type === 'multiline' ? (
+        <span
+            style={
+                layout.pairs
+                    ? {
+                          display: 'grid',
+                          gridTemplateColumns: 'min-content min-content',
+                          gap: '0 8px',
+                      }
+                    : { display: 'flex', flexDirection: 'column' }
+            }
+        >
+            {layout.tightFirst ? (
+                <span style={{ display: 'flex' }}>
+                    {nodes.slice(0, layout.tightFirst).map((node, i) => (
+                        <span
+                            key={children[i]}
+                            style={{ marginLeft: i === 0 ? 0 : 8 }}
+                        >
+                            {node}
+                        </span>
+                    ))}
+                </span>
+            ) : null}
+
+            {nodes.slice(layout.tightFirst).map((node, i) => (
+                <span
+                    key={children[layout.tightFirst + i]}
+                    style={{
+                        marginLeft: layout.tightFirst ? 30 : 0,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'flex-end',
+                    }}
+                >
+                    {node}
+                </span>
+            ))}
+        </span>
+    ) : (
+        nodes.map((node, i) => (
+            <>
+                {i != 0 ? (
+                    <span
+                        onMouseDown={sideClick((left) => {
+                            if (left) {
+                                setSelection(store, {
+                                    idx: children[i - 1],
+                                    side: 'end',
+                                });
+                            } else {
+                                setSelection(store, {
+                                    idx: children[i],
+                                    side: 'start',
+                                });
+                            }
+                        })}
+                    >
+                        &nbsp;
                     </span>
                 ) : null}
+                <span key={children[i]}>{node}</span>
+            </>
+        ))
+    );
 
-                {nodes.slice(layout.tightFirst).map((node, i) => (
-                    <span
-                        key={children[layout.tightFirst + i]}
-                        style={{
-                            marginLeft: layout.tightFirst ? 30 : 0,
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'flex-end',
-                        }}
-                    >
-                        {node}
-                    </span>
-                ))}
-            </span>
-        ) : (
-            nodes.map((node, i) => (
-                <>
-                    {i != 0 ? (
-                        <span
-                            onMouseDown={sideClick((left) => {
-                                if (left) {
-                                    setSelection(store, {
-                                        idx: children[i - 1],
-                                        side: 'end',
-                                    });
-                                } else {
-                                    setSelection(store, {
-                                        idx: children[i],
-                                        side: 'start',
-                                    });
-                                }
-                            })}
-                        >
-                            &nbsp;
-                        </span>
-                    ) : null}
-                    <span key={children[i]}>{node}</span>
-                </>
-            ))
-        );
+    // if (isRoot) {
+    //     return (
+    //         <div
+    //             style={{
+    //                 display: 'flex',
+    //                 flexDirection: 'column',
+    //                 alignItems: 'flex-start',
+    //                 cursor: 'text',
+    //             }}
+    //             onMouseDown={(evt) => {
+    //                 evt.stopPropagation();
+    //                 evt.preventDefault();
+    //                 setSelection(store, { idx, side: 'end' });
+    //                 console.log('OK');
+    //             }}
+    //         >
+    //             {contents}
+    //         </div>
+    //     );
+    // }
 
     return (
         <span
@@ -165,32 +199,34 @@ export const ListLike = ({
                     }}
                 />
             ) : null}
-            <span
-                style={{
-                    color: rainbow[path.length % rainbow.length],
-                    opacity: 0.5,
-                }}
-                onMouseDown={sideClick((left) => {
-                    if (left) {
-                        setSelection(store, {
-                            idx,
-                            side: 'start',
-                        });
-                    } else {
-                        setSelection(
-                            store,
-                            children.length
-                                ? {
-                                      idx: children[0],
-                                      side: 'start',
-                                  }
-                                : { idx, side: 'inside' },
-                        );
-                    }
-                })}
-            >
-                {left}
-            </span>
+            {!isRoot && (
+                <span
+                    style={{
+                        color: rainbow[path.length % rainbow.length],
+                        opacity: 0.5,
+                    }}
+                    onMouseDown={sideClick((left) => {
+                        if (left) {
+                            setSelection(store, {
+                                idx,
+                                side: 'start',
+                            });
+                        } else {
+                            setSelection(
+                                store,
+                                children.length
+                                    ? {
+                                          idx: children[0],
+                                          side: 'start',
+                                      }
+                                    : { idx, side: 'inside' },
+                            );
+                        }
+                    })}
+                >
+                    {left}
+                </span>
+            )}
             {store.selection?.idx === idx &&
             store.selection.side === 'inside' ? (
                 <Blinker
@@ -209,33 +245,35 @@ export const ListLike = ({
                 />
             ) : null}
             {contents}
-            <span
-                style={{
-                    color: rainbow[path.length % rainbow.length],
-                    opacity: 0.5,
-                    alignSelf: 'flex-end',
-                }}
-                onMouseDown={sideClick((left) => {
-                    if (left) {
-                        setSelection(
-                            store,
-                            children.length
-                                ? {
-                                      idx: children[children.length - 1],
-                                      side: 'end',
-                                  }
-                                : { idx, side: 'inside' },
-                        );
-                    } else {
-                        setSelection(store, {
-                            idx,
-                            side: 'end',
-                        });
-                    }
-                })}
-            >
-                {right}
-            </span>
+            {!isRoot && (
+                <span
+                    style={{
+                        color: rainbow[path.length % rainbow.length],
+                        opacity: 0.5,
+                        alignSelf: 'flex-end',
+                    }}
+                    onMouseDown={sideClick((left) => {
+                        if (left) {
+                            setSelection(
+                                store,
+                                children.length
+                                    ? {
+                                          idx: children[children.length - 1],
+                                          side: 'end',
+                                      }
+                                    : { idx, side: 'inside' },
+                            );
+                        } else {
+                            setSelection(store, {
+                                idx,
+                                side: 'end',
+                            });
+                        }
+                    })}
+                >
+                    {right}
+                </span>
+            )}
             {store.selection?.idx === idx && store.selection.side === 'end' ? (
                 <Blinker
                     idx={idx}

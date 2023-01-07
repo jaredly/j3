@@ -69,33 +69,17 @@ export const App = () => {
 
     return (
         <div style={{ margin: 24 }}>
-            {store.roots.map((root, i) => (
-                <div key={root} style={{ marginBottom: 8 }}>
-                    <Node
-                        idx={root}
-                        store={store}
-                        path={[]}
-                        events={{
-                            onLeft() {
-                                if (i > 0) {
-                                    setSelection(store, {
-                                        idx: store.roots[i - 1],
-                                        side: 'end',
-                                    });
-                                }
-                            },
-                            onRight() {
-                                if (i < store.roots.length - 1) {
-                                    setSelection(store, {
-                                        idx: store.roots[i + 1],
-                                        side: 'start',
-                                    });
-                                }
-                            },
-                        }}
-                    />
-                </div>
-            ))}
+            <div>
+                <Node
+                    idx={store.root}
+                    store={store}
+                    path={[]}
+                    events={{
+                        onLeft() {},
+                        onRight() {},
+                    }}
+                />
+            </div>
             <textarea
                 style={{
                     backgroundColor: 'transparent',

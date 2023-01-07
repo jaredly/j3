@@ -48,7 +48,7 @@ export const IdentifierLike = ({
             <span
                 className="idlike"
                 style={{
-                    color: colors[edit] ?? colors[type],
+                    color: nodeColor(edit, type),
                     minHeight: '1.3em',
                 }}
                 onMouseDown={(evt) => {
@@ -75,7 +75,7 @@ export const IdentifierLike = ({
                 setSelection(store, null);
             }}
             style={{
-                color: colors[edit] ?? colors[type],
+                color: nodeColor(edit, type),
                 outline: 'none',
                 minHeight: '1.3em',
             }}
@@ -86,6 +86,16 @@ export const IdentifierLike = ({
     );
 };
 
+const nodeColor = (text: string, type: MNodeContents['type']) => {
+    if (text.startsWith(':')) {
+        return colors[':'];
+    }
+    if (colors[text]) {
+        return colors[text];
+    }
+    return colors[type];
+};
+
 export const colors: {
     [key: string]: string;
 } = {
@@ -94,6 +104,7 @@ export const colors: {
     tag: '#82f682',
     number: '#4848a5',
     unparsed: 'red',
+    ':': 'orange',
 };
 
 const ops = ['+', '-', '*', '/', '==', '<', '>', '<=', '>=', '!=', ','];

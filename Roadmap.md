@@ -46,13 +46,17 @@ so good
 
 I want to be able to write an actual program
 
-- [ ] so, I'm thinking the grammar shouldn't care about type annotations and decorators and whatnot?
-
+- [x] so, I'm thinking the grammar shouldn't care about type annotations and decorators and whatnot?
+	- yeah, that's a good choice, because it aligns with the way we're treating comments as just another atom.
 
 OH soooo what if there's this thing we're doing.
 and it is, that lists can have a prefix?
 like `@` or `:`. or even `;` if we really want.
 
+Now, on the other hand, strings? How do we even think about that.
+I think, to simplify things, we say that inside *every* template literal is just a list.
+and if it's a single-element list, then it's not treated as a list. but otherwise it is.
+and an empty list is fine, it's just empty.
 
 
 

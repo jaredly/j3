@@ -10,7 +10,7 @@ export type Selection = {
 export type Store = {
     selection: Selection | null;
     listeners: { [key: string]: Array<() => void> };
-    roots: number[];
+    root: number;
     map: Map;
 };
 
@@ -19,7 +19,6 @@ export type Store = {
 // decorator (key) [tag or arg]
 
 export type PathChild =
-    | { type: 'root'; at: number }
     | {
           type: 'child';
           at: number;
@@ -36,11 +35,19 @@ export type Path = { idx: number; child: PathChild };
 
 export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
-    const roots = nodes.map((node) => toMCST(node, map));
-    roots.forEach((id) => layout(id, 0, map, true));
+    const root = toMCST(
+        {
+            contents: { type: 'list', values: nodes },
+            loc: { idx: -1, start: 0, end: 0 },
+        },
+        map,
+    );
+    // const roots = nodes.map((node) => toMCST(node, map));
+    // roots.forEach((id) => layout(id, 0, map, true));
+    layout(root, 0, map, true);
     return {
-        selection: { idx: roots[0], side: 'start' },
-        roots,
+        selection: { idx: root, side: 'start' },
+        root,
         listeners: {},
         map,
     };
