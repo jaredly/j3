@@ -10,6 +10,17 @@ import { Path, setSelection, Store, useStore } from './store';
 //   lists need to know the nature of the first item
 //   and arrays, when the second item of a dealio, will as well
 
+const rainbow = [
+    'red',
+    'orange',
+    'yellow',
+    'green',
+    'blue',
+    'indigo',
+    'violet',
+    'magenta',
+];
+
 export type Events = {
     onRight: () => void;
     onLeft: () => void;
@@ -163,7 +174,14 @@ export const Node = ({
                     alignItems: 'flex-end',
                 }}
             >
-                <span style={{ alignSelf: 'flex-start' }}>{left}</span>
+                <span
+                    style={{
+                        alignSelf: 'flex-start',
+                        color: rainbow[path.length % rainbow.length],
+                    }}
+                >
+                    {left}
+                </span>
                 <span
                     style={
                         layout.pairs
@@ -204,7 +222,9 @@ export const Node = ({
                         </span>
                     ))}
                 </span>
-                {right}
+                <span style={{ color: rainbow[path.length % rainbow.length] }}>
+                    {right}
+                </span>
             </span>
         );
     }

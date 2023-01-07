@@ -26,3 +26,8 @@
 
 Ok but let's do prettier.
 so updateStore should include a list of paths, so we know who to recalculate.
+
+- [x] figure out a little multiline
+- [ ] actually compute the whatsits
+- [ ] try out better hugging
+- [ ] oh lets get rainbow parens prolly
