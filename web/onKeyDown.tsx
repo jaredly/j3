@@ -95,14 +95,8 @@ export const onKeyDown = (
                 continue;
             }
             const nw = parse(
-                evt.key === '(' ? '(_)' : evt.key === '[' ? '[_]' : '{_}',
+                evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',
             )[0];
-            const id = nodeChildren(nw.contents)[0];
-            id.contents = {
-                type: 'identifier',
-                text: '',
-            };
-            const nidx = id.loc.idx;
 
             if (evt.currentTarget.textContent === '') {
                 nw.loc.idx = idx;
@@ -129,7 +123,8 @@ export const onKeyDown = (
                 {
                     map: mp,
                     selection: {
-                        idx: nidx,
+                        idx: nw.loc.idx,
+                        side: 'inside',
                     },
                 },
                 [path],
