@@ -11,14 +11,15 @@ import { Path, setSelection, Store, useStore } from './store';
 //   and arrays, when the second item of a dealio, will as well
 
 const rainbow = [
-    'red',
+    '#669',
     'orange',
-    'yellow',
     'green',
     'blue',
+    'yellow',
     'indigo',
     'violet',
     'magenta',
+    'red',
 ];
 
 export type Events = {
@@ -145,7 +146,14 @@ export const Node = ({
                         //     layout?.type === 'multiline' ? 'column' : 'row',
                     }}
                 >
-                    {left}
+                    <span
+                        style={{
+                            color: rainbow[path.length % rainbow.length],
+                            opacity: 0.5,
+                        }}
+                    >
+                        {left}
+                    </span>
                     {nodes.map((node, i) => (
                         <span
                             key={children[i]}
@@ -154,7 +162,14 @@ export const Node = ({
                             {node}
                         </span>
                     ))}
-                    {right}
+                    <span
+                        style={{
+                            color: rainbow[path.length % rainbow.length],
+                            opacity: 0.5,
+                        }}
+                    >
+                        {right}
+                    </span>
                 </span>
             );
         }
@@ -178,6 +193,7 @@ export const Node = ({
                     style={{
                         alignSelf: 'flex-start',
                         color: rainbow[path.length % rainbow.length],
+                        opacity: 0.5,
                     }}
                 >
                     {left}
@@ -222,7 +238,12 @@ export const Node = ({
                         </span>
                     ))}
                 </span>
-                <span style={{ color: rainbow[path.length % rainbow.length] }}>
+                <span
+                    style={{
+                        color: rainbow[path.length % rainbow.length],
+                        opacity: 0.5,
+                    }}
+                >
                     {right}
                 </span>
             </span>

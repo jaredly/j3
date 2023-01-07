@@ -95,8 +95,9 @@ export type StoreUpdate = {
 export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,
+    paths: Path[][],
 ) => {
-    console.log(`-> updateStore`, change, selection);
+    // console.log(`-> updateStore`, change, selection);
     const pre: UpdateMap = {};
     Object.keys(change).forEach((item) => {
         pre[+item] = store.map[+item];
@@ -119,9 +120,32 @@ export const updateStore = (
             store.map[+key] = change[+key]!;
         }
     });
+
+    paths.forEach((path) => {
+        for (let i = path.length - 1; i >= 0; i--) {
+            layout(
+                path[i].idx,
+                store.map[path[i].idx].layout?.pos ?? 0,
+                store.map,
+                true,
+            );
+        }
+    });
+
     if (selection !== undefined) {
-        setSelection(store, selection, Object.keys(change).map(Number));
+        setSelection(
+            store,
+            selection,
+            Object.keys(change)
+                .map(Number)
+                .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+        );
     } else {
-        notify(store, Object.keys(change).map(Number));
+        notify(
+            store,
+            Object.keys(change)
+                .map(Number)
+                .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+        );
     }
 };

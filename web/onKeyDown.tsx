@@ -33,16 +33,20 @@ export const onKeyDown = (
                         contents,
                     },
                 };
-                updateStore(store, {
-                    map: mp,
-                    selection:
-                        nidx != null
-                            ? {
-                                  idx: nidx,
-                                  side: 'end',
-                              }
-                            : null,
-                });
+                updateStore(
+                    store,
+                    {
+                        map: mp,
+                        selection:
+                            nidx != null
+                                ? {
+                                      idx: nidx,
+                                      side: 'end',
+                                  }
+                                : null,
+                    },
+                    [path],
+                );
                 evt.preventDefault();
             }
         }
@@ -66,12 +70,16 @@ export const onKeyDown = (
                     }),
                 },
             };
-            updateStore(store, {
-                map: mp,
-                selection: {
-                    idx: nidx,
+            updateStore(
+                store,
+                {
+                    map: mp,
+                    selection: {
+                        idx: nidx,
+                    },
                 },
-            });
+                [path],
+            );
             evt.preventDefault();
             return;
         }
@@ -116,12 +124,16 @@ export const onKeyDown = (
                     }),
                 },
             };
-            updateStore(store, {
-                map: mp,
-                selection: {
-                    idx: nidx,
+            updateStore(
+                store,
+                {
+                    map: mp,
+                    selection: {
+                        idx: nidx,
+                    },
                 },
-            });
+                [path],
+            );
             evt.preventDefault();
             return;
         }

@@ -48,13 +48,8 @@ export const IdentifierLike = ({
             <span
                 className="hover"
                 style={{
-                    color: colors[type],
-                    // color: pathColor(
-                    //     path.concat([{ idx, cid: 0, punct: 0 }]),
-                    //     store,
-                    // ),
+                    color: colors[edit] ?? colors[type],
                     minHeight: '1.3em',
-                    // backgroundColor: 'rgba(255, 255, 0, 0.05)',
                 }}
                 onMouseDown={(evt) => {
                     setEdit(text);
@@ -72,14 +67,14 @@ export const IdentifierLike = ({
             ref={ref}
             className="hover"
             onInput={(evt) => {
-                onInput(evt, setEdit, idx, store);
+                onInput(evt, setEdit, idx, path, store);
             }}
             onBlur={() => {
                 setEdit(null);
                 setSelection(store, null);
             }}
             style={{
-                color: colors[type],
+                color: colors[edit] ?? colors[type],
                 outline: 'none',
                 minHeight: '1.3em',
             }}
@@ -91,25 +86,23 @@ export const IdentifierLike = ({
 };
 
 export const colors: {
-    [key in MNodeContents['type']]: string;
+    [key: string]: string;
 } = {
     identifier: '#5bb6b7',
     tag: '#82f682',
     number: '#4848a5',
     unparsed: 'red',
-    // lol
-    ...({} as any),
 };
+
+const ops = ['+', '-', '*', '/', '==', '<', '>', '<=', '>=', '!=', ','];
+ops.forEach((op) => (colors[op] = '#c9cac9'));
+
+const kwds = ['let', 'def', 'defn', 'fn'];
+kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
 function focus(node: HTMLSpanElement, store: Store) {
     node.focus();
     switch (store.selection!.side) {
-        case 'end': {
-            const sel = window.getSelection()!;
-            sel.selectAllChildren(node);
-            sel.collapseToEnd();
-            break;
-        }
         case 'start': {
             const sel = window.getSelection()!;
             sel.selectAllChildren(node);
@@ -121,13 +114,22 @@ function focus(node: HTMLSpanElement, store: Store) {
             sel.selectAllChildren(node);
             break;
         }
+        case 'end':
+        default: {
+            const sel = window.getSelection()!;
+            sel.selectAllChildren(node);
+            sel.collapseToEnd();
+            break;
+        }
     }
+    store.selection!.side = undefined;
 }
 
 function onInput(
     evt: React.FormEvent<HTMLSpanElement>,
     setEdit: React.Dispatch<React.SetStateAction<string | null>>,
     idx: number,
+    path: Path[],
     store: Store,
 ) {
     const text = evt.currentTarget.textContent ?? '';
@@ -141,7 +143,7 @@ function onInput(
             };
             const mp: Map = {};
             toMCST(nw, mp);
-            updateStore(store, { map: mp });
+            updateStore(store, { map: mp }, [path]);
         } else {
             throw new Error('unparseable?');
         }
@@ -156,6 +158,6 @@ function onInput(
         };
         const mp: Map = {};
         toMCST(nw, mp);
-        updateStore(store, { map: mp });
+        updateStore(store, { map: mp }, [path]);
     }
 }

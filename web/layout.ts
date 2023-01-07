@@ -1,6 +1,6 @@
 import { Map, MNodeContents } from '../src/types/mcst';
 
-const maxWidth = 10;
+const maxWidth = 20;
 
 export const calculateLayout = (
     node: MNodeContents,
@@ -10,34 +10,46 @@ export const calculateLayout = (
 ): Map[0]['layout'] => {
     switch (node.type) {
         case 'identifier':
-            return { type: 'flat', width: node.text.length };
+            return { type: 'flat', width: node.text.length, pos };
+        case 'unparsed':
         case 'number':
-            return { type: 'flat', width: node.raw.length };
+            return { type: 'flat', width: node.raw.length, pos };
         case 'tag':
-            return { type: 'flat', width: node.text.length + 1 };
+            return { type: 'flat', width: node.text.length + 1, pos };
         case 'array': {
             const cw = childWidth(node.values, recursive, pos, map);
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', tightFirst: 0 };
+                return { type: 'multiline', tightFirst: 0, pos };
             }
-            return { type: 'flat', width: cw };
+            return { type: 'flat', width: cw, pos };
         }
         case 'list': {
             const cw = childWidth(node.values, recursive, pos, map);
-            if (cw === false || cw + pos > maxWidth) {
+            const firstName = idName(map[node.values[0]]);
+            if (cw === false || cw + pos > maxWidth || firstName === 'let') {
                 return {
                     type: 'multiline',
                     tightFirst: howTight(map[node.values[0]]),
+                    pos,
                 };
             }
-            return { type: 'flat', width: cw };
+            return { type: 'flat', width: cw, pos };
         }
         default:
-            return { type: 'flat', width: 10 };
+            return { type: 'flat', width: 10, pos };
     }
 };
 
-const tightFirsts: { [key: string]: number } = { fn: 2, def: 2, defn: 3 };
+const idName = (item?: Map[0]) =>
+    item?.node.contents.type === 'identifier' ? item.node.contents.text : null;
+
+const tightFirsts: { [key: string]: number } = {
+    fn: 2,
+    def: 2,
+    defn: 3,
+    let: 2,
+    if: 2,
+};
 
 function howTight(item?: Map[0]) {
     if (item?.node.contents.type === 'identifier') {

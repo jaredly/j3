@@ -43,11 +43,13 @@ export type Map = {
             | {
                   type: 'flat';
                   width: number;
+                  pos: number;
               }
             | {
                   type: 'multiline';
                   pairs?: boolean;
                   tightFirst: number;
+                  pos: number;
                   // umm I can't remember. do we need something here?
               };
     };
@@ -95,19 +97,20 @@ export const toMCST = (node: Node, map: Map): number => {
             contents: toMNode(node.contents, map),
             decorators,
         },
-        layout: {
-            type: 'multiline',
-            pairs:
-                node.contents.type === 'record' &&
-                node.contents.items.length > 1,
-            tightFirst:
-                node.contents.type === 'list'
-                    ? node.contents.values[0].contents.type === 'identifier'
-                        ? tightFirsts[node.contents.values[0].contents.text] ??
-                          1
-                        : 1
-                    : 0,
-        },
+        // layout: {
+        //     type: 'multiline',
+        //     pos: 0,
+        //     pairs:
+        //         node.contents.type === 'record' &&
+        //         node.contents.items.length > 1,
+        //     tightFirst:
+        //         node.contents.type === 'list'
+        //             ? node.contents.values[0].contents.type === 'identifier'
+        //                 ? tightFirsts[node.contents.values[0].contents.text] ??
+        //                   1
+        //                 : 1
+        //             : 0,
+        // },
     };
     return node.loc.idx;
 };
