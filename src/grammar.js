@@ -235,7 +235,7 @@ function peg$parse(input, options) {
 	})
 	return inner
 };
-  var peg$f2 = function(items) { return wrap({type: 'record', items})};
+  var peg$f2 = function(values) { return wrap({type: 'record', values})};
   var peg$f3 = function(form) { return {name: 'type', args:[form]} };
   var peg$f4 = function(name, args) { return {name, args} };
   var peg$f5 = function(name) { return wrap({type: 'macro', name})};

@@ -22,7 +22,7 @@ Form = inner:FormInner decorators:(_ @Decorator _)* {
 }
 FormInner = tag / number / list / array / comment / spread / string / identifier / macro / record
 
-record = "{" _ items:(@Form _)* "}" { return wrap({type: 'record', items})}
+record = "{" _ values:(@Form _)* "}" { return wrap({type: 'record', values})}
 
 TypeDec = ":" form:Form { return {name: 'type', args:[form]} }
 FullDecorator = "@" "(" _ name:$idtext args:(_ @Form)* _ ")" { return {name, args} }
