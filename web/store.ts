@@ -3,7 +3,10 @@ import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';
 import { layout } from './layout';
 
-export type Selection = { idx: number; side?: 'start' | 'end' | 'change' };
+export type Selection = {
+    idx: number;
+    side?: 'start' | 'end' | 'change' | 'inside';
+};
 export type Store = {
     selection: Selection | null;
     listeners: { [key: string]: Array<() => void> };

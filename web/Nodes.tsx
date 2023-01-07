@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { Map, MNodeContents } from '../src/types/mcst';
+import { MNodeContents } from '../src/types/mcst';
 import { IdentifierLike } from './IdentifierLike';
-import { Path, setSelection, Store, useStore } from './store';
+import { ListLike } from './ListLike';
+import { Path, Store, useStore } from './store';
 
 // ListLike
 // array, list, record
@@ -10,7 +11,7 @@ import { Path, setSelection, Store, useStore } from './store';
 //   lists need to know the nature of the first item
 //   and arrays, when the second item of a dealio, will as well
 
-const rainbow = [
+export const rainbow = [
     '#669',
     'orange',
     'green',
@@ -104,158 +105,11 @@ export const Node = ({
         const [left, right, children] = arr;
         return (
             <ListLike
-                {...{ left, right, children, store, path, layout, idx }}
+                {...{ left, right, children, store, path, layout, idx, events }}
             />
         );
     }
     return <span>{JSON.stringify(item.contents)}</span>;
-};
-
-export const ListLike = ({
-    left,
-    right,
-    children,
-    store,
-    path,
-    layout,
-    idx,
-}: {
-    left: string;
-    right: string;
-    children: number[];
-    store: Store;
-    path: Path[];
-    layout: Map[0]['layout'];
-    idx: number;
-}) => {
-    const nodes = children.map((cidx, i) => (
-        <Node
-            idx={cidx}
-            key={cidx}
-            path={path.concat({
-                idx,
-                child: {
-                    type: 'child',
-                    at: i,
-                },
-            })}
-            store={store}
-            events={{
-                onLeft() {
-                    if (i > 0) {
-                        setSelection(store, {
-                            idx: children[i - 1],
-                            side: 'end',
-                        });
-                    }
-                },
-                onRight() {
-                    if (i < children.length - 1) {
-                        setSelection(store, {
-                            idx: children[i + 1],
-                            side: 'start',
-                        });
-                    }
-                },
-            }}
-        />
-    ));
-
-    if (layout?.type !== 'multiline') {
-        return (
-            <span className="hover" style={{ display: 'flex' }}>
-                <span
-                    style={{
-                        color: rainbow[path.length % rainbow.length],
-                        opacity: 0.5,
-                    }}
-                >
-                    {left}
-                </span>
-                {nodes.map((node, i) => (
-                    <span
-                        key={children[i]}
-                        style={{ marginLeft: i === 0 ? 0 : 8 }}
-                    >
-                        {node}
-                    </span>
-                ))}
-                <span
-                    style={{
-                        color: rainbow[path.length % rainbow.length],
-                        opacity: 0.5,
-                    }}
-                >
-                    {right}
-                </span>
-            </span>
-        );
-    }
-
-    return (
-        <span
-            className="hover"
-            style={{
-                display: 'flex',
-            }}
-        >
-            <span
-                style={{
-                    color: rainbow[path.length % rainbow.length],
-                    opacity: 0.5,
-                }}
-            >
-                {left}
-            </span>
-            <span
-                style={
-                    layout.pairs
-                        ? {
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: '0 8px',
-                          }
-                        : { display: 'flex', flexDirection: 'column' }
-                }
-            >
-                {layout.tightFirst ? (
-                    <span style={{ display: 'flex' }}>
-                        {nodes.slice(0, layout.tightFirst).map((node, i) => (
-                            <span
-                                key={children[i]}
-                                style={{ marginLeft: i === 0 ? 0 : 8 }}
-                            >
-                                {node}
-                            </span>
-                        ))}
-                    </span>
-                ) : null}
-
-                {nodes.slice(layout.tightFirst).map((node, i) => (
-                    <span
-                        key={children[layout.tightFirst + i]}
-                        style={{
-                            marginLeft: layout.tightFirst ? 30 : 0,
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'flex-end',
-                        }}
-                    >
-                        {node}
-                    </span>
-                ))}
-            </span>
-            <span
-                style={{
-                    color: rainbow[path.length % rainbow.length],
-                    opacity: 0.5,
-                    alignSelf: 'flex-end',
-                }}
-            >
-                {right}
-            </span>
-        </span>
-    );
 };
 
 function Decorators({

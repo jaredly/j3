@@ -43,7 +43,7 @@ export const onKeyDown = (
                                       idx: nidx,
                                       side: 'end',
                                   }
-                                : null,
+                                : { idx: parent.idx, side: 'start' },
                     },
                     [path],
                 );
