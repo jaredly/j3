@@ -102,9 +102,28 @@ export const ListLike = ({
             </span>
         ) : (
             nodes.map((node, i) => (
-                <span key={children[i]} style={{ marginLeft: i === 0 ? 0 : 8 }}>
-                    {node}
-                </span>
+                <>
+                    {i != 0 ? (
+                        <span
+                            onMouseDown={sideClick((left) => {
+                                if (left) {
+                                    setSelection(store, {
+                                        idx: children[i - 1],
+                                        side: 'end',
+                                    });
+                                } else {
+                                    setSelection(store, {
+                                        idx: children[i],
+                                        side: 'start',
+                                    });
+                                }
+                            })}
+                        >
+                            &nbsp;
+                        </span>
+                    ) : null}
+                    <span key={children[i]}>{node}</span>
+                </>
             ))
         );
 

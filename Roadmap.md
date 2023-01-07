@@ -40,3 +40,14 @@ so good
 - [x] backspace inside/start/end of listlike works!
 - [x] backspace from start w/ empty before, deletes it
 - [x] typing normal things in a blank creates a new thing
+
+## SELECTION
+
+- [ ] clicking the deadspace should do something reasonably my goodness
+	- [x] inline deadspace fixed!
+
+gotta do a bunch
+
+### Mouse Selection
+
+### Keyboard Selection???
