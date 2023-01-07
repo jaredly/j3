@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Map } from '../src/types/mcst';
 import { Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
-import { onKeyDown } from './onKeyDown';
+import { Blinker } from './Blinker';
 
 export const ListLike = ({
     left,
@@ -239,45 +239,6 @@ export const ListLike = ({
                 />
             ) : null}
         </span>
-    );
-};
-
-export const Blinker = ({
-    events,
-    style,
-    idx,
-    path,
-    store,
-}: {
-    events: Events;
-    style: React.CSSProperties;
-    idx: number;
-    path: Path[];
-    store: Store;
-}) => {
-    const ref = React.useRef<HTMLSpanElement>(null);
-
-    React.useEffect(() => {
-        ref.current!.focus();
-    }, []);
-
-    return (
-        <span
-            contentEditable
-            ref={ref}
-            style={style}
-            onKeyDown={(evt) => {
-                // switch (evt.key) {
-                //     case 'ArrowLeft':
-                //         evt.preventDefault();
-                //         return events.onLeft();
-                //     case 'ArrowRight':
-                //         evt.preventDefault();
-                //         return events.onRight();
-                // }
-                onKeyDown(evt, idx, path, events, store);
-            }}
-        />
     );
 };
 

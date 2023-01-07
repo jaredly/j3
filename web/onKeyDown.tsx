@@ -26,6 +26,34 @@ export const onKeyDown = (
     if (evt.key === 'Backspace') {
         const parent = path[path.length - 1];
         if (parent.child.type === 'start') {
+            const gp = path[path.length - 2];
+            if (gp.child.type === 'child' && gp.child.at > 0) {
+                const children = mnodeChildren(store.map[gp.idx].node.contents);
+                const prev = children[gp.child.at - 1];
+                const pnode = store.map[prev].node.contents;
+                if (pnode.type === 'identifier' && pnode.text === '') {
+                    const values = children.slice();
+                    values.splice(gp.child.at - 1, 1);
+                    const mp: UpdateMap = {
+                        [prev]: null,
+                        [gp.idx]: {
+                            ...store.map[gp.idx],
+                            node: {
+                                ...store.map[gp.idx].node,
+                                contents: {
+                                    type: store.map[gp.idx].node.contents
+                                        .type as ListLikeContents['type'],
+                                    values,
+                                },
+                            },
+                        },
+                    };
+                    updateStore(store, { map: mp }, [path]);
+                    evt.preventDefault();
+                    return;
+                }
+            }
+
             evt.preventDefault();
             events.onLeft();
             return;
@@ -99,6 +127,29 @@ export const onKeyDown = (
     }
 
     if (evt.key === ' ') {
+        const parent = path[path.length - 1];
+        if (parent.child.type === 'start') {
+            const gp = path[path.length - 2];
+            if (gp.child.type === 'child') {
+                const child = gp.child;
+                const nw = parse('_')[0];
+                nw.contents = { type: 'identifier', text: '' };
+                const mp: Map = {};
+                const nidx = toMCST(nw, mp);
+                const pnode = store.map[gp.idx];
+                mp[gp.idx] = {
+                    node: {
+                        ...pnode.node,
+                        contents: modChildren(pnode.node.contents, (items) => {
+                            items.splice(child.at, 0, nidx);
+                        }),
+                    },
+                };
+                updateStore(store, { map: mp }, [path]);
+                evt.preventDefault();
+                return;
+            }
+        }
         for (let i = path.length - 1; i >= 0; i--) {
             const parent = path[i];
             if (parent.child.type !== 'child') {
@@ -198,10 +249,12 @@ export const onKeyDown = (
     if (evt.key === 'ArrowRight' && isAtEnd(evt.currentTarget)) {
         evt.preventDefault();
         events.onRight();
+        return;
     }
     if (evt.key === 'ArrowLeft' && isAtStart(evt.currentTarget)) {
         evt.preventDefault();
         events.onLeft();
+        return;
     }
 };
 
@@ -225,6 +278,16 @@ const getPos = (target: HTMLElement) => {
 
 export const isAtEnd = (node: HTMLSpanElement) => {
     return getPos(node) === node.textContent?.length;
+};
+
+export const mnodeChildren = (node: MNodeContents) => {
+    switch (node.type) {
+        case 'array':
+        case 'list':
+        case 'record':
+            return node.values;
+    }
+    return [];
 };
 
 export const nodeChildren = (node: NodeContents) => {
