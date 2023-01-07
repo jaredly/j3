@@ -81,6 +81,7 @@ export const ListLike = ({
                     }}
                 >
                     {node}
+                    {/* <EvalMyDudes idx={children[i]} store={store} /> */}
                 </div>
             ))}
         </div>

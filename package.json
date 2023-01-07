@@ -11,6 +11,7 @@
         "@types/object-hash": "^3.0.2",
         "@types/react": "^18.0.26",
         "@types/react-dom": "^18.0.10",
+        "buffer": "^6.0.3",
         "esbuild": "^0.16.14",
         "generator": "link:@types/@babel/generator",
         "object-hash": "^3.0.0",
@@ -21,7 +22,7 @@
     },
     "scripts": {
         "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
-        "web": "vite web --port 8221",
+        "web": "vite web --port 8221 --config vite.config.js",
         "gram": "peggy --format es src/grammar.pegjs"
     }
 }

@@ -11,6 +11,7 @@ export type Store = {
     selection: Selection | null;
     listeners: { [key: string]: Array<() => void> };
     root: number;
+    eval: { [key: string]: any };
     map: Map;
 };
 
@@ -49,6 +50,7 @@ export const initialStore = (nodes: Node[]): Store => {
         selection: { idx: root, side: 'start' },
         root,
         listeners: {},
+        eval: {},
         map,
     };
 };
