@@ -81,7 +81,7 @@ export const setSelection = (
     extras?: (number | null | undefined)[],
 ) => {
     const old = store.selection;
-    if (old?.idx === selection?.idx) {
+    if (old?.idx === selection?.idx && old?.side === selection?.side) {
         return notify(store, [selection?.idx, ...(extras || [])]);
     }
     store.selection = selection;
