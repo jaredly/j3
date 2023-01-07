@@ -21,13 +21,18 @@
 - [ ] backspace should joiiiin
 - [x] invalid syntax should be allowwwwwed (made a new kind of node, a "badsyntax" or sth)
 - [x] basic left & rightttt
-- [ ] left & right outside of a list
-  - [ ] this means we need the concept of focusing the start / end of a listylisty (and a non-idx IdentifierLike)
 
-Ok but let's do prettier.
+## Ok but let's do prettier.
 so updateStore should include a list of paths, so we know who to recalculate.
 
 - [x] figure out a little multiline
-- [ ] actually compute the whatsits
-- [ ] try out better hugging
-- [ ] oh lets get rainbow parens prolly
+- [x] actually compute the whatsits
+- [x] try out better hugging
+- [x] oh lets get rainbow parens prolly
+
+so good
+
+## More nav and stuff
+
+- [ ] left & right outside of a list
+  - [ ] this means we need the concept of focusing the start / end of a listylisty (and a non-idx IdentifierLike)
