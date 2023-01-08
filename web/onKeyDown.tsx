@@ -7,6 +7,7 @@ import {
 } from '../src/types/mcst';
 import {
     Path,
+    redo,
     setSelection,
     Store,
     undo,
@@ -14,7 +15,7 @@ import {
     updateStore,
 } from './store';
 import { parse } from '../src/grammar';
-import { NodeContents, NodeList } from '../src/types/cst';
+import { NodeContents } from '../src/types/cst';
 import { Events } from './Nodes';
 
 export const onKeyDown = (
@@ -31,7 +32,7 @@ export const onKeyDown = (
     // }
     if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
         evt.preventDefault();
-        return undo(store);
+        return evt.shiftKey ? redo(store) : undo(store);
     }
 
     if (evt.key === 'Backspace' && path.length) {

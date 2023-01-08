@@ -12,17 +12,17 @@ import { EvalCtx, Path, Store, useStore } from './store';
 //   lists need to know the nature of the first item
 //   and arrays, when the second item of a dealio, will as well
 
-export const rainbow = [
-    '#669',
-    'orange',
-    'green',
-    'blue',
-    'yellow',
-    'indigo',
-    'violet',
-    'magenta',
-    'red',
-];
+const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
+// const raw = '7fc97fbeaed4fdc086ffff99386cb0f0027fbf5b17666666';
+
+export const rainbow: string[] = ['#669'];
+
+for (let i = 0; i < raw.length; i += 6) {
+    rainbow.push('#' + raw.slice(i, i + 6));
+}
+
+// We'll start at depth=1, so this just rolls it one over
+rainbow.unshift(rainbow.pop()!);
 
 export type Events = {
     onRight: () => void;

@@ -177,6 +177,22 @@ export const undo = (store: Store) => {
     store.history.idx += 1;
 };
 
+export const redo = (store: Store) => {
+    if (store.history.idx <= 0) {
+        console.log('too far, its the end of history');
+        return;
+    }
+    const item =
+        store.history.items[store.history.items.length - store.history.idx];
+    updateStore(
+        store,
+        { map: item.post, selection: item.postSelection },
+        [],
+        true,
+    );
+    store.history.idx -= 1;
+};
+
 export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,

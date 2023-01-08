@@ -62,6 +62,7 @@ store will need a `highlight` prop? Prolly?
 
 - [x] Let's hang on to it.
 - [x] UNDO
+	- would be nice to hang onto exact selection location
 - [ ] redo?
 
 
