@@ -81,11 +81,14 @@ const compile = (store: Store, ectx: EvalCtx) => {
             };
             return;
         }
+        ctx.sym.current = 0;
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
         if (last[idx] === hash) {
             return;
         }
+        // ok, so the increasing idx's are really coming to haunt me.
+        // can I reset them?
         const ts = stmtToTs(res, ctx, 'top');
         const code = generate(t.file(t.program([ts]))).code;
         const fn = new Function('$terms', 'fail', code);
