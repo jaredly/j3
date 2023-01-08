@@ -9,11 +9,25 @@ export type Selection = {
     idx: number;
     side?: 'start' | 'end' | 'change' | 'inside';
 };
+
 export type Store = {
     selection: Selection | null;
     listeners: { [key: string]: Array<() => void> };
     root: number;
     map: Map;
+    history: History;
+};
+
+export type History = {
+    items: HistoryItem[];
+    idx: number;
+};
+
+export type HistoryItem = {
+    pre: UpdateMap;
+    post: UpdateMap;
+    preSelection: Selection | null;
+    postSelection: Selection | null | undefined;
 };
 
 export type EvalCtx = {
@@ -87,6 +101,10 @@ export const initialStore = (nodes: Node[]): Store => {
         selection: { idx: root, side: 'start' },
         root,
         listeners: {},
+        history: {
+            idx: 0,
+            items: [],
+        },
         map,
     };
 };
@@ -143,27 +161,46 @@ export type StoreUpdate = {
     prev?: Store['selection'] | null;
 };
 
+export const undo = (store: Store) => {
+    const item =
+        store.history.items[store.history.items.length - 1 - store.history.idx];
+    updateStore(
+        store,
+        { map: item.pre, selection: item.preSelection },
+        [],
+        true,
+    );
+    store.history.idx += 1;
+};
+
 export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,
     paths: Path[][],
+    skipHistory = false,
 ) => {
-    // console.log(`-> updateStore`, change, selection);
     const pre: UpdateMap = {};
     Object.keys(change).forEach((item) => {
         pre[+item] = store.map[+item];
     });
-    // const history: HistoryItem = {
-    //     pre,
-    //     post: change,
-    //     preSelection: prev != undefined ? prev : store.selection,
-    //     postSelection: selection,
-    // };
-    // if (store.history.idx > 0) {
-    //     store.history.items = store.history.items.slice(0, store.history.idx);
-    // }
-    // store.history.items.push(history);
-    // store.history.idx = 0;
+
+    if (!skipHistory) {
+        const history: HistoryItem = {
+            pre,
+            post: change,
+            preSelection: prev != undefined ? prev : store.selection,
+            postSelection: selection,
+        };
+        if (store.history.idx > 0) {
+            store.history.items = store.history.items.slice(
+                0,
+                store.history.idx,
+            );
+        }
+        store.history.items.push(history);
+        store.history.idx = 0;
+    }
+
     Object.keys(change).forEach((key) => {
         if (change[key] == null) {
             delete store.map[+key];

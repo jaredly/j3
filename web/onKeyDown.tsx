@@ -5,7 +5,14 @@ import {
     MNodeContents,
     toMCST,
 } from '../src/types/mcst';
-import { Path, setSelection, Store, UpdateMap, updateStore } from './store';
+import {
+    Path,
+    setSelection,
+    Store,
+    undo,
+    UpdateMap,
+    updateStore,
+} from './store';
 import { parse } from '../src/grammar';
 import { NodeContents, NodeList } from '../src/types/cst';
 import { Events } from './Nodes';
@@ -22,6 +29,9 @@ export const onKeyDown = (
     //     // TODO decide what to do here
     //     return;
     // }
+    if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
+        return undo(store);
+    }
 
     if (evt.key === 'Backspace' && path.length) {
         const parent = path[path.length - 1];
