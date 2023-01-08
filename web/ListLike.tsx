@@ -65,24 +65,32 @@ export const ListLike = ({
     const contents = isRoot ? (
         <div
             style={{
-                display: 'flex',
-                flexDirection: 'column',
+                // display: 'flex',
+                // flexDirection: 'column',
                 // alignItems: 'flex-start',
+                display: 'grid',
+                gridTemplateColumns: 'min-content min-content',
             }}
         >
             {nodes.map((node, i) => (
-                <div
-                    key={children[i]}
-                    className="hover"
-                    onMouseDown={(evt) => {
-                        evt.stopPropagation();
-                        evt.preventDefault();
-                        setSelection(store, { idx: children[i], side: 'end' });
-                    }}
-                >
-                    {node}
+                <React.Fragment key={children[i]}>
+                    <div
+                        key={children[i]}
+                        className="hover"
+                        onMouseDown={(evt) => {
+                            evt.stopPropagation();
+                            evt.preventDefault();
+                            setSelection(store, {
+                                idx: children[i],
+                                side: 'end',
+                            });
+                        }}
+                    >
+                        {node}
+                    </div>
+                    <ShowResult result={store.eval[children[i]]} />
                     {/* <EvalMyDudes idx={children[i]} store={store} /> */}
-                </div>
+                </React.Fragment>
             ))}
         </div>
     ) : layout?.type === 'multiline' ? (
@@ -325,3 +333,20 @@ export const sideClick =
         const x = evt.clientX - rect.left;
         fn(x < rect.width / 2);
     };
+
+export const ShowResult = ({
+    result,
+}: {
+    result:
+        | { status: 'success'; value: any }
+        | { status: 'failure'; message: string };
+}) => {
+    if (result.status === 'success') {
+        if (typeof result.value === 'function') {
+            return <pre>{result.value.toString().trim()}</pre>;
+        }
+        return <pre>{JSON.stringify(result.value, null, 2)}</pre>;
+    } else {
+        return <pre>{result.message}</pre>;
+    }
+};

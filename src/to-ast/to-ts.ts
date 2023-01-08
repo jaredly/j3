@@ -47,10 +47,32 @@ export const patternToTs = (
 export const stmtToTs = (
     expr: Expr,
     ctx: Ctx,
-    shouldReturn: boolean,
+    shouldReturn: boolean | 'top',
 ): t.Statement => {
     switch (expr.type) {
         case 'def':
+            if (shouldReturn === 'top') {
+                return t.blockStatement([
+                    t.expressionStatement(
+                        t.assignmentExpression(
+                            '=',
+                            t.memberExpression(
+                                t.identifier('$terms'),
+                                t.stringLiteral(expr.hash),
+                                true,
+                            ),
+                            exprToTs(expr.value, ctx),
+                        ),
+                    ),
+                    t.returnStatement(
+                        t.memberExpression(
+                            t.identifier('$terms'),
+                            t.stringLiteral(expr.hash),
+                            true,
+                        ),
+                    ),
+                ]);
+            }
             return t.variableDeclaration('const', [
                 t.variableDeclarator(
                     t.identifier('h' + expr.hash),
@@ -150,7 +172,12 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.identifier('s' + expr.sym);
         }
         case 'global': {
-            return t.identifier('h' + expr.hash);
+            // return t.identifier('h' + expr.hash);
+            return t.memberExpression(
+                t.identifier('$terms'),
+                t.stringLiteral(expr.hash),
+                true,
+            );
         }
         case 'let': {
             return t.callExpression(

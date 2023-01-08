@@ -30,6 +30,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     value: nodeToExpr(contents.values[0], ctx),
                 });
             } else if (
+                contents.values.length &&
                 contents.values[0].contents.type === 'identifier' &&
                 contents.values[0].contents.text === '$'
             ) {

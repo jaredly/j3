@@ -8,7 +8,8 @@ import { stmtToTs } from '../src/to-ast/to-ts';
 import { Expr } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { Node } from './Nodes';
-import { initialStore, setSelection } from './store';
+import { initialStore, setSelection, Store } from './store';
+import objectHash from 'object-hash';
 
 const init = `(== 5 (+ 2 3))
 (== 5 5)
@@ -29,7 +30,6 @@ const init = `(== 5 (+ 2 3))
 (\`Hello 10)
 (\`What)
 \`Yea
-Thing
 3
 (let [(\`Ok x) (\`Ok 20)] (+ x 23))
 
@@ -63,24 +63,56 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
+const compile = (store: Store, ctx: Ctx, last: { [key: number]: string }) => {
+    const root = store.map[store.root].node.contents as ListLikeContents;
+
+    const terms: { [key: string]: any } = {};
+
+    root.values.forEach((idx) => {
+        if (store.map[idx].node.contents.type === 'comment') {
+            store.eval[idx] = { status: 'success', value: undefined };
+            return;
+        }
+        const res = nodeToExpr(fromMCST(idx, store.map), ctx);
+        const hash = objectHash(noForm(res));
+        if (last[idx] === hash) {
+            return;
+        }
+        const ts = stmtToTs(res, ctx, 'top');
+        const code = generate(t.file(t.program([ts]))).code;
+        const fn = new Function('$terms', 'fail', code);
+        try {
+            store.eval[idx] = {
+                status: 'success',
+                value: fn(terms, (message: string) => {
+                    // console.log(`Encountered a compilation failure: `, message);
+                    throw new Error(message);
+                }),
+            };
+            last[idx] = hash;
+        } catch (err) {
+            store.eval[idx] = {
+                status: 'failure',
+                message: (err as Error).message,
+            };
+            last[idx] = hash;
+            return;
+        }
+        ctx = addDef(res, ctx);
+    });
+};
+
 export const App = () => {
-    const store = React.useMemo(() => initialStore(parse(init)), []);
+    const ctx = React.useMemo(() => newCtx(), []);
+    const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
+    const store = React.useMemo(() => {
+        const store = initialStore(parse(init));
+        compile(store, ctx, last);
+        return store;
+    }, []);
 
     React.useEffect(() => {
-        store.listeners[''] = [
-            () => {
-                const root = store.map[store.root].node
-                    .contents as ListLikeContents;
-                let ctx = newCtx();
-                root.values.forEach((idx) => {
-                    const res = nodeToExpr(fromMCST(idx, store.map), ctx);
-                    const ts = stmtToTs(res, ctx, true);
-                    const code = generate(t.file(t.program([ts]))).code;
-                    console.log(code);
-                    ctx = addDef(res, ctx);
-                });
-            },
-        ];
+        store.listeners[''] = [() => compile(store, ctx, last)];
     }, []);
 
     return (
@@ -96,18 +128,6 @@ export const App = () => {
                     }}
                 />
             </div>
-            <textarea
-                style={{
-                    backgroundColor: 'transparent',
-                    color: 'inherit',
-                    height: 300,
-                    width: 800,
-                }}
-                defaultValue={init}
-                onBlur={(evt) => {
-                    const text = evt.currentTarget.value;
-                }}
-            />
         </div>
     );
 };
