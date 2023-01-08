@@ -358,7 +358,12 @@ export const ShowResult = ({
     const [hover, setHover] = React.useState(false);
     return (
         <div
-            style={{ position: 'relative' }}
+            style={{
+                position: 'relative',
+                color: '#666',
+                fontSize: '80%',
+                padding: 4,
+            }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >

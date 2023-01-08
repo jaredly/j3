@@ -44,12 +44,15 @@ so good
 
 
 - [x] re-evaluate, got to
+- [ ] highlight errors inline, unresolved stuff
+	- yeah I really need to come up with some type errors
+	- currently I don't really have type checking at all.
+- [ ] and like, hover w/ a key pressed to see types of things?
+- [ ] figure out comments in things
+
 - [ ] ohhhh I need ast->cst, so I can nail down	hashes
 	- I guess I can kick that can a litte, because the most recently defined dealio wins.
 	- but once I start multiple dispatch, that'll be a whole thing.
-- [ ] highlight errors inline, unresolved stuff
-- [ ] and like, hover w/ a key pressed to see types of things?
-- [ ] figure out comments in things
 
 
 # Getting Full Input, because that would be nice
