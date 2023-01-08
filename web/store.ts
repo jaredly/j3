@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Ctx } from '../src/to-ast/to-ast';
+import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';
 import { layout } from './layout';
@@ -11,8 +13,41 @@ export type Store = {
     selection: Selection | null;
     listeners: { [key: string]: Array<() => void> };
     root: number;
-    eval: { [key: string]: any };
     map: Map;
+};
+
+export type EvalCtx = {
+    ctx: Ctx;
+    last: { [key: number]: string };
+    terms: { [key: string]: any };
+    nodes: {
+        [idx: number]:
+            | {
+                  type: 'Expr';
+                  node: Expr;
+              }
+            | {
+                  type: 'Type';
+                  node: Type;
+              }
+            | {
+                  type: 'Pattern';
+                  node: Pattern;
+              };
+    };
+    results: {
+        [key: string]:
+            | {
+                  status: 'success';
+                  value: any;
+                  code: string;
+              }
+            | {
+                  status: 'failure';
+                  error: string;
+                  code: string;
+              };
+    };
 };
 
 // Path Locations:
@@ -50,7 +85,6 @@ export const initialStore = (nodes: Node[]): Store => {
         selection: { idx: root, side: 'start' },
         root,
         listeners: {},
-        eval: {},
         map,
     };
 };

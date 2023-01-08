@@ -89,7 +89,7 @@ export const ListLike = ({
                     >
                         {node}
                     </div>
-                    <ShowResult result={store.eval[children[i]]} />
+                    <ShowResult result={store.results[children[i]]} />
                     {/* <EvalMyDudes idx={children[i]} store={store} /> */}
                 </React.Fragment>
             ))}

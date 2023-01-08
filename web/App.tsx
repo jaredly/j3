@@ -7,7 +7,7 @@ import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { Node } from './Nodes';
-import { initialStore, Store } from './store';
+import { EvalCtx, initialStore, Store } from './store';
 import objectHash from 'object-hash';
 
 const _init = `
@@ -68,17 +68,17 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
-const compile = (
-    store: Store,
-    ctx: Ctx,
-    last: { [key: number]: string },
-    terms: { [key: string]: any },
-) => {
+const compile = (store: Store, ectx: EvalCtx) => {
+    let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root].node.contents as ListLikeContents;
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.contents.type === 'comment') {
-            store.eval[idx] = { status: 'success', value: undefined };
+            results[idx] = {
+                status: 'success',
+                value: undefined,
+                code: '// a comment',
+            };
             return;
         }
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
@@ -90,7 +90,7 @@ const compile = (
         const code = generate(t.file(t.program([ts]))).code;
         const fn = new Function('$terms', 'fail', code);
         try {
-            store.eval[idx] = {
+            results[idx] = {
                 status: 'success',
                 value: fn(terms, (message: string) => {
                     // console.log(`Encountered a compilation failure: `, message);
@@ -100,9 +100,9 @@ const compile = (
             };
             last[idx] = hash;
         } catch (err) {
-            store.eval[idx] = {
+            results[idx] = {
                 status: 'failure',
-                message: (err as Error).message,
+                error: (err as Error).message,
                 code,
             };
             last[idx] = hash;
@@ -111,18 +111,19 @@ const compile = (
         ctx = addDef(res, ctx);
     });
 
-    return ctx;
+    ectx.ctx = ctx;
 };
-
-const intialCtx = newCtx();
 
 export const App = () => {
     const terms: { [key: string]: any } = React.useMemo(() => ({}), []);
-    const ctx = React.useRef(intialCtx);
+    const ctx = React.useMemo(
+        () => ({ ctx: newCtx(), last: {}, terms, nodes: {}, results: {} }),
+        [],
+    );
     const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
     const store = React.useMemo(() => {
         const store = initialStore(parse(init));
-        ctx.current = compile(store, ctx.current, last, terms);
+        compile(store, ctx);
         return store;
     }, []);
 
@@ -131,7 +132,7 @@ export const App = () => {
     React.useEffect(() => {
         store.listeners[''] = [
             () => {
-                ctx.current = compile(store, ctx.current, last, terms);
+                compile(store, ctx);
                 tick[1]((x) => x + 1);
             },
         ];
