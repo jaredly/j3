@@ -1,6 +1,6 @@
 // Ok so here we convert from cst to ast
 
-import { Node } from '../types/cst';
+import { Loc, Node } from '../types/cst';
 import { Expr, Term, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 
@@ -136,12 +136,14 @@ export const newCtx = (): Ctx => {
     };
 };
 
+export const noloc: Loc = { start: -1, end: -1, idx: -1 };
+
 export const nil: Expr = {
     type: 'record',
     entries: [],
     form: {
         contents: { type: 'list', values: [] },
-        loc: { start: -1, end: -1, idx: -1 },
+        loc: noloc,
     },
 };
 
@@ -151,7 +153,7 @@ export const nilt: Type = {
     open: false,
     form: {
         contents: { type: 'list', values: [] },
-        loc: { start: -1, end: -1, idx: -1 },
+        loc: noloc,
     },
 };
 

@@ -72,9 +72,6 @@ export const ListLike = ({
     const contents = isRoot ? (
         <div
             style={{
-                // display: 'flex',
-                // flexDirection: 'column',
-                // alignItems: 'flex-start',
                 display: 'grid',
                 gap: '0 8px',
                 gridTemplateColumns: 'min-content min-content',
@@ -84,6 +81,15 @@ export const ListLike = ({
                 <React.Fragment key={children[i]}>
                     <div
                         key={children[i]}
+                        onMouseEnter={(evt) =>
+                            setHover({
+                                idx: children[i],
+                                box: evt.currentTarget.getBoundingClientRect(),
+                            })
+                        }
+                        onMouseLeave={() =>
+                            setHover({ idx: children[i], box: null })
+                        }
                         onMouseDown={(evt) => {
                             evt.stopPropagation();
                             evt.preventDefault();
@@ -96,7 +102,6 @@ export const ListLike = ({
                         {node}
                     </div>
                     <ShowResult result={ctx.results[children[i]]} />
-                    {/* <EvalMyDudes idx={children[i]} store={store} /> */}
                 </React.Fragment>
             ))}
         </div>

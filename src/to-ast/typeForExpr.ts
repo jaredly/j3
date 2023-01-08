@@ -1,5 +1,5 @@
 import { Node } from '../types/cst';
-import { Expr, Type } from '../types/ast';
+import { Expr, TRecord, Type } from '../types/ast';
 import { Ctx, blank, nilt } from './to-ast';
 
 export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
@@ -81,6 +81,32 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
     };
 };
 
+export type RecordMap = { [key: string]: TRecord['entries'][0] };
+export const recordMap = (record: TRecord) => {
+    const map: RecordMap = {};
+    record.entries.forEach((entry) => {
+        map[entry.name] = entry;
+    });
+    return map;
+};
+
+export const unifyMaps = (one: RecordMap, two: RecordMap, ctx: Ctx) => {
+    const res: RecordMap = {};
+    for (let key of Object.keys(one)) {
+        if (!two[key]) return false;
+        const unified = unifyTypes(one[key].value, two[key].value, ctx, blank);
+        if (unified.type === 'unresolved') {
+            return false;
+        }
+        // We're dropping defaults here on purpose
+        res[key] = { name: key, value: unified };
+    }
+    for (let key of Object.keys(two)) {
+        if (!one[key]) return false;
+    }
+    return res;
+};
+
 export const unifyTypes = (
     one: Type,
     two: Type,
@@ -96,16 +122,37 @@ export const unifyTypes = (
                   form,
               };
     }
+    if (one.type === 'number' && two.type === 'number') {
+        return one.kind === two.kind
+            ? one.value === two.value
+                ? { ...one, form }
+                : {
+                      type: 'builtin',
+                      name: one.kind,
+                      form,
+                  }
+            : {
+                  type: 'unresolved',
+                  reason: `incompatible number types ${one.kind} vs ${two.kind}`,
+                  form,
+              };
+    }
     if (one.type === 'record' && two.type === 'record') {
-        // STOPSHIP: THIS IS WRONG
+        const onem = recordMap(one);
+        const twom = recordMap(two);
+        const unified = unifyMaps(onem, twom, ctx);
+        if (!unified) {
+            return {
+                type: 'unresolved',
+                reason: 'unable to unify records',
+                form,
+            };
+        }
         return {
             type: 'record',
-            entries: one.entries.map((entry, i) => ({
-                name: entry.name,
-                value: unifyTypes(entry.value, two.entries[i].value, ctx, form),
-            })),
-            form,
+            entries: Object.values(unified),
             open: false,
+            form,
         };
     }
     return {

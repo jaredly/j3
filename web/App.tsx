@@ -5,6 +5,8 @@ import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { Node } from './Nodes';
 import { EvalCtx, initialStore } from './store';
 import { compile } from './compile';
+import { nodeToString } from '../src/to-cst/nodeToString';
+import { nodeForType } from '../src/to-cst/nodeForExpr';
 
 const _init = `
 (def hello 10)
@@ -119,7 +121,14 @@ export const App = () => {
                             if (hover.box) {
                                 return [...h, hover];
                             } else {
-                                return h.filter((h) => h.idx !== hover.idx);
+                                for (let i = h.length - 1; i >= 0; i--) {
+                                    if (h[i].idx === hover.idx) {
+                                        const res = [...h];
+                                        res.splice(i, 1);
+                                        return res;
+                                    }
+                                }
+                                return h;
                             }
                         });
                     }}
@@ -145,7 +154,9 @@ export const App = () => {
                         padding: 8,
                     }}
                 >
-                    {JSON.stringify(noForm(ctx.types[best.idx]))}
+                    Type:{' '}
+                    {nodeToString(nodeForType(ctx.types[best.idx], ctx.ctx))}
+                    {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
                 </div>
             )}
             {best && (

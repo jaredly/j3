@@ -41,10 +41,34 @@ so good
 - [x] backspace from start w/ empty before, deletes it
 - [x] typing normal things in a blank creates a new thing
 
+((
+
+SO
+gotta do some tests, right?
+to verify that things work.
+and such.
+
+(@error "text" the-form)
+
+Hmmmm maybe I want the 'unresolved' node to have an optional "caused by". That would be nice.
+Then we can highlight the causer too. Which would be cool.
+
+store will need a `highlight` prop? Prolly?
+
+))
+
+
+### HISTORY
+
+Let's hang on to it.
+
+
+
+
 
 
 - [x] re-evaluate, got to
-- [ ] highlight errors inline, unresolved stuff
+- [x] highlight errors inline, unresolved stuff
 	- yeah I really need to come up with some type errors
 	- currently I don't really have type checking at all.
 - [ ] and like, hover w/ a key pressed to see types of things?

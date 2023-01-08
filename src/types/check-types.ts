@@ -1,4 +1,5 @@
 import { Ctx } from '../to-ast/to-ast';
+import { unifyTypes } from '../to-ast/typeForExpr';
 import { Expr, Type } from './ast';
 import { Visitor } from './walk-ast';
 
@@ -13,7 +14,7 @@ export type CCtx = {
 export const getType = (expr: Expr, ctx: CCtx): Type => {
     switch (expr.type) {
         case 'number':
-            return { type: 'builtin', name: expr.kind, form: expr.form };
+            return expr;
         case 'local':
             return (
                 ctx.ctx.localMap.terms[expr.sym]?.type ?? {
@@ -43,7 +44,7 @@ export const getType = (expr: Expr, ctx: CCtx): Type => {
                 };
             }
             // STOPSHIP: unify yes and no
-            return yes;
+            return unifyTypes(yes, no, ctx.ctx, expr.form);
         }
         case 'record': {
             const entries = expr.entries.map((entry) => ({

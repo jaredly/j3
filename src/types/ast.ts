@@ -146,9 +146,10 @@ export type Type =
           open: boolean;
           form: Node;
       }
-    | {
-          type: 'record';
-          entries: { name: string; value: Type; default?: Expr }[];
-          open: boolean;
-          form: Node;
-      };
+    | TRecord;
+export type TRecord = {
+    type: 'record';
+    entries: { name: string; value: Type; default?: Expr }[];
+    open: boolean;
+    form: Node;
+};
