@@ -22,7 +22,15 @@ export type Local = {
     types: { sym: number; name: string; bound?: Type }[];
 };
 
-export type Ctx = { sym: { current: number }; global: Global; local: Local };
+export type Ctx = {
+    sym: { current: number };
+    global: Global;
+    local: Local;
+    localMap: {
+        terms: { [sym: number]: { name: string; type: Type } };
+        types: { [sym: number]: { name: string; bound?: Type } };
+    };
+};
 
 export const blank: Node = {
     contents: { type: 'blank' },
@@ -119,11 +127,12 @@ export const initialGlobal: Global = {
     typeNames: {},
 };
 
-export const newCtx = () => {
+export const newCtx = (): Ctx => {
     return {
         sym: { current: 0 },
         global: initialGlobal,
         local: emptyLocal,
+        localMap: { terms: {}, types: {} },
     };
 };
 

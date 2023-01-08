@@ -1,14 +1,10 @@
-import generate from '@babel/generator';
 import * as React from 'react';
-import * as t from '@babel/types';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
-import { stmtToTs } from '../src/to-ast/to-ts';
-import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { Node } from './Nodes';
-import { EvalCtx, initialStore, Store } from './store';
-import objectHash from 'object-hash';
+import { EvalCtx, initialStore } from './store';
+import { compile } from './compile';
 
 const _init = `
 (def hello 10)
@@ -68,59 +64,18 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
-const compile = (store: Store, ectx: EvalCtx) => {
-    let { ctx, last, terms, nodes, results } = ectx;
-    const root = store.map[store.root].node.contents as ListLikeContents;
-
-    root.values.forEach((idx) => {
-        if (store.map[idx].node.contents.type === 'comment') {
-            results[idx] = {
-                status: 'success',
-                value: undefined,
-                code: '// a comment',
-            };
-            return;
-        }
-        ctx.sym.current = 0;
-        const res = nodeToExpr(fromMCST(idx, store.map), ctx);
-        const hash = objectHash(noForm(res));
-        if (last[idx] === hash) {
-            return;
-        }
-        // ok, so the increasing idx's are really coming to haunt me.
-        // can I reset them?
-        const ts = stmtToTs(res, ctx, 'top');
-        const code = generate(t.file(t.program([ts]))).code;
-        const fn = new Function('$terms', 'fail', code);
-        try {
-            results[idx] = {
-                status: 'success',
-                value: fn(terms, (message: string) => {
-                    // console.log(`Encountered a compilation failure: `, message);
-                    throw new Error(message);
-                }),
-                code,
-            };
-            last[idx] = hash;
-        } catch (err) {
-            results[idx] = {
-                status: 'failure',
-                error: (err as Error).message,
-                code,
-            };
-            last[idx] = hash;
-            return;
-        }
-        ctx = addDef(res, ctx);
-    });
-
-    ectx.ctx = ctx;
-};
-
 export const App = () => {
     const terms: { [key: string]: any } = React.useMemo(() => ({}), []);
-    const ctx = React.useMemo(
-        () => ({ ctx: newCtx(), last: {}, terms, nodes: {}, results: {} }),
+    const ctx = React.useMemo<EvalCtx>(
+        () => ({
+            ctx: newCtx(),
+            last: {},
+            terms,
+            nodes: {},
+            results: {},
+            types: {},
+            globalTypes: {},
+        }),
         [],
     );
     const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
@@ -141,6 +96,16 @@ export const App = () => {
         ];
     }, []);
 
+    const [hover, setHover] = React.useState([] as { idx: number; box: any }[]);
+
+    const best = React.useMemo(() => {
+        for (let i = hover.length - 1; i >= 0; i--) {
+            if (ctx.types[hover[i].idx]) {
+                return hover[i];
+            }
+        }
+    }, [hover]);
+
     return (
         <div style={{ margin: 24 }}>
             <div>
@@ -149,12 +114,58 @@ export const App = () => {
                     store={store}
                     ctx={ctx}
                     path={[]}
+                    setHover={(hover) => {
+                        setHover((h) => {
+                            if (hover.box) {
+                                return [...h, hover];
+                            } else {
+                                return h.filter((h) => h.idx !== hover.idx);
+                            }
+                        });
+                    }}
                     events={{
                         onLeft() {},
                         onRight() {},
                     }}
                 />
             </div>
+            {best && (
+                <div
+                    style={{
+                        position: 'absolute',
+
+                        left: best.box.left,
+                        top: best.box.bottom,
+                        pointerEvents: 'none',
+                        zIndex: 100,
+                        backgroundColor: 'black',
+                        fontSize: '80%',
+                        // boxShadow: '0 0 4px white',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        padding: 8,
+                    }}
+                >
+                    {JSON.stringify(noForm(ctx.types[best.idx]))}
+                </div>
+            )}
+            {best && (
+                <div
+                    style={{
+                        position: 'absolute',
+
+                        left: best.box.left,
+                        top: best.box.top,
+                        height: best.box.height,
+                        width: best.box.width,
+                        pointerEvents: 'none',
+                        zIndex: 50,
+                        backgroundColor: 'transparent',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                    }}
+                ></div>
+            )}
         </div>
     );
 };
+
+export type SetHover = (hover: { idx: number; box: any | null }) => void;

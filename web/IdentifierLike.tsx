@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
-import { Path, setSelection, Store, updateStore } from './store';
+import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
 import { onKeyDown } from './onKeyDown';
+import { SetHover } from './App';
 
 export const IdentifierLike = ({
     idx,
@@ -13,6 +14,8 @@ export const IdentifierLike = ({
     store,
     path,
     events,
+    ctx,
+    setHover,
 }: {
     type: MNodeContents['type'];
     text: string;
@@ -20,13 +23,11 @@ export const IdentifierLike = ({
     store: Store;
     path: Path[];
     events: Events;
+    ctx: EvalCtx;
+    setHover: SetHover;
 }) => {
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
-
-    // React.useEffect(() => {
-    //     const current =
-    // }, [edit])
 
     edit = edit == null ? text : edit;
 
@@ -42,34 +43,48 @@ export const IdentifierLike = ({
         }
     }, [editing, text]);
 
-    const ref = React.useRef(null as null | HTMLSpanElement);
-    if (!editing) {
-        return (
-            <span
-                className="idlike"
-                style={{
-                    color: nodeColor(edit, type),
-                    minHeight: '1.3em',
-                    whiteSpace: 'pre-wrap',
-                }}
-                onMouseDown={(evt) => {
-                    evt.stopPropagation();
-                    setEdit(text);
-                    setSelection(store, { idx });
-                }}
-            >
-                {text}
-            </span>
-        );
-    }
+    const dec =
+        ctx.types[idx]?.type === 'unresolved' ? 'underline red' : 'none';
 
-    return (
+    const ref = React.useRef(null as null | HTMLSpanElement);
+    return !editing ? (
+        <span
+            className="idlike"
+            style={{
+                color: nodeColor(edit, type),
+                minHeight: '1.3em',
+                whiteSpace: 'pre-wrap',
+                textDecoration: dec,
+            }}
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                setEdit(text);
+                setSelection(store, { idx });
+            }}
+            onMouseOver={(evt) =>
+                setHover({
+                    idx,
+                    box: evt.currentTarget.getBoundingClientRect(),
+                })
+            }
+            onMouseLeave={() => setHover({ idx, box: null })}
+        >
+            {text}
+        </span>
+    ) : (
         <span
             data-idx={idx}
             contentEditable
             ref={ref}
             className="idlike"
             onMouseDown={(evt) => evt.stopPropagation()}
+            onMouseOver={(evt) =>
+                setHover({
+                    idx,
+                    box: evt.currentTarget.getBoundingClientRect(),
+                })
+            }
+            onMouseLeave={() => setHover({ idx, box: null })}
             onInput={(evt) => {
                 onInput(evt, setEdit, idx, path, store);
             }}
@@ -82,6 +97,7 @@ export const IdentifierLike = ({
                 whiteSpace: 'pre-wrap',
                 outline: 'none',
                 minHeight: '1.3em',
+                textDecoration: dec,
             }}
             onKeyDown={(evt) => {
                 onKeyDown(evt, idx, path, events, store);

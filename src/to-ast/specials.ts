@@ -56,6 +56,13 @@ export const specials: {
                     type: t,
                 });
             });
+            locals.forEach(
+                (loc) =>
+                    (ctx.localMap.terms[loc.sym] = {
+                        name: loc.name,
+                        type: loc.type,
+                    }),
+            );
             const ct2: Ctx = {
                 ...ctx,
                 local: {
@@ -127,7 +134,7 @@ export const specials: {
         }
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
-        for (let i = 0; i < first.contents.values.length; i += 2) {
+        for (let i = 0; i < first.contents.values.length - 1; i += 2) {
             const value = nodeToExpr(first.contents.values[i + 1], ctx);
             const inferred = typeForExpr(value, ctx);
             bindings.push({
@@ -141,6 +148,13 @@ export const specials: {
                 type: inferred,
             });
         }
+        locals.forEach(
+            (loc) =>
+                (ctx.localMap.terms[loc.sym] = {
+                    name: loc.name,
+                    type: loc.type,
+                }),
+        );
         const ct2: Ctx = {
             ...ctx,
             local: {

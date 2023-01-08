@@ -62,6 +62,17 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 form: value.form,
             };
         }
+        case 'record': {
+            return {
+                type: 'record',
+                entries: value.entries.map((entry) => ({
+                    name: entry.name,
+                    value: typeForExpr(entry.value, ctx),
+                })),
+                form: value.form,
+                open: false,
+            };
+        }
     }
     return {
         type: 'unresolved',

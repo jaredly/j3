@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
+import { SetHover } from './App';
 import { IdentifierLike } from './IdentifierLike';
 import { ListLike } from './ListLike';
 import { EvalCtx, Path, Store, useStore } from './store';
@@ -63,12 +64,14 @@ export const Node = ({
     path,
     events,
     ctx,
+    setHover,
 }: {
     idx: number;
     store: Store;
     path: Path[];
     events: Events;
     ctx: EvalCtx;
+    setHover: SetHover;
 }) => {
     const both = useStore(store, idx);
     if (!both) {
@@ -88,6 +91,8 @@ export const Node = ({
                 idx={idx}
                 path={path}
                 events={events}
+                ctx={ctx}
+                setHover={setHover}
             />
         );
     }
@@ -108,6 +113,7 @@ export const Node = ({
                     idx,
                     events,
                     ctx,
+                    setHover,
                 }}
             />
         );

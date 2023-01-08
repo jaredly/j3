@@ -18,6 +18,8 @@ export type Store = {
 
 export type EvalCtx = {
     ctx: Ctx;
+    types: { [key: number]: Type };
+    globalTypes: { [hash: string]: Type };
     last: { [key: number]: string };
     terms: { [key: string]: any };
     nodes: {

@@ -3,6 +3,7 @@ import { Map } from '../src/types/mcst';
 import { EvalCtx, Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
+import { SetHover } from './App';
 
 export const ListLike = ({
     left,
@@ -14,6 +15,7 @@ export const ListLike = ({
     idx,
     events,
     ctx,
+    setHover,
 }: {
     left: string;
     right: string;
@@ -24,6 +26,7 @@ export const ListLike = ({
     events: Events;
     idx: number;
     ctx: EvalCtx;
+    setHover: SetHover;
 }) => {
     const isRoot = idx === store.root;
 
@@ -32,6 +35,7 @@ export const ListLike = ({
             idx={cidx}
             key={cidx}
             ctx={ctx}
+            setHover={setHover}
             path={path.concat({
                 idx,
                 child: {
@@ -80,7 +84,6 @@ export const ListLike = ({
                 <React.Fragment key={children[i]}>
                     <div
                         key={children[i]}
-                        className="hover"
                         onMouseDown={(evt) => {
                             evt.stopPropagation();
                             evt.preventDefault();
@@ -138,7 +141,7 @@ export const ListLike = ({
         </span>
     ) : (
         nodes.map((node, i) => (
-            <>
+            <React.Fragment key={children[i]}>
                 {i != 0 ? (
                     <span
                         onMouseDown={sideClick((left) => {
@@ -159,30 +162,9 @@ export const ListLike = ({
                     </span>
                 ) : null}
                 <span key={children[i]}>{node}</span>
-            </>
+            </React.Fragment>
         ))
     );
-
-    // if (isRoot) {
-    //     return (
-    //         <div
-    //             style={{
-    //                 display: 'flex',
-    //                 flexDirection: 'column',
-    //                 alignItems: 'flex-start',
-    //                 cursor: 'text',
-    //             }}
-    //             onMouseDown={(evt) => {
-    //                 evt.stopPropagation();
-    //                 evt.preventDefault();
-    //                 setSelection(store, { idx, side: 'end' });
-    //                 console.log('OK');
-    //             }}
-    //         >
-    //             {contents}
-    //         </div>
-    //     );
-    // }
 
     return (
         <span
@@ -190,6 +172,13 @@ export const ListLike = ({
                 display: 'flex',
                 cursor: 'text',
             }}
+            onMouseEnter={(evt) =>
+                setHover({
+                    idx,
+                    box: evt.currentTarget.getBoundingClientRect(),
+                })
+            }
+            onMouseLeave={() => setHover({ idx, box: null })}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 evt.preventDefault();

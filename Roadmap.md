@@ -55,6 +55,18 @@ so good
 	- but once I start multiple dispatch, that'll be a whole thing.
 
 
+- [x] HOVER for types please
+- [ ] WHY aren't patterns working ? prolly because they're very hacked together
+
+CAN I get away with not resolving any types in the first pass? like syms are typeless monsters.
+and then we do our check-types pass, ....
+
+now does that also mean that resolution of things is iffy? I guess if we're assuming that the editor locks down
+most hashes, we're not actually doing full type-directed resolution.
+
+START HERE ^^^^^
+
+
 # Getting Full Input, because that would be nice
 
 I want to be able to write an actual program
