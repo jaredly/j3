@@ -59,7 +59,7 @@ export const Blinker = ({
                         };
                         updateStore(
                             store,
-                            { map: mp, selection: { idx: nidx, side: 'end' } },
+                            { map: mp, selection: { idx: nidx, loc: 'end' } },
                             [path],
                         );
                         evt.preventDefault();
@@ -92,7 +92,7 @@ export const Blinker = ({
                             store,
                             {
                                 map: mp,
-                                selection: { idx: nidx, side: 'end' },
+                                selection: { idx: nidx, loc: 'end' },
                             },
                             [path],
                         );

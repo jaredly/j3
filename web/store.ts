@@ -7,7 +7,7 @@ import { layout } from './layout';
 
 export type Selection = {
     idx: number;
-    side?: 'start' | 'end' | 'change' | 'inside';
+    loc?: 'start' | 'end' | 'change' | 'inside' | number;
 };
 
 export type Store = {
@@ -98,7 +98,7 @@ export const initialStore = (nodes: Node[]): Store => {
     // roots.forEach((id) => layout(id, 0, map, true));
     layout(root, 0, map, true);
     return {
-        selection: { idx: root, side: 'start' },
+        selection: { idx: root, loc: 'start' },
         root,
         listeners: {},
         history: {
@@ -146,7 +146,7 @@ export const setSelection = (
     extras?: (number | null | undefined)[],
 ) => {
     const old = store.selection;
-    if (old?.idx === selection?.idx && old?.side === selection?.side) {
+    if (old?.idx === selection?.idx && old?.loc === selection?.loc) {
         return notify(store, [selection?.idx, ...(extras || [])]);
     }
     store.selection = selection;
@@ -168,6 +168,7 @@ export const undo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
+    console.log('presel', item.preSelection);
     updateStore(
         store,
         { map: item.pre, selection: item.preSelection },
@@ -184,6 +185,7 @@ export const redo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - store.history.idx];
+    console.log('postsel', item.postSelection);
     updateStore(
         store,
         { map: item.post, selection: item.postSelection },

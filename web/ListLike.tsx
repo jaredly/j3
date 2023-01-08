@@ -49,20 +49,20 @@ export const ListLike = ({
                     if (i > 0) {
                         setSelection(store, {
                             idx: children[i - 1],
-                            side: 'end',
+                            loc: 'end',
                         });
                     } else {
-                        setSelection(store, { idx, side: 'start' });
+                        setSelection(store, { idx, loc: 'start' });
                     }
                 },
                 onRight() {
                     if (i < children.length - 1) {
                         setSelection(store, {
                             idx: children[i + 1],
-                            side: 'start',
+                            loc: 'start',
                         });
                     } else {
-                        setSelection(store, { idx, side: 'end' });
+                        setSelection(store, { idx, loc: 'end' });
                     }
                 },
             }}
@@ -95,7 +95,7 @@ export const ListLike = ({
                             evt.preventDefault();
                             setSelection(store, {
                                 idx: children[i],
-                                side: 'end',
+                                loc: 'end',
                             });
                         }}
                     >
@@ -153,12 +153,12 @@ export const ListLike = ({
                             if (left) {
                                 setSelection(store, {
                                     idx: children[i - 1],
-                                    side: 'end',
+                                    loc: 'end',
                                 });
                             } else {
                                 setSelection(store, {
                                     idx: children[i],
-                                    side: 'start',
+                                    loc: 'start',
                                 });
                             }
                         })}
@@ -187,12 +187,11 @@ export const ListLike = ({
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 evt.preventDefault();
-                setSelection(store, { idx, side: 'end' });
+                setSelection(store, { idx, loc: 'end' });
                 console.log('OK');
             }}
         >
-            {store.selection?.idx === idx &&
-            store.selection.side === 'start' ? (
+            {store.selection?.idx === idx && store.selection.loc === 'start' ? (
                 <Blinker
                     idx={idx}
                     store={store}
@@ -208,9 +207,9 @@ export const ListLike = ({
                                 children.length
                                     ? {
                                           idx: children[0],
-                                          side: 'start',
+                                          loc: 'start',
                                       }
-                                    : { idx, side: 'inside' },
+                                    : { idx, loc: 'inside' },
                             );
                         },
                     }}
@@ -226,7 +225,7 @@ export const ListLike = ({
                         if (left) {
                             setSelection(store, {
                                 idx,
-                                side: 'start',
+                                loc: 'start',
                             });
                         } else {
                             setSelection(
@@ -234,9 +233,9 @@ export const ListLike = ({
                                 children.length
                                     ? {
                                           idx: children[0],
-                                          side: 'start',
+                                          loc: 'start',
                                       }
-                                    : { idx, side: 'inside' },
+                                    : { idx, loc: 'inside' },
                             );
                         }
                     })}
@@ -245,7 +244,7 @@ export const ListLike = ({
                 </span>
             )}
             {store.selection?.idx === idx &&
-            store.selection.side === 'inside' ? (
+            store.selection.loc === 'inside' ? (
                 <Blinker
                     idx={idx}
                     store={store}
@@ -253,10 +252,10 @@ export const ListLike = ({
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
                         onLeft() {
-                            setSelection(store, { idx, side: 'start' });
+                            setSelection(store, { idx, loc: 'start' });
                         },
                         onRight() {
-                            setSelection(store, { idx, side: 'end' });
+                            setSelection(store, { idx, loc: 'end' });
                         },
                     }}
                 />
@@ -276,14 +275,14 @@ export const ListLike = ({
                                 children.length
                                     ? {
                                           idx: children[children.length - 1],
-                                          side: 'end',
+                                          loc: 'end',
                                       }
-                                    : { idx, side: 'inside' },
+                                    : { idx, loc: 'inside' },
                             );
                         } else {
                             setSelection(store, {
                                 idx,
-                                side: 'end',
+                                loc: 'end',
                             });
                         }
                     })}
@@ -291,7 +290,7 @@ export const ListLike = ({
                     {right}
                 </span>
             )}
-            {store.selection?.idx === idx && store.selection.side === 'end' ? (
+            {store.selection?.idx === idx && store.selection.loc === 'end' ? (
                 <Blinker
                     idx={idx}
                     store={store}
@@ -307,9 +306,9 @@ export const ListLike = ({
                                 children.length
                                     ? {
                                           idx: children[children.length - 1],
-                                          side: 'end',
+                                          loc: 'end',
                                       }
-                                    : { idx, side: 'inside' },
+                                    : { idx, loc: 'inside' },
                             );
                         },
                         onRight() {

@@ -123,8 +123,8 @@ export const onKeyDown = (
                         map: mp,
                         selection:
                             nidx != null
-                                ? { idx: nidx, side: 'end' }
-                                : { idx: parent.idx, side: 'start' },
+                                ? { idx: nidx, loc: 'end' }
+                                : { idx: parent.idx, loc: 'start' },
                     },
                     [path],
                 );
@@ -201,7 +201,7 @@ export const onKeyDown = (
             if (node.contents.type === looking) {
                 return setSelection(store, {
                     idx: parent.idx,
-                    side: 'end',
+                    loc: 'end',
                 });
             }
         }
@@ -225,7 +225,7 @@ export const onKeyDown = (
                     }),
                 },
             };
-            updateStore(store, { map: mp, selection: { idx, side: 'end' } }, [
+            updateStore(store, { map: mp, selection: { idx, loc: 'end' } }, [
                 path,
             ]);
         }
@@ -277,7 +277,7 @@ export const onKeyDown = (
             };
             updateStore(
                 store,
-                { map: mp, selection: { idx: nw.loc.idx, side: 'inside' } },
+                { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
                 [path],
             );
             evt.preventDefault();
@@ -305,7 +305,61 @@ export const isAtStart = (node: HTMLSpanElement) => {
     return getPos(node) === 0;
 };
 
-const getPos = (target: HTMLElement) => {
+/**
+ * set caret position
+ * @param {number} position - caret position
+ */
+export const setPos = (target: ChildNode, position: number) => {
+    var selection = window.getSelection()!;
+    let range = document.createRange();
+    range.selectNode(target);
+    range.setStart(target, 0);
+    createRange(
+        target,
+        {
+            count: position,
+        },
+        range,
+    );
+    if (range) {
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+};
+
+export const createRange = (
+    node: ChildNode,
+    chars: { count: number },
+    range: Range,
+): boolean => {
+    if (chars.count === 0) {
+        range.setEnd(node, chars.count);
+        return true;
+    } else if (node && chars.count > 0) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (node.textContent!.length < chars.count) {
+                chars.count -= node.textContent!.length;
+            } else {
+                range.setEnd(node, chars.count);
+                chars.count = 0;
+                return true;
+            }
+        } else {
+            for (var lp = 0; lp < node.childNodes.length; lp++) {
+                if (createRange(node.childNodes[lp], chars, range)) {
+                    return true;
+                }
+            }
+            if (node.nodeName === 'DIV') {
+                chars.count--;
+            }
+        }
+    }
+    return false;
+};
+
+export const getPos = (target: HTMLElement) => {
     const sel = document.getSelection()!;
     const r = sel.getRangeAt(0).cloneRange();
     sel.extend(target, 0);

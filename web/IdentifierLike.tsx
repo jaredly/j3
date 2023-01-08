@@ -4,7 +4,7 @@ import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
-import { onKeyDown } from './onKeyDown';
+import { getPos, onKeyDown, setPos } from './onKeyDown';
 import { SetHover } from './App';
 
 export const IdentifierLike = ({
@@ -31,17 +31,20 @@ export const IdentifierLike = ({
 
     edit = edit == null ? text : edit;
 
+    const presel = React.useRef(null as null | number);
+
     React.useLayoutEffect(() => {
         if (!ref.current) {
             return;
         }
         if (editing) {
             ref.current.textContent = text;
-            if (ref.current !== document.activeElement) {
+            if (ref.current !== document.activeElement || true) {
                 focus(ref.current, store);
             }
+            presel.current = getPos(ref.current);
         }
-    }, [editing, text]);
+    }, [editing, text, editing ? store.selection!.loc : null]);
 
     const dec =
         ctx.types[idx]?.type === 'unresolved' ? 'underline red' : 'none';
@@ -84,9 +87,12 @@ export const IdentifierLike = ({
                     box: evt.currentTarget.getBoundingClientRect(),
                 })
             }
+            onMouseUp={(evt) => {
+                presel.current = getPos(evt.currentTarget);
+            }}
             onMouseLeave={() => setHover({ idx, box: null })}
             onInput={(evt) => {
-                onInput(evt, setEdit, idx, path, store);
+                onInput(evt, setEdit, idx, path, store, presel);
             }}
             onBlur={() => {
                 setEdit(null);
@@ -134,8 +140,15 @@ const kwds = ['let', 'def', 'defn', 'fn'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
 function focus(node: HTMLSpanElement, store: Store) {
+    console.log('a focus pls', node, store.selection!.loc);
     node.focus();
-    switch (store.selection!.side) {
+    if (typeof store.selection!.loc === 'number') {
+        setPos(node, store.selection!.loc);
+        console.log('focusing the loc', store.selection!.loc);
+        store.selection = { idx: store.selection!.idx, loc: undefined };
+        return;
+    }
+    switch (store.selection!.loc) {
         case 'start': {
             const sel = window.getSelection()!;
             sel.selectAllChildren(node);
@@ -148,14 +161,12 @@ function focus(node: HTMLSpanElement, store: Store) {
             break;
         }
         case 'end':
-        default: {
             const sel = window.getSelection()!;
             sel.selectAllChildren(node);
             sel.collapseToEnd();
             break;
-        }
     }
-    store.selection!.side = undefined;
+    store.selection!.loc = undefined;
 }
 
 function onInput(
@@ -164,9 +175,11 @@ function onInput(
     idx: number,
     path: Path[],
     store: Store,
+    presel: { current: number | null },
 ) {
     const text = evt.currentTarget.textContent ?? '';
     setEdit(text);
+    const pos = getPos(evt.currentTarget);
     try {
         const parsed = parse(text);
         if (parsed.length === 1) {
@@ -176,7 +189,21 @@ function onInput(
             };
             const mp: Map = {};
             toMCST(nw, mp);
-            updateStore(store, { map: mp }, [path]);
+            updateStore(
+                store,
+                {
+                    map: mp,
+                    selection: {
+                        idx,
+                        loc: pos,
+                    },
+                    prev: {
+                        idx,
+                        loc: presel.current ?? undefined,
+                    },
+                },
+                [path],
+            );
         } else {
             throw new Error('unparseable?');
         }
@@ -194,6 +221,20 @@ function onInput(
         };
         const mp: Map = {};
         toMCST(nw, mp);
-        updateStore(store, { map: mp }, [path]);
+        updateStore(
+            store,
+            {
+                map: mp,
+                selection: {
+                    idx,
+                    loc: pos,
+                },
+                prev: {
+                    idx,
+                    loc: presel.current ?? undefined,
+                },
+            },
+            [path],
+        );
     }
 }
