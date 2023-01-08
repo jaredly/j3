@@ -2,7 +2,7 @@ import { Loc, Node, NodeContents } from './cst';
 
 export type MNode = {
     contents: MNodeContents;
-    decorators: { [key: string]: number[] };
+    // decorators: { [key: string]: number[] };
     loc: Loc;
 };
 
@@ -58,6 +58,38 @@ export type Map = {
     };
 };
 
+export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
+    switch (node.type) {
+        case 'list':
+        case 'array':
+        case 'record':
+            return {
+                ...node,
+                values: node.values.map((child) => fromMCST(child, map)),
+            };
+        case 'string':
+            return {
+                ...node,
+                templates: node.templates.map(({ expr, suffix }) => ({
+                    expr: fromMCST(expr, map),
+                    suffix,
+                })),
+            };
+        case 'spread':
+            return { ...node, contents: fromMCST(node.contents, map) };
+        default:
+            return node;
+    }
+};
+
+export const fromMCST = (idx: number, map: Map): Node => {
+    const { node } = map[idx];
+    return {
+        ...node,
+        contents: fromMNode(node.contents, map),
+    };
+};
+
 export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
     switch (node.type) {
         case 'list':
@@ -83,33 +115,11 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
 };
 
 export const toMCST = (node: Node, map: Map): number => {
-    const decorators: MNode['decorators'] = {};
-    Object.entries(node.decorators).forEach(([key, value]) => {
-        decorators[key] = value.map((node) => toMCST(node, map));
-    });
     if (map[node.loc.idx]) {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
     map[node.loc.idx] = {
-        node: {
-            ...node,
-            contents: toMNode(node.contents, map),
-            decorators,
-        },
-        // layout: {
-        //     type: 'multiline',
-        //     pos: 0,
-        //     pairs:
-        //         node.contents.type === 'record' &&
-        //         node.contents.items.length > 1,
-        //     tightFirst:
-        //         node.contents.type === 'list'
-        //             ? node.contents.values[0].contents.type === 'identifier'
-        //                 ? tightFirsts[node.contents.values[0].contents.text] ??
-        //                   1
-        //                 : 1
-        //             : 0,
-        // },
+        node: { ...node, contents: toMNode(node.contents, map) },
     };
     return node.loc.idx;
 };

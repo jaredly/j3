@@ -5,7 +5,7 @@
 }}
 
 {
-	const wrap = (contents, loc) => ({contents, decorators: [], loc: {
+	const wrap = (contents, loc) => ({contents, loc: {
 		start: location().start.offset,
 		end: location().end.offset,
 		idx: nidx()
@@ -14,23 +14,23 @@
 
 File = _ contents:(@Form _)* _ { return contents}
 
-Form = inner:FormInner decorators:(_ @Decorator _)* {
-	decorators.forEach(dec => {
-		inner.decorators[dec.name] = dec.args
-	})
-	return inner
-}
-FormInner = tag / number / list / array / comment / spread / string / identifier / macro / record
+// Form = inner:FormInner decorators:(_ @Decorator _)* {
+// 	decorators.forEach(dec => {
+// 		inner.decorators[dec.name] = dec.args
+// 	})
+// 	return inner
+// }
+Form = tag / number / list / array / comment / spread / string / identifier / macro / record
 
 record = "{" _ values:(@Form _)* "}" { return wrap({type: 'record', values})}
 
-TypeDec = ":" form:Form { return {name: 'type', args:[form]} }
-FullDecorator = "@" "(" _ name:$idtext args:(_ @Form)* _ ")" { return {name, args} }
-Decorator = FullDecorator / TypeDec
+// TypeDec = ":" form:Form { return {name: 'type', args:[form]} }
+// FullDecorator = "@" "(" _ name:$idtext args:(_ @Form)* _ ")" { return {name, args} }
+// Decorator = FullDecorator / TypeDec
 
 macro = "@" name:$idtext { return wrap({type: 'macro', name})}
 
-tag = "`" text:$idtext { return wrap({type: 'tag', text })}
+tag = "`" text:$idtext? { return wrap({type: 'tag', text: text || '' })}
 
 number = raw:$(dotStart / dotEnd) {return wrap({type: 'number', raw})}
 
@@ -41,7 +41,7 @@ list = "(" _ values:(@Form _)* ")"  {return wrap({type: 'list', values})}
 
 array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'array', values})}
 
-comment = text:$commenttext {return wrap({type: 'comment', text})}
+comment = text:$(commenttext / finalLineComment) {return wrap({type: 'comment', text})}
 
 spread = "..." contents:Form {return wrap({type: 'spread', contents})}
 
@@ -55,11 +55,11 @@ tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [a-zA-Z0-9_<>!='$%*/+~&.|,-]+
+idtext = [@:a-zA-Z0-9_<>!='$%*/+~&.|,?-]+
 
-newline = "\n"
-_nonnewline = [ \t\r]* (comment [ \t\r]*)*
-__nonnewline = [ \t\r]+ (comment [ \t\r]*)*
+// newline = "\n"
+// _nonnewline = [ \t\r]* (comment [ \t\r]*)*
+// __nonnewline = [ \t\r]+ (comment [ \t\r]*)*
 _ "whitespace"
   = [ \t\n\r]*
 __ "whitespace"

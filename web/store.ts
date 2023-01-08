@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Ctx } from '../src/to-ast/to-ast';
+import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';
 import { layout } from './layout';
@@ -10,8 +12,44 @@ export type Selection = {
 export type Store = {
     selection: Selection | null;
     listeners: { [key: string]: Array<() => void> };
-    roots: number[];
+    root: number;
     map: Map;
+};
+
+export type EvalCtx = {
+    ctx: Ctx;
+    types: { [key: number]: Type };
+    globalTypes: { [hash: string]: Type };
+    last: { [key: number]: string };
+    terms: { [key: string]: any };
+    nodes: {
+        [idx: number]:
+            | {
+                  type: 'Expr';
+                  node: Expr;
+              }
+            | {
+                  type: 'Type';
+                  node: Type;
+              }
+            | {
+                  type: 'Pattern';
+                  node: Pattern;
+              };
+    };
+    results: {
+        [key: string]:
+            | {
+                  status: 'success';
+                  value: any;
+                  code: string;
+              }
+            | {
+                  status: 'failure';
+                  error: string;
+                  code: string;
+              };
+    };
 };
 
 // Path Locations:
@@ -35,11 +73,19 @@ export type Path = { idx: number; child: PathChild };
 
 export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
-    const roots = nodes.map((node) => toMCST(node, map));
-    roots.forEach((id) => layout(id, 0, map, true));
+    const root = toMCST(
+        {
+            contents: { type: 'list', values: nodes },
+            loc: { idx: -1, start: 0, end: 0 },
+        },
+        map,
+    );
+    // const roots = nodes.map((node) => toMCST(node, map));
+    // roots.forEach((id) => layout(id, 0, map, true));
+    layout(root, 0, map, true);
     return {
-        selection: { idx: roots[0], side: 'start' },
-        roots,
+        selection: { idx: root, side: 'start' },
+        root,
         listeners: {},
         map,
     };

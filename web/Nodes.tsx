@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
+import { SetHover } from './App';
 import { IdentifierLike } from './IdentifierLike';
 import { ListLike } from './ListLike';
-import { Path, Store, useStore } from './store';
+import { EvalCtx, Path, Store, useStore } from './store';
 
 // ListLike
 // array, list, record
@@ -32,6 +33,7 @@ export type Events = {
 export const idText = (node: MNodeContents) => {
     switch (node.type) {
         case 'identifier':
+        case 'comment':
             return node.text;
         case 'number':
         case 'unparsed':
@@ -61,11 +63,15 @@ export const Node = ({
     store,
     path,
     events,
+    ctx,
+    setHover,
 }: {
     idx: number;
     store: Store;
     path: Path[];
     events: Events;
+    ctx: EvalCtx;
+    setHover: SetHover;
 }) => {
     const both = useStore(store, idx);
     if (!both) {
@@ -74,28 +80,20 @@ export const Node = ({
     const { node: item, layout } = both;
     const text = idText(item.contents);
 
-    const decs = Object.entries(item.decorators);
+    // const decs = Object.entries(item.decorators);
 
     if (text != null) {
         return (
-            <>
-                <IdentifierLike
-                    text={text}
-                    type={item.contents.type}
-                    store={store}
-                    idx={idx}
-                    path={path}
-                    events={events}
-                />
-                {decs.length ? (
-                    <Decorators
-                        decs={decs}
-                        store={store}
-                        path={path}
-                        idx={idx}
-                    />
-                ) : null}
-            </>
+            <IdentifierLike
+                text={text}
+                type={item.contents.type}
+                store={store}
+                idx={idx}
+                path={path}
+                events={events}
+                ctx={ctx}
+                setHover={setHover}
+            />
         );
     }
 
@@ -105,104 +103,25 @@ export const Node = ({
         const [left, right, children] = arr;
         return (
             <ListLike
-                {...{ left, right, children, store, path, layout, idx, events }}
+                {...{
+                    left,
+                    right,
+                    children,
+                    store,
+                    path,
+                    layout,
+                    idx,
+                    events,
+                    ctx,
+                    setHover,
+                }}
             />
         );
     }
+
     return <span>{JSON.stringify(item.contents)}</span>;
 };
 
-function Decorators({
-    decs,
-    store,
-    path,
-    idx,
-}: {
-    decs: [string, number[]][];
-    store: Store;
-    path: Path[];
-    idx: number;
-}) {
-    return (
-        <>
-            {decs.map(([key, args]) =>
-                key === 'type' ? (
-                    <span key={key} style={{ marginLeft: 8 }}>
-                        :
-                        {args.length === 1 ? (
-                            <Node
-                                idx={args[0]}
-                                store={store}
-                                events={{ onLeft() {}, onRight() {} }}
-                                path={path.concat([
-                                    {
-                                        idx,
-                                        child: {
-                                            type: 'decorator',
-                                            key,
-                                            at: 1,
-                                        },
-                                    },
-                                ])}
-                            />
-                        ) : (
-                            <>
-                                (
-                                {args.map((arg, i) => (
-                                    <span key={arg} style={{ marginLeft: 8 }}>
-                                        <Node
-                                            idx={arg}
-                                            store={store}
-                                            events={{
-                                                onLeft() {},
-                                                onRight() {},
-                                            }}
-                                            path={path.concat([
-                                                {
-                                                    idx,
-                                                    child: {
-                                                        type: 'decorator',
-                                                        key,
-                                                        at: 1 + i,
-                                                    },
-                                                },
-                                            ])}
-                                        />
-                                    </span>
-                                ))}
-                                )
-                            </>
-                        )}
-                    </span>
-                ) : (
-                    <span key={key} style={{ marginLeft: 8 }}>
-                        @({key}
-                        {args.map((arg, i) => (
-                            <span key={arg} style={{ marginLeft: 8 }}>
-                                <Node
-                                    idx={arg}
-                                    store={store}
-                                    events={{ onLeft() {}, onRight() {} }}
-                                    path={path.concat([
-                                        {
-                                            idx,
-                                            child: {
-                                                type: 'decorator',
-                                                key,
-                                                at: 1 + i,
-                                            },
-                                        },
-                                    ])}
-                                />
-                            </span>
-                        ))}
-                        )
-                    </span>
-                ),
-            )}
-        </>
-    );
-}
 // Spread is weird, let's wait to support it?
 // String is special too
 

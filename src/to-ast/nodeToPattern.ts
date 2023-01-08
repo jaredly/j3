@@ -49,7 +49,7 @@ export const nodeToPattern = (
                             : {
                                   type: 'unresolved',
                                   form: t.form,
-                                  reason: `type not a record`,
+                                  reason: `type ${t.type} not a record`,
                               },
                         ctx,
                         bindings,

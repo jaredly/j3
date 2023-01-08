@@ -41,12 +41,61 @@ so good
 - [x] backspace from start w/ empty before, deletes it
 - [x] typing normal things in a blank creates a new thing
 
+
+
+- [x] re-evaluate, got to
+- [ ] highlight errors inline, unresolved stuff
+	- yeah I really need to come up with some type errors
+	- currently I don't really have type checking at all.
+- [ ] and like, hover w/ a key pressed to see types of things?
+- [ ] figure out comments in things
+
+- [ ] ohhhh I need ast->cst, so I can nail down	hashes
+	- I guess I can kick that can a litte, because the most recently defined dealio wins.
+	- but once I start multiple dispatch, that'll be a whole thing.
+
+
+- [x] HOVER for types please
+- [ ] WHY aren't patterns working ? prolly because they're very hacked together
+
+CAN I get away with not resolving any types in the first pass? like syms are typeless monsters.
+and then we do our check-types pass, ....
+
+now does that also mean that resolution of things is iffy? I guess if we're assuming that the editor locks down
+most hashes, we're not actually doing full type-directed resolution.
+
+START HERE ^^^^^
+
+
+# Getting Full Input, because that would be nice
+
+I want to be able to write an actual program
+
+- [x] so, I'm thinking the grammar shouldn't care about type annotations and decorators and whatnot?
+	- yeah, that's a good choice, because it aligns with the way we're treating comments as just another atom.
+
+OH soooo what if there's this thing we're doing.
+and it is, that lists can have a prefix?
+like `@` or `:`. or even `;` if we really want.
+
+Now, on the other hand, strings? How do we even think about that.
+I think, to simplify things, we say that inside *every* template literal is just a list.
+and if it's a single-element list, then it's not treated as a list. but otherwise it is.
+and an empty list is fine, it's just empty.
+
+# OK I think I can input everything at this point,
+it's annoying that I can't do up/down arrows, but not prohibitive.
+
+well, ok so decorators aren't really there yet. or complex type annotations.
+
+but now let's try a little compile.?
+
+
 ## SELECTION
 
-- [ ] clicking the deadspace should do something reasonably my goodness
+- [x] clicking the deadspace should do something reasonably my goodness
 	- [x] inline deadspace fixed!
-
-gotta do a bunch
+	- [x] and all of it, i guess it's ok
 
 ### Mouse Selection
 

@@ -18,24 +18,51 @@ export const specials: {
                 form,
             };
         }
-        console.log('A FB', contents);
         if (contents[0].contents.type === 'array') {
             let args: { pattern: Pattern; type?: Type }[] = [];
             let locals: Local['terms'] = [];
+
+            let pairs: { pat: Node; type?: Node }[] = [];
+
             contents[0].contents.values.forEach((arg) => {
-                const t: Type =
-                    arg.decorators.type && arg.decorators.type.length
-                        ? nodeToType(arg.decorators.type[0], ctx)
-                        : {
-                              type: 'unresolved',
-                              form: nil.form,
-                              reason: 'not provided type',
-                          };
+                if (
+                    arg.contents.type === 'identifier' &&
+                    arg.contents.text.startsWith(':')
+                ) {
+                    if (pairs.length) {
+                        pairs[pairs.length - 1].type = {
+                            ...arg,
+                            contents: {
+                                ...arg.contents,
+                                text: arg.contents.text.slice(1),
+                            },
+                        };
+                    }
+                } else {
+                    pairs.push({ pat: arg });
+                }
+            });
+
+            pairs.forEach(({ pat, type }) => {
+                const t: Type = type
+                    ? nodeToType(type, ctx)
+                    : {
+                          type: 'unresolved',
+                          form: nil.form,
+                          reason: 'not provided type',
+                      };
                 args.push({
-                    pattern: nodeToPattern(arg, t, ctx, locals),
+                    pattern: nodeToPattern(pat, t, ctx, locals),
                     type: t,
                 });
             });
+            locals.forEach(
+                (loc) =>
+                    (ctx.localMap.terms[loc.sym] = {
+                        name: loc.name,
+                        type: loc.type,
+                    }),
+            );
             const ct2: Ctx = {
                 ...ctx,
                 local: {
@@ -107,7 +134,7 @@ export const specials: {
         }
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
-        for (let i = 0; i < first.contents.values.length; i += 2) {
+        for (let i = 0; i < first.contents.values.length - 1; i += 2) {
             const value = nodeToExpr(first.contents.values[i + 1], ctx);
             const inferred = typeForExpr(value, ctx);
             bindings.push({
@@ -121,6 +148,13 @@ export const specials: {
                 type: inferred,
             });
         }
+        locals.forEach(
+            (loc) =>
+                (ctx.localMap.terms[loc.sym] = {
+                    name: loc.name,
+                    type: loc.type,
+                }),
+        );
         const ct2: Ctx = {
             ...ctx,
             local: {

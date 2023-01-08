@@ -22,11 +22,18 @@ export type Local = {
     types: { sym: number; name: string; bound?: Type }[];
 };
 
-export type Ctx = { sym: { current: number }; global: Global; local: Local };
+export type Ctx = {
+    sym: { current: number };
+    global: Global;
+    local: Local;
+    localMap: {
+        terms: { [sym: number]: { name: string; type: Type } };
+        types: { [sym: number]: { name: string; bound?: Type } };
+    };
+};
 
 export const blank: Node = {
     contents: { type: 'blank' },
-    decorators: {},
     loc: { start: -1, end: -1, idx: -1 },
 };
 
@@ -120,11 +127,12 @@ export const initialGlobal: Global = {
     typeNames: {},
 };
 
-export const newCtx = () => {
+export const newCtx = (): Ctx => {
     return {
         sym: { current: 0 },
         global: initialGlobal,
         local: emptyLocal,
+        localMap: { terms: {}, types: {} },
     };
 };
 
@@ -133,7 +141,6 @@ export const nil: Expr = {
     entries: [],
     form: {
         contents: { type: 'list', values: [] },
-        decorators: {},
         loc: { start: -1, end: -1, idx: -1 },
     },
 };
@@ -144,7 +151,6 @@ export const nilt: Type = {
     open: false,
     form: {
         contents: { type: 'list', values: [] },
-        decorators: {},
         loc: { start: -1, end: -1, idx: -1 },
     },
 };

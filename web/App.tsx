@@ -2,14 +2,22 @@ import * as React from 'react';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
-import { Expr } from '../src/types/ast';
 import { Node } from './Nodes';
-import { initialStore, setSelection } from './store';
+import { EvalCtx, initialStore } from './store';
+import { compile } from './compile';
+
+const _init = `
+(def hello 10)
+(== hello 10)
+(== what 20)
+`;
 
 const init = `(== 5 (+ 2 3))
 (== 5 5)
 
-(empties [] one () two {} hello folks)
+; let's get this going
+
+; (empties [] one () two {} hello folks)
 
 (fn [v :int] (+ v 1))
 (def hello 10)
@@ -23,7 +31,6 @@ const init = `(== 5 (+ 2 3))
 (\`Hello 10)
 (\`What)
 \`Yea
-Thing
 3
 (let [(\`Ok x) (\`Ok 20)] (+ x 23))
 
@@ -58,54 +65,107 @@ export const getInitialState = () => {
 };
 
 export const App = () => {
-    // const [state, setState] = useLocalStorage<{ exprs: Expr[]; ctx: Ctx }>(
-    //     'j3:test',
-    //     getInitialState,
-    // );
-    const store = React.useMemo(() => initialStore(parse(init)), []);
+    const terms: { [key: string]: any } = React.useMemo(() => ({}), []);
+    const ctx = React.useMemo<EvalCtx>(
+        () => ({
+            ctx: newCtx(),
+            last: {},
+            terms,
+            nodes: {},
+            results: {},
+            types: {},
+            globalTypes: {},
+        }),
+        [],
+    );
+    const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
+    const store = React.useMemo(() => {
+        const store = initialStore(parse(init));
+        compile(store, ctx);
+        return store;
+    }, []);
+
+    const tick = React.useState(0);
+
+    React.useEffect(() => {
+        store.listeners[''] = [
+            () => {
+                compile(store, ctx);
+                tick[1]((x) => x + 1);
+            },
+        ];
+    }, []);
+
+    const [hover, setHover] = React.useState([] as { idx: number; box: any }[]);
+
+    const best = React.useMemo(() => {
+        for (let i = hover.length - 1; i >= 0; i--) {
+            if (ctx.types[hover[i].idx]) {
+                return hover[i];
+            }
+        }
+    }, [hover]);
 
     return (
         <div style={{ margin: 24 }}>
-            {/* <button onClick={() => setState(getInitialState())}>Ok</button> */}
-            {store.roots.map((root, i) => (
-                <div key={root} style={{ marginBottom: 8 }}>
-                    <Node
-                        idx={root}
-                        store={store}
-                        path={[]}
-                        events={{
-                            onLeft() {
-                                if (i > 0) {
-                                    setSelection(store, {
-                                        idx: store.roots[i - 1],
-                                        side: 'end',
-                                    });
-                                }
-                            },
-                            onRight() {
-                                if (i < store.roots.length - 1) {
-                                    setSelection(store, {
-                                        idx: store.roots[i + 1],
-                                        side: 'start',
-                                    });
-                                }
-                            },
-                        }}
-                    />
+            <div>
+                <Node
+                    idx={store.root}
+                    store={store}
+                    ctx={ctx}
+                    path={[]}
+                    setHover={(hover) => {
+                        setHover((h) => {
+                            if (hover.box) {
+                                return [...h, hover];
+                            } else {
+                                return h.filter((h) => h.idx !== hover.idx);
+                            }
+                        });
+                    }}
+                    events={{
+                        onLeft() {},
+                        onRight() {},
+                    }}
+                />
+            </div>
+            {best && (
+                <div
+                    style={{
+                        position: 'absolute',
+
+                        left: best.box.left,
+                        top: best.box.bottom,
+                        pointerEvents: 'none',
+                        zIndex: 100,
+                        backgroundColor: 'black',
+                        fontSize: '80%',
+                        // boxShadow: '0 0 4px white',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        padding: 8,
+                    }}
+                >
+                    {JSON.stringify(noForm(ctx.types[best.idx]))}
                 </div>
-            ))}
-            <textarea
-                style={{
-                    backgroundColor: 'transparent',
-                    color: 'inherit',
-                    height: 300,
-                    width: 800,
-                }}
-                defaultValue={init}
-                onBlur={(evt) => {
-                    const text = evt.currentTarget.value;
-                }}
-            />
+            )}
+            {best && (
+                <div
+                    style={{
+                        position: 'absolute',
+
+                        left: best.box.left,
+                        top: best.box.top,
+                        height: best.box.height,
+                        width: best.box.width,
+                        pointerEvents: 'none',
+                        zIndex: 50,
+                        backgroundColor: 'transparent',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                    }}
+                ></div>
+            )}
         </div>
     );
 };
+
+export type SetHover = (hover: { idx: number; box: any | null }) => void;
