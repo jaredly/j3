@@ -96,6 +96,18 @@ export const unifyTypes = (
                   form,
               };
     }
+    if (one.type === 'record' && two.type === 'record') {
+        // STOPSHIP: THIS IS WRONG
+        return {
+            type: 'record',
+            entries: one.entries.map((entry, i) => ({
+                name: entry.name,
+                value: unifyTypes(entry.value, two.entries[i].value, ctx, form),
+            })),
+            form,
+            open: false,
+        };
+    }
     return {
         type: 'unresolved',
         reason: 'incompatible builtins',

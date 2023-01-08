@@ -38,7 +38,7 @@ const init = `(== 5 (+ 2 3))
 (== (add2 23) 25)
 
 (def ok {23 100 yes 34})
-(def yes (let [{yes} ok] yes))
+(def yes (let [{yes} {yes 34}] yes))
 (== yes 34)`;
 
 const useLocalStorage = <T,>(key: string, initial: () => T) => {
