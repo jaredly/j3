@@ -62,12 +62,14 @@ export const IdentifierLike = ({
             </span>
         );
     }
+
     return (
         <span
             data-idx={idx}
             contentEditable
             ref={ref}
             className="idlike"
+            onMouseDown={(evt) => evt.stopPropagation()}
             onInput={(evt) => {
                 onInput(evt, setEdit, idx, path, store);
             }}

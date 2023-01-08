@@ -5,11 +5,16 @@ import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { stmtToTs } from '../src/to-ast/to-ts';
-import { Expr } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { Node } from './Nodes';
-import { initialStore, setSelection, Store } from './store';
+import { initialStore, Store } from './store';
 import objectHash from 'object-hash';
+
+const _init = `
+(def hello 10)
+(== hello 10)
+(== what 20)
+`;
 
 const init = `(== 5 (+ 2 3))
 (== 5 5)
@@ -63,10 +68,13 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
-const compile = (store: Store, ctx: Ctx, last: { [key: number]: string }) => {
+const compile = (
+    store: Store,
+    ctx: Ctx,
+    last: { [key: number]: string },
+    terms: { [key: string]: any },
+) => {
     const root = store.map[store.root].node.contents as ListLikeContents;
-
-    const terms: { [key: string]: any } = {};
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.contents.type === 'comment') {
@@ -88,31 +96,45 @@ const compile = (store: Store, ctx: Ctx, last: { [key: number]: string }) => {
                     // console.log(`Encountered a compilation failure: `, message);
                     throw new Error(message);
                 }),
+                code,
             };
             last[idx] = hash;
         } catch (err) {
             store.eval[idx] = {
                 status: 'failure',
                 message: (err as Error).message,
+                code,
             };
             last[idx] = hash;
             return;
         }
         ctx = addDef(res, ctx);
     });
+
+    return ctx;
 };
 
+const intialCtx = newCtx();
+
 export const App = () => {
-    const ctx = React.useMemo(() => newCtx(), []);
+    const terms: { [key: string]: any } = React.useMemo(() => ({}), []);
+    const ctx = React.useRef(intialCtx);
     const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
     const store = React.useMemo(() => {
         const store = initialStore(parse(init));
-        compile(store, ctx, last);
+        ctx.current = compile(store, ctx.current, last, terms);
         return store;
     }, []);
 
+    const tick = React.useState(0);
+
     React.useEffect(() => {
-        store.listeners[''] = [() => compile(store, ctx, last)];
+        store.listeners[''] = [
+            () => {
+                ctx.current = compile(store, ctx.current, last, terms);
+                tick[1]((x) => x + 1);
+            },
+        ];
     }, []);
 
     return (

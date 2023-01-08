@@ -42,6 +42,15 @@ so good
 - [x] typing normal things in a blank creates a new thing
 
 
+
+- [x] re-evaluate, got to
+- [ ] ohhhh I need ast->cst, so I can nail down	hashes
+	- I guess I can kick that can a litte, because the most recently defined dealio wins.
+	- but once I start multiple dispatch, that'll be a whole thing.
+- [ ] highlight errors inline, unresolved stuff
+- [ ] figure out comments in things
+
+
 # Getting Full Input, because that would be nice
 
 I want to be able to write an actual program

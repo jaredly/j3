@@ -69,6 +69,7 @@ export const ListLike = ({
                 // flexDirection: 'column',
                 // alignItems: 'flex-start',
                 display: 'grid',
+                gap: '0 8px',
                 gridTemplateColumns: 'min-content min-content',
             }}
         >
@@ -338,15 +339,46 @@ export const ShowResult = ({
     result,
 }: {
     result:
-        | { status: 'success'; value: any }
-        | { status: 'failure'; message: string };
+        | { status: 'success'; value: any; code: string }
+        | { status: 'failure'; message: string; code: string };
 }) => {
+    let body;
     if (result.status === 'success') {
         if (typeof result.value === 'function') {
-            return <pre>{result.value.toString().trim()}</pre>;
+            body = <pre>{result.value.toString().trim()}</pre>;
+        } else {
+            body = <pre>{JSON.stringify(result.value, null, 2)}</pre>;
         }
-        return <pre>{JSON.stringify(result.value, null, 2)}</pre>;
     } else {
-        return <pre>{result.message}</pre>;
+        body = <pre>{result.message}</pre>;
     }
+    const [hover, setHover] = React.useState(false);
+    return (
+        <div
+            style={{ position: 'relative' }}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+        >
+            {body}
+            {hover && (
+                <pre
+                    style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        marginTop: 0,
+                        pointerEvents: 'none',
+                        fontSize: '80%',
+                        zIndex: 1000,
+                        backgroundColor: 'black',
+                        boxShadow: '0 0 2px white',
+                        padding: 5,
+                        border: '1px solid black',
+                    }}
+                >
+                    {result.code}
+                </pre>
+            )}
+        </div>
+    );
 };

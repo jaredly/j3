@@ -119,6 +119,9 @@ export const bodyToTs = (
     if (res.length === 1 && res[0].type === 'ReturnStatement') {
         return res[0].argument!;
     }
+    if (!res.length) {
+        return t.blockStatement([]);
+    }
     const last = res[res.length - 1];
     if (last.type === 'BlockStatement') {
         res.pop();
@@ -134,7 +137,10 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
         case 'apply': {
             if (expr.target.type === 'builtin') {
                 const name = ctx.global.builtins.namesBack[expr.target.hash];
-                if (name === '==' || name === '+' || name === '<') {
+                if (
+                    (name === '==' || name === '+' || name === '<') &&
+                    expr.args.length === 2
+                ) {
                     return t.binaryExpression(
                         name,
                         exprToTs(expr.args[0], ctx),
