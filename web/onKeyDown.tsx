@@ -30,6 +30,7 @@ export const onKeyDown = (
     //     return;
     // }
     if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
+        evt.preventDefault();
         return undo(store);
     }
 

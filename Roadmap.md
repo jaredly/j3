@@ -60,7 +60,10 @@ store will need a `highlight` prop? Prolly?
 
 ### HISTORY
 
-Let's hang on to it.
+- [x] Let's hang on to it.
+- [x] UNDO
+- [ ] redo?
+
 
 
 

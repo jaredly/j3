@@ -162,6 +162,10 @@ export type StoreUpdate = {
 };
 
 export const undo = (store: Store) => {
+    if (store.history.idx >= store.history.items.length) {
+        console.log('too far, its the end of history');
+        return;
+    }
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
     updateStore(
@@ -179,12 +183,13 @@ export const updateStore = (
     paths: Path[][],
     skipHistory = false,
 ) => {
-    const pre: UpdateMap = {};
-    Object.keys(change).forEach((item) => {
-        pre[+item] = store.map[+item];
-    });
-
+    console.log('UP', change, selection);
     if (!skipHistory) {
+        const pre: UpdateMap = {};
+        Object.keys(change).forEach((item) => {
+            pre[+item] = store.map[+item];
+        });
+
         const history: HistoryItem = {
             pre,
             post: change,
