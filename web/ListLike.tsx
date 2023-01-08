@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Map } from '../src/types/mcst';
-import { Path, setSelection, Store } from './store';
+import { EvalCtx, Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 
@@ -13,6 +13,7 @@ export const ListLike = ({
     layout,
     idx,
     events,
+    ctx,
 }: {
     left: string;
     right: string;
@@ -22,6 +23,7 @@ export const ListLike = ({
     layout: Map[0]['layout'];
     events: Events;
     idx: number;
+    ctx: EvalCtx;
 }) => {
     const isRoot = idx === store.root;
 
@@ -29,6 +31,7 @@ export const ListLike = ({
         <Node
             idx={cidx}
             key={cidx}
+            ctx={ctx}
             path={path.concat({
                 idx,
                 child: {
@@ -89,7 +92,7 @@ export const ListLike = ({
                     >
                         {node}
                     </div>
-                    <ShowResult result={store.results[children[i]]} />
+                    <ShowResult result={ctx.results[children[i]]} />
                     {/* <EvalMyDudes idx={children[i]} store={store} /> */}
                 </React.Fragment>
             ))}
@@ -340,7 +343,7 @@ export const ShowResult = ({
 }: {
     result:
         | { status: 'success'; value: any; code: string }
-        | { status: 'failure'; message: string; code: string };
+        | { status: 'failure'; error: string; code: string };
 }) => {
     let body;
     if (result.status === 'success') {
@@ -350,7 +353,7 @@ export const ShowResult = ({
             body = <pre>{JSON.stringify(result.value, null, 2)}</pre>;
         }
     } else {
-        body = <pre>{result.message}</pre>;
+        body = <pre>{result.error}</pre>;
     }
     const [hover, setHover] = React.useState(false);
     return (

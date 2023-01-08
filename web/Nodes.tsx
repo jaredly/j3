@@ -2,7 +2,7 @@ import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
 import { IdentifierLike } from './IdentifierLike';
 import { ListLike } from './ListLike';
-import { Path, Store, useStore } from './store';
+import { EvalCtx, Path, Store, useStore } from './store';
 
 // ListLike
 // array, list, record
@@ -62,11 +62,13 @@ export const Node = ({
     store,
     path,
     events,
+    ctx,
 }: {
     idx: number;
     store: Store;
     path: Path[];
     events: Events;
+    ctx: EvalCtx;
 }) => {
     const both = useStore(store, idx);
     if (!both) {
@@ -96,7 +98,17 @@ export const Node = ({
         const [left, right, children] = arr;
         return (
             <ListLike
-                {...{ left, right, children, store, path, layout, idx, events }}
+                {...{
+                    left,
+                    right,
+                    children,
+                    store,
+                    path,
+                    layout,
+                    idx,
+                    events,
+                    ctx,
+                }}
             />
         );
     }

@@ -144,6 +144,7 @@ export const App = () => {
                 <Node
                     idx={store.root}
                     store={store}
+                    ctx={ctx}
                     path={[]}
                     events={{
                         onLeft() {},
