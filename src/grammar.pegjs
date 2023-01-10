@@ -5,7 +5,7 @@
 }}
 
 {
-	const wrap = (contents, loc) => ({contents, loc: {
+	const wrap = (contents, loc) => ({...contents, loc: {
 		start: location().start.offset,
 		end: location().end.offset,
 		idx: nidx()
