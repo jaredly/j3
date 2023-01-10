@@ -6,6 +6,14 @@ like non-ids as a record key
 or some non-array nonsense in a function second position
 
 
+## Enumerating the syntax, in Syntax.md
+
+Very helpful for hammering some things out in this brave new lispy world!
+And... it's with a heavy heart that I decide that tags probably need something
+other than backtick. It just makes interacting with markdown too annoying.
+
+
+
 
 
 ## Ok
