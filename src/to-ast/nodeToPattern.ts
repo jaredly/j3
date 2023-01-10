@@ -63,6 +63,13 @@ export const nodeToPattern = (
             };
         }
         case 'list': {
+            if (!form.contents.values.length) {
+                return {
+                    type: 'record',
+                    form,
+                    entries: [],
+                };
+            }
             const [{ contents: first }, ...rest] = form.contents.values;
             if (first.type === 'identifier' && first.text === ',') {
                 const prm =

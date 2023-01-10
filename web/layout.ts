@@ -39,6 +39,7 @@ export const calculateLayout = (
                     type: 'multiline',
                     tightFirst: howTight(map[node.values[0]]),
                     pos,
+                    pairs: firstName === 'switch',
                 };
             }
             return { type: 'flat', width: cw, pos };
