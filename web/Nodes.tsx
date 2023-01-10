@@ -78,7 +78,7 @@ export const Node = ({
         return null;
     }
     const { node: item, layout } = both;
-    const text = idText(item.contents);
+    const text = idText(item);
 
     // const decs = Object.entries(item.decorators);
 
@@ -86,7 +86,7 @@ export const Node = ({
         return (
             <IdentifierLike
                 text={text}
-                type={item.contents.type}
+                type={item.type}
                 store={store}
                 idx={idx}
                 path={path}
@@ -97,7 +97,7 @@ export const Node = ({
         );
     }
 
-    const arr = arrayItems(item.contents);
+    const arr = arrayItems(item);
 
     if (arr) {
         const [left, right, children] = arr;
@@ -119,7 +119,7 @@ export const Node = ({
         );
     }
 
-    return <span>{JSON.stringify(item.contents)}</span>;
+    return <span>{JSON.stringify(item)}</span>;
 };
 
 // Spread is weird, let's wait to support it?

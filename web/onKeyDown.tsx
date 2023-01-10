@@ -40,9 +40,9 @@ export const onKeyDown = (
         if (parent.child.type === 'start') {
             const gp = path[path.length - 2];
             if (gp.child.type === 'child' && gp.child.at > 0) {
-                const children = mnodeChildren(store.map[gp.idx].node.contents);
+                const children = mnodeChildren(store.map[gp.idx].node);
                 const prev = children[gp.child.at - 1];
-                const pnode = store.map[prev].node.contents;
+                const pnode = store.map[prev].node;
                 if (pnode.type === 'identifier' && pnode.text === '') {
                     const values = children.slice();
                     values.splice(gp.child.at - 1, 1);
@@ -52,8 +52,8 @@ export const onKeyDown = (
                             ...store.map[gp.idx],
                             node: {
                                 ...store.map[gp.idx].node,
-                                contents: {
-                                    type: store.map[gp.idx].node.contents
+                                ...{
+                                    type: store.map[gp.idx].node
                                         .type as ListLikeContents['type'],
                                     values,
                                 },
@@ -78,7 +78,7 @@ export const onKeyDown = (
                     ...store.map[idx],
                     node: {
                         ...store.map[idx].node,
-                        contents: { type: 'identifier', text: '' },
+                        ...{ type: 'identifier', text: '' },
                     },
                 },
             };
@@ -91,7 +91,7 @@ export const onKeyDown = (
             if (evt.currentTarget.textContent === '') {
                 const mp: UpdateMap = {};
                 const pnode = store.map[parent.idx];
-                const res = rmChild(pnode.node.contents, parent.child.at);
+                const res = rmChild(pnode.node, parent.child.at);
                 if (!res) {
                     return;
                 }
@@ -100,7 +100,7 @@ export const onKeyDown = (
                     mp[parent.idx] = {
                         node: {
                             ...pnode.node,
-                            contents: { type: 'identifier', text: '' },
+                            ...{ type: 'identifier', text: '' },
                         },
                     };
                     updateStore(
@@ -116,7 +116,7 @@ export const onKeyDown = (
                     evt.preventDefault();
                     return;
                 }
-                mp[parent.idx] = { node: { ...pnode.node, contents } };
+                mp[parent.idx] = { node: { ...pnode.node, ...contents } };
                 updateStore(
                     store,
                     {
@@ -138,7 +138,7 @@ export const onKeyDown = (
         }
     }
 
-    const isComment = store.map[idx].node.contents.type === 'comment';
+    const isComment = store.map[idx].node.type === 'comment';
 
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         const parent = path[path.length - 1];
@@ -146,15 +146,15 @@ export const onKeyDown = (
             const gp = path[path.length - 2];
             if (gp.child.type === 'child') {
                 const child = gp.child;
-                const nw = parse('_')[0];
-                nw.contents = { type: 'identifier', text: '' };
+                let nw = parse('_')[0];
+                nw = { type: 'identifier', text: '', loc: nw.loc };
                 const mp: Map = {};
                 const nidx = toMCST(nw, mp);
                 const pnode = store.map[gp.idx];
                 mp[gp.idx] = {
                     node: {
                         ...pnode.node,
-                        contents: modChildren(pnode.node.contents, (items) => {
+                        ...modChildren(pnode.node, (items) => {
                             items.splice(child.at, 0, nidx);
                         }),
                     },
@@ -170,15 +170,15 @@ export const onKeyDown = (
                 continue;
             }
             const child = parent.child;
-            const nw = parse('_')[0];
-            nw.contents = { type: 'identifier', text: '' };
+            let nw = parse('_')[0];
+            nw = { type: 'identifier', text: '', loc: nw.loc };
             const mp: Map = {};
             const nidx = toMCST(nw, mp);
             const pnode = store.map[parent.idx];
             mp[parent.idx] = {
                 node: {
                     ...pnode.node,
-                    contents: modChildren(pnode.node.contents, (items) => {
+                    ...modChildren(pnode.node, (items) => {
                         items.splice(child.at + 1, 0, nidx);
                     }),
                 },
@@ -198,7 +198,7 @@ export const onKeyDown = (
                 continue;
             }
             const node = store.map[parent.idx].node;
-            if (node.contents.type === looking) {
+            if (node.type === looking) {
                 return setSelection(store, {
                     idx: parent.idx,
                     loc: 'end',
@@ -215,12 +215,12 @@ export const onKeyDown = (
             const nw = parse('()')[0];
             const mp: Map = {};
             const nidx = toMCST(nw, mp);
-            (mp[nw.loc.idx].node.contents as ListLikeContents).values.push(idx);
+            (mp[nw.loc.idx].node as ListLikeContents).values.push(idx);
             const pnode = store.map[parent.idx];
             mp[parent.idx] = {
                 node: {
                     ...pnode.node,
-                    contents: modChildren(pnode.node.contents, (items) => {
+                    ...modChildren(pnode.node, (items) => {
                         items.splice(child.at, 1, nidx);
                     }),
                 },
@@ -261,7 +261,7 @@ export const onKeyDown = (
             mp[parent.idx] = {
                 node: {
                     ...pnode.node,
-                    contents: modChildren(pnode.node.contents, (items) => {
+                    ...modChildren(pnode.node, (items) => {
                         if (overwrite && child.type === 'child') {
                             items[child.at] = nw.loc.idx;
                         } else {

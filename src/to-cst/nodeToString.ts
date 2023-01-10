@@ -1,27 +1,19 @@
 import { Node } from '../types/cst';
 
 export const nodeToString = (node: Node): string => {
-    switch (node.contents.type) {
+    switch (node.type) {
         case 'array':
-            return `[${node.contents.values
-                .map((v) => nodeToString(v))
-                .join(' ')}]`;
+            return `[${node.values.map((v) => nodeToString(v)).join(' ')}]`;
         case 'list':
-            return `(${node.contents.values
-                .map((v) => nodeToString(v))
-                .join(' ')})`;
+            return `(${node.values.map((v) => nodeToString(v)).join(' ')})`;
         case 'record':
-            return `{${node.contents.values
-                .map((v) => nodeToString(v))
-                .join(' ')}}`;
+            return `{${node.values.map((v) => nodeToString(v)).join(' ')}}`;
         case 'identifier':
-            return `${node.contents.text}${
-                node.contents.hash ? '#' + node.contents.hash : ''
-            }`;
+            return `${node.text}${node.hash ? '#' + node.hash : ''}`;
         case 'number':
-            return node.contents.raw;
+            return node.raw;
         case 'tag':
-            return `\`${node.contents.text}`;
+            return `\`${node.text}`;
     }
-    return `NOP(${node.contents.type})`;
+    return `NOP(${node.type})`;
 };

@@ -10,7 +10,7 @@ import { CacheCtx, getCachedType } from '../src/types/check-types';
 
 export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
-    const root = store.map[store.root].node.contents as ListLikeContents;
+    const root = store.map[store.root].node as ListLikeContents;
 
     const cctx: CacheCtx = {
         ctx,
@@ -19,7 +19,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     };
 
     root.values.forEach((idx) => {
-        if (store.map[idx].node.contents.type === 'comment') {
+        if (store.map[idx].node.type === 'comment') {
             results[idx] = {
                 status: 'success',
                 value: undefined,

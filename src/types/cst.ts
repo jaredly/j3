@@ -6,11 +6,6 @@ export type Loc = {
     idx: number;
 };
 
-export type Node = {
-    contents: NodeContents;
-    // decorators: { [key: string]: Node[] };
-    loc: Loc;
-};
 export type NodeList = { type: 'list'; values: Node[] };
 
 export type NodeContents =
@@ -50,3 +45,8 @@ export type NodeContents =
       }
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
+
+export type Node = NodeContents & {
+    // decorators: { [key: string]: Node[] };
+    loc: Loc;
+};

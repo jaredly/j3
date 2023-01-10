@@ -1,4 +1,3 @@
-import generate from '@babel/generator';
 import { readdirSync, readFileSync } from 'fs';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
@@ -11,14 +10,19 @@ import { getLine, idxLines } from '../src/to-ast/utils';
 import { Node } from '../src/types/cst';
 import { transformNode } from '../src/types/transform-cst';
 
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const callWith = (node: Node, name: string): Node[] | void => {
     if (
-        node.contents.type === 'list' &&
-        node.contents.values.length >= 1 &&
-        node.contents.values[0].contents.type === 'identifier' &&
-        node.contents.values[0].contents.text === name
+        node.type === 'list' &&
+        node.values.length >= 1 &&
+        node.values[0].type === 'identifier' &&
+        node.values[0].text === name
     ) {
-        return node.contents.values.slice(1);
+        return node.values.slice(1);
     }
 };
 
@@ -53,11 +57,11 @@ const removeDecorators = (node: Node) => {
             if (values.length !== 2) {
                 throw new Error(`misconfigured, wrong size`);
             }
-            if (values[0].contents.type !== 'string') {
+            if (values[0].type !== 'string') {
                 throw new Error(`error non a string`);
             }
             result.errors.push({
-                message: values[0].contents.first,
+                message: values[0].first,
                 idx: values[1].loc.idx,
             });
             return values[1];
@@ -82,6 +86,7 @@ readdirSync(__dirname)
 
                 const types = {};
                 // getType(res, ctx.ctx, types);
+                it('should', () => {});
             }
         });
     });

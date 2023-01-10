@@ -1,8 +1,6 @@
 import { Loc, Node, NodeContents } from './cst';
 
-export type MNode = {
-    contents: MNodeContents;
-    // decorators: { [key: string]: number[] };
+export type MNode = MNodeContents & {
     loc: Loc;
 };
 
@@ -86,7 +84,7 @@ export const fromMCST = (idx: number, map: Map): Node => {
     const { node } = map[idx];
     return {
         ...node,
-        contents: fromMNode(node.contents, map),
+        ...fromMNode(node, map),
     };
 };
 
@@ -119,7 +117,7 @@ export const toMCST = (node: Node, map: Map): number => {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
     map[node.loc.idx] = {
-        node: { ...node, contents: toMNode(node.contents, map) },
+        node: { ...node, ...toMNode(node, map) },
     };
     return node.loc.idx;
 };

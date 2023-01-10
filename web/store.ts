@@ -101,7 +101,8 @@ export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
     const root = toMCST(
         {
-            contents: { type: 'list', values: nodes },
+            type: 'list',
+            values: nodes,
             loc: { idx: -1, start: 0, end: 0 },
         },
         map,

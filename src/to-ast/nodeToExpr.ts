@@ -4,40 +4,39 @@ import { specials } from './specials';
 import { Ctx, resolveExpr } from './to-ast';
 
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
-    const { contents } = form;
     // todo decorators
-    switch (contents.type) {
+    switch (form.type) {
         case 'identifier': {
-            return resolveExpr(contents.text, contents.hash, ctx, form);
+            return resolveExpr(form.text, form.hash, ctx, form);
         }
         case 'tag':
-            return { type: 'tag', name: contents.text, form };
+            return { type: 'tag', name: form.text, form };
         case 'number':
             return {
                 type: 'number',
                 form,
-                value: +contents.raw,
-                kind: contents.raw.includes('.') ? 'float' : 'int',
+                value: +form.raw,
+                kind: form.raw.includes('.') ? 'float' : 'int',
             };
         case 'record': {
             const entries: Record['entries'] = [];
             if (
-                contents.values.length === 1 &&
-                contents.values[0].contents.type === 'identifier'
+                form.values.length === 1 &&
+                form.values[0].type === 'identifier'
             ) {
                 entries.push({
-                    name: contents.values[0].contents.text,
-                    value: nodeToExpr(contents.values[0], ctx),
+                    name: form.values[0].text,
+                    value: nodeToExpr(form.values[0], ctx),
                 });
             } else if (
-                contents.values.length &&
-                contents.values[0].contents.type === 'identifier' &&
-                contents.values[0].contents.text === '$'
+                form.values.length &&
+                form.values[0].type === 'identifier' &&
+                form.values[0].text === '$'
             ) {
-                contents.values.slice(1).forEach((item) => {
-                    if (item.contents.type === 'identifier') {
+                form.values.slice(1).forEach((item) => {
+                    if (item.type === 'identifier') {
                         entries.push({
-                            name: item.contents.text,
+                            name: item.text,
                             value: nodeToExpr(item, ctx),
                         });
                     } else {
@@ -52,16 +51,16 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                for (let i = 0; i < contents.values.length; i += 2) {
-                    const name = contents.values[i];
-                    const value = contents.values[i + 1];
+                for (let i = 0; i < form.values.length; i += 2) {
+                    const name = form.values[i];
+                    const value = form.values[i + 1];
                     entries.push({
                         name:
-                            name.contents.type === 'identifier'
-                                ? name.contents.text
-                                : name.contents.type === 'number'
-                                ? name.contents.raw
-                                : '_ignored_' + name.contents.type,
+                            name.type === 'identifier'
+                                ? name.text
+                                : name.type === 'number'
+                                ? name.raw
+                                : '_ignored_' + name.type,
                         value: nodeToExpr(value, ctx),
                     });
                 }
@@ -69,20 +68,20 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             return { type: 'record', entries, form };
         }
         case 'list': {
-            if (!contents.values.length) {
+            if (!form.values.length) {
                 return { type: 'record', entries: [], form };
             }
-            const first = contents.values[0];
-            if (first.contents.type === 'identifier') {
-                if (specials[first.contents.text]) {
-                    return specials[first.contents.text](
+            const first = form.values[0];
+            if (first.type === 'identifier') {
+                if (specials[first.text]) {
+                    return specials[first.text](
                         form,
-                        contents.values.slice(1),
+                        form.values.slice(1),
                         ctx,
                     );
                 }
             }
-            const [target, ...args] = contents.values.map((child) =>
+            const [target, ...args] = form.values.map((child) =>
                 nodeToExpr(child, ctx),
             );
             return {
@@ -96,6 +95,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     return {
         type: 'unresolved',
         form,
-        reason: 'not impl ' + contents.type,
+        reason: 'not impl ' + form.type,
     };
 };

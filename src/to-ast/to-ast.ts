@@ -33,7 +33,7 @@ export type Ctx = {
 };
 
 export const blank: Node = {
-    contents: { type: 'blank' },
+    type: 'blank',
     loc: { start: -1, end: -1, idx: -1 },
 };
 
@@ -142,7 +142,8 @@ export const nil: Expr = {
     type: 'record',
     entries: [],
     form: {
-        contents: { type: 'list', values: [] },
+        type: 'list',
+        values: [],
         loc: noloc,
     },
 };
@@ -152,7 +153,8 @@ export const nilt: Type = {
     entries: [],
     open: false,
     form: {
-        contents: { type: 'list', values: [] },
+        type: 'list',
+        values: [],
         loc: noloc,
     },
 };
@@ -237,14 +239,9 @@ export const resolveType = (
 };
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
-    switch (form.contents.type) {
+    switch (form.type) {
         case 'identifier': {
-            return resolveType(
-                form.contents.text,
-                form.contents.hash,
-                ctx,
-                form,
-            );
+            return resolveType(form.text, form.hash, ctx, form);
         }
     }
     return { type: 'unresolved', form, reason: 'not impl type' };

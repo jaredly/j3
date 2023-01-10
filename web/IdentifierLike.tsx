@@ -209,13 +209,12 @@ function onInput(
         }
     } catch (err) {
         const nw: Node = {
-            contents:
-                text.length === 0
-                    ? { type: 'identifier', text: '' }
-                    : {
-                          type: 'unparsed',
-                          raw: text,
-                      },
+            ...(text.length === 0
+                ? { type: 'identifier', text: '' }
+                : {
+                      type: 'unparsed',
+                      raw: text,
+                  }),
             // decorators: {},
             loc: { start: 0, end: text.length, idx },
         };

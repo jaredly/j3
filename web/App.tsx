@@ -9,7 +9,7 @@ import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
 import { Node as NodeT } from '../src/types/cst';
 
-const init = `
+const _init = `
 (one two )
 `;
 
@@ -19,7 +19,7 @@ const init_ = `
 (== what 20)
 `;
 
-const _init = `(== 5 (+ 2 3))
+const init = `(== 5 (+ 2 3))
 (== 5 5)
 
 ; let's get this going

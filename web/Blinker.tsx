@@ -51,9 +51,8 @@ export const Blinker = ({
                         mp[parent.idx] = {
                             node: {
                                 ...pnode.node,
-                                contents: modChildren(
-                                    pnode.node.contents,
-                                    (items) => items.push(nidx),
+                                ...modChildren(pnode.node, (items) =>
+                                    items.push(nidx),
                                 ),
                             },
                         };
@@ -73,19 +72,16 @@ export const Blinker = ({
                         mp[gp.idx] = {
                             node: {
                                 ...pnode.node,
-                                contents: modChildren(
-                                    pnode.node.contents,
-                                    (items) => {
-                                        items.splice(
-                                            child.at +
-                                                (parent.child.type === 'start'
-                                                    ? 0
-                                                    : 1),
-                                            0,
-                                            nidx,
-                                        );
-                                    },
-                                ),
+                                ...modChildren(pnode.node, (items) => {
+                                    items.splice(
+                                        child.at +
+                                            (parent.child.type === 'start'
+                                                ? 0
+                                                : 1),
+                                        0,
+                                        nidx,
+                                    );
+                                }),
                             },
                         };
                         updateStore(

@@ -8,11 +8,11 @@ export const nodeToPattern = (
     ctx: Ctx,
     bindings: Local['terms'],
 ): Pattern => {
-    switch (form.contents.type) {
+    switch (form.type) {
         case 'identifier': {
             const sym = nextSym(ctx);
             bindings.push({
-                name: form.contents.text,
+                name: form.text,
                 sym,
                 type: t,
             });
@@ -32,14 +32,14 @@ export const nodeToPattern = (
                       }, {} as { [key: string]: Type })
                     : null;
             if (
-                form.contents.values.length === 1 &&
-                form.contents.values[0].contents.type === 'identifier'
+                form.values.length === 1 &&
+                form.values[0].type === 'identifier'
             ) {
-                const name = form.contents.values[0].contents.text;
+                const name = form.values[0].text;
                 entries.push({
                     name,
                     value: nodeToPattern(
-                        form.contents.values[0],
+                        form.values[0],
                         prm
                             ? prm[name] ?? {
                                   type: 'unresolved',
@@ -63,14 +63,14 @@ export const nodeToPattern = (
             };
         }
         case 'list': {
-            if (!form.contents.values.length) {
+            if (!form.values.length) {
                 return {
                     type: 'record',
                     form,
                     entries: [],
                 };
             }
-            const [{ contents: first }, ...rest] = form.contents.values;
+            const [first, ...rest] = form.values;
             if (first.type === 'identifier' && first.text === ',') {
                 const prm =
                     t.type === 'record'

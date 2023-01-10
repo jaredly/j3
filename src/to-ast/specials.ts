@@ -18,24 +18,18 @@ export const specials: {
                 form,
             };
         }
-        if (contents[0].contents.type === 'array') {
+        if (contents[0].type === 'array') {
             let args: { pattern: Pattern; type?: Type }[] = [];
             let locals: Local['terms'] = [];
 
             let pairs: { pat: Node; type?: Node }[] = [];
 
-            contents[0].contents.values.forEach((arg) => {
-                if (
-                    arg.contents.type === 'identifier' &&
-                    arg.contents.text.startsWith(':')
-                ) {
+            contents[0].values.forEach((arg) => {
+                if (arg.type === 'identifier' && arg.text.startsWith(':')) {
                     if (pairs.length) {
                         pairs[pairs.length - 1].type = {
                             ...arg,
-                            contents: {
-                                ...arg.contents,
-                                text: arg.contents.text.slice(1),
-                            },
+                            text: arg.text.slice(1),
                         };
                     }
                 } else {
@@ -90,17 +84,17 @@ export const specials: {
             return { type: 'unresolved', form, reason: 'no engouh args' };
         }
         const [name, ...rest] = contents;
-        if (name.contents.type !== 'identifier') {
+        if (name.type !== 'identifier') {
             return {
                 type: 'unresolved',
-                reason: 'cant defn not id ' + name.contents.type,
+                reason: 'cant defn not id ' + name.type,
                 form,
             };
         }
         const value = specials.fn(form, rest, ctx);
         return {
             type: 'def',
-            name: name.contents.text,
+            name: name.text,
             hash: objectHash(noForm(value)),
             value,
             form,
@@ -110,7 +104,7 @@ export const specials: {
         if (!contents.length) {
             return { type: 'unresolved', form, reason: 'no contents' };
         }
-        const first = contents[0].contents;
+        const first = contents[0];
         if (first.type !== 'identifier') {
             return {
                 type: 'unresolved',
@@ -129,21 +123,16 @@ export const specials: {
     },
     let: (form, contents, ctx): Expr => {
         const first = contents[0];
-        if (!first || first.contents.type !== 'array') {
+        if (!first || first.type !== 'array') {
             return { type: 'unresolved', form, reason: 'first not array' };
         }
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
-        for (let i = 0; i < first.contents.values.length - 1; i += 2) {
-            const value = nodeToExpr(first.contents.values[i + 1], ctx);
+        for (let i = 0; i < first.values.length - 1; i += 2) {
+            const value = nodeToExpr(first.values[i + 1], ctx);
             const inferred = typeForExpr(value, ctx);
             bindings.push({
-                pattern: nodeToPattern(
-                    first.contents.values[i],
-                    inferred,
-                    ctx,
-                    locals,
-                ),
+                pattern: nodeToPattern(first.values[i], inferred, ctx, locals),
                 value,
                 type: inferred,
             });

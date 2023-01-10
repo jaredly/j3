@@ -12,15 +12,13 @@ import {
 
 export const loc = (loc: Loc, contents: NodeContents): Node => ({
     loc,
-    contents,
+    ...contents,
 });
 
 export const id = (text: string, loc: Loc): Node => ({
+    type: 'identifier',
+    text,
     loc,
-    contents: {
-        type: 'identifier',
-        text,
-    },
 });
 
 export const asTuple = (record: TRecord): Type[] | null => {
@@ -43,45 +41,38 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
         case 'builtin':
             return {
                 loc: type.form.loc,
-                contents: {
-                    type: 'identifier',
-                    text: type.name,
-                },
+                type: 'identifier',
+                text: type.name,
             };
         case 'number':
             return {
                 loc: type.form.loc,
-                contents: {
-                    type: 'number',
-                    raw: type.value.toString(),
-                },
+                type: 'number',
+                raw: type.value.toString(),
             };
         case 'tag':
             return {
                 loc: type.form.loc,
-                contents: {
-                    type: 'list',
-                    values: [
-                        {
-                            loc: noloc,
-                            contents: { type: 'tag', text: type.name },
-                        },
-                        ...type.args.map((arg) => nodeForType(arg, ctx)),
-                    ],
-                },
+                type: 'list',
+                values: [
+                    {
+                        loc: noloc,
+                        type: 'tag',
+                        text: type.name,
+                    },
+                    ...type.args.map((arg) => nodeForType(arg, ctx)),
+                ],
             };
         case 'record':
             const tuple = asTuple(type);
             if (tuple) {
                 return {
                     loc: type.form.loc,
-                    contents: {
-                        type: 'list',
-                        values: [
-                            id(',', noloc),
-                            ...tuple.map((t) => nodeForType(t, ctx)),
-                        ],
-                    },
+                    type: 'list',
+                    values: [
+                        id(',', noloc),
+                        ...tuple.map((t) => nodeForType(t, ctx)),
+                    ],
                 };
             }
             return loc(type.form.loc, {
@@ -112,7 +103,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
     }
     return {
         loc: type.form.loc,
-        contents: { type: 'identifier', text: 'NOT HANDLED ' + type.type },
+        type: 'identifier',
+        text: 'NOT HANDLED ' + type.type,
     };
 };
 
@@ -120,38 +112,33 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
     switch (expr.type) {
         case 'local':
             return {
-                contents: {
-                    type: 'identifier',
-                    text: ctx.localMap.terms[expr.sym].name,
-                    hash: '#' + expr.sym,
-                },
+                type: 'identifier',
+                text: ctx.localMap.terms[expr.sym].name,
+                hash: '#' + expr.sym,
                 loc: expr.form.loc,
             };
 
         case 'global':
             return {
-                contents: {
-                    type: 'identifier',
-                    text: 'need-reverse',
-                    hash: '#' + expr.hash,
-                },
+                type: 'identifier',
+                text: 'need-reverse',
+                hash: '#' + expr.hash,
                 loc: expr.form.loc,
             };
         case 'apply':
             return {
                 loc: expr.form.loc,
-                contents: {
-                    type: 'array',
-                    values: [
-                        nodeForExpr(expr.target, ctx),
-                        ...expr.args.map((arg) => nodeForExpr(arg, ctx)),
-                    ],
-                },
+                type: 'array',
+                values: [
+                    nodeForExpr(expr.target, ctx),
+                    ...expr.args.map((arg) => nodeForExpr(arg, ctx)),
+                ],
             };
     }
     // return expr.form;
     return {
         loc: expr.form.loc,
-        contents: { type: 'identifier', text: 'NOT HANDLED ' + expr.type },
+        type: 'identifier',
+        text: 'NOT HANDLED ' + expr.type,
     };
 };
