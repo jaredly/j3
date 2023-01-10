@@ -17,6 +17,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// @ts-ignore // jest is being silly
 const generate: typeof generator = generator.default;
 
 readdirSync(__dirname)
