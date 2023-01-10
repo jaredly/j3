@@ -89,6 +89,29 @@ export const App = () => {
 
     const tick = React.useState(0);
 
+    const [altDown, setAltDown] = React.useState(false);
+
+    React.useEffect(() => {
+        const fn = (evt: KeyboardEvent) => {
+            if (evt.key === 'Alt') {
+                setAltDown(true);
+                console.log('good');
+            }
+            console.log('ya');
+        };
+        const up = (evt: KeyboardEvent) => {
+            if (evt.key === 'Alt') {
+                setAltDown(false);
+            }
+        };
+        document.addEventListener('keydown', fn);
+        document.addEventListener('keyup', up);
+        return () => {
+            document.removeEventListener('keydown', fn);
+            document.removeEventListener('keyup', up);
+        };
+    }, []);
+
     React.useEffect(() => {
         store.listeners[''] = [
             () => {
@@ -138,7 +161,7 @@ export const App = () => {
                     }}
                 />
             </div>
-            {best && (
+            {best && altDown && (
                 <div
                     style={{
                         position: 'absolute',
@@ -159,7 +182,7 @@ export const App = () => {
                     {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
                 </div>
             )}
-            {best && (
+            {best && altDown && (
                 <div
                     style={{
                         position: 'absolute',
