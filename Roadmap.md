@@ -66,7 +66,15 @@ store will need a `highlight` prop? Prolly?
 	- [x] selecting hanging on! there's a bug or two, but it's pretty good
 - [x] redo?
 
+## TEST CASES
 
+So we have good test cases, where nice things happen.
+and things evaluate to true.
+
+- [ ] make a test for good
+
+And then we have bad test cases, where we want type
+errors to be found & reported correctly.
 
 
 
@@ -76,7 +84,7 @@ store will need a `highlight` prop? Prolly?
 - [x] highlight errors inline, unresolved stuff
 	- yeah I really need to come up with some type errors
 	- currently I don't really have type checking at all.
-- [ ] and like, hover w/ a key pressed to see types of things?
+- [x] and like, hover w/ a key pressed to see types of things?
 - [ ] figure out comments in things
 
 - [ ] ohhhh I need ast->cst, so I can nail down	hashes

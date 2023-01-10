@@ -6,13 +6,13 @@ import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { EvalCtx, Store } from './store';
 import objectHash from 'object-hash';
-import { CCtx, getCachedType } from '../src/types/check-types';
+import { CacheCtx, getCachedType } from '../src/types/check-types';
 
 export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root].node.contents as ListLikeContents;
 
-    const cctx: CCtx = {
+    const cctx: CacheCtx = {
         ctx,
         types: ectx.types,
         globalTypes: ectx.globalTypes,

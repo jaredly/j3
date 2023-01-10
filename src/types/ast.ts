@@ -8,6 +8,11 @@ export type Term = {
 
 export type NumberKind = 'int' | 'uint' | 'float';
 
+export type Bool = {
+    type: 'bool';
+    value: boolean;
+    form: Node;
+};
 export type Number = {
     type: 'number';
     form: Node;
@@ -21,6 +26,7 @@ export type Pattern =
           form: Node;
       }
     | Number
+    | Bool
     | {
           type: 'record';
           form: Node;
@@ -123,6 +129,7 @@ export type Identifier =
 export type Shared =
     | Identifier
     | Number
+    | Bool
     | { type: 'unresolved'; form: Node; reason?: string };
 
 export type Type =

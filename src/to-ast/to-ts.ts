@@ -26,6 +26,8 @@ export const patternToTs = (
             ]);
         case 'unresolved':
             return t.identifier('pat_un_' + pattern.reason);
+        case 'bool':
+            return t.identifier('oops_bool_idk');
         case 'record':
             const items = tupleRecord(pattern.entries);
             if (items) {
@@ -134,11 +136,17 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
     switch (expr.type) {
         case 'number':
             return t.numericLiteral(expr.value);
+        case 'bool':
+            return t.booleanLiteral(expr.value);
         case 'apply': {
             if (expr.target.type === 'builtin') {
                 const name = ctx.global.builtins.namesBack[expr.target.hash];
                 if (
-                    (name === '==' || name === '+' || name === '<') &&
+                    (name === '==' ||
+                        name === '!=' ||
+                        name === '+' ||
+                        name === '<' ||
+                        name === '>') &&
                     expr.args.length === 2
                 ) {
                     return t.binaryExpression(
@@ -224,6 +232,10 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.callExpression(t.identifier('fail'), [
                 t.stringLiteral('unresolved ' + expr.reason),
             ]);
+        case 'builtin': {
+            const name = ctx.global.builtins.namesBack[expr.hash];
+            return t.identifier(name);
+        }
     }
     return t.stringLiteral('Not impl expr ' + expr.type);
 };

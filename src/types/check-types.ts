@@ -3,7 +3,7 @@ import { unifyTypes } from '../to-ast/typeForExpr';
 import { Expr, Type } from './ast';
 import { Visitor } from './walk-ast';
 
-export type CCtx = {
+export type CacheCtx = {
     ctx: Ctx;
     globalTypes: { [hash: string]: Type };
     types: {
@@ -11,7 +11,7 @@ export type CCtx = {
     };
 };
 
-export const getType = (expr: Expr, ctx: CCtx): Type => {
+export const getType = (expr: Expr, ctx: CacheCtx): Type => {
     switch (expr.type) {
         case 'number':
             return expr;
@@ -140,7 +140,7 @@ export const getType = (expr: Expr, ctx: CCtx): Type => {
     };
 };
 
-export const getCachedType = (expr: Expr, ctx: CCtx): Type => {
+export const getCachedType = (expr: Expr, ctx: CacheCtx): Type => {
     const at = expr.form.loc.idx;
     if (ctx.types[at] == null) {
         ctx.types[at] = getType(expr, ctx);

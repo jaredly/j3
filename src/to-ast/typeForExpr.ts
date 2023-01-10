@@ -12,6 +12,8 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 value.form,
             );
         }
+        case 'bool':
+            return { type: 'builtin', name: 'bool', form: blank };
         case 'number': {
             return { type: 'builtin', name: value.kind, form: blank };
         }

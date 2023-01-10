@@ -30,6 +30,16 @@ export type HistoryItem = {
     postSelection: Selection | null | undefined;
 };
 
+export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
+    ctx,
+    last: {},
+    terms: {},
+    nodes: {},
+    results: {},
+    types: {},
+    globalTypes: {},
+});
+
 export type EvalCtx = {
     ctx: Ctx;
     types: { [key: number]: Type };

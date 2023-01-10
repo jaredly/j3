@@ -3,7 +3,7 @@ import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { Node } from './Nodes';
-import { EvalCtx, initialStore } from './store';
+import { EvalCtx, initialStore, newEvalCtx } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
@@ -67,19 +67,7 @@ export const getInitialState = () => {
 };
 
 export const App = () => {
-    const terms: { [key: string]: any } = React.useMemo(() => ({}), []);
-    const ctx = React.useMemo<EvalCtx>(
-        () => ({
-            ctx: newCtx(),
-            last: {},
-            terms,
-            nodes: {},
-            results: {},
-            types: {},
-            globalTypes: {},
-        }),
-        [],
-    );
+    const ctx = React.useMemo<EvalCtx>(() => newEvalCtx(newCtx()), []);
     const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
     const store = React.useMemo(() => {
         const store = initialStore(parse(init));

@@ -163,6 +163,9 @@ export const resolveExpr = (
     ctx: Ctx,
     form: Node,
 ): Expr => {
+    if (text === 'true' || text === 'false') {
+        return { type: 'bool', value: text === 'true', form };
+    }
     if (hash) {
         // if (hash === '#builtin') {
         //     return {
