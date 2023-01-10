@@ -92,9 +92,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         }
     }
-    return {
-        type: 'unresolved',
-        form,
-        reason: 'not impl ' + form.type,
-    };
+    throw new Error(
+        `nodeToExpr is ashamed to admit it can't handle ${form.type}`,
+    );
 };

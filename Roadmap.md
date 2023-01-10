@@ -93,7 +93,7 @@ Well, it's ok to like /report/ it and such.
 When you're collecting annotations.
 But not keep it around / use it as a source of important info. right?
 
-- [ ] let's ditch this `.contents` nonsense. No need for it. we can just inline loc into the definitions.
+- [x] let's ditch this `.contents` nonsense. No need for it. we can just inline loc into the definitions.
 
 
 
