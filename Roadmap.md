@@ -1,4 +1,15 @@
 
+## Thinking a lot about errors
+
+FOR extra CST nodes that don't fit ...
+like non-ids as a record key
+or some non-array nonsense in a function second position
+
+
+
+
+## Ok
+
 - [x] come up with a syntax that can handle things
 - [x] make a tight grammar (text -> CST)
 - [x] see if it can handle glsl? hmm yeah I think so

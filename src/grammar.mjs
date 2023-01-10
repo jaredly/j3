@@ -178,7 +178,7 @@ function peg$parse(input, options) {
   var peg$c0 = "{";
   var peg$c1 = "}";
   var peg$c2 = "@";
-  var peg$c3 = "`";
+  var peg$c3 = "'";
   var peg$c4 = ".";
   var peg$c5 = "(";
   var peg$c6 = ")";
@@ -195,13 +195,13 @@ function peg$parse(input, options) {
 
   var peg$r0 = /^[0-9]/;
   var peg$r1 = /^[^"\\]/;
-  var peg$r2 = /^[@:a-zA-Z0-9_<>!='$%*\/+~&.|,?\-]/;
+  var peg$r2 = /^[@:a-zA-Z0-9_<>!=$%*\/+~&.|,?\-]/;
   var peg$r3 = /^[ \t\n\r]/;
 
   var peg$e0 = peg$literalExpectation("{", false);
   var peg$e1 = peg$literalExpectation("}", false);
   var peg$e2 = peg$literalExpectation("@", false);
-  var peg$e3 = peg$literalExpectation("`", false);
+  var peg$e3 = peg$literalExpectation("'", false);
   var peg$e4 = peg$literalExpectation(".", false);
   var peg$e5 = peg$classExpectation([["0", "9"]], false, false);
   var peg$e6 = peg$literalExpectation("(", false);
@@ -214,7 +214,7 @@ function peg$parse(input, options) {
   var peg$e13 = peg$classExpectation(["\"", "\\"], true, false);
   var peg$e14 = peg$literalExpectation("\\", false);
   var peg$e15 = peg$anyExpectation();
-  var peg$e16 = peg$classExpectation(["@", ":", ["a", "z"], ["A", "Z"], ["0", "9"], "_", "<", ">", "!", "=", "'", "$", "%", "*", "/", "+", "~", "&", ".", "|", ",", "?", "-"], false, false);
+  var peg$e16 = peg$classExpectation(["@", ":", ["a", "z"], ["A", "Z"], ["0", "9"], "_", "<", ">", "!", "=", "$", "%", "*", "/", "+", "~", "&", ".", "|", ",", "?", "-"], false, false);
   var peg$e17 = peg$otherExpectation("whitespace");
   var peg$e18 = peg$classExpectation([" ", "\t", "\n", "\r"], false, false);
   var peg$e19 = peg$literalExpectation("(*", false);
@@ -550,7 +550,7 @@ function peg$parse(input, options) {
     var s0, s1, s2, s3;
 
     s0 = peg$currPos;
-    if (input.charCodeAt(peg$currPos) === 96) {
+    if (input.charCodeAt(peg$currPos) === 39) {
       s1 = peg$c3;
       peg$currPos++;
     } else {

@@ -30,7 +30,7 @@ record = "{" _ values:(@Form _)* "}" { return wrap({type: 'record', values})}
 
 macro = "@" name:$idtext { return wrap({type: 'macro', name})}
 
-tag = "`" text:$idtext? { return wrap({type: 'tag', text: text || '' })}
+tag = "'" text:$idtext? { return wrap({type: 'tag', text: text || '' })}
 
 number = raw:$(dotStart / dotEnd) {return wrap({type: 'number', raw})}
 
@@ -56,7 +56,7 @@ tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [@:a-zA-Z0-9_<>!='$%*/+~&.|,?-]+
+idtext = [@:a-zA-Z0-9_<>!=$%*/+~&.|,?-]+
 
 // newline = "\n"
 // _nonnewline = [ \t\r]* (comment [ \t\r]*)*

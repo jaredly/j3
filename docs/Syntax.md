@@ -11,8 +11,8 @@
 1.2 3.45
 ; do we want suffixable numbers? 1i 2f idk, wait on it
 ; oh wait, to do uint we'll need it
-; unless we do `(uint 2)` or some nonsense lol
-; I guess `(@uint 2)` would fit with the macro vibe
+; unless we do '(uint 2)' or some nonsense lol
+; I guess '(@uint 2)' would fit with the macro vibe
 true false
 
 ; strings
@@ -22,8 +22,8 @@ true false
 ;; collections
 
 ; tags!
-`SomeTag ; same as (`SomeTag)
-(`SomeTag arg1 arg2)
+'SomeTag ; same as ('SomeTag)
+('SomeTag arg1 arg2)
 
 ; records
 {1 23 two 34 (... otherRecord)} ; keys must be either an int literal or an id
@@ -39,7 +39,10 @@ true false
 
 () ; also nil! same as {} or (,)
 
-; function application (or "type application")
+; record access (type or expr)
+(.one {one uint two string}) ; = uint
+
+; function application or type application
 (one 2 "three")
 
 
@@ -56,6 +59,10 @@ true false
 (fn [one (: one two)] (: int) ok)
 (fn [one (: (one two))] (: int) ok)
 
+
+;;; Flow control
+
+
 ; loop/recur
 
 (defrec hello [n :int]
@@ -63,15 +70,93 @@ true false
 ; is equivalent to
 (def hello (@loop [n :int] ...))
 
+;; ok so mutual recursion...
+
+(def {$ isOdd isEven}
+  (@loop {
+    isOdd (fn [num] (if (== num 1) true (not ((.isEven @recur) (- num 1)))))
+    isEven (fn [num] (if (== num 0) false (not ((.isOdd @recur) (- num 1)))))
+  }))
+
+; $ punning strikes again! "just get me the stuff thanks"
+; I think I should restrict this super-pun to only things where the literal is defined right there.
+(def $ (@loop {
+    isOdd (fn [num] (if (== num 1) true (not ((.isEven @recur) (- num 1)))))
+    isEven (fn [num] (if (== num 0) false (not ((.isOdd @recur) (- num 1)))))
+}))
+
+;;;; how do we do hash references of things like this ^^^^? theHash.isOdd?
+;;;; and how detailed can we get? I guess not too detailed.
+; so
+; ok yeah, TERMS are stored without the suffix, and TERMTYPES are stored separately,
+; because they might have a suffix.
+
+; so this would be a more ~normal way to do it.
+; but let's be honest, how often do you really need mutual recursion? like.
+; ok actually a lot? right
+(defrec
+  isOdd (fn [num] (if (== num 1) true (not (isEven (- num 1)))))
+  isEven (fn [num] (if (== num 0) false (not (isOdd (- num 1)))))
+)
+; and what do you do? you use a visitor pattern
+(defn _isOdd [num isEven] (if (== num 1) true (not (isEven (- num 1)))))
+(defn _isEven [num isOdd] (if (== num 0) false (not (isOdd (- num 1)))))
+(defrec isOdd [num] (_isOdd num (fn [num] (_isEven num @recur))))
+
+(defrec isEven [num] (if (== num 0) false (not (_isOdd (- num 1) @recur))))
+
+; the fns-map approach. more annoying to type probably
+(def fns {
+  isOdd (fn [num fns] (if (== num 1) true (not ((.isEven fns) (- num 1)))))
+  isEven (fn [num fns] (if (== num 0) true (not ((.isOdd fns) (- num 1)))))
+})
+(defn isOdd [num] ((.isOdd fns) num fns))
+(defn isEven [num] ((.isEven fns) num fns))
+
+; if
+
+(if true yes no)
+
+; switch
+
+(defn legs [animal]
+  (switch animal
+    (| 'Cat 'Dog) 4
+    'Human 2
+    ('Table legs) legs
+    'Spider 8))
+
+
+;;; Tasks!!
+
+(defn print [x :string]
+	('Write x (fn [()] ('Return ()))))
+
+(fn [()]
+  (! print "Hello")
+  (! print "Goodbye"))
+
+; becomes
+
+(fn [()]
+  (andThen
+    (print "Hello")
+    (fn [()] (print "Goodbye"))))
+
+; 'andThen' taks a (@task A X) and a (fn [X] (@task B Y)) and returns a (@task [A B] Y)
+
 
 ;;;;;;;;;;; TYPES
 
 
 ; enums
-[`One (`Two int)]
-`One ; is the same as [`One]
-(`Two int) ; is the same as [(`Two int)]
-[`One [`Two (`Three int)]] ; is the same as [`One `Two (`Three int)]
+['One ('Two int)]
+'One ; is the same as ['One]
+('Two int) ; is the same as [('Two int)]
+['One ['Two ('Three int)]] ; is the same as ['One 'Two ('Three int)]
+
+; enum sub-access
+(.one [('one int) 'Two]) ; same as [('one int)]
 
 ;; macros 
 
@@ -81,15 +166,16 @@ true false
 
 ; task magic
 (@task [
-  (`Read () string)
-  (`Write string ())
-  `Message
+  ('Read () string)
+  ('Write string ())
+  'Message
 ] int)
 ; expands to
 (@loop [
-  (`Return int)
-  (`Read () (fn [string] @recur))
-  (`Write string (fn [()] @recur))
+  ('Return int)
+  ('Read () (fn [string] @recur))
+  ('Write string (fn [()] @recur))
+  ('Message () (fn [()] @recur))
 ])
 ; i mean tbh now that I have loop/recur
 ; that @task macro isn't even all that magic anymore.
@@ -99,14 +185,14 @@ true false
 ; recursion!
 
 (deftype one 2)
-; nope (deftype nat [`zero (`succ nat)])
-(deftype nat (@loop [`zero (`succ @recur)]))
+; nope (deftype nat ['zero ('succ nat)])
+(deftype nat (@loop ['zero ('succ @recur)]))
 
 (deftype tree
   (tfn [T]
     (@loop [
-      (`leaf T)
-      (`node (array @recur))
+      ('leaf T)
+      ('node (array @recur))
     ])
   )
 )
@@ -114,10 +200,9 @@ true false
 (deftype tree
   (@loop
     (tfn [T] [
-      (`leaf T)
-      (`node (array (@recur T)))
-    ])
-)
+      ('leaf T)
+      ('node (array (@recur T)))
+    ])))
 
 ; and tbh I kinda wonder if there's any important difference?
 ; like
@@ -134,25 +219,42 @@ true false
 ; OK SO how do we mutually recursive types
 (deftype node
   (@loop [
-    (`identifier {text string hash [`NoHash (`Hash string)]})
-    (`tag string)
-    (`number string)
-    (`record (array @recur))
-    (`array (array @recur))
-    (`list (array @recur))
+    ('identifier {text string hash string})
+    ('tag string)
+    ('number string)
+    ('record (array @recur))
+    ('array (array @recur))
+    ('list (array @recur))
 
-    (`comment string)
-    (`string string (array {expr @recur suffix string}))
+    ('comment string)
+    ('template-string string (array {expr @recur suffix string}))
   ])
 )
 
 ; if we need multiple recursion for some reason we could do tags
 ; loop.1 -> recur.1 and loop.2 -> recur.2 etc.
 
+; ok so non-enumish mutual recursion
+
+(deftype AsAndBs
+  (@loop [
+    ('a string (array (.b @recur)))
+    ('b int (array (.a @recur)))
+  ]))
+
+; a valid instantiation:
+('a "1" [('b 1 []) ('b 2 [('a "2" [])])])
+
+; another way to do it, that's probably more ergonomic for this use case
+(deftype {$ a b}
+  (@loop {
+    a {name string children (array (.b @recur))}
+    b {count int children (array (.a @recur))}
+  }))
+
+; here's a (.a AsAndBs)
 
 
-
-(1 2 3)
 
 ```
 
@@ -210,7 +312,7 @@ type Node = {
   type: 'identifier', // likeThis
   text: string,
 } | {
-  type: 'tag', // `LikeThis
+  type: 'tag', // 'LikeThis
   text: string,
 } | {
   type: 'number', // 12.32
@@ -255,9 +357,9 @@ type Node = {
 /*
 
 (switch node
-  (`List [
-    {body (`Id "let")}
-    {body (`Vector bindings)}
+  ('List [
+    {body ('Id "let")}
+    {body ('Vector bindings)}
     ...rest
   ])
 )
@@ -276,7 +378,7 @@ type Node = {
 (@match macro it up my pretties)
 
 (@matcher
-  [(`Id "let") (`Vector bindings) ...rest]
+  [('Id "let") ('Vector bindings) ...rest]
   (fn [{$ bindings rest}]
     // do something with it, yes.
     ))
