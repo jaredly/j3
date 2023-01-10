@@ -71,10 +71,29 @@ store will need a `highlight` prop? Prolly?
 So we have good test cases, where nice things happen.
 and things evaluate to true.
 
-- [ ] make a test for good
+- [x] make a test for goodness
+- [ ] make a test for badness
 
 And then we have bad test cases, where we want type
 errors to be found & reported correctly.
+
+
+- [ ] actually respect function parameters, and report type errors.
+
+
+hmmmmm my type cache dealio really should be separated out.
+and maybe it shouldn't even cache? idk.
+well, for syms it's maybe important? 🤔
+
+Ok yeah it was the cache that was getting me.
+
+Yeah I need to rethink the "check-types" story.
+Caching by loc.idx is, maybe a little weird? idk.
+Well, it's ok to like /report/ it and such.
+When you're collecting annotations.
+But not keep it around / use it as a source of important info. right?
+
+- [ ] let's ditch this `.contents` nonsense. No need for it. we can just inline loc into the definitions.
 
 
 

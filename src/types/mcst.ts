@@ -31,7 +31,7 @@ export type MNodeContents =
     | { type: 'comment'; text: string }
 
     // random stuff
-    | { type: 'spread'; contents: number }
+    // | { type: 'spread'; contents: number }
     | {
           type: 'string';
           first: string;
@@ -75,8 +75,8 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
                     suffix,
                 })),
             };
-        case 'spread':
-            return { ...node, contents: fromMCST(node.contents, map) };
+        // case 'spread':
+        //     return { ...node, contents: fromMCST(node.contents, map) };
         default:
             return node;
     }
@@ -107,8 +107,8 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
                     suffix,
                 })),
             };
-        case 'spread':
-            return { ...node, contents: toMCST(node.contents, map) };
+        // case 'spread':
+        //     return { ...node, contents: toMCST(node.contents, map) };
         default:
             return node;
     }

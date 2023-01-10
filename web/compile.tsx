@@ -1,7 +1,7 @@
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, noForm } from '../src/to-ast/to-ast';
+import { addDef, nil, noForm } from '../src/to-ast/to-ast';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { EvalCtx, Store } from './store';
@@ -24,6 +24,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 status: 'success',
                 value: undefined,
                 code: '// a comment',
+                expr: nil,
             };
             return;
         }
@@ -49,6 +50,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                     throw new Error(message);
                 }),
                 code,
+                expr: res,
             };
             last[idx] = hash;
         } catch (err) {
@@ -56,6 +58,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 status: 'failure',
                 error: (err as Error).message,
                 code,
+                expr: res,
             };
             last[idx] = hash;
             return;

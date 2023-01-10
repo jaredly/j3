@@ -42,7 +42,7 @@ export type NodeContents =
     | { type: 'comment'; text: string }
 
     // random stuff
-    | { type: 'spread'; contents: Node }
+    // | { type: 'spread'; contents: Node }
     | {
           type: 'string';
           first: string;

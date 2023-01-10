@@ -196,7 +196,7 @@ export const resolveExpr = (
     return {
         type: 'unresolved',
         form,
-        reason: 'id not resolved ' + text,
+        reason: `id "${text}" not resolved`,
     };
 };
 
@@ -232,7 +232,7 @@ export const resolveType = (
     return {
         type: 'unresolved',
         form,
-        reason: 'id not resolved ' + text,
+        reason: `id ${text} not resolved`,
     };
 };
 

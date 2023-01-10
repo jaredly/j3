@@ -1,7 +1,6 @@
 import { Ctx } from '../to-ast/to-ast';
 import { unifyTypes } from '../to-ast/typeForExpr';
 import { Expr, Type } from './ast';
-import { Visitor } from './walk-ast';
 
 export type CacheCtx = {
     ctx: Ctx;
@@ -104,6 +103,9 @@ export const getType = (expr: Expr, ctx: CacheCtx): Type => {
             }
             const fn = getCachedType(expr.target, ctx);
             const args = expr.args.map((arg) => getCachedType(arg, ctx));
+            if (fn.type === 'unresolved') {
+                return fn;
+            }
             if (fn.type === 'fn') {
                 // TODO: Check args
                 if (fn.args.length !== args.length) {
@@ -132,6 +134,8 @@ export const getType = (expr: Expr, ctx: CacheCtx): Type => {
                 args: [],
                 form: expr.form,
             };
+        case 'unresolved':
+            return expr;
     }
     return {
         type: 'unresolved',
@@ -142,9 +146,9 @@ export const getType = (expr: Expr, ctx: CacheCtx): Type => {
 
 export const getCachedType = (expr: Expr, ctx: CacheCtx): Type => {
     const at = expr.form.loc.idx;
-    if (ctx.types[at] == null) {
-        ctx.types[at] = getType(expr, ctx);
-    }
+    // if (ctx.types[at] == null) {
+    ctx.types[at] = getType(expr, ctx);
+    // }
     return ctx.types[at];
 };
 

@@ -67,11 +67,13 @@ export type EvalCtx = {
                   status: 'success';
                   value: any;
                   code: string;
+                  expr: Expr;
               }
             | {
                   status: 'failure';
                   error: string;
                   code: string;
+                  expr: Expr;
               };
     };
 };

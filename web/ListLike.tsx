@@ -4,6 +4,7 @@ import { EvalCtx, Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './App';
+import { Expr } from '../src/types/ast';
 
 export const ListLike = ({
     left,
@@ -335,8 +336,8 @@ export const ShowResult = ({
     result,
 }: {
     result:
-        | { status: 'success'; value: any; code: string }
-        | { status: 'failure'; error: string; code: string };
+        | { status: 'success'; value: any; code: string; expr: Expr }
+        | { status: 'failure'; error: string; code: string; expr: Expr };
 }) => {
     let body;
     if (result.status === 'success') {
@@ -378,6 +379,7 @@ export const ShowResult = ({
                     }}
                 >
                     {result.code}
+                    {JSON.stringify(result.expr, null, 2)}
                 </pre>
             )}
         </div>

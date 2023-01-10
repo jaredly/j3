@@ -20,7 +20,7 @@ File = _ contents:(@Form _)* _ { return contents}
 // 	})
 // 	return inner
 // }
-Form = tag / number / list / array / comment / spread / string / identifier / macro / record
+Form = tag / number / list / array / comment / string / identifier / macro / record
 
 record = "{" _ values:(@Form _)* "}" { return wrap({type: 'record', values})}
 
@@ -43,7 +43,8 @@ array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'array', values})}
 
 comment = text:$(commenttext / finalLineComment) {return wrap({type: 'comment', text})}
 
-spread = "..." contents:Form {return wrap({type: 'spread', contents})}
+// TODO figure this out
+// spread = "..." contents:Form {return wrap({type: 'spread', contents})}
 
 string = "\"" first:$tplStringChars templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
 

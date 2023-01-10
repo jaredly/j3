@@ -8,28 +8,12 @@ import { getCachedType } from '../src/types/check-types';
 import { newEvalCtx } from '../web/store';
 import * as t from '@babel/types';
 import { typeForExpr } from '../src/to-ast/typeForExpr';
-
-const idxLines = (raw: string) => {
-    const starts: number[] = [];
-    let total = 0;
-    raw.split('\n').forEach((line) => {
-        starts.push(total);
-        total += line.length + 1;
-    });
-    return starts;
-};
-
-const getLine = (lines: number[], idx: number) => {
-    for (let i = 0; i < lines.length; i++) {
-        if (idx < lines[i]) {
-            return i - 1;
-        }
-    }
-    return lines.length - 1;
-};
+import { getLine, idxLines } from '../src/to-ast/utils';
+import { Node } from '../src/types/cst';
+import { Type } from '../src/types/ast';
 
 readdirSync(__dirname)
-    .filter((m) => m.endsWith('.jd') && !m.endsWith('.fail.jd'))
+    .filter((m) => m.endsWith('.jd') && !m.endsWith('.types.jd'))
     .forEach((name) => {
         describe(name, () => {
             const raw = readFileSync(__dirname + '/' + name, 'utf8');
@@ -49,27 +33,31 @@ readdirSync(__dirname)
 
                 const ts = stmtToTs(res, ctx.ctx, 'top');
                 const code = generate(t.file(t.program([ts]))).code;
+                let item: {
+                    result?: any;
+                    node: Node;
+                    code: string;
+                    type: Type;
+                    err?: Error;
+                };
                 try {
                     const fn = new Function('$terms', 'fail', code);
                     const result = fn(ctx.terms, (message: string) => {
                         // console.log(`Encountered a compilation failure: `, message);
                         throw new Error(message);
                     });
-                    results.push({ result, node, code, type });
+                    item = { result, node, code, type };
                     ctx.ctx = addDef(res, ctx.ctx);
                 } catch (err) {
-                    results.push({
+                    item = {
                         err: new Error(
                             `Failed to run: ${(err as Error).message}, ${code}`,
                         ),
                         node,
                         code,
                         type,
-                    });
+                    };
                 }
-            }
-
-            results.forEach((item) => {
                 it(`${name}:${
                     getLine(lines, item.node.loc.start) + 1
                 } ${raw.slice(item.node.loc.start, item.node.loc.end)} ::: ${
@@ -85,6 +73,6 @@ readdirSync(__dirname)
                         expect(item.result).toEqual(true);
                     }
                 });
-            });
+            }
         });
     });

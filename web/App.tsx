@@ -9,13 +9,17 @@ import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
 import { Node as NodeT } from '../src/types/cst';
 
-const _init = `
+const init = `
+(one two )
+`;
+
+const init_ = `
 (def hello 10)
 (== hello 10)
 (== what 20)
 `;
 
-const init = `(== 5 (+ 2 3))
+const _init = `(== 5 (+ 2 3))
 (== 5 5)
 
 ; let's get this going
