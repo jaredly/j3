@@ -35,9 +35,21 @@ readdirSync(__dirname)
                     const results = removeDecorators(node, ctx.ctx);
                     const res = nodeToExpr(results.node, ctx.ctx);
                     const report: Report = { types: {}, errors: {} };
-                    // const type = getType(res, ctx.ctx, report);
+                    const _ = getType(res, ctx.ctx, report);
+                    // console.log(report, results.errors, results.expected);
+                    const touched: { [key: number]: boolean } = {};
                     results.errors.forEach((err) => {
-                        expect(report.errors[err.idx]).toBeTruthy();
+                        touched[err.idx] = true;
+                        const found = report.errors[err.idx];
+                        expect(found).toBeTruthy();
+                        expect(found).toHaveLength(1);
+                        expect(found[0].type).toEqual(err.message);
+                    });
+                    Object.keys(report.errors).forEach((idx) => {
+                        if (touched[+idx]) {
+                            return;
+                        }
+                        expect(report.errors[+idx]).toHaveLength(0);
                     });
                     results.expected.forEach(({ idx, type }) => {
                         expect(noForm(report.types[idx])).toEqual(noForm(type));

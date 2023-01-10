@@ -64,11 +64,24 @@ export const specials: {
                     terms: [...locals, ...ctx.local.terms],
                 },
             };
+            const body = contents.slice(1);
+            let ret: Type | undefined;
+            if (body[0].type === 'identifier' && body[0].text.startsWith(':')) {
+                ret = nodeToType(
+                    {
+                        ...body[0],
+                        text: body[0].text.slice(1),
+                    },
+                    ctx,
+                );
+                body.shift();
+            }
             // parse fn args
             return {
                 type: 'fn',
                 args,
-                body: contents.slice(1).map((child) => nodeToExpr(child, ct2)),
+                body: body.map((child) => nodeToExpr(child, ct2)),
+                ret,
                 form,
             };
         }

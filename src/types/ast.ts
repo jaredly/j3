@@ -64,6 +64,7 @@ export type Expr =
           type: 'fn';
           name?: string;
           args: { pattern: Pattern; type?: Type }[];
+          ret?: Type;
           body: Expr[];
           form: Node;
       }

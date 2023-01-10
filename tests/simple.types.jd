@@ -5,5 +5,8 @@
 
 (
 	(fn [one :int] 3)
-	(@error "what" true)
+	(@error "invalid type" true)
 )
+
+(@type 3 ((fn [one :int] 3) 10))
+(@type int ((fn [one :int] :int 3) 10))

@@ -118,7 +118,6 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             }
             const target = getType(expr.target, ctx, report);
             if (!target) {
-                console.log('no targe', expr.target);
                 return;
             }
             if (args.length < expr.args.length) {
@@ -171,6 +170,36 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 }
             }
             return target.body;
+        }
+        case 'fn': {
+            const args: Type[] = [];
+            expr.args.forEach((arg) => {
+                if (arg.type) {
+                    args.push(arg.type);
+                } else {
+                    if (report) {
+                        err(report, arg.pattern, {
+                            type: 'misc',
+                            message: 'missing type annotation',
+                        });
+                    }
+                }
+            });
+            if (args.length < expr.args.length) {
+                return;
+            }
+            const body = expr.body.map((body) => getType(body, ctx, report));
+            const last =
+                expr.ret ?? (body.length ? body[body.length - 1] : nilt);
+            if (!last) {
+                return;
+            }
+            return {
+                type: 'fn',
+                args,
+                body: last,
+                form: expr.form,
+            };
         }
     }
     console.log('nope', expr.type);
