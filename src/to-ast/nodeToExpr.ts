@@ -11,6 +11,16 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         }
         case 'tag':
             return { type: 'tag', name: form.text, form };
+        case 'string':
+            return {
+                type: 'string',
+                first: form.first,
+                form,
+                templates: form.templates.map((item) => ({
+                    suffix: item.suffix,
+                    expr: nodeToExpr(item.expr, ctx),
+                })),
+            };
         case 'number':
             return {
                 type: 'number',

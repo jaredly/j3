@@ -1,0 +1,11 @@
+((@1 ==) 1 true)
+(@1 "no implementation of == found with args (int, bool)")
+
+(if (@error "not a bool" 4) 3 1)
+
+(def one 23)
+
+(if (@error "not a bool" one) 3 1)
+
+(if (@1 one) 3 1)
+(@1 "not a bool")

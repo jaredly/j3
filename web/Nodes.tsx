@@ -39,7 +39,7 @@ export const idText = (node: MNodeContents) => {
         case 'unparsed':
             return node.raw;
         case 'tag':
-            return '`' + node.text;
+            return "'" + node.text;
     }
 };
 

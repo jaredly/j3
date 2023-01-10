@@ -17,6 +17,7 @@ true false
 
 ; strings
 "one${two}three" ; yay interpolation
+; v so this might be annoying for the UI, so I'll skip it for now?
 "one${two three}three" ; is the same as "one${(two three)}three"
 
 ;; collections

@@ -1,6 +1,8 @@
 import { Node } from '../types/cst';
 import { Expr, TRecord, Type } from '../types/ast';
 import { Ctx, blank, nilt } from './to-ast';
+import { Report } from '../types/get-types-new';
+import { Error } from '../types/types';
 
 export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
     switch (value.type) {

@@ -243,6 +243,13 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
         case 'identifier': {
             return resolveType(form.text, form.hash, ctx, form);
         }
+        case 'number':
+            return {
+                type: 'number',
+                form,
+                kind: form.raw.includes('.') ? 'float' : 'int',
+                value: +form.raw,
+            };
     }
     return { type: 'unresolved', form, reason: 'not impl type' };
 };

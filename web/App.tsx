@@ -35,11 +35,11 @@ const init = `(== 5 (+ 2 3))
 	)
 	5
 )
-(\`Hello 10)
-(\`What)
-\`Yea
+('Hello 10)
+('What)
+'Yea
 3
-(let [(\`Ok x) (\`Ok 20)] (+ x 23))
+(let [('Ok x) ('Ok 20)] (+ x 23))
 
 (defn add2 [x :int] (+ x 2))
 (== (add2 23) 25)
@@ -48,7 +48,7 @@ const init = `(== 5 (+ 2 3))
 (def yes (let [{yes} {yes 34}] yes))
 (== yes 34)`;
 
-const useLocalStorage = <T,>(key: string, initial: () => T) => {
+export const useLocalStorage = <T,>(key: string, initial: () => T) => {
     const [state, setState] = React.useState<T>(
         localStorage[key] ? JSON.parse(localStorage[key]) : initial(),
     );

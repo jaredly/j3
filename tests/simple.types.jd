@@ -1,11 +1,9 @@
-((@1 ==) 1 true)
-(@1 "no implementation of == found with args (int, bool)")
 
-(if (@error "not a bool" 4) 3 1)
+(@type 1 1)
 
-(def one 23)
+(@type int (+ 2 3))
 
-(if (@error "not a bool" one) 3 1)
-
-(if (@1 one) 3 1)
-(@1 "not a bool")
+(
+	(fn [one :int] 3)
+	(@error "what" true)
+)
