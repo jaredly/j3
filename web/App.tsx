@@ -7,6 +7,7 @@ import { EvalCtx, initialStore, newEvalCtx } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
+import { Node as NodeT } from '../src/types/cst';
 
 const _init = `
 (def hello 10)
@@ -56,7 +57,7 @@ const useLocalStorage = <T,>(key: string, initial: () => T) => {
 };
 
 export const getInitialState = () => {
-    const cst = parse(init);
+    const cst: NodeT[] = parse(init);
     let ctx = newCtx();
     const exprs = cst.map((node) => {
         const res = nodeToExpr(node, ctx);
