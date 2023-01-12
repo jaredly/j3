@@ -49,9 +49,18 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'string':
             if (report) {
                 // Populate the map
-                expr.templates.forEach(({ expr }) =>
-                    getType(expr, ctx, report),
-                );
+                expr.templates.forEach(({ expr }) => {
+                    const t = getType(expr, ctx, report);
+                    if (t) {
+                        matchesType(
+                            t,
+                            { type: 'builtin', name: 'string', form: blank },
+                            ctx,
+                            expr.form,
+                            report,
+                        );
+                    }
+                });
             }
             // TODO: support string constant report
             return { type: 'builtin', name: 'string', form: expr.form };

@@ -51,7 +51,7 @@ string = "\"" first:$tplStringChars templates:TemplatePair* "\"" {return wrap({t
 identifier = text:$idtext hash:$("#" idtext)? {return wrap({type: 'identifier', text, hash})}
 
 TemplatePair = expr:TemplateWrap suffix:$tplStringChars {return {expr, suffix}}
-TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 0 ? wrap({type: 'list', values: forms}) : forms[0]}
+TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 1 ? wrap({type: 'list', values: forms}) : forms[0]}
 tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .

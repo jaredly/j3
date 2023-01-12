@@ -233,7 +233,7 @@ function peg$parse(input, options) {
   var peg$f8 = function(first, templates) {return wrap({type: 'string', first, templates})};
   var peg$f9 = function(text, hash) {return wrap({type: 'identifier', text, hash})};
   var peg$f10 = function(expr, suffix) {return {expr, suffix}};
-  var peg$f11 = function(forms) {return forms.length > 0 ? wrap({type: 'list', values: forms}) : forms[0]};
+  var peg$f11 = function(forms) {return forms.length > 1 ? wrap({type: 'list', values: forms}) : forms[0]};
   var peg$currPos = 0;
   var peg$savedPos = 0;
   var peg$posDetailsCache = [{ line: 1, column: 1 }];

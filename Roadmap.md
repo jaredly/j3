@@ -5,6 +5,14 @@ FOR extra CST nodes that don't fit ...
 like non-ids as a record key
 or some non-array nonsense in a function second position
 
+### Ok, now that we have an error system that I think is good, we
+
+- [x] make a .types.jd that works
+- [ ] start just, going through all the forms?
+- [ ] I guess let's move the App over to use the new getType & associated error reporting
+- [ ] implement support for `def` level destructuring, e.g. multiple `name`s (and associated `type`s from a single toplevel def)
+	- addDef should calculate the type of the dealio, along with a report why not, and then cache that type on the global whatsit, for others to use.
+
 
 ## Enumerating the syntax, in Syntax.md
 

@@ -42,6 +42,17 @@ export const callWith = (node: Node, name: string): Node[] | void => {
     }
 };
 
+export type DecExpected = {
+    errors: {
+        message: string;
+        idx: number;
+    }[];
+    expected: {
+        type: Type;
+        idx: number;
+    }[];
+};
+
 export const removeDecorators = (node: Node, ctx: Ctx) => {
     const result: {
         errors: {
@@ -83,5 +94,5 @@ export const removeDecorators = (node: Node, ctx: Ctx) => {
             return values[1];
         },
     });
-    return { ...result, node };
+    return { expected: result, node };
 };

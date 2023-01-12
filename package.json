@@ -27,6 +27,6 @@
         "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
         "web": "vite web --port 8221 --config vite.config.js",
         "gram": "peggy --format es src/grammar.pegjs -o src/grammar.mjs",
-        "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js"
+        "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
     }
 }
