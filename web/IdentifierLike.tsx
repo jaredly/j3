@@ -46,8 +46,12 @@ export const IdentifierLike = ({
         }
     }, [editing, text, editing ? store.selection!.loc : null]);
 
-    const dec =
-        ctx.types[idx]?.type === 'unresolved' ? 'underline red' : 'none';
+    const dec = ctx.report.errors[idx]
+        ? 'underlined red'
+        : ctx.report.types[idx] == null
+        ? 'underline gray'
+        : 'none';
+    // ctx.types[idx]?.type === 'unresolved' ? 'underline red' : 'none';
 
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (

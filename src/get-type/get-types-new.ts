@@ -213,6 +213,31 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'def':
         case 'deftype':
             return nilt;
+        case 'let': {
+            expr.bindings.forEach((binding) =>
+                getType(binding.value, ctx, report),
+            );
+            const body = expr.body.map((body) => getType(body, ctx, report));
+            return body[body.length - 1] ?? nilt;
+        }
+        case 'record': {
+            const entries: { name: string; value: Type }[] = [];
+            expr.entries.forEach((entry) => {
+                const type = getType(entry.value, ctx, report);
+                if (type) {
+                    entries.push({
+                        name: entry.name,
+                        value: type,
+                    });
+                }
+            });
+            return {
+                type: 'record',
+                form: expr.form,
+                open: false,
+                entries,
+            };
+        }
     }
-    console.log('nope', expr.type);
+    console.log('getType is sorry about', expr.type);
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Report } from '../src/get-type/get-types-new';
 import { Ctx } from '../src/to-ast/to-ast';
 import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
@@ -36,14 +37,15 @@ export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
     terms: {},
     nodes: {},
     results: {},
-    types: {},
-    globalTypes: {},
+    // types: {},
+    // globalTypes: {},
+    report: { errors: {}, types: {} },
 });
 
 export type EvalCtx = {
     ctx: Ctx;
-    types: { [key: number]: Type };
-    globalTypes: { [hash: string]: Type };
+    // types: { [key: number]: Type };
+    // globalTypes: { [hash: string]: Type };
     last: { [key: number]: string };
     terms: { [key: string]: any };
     nodes: {
@@ -61,6 +63,7 @@ export type EvalCtx = {
                   node: Pattern;
               };
     };
+    report: Report;
     results: {
         [key: string]:
             | {
@@ -74,7 +77,8 @@ export type EvalCtx = {
                   error: string;
                   code: string;
                   expr: Expr;
-              };
+              }
+            | { status: 'errors'; expr: Expr };
     };
 };
 

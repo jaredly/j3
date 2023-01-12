@@ -172,11 +172,25 @@ export const ListLike = ({
         ))
     );
 
+    const dec = ctx.report.errors[idx]
+        ? 'underline red'
+        : // : !ctx.report.types[idx]
+          // ? 'underline gray'
+          'none';
+
+    const color = ctx.report.errors[idx]
+        ? 'red'
+        : !ctx.report.types[idx]
+        ? 'green'
+        : undefined;
+
     return (
         <span
             style={{
                 display: 'flex',
                 cursor: 'text',
+                textDecoration: isRoot ? undefined : dec,
+                color,
             }}
             onMouseEnter={(evt) =>
                 setHover({
@@ -337,7 +351,8 @@ export const ShowResult = ({
 }: {
     result:
         | { status: 'success'; value: any; code: string; expr: Expr }
-        | { status: 'failure'; error: string; code: string; expr: Expr };
+        | { status: 'failure'; error: string; code: string; expr: Expr }
+        | { status: 'errors'; expr: Expr };
 }) => {
     let body;
     if (result.status === 'success') {
@@ -346,6 +361,8 @@ export const ShowResult = ({
         } else {
             body = <pre>{JSON.stringify(result.value, null, 2)}</pre>;
         }
+    } else if (result.status === 'errors') {
+        body = <pre>There were errors?</pre>;
     } else {
         body = <pre>{result.error}</pre>;
     }
@@ -378,7 +395,7 @@ export const ShowResult = ({
                         border: '1px solid black',
                     }}
                 >
-                    {result.code}
+                    {result.status !== 'errors' && result.code}
                     {JSON.stringify(result.expr, null, 2)}
                 </pre>
             )}

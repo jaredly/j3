@@ -7,16 +7,18 @@ import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { EvalCtx, Store } from './store';
 import objectHash from 'object-hash';
 import { CacheCtx, getCachedType } from '../src/types/check-types';
+import { getType, Report } from '../src/get-type/get-types-new';
+import { validateExpr } from '../src/get-type/validate';
 
 export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root].node as ListLikeContents;
 
-    const cctx: CacheCtx = {
-        ctx,
-        types: ectx.types,
-        globalTypes: ectx.globalTypes,
-    };
+    // const cctx: CacheCtx = {
+    //     ctx,
+    //     types: ectx.types,
+    //     globalTypes: ectx.globalTypes,
+    // };
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.type === 'comment') {
@@ -35,7 +37,24 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             return;
         }
 
-        getCachedType(res, cctx);
+        const report: Report = { errors: {}, types: {} };
+
+        const _ = getType(res, ctx, report);
+        validateExpr(res, ctx, report.errors);
+
+        const hasErrors = Object.keys(report.errors).length > 0;
+
+        Object.assign(ectx.report.errors, report.errors);
+        Object.assign(ectx.report.types, report.types);
+
+        if (hasErrors) {
+            results[idx] = {
+                status: 'errors',
+                expr: res,
+            };
+            last[idx] = hash;
+            return;
+        }
 
         // ok, so the increasing idx's are really coming to haunt me.
         // can I reset them?
@@ -64,7 +83,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             return;
         }
         ctx = addDef(res, ctx);
-        cctx.ctx = ctx;
     });
 
     ectx.ctx = ctx;

@@ -73,7 +73,6 @@ export const getInitialState = () => {
 
 export const App = () => {
     const ctx = React.useMemo<EvalCtx>(() => newEvalCtx(newCtx()), []);
-    const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
     const store = React.useMemo(() => {
         const store = initialStore(parse(init));
         compile(store, ctx);
@@ -118,10 +117,11 @@ export const App = () => {
 
     const best = React.useMemo(() => {
         for (let i = hover.length - 1; i >= 0; i--) {
-            if (ctx.types[hover[i].idx]) {
-                return hover[i];
-            }
+            // if (ctx.report.types[hover[i].idx]) {
+            return hover[i];
+            // }
         }
+        return null;
     }, [hover]);
 
     return (
@@ -171,7 +171,11 @@ export const App = () => {
                     }}
                 >
                     Type:{' '}
-                    {nodeToString(nodeForType(ctx.types[best.idx], ctx.ctx))}
+                    {ctx.report.types[best.idx]
+                        ? nodeToString(
+                              nodeForType(ctx.report.types[best.idx], ctx.ctx),
+                          )
+                        : 'um no type'}
                     {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
                 </div>
             )}

@@ -20,7 +20,7 @@ window.root =
 
 root.render(
     <React.StrictMode>
-        {/* <App /> */}
-        <Debug />
+        <App />
+        {/* <Debug /> */}
     </React.StrictMode>,
 );
