@@ -132,22 +132,28 @@ export const _matchesType = (
                 return true;
             }
             if (expected.type === 'union') {
-                let best: null | MatchError = null;
-                for (let i = 0; i < expected.items.length; i++) {
+                const whats = expandEnumItems(expected.items, ctx, path);
+                if (whats.type === 'error') {
+                    return whats.error;
+                }
+                if (!whats.map[candidate.name]) {
+                    // TODO: report that its missing
+                    return inv(candidate, expected, path);
+                }
+                const args = whats.map[candidate.name].args;
+                for (let i = 0; i < args.length; i++) {
                     const res = _matchOrExpand(
-                        candidate,
-                        expected.items[i],
+                        candidate.args[i],
+                        args[i],
                         ctx,
                         path.concat([i.toString()]),
                     );
-                    if (res === true) {
-                        return true;
-                    }
-                    if (!best || res.path.length > best.path.length) {
-                        best = res;
+                    if (res !== true) {
+                        return res;
                     }
                 }
-                return best || inv(candidate, expected, path);
+
+                return true;
             }
             return inv(candidate, expected, path);
         case 'union': {

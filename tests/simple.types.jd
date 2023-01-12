@@ -45,6 +45,9 @@
 
 (deftype what ['One (@error "enum args mismatch" ('One 2))])
 
+(deftype what [('One 3) ('One 4)])
+
+((fn [one (: what)] one) ('One 10))
 ;(deftype andhow (tfn [T (: [...])] ['How T]))
 ; should be fine
 ;(defn hi [one (: andHow 'Who)] one)
