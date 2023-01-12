@@ -125,5 +125,5 @@ export const nodeToPattern = (
             }
         }
     }
-    return { type: 'unresolved', form, reason: 'not impl pat' };
+    throw new Error(`nodeToPattern can't handle ${form.type}`);
 };

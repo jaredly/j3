@@ -4,7 +4,6 @@ import { specials } from './specials';
 import { Ctx, resolveExpr } from './to-ast';
 
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
-    // todo decorators
     switch (form.type) {
         case 'identifier': {
             return resolveExpr(form.text, form.hash, ctx, form);

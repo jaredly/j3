@@ -77,7 +77,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return ctx.localMap.terms[expr.sym]?.type;
         case 'global':
             // Should we cache? idk
-            return getType(ctx.global.terms[expr.hash], ctx);
+            return ctx.global.termTypes[expr.hash];
         case 'if': {
             const cond = getType(expr.cond, ctx, report);
             const yes = getType(expr.yes, ctx, report);
@@ -210,6 +210,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 form: expr.form,
             };
         }
+        case 'def':
+            return nilt;
     }
     console.log('nope', expr.type);
 };

@@ -50,9 +50,5 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             };
         }
     }
-    return {
-        type: 'unresolved',
-        form,
-        reason: 'nodeToType not impl type ' + form.type,
-    };
+    throw new Error(`nodeToType can't handle ${form.type}`);
 };

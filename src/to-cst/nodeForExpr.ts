@@ -51,6 +51,9 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                 raw: type.value.toString(),
             };
         case 'tag':
+            if (type.args.length === 0) {
+                return { type: 'tag', text: type.name, loc: type.form.loc };
+            }
             return {
                 loc: type.form.loc,
                 type: 'list',

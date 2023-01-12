@@ -21,3 +21,10 @@
 
 (@type 'Hello 'Hello )
 (@type ('Hello 23) ('Hello 23) )
+
+(def tagg (fn [one (: ['Hello 'Awesome ('Bye int)])] 23))
+
+(tagg 'Hello)
+(tagg (@error "invalid type" 'Hellos))
+
+(fn [one (: ['Hello 'Awesome])] (tagg one))

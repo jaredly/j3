@@ -133,6 +133,7 @@ export type Shared =
     | Bool
     | { type: 'unresolved'; form: Node; reason?: string };
 
+export type TypeArg = { sym: number; bound?: Type; form: Node };
 export type Type =
     | Shared
     | {
@@ -148,6 +149,7 @@ export type Type =
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
     | { type: 'fn'; name?: string; args: Type[]; body: Type; form: Node }
+    | { type: 'tfn'; name?: string; args: TypeArg[]; body: Type; form: Node }
     | {
           type: 'union';
           items: Type[];

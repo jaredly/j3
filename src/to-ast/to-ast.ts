@@ -3,6 +3,8 @@
 import { Loc, Node } from '../types/cst';
 import { Expr, Term, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
+import { typeForExpr } from './typeForExpr';
+import { getType } from '../types/get-types-new';
 
 export type Global = {
     builtins: {
@@ -12,6 +14,7 @@ export type Global = {
         types: { [name: string]: TVar[] };
     };
     terms: { [hash: string]: Expr };
+    termTypes: { [hash: string]: Type };
     names: { [name: string]: string[] };
     types: { [hash: string]: Type };
     typeNames: { [name: string]: string[] };
@@ -122,6 +125,7 @@ export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {
     builtins: basicBuiltins,
     terms: {},
+    termTypes: {},
     names: {},
     types: {},
     typeNames: {},
@@ -240,8 +244,13 @@ export const resolveType = (
 
 export const nextSym = (ctx: Ctx) => ctx.sym.current++;
 
-export const addDef = (res: Expr, ctx: Ctx) => {
+export const addDef = (res: Expr, ctx: Ctx): Ctx => {
     if (res.type === 'def') {
+        const type = getType(res.value, ctx);
+        if (!type) {
+            console.warn(`Trying to add a def that doesnt give a type`);
+            return ctx;
+        }
         return {
             ...ctx,
             global: {
@@ -249,6 +258,10 @@ export const addDef = (res: Expr, ctx: Ctx) => {
                 terms: {
                     ...ctx.global.terms,
                     [res.hash]: res,
+                },
+                termTypes: {
+                    ...ctx.global.termTypes,
+                    [res.hash]: type,
                 },
                 names: {
                     ...ctx.global.names,

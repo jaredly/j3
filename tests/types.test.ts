@@ -2,19 +2,13 @@ import { readdirSync, readFileSync } from 'fs';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
-import { nodeToType } from '../src/to-ast/nodeToType';
-import { stmtToTs } from '../src/to-ast/to-ts';
 import { newEvalCtx } from '../web/store';
-import * as t from '@babel/types';
-import { typeForExpr } from '../src/to-ast/typeForExpr';
 import {
     DecExpected,
     getLine,
     idxLines,
     removeDecorators,
 } from '../src/to-ast/utils';
-import { Node } from '../src/types/cst';
-import { transformNode } from '../src/types/transform-cst';
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -78,6 +72,9 @@ expect.extend({
                                 nodeForType(err.found, ctx),
                             )} at idx ${err.found.form.loc.idx}`,
                         );
+                        break;
+                    default:
+                        lines.push(`Some error ${err.type} at ${idx}`);
                 }
             });
         });
@@ -102,6 +99,7 @@ expect.extend({
                 pass: true,
             };
         } else {
+            lines.unshift(JSON.stringify(noForm({ report, expected })) + '\n');
             return {
                 message: () => lines.join('\n'),
                 pass: false,
@@ -129,6 +127,7 @@ readdirSync(__dirname)
                     const report: Report = { types: {}, errors: {} };
                     const _ = getType(res, ctx.ctx, report);
                     expect(report).toMatchExpected(results.expected, ctx.ctx);
+                    ctx.ctx = addDef(res, ctx.ctx);
                 });
             }
         });

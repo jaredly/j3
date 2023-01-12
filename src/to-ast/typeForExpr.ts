@@ -81,7 +81,7 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
     return {
         type: 'unresolved',
         form: value.form,
-        reason: 'not impl ' + value.type,
+        reason: 'typeForExpr not impl ' + value.type,
     };
 };
 

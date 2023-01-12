@@ -253,7 +253,26 @@ true false
     b {count int children (array (.a @recur))}
   }))
 
-; here's a (.a AsAndBs)
+; And now a complex mutually recursive pair!
+(deftype AST
+  (@loop {
+    Expr [
+      (`Fn (array (.Type @recur)) (.Expr @recur))
+      (`Apply (.Expr @recur) (array (.Expr @recur)))
+      (`String string)
+      (`Bool bool)
+    ]
+    Type [
+      (`Builtin string)
+      (`TypeApply (.Type @recur) (array (.Type @recur)))
+      (`Record (array {
+        key string
+        value (.Type @recur)
+        default [`None (`Some (.Expr @recur))]
+      }))
+    ]
+  })
+)
 
 
 

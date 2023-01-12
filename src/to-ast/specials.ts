@@ -1,11 +1,11 @@
 import { Node } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { Ctx, Local, nil, noForm } from './to-ast';
+import { Ctx, Local, nil, nilt, noForm } from './to-ast';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
-import { typeForExpr } from './typeForExpr';
 import { nodeToPattern } from './nodeToPattern';
+import { getType } from '../types/get-types-new';
 
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
@@ -32,6 +32,21 @@ export const specials: {
                             ...arg,
                             text: arg.text.slice(1),
                         };
+                    }
+                } else if (
+                    arg.type === 'list' &&
+                    arg.values.length > 1 &&
+                    arg.values[0].type === 'identifier' &&
+                    arg.values[0].text === ':'
+                ) {
+                    if (pairs.length) {
+                        pairs[pairs.length - 1].type =
+                            arg.values.length > 2
+                                ? {
+                                      ...arg,
+                                      values: arg.values.slice(1),
+                                  }
+                                : arg.values[1];
                     }
                 } else {
                     pairs.push({ pat: arg });
@@ -144,7 +159,7 @@ export const specials: {
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         for (let i = 0; i < first.values.length - 1; i += 2) {
             const value = nodeToExpr(first.values[i + 1], ctx);
-            const inferred = typeForExpr(value, ctx);
+            const inferred = getType(value, ctx) ?? nilt;
             bindings.push({
                 pattern: nodeToPattern(first.values[i], inferred, ctx, locals),
                 value,
