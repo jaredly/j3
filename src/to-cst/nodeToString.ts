@@ -13,7 +13,7 @@ export const nodeToString = (node: Node): string => {
         case 'number':
             return node.raw;
         case 'tag':
-            return `\`${node.text}`;
+            return `'${node.text}`;
     }
     return `NOP(${node.type})`;
 };

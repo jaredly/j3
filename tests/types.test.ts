@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'fs';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, Ctx, newCtx, nodeToType, noForm } from '../src/to-ast/to-ast';
+import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
+import { nodeToType } from '../src/to-ast/nodeToType';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { newEvalCtx } from '../web/store';
 import * as t from '@babel/types';
@@ -86,11 +87,11 @@ expect.extend({
                 expect(noForm(report.types[idx])).toEqual(noForm(type));
             } catch (err) {
                 lines.push(
-                    `Expected type ${nodeToString(
+                    `Expected type \`${nodeToString(
                         nodeForType(type, ctx),
-                    )} at ${idx}, but found ${nodeToString(
+                    )}\` at ${idx}, but found \`${nodeToString(
                         nodeForType(report.types[idx], ctx),
-                    )}`,
+                    )}\``,
                 );
             }
         });

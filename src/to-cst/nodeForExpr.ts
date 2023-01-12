@@ -100,11 +100,18 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                 type: 'identifier',
                 text: `unresolved ${type.reason}`,
             });
+        case 'union':
+            return loc(type.form.loc, {
+                type: 'array',
+                values: type.items
+                    .map((item) => nodeForType(item, ctx))
+                    .concat(type.open ? [id('...', noloc)] : []),
+            });
     }
     return {
         loc: type.form.loc,
         type: 'identifier',
-        text: 'NOT HANDLED ' + type.type,
+        text: 'nodeForType ' + type.type,
     };
 };
 
@@ -126,6 +133,9 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                 loc: expr.form.loc,
             };
         case 'apply':
+            if (expr.args.length === 0 && expr.target.type === 'tag') {
+                return nodeForExpr(expr.target, ctx);
+            }
             return {
                 loc: expr.form.loc,
                 type: 'array',
@@ -139,6 +149,6 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
     return {
         loc: expr.form.loc,
         type: 'identifier',
-        text: 'NOT HANDLED ' + expr.type,
+        text: 'nodeForExpr ' + expr.type,
     };
 };

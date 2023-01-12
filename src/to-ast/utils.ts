@@ -5,7 +5,8 @@
 import { Type } from '../types/ast';
 import { Node } from '../types/cst';
 import { transformNode } from '../types/transform-cst';
-import { Ctx, nodeToType } from './to-ast';
+import { Ctx } from './to-ast';
+import { nodeToType } from './nodeToType';
 
 export const idxLines = (raw: string) => {
     const starts: number[] = [];
