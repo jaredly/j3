@@ -13,13 +13,14 @@ const _init = `
 (one two )
 `;
 
-const init_ = `
+const init = `
 (def hello 10)
 (== hello 10)
 (== what 20)
+(switch 10 5 23 20 30)
 `;
 
-const init = `(== 5 (+ 2 3))
+const __init = `(== 5 (+ 2 3))
 (== 5 5)
 
 ; let's get this going
@@ -87,9 +88,7 @@ export const App = () => {
         const fn = (evt: KeyboardEvent) => {
             if (evt.key === 'Alt') {
                 setAltDown(true);
-                console.log('good');
             }
-            console.log('ya');
         };
         const up = (evt: KeyboardEvent) => {
             if (evt.key === 'Alt') {
@@ -117,9 +116,12 @@ export const App = () => {
 
     const best = React.useMemo(() => {
         for (let i = hover.length - 1; i >= 0; i--) {
-            // if (ctx.report.types[hover[i].idx]) {
-            return hover[i];
-            // }
+            if (
+                ctx.report.types[hover[i].idx] ||
+                ctx.report.errors[hover[i].idx]
+            ) {
+                return hover[i];
+            }
         }
         return null;
     }, [hover]);
@@ -176,6 +178,8 @@ export const App = () => {
                               nodeForType(ctx.report.types[best.idx], ctx.ctx),
                           )
                         : 'um no type'}
+                    {ctx.report.errors[best.idx] &&
+                        JSON.stringify(ctx.report.errors[best.idx])}
                     {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
                 </div>
             )}

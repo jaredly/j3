@@ -78,7 +78,7 @@ export type EvalCtx = {
                   code: string;
                   expr: Expr;
               }
-            | { status: 'errors'; expr: Expr };
+            | { status: 'errors'; expr: Expr; errors: Report['errors'] };
     };
 };
 
@@ -218,7 +218,7 @@ export const updateStore = (
     paths: Path[][],
     skipHistory = false,
 ) => {
-    console.log('UP', change, selection);
+    // console.log('UP', change, selection);
     if (!skipHistory) {
         const pre: UpdateMap = {};
         Object.keys(change).forEach((item) => {

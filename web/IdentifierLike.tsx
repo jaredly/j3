@@ -47,11 +47,10 @@ export const IdentifierLike = ({
     }, [editing, text, editing ? store.selection!.loc : null]);
 
     const dec = ctx.report.errors[idx]
-        ? 'underlined red'
+        ? 'underline red'
         : ctx.report.types[idx] == null
         ? 'underline gray'
         : 'none';
-    // ctx.types[idx]?.type === 'unresolved' ? 'underline red' : 'none';
 
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
@@ -144,11 +143,9 @@ const kwds = ['let', 'def', 'defn', 'fn'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
 function focus(node: HTMLSpanElement, store: Store) {
-    console.log('a focus pls', node, store.selection!.loc);
     node.focus();
     if (typeof store.selection!.loc === 'number') {
         setPos(node, store.selection!.loc);
-        console.log('focusing the loc', store.selection!.loc);
         store.selection = { idx: store.selection!.idx, loc: undefined };
         return;
     }

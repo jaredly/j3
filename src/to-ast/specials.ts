@@ -170,6 +170,35 @@ export const specials: {
             form,
         };
     },
+    switch: (form, contents, ctx): Expr => {
+        const [valueNode, ...cases] = contents;
+        const pairs = [];
+        const value = nodeToExpr(valueNode, ctx);
+        const typ = getType(value, ctx) ?? nilt;
+        for (let i = 0; i < cases.length; i += 2) {
+            const bindings: Local['terms'] = [];
+            pairs.push({
+                pattern: nodeToPattern(cases[i], typ, ctx, bindings),
+                body: cases[i + 1]
+                    ? nodeToExpr(cases[i + 1], {
+                          ...ctx,
+                          local: {
+                              ...ctx.local,
+                              terms: [...bindings, ...ctx.local.terms],
+                          },
+                      })
+                    : nil,
+            });
+            bindings.forEach(
+                (loc) =>
+                    (ctx.localMap.terms[loc.sym] = {
+                        name: loc.name,
+                        type: loc.type,
+                    }),
+            );
+        }
+        return { type: 'switch', target: value, cases: pairs, form };
+    },
     let: (form, contents, ctx): Expr => {
         const first = contents[0];
         if (!first || first.type !== 'array') {

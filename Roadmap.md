@@ -5,6 +5,14 @@
 HOVERY things
 - [ ] filter out keywords
 
+What's a good way to italicize record keys?
+hmmm maybe in the report, we can include like style stuff?
+like
+
+- [ ] hover types for patterns pls
+
+- [ ] switch get it workin
+
 
 ## maybeeee nodeToType should ... potentially not even return an ast node?
 hmmmmmmm

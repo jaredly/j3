@@ -11,6 +11,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'identifier': {
             return resolveExpr(form.text, form.hash, ctx, form);
         }
+        case 'unparsed':
+            return { type: 'unresolved', form };
         case 'tag':
             return { type: 'tag', name: form.text, form };
         case 'string':

@@ -189,6 +189,10 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             expr.args.forEach((arg) => {
                 if (arg.type) {
                     args.push(arg.type);
+                    if (report) {
+                        report.types[arg.type.form.loc.idx] = arg.type;
+                        report.types[arg.pattern.form.loc.idx] = arg.type;
+                    }
                 } else {
                     if (report) {
                         err(report, arg.pattern, {
@@ -200,6 +204,9 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             });
             if (args.length < expr.args.length) {
                 return;
+            }
+            if (expr.ret && report) {
+                report.types[expr.ret.form.loc.idx] = expr.ret;
             }
             const body = expr.body.map((body) => getType(body, ctx, report));
             const last =
@@ -215,8 +222,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             };
         }
         case 'def':
-            getType(expr.value, ctx, report);
-            return nilt;
+            return getType(expr.value, ctx, report);
         case 'deftype':
             return nilt;
         case 'let': {
@@ -225,6 +231,31 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             );
             const body = expr.body.map((body) => getType(body, ctx, report));
             return body[body.length - 1] ?? nilt;
+        }
+        case 'switch': {
+            getType(expr.target, ctx, report);
+            let res: null | Type = null;
+            let bad = false;
+            expr.cases.forEach(({ body }) => {
+                const type = getType(body, ctx, report);
+                if (!type) {
+                    return;
+                }
+                if (!res) {
+                    res = type;
+                } else {
+                    const un = unifyTypes(res, type, ctx, expr.form, report);
+                    if (!un) {
+                        bad = true;
+                        return;
+                    }
+                    res = un;
+                }
+            });
+            if (bad || !res) {
+                return;
+            }
+            return res;
         }
         case 'record': {
             const entries: { name: string; value: Type }[] = [];

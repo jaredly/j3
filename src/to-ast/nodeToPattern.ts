@@ -22,6 +22,13 @@ export const nodeToPattern = (
                 sym,
             };
         }
+        case 'number':
+            return {
+                type: 'number',
+                value: Number(form.raw),
+                kind: form.raw.includes('.') ? 'float' : 'int',
+                form,
+            };
         case 'record': {
             const entries: { name: string; value: Pattern }[] = [];
             const prm =

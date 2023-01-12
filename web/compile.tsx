@@ -19,6 +19,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     //     types: ectx.types,
     //     globalTypes: ectx.globalTypes,
     // };
+    ectx.report.errors = {};
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.type === 'comment') {
@@ -34,6 +35,10 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
         if (last[idx] === hash) {
+            const prev = results[idx];
+            if (prev.status === 'errors') {
+                Object.assign(ectx.report.errors, prev.errors);
+            }
             return;
         }
 
@@ -51,6 +56,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             results[idx] = {
                 status: 'errors',
                 expr: res,
+                errors: report.errors,
             };
             last[idx] = hash;
             return;

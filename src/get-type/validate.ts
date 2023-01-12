@@ -82,6 +82,13 @@ export const validateExpr = (
             );
             expr.body.forEach((body) => validateExpr(body, ctx, errors));
             return;
+        case 'switch':
+            validateExpr(expr.target, ctx, errors);
+            expr.cases.forEach((kase) => {
+                // TODO validate patterns
+                validateExpr(kase.body, ctx, errors);
+            });
+            return;
         case 'if':
             validateExpr(expr.cond, ctx, errors);
             validateExpr(expr.yes, ctx, errors);

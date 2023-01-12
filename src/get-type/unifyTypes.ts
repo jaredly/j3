@@ -45,6 +45,20 @@ export const _unifyTypes = (
 
     // - [ ] Constants as builtins
     // Number constants
+    if (
+        one.type === 'number' &&
+        two.type === 'builtin' &&
+        two.name === one.kind
+    ) {
+        return two;
+    }
+    if (
+        two.type === 'number' &&
+        one.type === 'builtin' &&
+        one.name === two.kind
+    ) {
+        return one;
+    }
     if (one.type === 'number' && two.type === 'number') {
         return one.kind === two.kind
             ? one.value === two.value
@@ -74,7 +88,7 @@ export const _unifyTypes = (
         type: 'error',
         error: {
             type: 'misc',
-            message: `not yet handled ${one.type} vs ${two.type}`,
+            message: `unifyTypes not yet handled ${one.type} vs ${two.type}`,
         } as any,
     };
 };

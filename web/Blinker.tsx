@@ -36,7 +36,7 @@ export const Blinker = ({
         <span
             contentEditable
             ref={ref}
-            style={style}
+            style={{ ...style, width: 1, marginRight: -1 }}
             onKeyDown={(evt) => {
                 onKeyDown(evt, idx, path, events, store);
                 if (!evt.defaultPrevented && fullAscii.includes(evt.key)) {
