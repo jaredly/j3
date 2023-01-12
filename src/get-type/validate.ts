@@ -75,6 +75,18 @@ export const validateExpr = (
                 });
             }
             return;
+        case 'let':
+            // TODO validate patterns?
+            expr.bindings.forEach((binding) =>
+                validateExpr(binding.value, ctx, errors),
+            );
+            expr.body.forEach((body) => validateExpr(body, ctx, errors));
+            return;
+        case 'if':
+            validateExpr(expr.cond, ctx, errors);
+            validateExpr(expr.yes, ctx, errors);
+            validateExpr(expr.no, ctx, errors);
+            return;
     }
     throw new Error('not validated ' + expr.type);
 };
