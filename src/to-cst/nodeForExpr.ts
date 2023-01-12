@@ -99,10 +99,11 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             });
         }
         case 'unresolved':
-            return loc(type.form.loc, {
-                type: 'identifier',
-                text: `unresolved ${type.reason}`,
-            });
+            return type.form;
+        // return loc(type.form.loc, {
+        //     type: 'identifier',
+        //     text: `unresolved ${type.reason}`,
+        // });
         case 'union':
             return loc(type.form.loc, {
                 type: 'array',
@@ -158,6 +159,8 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                 hash: '#' + expr.hash,
                 loc: expr.form.loc,
             };
+        case 'unresolved':
+            return expr.form;
         case 'apply':
             if (expr.args.length === 0 && expr.target.type === 'tag') {
                 return nodeForExpr(expr.target, ctx);

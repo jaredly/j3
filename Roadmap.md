@@ -1,4 +1,22 @@
 
+## maybeeee nodeToType should ... potentially not even return an ast node?
+hmmmmmmm
+I mean we've got our "unrsolved", right?
+hmmm so the reason I was hanging on to everything was so that I could retrieve the original syntax when
+reconstructing the syntax stuffs.
+which I still think is a valuable thing.
+hmmmmmmmmmmmm
+but like, comments. what do we do.
+
+toplevel `def` and `defn` should probably go unresolved (??).
+
+and then ... we should log an error to the report if we have anything unresolved (???)
+
+Anyway, alsos, we'll want to do a `validateType`, right?
+oh maybe have a `validateForm` or soemthing...
+yeah, before we'll add anything, it's not just the the type to check
+
+
 ## Thinking a lot about errors
 
 FOR extra CST nodes that don't fit ...

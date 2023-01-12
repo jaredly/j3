@@ -1,6 +1,7 @@
 import { Node } from '../types/cst';
 import { Type } from '../types/ast';
 import { Ctx, resolveType, nilt, nextSym } from './to-ast';
+import { filterComments } from './nodeToExpr';
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
     switch (form.type) {
@@ -19,7 +20,9 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 type: 'union',
                 form,
                 open: false,
-                items: form.values.map((value) => nodeToType(value, ctx)),
+                items: filterComments(form.values).map((value) =>
+                    nodeToType(value, ctx),
+                ),
             };
         case 'tag':
             return {
@@ -32,8 +35,9 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             if (!form.values.length) {
                 return { ...nilt, form };
             }
-            const first = form.values[0];
-            const args = form.values.slice(1);
+            const values = filterComments(form.values);
+            const first = values[0];
+            const args = values.slice(1);
             if (first.type === 'tag') {
                 return {
                     type: 'tag',
@@ -51,7 +55,8 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                         reason: `tfn needs array as second item`,
                     };
                 }
-                const parsed = targs.values.map((arg) => {
+                const tvalues = filterComments(targs.values);
+                const parsed = tvalues.map((arg) => {
                     // const type = nodeToType(arg, ctx)
                     return {
                         name: arg.type === 'identifier' ? arg.text : 'NOPE',

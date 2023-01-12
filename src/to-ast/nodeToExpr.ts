@@ -3,6 +3,9 @@ import { Expr, Record } from '../types/ast';
 import { specials } from './specials';
 import { Ctx, resolveExpr } from './to-ast';
 
+export const filterComments = (nodes: Node[]) =>
+    nodes.filter((node) => node.type !== 'comment');
+
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
         case 'identifier': {
@@ -29,20 +32,18 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         case 'record': {
             const entries: Record['entries'] = [];
-            if (
-                form.values.length === 1 &&
-                form.values[0].type === 'identifier'
-            ) {
+            const values = filterComments(form.values);
+            if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
-                    name: form.values[0].text,
-                    value: nodeToExpr(form.values[0], ctx),
+                    name: values[0].text,
+                    value: nodeToExpr(values[0], ctx),
                 });
             } else if (
-                form.values.length &&
-                form.values[0].type === 'identifier' &&
-                form.values[0].text === '$'
+                values.length &&
+                values[0].type === 'identifier' &&
+                values[0].text === '$'
             ) {
-                form.values.slice(1).forEach((item) => {
+                values.slice(1).forEach((item) => {
                     if (item.type === 'identifier') {
                         entries.push({
                             name: item.text,
@@ -60,9 +61,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                for (let i = 0; i < form.values.length; i += 2) {
-                    const name = form.values[i];
-                    const value = form.values[i + 1];
+                for (let i = 0; i < values.length; i += 2) {
+                    const name = values[i];
+                    const value = values[i + 1];
                     entries.push({
                         name:
                             name.type === 'identifier'
@@ -77,20 +78,17 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             return { type: 'record', entries, form };
         }
         case 'list': {
-            if (!form.values.length) {
+            const values = filterComments(form.values);
+            if (!values.length) {
                 return { type: 'record', entries: [], form };
             }
-            const first = form.values[0];
+            const first = values[0];
             if (first.type === 'identifier') {
                 if (specials[first.text]) {
-                    return specials[first.text](
-                        form,
-                        form.values.slice(1),
-                        ctx,
-                    );
+                    return specials[first.text](form, values.slice(1), ctx);
                 }
             }
-            const [target, ...args] = form.values.map((child) =>
+            const [target, ...args] = values.map((child) =>
                 nodeToExpr(child, ctx),
             );
             return {
