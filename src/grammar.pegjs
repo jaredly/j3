@@ -2,6 +2,7 @@
 {{
 	let idx = 0;
 	export const nidx = () => idx++;
+	export const setIdx = (i) => idx = i;
 }}
 
 {

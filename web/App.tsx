@@ -3,12 +3,13 @@ import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { Node } from './Nodes';
-import { EvalCtx, initialStore, newEvalCtx } from './store';
+import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
 import { Node as NodeT } from '../src/types/cst';
 import { errorToString } from '../src/to-cst/show-errors';
+import localforage from 'localforage';
 
 const _init = `
 (one two )
@@ -73,13 +74,18 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
-export const App = () => {
+export const debounce = () => {};
+
+export const App = ({ store }: { store: Store }) => {
     const ctx = React.useMemo<EvalCtx>(() => newEvalCtx(newCtx()), []);
-    const store = React.useMemo(() => {
-        const store = initialStore(parse(init));
-        compile(store, ctx);
-        return store;
-    }, []);
+
+    React.useMemo(() => compile(store, ctx), []);
+
+    // const store = React.useMemo(() => {
+    //     const store = initialStore(parse(init));
+    //     compile(store, ctx);
+    //     return store;
+    // }, []);
 
     const tick = React.useState(0);
 
@@ -109,6 +115,7 @@ export const App = () => {
             () => {
                 compile(store, ctx);
                 tick[1]((x) => x + 1);
+                localforage.setItem('j3:app', { ...store, listeners: {} });
             },
         ];
     }, []);
@@ -132,6 +139,14 @@ export const App = () => {
 
     return (
         <div style={{ margin: 24 }}>
+            <button
+                onClick={() => {
+                    localforage.removeItem('j3:app');
+                    location.reload();
+                }}
+            >
+                Clear
+            </button>
             <div>
                 <Node
                     idx={store.root}

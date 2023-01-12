@@ -1,6 +1,10 @@
 
 - [x] ok validate the stuff
-- [ ] move the web UI over to the new type checking and valdiation
+- [x] move the web UI over to the new type checking and valdiation
+
+- [ ] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
+
+- [ ] also, get we get a force-directed graph in here?
 
 HOVERY things
 - [ ] filter out keywords
@@ -11,7 +15,7 @@ like
 
 - [ ] hover types for patterns pls
 
-- [ ] switch get it workin
+- [x] switch get it workin
 
 
 ## maybeeee nodeToType should ... potentially not even return an ast node?

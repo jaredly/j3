@@ -154,6 +154,8 @@ export const stmtToTs = (
     shouldReturn: boolean | 'top',
 ): t.Statement => {
     switch (expr.type) {
+        case 'deftype':
+            return t.emptyStatement();
         case 'def':
             if (shouldReturn === 'top') {
                 return t.blockStatement([

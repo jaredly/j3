@@ -16,6 +16,7 @@
         "esbuild": "^0.16.14",
         "generator": "link:@types/@babel/generator",
         "jest": "^29.3.1",
+        "localforage": "^1.10.0",
         "object-hash": "^3.0.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",

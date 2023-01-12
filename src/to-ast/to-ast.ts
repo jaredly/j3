@@ -4,7 +4,7 @@ import { Loc, Node } from '../types/cst';
 import { Expr, Term, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { typeForExpr } from './typeForExpr';
-import { getType } from '../get-type/get-types-new';
+import { getType, Report } from '../get-type/get-types-new';
 import { validateType } from '../get-type/validate';
 
 export type Global = {
@@ -27,6 +27,7 @@ export type Local = {
 };
 
 export type Ctx = {
+    errors: Report['errors'];
     sym: { current: number };
     global: Global;
     local: Local;
@@ -138,6 +139,7 @@ export const newCtx = (): Ctx => {
         global: initialGlobal,
         local: emptyLocal,
         localMap: { terms: {}, types: {} },
+        errors: {},
     };
 };
 

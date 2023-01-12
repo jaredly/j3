@@ -32,6 +32,10 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             return;
         }
         ctx.sym.current = 0;
+
+        const report: Report = { errors: {}, types: {} };
+        ctx.errors = report.errors;
+
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
         if (last[idx] === hash) {
@@ -41,8 +45,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             }
             return;
         }
-
-        const report: Report = { errors: {}, types: {} };
 
         const _ = getType(res, ctx, report);
         validateExpr(res, ctx, report.errors);
@@ -62,10 +64,15 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             return;
         }
 
+        let code = 'failed to generate';
+        try {
+            const ts = stmtToTs(res, ctx, 'top');
+            code = generate(t.file(t.program([ts]))).code;
+        } catch (err) {
+            //
+        }
         // ok, so the increasing idx's are really coming to haunt me.
         // can I reset them?
-        const ts = stmtToTs(res, ctx, 'top');
-        const code = generate(t.file(t.program([ts]))).code;
         try {
             const fn = new Function('$terms', 'fail', code);
             results[idx] = {

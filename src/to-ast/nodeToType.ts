@@ -2,6 +2,7 @@ import { Node } from '../types/cst';
 import { Type } from '../types/ast';
 import { Ctx, resolveType, nilt, nextSym } from './to-ast';
 import { filterComments } from './nodeToExpr';
+import { err } from './nodeToPattern';
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
     switch (form.type) {
@@ -31,6 +32,31 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 name: form.text,
                 args: [],
             };
+        case 'record': {
+            const values = filterComments(form.values);
+            const entries = [];
+            for (let i = 0; i < values.length; i += 2) {
+                const name = values[i];
+                const value = values[i + 1];
+                if (name.type !== 'identifier') {
+                    err(ctx.errors, name, {
+                        type: 'misc',
+                        message: `record entry name must be an identifier`,
+                    });
+                    continue;
+                }
+                entries.push({
+                    name: name.text,
+                    value: value ? nodeToType(value, ctx) : nilt,
+                });
+            }
+            return {
+                type: 'record',
+                form,
+                entries,
+                open: false,
+            };
+        }
         case 'list': {
             if (!form.values.length) {
                 return { ...nilt, form };

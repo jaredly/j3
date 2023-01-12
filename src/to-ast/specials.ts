@@ -82,7 +82,11 @@ export const specials: {
             };
             const body = contents.slice(1);
             let ret: Type | undefined;
-            if (body[0].type === 'identifier' && body[0].text.startsWith(':')) {
+            if (
+                body.length > 0 &&
+                body[0].type === 'identifier' &&
+                body[0].text.startsWith(':')
+            ) {
                 ret = nodeToType(
                     {
                         ...body[0],
@@ -189,6 +193,7 @@ export const specials: {
                       })
                     : nil,
             });
+            console.log('boudn', bindings);
             bindings.forEach(
                 (loc) =>
                     (ctx.localMap.terms[loc.sym] = {

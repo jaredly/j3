@@ -5,6 +5,7 @@
 
 	let idx = 0;
 	export const nidx = () => idx++;
+	export const setIdx = (i) => idx = i;
 
 function peg$subclass(child, parent) {
   function C() { this.constructor = child; }

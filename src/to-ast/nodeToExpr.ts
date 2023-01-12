@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { Expr, Record } from '../types/ast';
 import { specials } from './specials';
-import { Ctx, resolveExpr } from './to-ast';
+import { Ctx, nil, resolveExpr } from './to-ast';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter((node) => node.type !== 'comment');
@@ -73,7 +73,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                                 : name.type === 'number'
                                 ? name.raw
                                 : '_ignored_' + name.type,
-                        value: nodeToExpr(value, ctx),
+                        value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }
             }

@@ -144,6 +144,9 @@ kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
 function focus(node: HTMLSpanElement, store: Store) {
     node.focus();
+    if (!store.selection) {
+        return;
+    }
     if (typeof store.selection!.loc === 'number') {
         setPos(node, store.selection!.loc);
         store.selection = { idx: store.selection!.idx, loc: undefined };
