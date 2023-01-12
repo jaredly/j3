@@ -108,6 +108,26 @@ export const specials: {
             form,
         };
     },
+    deftype: (form, contents, ctx): Expr => {
+        if (contents.length !== 2) {
+            return { type: 'unresolved', form, reason: 'need just 2 args' };
+        }
+        const [name, value] = contents;
+        if (name.type !== 'identifier') {
+            return {
+                type: 'unresolved',
+                reason: 'cant defn not id ' + name.type,
+                form,
+            };
+        }
+        return {
+            type: 'deftype',
+            name: name.text,
+            hash: objectHash(noForm(value)),
+            value: nodeToType(value, ctx),
+            form,
+        };
+    },
     defn: (form, contents, ctx): Expr => {
         if (contents.length < 2) {
             return { type: 'unresolved', form, reason: 'no engouh args' };

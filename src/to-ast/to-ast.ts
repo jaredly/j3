@@ -245,6 +245,25 @@ export const resolveType = (
 export const nextSym = (ctx: Ctx) => ctx.sym.current++;
 
 export const addDef = (res: Expr, ctx: Ctx): Ctx => {
+    if (res.type === 'deftype') {
+        return {
+            ...ctx,
+            global: {
+                ...ctx.global,
+                types: {
+                    ...ctx.global.types,
+                    [res.hash]: res.value,
+                },
+                typeNames: {
+                    ...ctx.global.typeNames,
+                    [res.name]: [
+                        res.hash,
+                        ...(ctx.global.typeNames[res.name] || []),
+                    ],
+                },
+            },
+        };
+    }
     if (res.type === 'def') {
         const type = getType(res.value, ctx);
         if (!type) {

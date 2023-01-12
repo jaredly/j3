@@ -14,7 +14,10 @@ export const unifyTypes = (
     const unified = _unifyTypes(one, two, ctx, []);
     if (unified.type === 'error') {
         if (report) {
-            report.errors[form.loc.idx] = unified.error;
+            if (!report.errors[form.loc.idx]) {
+                report.errors[form.loc.idx] = [];
+            }
+            report.errors[form.loc.idx].push(unified.error);
         }
         return;
     }

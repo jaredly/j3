@@ -1,6 +1,6 @@
 import { Node } from '../types/cst';
 import { Type } from '../types/ast';
-import { Ctx, resolveType, nilt } from './to-ast';
+import { Ctx, resolveType, nilt, nextSym } from './to-ast';
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
     switch (form.type) {
@@ -40,6 +40,37 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     form,
                     name: first.text,
                     args: args.map((arg) => nodeToType(arg, ctx)),
+                };
+            }
+            if (first.type === 'identifier' && first.text === 'tfn') {
+                const targs = args.shift()!;
+                if (targs.type !== 'array') {
+                    return {
+                        type: 'unresolved',
+                        form,
+                        reason: `tfn needs array as second item`,
+                    };
+                }
+                const parsed = targs.values.map((arg) => {
+                    // const type = nodeToType(arg, ctx)
+                    return {
+                        name: arg.type === 'identifier' ? arg.text : 'NOPE',
+                        sym: nextSym(ctx),
+                        form: arg,
+                    };
+                });
+                parsed.forEach((targ) => (ctx.localMap.types[targ.sym] = targ));
+                return {
+                    type: 'tfn',
+                    args: parsed,
+                    body: nodeToType(args[0], {
+                        ...ctx,
+                        local: {
+                            ...ctx.local,
+                            types: [...parsed, ...ctx.local.types],
+                        },
+                    }),
+                    form,
                 };
             }
             return {

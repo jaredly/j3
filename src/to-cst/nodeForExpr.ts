@@ -110,12 +110,35 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     .map((item) => nodeForType(item, ctx))
                     .concat(type.open ? [id('...', noloc)] : []),
             });
+        case 'apply':
+            return loc(type.form.loc, {
+                type: 'list',
+                values: [
+                    nodeForType(type.target, ctx),
+                    ...type.args.map((arg) => nodeForType(arg, ctx)),
+                ],
+            });
+        case 'global':
+            return {
+                type: 'identifier',
+                text: 'need-reverse',
+                hash: '#' + type.hash,
+                loc: type.form.loc,
+            };
+        case 'local':
+            return {
+                type: 'identifier',
+                text: 'need-reverse-local',
+                hash: '#' + type.sym,
+                loc: type.form.loc,
+            };
     }
-    return {
-        loc: type.form.loc,
-        type: 'identifier',
-        text: 'nodeForType ' + type.type,
-    };
+    // return {
+    //     loc: type.form.loc,
+    //     type: 'identifier',
+    //     text: 'nodeForType ' + type.type,
+    // };
+    throw new Error(`cannot nodeForType ${type.type}`);
 };
 
 export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {

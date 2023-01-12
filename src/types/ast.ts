@@ -46,6 +46,7 @@ export type Expr =
           form: Node;
       }
     | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
+    | { type: 'deftype'; name: string; hash: string; value: Type; form: Node }
     | {
           type: 'string';
           first: string;

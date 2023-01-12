@@ -23,13 +23,11 @@ export type MatchError =
     | {
           type: 'not a function';
           form: Node;
+          kind: string;
           args: Type[];
           path: string[];
-      };
-
-export type Error =
-    | MatchError
-    | { type: 'malformed'; form: Node }
+      }
+    | { type: 'cannot apply local'; path: string[] }
     | {
           type: 'wrong number of arguments';
           form: Node;
@@ -37,6 +35,18 @@ export type Error =
           received: number;
           path: string[];
       }
+    | {
+          type: 'enum args mismatch';
+          form: Node;
+          one: Type[];
+          two: Type[];
+          tag: string;
+          path: string[];
+      };
+
+export type Error =
+    | MatchError
+    | { type: 'malformed'; form: Node }
     | {
           type: 'too few arguments';
           form: Node;

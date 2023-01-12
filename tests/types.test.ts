@@ -74,7 +74,11 @@ expect.extend({
                         );
                         break;
                     default:
-                        lines.push(`Some error ${err.type} at ${idx}`);
+                        lines.push(
+                            `Some error ${
+                                err.type
+                            } at ${idx} : ${JSON.stringify(err)}`,
+                        );
                 }
             });
         });
@@ -118,6 +122,9 @@ readdirSync(__dirname)
             const lines = idxLines(raw);
 
             for (let node of parsed) {
+                if (node.type === 'comment') {
+                    continue;
+                }
                 it(`${name}:${getLine(lines, node.loc.start) + 1} ${raw.slice(
                     node.loc.start,
                     node.loc.end,

@@ -28,3 +28,12 @@
 (tagg (@error "invalid type" 'Hellos))
 
 (fn [one (: ['Hello 'Awesome])] (tagg one))
+
+(deftype option (tfn [T] [('Some T) 'None]))
+
+((fn [one (: option int)] 10) 'None)
+((fn [one (: option int)] 10) ('Some 100))
+((fn [one (: option int)] 10) (@error "invalid type" 'Nones))
+((fn [one (: option int)] 10) (@error "invalid type" ('Some "hi")))
+; I think this is the better place for it?
+; ((fn [one (: option int)] 10) ('Some (@error "invalid type" "hi")))
