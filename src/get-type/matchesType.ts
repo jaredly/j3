@@ -1,8 +1,8 @@
 import { blank, Ctx } from '../to-ast/to-ast';
-import { Node, Type } from './ast';
-import { Error, MatchError } from './types';
+import { Node, Type } from '../types/ast';
+import { MatchError } from '../types/types';
 import { errf, Report } from './get-types-new';
-import { transformType } from './walk-ast';
+import { transformType } from '../types/walk-ast';
 import { unifyTypes, _unifyTypes } from './unifyTypes';
 
 export const matchesType = (
@@ -56,7 +56,7 @@ export const _matchOrExpand = (
         return ce.error;
     }
     if (ca.type === 'local-bound' || ce.type === 'local-bound') {
-        return { type: 'cannot apply local', path };
+        return { type: 'cannot apply local', path, form: candidate.form };
     }
     return _matchesType(ca, ce, ctx, path);
 };
@@ -112,7 +112,6 @@ export const _matchesType = (
             );
         case 'tag':
             if (expected.type === 'tag') {
-                console.error('got here', expected, candidate);
                 if (
                     expected.name !== candidate.name ||
                     expected.args.length !== candidate.args.length
@@ -250,6 +249,7 @@ export const applyAndResolve = (
                 error: {
                     type: 'cannot apply local',
                     path,
+                    form: type.target.form,
                 },
             };
         }
@@ -314,6 +314,12 @@ export const applyTypeVariables = (
         map,
     );
 };
+export type EnumMap = {
+    [key: string]: {
+        args: Type[];
+        form: Node;
+    };
+};
 
 /**
  * Expand the items of an enum into a map.
@@ -326,19 +332,33 @@ export const expandEnumItems = (
 ):
     | { type: 'success'; map: { [key: string]: { args: Type[]; form: Node } } }
     | { type: 'error'; error: MatchError } => {
-    const map: { [key: string]: { args: Type[]; form: Node } } = {};
-    items.forEach((item, i) => {
+    const map: EnumMap = {};
+    for (let i = 0; i < items.length; i++) {
+        let item = items[i];
+
         if (item.type === 'global') {
             item = ctx.global.types[item.hash];
         }
         if (item.type === 'local') {
             throw new Error(`need something else to expand local types`);
         }
+
         if (item.type === 'tag') {
             if (map[item.name]) {
-                throw new Error('not impl unify tag bodies');
+                const err = unifyEnumArgs(
+                    item.name,
+                    item.args,
+                    map,
+                    item.form,
+                    path,
+                    ctx,
+                );
+                if (err) {
+                    return { type: 'error', error: err };
+                }
+            } else {
+                map[item.name] = { args: item.args, form: item.form };
             }
-            map[item.name] = { args: item.args, form: item.form };
         }
         if (item.type === 'union') {
             const inner = expandEnumItems(
@@ -351,40 +371,46 @@ export const expandEnumItems = (
             }
             for (let [tag, { args, form }] of Object.entries(inner.map)) {
                 if (map[tag]) {
-                    if (map[tag].args.length !== args.length) {
-                        return {
-                            type: 'error',
-                            error: {
-                                type: 'enum args mismatch',
-                                form,
-                                one: map[tag],
-                                two: args,
-                                tag,
-                                path: path.concat([tag]),
-                            },
-                        };
+                    const err = unifyEnumArgs(tag, args, map, form, path, ctx);
+                    if (err) {
+                        return { type: 'error', error: err };
                     }
-
-                    const unified: Type[] = [];
-                    for (let i = 0; i < args.length; i++) {
-                        const un = _unifyTypes(
-                            map[tag].args[i],
-                            args[i],
-                            ctx,
-                            path,
-                        );
-                        if (un.type === 'error') {
-                            return un;
-                        }
-                        unified.push(un);
-                    }
-
-                    map[tag] = { args: unified, form: map[tag].form };
                 } else {
                     map[tag] = { args, form };
                 }
             }
         }
-    });
+    }
     return { type: 'success', map };
+};
+
+export const unifyEnumArgs = (
+    tag: string,
+    args: Type[],
+    map: EnumMap,
+    form: Node,
+    path: string[],
+    ctx: Ctx,
+): void | MatchError => {
+    if (map[tag].args.length !== args.length) {
+        return {
+            type: 'enum args mismatch',
+            form,
+            one: map[tag].args,
+            two: args,
+            tag,
+            path: path.concat([tag]),
+        };
+    }
+
+    const unified: Type[] = [];
+    for (let i = 0; i < args.length; i++) {
+        const un = _unifyTypes(map[tag].args[i], args[i], ctx, path);
+        if (un.type === 'error') {
+            return un.error;
+        }
+        unified.push(un);
+    }
+
+    map[tag] = { args: unified, form: map[tag].form };
 };

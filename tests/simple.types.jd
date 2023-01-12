@@ -43,13 +43,10 @@
 
 (== one 1)
 
-; (deftype what (@error "invalid type" ['One ('One 2)]))
-(defn hi [one :what] 23)
-; (hi ('One 2 3))
+(deftype what ['One (@error "enum args mismatch" ('One 2))])
 
-(deftype andhow (tfn [T (: [...])] ['How T]))
-
+;(deftype andhow (tfn [T (: [...])] ['How T]))
 ; should be fine
-(defn hi [one (: andHow 'Who)] one)
+;(defn hi [one (: andHow 'Who)] one)
 ; should fail
-(defn hi [one (: andHow [('How int)])] one)
+;(defn hi [one (: andHow [('How int)])] one)

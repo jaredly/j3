@@ -1,7 +1,7 @@
 // Yeah
 
 import { Type } from './ast';
-import { Node } from './cst';
+import { Loc, Node } from './cst';
 
 export {};
 
@@ -18,6 +18,7 @@ export type MatchError =
           path: string[];
           one: Type;
           two: Type;
+          form: Node;
           message?: string;
       }
     | {
@@ -27,7 +28,7 @@ export type MatchError =
           args: Type[];
           path: string[];
       }
-    | { type: 'cannot apply local'; path: string[] }
+    | { type: 'cannot apply local'; path: string[]; form: Node }
     | {
           type: 'wrong number of arguments';
           form: Node;

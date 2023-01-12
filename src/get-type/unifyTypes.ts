@@ -1,7 +1,7 @@
 import { Ctx, nilt } from '../to-ast/to-ast';
 import { RecordMap, recordMap } from '../to-ast/typeForExpr';
-import { Node, Type } from './ast';
-import { Error } from './types';
+import { Node, Type } from '../types/ast';
+import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
 
 export const unifyTypes = (
@@ -28,9 +28,9 @@ export const une = (
     path: string[],
     one: Type,
     two: Type,
-): { type: 'error'; error: Error } => ({
+): { type: 'error'; error: MatchError } => ({
     type: 'error',
-    error: { type: 'unification', path, one, two },
+    error: { type: 'unification', path, one, two, form: one.form },
 });
 
 export const _unifyTypes = (
@@ -38,7 +38,7 @@ export const _unifyTypes = (
     two: Type,
     ctx: Ctx,
     path: string[],
-): Type | { type: 'error'; error: Error } => {
+): Type | { type: 'error'; error: MatchError } => {
     if (one.type === 'builtin' && two.type === 'builtin') {
         return one.name === two.name ? one : une(path, one, two);
     }
@@ -75,7 +75,7 @@ export const _unifyTypes = (
         error: {
             type: 'misc',
             message: `not yet handled ${one.type} vs ${two.type}`,
-        },
+        } as any,
     };
 };
 
@@ -87,7 +87,7 @@ export const unifyMaps = (
 ):
     | {
           type: 'error';
-          error: Error;
+          error: MatchError;
       }
     | { type: 'ok'; map: RecordMap } => {
     const res: RecordMap = {};
@@ -101,6 +101,7 @@ export const unifyMaps = (
                     one: one[key].value,
                     two: nilt,
                     message: `missing ${key}`,
+                    form: one[key].value.form,
                 },
             };
         const unified = _unifyTypes(one[key].value, two[key].value, ctx, [
@@ -123,6 +124,7 @@ export const unifyMaps = (
                     one: nilt,
                     two: two[key].value,
                     message: `missing ${key}`,
+                    form: two[key].value.form,
                 },
             };
     }

@@ -1,7 +1,7 @@
 import { blank, Ctx, nilt } from '../to-ast/to-ast';
-import { Expr, Node, Type } from './ast';
+import { Expr, Node, Type } from '../types/ast';
 import { matchesType } from './matchesType';
-import { Error } from './types';
+import { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 
 export type Report = {
@@ -211,6 +211,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             };
         }
         case 'def':
+        case 'deftype':
             return nilt;
     }
     console.log('nope', expr.type);

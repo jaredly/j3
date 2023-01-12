@@ -6,7 +6,7 @@ import { addDef, newCtx, noForm } from '../src/to-ast/to-ast';
 import { nodeToType } from '../src/to-ast/nodeToType';
 import { idxLines, removeDecorators } from '../src/to-ast/utils';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { getType, Report } from '../src/types/get-types-new';
+import { getType, Report } from '../src/get-type/get-types-new';
 
 export const Debug = () => {
     const [text, setText] = useLocalStorage('text', () => '23');
@@ -24,6 +24,7 @@ export const Debug = () => {
                 return { res, results, report, type };
             });
         } catch (err) {
+            console.error(err);
             return 'synntax prolly';
         }
     }, [text]);

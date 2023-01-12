@@ -12,9 +12,10 @@ import {
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { getType, Report } from '../src/types/get-types-new';
+import { getType, Report } from '../src/get-type/get-types-new';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
 import { nodeToString } from '../src/to-cst/nodeToString';
+import { validateExpr } from '../src/get-type/validate';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -133,8 +134,11 @@ readdirSync(__dirname)
                     const res = nodeToExpr(results.node, ctx.ctx);
                     const report: Report = { types: {}, errors: {} };
                     const _ = getType(res, ctx.ctx, report);
+                    validateExpr(res, ctx.ctx, report.errors);
                     expect(report).toMatchExpected(results.expected, ctx.ctx);
-                    ctx.ctx = addDef(res, ctx.ctx);
+                    if (!Object.keys(report.errors).length) {
+                        ctx.ctx = addDef(res, ctx.ctx);
+                    }
                 });
             }
         });

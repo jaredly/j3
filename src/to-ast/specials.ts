@@ -5,7 +5,7 @@ import { Ctx, Local, nil, nilt, noForm } from './to-ast';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
 import { nodeToPattern } from './nodeToPattern';
-import { getType } from '../types/get-types-new';
+import { getType } from '../get-type/get-types-new';
 
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;

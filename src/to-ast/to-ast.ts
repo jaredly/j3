@@ -4,7 +4,8 @@ import { Loc, Node } from '../types/cst';
 import { Expr, Term, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { typeForExpr } from './typeForExpr';
-import { getType } from '../types/get-types-new';
+import { getType } from '../get-type/get-types-new';
+import { validateType } from '../get-type/validate';
 
 export type Global = {
     builtins: {
