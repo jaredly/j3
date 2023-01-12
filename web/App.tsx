@@ -8,6 +8,7 @@ import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForExpr';
 import { Node as NodeT } from '../src/types/cst';
+import { errorToString } from '../src/to-cst/show-errors';
 
 const _init = `
 (one two )
@@ -126,6 +127,9 @@ export const App = () => {
         return null;
     }, [hover]);
 
+    const showBest =
+        best && (altDown || ctx.report.errors[best.idx]) ? best : null;
+
     return (
         <div style={{ margin: 24 }}>
             <div>
@@ -156,13 +160,13 @@ export const App = () => {
                     }}
                 />
             </div>
-            {best && altDown && (
+            {showBest && (
                 <div
                     style={{
                         position: 'absolute',
 
-                        left: best.box.left,
-                        top: best.box.bottom,
+                        left: showBest.box.left,
+                        top: showBest.box.bottom,
                         pointerEvents: 'none',
                         zIndex: 100,
                         backgroundColor: 'black',
@@ -170,28 +174,35 @@ export const App = () => {
                         // boxShadow: '0 0 4px white',
                         border: '1px solid rgba(255,255,255,0.2)',
                         padding: 8,
+                        whiteSpace: 'pre',
                     }}
                 >
-                    Type:{' '}
-                    {ctx.report.types[best.idx]
-                        ? nodeToString(
-                              nodeForType(ctx.report.types[best.idx], ctx.ctx),
-                          )
-                        : 'um no type'}
-                    {ctx.report.errors[best.idx] &&
-                        JSON.stringify(ctx.report.errors[best.idx])}
-                    {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
+                    {ctx.report.types[showBest.idx]
+                        ? 'Type: ' +
+                          nodeToString(
+                              nodeForType(
+                                  ctx.report.types[showBest.idx],
+                                  ctx.ctx,
+                              ),
+                          ) +
+                          '\n'
+                        : ''}
+                    {ctx.report.errors[showBest.idx] &&
+                        ctx.report.errors[showBest.idx]
+                            .map((error) => errorToString(error, ctx.ctx))
+                            .join('\n')}
+                    {/* {JSON.stringify(noForm(ctx.types[showBest.idx]))} */}
                 </div>
             )}
-            {best && altDown && (
+            {showBest && (
                 <div
                     style={{
                         position: 'absolute',
 
-                        left: best.box.left,
-                        top: best.box.top,
-                        height: best.box.height,
-                        width: best.box.width,
+                        left: showBest.box.left,
+                        top: showBest.box.top,
+                        height: showBest.box.height,
+                        width: showBest.box.width,
                         pointerEvents: 'none',
                         zIndex: 50,
                         backgroundColor: 'transparent',
