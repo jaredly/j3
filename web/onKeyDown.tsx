@@ -159,7 +159,16 @@ export const onKeyDown = (
                         }),
                     },
                 };
-                updateStore(store, { map: mp }, [path]);
+                updateStore(
+                    store,
+                    {
+                        map: mp,
+                        selection: evt.shiftKey
+                            ? { idx: nidx, loc: 'start' }
+                            : undefined,
+                    },
+                    [path],
+                );
                 evt.preventDefault();
                 return;
             }
@@ -179,7 +188,11 @@ export const onKeyDown = (
                 node: {
                     ...pnode.node,
                     ...modChildren(pnode.node, (items) => {
-                        items.splice(child.at + 1, 0, nidx);
+                        items.splice(
+                            child.at + (evt.shiftKey ? 0 : 1),
+                            0,
+                            nidx,
+                        );
                     }),
                 },
             };
