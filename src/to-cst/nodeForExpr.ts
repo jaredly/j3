@@ -72,10 +72,13 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                 return {
                     loc: type.form.loc,
                     type: 'list',
-                    values: [
-                        id(',', noloc),
-                        ...tuple.map((t) => nodeForType(t, ctx)),
-                    ],
+                    values:
+                        tuple.length === 0
+                            ? []
+                            : [
+                                  id(',', noloc),
+                                  ...tuple.map((t) => nodeForType(t, ctx)),
+                              ],
                 };
             }
             return loc(type.form.loc, {

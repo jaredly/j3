@@ -118,12 +118,16 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 if (args.length < expr.args.length) {
                     return;
                 }
-                return {
+                const res: Type = {
                     type: 'tag',
                     name: expr.target.name,
                     args,
                     form: expr.form,
                 };
+                if (report) {
+                    report.types[expr.target.form.loc.idx] = res;
+                }
+                return res;
             }
             const target = getType(expr.target, ctx, report);
             if (!target) {
@@ -211,6 +215,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             };
         }
         case 'def':
+            getType(expr.value, ctx, report);
+            return nilt;
         case 'deftype':
             return nilt;
         case 'let': {

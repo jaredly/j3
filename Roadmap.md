@@ -2,6 +2,9 @@
 - [x] ok validate the stuff
 - [ ] move the web UI over to the new type checking and valdiation
 
+HOVERY things
+- [ ] filter out keywords
+
 
 ## maybeeee nodeToType should ... potentially not even return an ast node?
 hmmmmmmm
