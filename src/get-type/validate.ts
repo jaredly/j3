@@ -38,6 +38,16 @@ export const validateExpr = (
             validateExpr(expr.target, ctx, errors);
             expr.args.forEach((arg) => validateExpr(arg, ctx, errors));
             return;
+        case 'record':
+            expr.entries.forEach((entry) =>
+                validateExpr(entry.value, ctx, errors),
+            );
+            return;
+        case 'string':
+            return expr.templates.forEach(({ expr }) =>
+                validateExpr(expr, ctx, errors),
+            );
+        case 'tag':
         case 'number':
         case 'bool':
             return;
@@ -66,7 +76,7 @@ export const validateExpr = (
             }
             return;
     }
-    console.warn('not validated', expr.type);
+    throw new Error('not validated ' + expr.type);
 };
 
 export const validateType = (
