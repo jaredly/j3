@@ -36,7 +36,35 @@ export const asTuple = (record: TRecord): Type[] | null => {
     return res;
 };
 
-export const nodeForType = (type: Type, ctx: Ctx): Node => {
+export type RCtx = Ctx & {
+    reverseNames: { [hash: string]: string };
+};
+
+export const makeRCtx = (ctx: Ctx): RCtx => {
+    const reverseNames: { [hash: string]: string } = {};
+    for (const name in ctx.global.names) {
+        ctx.global.names[name].forEach((hash) => (reverseNames[hash] = name));
+    }
+    for (const name in ctx.global.typeNames) {
+        ctx.global.typeNames[name].forEach(
+            (hash) => (reverseNames[hash] = name),
+        );
+    }
+    for (const name in ctx.global.builtins.names) {
+        ctx.global.builtins.names[name].forEach(
+            (hash) => (reverseNames[hash] = name),
+        );
+    }
+    for (const sym in ctx.localMap.terms) {
+        reverseNames[sym] = ctx.localMap.terms[sym].name;
+    }
+    for (const sym in ctx.localMap.types) {
+        reverseNames[sym] = ctx.localMap.types[sym].name;
+    }
+    return { ...ctx, reverseNames };
+};
+
+export const nodeForType = (type: Type, ctx: RCtx): Node => {
     switch (type.type) {
         case 'builtin':
             return {
@@ -103,10 +131,6 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
         }
         case 'unresolved':
             return type.form;
-        // return loc(type.form.loc, {
-        //     type: 'identifier',
-        //     text: `unresolved ${type.reason}`,
-        // });
         case 'union':
             return loc(type.form.loc, {
                 type: 'array',
@@ -125,27 +149,20 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
         case 'global':
             return {
                 type: 'identifier',
-                text: 'need-reverse',
-                hash: '#' + type.hash,
+                text: ctx.reverseNames[type.hash],
                 loc: type.form.loc,
             };
         case 'local':
             return {
                 type: 'identifier',
-                text: 'need-reverse-local',
-                hash: '#' + type.sym,
+                text: ctx.reverseNames[type.sym],
                 loc: type.form.loc,
             };
     }
-    // return {
-    //     loc: type.form.loc,
-    //     type: 'identifier',
-    //     text: 'nodeForType ' + type.type,
-    // };
     throw new Error(`cannot nodeForType ${type.type}`);
 };
 
-export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
+export const nodeForExpr = (expr: Expr, ctx: RCtx): Node => {
     switch (expr.type) {
         case 'local':
             return {
@@ -158,7 +175,7 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
         case 'global':
             return {
                 type: 'identifier',
-                text: 'need-reverse',
+                text: ctx.reverseNames[expr.hash],
                 hash: '#' + expr.hash,
                 loc: expr.form.loc,
             };

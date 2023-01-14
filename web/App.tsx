@@ -6,10 +6,12 @@ import { Node } from './Nodes';
 import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
-import { nodeForType } from '../src/to-cst/nodeForExpr';
+import { makeRCtx, nodeForType } from '../src/to-cst/nodeForExpr';
 import { Node as NodeT } from '../src/types/cst';
 import { errorToString } from '../src/to-cst/show-errors';
 import localforage from 'localforage';
+import { Type } from '../src/types/ast';
+import { applyAndResolve } from '../src/get-type/matchesType';
 
 const _init = `
 (one two )
@@ -201,9 +203,7 @@ export const App = ({ store }: { store: Store }) => {
                 >
                     {ctx.report.types[best.idx]
                         ? 'Type: ' +
-                          nodeToString(
-                              nodeForType(ctx.report.types[best.idx], ctx.ctx),
-                          ) +
+                          showType(ctx.report.types[best.idx], ctx.ctx) +
                           '\n'
                         : ''}
                     {ctx.report.errors[best.idx] &&
@@ -231,6 +231,17 @@ export const App = ({ store }: { store: Store }) => {
             )}
         </div>
     );
+};
+
+export const showType = (type: Type, ctx: Ctx): string => {
+    let text = nodeToString(nodeForType(type, makeRCtx(ctx)));
+    if (type.type === 'global') {
+        const res = applyAndResolve(type, ctx, []);
+        if (res.type !== 'error' && res.type !== 'local-bound') {
+            return text + ' = ' + nodeToString(nodeForType(res, makeRCtx(ctx)));
+        }
+    }
+    return text;
 };
 
 export type SetHover = (hover: { idx: number; box: any | null }) => void;

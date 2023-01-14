@@ -11,6 +11,7 @@
 		so we can rerender them if necessary
 
 
+- [ ] reverse names and such ples
 
 - [ ] also, get we get a force-directed graph in here?
 
