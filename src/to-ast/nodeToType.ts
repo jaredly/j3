@@ -26,6 +26,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 ),
             };
         case 'tag':
+            ctx.styles[form.loc.idx] = 'bold';
             return {
                 type: 'tag',
                 form,
@@ -66,6 +67,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'tag') {
+                ctx.styles[first.loc.idx] = 'bold';
                 return {
                     type: 'tag',
                     form,

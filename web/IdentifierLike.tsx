@@ -64,6 +64,11 @@ export const IdentifierLike = ({
                   //   fontVariationSettings: '"wght" 100',
                   color: '#84a4a5',
               }
+            : ctx.ctx.styles[idx] === 'bold'
+            ? {
+                  //   fontWeight: 'bold',
+                  fontVariationSettings: '"wght" 500',
+              }
             : {};
 
     const ref = React.useRef(null as null | HTMLSpanElement);

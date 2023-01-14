@@ -23,6 +23,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'unparsed':
             return { type: 'unresolved', form };
         case 'tag':
+            ctx.styles[form.loc.idx] = 'bold';
             return { type: 'tag', name: form.text, form };
         case 'string':
             return {

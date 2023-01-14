@@ -164,6 +164,7 @@ export const nodeToPattern = (
                 };
             }
             if (first.type === 'tag') {
+                ctx.styles[first.loc.idx] = 'bold';
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
                     console.log('no t', t);
