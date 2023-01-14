@@ -1,7 +1,7 @@
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, nil, noForm } from '../src/to-ast/to-ast';
+import { addDef, Ctx, nil, noForm } from '../src/to-ast/to-ast';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { EvalCtx, Store } from './store';
@@ -45,6 +45,8 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             }
             return;
         }
+
+        ctx = rmPrevious(ctx, nodes[idx]);
 
         const _ = getType(res, ctx, report);
         validateExpr(res, ctx, report.errors);
@@ -96,7 +98,30 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             return;
         }
         ctx = addDef(res, ctx);
+        if (res.type === 'def') {
+            nodes[idx] = {
+                type: 'Def',
+                node: res.value,
+                names: { [res.name]: res.hash },
+            };
+        }
     });
 
+    ctx.errors = {};
+
     ectx.ctx = ctx;
+};
+
+const rmPrevious = (ctx: Ctx, node?: EvalCtx['nodes'][0]): Ctx => {
+    if (!node) {
+        return ctx;
+    }
+    if (node.type === 'Def') {
+        const names = { ...ctx.global.names };
+        Object.keys(node.names).forEach((key) => {
+            names[key] = names[key].filter((h) => h !== node.names[key]);
+        });
+        return { ...ctx, global: { ...ctx.global, names } };
+    }
+    return ctx;
 };

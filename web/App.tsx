@@ -125,17 +125,17 @@ export const App = ({ store }: { store: Store }) => {
     const best = React.useMemo(() => {
         for (let i = hover.length - 1; i >= 0; i--) {
             if (
-                ctx.report.types[hover[i].idx] ||
+                (altDown && ctx.report.types[hover[i].idx]) ||
                 ctx.report.errors[hover[i].idx]
             ) {
                 return hover[i];
             }
         }
         return null;
-    }, [hover]);
+    }, [hover, altDown]);
 
-    const showBest =
-        best && (altDown || ctx.report.errors[best.idx]) ? best : null;
+    // const showBest =
+    //     best && (altDown || ctx.report.errors[best.idx]) ? best : null;
 
     return (
         <div style={{ margin: 24 }}>
@@ -175,13 +175,13 @@ export const App = ({ store }: { store: Store }) => {
                     }}
                 />
             </div>
-            {showBest && (
+            {best && (
                 <div
                     style={{
                         position: 'absolute',
 
-                        left: showBest.box.left,
-                        top: showBest.box.bottom,
+                        left: best.box.left,
+                        top: best.box.bottom,
                         pointerEvents: 'none',
                         zIndex: 100,
                         backgroundColor: 'black',
@@ -192,32 +192,29 @@ export const App = ({ store }: { store: Store }) => {
                         whiteSpace: 'pre',
                     }}
                 >
-                    {ctx.report.types[showBest.idx]
+                    {ctx.report.types[best.idx]
                         ? 'Type: ' +
                           nodeToString(
-                              nodeForType(
-                                  ctx.report.types[showBest.idx],
-                                  ctx.ctx,
-                              ),
+                              nodeForType(ctx.report.types[best.idx], ctx.ctx),
                           ) +
                           '\n'
                         : ''}
-                    {ctx.report.errors[showBest.idx] &&
-                        ctx.report.errors[showBest.idx]
+                    {ctx.report.errors[best.idx] &&
+                        ctx.report.errors[best.idx]
                             .map((error) => errorToString(error, ctx.ctx))
                             .join('\n')}
-                    {/* {JSON.stringify(noForm(ctx.types[showBest.idx]))} */}
+                    {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
                 </div>
             )}
-            {showBest && (
+            {best && (
                 <div
                     style={{
                         position: 'absolute',
 
-                        left: showBest.box.left,
-                        top: showBest.box.top,
-                        height: showBest.box.height,
-                        width: showBest.box.width,
+                        left: best.box.left,
+                        top: best.box.top,
+                        height: best.box.height,
+                        width: best.box.width,
                         pointerEvents: 'none',
                         zIndex: 50,
                         backgroundColor: 'transparent',

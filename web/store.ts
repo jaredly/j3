@@ -50,13 +50,15 @@ export type EvalCtx = {
     terms: { [key: string]: any };
     nodes: {
         [idx: number]:
+            | { type: 'Def'; node: Expr; names: { [name: string]: string } }
             | {
                   type: 'Expr';
                   node: Expr;
               }
             | {
-                  type: 'Type';
+                  type: 'Deftype';
                   node: Type;
+                  names: { [name: string]: string };
               }
             | {
                   type: 'Pattern';

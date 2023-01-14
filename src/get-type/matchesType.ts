@@ -68,6 +68,39 @@ export const _matchesType = (
     path: string[],
 ): MatchError | true => {
     switch (candidate.type) {
+        case 'record': {
+            if (expected.type === 'record') {
+                const map = expected.entries.reduce((map, entry) => {
+                    map[entry.name] = entry.value;
+                    return map;
+                }, {} as { [key: string]: Type });
+                const cmap = candidate.entries.reduce((map, entry) => {
+                    map[entry.name] = entry.value;
+                    return map;
+                }, {} as { [key: string]: Type });
+                for (const entry of candidate.entries) {
+                    if (map[entry.name]) {
+                        const result = _matchOrExpand(
+                            entry.value,
+                            map[entry.name],
+                            ctx,
+                            path,
+                        );
+                        if (result !== true) {
+                            return result;
+                        }
+                    } else {
+                        return inv(
+                            candidate,
+                            expected,
+                            path.concat([entry.name]),
+                        );
+                    }
+                }
+                return true;
+            }
+            return inv(candidate, expected, path);
+        }
         case 'global': {
             if (
                 expected.type === 'global' &&

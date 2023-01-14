@@ -3,8 +3,12 @@
 - [x] move the web UI over to the new type checking and valdiation
 
 - [ ] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
+	- 
 
 - [ ] also, get we get a force-directed graph in here?
+
+- [ ] record matches!!!! Making so much progress.
+- [ ] why does the error stick around?
 
 HOVERY things
 - [ ] filter out keywords

@@ -172,24 +172,28 @@ export const ListLike = ({
         ))
     );
 
-    const dec = ctx.report.errors[idx]
-        ? 'underline red'
+    const dec = ctx.report.errors[idx]?.length
+        ? 'rgba(255,0,0,0.1)'
         : // : !ctx.report.types[idx]
           // ? 'underline gray'
           'none';
 
-    const color = ctx.report.errors[idx]
+    const color = ctx.report.errors[idx]?.length
         ? 'red'
         : !ctx.report.types[idx]
         ? 'green'
         : undefined;
+
+    // if (ctx.report.errors[idx]?.length) {
+    //     console.log('BAD', ctx.report.errors[idx]);
+    // }
 
     return (
         <span
             style={{
                 display: 'flex',
                 cursor: 'text',
-                textDecoration: isRoot ? undefined : dec,
+                backgroundColor: isRoot ? undefined : dec,
                 color,
             }}
             onMouseEnter={(evt) =>
