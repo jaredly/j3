@@ -175,6 +175,9 @@ export const _matchesType = (
                 }
                 const args = whats.map[candidate.name].args;
                 for (let i = 0; i < args.length; i++) {
+                    if (i >= candidate.args.length) {
+                        return inv(candidate, expected, path);
+                    }
                     const res = _matchOrExpand(
                         candidate.args[i],
                         args[i],
