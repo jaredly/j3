@@ -1,8 +1,9 @@
 import { blank, Ctx, nilt } from '../to-ast/to-ast';
-import { Expr, Node, Type } from '../types/ast';
+import { Expr, Node, Pattern, Type } from '../types/ast';
 import { matchesType } from './matchesType';
 import { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
+import { transformType } from '../types/walk-ast';
 
 export type Report = {
     types: { [idx: number]: Type };
@@ -224,6 +225,18 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'def':
             return getType(expr.value, ctx, report);
         case 'deftype':
+            if (report) {
+                transformType(
+                    expr.value,
+                    {
+                        Type(node) {
+                            report.types[node.form.loc.idx] = node;
+                            return null;
+                        },
+                    },
+                    null,
+                );
+            }
             return nilt;
         case 'let': {
             expr.bindings.forEach((binding) =>
@@ -236,7 +249,10 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             getType(expr.target, ctx, report);
             let res: null | Type = null;
             let bad = false;
-            expr.cases.forEach(({ body }) => {
+            expr.cases.forEach(({ pattern, body }) => {
+                if (report) {
+                    walkPattern(pattern, ctx, report);
+                }
                 const type = getType(body, ctx, report);
                 if (!type) {
                     return;
@@ -277,4 +293,33 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         }
     }
     console.log('getType is sorry about', expr.type);
+};
+
+export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {
+    switch (pattern.type) {
+        case 'bool':
+            report.types[pattern.form.loc.idx] = {
+                type: 'builtin',
+                name: 'bool',
+                form: pattern.form,
+            };
+            return;
+        case 'number':
+            report.types[pattern.form.loc.idx] = pattern;
+            return;
+        case 'local':
+            report.types[pattern.form.loc.idx] =
+                ctx.localMap.terms[pattern.sym].type;
+            return;
+        case 'record':
+            pattern.entries.forEach((entry) => {
+                walkPattern(entry.value, ctx, report);
+            });
+            return;
+        case 'tag':
+            pattern.args.forEach((arg) => {
+                walkPattern(arg, ctx, report);
+            });
+            return;
+    }
 };

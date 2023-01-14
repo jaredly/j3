@@ -11,7 +11,12 @@
 		so we can rerender them if necessary
 
 
-- [ ] reverse names and such ples
+- [x] reverse names and such ples
+
+
+- [x] pattern type-hover, yes thanks
+- [ ] for fun demos, and art and such, can we get a custom render in here?
+
 
 - [ ] also, get we get a force-directed graph in here?
 
