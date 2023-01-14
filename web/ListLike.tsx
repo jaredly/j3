@@ -31,44 +31,48 @@ export const ListLike = ({
 }) => {
     const isRoot = idx === store.root;
 
-    const nodes = children.map((cidx, i) => (
-        <Node
-            idx={cidx}
-            key={cidx}
-            ctx={ctx}
-            setHover={setHover}
-            path={path.concat({
-                idx,
-                child: {
-                    type: 'child',
-                    at: i,
-                },
-            })}
-            store={store}
-            events={{
-                onLeft() {
-                    if (i > 0) {
-                        setSelection(store, {
-                            idx: children[i - 1],
-                            loc: 'end',
-                        });
-                    } else {
-                        setSelection(store, { idx, loc: 'start' });
-                    }
-                },
-                onRight() {
-                    if (i < children.length - 1) {
-                        setSelection(store, {
-                            idx: children[i + 1],
-                            loc: 'start',
-                        });
-                    } else {
-                        setSelection(store, { idx, loc: 'end' });
-                    }
-                },
-            }}
-        />
-    ));
+    const nodes = React.useMemo(
+        () =>
+            children.map((cidx, i) => (
+                <Node
+                    idx={cidx}
+                    key={cidx}
+                    ctx={ctx}
+                    setHover={setHover}
+                    path={path.concat({
+                        idx,
+                        child: {
+                            type: 'child',
+                            at: i,
+                        },
+                    })}
+                    store={store}
+                    events={{
+                        onLeft() {
+                            if (i > 0) {
+                                setSelection(store, {
+                                    idx: children[i - 1],
+                                    loc: 'end',
+                                });
+                            } else {
+                                setSelection(store, { idx, loc: 'start' });
+                            }
+                        },
+                        onRight() {
+                            if (i < children.length - 1) {
+                                setSelection(store, {
+                                    idx: children[i + 1],
+                                    loc: 'start',
+                                });
+                            } else {
+                                setSelection(store, { idx, loc: 'end' });
+                            }
+                        },
+                    }}
+                />
+            )),
+        [children, idx],
+    );
 
     const contents = isRoot ? (
         <div
@@ -172,29 +176,14 @@ export const ListLike = ({
         ))
     );
 
-    const dec = ctx.report.errors[idx]?.length
-        ? 'rgba(255,0,0,0.1)'
-        : // : !ctx.report.types[idx]
-          // ? 'underline gray'
-          'none';
-
-    const color = ctx.report.errors[idx]?.length
-        ? 'red'
-        : !ctx.report.types[idx]
-        ? 'green'
-        : undefined;
-
-    // if (ctx.report.errors[idx]?.length) {
-    //     console.log('BAD', ctx.report.errors[idx]);
-    // }
+    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.05)' : 'none';
 
     return (
         <span
             style={{
                 display: 'flex',
                 cursor: 'text',
-                backgroundColor: isRoot ? undefined : dec,
-                color,
+                background: isRoot ? 'transparent' : dec,
             }}
             onMouseEnter={(evt) =>
                 setHover({

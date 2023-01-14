@@ -7,7 +7,7 @@
 
 - [ ] also, get we get a force-directed graph in here?
 
-- [ ] record matches!!!! Making so much progress.
+- [x] record matches!!!! Making so much progress.
 - [ ] why does the error stick around?
 
 HOVERY things

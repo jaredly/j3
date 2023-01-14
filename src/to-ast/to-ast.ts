@@ -26,8 +26,11 @@ export type Local = {
     types: { sym: number; name: string; bound?: Type }[];
 };
 
+export type NodeStyle = 'italic';
+
 export type Ctx = {
     errors: Report['errors'];
+    styles: { [idx: number]: NodeStyle };
     sym: { current: number };
     global: Global;
     local: Local;
@@ -140,6 +143,7 @@ export const newCtx = (): Ctx => {
         local: emptyLocal,
         localMap: { terms: {}, types: {} },
         errors: {},
+        styles: {},
     };
 };
 

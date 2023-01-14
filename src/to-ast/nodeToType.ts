@@ -45,6 +45,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     });
                     continue;
                 }
+                ctx.styles[name.loc.idx] = 'italic';
                 entries.push({
                     name: name.text,
                     value: value ? nodeToType(value, ctx) : nilt,

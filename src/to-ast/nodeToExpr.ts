@@ -51,6 +51,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             name: item.text,
                             value: nodeToExpr(item, ctx),
                         });
+                        ctx.styles[item.loc.idx] = 'italic';
                     } else {
                         entries.push({
                             name: '_ignored',
@@ -65,14 +66,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             } else {
                 for (let i = 0; i < values.length; i += 2) {
                     const name = values[i];
+                    ctx.styles[name.loc.idx] = 'italic';
+                    if (name.type !== 'identifier' && name.type !== 'number') {
+                        continue;
+                    }
                     const value = values[i + 1];
                     entries.push({
-                        name:
-                            name.type === 'identifier'
-                                ? name.text
-                                : name.type === 'number'
-                                ? name.raw
-                                : '_ignored_' + name.type,
+                        name: name.type === 'identifier' ? name.text : name.raw,
                         value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }

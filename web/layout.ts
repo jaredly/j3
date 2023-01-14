@@ -56,6 +56,7 @@ const tightFirsts: { [key: string]: number } = {
     fn: 2,
     def: 2,
     defn: 3,
+    deftype: 2,
     let: 2,
     if: 2,
 };

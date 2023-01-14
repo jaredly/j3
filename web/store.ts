@@ -73,14 +73,21 @@ export type EvalCtx = {
                   value: any;
                   code: string;
                   expr: Expr;
+                  styles: Ctx['styles'];
               }
             | {
                   status: 'failure';
                   error: string;
                   code: string;
                   expr: Expr;
+                  styles: Ctx['styles'];
               }
-            | { status: 'errors'; expr: Expr; errors: Report['errors'] };
+            | {
+                  status: 'errors';
+                  expr: Expr;
+                  errors: Report['errors'];
+                  styles: Ctx['styles'];
+              };
     };
 };
 
@@ -146,7 +153,11 @@ export const useStore = (store: Store, key: number): Map[0] => {
     return store.map[key];
 };
 
-export const notify = (store: Store, idxs: (number | null | undefined)[]) => {
+export const notify = (
+    store: Store,
+    idxs: (number | null | undefined)[],
+    change = false,
+) => {
     let seen: { [key: string]: true } = {};
     idxs.forEach((idx) => {
         if (idx != null && !seen[idx]) {
@@ -157,19 +168,23 @@ export const notify = (store: Store, idxs: (number | null | undefined)[]) => {
     if (store.listeners['']) {
         store.listeners[''].forEach((fn) => fn());
     }
+    if (store.listeners[':change'] && change) {
+        store.listeners[':change'].forEach((fn) => fn());
+    }
 };
 
 export const setSelection = (
     store: Store,
     selection: Store['selection'],
     extras?: (number | null | undefined)[],
+    change = false,
 ) => {
     const old = store.selection;
     if (old?.idx === selection?.idx && old?.loc === selection?.loc) {
-        return notify(store, [selection?.idx, ...(extras || [])]);
+        return notify(store, [selection?.idx, ...(extras || [])], change);
     }
     store.selection = selection;
-    notify(store, [old?.idx, selection?.idx, ...(extras || [])]);
+    notify(store, [old?.idx, selection?.idx, ...(extras || [])], change);
     return old;
 };
 
@@ -269,6 +284,7 @@ export const updateStore = (
             Object.keys(change)
                 .map(Number)
                 .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            true,
         );
     } else {
         notify(
@@ -276,6 +292,7 @@ export const updateStore = (
             Object.keys(change)
                 .map(Number)
                 .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            true,
         );
     }
 };

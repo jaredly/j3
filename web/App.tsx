@@ -111,7 +111,7 @@ export const App = ({ store }: { store: Store }) => {
     }, []);
 
     React.useEffect(() => {
-        store.listeners[''] = [
+        store.listeners[':change'] = [
             () => {
                 compile(store, ctx);
                 tick[1]((x) => x + 1);
@@ -137,6 +137,31 @@ export const App = ({ store }: { store: Store }) => {
     // const showBest =
     //     best && (altDown || ctx.report.errors[best.idx]) ? best : null;
 
+    const setHover2 = React.useCallback<SetHover>((hover) => {
+        setHover((h) => {
+            if (hover.box) {
+                return [...h, hover];
+            } else {
+                for (let i = h.length - 1; i >= 0; i--) {
+                    if (h[i].idx === hover.idx) {
+                        const res = [...h];
+                        res.splice(i, 1);
+                        return res;
+                    }
+                }
+                return h;
+            }
+        });
+    }, []);
+    const topPath = React.useMemo(() => [], []);
+    const emptyEvents = React.useMemo(
+        () => ({
+            onLeft() {},
+            onRight() {},
+        }),
+        [],
+    );
+
     return (
         <div style={{ margin: 24 }}>
             <button
@@ -152,27 +177,9 @@ export const App = ({ store }: { store: Store }) => {
                     idx={store.root}
                     store={store}
                     ctx={ctx}
-                    path={[]}
-                    setHover={(hover) => {
-                        setHover((h) => {
-                            if (hover.box) {
-                                return [...h, hover];
-                            } else {
-                                for (let i = h.length - 1; i >= 0; i--) {
-                                    if (h[i].idx === hover.idx) {
-                                        const res = [...h];
-                                        res.splice(i, 1);
-                                        return res;
-                                    }
-                                }
-                                return h;
-                            }
-                        });
-                    }}
-                    events={{
-                        onLeft() {},
-                        onRight() {},
-                    }}
+                    path={topPath}
+                    setHover={setHover2}
+                    events={emptyEvents}
                 />
             </div>
             {best && (

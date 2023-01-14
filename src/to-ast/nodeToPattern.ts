@@ -86,6 +86,7 @@ export const nodeToPattern = (
                         });
                         continue;
                     }
+                    ctx.styles[name.loc.idx] = 'italic';
                     if (!prm[name.text]) {
                         err(ctx.errors, form.values[i], {
                             type: 'misc',

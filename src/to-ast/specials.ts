@@ -175,6 +175,9 @@ export const specials: {
         };
     },
     switch: (form, contents, ctx): Expr => {
+        if (contents.length < 2) {
+            return { type: 'unresolved', form, reason: 'no enough args' };
+        }
         const [valueNode, ...cases] = contents;
         const pairs = [];
         const value = nodeToExpr(valueNode, ctx);

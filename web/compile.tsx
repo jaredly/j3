@@ -4,7 +4,7 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, nil, noForm } from '../src/to-ast/to-ast';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { EvalCtx, Store } from './store';
+import { EvalCtx, notify, Store } from './store';
 import objectHash from 'object-hash';
 import { CacheCtx, getCachedType } from '../src/types/check-types';
 import { getType, Report } from '../src/get-type/get-types-new';
@@ -19,7 +19,11 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     //     types: ectx.types,
     //     globalTypes: ectx.globalTypes,
     // };
+    const prevErrors = ectx.report.errors;
+
     ectx.report.errors = {};
+    const allStyles: Ctx['styles'] = {};
+    const prevStyles = ctx.styles;
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.type === 'comment') {
@@ -28,6 +32,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 value: undefined,
                 code: '// a comment',
                 expr: nil,
+                styles: {},
             };
             return;
         }
@@ -35,6 +40,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         const report: Report = { errors: {}, types: {} };
         ctx.errors = report.errors;
+        ctx.styles = {};
 
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
@@ -43,6 +49,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             if (prev.status === 'errors') {
                 Object.assign(ectx.report.errors, prev.errors);
             }
+            Object.assign(allStyles, prev.styles);
             return;
         }
 
@@ -55,12 +62,15 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         Object.assign(ectx.report.errors, report.errors);
         Object.assign(ectx.report.types, report.types);
+        Object.assign(allStyles, ctx.styles);
 
         if (hasErrors) {
+            console.log(idx, 'had errors I guess');
             results[idx] = {
                 status: 'errors',
                 expr: res,
                 errors: report.errors,
+                styles: ctx.styles,
             };
             last[idx] = hash;
             return;
@@ -85,6 +95,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 }),
                 code,
                 expr: res,
+                styles: ctx.styles,
             };
             last[idx] = hash;
         } catch (err) {
@@ -93,6 +104,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 error: (err as Error).message,
                 code,
                 expr: res,
+                styles: ctx.styles,
             };
             last[idx] = hash;
             return;
@@ -107,7 +119,39 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         }
     });
 
-    ctx.errors = {};
+    // Now figure out what's changed
+    const changed: { [key: number]: true } = {};
+    Object.keys(prevErrors).forEach((key) => {
+        if (!ectx.report.errors[+key]) {
+            changed[+key] = true;
+        }
+    });
+    Object.keys(ectx.report.errors).forEach((key) => {
+        if (!prevErrors[+key]) {
+            changed[+key] = true;
+        }
+    });
+
+    Object.keys(prevStyles).forEach((key) => {
+        if (allStyles[+key] !== prevStyles[+key]) {
+            changed[+key] = true;
+        }
+    });
+    Object.keys(allStyles).forEach((key) => {
+        if (allStyles[+key] !== prevStyles[+key]) {
+            changed[+key] = true;
+        }
+    });
+    ctx.styles = allStyles;
+
+    const keys = Object.keys(changed);
+    if (keys.length) {
+        notify(
+            store,
+            keys.map((k) => +k),
+        );
+        console.log(changed);
+    }
 
     ectx.ctx = ctx;
 };

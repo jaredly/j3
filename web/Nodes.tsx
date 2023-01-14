@@ -58,69 +58,71 @@ const arrayItems = (
 
 // IdentifierLike (atom?)
 // identifier, tag, number?, comment prolly
-export const Node = ({
-    idx,
-    store,
-    path,
-    events,
-    ctx,
-    setHover,
-}: {
-    idx: number;
-    store: Store;
-    path: Path[];
-    events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
-}) => {
-    const both = useStore(store, idx);
-    if (!both) {
-        return null;
-    }
-    const { node: item, layout } = both;
-    const text = idText(item);
+export const Node = React.memo(
+    ({
+        idx,
+        store,
+        path,
+        events,
+        ctx,
+        setHover,
+    }: {
+        idx: number;
+        store: Store;
+        path: Path[];
+        events: Events;
+        ctx: EvalCtx;
+        setHover: SetHover;
+    }) => {
+        const both = useStore(store, idx);
+        if (!both) {
+            return null;
+        }
+        const { node: item, layout } = both;
+        const text = idText(item);
 
-    // const decs = Object.entries(item.decorators);
+        // const decs = Object.entries(item.decorators);
 
-    if (text != null) {
-        return (
-            <IdentifierLike
-                text={text}
-                type={item.type}
-                store={store}
-                idx={idx}
-                path={path}
-                events={events}
-                ctx={ctx}
-                setHover={setHover}
-            />
-        );
-    }
+        if (text != null) {
+            return (
+                <IdentifierLike
+                    text={text}
+                    type={item.type}
+                    store={store}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                    ctx={ctx}
+                    setHover={setHover}
+                />
+            );
+        }
 
-    const arr = arrayItems(item);
+        const arr = arrayItems(item);
 
-    if (arr) {
-        const [left, right, children] = arr;
-        return (
-            <ListLike
-                {...{
-                    left,
-                    right,
-                    children,
-                    store,
-                    path,
-                    layout,
-                    idx,
-                    events,
-                    ctx,
-                    setHover,
-                }}
-            />
-        );
-    }
+        if (arr) {
+            const [left, right, children] = arr;
+            return (
+                <ListLike
+                    {...{
+                        left,
+                        right,
+                        children,
+                        store,
+                        path,
+                        layout,
+                        idx,
+                        events,
+                        ctx,
+                        setHover,
+                    }}
+                />
+            );
+        }
 
-    return <span>{JSON.stringify(item)}</span>;
-};
+        return <span>{JSON.stringify(item)}</span>;
+    },
+);
 
 // Spread is weird, let's wait to support it?
 // String is special too

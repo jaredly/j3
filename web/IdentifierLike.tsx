@@ -48,9 +48,18 @@ export const IdentifierLike = ({
 
     const dec = ctx.report.errors[idx]
         ? 'underline red'
-        : ctx.report.types[idx] == null
-        ? 'underline gray'
-        : 'none';
+        : // : ctx.report.types[idx] == null
+          // ? 'underline gray'
+          'none';
+
+    const style =
+        ctx.ctx.styles[idx] === 'italic'
+            ? {
+                  fontStyle: 'italic',
+                  fontFamily: 'serif',
+                  color: '#84a4a5',
+              }
+            : {};
 
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
@@ -61,6 +70,7 @@ export const IdentifierLike = ({
                 minHeight: '1.3em',
                 whiteSpace: 'pre-wrap',
                 textDecoration: dec,
+                ...style,
             }}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
@@ -107,6 +117,7 @@ export const IdentifierLike = ({
                 outline: 'none',
                 minHeight: '1.3em',
                 textDecoration: dec,
+                ...style,
             }}
             onKeyDown={(evt) => {
                 onKeyDown(evt, idx, path, events, store);
@@ -139,7 +150,7 @@ export const colors: {
 const ops = ['+', '-', '*', '/', '==', '<', '>', '<=', '>=', '!=', ','];
 ops.forEach((op) => (colors[op] = '#c9cac9'));
 
-const kwds = ['let', 'def', 'defn', 'fn'];
+const kwds = ['let', 'def', 'defn', 'fn', 'deftype', 'if', 'switch'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
 function focus(node: HTMLSpanElement, store: Store) {
@@ -184,35 +195,16 @@ function onInput(
     const text = evt.currentTarget.textContent ?? '';
     setEdit(text);
     const pos = getPos(evt.currentTarget);
+
+    let nw: Node;
     try {
         const parsed = parse(text);
-        if (parsed.length === 1) {
-            const nw = {
-                ...parsed[0],
-                loc: { ...parsed[0].loc, idx },
-            };
-            const mp: Map = {};
-            toMCST(nw, mp);
-            updateStore(
-                store,
-                {
-                    map: mp,
-                    selection: {
-                        idx,
-                        loc: pos,
-                    },
-                    prev: {
-                        idx,
-                        loc: presel.current ?? undefined,
-                    },
-                },
-                [path],
-            );
-        } else {
-            throw new Error('unparseable?');
-        }
+        nw = {
+            ...parsed[0],
+            loc: { ...parsed[0].loc, idx },
+        };
     } catch (err) {
-        const nw: Node = {
+        nw = {
             ...(text.length === 0
                 ? { type: 'identifier', text: '' }
                 : {
@@ -222,22 +214,23 @@ function onInput(
             // decorators: {},
             loc: { start: 0, end: text.length, idx },
         };
-        const mp: Map = {};
-        toMCST(nw, mp);
-        updateStore(
-            store,
-            {
-                map: mp,
-                selection: {
-                    idx,
-                    loc: pos,
-                },
-                prev: {
-                    idx,
-                    loc: presel.current ?? undefined,
-                },
-            },
-            [path],
-        );
     }
+
+    const mp: Map = {};
+    toMCST(nw, mp);
+    updateStore(
+        store,
+        {
+            map: mp,
+            selection: {
+                idx,
+                loc: pos,
+            },
+            prev: {
+                idx,
+                loc: presel.current ?? undefined,
+            },
+        },
+        [path],
+    );
 }
