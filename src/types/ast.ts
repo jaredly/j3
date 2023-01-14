@@ -77,6 +77,7 @@ export type Expr =
           args: Expr[];
           form: Node;
       }
+    | { type: 'array'; values: Expr[]; form: Node }
     | {
           type: 'type-apply';
           target: Expr;

@@ -5,7 +5,15 @@ import { Ctx, nil, resolveExpr } from './to-ast';
 import { err } from './nodeToPattern';
 
 export const filterComments = (nodes: Node[]) =>
-    nodes.filter((node) => node.type !== 'comment');
+    nodes.filter(
+        (node) =>
+            node.type !== 'comment' &&
+            !(
+                node.type === 'identifier' &&
+                node.text === '' &&
+                node.hash === ''
+            ),
+    );
 
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
@@ -106,6 +114,14 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 type: 'apply',
                 target,
                 args,
+                form,
+            };
+        }
+        case 'array': {
+            const values = filterComments(form.values);
+            return {
+                type: 'array',
+                values: values.map((child) => nodeToExpr(child, ctx)),
                 form,
             };
         }

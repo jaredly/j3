@@ -238,6 +238,44 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 );
             }
             return nilt;
+        case 'array': {
+            let res = null;
+            // hmmmmm I should have a "ground" type ... for the empty array.
+            // like, this is a type that unifies with everything.
+            let failed = false;
+            for (let value of expr.values) {
+                const type = getType(value, ctx, report);
+                if (type) {
+                    if (res) {
+                        res = unifyTypes(res, type, ctx, expr.form, report);
+                        if (!res) {
+                            failed = true;
+                        }
+                    } else {
+                        res = type;
+                    }
+                } else {
+                    failed = true;
+                }
+            }
+            if (failed || !res) {
+                return;
+            }
+            return {
+                type: 'apply',
+                target: { type: 'builtin', name: 'array', form: expr.form },
+                args: [
+                    res,
+                    {
+                        type: 'number',
+                        value: expr.values.length,
+                        form: expr.form,
+                        kind: 'uint',
+                    },
+                ],
+                form: expr.form,
+            };
+        }
         case 'let': {
             expr.bindings.forEach((binding) =>
                 getType(binding.value, ctx, report),

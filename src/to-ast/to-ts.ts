@@ -243,6 +243,10 @@ export const bodyToTs = (
 
 export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
     switch (expr.type) {
+        case 'array':
+            return t.arrayExpression(
+                expr.values.map((item) => exprToTs(item, ctx)),
+            );
         case 'number':
             return t.numericLiteral(expr.value);
         case 'bool':

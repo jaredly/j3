@@ -171,6 +171,7 @@ export const App = ({ store }: { store: Store }) => {
                     localforage.removeItem('j3:app');
                     location.reload();
                 }}
+                style={{ marginBottom: 20 }}
             >
                 Clear
             </button>

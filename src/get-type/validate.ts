@@ -94,6 +94,9 @@ export const validateExpr = (
             validateExpr(expr.yes, ctx, errors);
             validateExpr(expr.no, ctx, errors);
             return;
+        case 'array':
+            expr.values.forEach((item) => validateExpr(item, ctx, errors));
+            return;
     }
     throw new Error('not validated ' + expr.type);
 };

@@ -72,6 +72,12 @@ export const nodeForType = (type: Type, ctx: RCtx): Node => {
                 type: 'identifier',
                 text: type.name,
             };
+        case 'bool':
+            return {
+                loc: type.form.loc,
+                type: 'identifier',
+                text: type.value ? 'true' : 'false',
+            };
         case 'number':
             return {
                 loc: type.form.loc,

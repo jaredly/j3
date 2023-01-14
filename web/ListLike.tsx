@@ -5,6 +5,7 @@ import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './App';
 import { Expr } from '../src/types/ast';
+import { Report } from '../src/get-type/get-types-new';
 
 export const ListLike = ({
     left,
@@ -257,7 +258,7 @@ export const ShowResult = ({
     result:
         | { status: 'success'; value: any; code: string; expr: Expr }
         | { status: 'failure'; error: string; code: string; expr: Expr }
-        | { status: 'errors'; expr: Expr };
+        | { status: 'errors'; expr: Expr; errors: Report['errors'] };
 }) => {
     let body;
     if (result.status === 'success') {
@@ -271,7 +272,7 @@ export const ShowResult = ({
             );
         }
     } else if (result.status === 'errors') {
-        body = <pre>There were errors?</pre>;
+        body = <pre style={{ whiteSpace: 'pre-wrap' }}>Type errors</pre>;
     } else {
         body = <pre>{result.error}</pre>;
     }

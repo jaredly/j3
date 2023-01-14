@@ -16,6 +16,9 @@
 
 - [x] pattern type-hover, yes thanks
 - [ ] for fun demos, and art and such, can we get a custom render in here?
+- [ ] ok maybe I need floats. Which means multi-dispatch (?) or just some inference?
+- [ ] also, let's get arrays in there!
+- [ ] '(' in a start Blinker should wrap the thing. Also alt-( should work.
 
 
 - [ ] also, get we get a force-directed graph in here?

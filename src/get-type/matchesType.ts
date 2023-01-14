@@ -78,11 +78,11 @@ export const _matchesType = (
                     map[entry.name] = entry.value;
                     return map;
                 }, {} as { [key: string]: Type });
-                for (const entry of candidate.entries) {
-                    if (map[entry.name]) {
+                for (const entry of expected.entries) {
+                    if (cmap[entry.name]) {
                         const result = _matchOrExpand(
+                            cmap[entry.name],
                             entry.value,
-                            map[entry.name],
                             ctx,
                             path,
                         );
@@ -95,6 +95,17 @@ export const _matchesType = (
                             expected,
                             path.concat([entry.name]),
                         );
+                    }
+                }
+                if (!expected.open) {
+                    for (const entry of candidate.entries) {
+                        if (!map[entry.name]) {
+                            return inv(
+                                candidate,
+                                expected,
+                                path.concat([entry.name]),
+                            );
+                        }
                     }
                 }
                 return true;
