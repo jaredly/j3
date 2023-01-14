@@ -56,7 +56,12 @@ export const IdentifierLike = ({
         ctx.ctx.styles[idx] === 'italic'
             ? {
                   fontStyle: 'italic',
+                  //   fontFamily: 'Monoid',
+                  //   fontSize: '80%',
                   fontFamily: 'serif',
+                  //   fontFamily: 'Fira Code VF',
+                  //   fontFamily: 'Jet Brains Italic',
+                  //   fontVariationSettings: '"wght" 100',
                   color: '#84a4a5',
               }
             : {};
@@ -92,6 +97,9 @@ export const IdentifierLike = ({
             data-idx={idx}
             contentEditable
             ref={ref}
+            autoCorrect="off"
+            spellCheck="false"
+            autoCapitalize="off"
             className="idlike"
             onMouseDown={(evt) => evt.stopPropagation()}
             onMouseOver={(evt) =>

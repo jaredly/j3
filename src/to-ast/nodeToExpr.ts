@@ -2,6 +2,7 @@ import { Node } from '../types/cst';
 import { Expr, Record } from '../types/ast';
 import { specials } from './specials';
 import { Ctx, nil, resolveExpr } from './to-ast';
+import { err } from './nodeToPattern';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter((node) => node.type !== 'comment');
@@ -70,9 +71,17 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     if (name.type !== 'identifier' && name.type !== 'number') {
                         continue;
                     }
+                    const namev =
+                        name.type === 'identifier' ? name.text : name.raw;
                     const value = values[i + 1];
+                    if (!value) {
+                        err(ctx.errors, name, {
+                            type: 'misc',
+                            message: `missing value for field ${namev}`,
+                        });
+                    }
                     entries.push({
-                        name: name.type === 'identifier' ? name.text : name.raw,
+                        name: namev,
                         value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }

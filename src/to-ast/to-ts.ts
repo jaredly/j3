@@ -255,6 +255,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                         name === '!=' ||
                         name === '+' ||
                         name === '*' ||
+                        name === '/' ||
                         name === '<' ||
                         name === '>') &&
                     expr.args.length === 2

@@ -2,16 +2,25 @@
 - [x] ok validate the stuff
 - [x] move the web UI over to the new type checking and valdiation
 
-- [ ] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
+- [x] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
 	- 
+
+
+- [x] hmmmmmm I think this is a listener issue?
+	- I need to keep track of what nodes had errors in the previous one, and do a diff
+		so we can rerender them if necessary
+
+
 
 - [ ] also, get we get a force-directed graph in here?
 
 - [x] record matches!!!! Making so much progress.
-- [ ] why does the error stick around?
+- [x] why does the error stick around? (weird dom not clearing thing, backgroundColor='none' is invalid css)
+
+- [ ] WELL having let-arrays be formatted as pairs is a little tricky. I think storing layout on the map is maybe not my best idea. idk.
 
 HOVERY things
-- [ ] filter out keywords
+- [x] filter out keywords
 
 What's a good way to italicize record keys?
 hmmm maybe in the report, we can include like style stuff?

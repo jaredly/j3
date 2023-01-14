@@ -79,28 +79,37 @@ export const nodeToPattern = (
                 for (let i = 0; i < form.values.length; i += 2) {
                     const name = form.values[i];
                     const value = form.values[i + 1];
-                    if (name.type !== 'identifier') {
+                    if (name.type !== 'identifier' && name.type !== 'number') {
                         err(ctx.errors, form.values[i], {
                             type: 'misc',
-                            message: 'expected identifier',
+                            message: 'expected identifier or integer literal',
                         });
                         continue;
                     }
+                    const namev =
+                        name.type === 'identifier' ? name.text : name.raw;
                     ctx.styles[name.loc.idx] = 'italic';
-                    if (!prm[name.text]) {
+                    if (!prm[namev]) {
                         err(ctx.errors, form.values[i], {
                             type: 'misc',
-                            message: `attribute not in type ${
-                                name.text
-                            } ${Object.keys(prm).join(', ')}`,
+                            message: `attribute not in type ${namev} ${Object.keys(
+                                prm,
+                            ).join(', ')}`,
+                        });
+                        continue;
+                    }
+                    if (!value) {
+                        err(ctx.errors, form.values[i], {
+                            type: 'misc',
+                            message: 'expected value',
                         });
                         continue;
                     }
                     entries.push({
-                        name: name.text,
+                        name: namev,
                         value: nodeToPattern(
                             value,
-                            prm[name.text] ?? nilt,
+                            prm[namev] ?? nilt,
                             ctx,
                             bindings,
                         ),

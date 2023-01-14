@@ -26,7 +26,7 @@ export type Local = {
     types: { sym: number; name: string; bound?: Type }[];
 };
 
-export type NodeStyle = 'italic';
+export type NodeStyle = 'italic' | 'pairs';
 
 export type Ctx = {
     errors: Report['errors'];
