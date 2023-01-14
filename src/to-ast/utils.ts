@@ -89,7 +89,7 @@ export const removeDecorators = (node: Node, ctx: Ctx) => {
                 throw new Error(`error non a string`);
             }
             result.errors.push({
-                message: values[0].first,
+                message: values[0].first.text,
                 idx: values[1].loc.idx,
             });
             return values[1];

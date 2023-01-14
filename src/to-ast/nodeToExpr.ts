@@ -28,10 +28,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'string':
             return {
                 type: 'string',
-                first: form.first,
+                first: { text: form.first.text, form: form.first },
                 form,
                 templates: form.templates.map((item) => ({
-                    suffix: item.suffix,
+                    suffix: { text: item.suffix.text, form: item.suffix },
                     expr: nodeToExpr(item.expr, ctx),
                 })),
             };

@@ -40,11 +40,13 @@ export type NodeContents =
     // | { type: 'spread'; contents: Node }
     | {
           type: 'string';
-          first: string;
-          templates: { expr: Node; suffix: string }[];
+          first: stringText;
+          templates: { expr: Node; suffix: stringText }[];
       }
+    | stringText
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
+export type stringText = { type: 'stringText'; text: string; loc: Loc };
 
 export type Node = NodeContents & {
     // decorators: { [key: string]: Node[] };

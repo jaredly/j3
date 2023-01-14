@@ -43,6 +43,16 @@ export const _unifyTypes = (
         return one.name === two.name ? one : une(path, one, two);
     }
 
+    if (one.type === 'bool' && two.type === 'bool') {
+        return one.value === two.value
+            ? one
+            : {
+                  type: 'builtin',
+                  name: 'bool',
+                  form: one.form,
+              };
+    }
+
     // - [ ] Constants as builtins
     // Number constants
     if (

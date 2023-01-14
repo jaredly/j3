@@ -6,11 +6,12 @@
 }}
 
 {
-	const wrap = (contents, loc) => ({...contents, loc: {
+	const newLoc = () => ({
 		start: location().start.offset,
 		end: location().end.offset,
 		idx: nidx()
-	}});
+	});
+	const wrap = (contents) => ({...contents, loc: newLoc()});
 }
 
 File = _ contents:(@Form _)* _ { return contents}
@@ -47,11 +48,12 @@ comment = text:$(commenttext / finalLineComment) {return wrap({type: 'comment', 
 // TODO figure this out
 // spread = "..." contents:Form {return wrap({type: 'spread', contents})}
 
-string = "\"" first:$tplStringChars templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
+string = "\"" first:stringText templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
+stringText = text:$tplStringChars {return {type: 'stringText', text, loc: newLoc()}}
 
 identifier = text:$idtext hash:$("#" idtext)? {return wrap({type: 'identifier', text, hash})}
 
-TemplatePair = expr:TemplateWrap suffix:$tplStringChars {return {expr, suffix}}
+TemplatePair = expr:TemplateWrap suffix:stringText {return {expr, suffix}}
 TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 1 ? wrap({type: 'list', values: forms}) : forms[0]}
 tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)

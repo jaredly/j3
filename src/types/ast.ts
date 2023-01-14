@@ -38,6 +38,12 @@ export type Pattern =
     | { type: 'unresolved'; form: Node; reason?: string }
     | { type: 'tag'; name: string; args: Pattern[]; form: Node };
 
+export type String = {
+    type: 'string';
+    first: { text: string; form: Node };
+    templates: { expr: Expr; suffix: { text: string; form: Node } }[];
+    form: Node;
+};
 export type Expr =
     | Shared
     | {
@@ -47,12 +53,7 @@ export type Expr =
       }
     | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
     | { type: 'deftype'; name: string; hash: string; value: Type; form: Node }
-    | {
-          type: 'string';
-          first: string;
-          templates: { expr: Expr; suffix: string }[];
-          form: Node;
-      }
+    | String
     | { type: 'if'; cond: Expr; yes: Expr; no: Expr; form: Node }
     | {
           type: 'switch';

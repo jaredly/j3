@@ -18,6 +18,8 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 .join(', ')}')`;
         case 'unresolved':
             return `Unresolved identifier: ${nodeToString(error.form)}`;
+        case 'misc':
+            return error.message;
         case 'invalid type':
             return `Invalid type.\nExpected: ${nodeToString(
                 nodeForType(error.expected, rctx),

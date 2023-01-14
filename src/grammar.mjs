@@ -232,9 +232,10 @@ function peg$parse(input, options) {
   var peg$f6 = function(values) {return wrap({type: 'array', values})};
   var peg$f7 = function(text) {return wrap({type: 'comment', text})};
   var peg$f8 = function(first, templates) {return wrap({type: 'string', first, templates})};
-  var peg$f9 = function(text, hash) {return wrap({type: 'identifier', text, hash})};
-  var peg$f10 = function(expr, suffix) {return {expr, suffix}};
-  var peg$f11 = function(forms) {return forms.length > 1 ? wrap({type: 'list', values: forms}) : forms[0]};
+  var peg$f9 = function(text) {return {type: 'stringText', text, loc: newLoc()}};
+  var peg$f10 = function(text, hash) {return wrap({type: 'identifier', text, hash})};
+  var peg$f11 = function(expr, suffix) {return {expr, suffix}};
+  var peg$f12 = function(forms) {return forms.length > 1 ? wrap({type: 'list', values: forms}) : forms[0]};
   var peg$currPos = 0;
   var peg$savedPos = 0;
   var peg$posDetailsCache = [{ line: 1, column: 1 }];
@@ -869,9 +870,7 @@ function peg$parse(input, options) {
       if (peg$silentFails === 0) { peg$fail(peg$e10); }
     }
     if (s1 !== peg$FAILED) {
-      s2 = peg$currPos;
-      s3 = peg$parsetplStringChars();
-      s2 = input.substring(s2, peg$currPos);
+      s2 = peg$parsestringText();
       s3 = [];
       s4 = peg$parseTemplatePair();
       while (s4 !== peg$FAILED) {
@@ -896,6 +895,20 @@ function peg$parse(input, options) {
       peg$currPos = s0;
       s0 = peg$FAILED;
     }
+
+    return s0;
+  }
+
+  function peg$parsestringText() {
+    var s0, s1, s2;
+
+    s0 = peg$currPos;
+    s1 = peg$currPos;
+    s2 = peg$parsetplStringChars();
+    s1 = input.substring(s1, peg$currPos);
+    peg$savedPos = s0;
+    s1 = peg$f9(s1);
+    s0 = s1;
 
     return s0;
   }
@@ -939,7 +952,7 @@ function peg$parse(input, options) {
       }
       s2 = input.substring(s2, peg$currPos);
       peg$savedPos = s0;
-      s0 = peg$f9(s1, s2);
+      s0 = peg$f10(s1, s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -949,16 +962,14 @@ function peg$parse(input, options) {
   }
 
   function peg$parseTemplatePair() {
-    var s0, s1, s2, s3;
+    var s0, s1, s2;
 
     s0 = peg$currPos;
     s1 = peg$parseTemplateWrap();
     if (s1 !== peg$FAILED) {
-      s2 = peg$currPos;
-      s3 = peg$parsetplStringChars();
-      s2 = input.substring(s2, peg$currPos);
+      s2 = peg$parsestringText();
       peg$savedPos = s0;
-      s0 = peg$f10(s1, s2);
+      s0 = peg$f11(s1, s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -1017,7 +1028,7 @@ function peg$parse(input, options) {
         }
         if (s5 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f11(s3);
+          s0 = peg$f12(s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -1617,11 +1628,12 @@ function peg$parse(input, options) {
   }
 
 
-	const wrap = (contents, loc) => ({...contents, loc: {
+	const newLoc = () => ({
 		start: location().start.offset,
 		end: location().end.offset,
 		idx: nidx()
-	}});
+	});
+	const wrap = (contents) => ({...contents, loc: newLoc()});
 
   peg$result = peg$startRuleFunction();
 

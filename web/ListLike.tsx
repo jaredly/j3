@@ -6,6 +6,8 @@ import { Blinker } from './Blinker';
 import { SetHover } from './App';
 import { Expr } from '../src/types/ast';
 import { Report } from '../src/get-type/get-types-new';
+import { errorToString } from '../src/to-cst/show-errors';
+import { Ctx } from '../src/to-ast/to-ast';
 
 export const ListLike = ({
     left,
@@ -254,7 +256,9 @@ export const sideClick =
 
 export const ShowResult = ({
     result,
+    ctx,
 }: {
+    ctx: Ctx;
     result:
         | { status: 'success'; value: any; code: string; expr: Expr }
         | { status: 'failure'; error: string; code: string; expr: Expr }
@@ -272,7 +276,15 @@ export const ShowResult = ({
             );
         }
     } else if (result.status === 'errors') {
-        body = <pre style={{ whiteSpace: 'pre-wrap' }}>Type errors</pre>;
+        body = (
+            <pre style={{ whiteSpace: 'pre-wrap' }}>
+                {Object.values(result.errors).flatMap((errors, j) =>
+                    errors.map((error, i) => (
+                        <div key={j + ':' + i}>{errorToString(error, ctx)}</div>
+                    )),
+                )}
+            </pre>
+        );
     } else {
         body = <pre>{result.error}</pre>;
     }
@@ -336,7 +348,7 @@ function formatContents(
                 style={{
                     display: 'grid',
                     gap: '0 8px',
-                    gridTemplateColumns: 'min-content min-content',
+                    gridTemplateColumns: 'min-content 1fr',
                 }}
             >
                 {nodes.map((node, i) => (
@@ -363,7 +375,10 @@ function formatContents(
                         >
                             {node}
                         </div>
-                        <ShowResult result={ctx.results[children[i]]} />
+                        <ShowResult
+                            result={ctx.results[children[i]]}
+                            ctx={ctx.ctx}
+                        />
                     </React.Fragment>
                 ))}
             </div>

@@ -13,12 +13,20 @@
 
 - [x] reverse names and such ples
 
-
 - [x] pattern type-hover, yes thanks
 - [ ] for fun demos, and art and such, can we get a custom render in here?
 - [ ] ok maybe I need floats. Which means multi-dispatch (?) or just some inference?
 - [ ] also, let's get arrays in there!
 - [ ] '(' in a start Blinker should wrap the thing. Also alt-( should work.
+- [x] filter out empty identifiers, they're not helpful
+- [ ] AUTOCOMPLETEEEEEE
+
+- [ ] lol strings	?
+
+
+
+- [ ] ok, so in order for map & stuff to work, I need recursion. Is it time?
+
 
 
 - [ ] also, get we get a force-directed graph in here?

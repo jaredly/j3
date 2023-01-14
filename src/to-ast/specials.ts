@@ -4,7 +4,7 @@ import objectHash from 'object-hash';
 import { Ctx, Local, nil, nilt, noForm } from './to-ast';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
-import { nodeToPattern } from './nodeToPattern';
+import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 
 export const specials: {
@@ -134,7 +134,12 @@ export const specials: {
     },
     defn: (form, contents, ctx): Expr => {
         if (contents.length < 2) {
-            return { type: 'unresolved', form, reason: 'no engouh args' };
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: 'defn needs a name and args and a body',
+            });
+            return { type: 'def', name: '', hash: '', value: nil, form };
+            // return { type: 'unresolved', form, reason: 'no engouh args' };
         }
         const [name, ...rest] = contents;
         if (name.type !== 'identifier') {
