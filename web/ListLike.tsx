@@ -57,7 +57,7 @@ export const ListLike = ({
                                     idx: children[i - 1],
                                     loc: 'end',
                                 });
-                            } else {
+                            } else if (!isRoot) {
                                 setSelection(store, { idx, loc: 'start' });
                             }
                         },
@@ -67,7 +67,7 @@ export const ListLike = ({
                                     idx: children[i + 1],
                                     loc: 'start',
                                 });
-                            } else {
+                            } else if (!isRoot) {
                                 setSelection(store, { idx, loc: 'end' });
                             }
                         },
@@ -106,8 +106,10 @@ export const ListLike = ({
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 evt.preventDefault();
-                setSelection(store, { idx, loc: 'end' });
-                console.log('OK');
+                if (!isRoot) {
+                    setSelection(store, { idx, loc: 'end' });
+                    console.log('OK');
+                }
             }}
         >
             {store.selection?.idx === idx && store.selection.loc === 'start' ? (
@@ -420,33 +422,6 @@ function formatContents(
             ))}
         </span>
     ) : null;
-
-    // if (layout.tightFirst && layout.pairs) {
-    //     return (
-    //         <span
-    //             style={{
-    //                 display: 'flex',
-    //                 flexDirection: 'column',
-    //             }}
-    //         >
-    //             {first}
-    //             <span
-    //                 style={{
-    //                     display: 'grid',
-    //                     gridTemplateColumns: 'min-content min-content',
-    //                     gap: '0 8px',
-    //                     marginLeft: 30,
-    //                 }}
-    //             >
-    //                 {nodes.slice(layout.tightFirst).map((node, i) => (
-    //                     <span key={children[layout.tightFirst + i]}>
-    //                         {node}
-    //                     </span>
-    //                 ))}
-    //             </span>
-    //         </span>
-    //     );
-    // }
 
     return (
         <span style={{ display: 'flex', flexDirection: 'column' }}>
