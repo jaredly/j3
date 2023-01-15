@@ -133,6 +133,10 @@ export const IdentifierLike = ({
                 ...style,
             }}
             onKeyDown={(evt) => {
+                if (events.onKeyDown && events.onKeyDown(evt)) {
+                    // it's been handled
+                    return;
+                }
                 onKeyDown(evt, idx, path, events, store);
             }}
         />
@@ -140,7 +144,7 @@ export const IdentifierLike = ({
 };
 
 const nodeColor = (text: string, type: MNodeContents['type']) => {
-    if (text.startsWith(':')) {
+    if (text && text.startsWith(':')) {
         return colors[':'];
     }
     if (colors[text]) {
@@ -156,6 +160,7 @@ export const colors: {
     comment: '#616162',
     tag: '#82f682',
     number: '#4848a5',
+    string: 'yellow',
     unparsed: 'red',
     ':': 'orange',
 };
@@ -166,7 +171,7 @@ ops.forEach((op) => (colors[op] = '#c9cac9'));
 const kwds = ['let', 'def', 'defn', 'fn', 'deftype', 'if', 'switch'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
-function focus(node: HTMLSpanElement, store: Store) {
+export function focus(node: HTMLSpanElement, store: Store) {
     node.focus();
     if (!store.selection) {
         return;

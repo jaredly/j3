@@ -38,15 +38,16 @@ export type NodeContents =
 
     // random stuff
     // | { type: 'spread'; contents: Node }
-    | {
-          type: 'string';
-          first: stringText;
-          templates: { expr: Node; suffix: stringText }[];
-      }
+    | CString
     | stringText
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
 export type stringText = { type: 'stringText'; text: string; loc: Loc };
+export type CString = {
+    type: 'string';
+    first: stringText;
+    templates: { expr: Node; suffix: stringText }[];
+};
 
 export type Node = NodeContents & {
     // decorators: { [key: string]: Node[] };

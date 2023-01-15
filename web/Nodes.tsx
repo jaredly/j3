@@ -4,6 +4,7 @@ import { SetHover } from './App';
 import { IdentifierLike } from './IdentifierLike';
 import { ListLike } from './ListLike';
 import { EvalCtx, Path, Store, useStore } from './store';
+import { StringView } from './String';
 
 // ListLike
 // array, list, record
@@ -27,6 +28,7 @@ rainbow.unshift(rainbow.pop()!);
 export type Events = {
     onRight: () => void;
     onLeft: () => void;
+    onKeyDown?: (evt: React.KeyboardEvent) => true | void;
     // other things? idk
 };
 
@@ -79,6 +81,21 @@ export const Node = React.memo(
             return null;
         }
         const { node: item, layout } = both;
+
+        if (item.type === 'string') {
+            return (
+                <StringView
+                    node={item}
+                    store={store}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                    ctx={ctx}
+                    setHover={setHover}
+                />
+            );
+        }
+
         const text = idText(item);
 
         // const decs = Object.entries(item.decorators);

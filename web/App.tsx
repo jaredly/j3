@@ -246,3 +246,8 @@ export const showType = (type: Type, ctx: Ctx): string => {
 };
 
 export type SetHover = (hover: { idx: number; box: any | null }) => void;
+
+window.clearJ3 = () => {
+    localforage.removeItem('j3:app');
+    location.reload();
+};

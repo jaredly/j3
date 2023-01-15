@@ -1,4 +1,4 @@
-import { Loc, Node, NodeContents } from './cst';
+import { Loc, Node, NodeContents, stringText } from './cst';
 
 export type MNode = MNodeContents & {
     loc: Loc;
@@ -24,18 +24,20 @@ export type ListLikeContents =
 export type MNodeContents =
     | Atom
     | ListLikeContents
+    | stringText
 
     // list-like
     | { type: 'comment'; text: string }
 
     // random stuff
     // | { type: 'spread'; contents: number }
-    | {
-          type: 'string';
-          first: string;
-          templates: { expr: number; suffix: string }[];
-      }
+    | MCString
     | { type: 'blank' };
+export type MCString = {
+    type: 'string';
+    first: number;
+    templates: { expr: number; suffix: number }[];
+};
 
 export type Map = {
     [key: number]: {
@@ -68,9 +70,10 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
         case 'string':
             return {
                 ...node,
+                first: fromMCST(node.first, map) as stringText,
                 templates: node.templates.map(({ expr, suffix }) => ({
                     expr: fromMCST(expr, map),
-                    suffix,
+                    suffix: fromMCST(suffix, map) as stringText,
                 })),
             };
         // case 'spread':
@@ -100,9 +103,10 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
         case 'string':
             return {
                 ...node,
+                first: toMCST(node.first, map),
                 templates: node.templates.map(({ expr, suffix }) => ({
                     expr: toMCST(expr, map),
-                    suffix,
+                    suffix: toMCST(suffix, map),
                 })),
             };
         // case 'spread':

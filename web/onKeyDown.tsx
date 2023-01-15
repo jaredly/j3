@@ -199,6 +199,7 @@ export const onKeyDown = (
     events: Events,
     store: Store,
 ) => {
+    console.log('ok', evt);
     // if (evt.key === 'Enter') {
     //     evt.preventDefault();
     //     // TODO decide what to do here
