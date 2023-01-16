@@ -1,195 +1,16 @@
 import * as React from 'react';
-import { Map, MCString } from '../src/types/mcst';
-import {
-    EvalCtx,
-    Path,
-    setSelection,
-    Store,
-    updateStore,
-    useStore,
-} from './store';
-import { Events, rainbow } from './Nodes';
+import { MCString } from '../src/types/mcst';
+import { EvalCtx, Path, setSelection, Store } from './store';
+import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './App';
-import { Expr, Node } from '../src/types/ast';
+import type { Expr } from '../src/types/ast';
 import { Report } from '../src/get-type/get-types-new';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Ctx } from '../src/to-ast/to-ast';
-import { CString, stringText } from '../src/types/cst';
+import { CString } from '../src/types/cst';
 import { sideClick } from './ListLike';
-import { focus } from './IdentifierLike';
-import { getPos, onKeyDown } from './onKeyDown';
-
-// export const StringText = ({
-//     idx,
-//     ...props
-// }: {
-//     idx: number;
-//     store: Store;
-//     path: Path[];
-//     events: Events;
-//     ctx: EvalCtx;
-//     setHover: SetHover;
-// }) => {
-//     const { node } = useStore(props.store, idx);
-//     const snode = node as stringText;
-//     return (
-//         <IdentifierLike
-//             type="string"
-//             text={snode.text}
-//             idx={snode.loc.idx}
-//             {...props}
-//         />
-//     );
-// };
-
-export const StringText = ({
-    idx,
-    store,
-    path,
-    events,
-    ctx,
-    setHover,
-}: {
-    idx: number;
-    store: Store;
-    path: Path[];
-    events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
-}) => {
-    const { node } = useStore(store, idx);
-    const text = (node as stringText).text;
-    const editing = store.selection?.idx === idx;
-    let [edit, setEdit] = React.useState(null as null | string);
-
-    edit = edit == null ? text : edit;
-
-    const presel = React.useRef(null as null | number);
-
-    React.useLayoutEffect(() => {
-        if (!ref.current) {
-            return;
-        }
-        if (editing) {
-            ref.current.textContent = text;
-            if (ref.current !== document.activeElement || true) {
-                focus(ref.current, store);
-            }
-            presel.current = getPos(ref.current);
-        }
-    }, [editing, text, editing ? store.selection!.loc : null]);
-
-    const dec = ctx.report.errors[idx]
-        ? 'underline red'
-        : // : ctx.report.types[idx] == null
-          // ? 'underline gray'
-          'none';
-
-    const style = {};
-
-    const ref = React.useRef(null as null | HTMLSpanElement);
-    return !editing ? (
-        <span
-            className="idlike"
-            style={{
-                color: 'yello',
-                minHeight: '1.3em',
-                whiteSpace: 'pre-wrap',
-                textDecoration: dec,
-            }}
-            onMouseDown={(evt) => {
-                evt.stopPropagation();
-                setEdit(text);
-                setSelection(store, { idx });
-            }}
-            onMouseOver={(evt) =>
-                setHover({
-                    idx,
-                    box: evt.currentTarget.getBoundingClientRect(),
-                })
-            }
-            onMouseLeave={() => setHover({ idx, box: null })}
-        >
-            {text}
-        </span>
-    ) : (
-        <span
-            data-idx={idx}
-            contentEditable
-            ref={ref}
-            autoCorrect="off"
-            spellCheck="false"
-            autoCapitalize="off"
-            className="idlike"
-            onMouseDown={(evt) => evt.stopPropagation()}
-            onMouseOver={(evt) =>
-                setHover({
-                    idx,
-                    box: evt.currentTarget.getBoundingClientRect(),
-                })
-            }
-            onMouseUp={(evt) => {
-                presel.current = getPos(evt.currentTarget);
-            }}
-            onMouseLeave={() => setHover({ idx, box: null })}
-            onInput={(evt) => {
-                const text = evt.currentTarget.textContent ?? '';
-                setEdit(text);
-                const pos = getPos(evt.currentTarget);
-                const mp: Map = {
-                    [node.loc.idx]: {
-                        node: {
-                            type: 'stringText',
-                            loc: node.loc,
-                            text,
-                        },
-                    },
-                };
-                updateStore(
-                    store,
-                    {
-                        map: mp,
-                        selection: {
-                            idx,
-                            loc: pos,
-                        },
-                        prev: {
-                            idx,
-                            loc: presel.current ?? undefined,
-                        },
-                    },
-                    [path],
-                );
-                // onInput(evt, setEdit, idx, path, store, presel);
-            }}
-            onBlur={() => {
-                setEdit(null);
-                setSelection(store, null);
-            }}
-            style={{
-                color: 'yellow',
-                whiteSpace: 'pre-wrap',
-                outline: 'none',
-                minHeight: '1.3em',
-                textDecoration: dec,
-                ...style,
-            }}
-            onKeyDown={(evt) => {
-                if (
-                    evt.key === 'ArrowLeft' ||
-                    evt.key === 'ArrowRight' ||
-                    evt.metaKey ||
-                    evt.altKey ||
-                    evt.ctrlKey
-                ) {
-                    onKeyDown(evt, idx, path, events, store);
-                    return;
-                }
-            }}
-        />
-    );
-};
+import { StringText } from './StringText';
 
 export const StringView = ({
     node,
@@ -271,6 +92,56 @@ export const StringView = ({
                 ctx={ctx}
                 setHover={setHover}
             />
+            {node.templates.flatMap((t, i) => [
+                <Node
+                    key={t.expr}
+                    idx={t.expr}
+                    store={store}
+                    path={path}
+                    events={{
+                        onLeft() {
+                            if (i === 0) {
+                                setSelection(store, {
+                                    idx: node.first,
+                                    loc: 'end',
+                                });
+                            } else {
+                                setSelection(store, {
+                                    idx: node.templates[i - 1].suffix,
+                                    loc: 'end',
+                                });
+                            }
+                        },
+                        onRight() {
+                            if (i === node.templates.length - 1) {
+                                setSelection(store, {
+                                    idx,
+                                    loc: 'end',
+                                });
+                            } else {
+                                setSelection(store, {
+                                    idx: node.templates[i + 1].expr,
+                                    loc: 'start',
+                                });
+                            }
+                        },
+                    }}
+                    ctx={ctx}
+                    setHover={setHover}
+                />,
+                <StringText
+                    key={t.suffix}
+                    idx={t.suffix}
+                    store={store}
+                    path={path}
+                    events={{
+                        onLeft() {},
+                        onRight() {},
+                    }}
+                    ctx={ctx}
+                    setHover={setHover}
+                />,
+            ])}
             <span
                 style={{
                     color: 'yellow',

@@ -1,4 +1,20 @@
 
+# So, about the editor terms
+
+I'm thinking about a "playground / workspace" distinction
+where the playground autoevaluates, but doesn't persist.
+And then you can click something to "commit" it, which means
+it persists, you can dismiss it, etc.
+That will also persist the tree of things it depends on.
+
+
+
+# Strings!
+Want.
+
+
+--
+
 - [x] ok validate the stuff
 - [x] move the web UI over to the new type checking and valdiation
 

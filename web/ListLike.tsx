@@ -350,7 +350,7 @@ function formatContents(
                 style={{
                     display: 'grid',
                     gap: '0 8px',
-                    gridTemplateColumns: 'min-content 1fr',
+                    gridTemplateColumns: 'max-content 1fr',
                 }}
             >
                 {nodes.map((node, i) => (
