@@ -4,11 +4,6 @@ import { EvalCtx, Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './App';
-import type { Expr } from '../src/types/ast';
-import { Report } from '../src/get-type/get-types-new';
-import { errorToString } from '../src/to-cst/show-errors';
-import { Ctx } from '../src/to-ast/to-ast';
-import { CString } from '../src/types/cst';
 import { sideClick } from './ListLike';
 import { StringText } from './StringText';
 
@@ -74,7 +69,7 @@ export const StringView = ({
             <StringText
                 idx={node.first}
                 store={store}
-                path={path}
+                path={path.concat([{ idx, child: { type: 'text', at: 0 } }])}
                 events={{
                     onLeft() {
                         setSelection(store, {
@@ -83,21 +78,31 @@ export const StringView = ({
                         });
                     },
                     onRight() {
-                        setSelection(store, {
-                            idx,
-                            loc: 'end',
-                        });
+                        if (node.templates.length === 0) {
+                            setSelection(store, {
+                                idx,
+                                loc: 'end',
+                            });
+                        } else {
+                            setSelection(store, {
+                                idx: node.templates[0].expr,
+                                loc: 'start',
+                            });
+                        }
                     },
                 }}
                 ctx={ctx}
                 setHover={setHover}
             />
             {node.templates.flatMap((t, i) => [
+                <span key={i}>{'${'}</span>,
                 <Node
                     key={t.expr}
                     idx={t.expr}
                     store={store}
-                    path={path}
+                    path={path.concat([
+                        { idx, child: { type: 'expr', at: i + 1 } },
+                    ])}
                     events={{
                         onLeft() {
                             if (i === 0) {
@@ -113,6 +118,31 @@ export const StringView = ({
                             }
                         },
                         onRight() {
+                            setSelection(store, {
+                                idx: t.suffix,
+                                loc: 'start',
+                            });
+                        },
+                    }}
+                    ctx={ctx}
+                    setHover={setHover}
+                />,
+                <span key={i + 'end'}>{'}'}</span>,
+                <StringText
+                    key={t.suffix}
+                    idx={t.suffix}
+                    store={store}
+                    path={path.concat([
+                        { idx, child: { type: 'text', at: i + 1 } },
+                    ])}
+                    events={{
+                        onLeft() {
+                            setSelection(store, {
+                                idx: t.expr,
+                                loc: 'end',
+                            });
+                        },
+                        onRight() {
                             if (i === node.templates.length - 1) {
                                 setSelection(store, {
                                     idx,
@@ -125,18 +155,6 @@ export const StringView = ({
                                 });
                             }
                         },
-                    }}
-                    ctx={ctx}
-                    setHover={setHover}
-                />,
-                <StringText
-                    key={t.suffix}
-                    idx={t.suffix}
-                    store={store}
-                    path={path}
-                    events={{
-                        onLeft() {},
-                        onRight() {},
                     }}
                     ctx={ctx}
                     setHover={setHover}
@@ -180,10 +198,19 @@ export const StringView = ({
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
                         onLeft() {
-                            setSelection(store, {
-                                idx: node.first,
-                                loc: 'end',
-                            });
+                            if (node.templates.length === 0) {
+                                setSelection(store, {
+                                    idx: node.first,
+                                    loc: 'end',
+                                });
+                            } else {
+                                setSelection(store, {
+                                    idx: node.templates[
+                                        node.templates.length - 1
+                                    ].suffix,
+                                    loc: 'end',
+                                });
+                            }
                         },
                         onRight() {
                             events.onRight();

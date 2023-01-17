@@ -47,6 +47,10 @@ export const validateExpr = (
             return expr.templates.forEach(({ expr }) =>
                 validateExpr(expr, ctx, errors),
             );
+        case 'type-apply':
+            validateExpr(expr.target, ctx, errors);
+            expr.args.forEach((arg) => validateType(arg, ctx, errors));
+            return;
         case 'tag':
         case 'number':
         case 'bool':

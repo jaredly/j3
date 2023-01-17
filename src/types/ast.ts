@@ -113,6 +113,7 @@ export type Record = {
 
 export type TVar = {
     sym: number;
+    name: string;
     bound?: Type;
     default_?: Type;
     form: Node;
@@ -136,7 +137,7 @@ export type Shared =
     | Bool
     | { type: 'unresolved'; form: Node; reason?: string };
 
-export type TypeArg = { sym: number; bound?: Type; form: Node };
+export type TypeArg = { sym: number; name: string; bound?: Type; form: Node };
 export type Type =
     | Shared
     | {

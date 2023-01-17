@@ -1,4 +1,4 @@
-import { Ctx, nilt, noloc } from '../to-ast/to-ast';
+import { Ctx, nilt } from '../to-ast/to-ast';
 import { recordMap } from '../to-ast/typeForExpr';
 import {
     Expr,
@@ -62,110 +62,6 @@ export const makeRCtx = (ctx: Ctx): RCtx => {
         reverseNames[sym] = ctx.localMap.types[sym].name;
     }
     return { ...ctx, reverseNames };
-};
-
-export const nodeForType = (type: Type, ctx: RCtx): Node => {
-    switch (type.type) {
-        case 'builtin':
-            return {
-                loc: type.form.loc,
-                type: 'identifier',
-                text: type.name,
-            };
-        case 'bool':
-            return {
-                loc: type.form.loc,
-                type: 'identifier',
-                text: type.value ? 'true' : 'false',
-            };
-        case 'number':
-            return {
-                loc: type.form.loc,
-                type: 'number',
-                raw: type.value.toString(),
-            };
-        case 'tag':
-            if (type.args.length === 0) {
-                return { type: 'tag', text: type.name, loc: type.form.loc };
-            }
-            return {
-                loc: type.form.loc,
-                type: 'list',
-                values: [
-                    {
-                        loc: noloc,
-                        type: 'tag',
-                        text: type.name,
-                    },
-                    ...type.args.map((arg) => nodeForType(arg, ctx)),
-                ],
-            };
-        case 'record':
-            const tuple = asTuple(type);
-            if (tuple) {
-                return {
-                    loc: type.form.loc,
-                    type: 'list',
-                    values:
-                        tuple.length === 0
-                            ? []
-                            : [
-                                  id(',', noloc),
-                                  ...tuple.map((t) => nodeForType(t, ctx)),
-                              ],
-                };
-            }
-            return loc(type.form.loc, {
-                type: 'record',
-                values: type.entries.flatMap(({ name, value }) => [
-                    id(name, noloc),
-                    nodeForType(value, ctx),
-                ]),
-            });
-        case 'fn': {
-            return loc(type.form.loc, {
-                type: 'list',
-                values: [
-                    id('fn', noloc),
-                    loc(noloc, {
-                        type: 'array',
-                        values: type.args.map((arg) => nodeForType(arg, ctx)),
-                    }),
-                    nodeForType(type.body, ctx),
-                ],
-            });
-        }
-        case 'unresolved':
-            return type.form;
-        case 'union':
-            return loc(type.form.loc, {
-                type: 'array',
-                values: type.items
-                    .map((item) => nodeForType(item, ctx))
-                    .concat(type.open ? [id('...', noloc)] : []),
-            });
-        case 'apply':
-            return loc(type.form.loc, {
-                type: 'list',
-                values: [
-                    nodeForType(type.target, ctx),
-                    ...type.args.map((arg) => nodeForType(arg, ctx)),
-                ],
-            });
-        case 'global':
-            return {
-                type: 'identifier',
-                text: ctx.reverseNames[type.hash],
-                loc: type.form.loc,
-            };
-        case 'local':
-            return {
-                type: 'identifier',
-                text: ctx.reverseNames[type.sym],
-                loc: type.form.loc,
-            };
-    }
-    throw new Error(`cannot nodeForType ${type.type}`);
 };
 
 export const nodeForExpr = (expr: Expr, ctx: RCtx): Node => {

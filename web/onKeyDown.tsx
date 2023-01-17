@@ -137,7 +137,7 @@ export const handleSpace = (
     const parent = path[path.length - 1];
     if (parent.child.type === 'start') {
         const gp = path[path.length - 2];
-        if (gp.child.type === 'child') {
+        if (gp && gp.child.type === 'child') {
             const child = gp.child;
             let nw = parse('_')[0];
             nw = { type: 'identifier', text: '', loc: nw.loc };

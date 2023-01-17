@@ -59,10 +59,11 @@ export const basicBuiltins: Global['builtins'] = {
         bool: [],
         string: [],
         Array: [
-            { sym: 0, form: blank },
+            { sym: 0, form: blank, name: 'Value' },
             {
                 sym: 1,
                 form: blank,
+                name: 'Length',
                 default_: {
                     type: 'builtin',
                     name: 'uint',
@@ -119,12 +120,26 @@ export const builtinFn = (
 };
 const tint = btype('int');
 const tbool = btype('bool');
+const tstring = btype('string');
 ['<', '>', '<=', '>=', '==', '!='].map((name) =>
     builtinFn(basicBuiltins, name, [tint, tint], tbool),
 );
 ['+', '-', '*', '/'].map((name) =>
     builtinFn(basicBuiltins, name, [tint, tint], tint),
 );
+builtinFn(basicBuiltins, 'toString', [tint], tstring);
+builtinFn(basicBuiltins, 'toString', [tbool], tstring);
+addBuiltin(basicBuiltins, 'debugToString', {
+    type: 'tfn',
+    args: [{ sym: 0, form: blank, name: 'Value' }],
+    body: {
+        type: 'fn',
+        args: [{ type: 'local', sym: 0, form: blank }],
+        body: tstring,
+        form: blank,
+    },
+    form: blank,
+});
 
 export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {
@@ -192,7 +207,7 @@ export const resolveExpr = (
     if (local) {
         return { type: 'local', sym: local.sym, form };
     }
-    if (ctx.global.names[text]) {
+    if (ctx.global.names[text]?.length) {
         return {
             type: 'global',
             hash: ctx.global.names[text][0],

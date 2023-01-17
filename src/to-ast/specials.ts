@@ -10,6 +10,24 @@ import { getType } from '../get-type/get-types-new';
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
 } = {
+    '<>': (form, contents, ctx) => {
+        if (contents.length < 2) {
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: `<> requires at least 2 arguments`,
+            });
+            return nil;
+        }
+        const [target, ...args] = contents;
+        const t = nodeToExpr(target, ctx);
+        const targs = args.map((arg) => nodeToType(arg, ctx));
+        return {
+            type: 'type-apply',
+            form,
+            target: t,
+            args: targs,
+        };
+    },
     fn: (form, contents, ctx): Expr => {
         if (contents.length < 1) {
             return {

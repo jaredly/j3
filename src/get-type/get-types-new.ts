@@ -1,6 +1,6 @@
 import { blank, Ctx, nilt } from '../to-ast/to-ast';
 import { Expr, Node, Pattern, Type } from '../types/ast';
-import { matchesType } from './matchesType';
+import { applyTypeVariables, matchesType } from './matchesType';
 import { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
@@ -79,6 +79,47 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'global':
             // Should we cache? idk
             return ctx.global.termTypes[expr.hash];
+        case 'type-apply': {
+            const target = getType(expr.target, ctx, report);
+            if (!target) {
+                return;
+            }
+            if (target.type !== 'tfn') {
+                if (report) {
+                    err(report, expr, {
+                        type: 'misc',
+                        message: `not a tfn`,
+                    });
+                }
+                return;
+            }
+            if (expr.args.length !== target.args.length) {
+                if (report) {
+                    err(report, expr, {
+                        type: 'misc',
+                        message: `wrong number of args`,
+                    });
+                }
+                return;
+            }
+            const map: { [key: number]: Type } = {};
+            for (let i = 0; i < expr.args.length; i++) {
+                if (target.args[i].bound) {
+                    const match = matchesType(
+                        expr.args[i],
+                        target.args[i].bound!,
+                        ctx,
+                        expr.form,
+                        report,
+                    );
+                    if (!match) {
+                        return;
+                    }
+                }
+                map[target.args[i].sym] = expr.args[i];
+            }
+            return applyTypeVariables(target.body, map);
+        }
         case 'if': {
             const cond = getType(expr.cond, ctx, report);
             const yes = getType(expr.yes, ctx, report);

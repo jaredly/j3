@@ -60,6 +60,7 @@ const tightFirsts: { [key: string]: number } = {
     switch: 2,
     let: 2,
     if: 2,
+    '<>': 2,
 };
 
 function howTight(item?: Map[0]) {

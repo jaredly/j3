@@ -247,6 +247,28 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.arrayExpression(
                 expr.values.map((item) => exprToTs(item, ctx)),
             );
+        case 'type-apply':
+            return exprToTs(expr.target, ctx);
+        // case 'tfn': return exprToTs(expr.body, ctx);
+        case 'string':
+            if (expr.templates.length) {
+                return t.templateLiteral(
+                    [
+                        t.templateElement({
+                            raw: expr.first.text,
+                            cooked: expr.first.text,
+                        }),
+                        ...expr.templates.map((template) =>
+                            t.templateElement({
+                                raw: template.suffix.text,
+                                cooked: template.suffix.text,
+                            }),
+                        ),
+                    ],
+                    expr.templates.map((t) => exprToTs(t.expr, ctx)),
+                );
+            }
+            return t.stringLiteral(expr.first.text);
         case 'number':
             return t.numericLiteral(expr.value);
         case 'bool':

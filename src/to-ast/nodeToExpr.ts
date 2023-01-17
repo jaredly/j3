@@ -102,15 +102,17 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             if (!values.length) {
                 return { type: 'record', entries: [], form };
             }
+            console.log('list', values);
             const first = values[0];
             if (first.type === 'identifier') {
-                if (specials[first.text]) {
+                if (Object.hasOwn(specials, first.text)) {
                     return specials[first.text](form, values.slice(1), ctx);
                 }
             }
             const [target, ...args] = values.map((child) =>
                 nodeToExpr(child, ctx),
             );
+            console.log('apply now');
             return {
                 type: 'apply',
                 target,

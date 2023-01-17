@@ -13,7 +13,8 @@ import {
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getType, Report } from '../src/get-type/get-types-new';
-import { makeRCtx, nodeForType } from '../src/to-cst/nodeForExpr';
+import { makeRCtx } from '../src/to-cst/nodeForExpr';
+import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { validateExpr } from '../src/get-type/validate';
 const __filename = fileURLToPath(import.meta.url);

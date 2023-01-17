@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Map } from '../src/types/mcst';
+import { Map, MCString, toMCST } from '../src/types/mcst';
 import {
     EvalCtx,
     Path,
@@ -10,9 +10,10 @@ import {
 } from './store';
 import { Events } from './Nodes';
 import { SetHover } from './App';
-import { stringText } from '../src/types/cst';
+import { Loc, stringText } from '../src/types/cst';
 import { focus } from './IdentifierLike';
 import { getPos, onKeyDown } from './onKeyDown';
+import { nidx, parse } from '../src/grammar';
 
 // export const StringText = ({
 //     idx,
@@ -86,9 +87,9 @@ export const StringText = ({
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
         <span
-            className="idlike"
+            // className="idlike"
             style={{
-                color: 'yello',
+                color: 'yellow',
                 minHeight: '1.3em',
                 whiteSpace: 'pre-wrap',
                 textDecoration: dec,
@@ -171,6 +172,53 @@ export const StringText = ({
                 ...style,
             }}
             onKeyDown={(evt) => {
+                if (evt.key === '{') {
+                    evt.preventDefault();
+                    const last = path[path.length - 1];
+                    const node = store.map[last.idx].node as MCString & {
+                        loc: Loc;
+                    };
+                    let nw = parse('_')[0];
+                    nw = { type: 'identifier', text: '', loc: nw.loc };
+                    const mp: Map = {};
+                    const eidx = toMCST(nw, mp);
+                    const sidx = toMCST(
+                        {
+                            type: 'stringText',
+                            text: '',
+                            loc: { idx: nidx(), start: 0, end: 0 },
+                        },
+                        mp,
+                    );
+                    mp[last.idx] = {
+                        node: {
+                            ...node,
+                            templates: [
+                                ...node.templates,
+                                {
+                                    expr: eidx,
+                                    suffix: sidx,
+                                },
+                            ],
+                        },
+                    };
+                    updateStore(
+                        store,
+                        {
+                            map: mp,
+                            selection: {
+                                idx: eidx,
+                                loc: 'start',
+                            },
+                            prev: {
+                                idx,
+                                loc: presel.current ?? undefined,
+                            },
+                        },
+                        [path],
+                    );
+                    return;
+                }
                 if (
                     evt.key === 'ArrowLeft' ||
                     evt.key === 'ArrowRight' ||

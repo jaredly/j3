@@ -12,6 +12,17 @@ That will also persist the tree of things it depends on.
 # Strings!
 Want.
 
+- [ ] ${ actuall track the $, and split the string
+- [ ] handle 
+
+# GENERICS
+
+tfn, and (<>) for tapply. Let's get it. So we can do
+`debugToString` and have it work!
+
+- do the "generics can hide" thing
+
+what other thing can hide? probably macros? or like watchers?
 
 --
 

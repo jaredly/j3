@@ -6,6 +6,8 @@ import { err } from './nodeToPattern';
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
     switch (form.type) {
+        case 'unparsed':
+            return nilt;
         case 'identifier': {
             return resolveType(form.text, form.hash, ctx, form);
         }

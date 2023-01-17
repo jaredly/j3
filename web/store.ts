@@ -101,6 +101,7 @@ export type PathChild =
           at: number;
       }
     | { type: 'inside' | 'start' | 'end' }
+    | { type: 'expr' | 'text'; at: number }
     | {
           type: 'decorator';
           key: string;

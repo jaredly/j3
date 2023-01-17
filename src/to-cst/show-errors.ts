@@ -1,6 +1,7 @@
 import { Ctx } from '../to-ast/to-ast';
 import type { Error } from '../types/types';
-import { makeRCtx, nodeForType } from './nodeForExpr';
+import { makeRCtx } from './nodeForExpr';
+import { nodeForType } from './nodeForType';
 import { nodeToString } from './nodeToString';
 
 export const errorToString = (error: Error, ctx: Ctx): string => {

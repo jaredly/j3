@@ -10,6 +10,11 @@ import { CacheCtx, getCachedType } from '../src/types/check-types';
 import { getType, Report } from '../src/get-type/get-types-new';
 import { validateExpr } from '../src/get-type/validate';
 
+export const builtins = {
+    toString: (t: number | boolean) => t + '',
+    debugToString: (t: any) => JSON.stringify(t),
+};
+
 export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root].node as ListLikeContents;
@@ -86,10 +91,15 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         // ok, so the increasing idx's are really coming to haunt me.
         // can I reset them?
         try {
-            const fn = new Function('$terms', 'fail', code);
+            const fn = new Function(
+                '$terms',
+                `{${Object.keys(builtins).join(',')}}`,
+                'fail',
+                code,
+            );
             results[idx] = {
                 status: 'success',
-                value: fn(terms, (message: string) => {
+                value: fn(terms, builtins, (message: string) => {
                     // console.log(`Encountered a compilation failure: `, message);
                     throw new Error(message);
                 }),
