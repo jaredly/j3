@@ -1,45 +1,67 @@
 import { Node } from '../types/cst';
 import { Expr, Record } from '../types/ast';
 import { specials } from './specials';
-import { Ctx, resolveExpr } from './to-ast';
+import { Ctx, nil, resolveExpr } from './to-ast';
+import { err } from './nodeToPattern';
+
+export const filterComments = (nodes: Node[]) =>
+    nodes.filter(
+        (node) =>
+            node.type !== 'comment' &&
+            !(
+                node.type === 'identifier' &&
+                node.text === '' &&
+                node.hash === ''
+            ),
+    );
 
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
-    const { contents } = form;
-    // todo decorators
-    switch (contents.type) {
+    switch (form.type) {
         case 'identifier': {
-            return resolveExpr(contents.text, contents.hash, ctx, form);
+            return resolveExpr(form.text, form.hash, ctx, form);
         }
+        case 'unparsed':
+            return { type: 'unresolved', form };
         case 'tag':
-            return { type: 'tag', name: contents.text, form };
+            ctx.styles[form.loc.idx] = 'bold';
+            return { type: 'tag', name: form.text, form };
+        case 'string':
+            return {
+                type: 'string',
+                first: { text: form.first.text, form: form.first },
+                form,
+                templates: form.templates.map((item) => ({
+                    suffix: { text: item.suffix.text, form: item.suffix },
+                    expr: nodeToExpr(item.expr, ctx),
+                })),
+            };
         case 'number':
             return {
                 type: 'number',
                 form,
-                value: +contents.raw,
-                kind: contents.raw.includes('.') ? 'float' : 'int',
+                value: +form.raw,
+                kind: form.raw.includes('.') ? 'float' : 'int',
             };
         case 'record': {
             const entries: Record['entries'] = [];
-            if (
-                contents.values.length === 1 &&
-                contents.values[0].contents.type === 'identifier'
-            ) {
+            const values = filterComments(form.values);
+            if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
-                    name: contents.values[0].contents.text,
-                    value: nodeToExpr(contents.values[0], ctx),
+                    name: values[0].text,
+                    value: nodeToExpr(values[0], ctx),
                 });
             } else if (
-                contents.values.length &&
-                contents.values[0].contents.type === 'identifier' &&
-                contents.values[0].contents.text === '$'
+                values.length &&
+                values[0].type === 'identifier' &&
+                values[0].text === '$'
             ) {
-                contents.values.slice(1).forEach((item) => {
-                    if (item.contents.type === 'identifier') {
+                values.slice(1).forEach((item) => {
+                    if (item.type === 'identifier') {
                         entries.push({
-                            name: item.contents.text,
+                            name: item.text,
                             value: nodeToExpr(item, ctx),
                         });
+                        ctx.styles[item.loc.idx] = 'italic';
                     } else {
                         entries.push({
                             name: '_ignored',
@@ -52,39 +74,45 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                for (let i = 0; i < contents.values.length; i += 2) {
-                    const name = contents.values[i];
-                    const value = contents.values[i + 1];
+                for (let i = 0; i < values.length; i += 2) {
+                    const name = values[i];
+                    ctx.styles[name.loc.idx] = 'italic';
+                    if (name.type !== 'identifier' && name.type !== 'number') {
+                        continue;
+                    }
+                    const namev =
+                        name.type === 'identifier' ? name.text : name.raw;
+                    const value = values[i + 1];
+                    if (!value) {
+                        err(ctx.errors, name, {
+                            type: 'misc',
+                            message: `missing value for field ${namev}`,
+                        });
+                    }
                     entries.push({
-                        name:
-                            name.contents.type === 'identifier'
-                                ? name.contents.text
-                                : name.contents.type === 'number'
-                                ? name.contents.raw
-                                : '_ignored_' + name.contents.type,
-                        value: nodeToExpr(value, ctx),
+                        name: namev,
+                        value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }
             }
             return { type: 'record', entries, form };
         }
         case 'list': {
-            if (!contents.values.length) {
+            const values = filterComments(form.values);
+            if (!values.length) {
                 return { type: 'record', entries: [], form };
             }
-            const first = contents.values[0];
-            if (first.contents.type === 'identifier') {
-                if (specials[first.contents.text]) {
-                    return specials[first.contents.text](
-                        form,
-                        contents.values.slice(1),
-                        ctx,
-                    );
+            console.log('list', values);
+            const first = values[0];
+            if (first.type === 'identifier') {
+                if (Object.hasOwn(specials, first.text)) {
+                    return specials[first.text](form, values.slice(1), ctx);
                 }
             }
-            const [target, ...args] = contents.values.map((child) =>
+            const [target, ...args] = values.map((child) =>
                 nodeToExpr(child, ctx),
             );
+            console.log('apply now');
             return {
                 type: 'apply',
                 target,
@@ -92,10 +120,16 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 form,
             };
         }
+        case 'array': {
+            const values = filterComments(form.values);
+            return {
+                type: 'array',
+                values: values.map((child) => nodeToExpr(child, ctx)),
+                form,
+            };
+        }
     }
-    return {
-        type: 'unresolved',
-        form,
-        reason: 'not impl ' + contents.type,
-    };
+    throw new Error(
+        `nodeToExpr is ashamed to admit it can't handle ${form.type}`,
+    );
 };

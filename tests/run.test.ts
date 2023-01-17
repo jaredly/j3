@@ -1,4 +1,4 @@
-import generate from '@babel/generator';
+import generator from '@babel/generator';
 import { readdirSync, readFileSync } from 'fs';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
@@ -11,6 +11,14 @@ import { typeForExpr } from '../src/to-ast/typeForExpr';
 import { getLine, idxLines } from '../src/to-ast/utils';
 import { Node } from '../src/types/cst';
 import { Type } from '../src/types/ast';
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// @ts-ignore // jest is being silly
+const generate: typeof generator = generator.default;
 
 readdirSync(__dirname)
     .filter((m) => m.endsWith('.jd') && !m.endsWith('.types.jd'))

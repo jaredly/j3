@@ -10,10 +10,10 @@
 	)
 	5
 )
-(`Hello 10)
-(`What)
-`Yea
-(let [(`Ok x) (`Ok 20)] (+ x 23))
+('Hello 10)
+('What)
+'Yea
+(let [('Ok x) ('Ok 20)] (+ x 23))
 
 (defn add2 [x :int] (+ x 2))
 (== (add2 23) 25)

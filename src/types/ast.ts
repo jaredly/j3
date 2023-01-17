@@ -38,6 +38,12 @@ export type Pattern =
     | { type: 'unresolved'; form: Node; reason?: string }
     | { type: 'tag'; name: string; args: Pattern[]; form: Node };
 
+export type String = {
+    type: 'string';
+    first: { text: string; form: Node };
+    templates: { expr: Expr; suffix: { text: string; form: Node } }[];
+    form: Node;
+};
 export type Expr =
     | Shared
     | {
@@ -46,12 +52,8 @@ export type Expr =
           form: Node;
       }
     | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
-    | {
-          type: 'string';
-          first: string;
-          templates: { expr: Expr; suffix: string }[];
-          form: Node;
-      }
+    | { type: 'deftype'; name: string; hash: string; value: Type; form: Node }
+    | String
     | { type: 'if'; cond: Expr; yes: Expr; no: Expr; form: Node }
     | {
           type: 'switch';
@@ -64,6 +66,7 @@ export type Expr =
           type: 'fn';
           name?: string;
           args: { pattern: Pattern; type?: Type }[];
+          ret?: Type;
           body: Expr[];
           form: Node;
       }
@@ -75,6 +78,7 @@ export type Expr =
           args: Expr[];
           form: Node;
       }
+    | { type: 'array'; values: Expr[]; form: Node }
     | {
           type: 'type-apply';
           target: Expr;
@@ -109,6 +113,7 @@ export type Record = {
 
 export type TVar = {
     sym: number;
+    name: string;
     bound?: Type;
     default_?: Type;
     form: Node;
@@ -132,6 +137,7 @@ export type Shared =
     | Bool
     | { type: 'unresolved'; form: Node; reason?: string };
 
+export type TypeArg = { sym: number; name: string; bound?: Type; form: Node };
 export type Type =
     | Shared
     | {
@@ -147,6 +153,7 @@ export type Type =
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
     | { type: 'fn'; name?: string; args: Type[]; body: Type; form: Node }
+    | { type: 'tfn'; name?: string; args: TypeArg[]; body: Type; form: Node }
     | {
           type: 'union';
           items: Type[];

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Report } from '../src/get-type/get-types-new';
 import { Ctx } from '../src/to-ast/to-ast';
 import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
@@ -36,31 +37,35 @@ export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
     terms: {},
     nodes: {},
     results: {},
-    types: {},
-    globalTypes: {},
+    // types: {},
+    // globalTypes: {},
+    report: { errors: {}, types: {} },
 });
 
 export type EvalCtx = {
     ctx: Ctx;
-    types: { [key: number]: Type };
-    globalTypes: { [hash: string]: Type };
+    // types: { [key: number]: Type };
+    // globalTypes: { [hash: string]: Type };
     last: { [key: number]: string };
     terms: { [key: string]: any };
     nodes: {
         [idx: number]:
+            | { type: 'Def'; node: Expr; names: { [name: string]: string } }
             | {
                   type: 'Expr';
                   node: Expr;
               }
             | {
-                  type: 'Type';
+                  type: 'Deftype';
                   node: Type;
+                  names: { [name: string]: string };
               }
             | {
                   type: 'Pattern';
                   node: Pattern;
               };
     };
+    report: Report;
     results: {
         [key: string]:
             | {
@@ -68,12 +73,20 @@ export type EvalCtx = {
                   value: any;
                   code: string;
                   expr: Expr;
+                  styles: Ctx['styles'];
               }
             | {
                   status: 'failure';
                   error: string;
                   code: string;
                   expr: Expr;
+                  styles: Ctx['styles'];
+              }
+            | {
+                  status: 'errors';
+                  expr: Expr;
+                  errors: Report['errors'];
+                  styles: Ctx['styles'];
               };
     };
 };
@@ -88,6 +101,7 @@ export type PathChild =
           at: number;
       }
     | { type: 'inside' | 'start' | 'end' }
+    | { type: 'expr' | 'text'; at: number }
     | {
           type: 'decorator';
           key: string;
@@ -101,7 +115,8 @@ export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
     const root = toMCST(
         {
-            contents: { type: 'list', values: nodes },
+            type: 'list',
+            values: nodes,
             loc: { idx: -1, start: 0, end: 0 },
         },
         map,
@@ -139,7 +154,11 @@ export const useStore = (store: Store, key: number): Map[0] => {
     return store.map[key];
 };
 
-export const notify = (store: Store, idxs: (number | null | undefined)[]) => {
+export const notify = (
+    store: Store,
+    idxs: (number | null | undefined)[],
+    change = false,
+) => {
     let seen: { [key: string]: true } = {};
     idxs.forEach((idx) => {
         if (idx != null && !seen[idx]) {
@@ -150,19 +169,23 @@ export const notify = (store: Store, idxs: (number | null | undefined)[]) => {
     if (store.listeners['']) {
         store.listeners[''].forEach((fn) => fn());
     }
+    if (store.listeners[':change'] && change) {
+        store.listeners[':change'].forEach((fn) => fn());
+    }
 };
 
 export const setSelection = (
     store: Store,
     selection: Store['selection'],
     extras?: (number | null | undefined)[],
+    change = false,
 ) => {
     const old = store.selection;
     if (old?.idx === selection?.idx && old?.loc === selection?.loc) {
-        return notify(store, [selection?.idx, ...(extras || [])]);
+        return notify(store, [selection?.idx, ...(extras || [])], change);
     }
     store.selection = selection;
-    notify(store, [old?.idx, selection?.idx, ...(extras || [])]);
+    notify(store, [old?.idx, selection?.idx, ...(extras || [])], change);
     return old;
 };
 
@@ -213,7 +236,7 @@ export const updateStore = (
     paths: Path[][],
     skipHistory = false,
 ) => {
-    console.log('UP', change, selection);
+    // console.log('UP', change, selection);
     if (!skipHistory) {
         const pre: UpdateMap = {};
         Object.keys(change).forEach((item) => {
@@ -262,6 +285,7 @@ export const updateStore = (
             Object.keys(change)
                 .map(Number)
                 .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            true,
         );
     } else {
         notify(
@@ -269,6 +293,7 @@ export const updateStore = (
             Object.keys(change)
                 .map(Number)
                 .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            true,
         );
     }
 };

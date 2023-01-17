@@ -3,7 +3,7 @@
 (type Write [(`Write string ())])
 
 (defn print [x :string]
-	(`Write x (fn [()] (`Return))))
+	(`Write x (fn [()] (`Return ()))))
 
 (def read (`Read () (fn [v :string] (`Return v))))
 

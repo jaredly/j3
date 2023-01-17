@@ -1,6 +1,8 @@
 import { Node } from '../types/cst';
 import { Expr, TRecord, Type } from '../types/ast';
 import { Ctx, blank, nilt } from './to-ast';
+import { Report } from '../get-type/get-types-new';
+import { Error } from '../types/types';
 
 export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
     switch (value.type) {
@@ -79,7 +81,7 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
     return {
         type: 'unresolved',
         form: value.form,
-        reason: 'not impl ' + value.type,
+        reason: 'typeForExpr not impl ' + value.type,
     };
 };
 

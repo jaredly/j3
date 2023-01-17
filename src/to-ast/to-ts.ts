@@ -4,30 +4,129 @@ import { Expr, Pattern, Record } from '../types/ast';
 import { Ctx } from './to-ast';
 import { nodeToExpr } from './nodeToExpr';
 
+export const patternToCheck = (
+    pattern: Pattern,
+    target: t.Expression,
+    ctx: Ctx,
+): t.Expression | null => {
+    switch (pattern.type) {
+        case 'local':
+            return null;
+        case 'number':
+            return t.binaryExpression(
+                '===',
+                target,
+                t.numericLiteral(pattern.value),
+            );
+        case 'bool':
+            return t.binaryExpression(
+                '===',
+                target,
+                t.booleanLiteral(pattern.value),
+            );
+        case 'tag': {
+            let checks =
+                pattern.args.length > 1
+                    ? pattern.args.map((arg, i) =>
+                          patternToCheck(
+                              arg,
+                              t.memberExpression(
+                                  t.memberExpression(
+                                      target,
+                                      t.identifier('payload'),
+                                  ),
+                                  t.numericLiteral(i),
+                                  true,
+                              ),
+                              ctx,
+                          ),
+                      )
+                    : [
+                          patternToCheck(
+                              pattern.args[0],
+                              t.memberExpression(
+                                  target,
+                                  t.identifier('payload'),
+                              ),
+                              ctx,
+                          ),
+                      ];
+
+            const tagCheck = t.binaryExpression(
+                '===',
+                t.memberExpression(target, t.identifier('type')),
+                t.stringLiteral(pattern.name),
+            );
+            checks.unshift(tagCheck);
+
+            return andMany(checks);
+        }
+        case 'unresolved':
+            return t.identifier('pat_un_' + pattern.reason);
+        case 'record':
+            const checks = pattern.entries.map((item) =>
+                patternToCheck(
+                    item.value,
+                    t.memberExpression(target, t.identifier(item.name)),
+                    ctx,
+                ),
+            );
+            return andMany(checks);
+    }
+};
+
+const ifs = (
+    pairs: { cond: t.Expression | null; body: t.Statement[] }[],
+): t.Statement => {
+    let res = null;
+    for (let i = pairs.length - 1; i >= 0; i--) {
+        res = t.ifStatement(
+            pairs[i].cond ?? t.booleanLiteral(true),
+            t.blockStatement(pairs[i].body),
+            res,
+        );
+    }
+    return res!;
+};
+
+const andMany = (checks: (t.Expression | null)[]): t.Expression | null => {
+    let current: null | t.Expression = null;
+    checks.forEach((check) => {
+        if (!check) return;
+        if (!current) {
+            current = check;
+        } else {
+            current = t.logicalExpression('&&', current, check);
+        }
+    });
+    return current;
+};
+
 export const patternToTs = (
     pattern: Pattern,
     ctx: Ctx,
-): t.Pattern | t.Identifier => {
+): t.Pattern | t.Identifier | null => {
     switch (pattern.type) {
         case 'local':
             return t.identifier(`s${pattern.sym}`);
         case 'number':
-            return t.identifier('_');
-        case 'tag':
-            return t.objectPattern([
-                t.objectProperty(
-                    t.identifier('payload'),
-                    pattern.args.length > 1
-                        ? t.arrayPattern(
-                              pattern.args.map((arg) => patternToTs(arg, ctx)),
-                          )
-                        : patternToTs(pattern.args[0], ctx),
-                ),
-            ]);
+        case 'bool':
+            return null;
+        case 'tag': {
+            const inner =
+                pattern.args.length > 1
+                    ? t.arrayPattern(
+                          pattern.args.map((arg) => patternToTs(arg, ctx)),
+                      )
+                    : patternToTs(pattern.args[0], ctx);
+            return inner
+                ? t.objectPattern([
+                      t.objectProperty(t.identifier('payload'), inner),
+                  ])
+                : null;
+        }
         case 'unresolved':
             return t.identifier('pat_un_' + pattern.reason);
-        case 'bool':
-            return t.identifier('oops_bool_idk');
         case 'record':
             const items = tupleRecord(pattern.entries);
             if (items) {
@@ -36,12 +135,15 @@ export const patternToTs = (
                 );
             }
             return t.objectPattern(
-                pattern.entries.map((entry) =>
-                    t.objectProperty(
-                        t.identifier(entry.name),
-                        patternToTs(entry.value, ctx),
-                    ),
-                ),
+                pattern.entries
+                    .map((entry) => {
+                        const v = patternToTs(entry.value, ctx);
+
+                        return v
+                            ? t.objectProperty(t.identifier(entry.name), v)
+                            : null;
+                    })
+                    .filter((x) => !!x) as t.ObjectProperty[],
             );
     }
 };
@@ -52,6 +154,8 @@ export const stmtToTs = (
     shouldReturn: boolean | 'top',
 ): t.Statement => {
     switch (expr.type) {
+        case 'deftype':
+            return t.emptyStatement();
         case 'def':
             if (shouldReturn === 'top') {
                 return t.blockStatement([
@@ -84,15 +188,20 @@ export const stmtToTs = (
         case 'let':
             const last = expr.body.length - 1;
             return t.blockStatement([
-                t.variableDeclaration(
-                    'const',
-                    expr.bindings.map((binding) =>
-                        t.variableDeclarator(
-                            patternToTs(binding.pattern, ctx),
-                            exprToTs(binding.value, ctx),
-                        ),
-                    ),
-                ),
+                ...expr.bindings.map((binding) => {
+                    const pattern = patternToTs(binding.pattern, ctx);
+                    return pattern
+                        ? t.variableDeclaration(
+                              'const',
+                              expr.bindings.map((binding) =>
+                                  t.variableDeclarator(
+                                      pattern,
+                                      exprToTs(binding.value, ctx),
+                                  ),
+                              ),
+                          )
+                        : t.expressionStatement(exprToTs(binding.value, ctx));
+                }),
                 ...expr.body.flatMap((expr, i) =>
                     stmtToTs(expr, ctx, shouldReturn && i === last),
                 ),
@@ -134,6 +243,32 @@ export const bodyToTs = (
 
 export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
     switch (expr.type) {
+        case 'array':
+            return t.arrayExpression(
+                expr.values.map((item) => exprToTs(item, ctx)),
+            );
+        case 'type-apply':
+            return exprToTs(expr.target, ctx);
+        // case 'tfn': return exprToTs(expr.body, ctx);
+        case 'string':
+            if (expr.templates.length) {
+                return t.templateLiteral(
+                    [
+                        t.templateElement({
+                            raw: expr.first.text,
+                            cooked: expr.first.text,
+                        }),
+                        ...expr.templates.map((template) =>
+                            t.templateElement({
+                                raw: template.suffix.text,
+                                cooked: template.suffix.text,
+                            }),
+                        ),
+                    ],
+                    expr.templates.map((t) => exprToTs(t.expr, ctx)),
+                );
+            }
+            return t.stringLiteral(expr.first.text);
         case 'number':
             return t.numericLiteral(expr.value);
         case 'bool':
@@ -145,6 +280,8 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                     (name === '==' ||
                         name === '!=' ||
                         name === '+' ||
+                        name === '*' ||
+                        name === '/' ||
                         name === '<' ||
                         name === '>') &&
                     expr.args.length === 2
@@ -201,7 +338,11 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
         }
         case 'fn': {
             return t.arrowFunctionExpression(
-                expr.args.map((arg) => patternToTs(arg.pattern, ctx)),
+                expr.args.map(
+                    (arg, i) =>
+                        patternToTs(arg.pattern, ctx) ??
+                        t.identifier('$ignored_' + i),
+                ),
                 bodyToTs(expr.body, ctx),
             );
         }
@@ -228,6 +369,47 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 exprToTs(expr.no, ctx),
             );
         }
+        case 'switch': {
+            return t.callExpression(
+                t.arrowFunctionExpression(
+                    [t.identifier('target')],
+                    t.blockStatement([
+                        ifs(
+                            expr.cases.map((kase) => {
+                                const cond = patternToCheck(
+                                    kase.pattern,
+                                    t.identifier('target'),
+                                    ctx,
+                                );
+                                const pat = patternToTs(kase.pattern, ctx);
+                                return {
+                                    cond,
+                                    body: [
+                                        ...(pat
+                                            ? [
+                                                  t.variableDeclaration(
+                                                      'const',
+                                                      [
+                                                          t.variableDeclarator(
+                                                              pat,
+                                                              t.identifier(
+                                                                  'target',
+                                                              ),
+                                                          ),
+                                                      ],
+                                                  ),
+                                              ]
+                                            : []),
+                                        stmtToTs(kase.body, ctx, true),
+                                    ],
+                                };
+                            }),
+                        ),
+                    ]),
+                ),
+                [exprToTs(expr.target, ctx)],
+            );
+        }
         case 'unresolved':
             return t.callExpression(t.identifier('fail'), [
                 t.stringLiteral('unresolved ' + expr.reason),
@@ -237,7 +419,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.identifier(name);
         }
     }
-    return t.stringLiteral('Not impl expr ' + expr.type);
+    return t.stringLiteral('exprToTs Not impl expr ' + expr.type);
 };
 
 export const tupleRecord = <T>(entries: { name: string; value: T }[]) => {

@@ -5,6 +5,9 @@ import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './App';
 import { Expr } from '../src/types/ast';
+import { Report } from '../src/get-type/get-types-new';
+import { errorToString } from '../src/to-cst/show-errors';
+import { Ctx } from '../src/to-ast/to-ast';
 
 export const ListLike = ({
     left,
@@ -31,152 +34,67 @@ export const ListLike = ({
 }) => {
     const isRoot = idx === store.root;
 
-    const nodes = children.map((cidx, i) => (
-        <Node
-            idx={cidx}
-            key={cidx}
-            ctx={ctx}
-            setHover={setHover}
-            path={path.concat({
-                idx,
-                child: {
-                    type: 'child',
-                    at: i,
-                },
-            })}
-            store={store}
-            events={{
-                onLeft() {
-                    if (i > 0) {
-                        setSelection(store, {
-                            idx: children[i - 1],
-                            loc: 'end',
-                        });
-                    } else {
-                        setSelection(store, { idx, loc: 'start' });
-                    }
-                },
-                onRight() {
-                    if (i < children.length - 1) {
-                        setSelection(store, {
-                            idx: children[i + 1],
-                            loc: 'start',
-                        });
-                    } else {
-                        setSelection(store, { idx, loc: 'end' });
-                    }
-                },
-            }}
-        />
-    ));
-
-    const contents = isRoot ? (
-        <div
-            style={{
-                display: 'grid',
-                gap: '0 8px',
-                gridTemplateColumns: 'min-content min-content',
-            }}
-        >
-            {nodes.map((node, i) => (
-                <React.Fragment key={children[i]}>
-                    <div
-                        key={children[i]}
-                        onMouseEnter={(evt) =>
-                            setHover({
-                                idx: children[i],
-                                box: evt.currentTarget.getBoundingClientRect(),
-                            })
-                        }
-                        onMouseLeave={() =>
-                            setHover({ idx: children[i], box: null })
-                        }
-                        onMouseDown={(evt) => {
-                            evt.stopPropagation();
-                            evt.preventDefault();
-                            setSelection(store, {
-                                idx: children[i],
-                                loc: 'end',
-                            });
-                        }}
-                    >
-                        {node}
-                    </div>
-                    <ShowResult result={ctx.results[children[i]]} />
-                </React.Fragment>
-            ))}
-        </div>
-    ) : layout?.type === 'multiline' ? (
-        <span
-            style={
-                layout.pairs
-                    ? {
-                          display: 'grid',
-                          gridTemplateColumns: 'min-content min-content',
-                          gap: '0 8px',
-                      }
-                    : { display: 'flex', flexDirection: 'column' }
-            }
-        >
-            {layout.tightFirst ? (
-                <span style={{ display: 'flex' }}>
-                    {nodes.slice(0, layout.tightFirst).map((node, i) => (
-                        <span
-                            key={children[i]}
-                            style={{ marginLeft: i === 0 ? 0 : 8 }}
-                        >
-                            {node}
-                        </span>
-                    ))}
-                </span>
-            ) : null}
-
-            {nodes.slice(layout.tightFirst).map((node, i) => (
-                <span
-                    key={children[layout.tightFirst + i]}
-                    style={{
-                        marginLeft: layout.tightFirst ? 30 : 0,
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'flex-end',
-                    }}
-                >
-                    {node}
-                </span>
-            ))}
-        </span>
-    ) : (
-        nodes.map((node, i) => (
-            <React.Fragment key={children[i]}>
-                {i != 0 ? (
-                    <span
-                        onMouseDown={sideClick((left) => {
-                            if (left) {
+    const nodes = React.useMemo(
+        () =>
+            children.map((cidx, i) => (
+                <Node
+                    idx={cidx}
+                    key={cidx}
+                    ctx={ctx}
+                    setHover={setHover}
+                    path={path.concat({
+                        idx,
+                        child: {
+                            type: 'child',
+                            at: i,
+                        },
+                    })}
+                    store={store}
+                    events={{
+                        onLeft() {
+                            if (i > 0) {
                                 setSelection(store, {
                                     idx: children[i - 1],
                                     loc: 'end',
                                 });
-                            } else {
+                            } else if (!isRoot) {
+                                setSelection(store, { idx, loc: 'start' });
+                            }
+                        },
+                        onRight() {
+                            if (i < children.length - 1) {
                                 setSelection(store, {
-                                    idx: children[i],
+                                    idx: children[i + 1],
                                     loc: 'start',
                                 });
+                            } else if (!isRoot) {
+                                setSelection(store, { idx, loc: 'end' });
                             }
-                        })}
-                    >
-                        &nbsp;
-                    </span>
-                ) : null}
-                <span key={children[i]}>{node}</span>
-            </React.Fragment>
-        ))
+                        },
+                    }}
+                />
+            )),
+        [children, idx],
     );
+
+    const contents = formatContents(
+        isRoot,
+        nodes,
+        children,
+        setHover,
+        store,
+        ctx,
+        layout,
+    );
+
+    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.05)' : 'none';
 
     return (
         <span
             style={{
                 display: 'flex',
                 cursor: 'text',
+                background: isRoot ? 'transparent' : dec,
             }}
             onMouseEnter={(evt) =>
                 setHover({
@@ -188,8 +106,10 @@ export const ListLike = ({
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 evt.preventDefault();
-                setSelection(store, { idx, loc: 'end' });
-                console.log('OK');
+                if (!isRoot) {
+                    setSelection(store, { idx, loc: 'end' });
+                    console.log('OK');
+                }
             }}
         >
             {store.selection?.idx === idx && store.selection.loc === 'start' ? (
@@ -221,6 +141,8 @@ export const ListLike = ({
                     style={{
                         color: rainbow[path.length % rainbow.length],
                         opacity: 0.5,
+                        fontVariationSettings:
+                            store.selection?.idx === idx ? '"wght" 900' : '',
                     }}
                     onMouseDown={sideClick((left) => {
                         if (left) {
@@ -268,6 +190,8 @@ export const ListLike = ({
                         color: rainbow[path.length % rainbow.length],
                         opacity: 0.5,
                         alignSelf: 'flex-end',
+                        fontVariationSettings:
+                            store.selection?.idx === idx ? '"wght" 900' : '',
                     }}
                     onMouseDown={sideClick((left) => {
                         if (left) {
@@ -334,18 +258,35 @@ export const sideClick =
 
 export const ShowResult = ({
     result,
+    ctx,
 }: {
+    ctx: Ctx;
     result:
         | { status: 'success'; value: any; code: string; expr: Expr }
-        | { status: 'failure'; error: string; code: string; expr: Expr };
+        | { status: 'failure'; error: string; code: string; expr: Expr }
+        | { status: 'errors'; expr: Expr; errors: Report['errors'] };
 }) => {
     let body;
     if (result.status === 'success') {
         if (typeof result.value === 'function') {
-            body = <pre>{result.value.toString().trim()}</pre>;
+            body = <pre>{result.value.toString().slice(0, 100)}...</pre>;
         } else {
-            body = <pre>{JSON.stringify(result.value, null, 2)}</pre>;
+            body = (
+                <pre style={{ whiteSpace: 'pre-wrap' }}>
+                    {JSON.stringify(result.value)}
+                </pre>
+            );
         }
+    } else if (result.status === 'errors') {
+        body = (
+            <pre style={{ whiteSpace: 'pre-wrap' }}>
+                {Object.values(result.errors).flatMap((errors, j) =>
+                    errors.map((error, i) => (
+                        <div key={j + ':' + i}>{errorToString(error, ctx)}</div>
+                    )),
+                )}
+            </pre>
+        );
     } else {
         body = <pre>{result.error}</pre>;
     }
@@ -378,10 +319,140 @@ export const ShowResult = ({
                         border: '1px solid black',
                     }}
                 >
-                    {result.code}
+                    {result.status !== 'errors' && result.code}
                     {JSON.stringify(result.expr, null, 2)}
                 </pre>
             )}
         </div>
     );
 };
+
+function formatContents(
+    isRoot: boolean,
+    nodes: JSX.Element[],
+    children: number[],
+    setHover: SetHover,
+    store: Store,
+    ctx: EvalCtx,
+    layout:
+        | { type: 'flat'; width: number; pos: number }
+        | {
+              type: 'multiline';
+              pairs?: boolean | undefined;
+              tightFirst: number;
+              pos: number;
+          }
+        | undefined,
+) {
+    if (isRoot) {
+        return (
+            <div
+                style={{
+                    display: 'grid',
+                    gap: '0 8px',
+                    gridTemplateColumns: 'max-content 1fr',
+                }}
+            >
+                {nodes.map((node, i) => (
+                    <React.Fragment key={children[i]}>
+                        <div
+                            key={children[i]}
+                            onMouseEnter={(evt) =>
+                                setHover({
+                                    idx: children[i],
+                                    box: evt.currentTarget.getBoundingClientRect(),
+                                })
+                            }
+                            onMouseLeave={() =>
+                                setHover({ idx: children[i], box: null })
+                            }
+                            onMouseDown={(evt) => {
+                                evt.stopPropagation();
+                                evt.preventDefault();
+                                setSelection(store, {
+                                    idx: children[i],
+                                    loc: 'end',
+                                });
+                            }}
+                        >
+                            {node}
+                        </div>
+                        <ShowResult
+                            result={ctx.results[children[i]]}
+                            ctx={ctx.ctx}
+                        />
+                    </React.Fragment>
+                ))}
+            </div>
+        );
+    }
+    if (layout?.type !== 'multiline') {
+        return nodes.map((node, i) => (
+            <React.Fragment key={children[i]}>
+                {i != 0 ? (
+                    <span
+                        onMouseDown={sideClick((left) => {
+                            if (left) {
+                                setSelection(store, {
+                                    idx: children[i - 1],
+                                    loc: 'end',
+                                });
+                            } else {
+                                setSelection(store, {
+                                    idx: children[i],
+                                    loc: 'start',
+                                });
+                            }
+                        })}
+                    >
+                        &nbsp;
+                    </span>
+                ) : null}
+                <span key={children[i]}>{node}</span>
+            </React.Fragment>
+        ));
+    }
+
+    const first = layout.tightFirst ? (
+        <span style={{ display: 'flex' }}>
+            {nodes.slice(0, layout.tightFirst).map((node, i) => (
+                <span key={children[i]} style={{ marginLeft: i === 0 ? 0 : 8 }}>
+                    {node}
+                </span>
+            ))}
+        </span>
+    ) : null;
+
+    return (
+        <span style={{ display: 'flex', flexDirection: 'column' }}>
+            {first}
+
+            <span
+                style={{
+                    marginLeft: layout.tightFirst ? 30 : 0,
+                    ...(layout.pairs
+                        ? {
+                              display: 'grid',
+                              gridTemplateColumns: 'min-content min-content',
+                              gap: '0 8px',
+                          }
+                        : { display: 'flex', flexDirection: 'column' }),
+                }}
+            >
+                {nodes.slice(layout.tightFirst).map((node, i) => (
+                    <span
+                        key={children[layout.tightFirst + i]}
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'flex-end',
+                            alignSelf: 'flex-start',
+                        }}
+                    >
+                        {node}
+                    </span>
+                ))}
+            </span>
+        </span>
+    );
+}

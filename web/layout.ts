@@ -50,19 +50,22 @@ export const calculateLayout = (
 };
 
 const idName = (item?: Map[0]) =>
-    item?.node.contents.type === 'identifier' ? item.node.contents.text : null;
+    item?.node.type === 'identifier' ? item.node.text : null;
 
 const tightFirsts: { [key: string]: number } = {
     fn: 2,
     def: 2,
     defn: 3,
+    deftype: 2,
+    switch: 2,
     let: 2,
     if: 2,
+    '<>': 2,
 };
 
 function howTight(item?: Map[0]) {
-    if (item?.node.contents.type === 'identifier') {
-        return tightFirsts[item.node.contents.text] ?? 1;
+    if (item?.node.type === 'identifier') {
+        return tightFirsts[item.node.text] ?? 1;
     }
     return 1;
 }
@@ -74,7 +77,7 @@ export const layout = (
     recursive = false,
 ) => {
     const item = map[idx];
-    item.layout = calculateLayout(item.node.contents, pos, map, recursive);
+    item.layout = calculateLayout(item.node, pos, map, recursive);
 };
 
 function childWidth(

@@ -4,6 +4,7 @@ import { SetHover } from './App';
 import { IdentifierLike } from './IdentifierLike';
 import { ListLike } from './ListLike';
 import { EvalCtx, Path, Store, useStore } from './store';
+import { StringView } from './String';
 
 // ListLike
 // array, list, record
@@ -27,6 +28,7 @@ rainbow.unshift(rainbow.pop()!);
 export type Events = {
     onRight: () => void;
     onLeft: () => void;
+    onKeyDown?: (evt: React.KeyboardEvent) => true | void;
     // other things? idk
 };
 
@@ -39,7 +41,7 @@ export const idText = (node: MNodeContents) => {
         case 'unparsed':
             return node.raw;
         case 'tag':
-            return '`' + node.text;
+            return "'" + node.text;
     }
 };
 
@@ -58,69 +60,86 @@ const arrayItems = (
 
 // IdentifierLike (atom?)
 // identifier, tag, number?, comment prolly
-export const Node = ({
-    idx,
-    store,
-    path,
-    events,
-    ctx,
-    setHover,
-}: {
-    idx: number;
-    store: Store;
-    path: Path[];
-    events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
-}) => {
-    const both = useStore(store, idx);
-    if (!both) {
-        return null;
-    }
-    const { node: item, layout } = both;
-    const text = idText(item.contents);
+export const Node = React.memo(
+    ({
+        idx,
+        store,
+        path,
+        events,
+        ctx,
+        setHover,
+    }: {
+        idx: number;
+        store: Store;
+        path: Path[];
+        events: Events;
+        ctx: EvalCtx;
+        setHover: SetHover;
+    }) => {
+        const both = useStore(store, idx);
+        if (!both) {
+            return null;
+        }
+        const { node: item, layout } = both;
 
-    // const decs = Object.entries(item.decorators);
+        if (item.type === 'string') {
+            return (
+                <StringView
+                    node={item}
+                    store={store}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                    ctx={ctx}
+                    setHover={setHover}
+                />
+            );
+        }
 
-    if (text != null) {
-        return (
-            <IdentifierLike
-                text={text}
-                type={item.contents.type}
-                store={store}
-                idx={idx}
-                path={path}
-                events={events}
-                ctx={ctx}
-                setHover={setHover}
-            />
-        );
-    }
+        const text = idText(item);
 
-    const arr = arrayItems(item.contents);
+        // const decs = Object.entries(item.decorators);
 
-    if (arr) {
-        const [left, right, children] = arr;
-        return (
-            <ListLike
-                {...{
-                    left,
-                    right,
-                    children,
-                    store,
-                    path,
-                    layout,
-                    idx,
-                    events,
-                    ctx,
-                    setHover,
-                }}
-            />
-        );
-    }
+        if (text != null) {
+            return (
+                <IdentifierLike
+                    text={text}
+                    type={item.type}
+                    store={store}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                    ctx={ctx}
+                    setHover={setHover}
+                />
+            );
+        }
 
-    return <span>{JSON.stringify(item.contents)}</span>;
-};
+        const arr = arrayItems(item);
+
+        if (arr) {
+            const [left, right, children] = arr;
+            return (
+                <ListLike
+                    {...{
+                        left,
+                        right,
+                        children,
+                        store,
+                        path,
+                        layout,
+                        idx,
+                        events,
+                        ctx,
+                        setHover,
+                    }}
+                />
+            );
+        }
+
+        return <span>{JSON.stringify(item)}</span>;
+    },
+);
 
 // Spread is weird, let's wait to support it?
 // String is special too

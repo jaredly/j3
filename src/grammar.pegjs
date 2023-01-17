@@ -2,14 +2,16 @@
 {{
 	let idx = 0;
 	export const nidx = () => idx++;
+	export const setIdx = (i) => idx = i;
 }}
 
 {
-	const wrap = (contents, loc) => ({contents, loc: {
+	const newLoc = () => ({
 		start: location().start.offset,
 		end: location().end.offset,
 		idx: nidx()
-	}});
+	});
+	const wrap = (contents) => ({...contents, loc: newLoc()});
 }
 
 File = _ contents:(@Form _)* _ { return contents}
@@ -30,7 +32,7 @@ record = "{" _ values:(@Form _)* "}" { return wrap({type: 'record', values})}
 
 macro = "@" name:$idtext { return wrap({type: 'macro', name})}
 
-tag = "`" text:$idtext? { return wrap({type: 'tag', text: text || '' })}
+tag = "'" text:$idtext? { return wrap({type: 'tag', text: text || '' })}
 
 number = raw:$(dotStart / dotEnd) {return wrap({type: 'number', raw})}
 
@@ -46,17 +48,18 @@ comment = text:$(commenttext / finalLineComment) {return wrap({type: 'comment', 
 // TODO figure this out
 // spread = "..." contents:Form {return wrap({type: 'spread', contents})}
 
-string = "\"" first:$tplStringChars templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
+string = "\"" first:stringText templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
+stringText = text:$tplStringChars {return {type: 'stringText', text, loc: newLoc()}}
 
 identifier = text:$idtext hash:$("#" idtext)? {return wrap({type: 'identifier', text, hash})}
 
-TemplatePair = expr:TemplateWrap suffix:$tplStringChars {return {expr, suffix}}
-TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 0 ? wrap({type: 'list', values: forms}) : forms[0]}
+TemplatePair = expr:TemplateWrap suffix:stringText {return {expr, suffix}}
+TemplateWrap = "\${" _ forms:(@Form _)+ _ "}" {return forms.length > 1 ? wrap({type: 'list', values: forms}) : forms[0]}
 tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [@:a-zA-Z0-9_<>!='$%*/+~&.|,?-]+
+idtext = [@:a-zA-Z0-9_<>!=$%*/+~&.|,?-]+
 
 // newline = "\n"
 // _nonnewline = [ \t\r]* (comment [ \t\r]*)*

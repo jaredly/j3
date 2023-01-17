@@ -1,5 +1,6 @@
 // ok?
-import { parse } from './grammar';
+// @ts-ignore
+import { parse } from './grammar.mjs';
 
 import fs from 'fs';
 import { addDef, newCtx, noForm } from './to-ast/to-ast';

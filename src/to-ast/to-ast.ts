@@ -3,6 +3,9 @@
 import { Loc, Node } from '../types/cst';
 import { Expr, Term, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
+import { typeForExpr } from './typeForExpr';
+import { getType, Report } from '../get-type/get-types-new';
+import { validateType } from '../get-type/validate';
 
 export type Global = {
     builtins: {
@@ -12,6 +15,7 @@ export type Global = {
         types: { [name: string]: TVar[] };
     };
     terms: { [hash: string]: Expr };
+    termTypes: { [hash: string]: Type };
     names: { [name: string]: string[] };
     types: { [hash: string]: Type };
     typeNames: { [name: string]: string[] };
@@ -22,7 +26,11 @@ export type Local = {
     types: { sym: number; name: string; bound?: Type }[];
 };
 
+export type NodeStyle = 'italic' | 'pairs' | 'bold';
+
 export type Ctx = {
+    errors: Report['errors'];
+    styles: { [idx: number]: NodeStyle };
     sym: { current: number };
     global: Global;
     local: Local;
@@ -33,7 +41,7 @@ export type Ctx = {
 };
 
 export const blank: Node = {
-    contents: { type: 'blank' },
+    type: 'blank',
     loc: { start: -1, end: -1, idx: -1 },
 };
 
@@ -51,10 +59,11 @@ export const basicBuiltins: Global['builtins'] = {
         bool: [],
         string: [],
         Array: [
-            { sym: 0, form: blank },
+            { sym: 0, form: blank, name: 'Value' },
             {
                 sym: 1,
                 form: blank,
+                name: 'Length',
                 default_: {
                     type: 'builtin',
                     name: 'uint',
@@ -111,17 +120,32 @@ export const builtinFn = (
 };
 const tint = btype('int');
 const tbool = btype('bool');
+const tstring = btype('string');
 ['<', '>', '<=', '>=', '==', '!='].map((name) =>
     builtinFn(basicBuiltins, name, [tint, tint], tbool),
 );
 ['+', '-', '*', '/'].map((name) =>
     builtinFn(basicBuiltins, name, [tint, tint], tint),
 );
+builtinFn(basicBuiltins, 'toString', [tint], tstring);
+builtinFn(basicBuiltins, 'toString', [tbool], tstring);
+addBuiltin(basicBuiltins, 'debugToString', {
+    type: 'tfn',
+    args: [{ sym: 0, form: blank, name: 'Value' }],
+    body: {
+        type: 'fn',
+        args: [{ type: 'local', sym: 0, form: blank }],
+        body: tstring,
+        form: blank,
+    },
+    form: blank,
+});
 
 export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {
     builtins: basicBuiltins,
     terms: {},
+    termTypes: {},
     names: {},
     types: {},
     typeNames: {},
@@ -133,6 +157,8 @@ export const newCtx = (): Ctx => {
         global: initialGlobal,
         local: emptyLocal,
         localMap: { terms: {}, types: {} },
+        errors: {},
+        styles: {},
     };
 };
 
@@ -142,7 +168,8 @@ export const nil: Expr = {
     type: 'record',
     entries: [],
     form: {
-        contents: { type: 'list', values: [] },
+        type: 'list',
+        values: [],
         loc: noloc,
     },
 };
@@ -152,7 +179,8 @@ export const nilt: Type = {
     entries: [],
     open: false,
     form: {
-        contents: { type: 'list', values: [] },
+        type: 'list',
+        values: [],
         loc: noloc,
     },
 };
@@ -179,7 +207,7 @@ export const resolveExpr = (
     if (local) {
         return { type: 'local', sym: local.sym, form };
     }
-    if (ctx.global.names[text]) {
+    if (ctx.global.names[text]?.length) {
         return {
             type: 'global',
             hash: ctx.global.names[text][0],
@@ -236,24 +264,34 @@ export const resolveType = (
     };
 };
 
-export const nodeToType = (form: Node, ctx: Ctx): Type => {
-    switch (form.contents.type) {
-        case 'identifier': {
-            return resolveType(
-                form.contents.text,
-                form.contents.hash,
-                ctx,
-                form,
-            );
-        }
-    }
-    return { type: 'unresolved', form, reason: 'not impl type' };
-};
-
 export const nextSym = (ctx: Ctx) => ctx.sym.current++;
 
-export const addDef = (res: Expr, ctx: Ctx) => {
+export const addDef = (res: Expr, ctx: Ctx): Ctx => {
+    if (res.type === 'deftype') {
+        return {
+            ...ctx,
+            global: {
+                ...ctx.global,
+                types: {
+                    ...ctx.global.types,
+                    [res.hash]: res.value,
+                },
+                typeNames: {
+                    ...ctx.global.typeNames,
+                    [res.name]: [
+                        res.hash,
+                        ...(ctx.global.typeNames[res.name] || []),
+                    ],
+                },
+            },
+        };
+    }
     if (res.type === 'def') {
+        const type = getType(res.value, ctx);
+        if (!type) {
+            console.warn(`Trying to add a def that doesnt give a type`);
+            return ctx;
+        }
         return {
             ...ctx,
             global: {
@@ -261,6 +299,10 @@ export const addDef = (res: Expr, ctx: Ctx) => {
                 terms: {
                     ...ctx.global.terms,
                     [res.hash]: res,
+                },
+                termTypes: {
+                    ...ctx.global.termTypes,
+                    [res.hash]: type,
                 },
                 names: {
                     ...ctx.global.names,

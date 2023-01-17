@@ -1,4 +1,125 @@
 
+# So, about the editor terms
+
+I'm thinking about a "playground / workspace" distinction
+where the playground autoevaluates, but doesn't persist.
+And then you can click something to "commit" it, which means
+it persists, you can dismiss it, etc.
+That will also persist the tree of things it depends on.
+
+
+
+# Strings!
+Want.
+
+- [ ] ${ actuall track the $, and split the string
+- [ ] handle 
+
+# GENERICS
+
+tfn, and (<>) for tapply. Let's get it. So we can do
+`debugToString` and have it work!
+
+- do the "generics can hide" thing
+
+what other thing can hide? probably macros? or like watchers?
+
+--
+
+- [x] ok validate the stuff
+- [x] move the web UI over to the new type checking and valdiation
+
+- [x] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
+	- 
+
+
+- [x] hmmmmmm I think this is a listener issue?
+	- I need to keep track of what nodes had errors in the previous one, and do a diff
+		so we can rerender them if necessary
+
+
+- [x] reverse names and such ples
+
+- [x] pattern type-hover, yes thanks
+- [ ] for fun demos, and art and such, can we get a custom render in here?
+- [ ] ok maybe I need floats. Which means multi-dispatch (?) or just some inference?
+- [ ] also, let's get arrays in there!
+- [ ] '(' in a start Blinker should wrap the thing. Also alt-( should work.
+- [x] filter out empty identifiers, they're not helpful
+- [ ] AUTOCOMPLETEEEEEE
+
+- [ ] lol strings	?
+
+
+
+- [ ] ok, so in order for map & stuff to work, I need recursion. Is it time?
+
+
+
+- [ ] also, get we get a force-directed graph in here?
+
+- [x] record matches!!!! Making so much progress.
+- [x] why does the error stick around? (weird dom not clearing thing, backgroundColor='none' is invalid css)
+
+- [ ] WELL having let-arrays be formatted as pairs is a little tricky. I think storing layout on the map is maybe not my best idea. idk.
+
+HOVERY things
+- [x] filter out keywords
+
+What's a good way to italicize record keys?
+hmmm maybe in the report, we can include like style stuff?
+like
+
+- [ ] hover types for patterns pls
+
+- [x] switch get it workin
+
+
+## maybeeee nodeToType should ... potentially not even return an ast node?
+hmmmmmmm
+I mean we've got our "unrsolved", right?
+hmmm so the reason I was hanging on to everything was so that I could retrieve the original syntax when
+reconstructing the syntax stuffs.
+which I still think is a valuable thing.
+hmmmmmmmmmmmm
+but like, comments. what do we do.
+
+toplevel `def` and `defn` should probably go unresolved (??).
+
+and then ... we should log an error to the report if we have anything unresolved (???)
+
+Anyway, alsos, we'll want to do a `validateType`, right?
+oh maybe have a `validateForm` or soemthing...
+yeah, before we'll add anything, it's not just the the type to check
+
+
+## Thinking a lot about errors
+
+FOR extra CST nodes that don't fit ...
+like non-ids as a record key
+or some non-array nonsense in a function second position
+
+### Ok, now that we have an error system that I think is good, we
+
+- [x] make a .types.jd that works
+- [ ] start just, going through all the forms?
+- [ ] I guess let's move the App over to use the new getType & associated error reporting
+- [ ] implement support for `def` level destructuring, e.g. multiple `name`s (and associated `type`s from a single toplevel def)
+	- addDef should calculate the type of the dealio, along with a report why not, and then cache that type on the global whatsit, for others to use.
+
+
+## Enumerating the syntax, in Syntax.md
+
+Very helpful for hammering some things out in this brave new lispy world!
+And... it's with a heavy heart that I decide that tags probably need something
+other than backtick. It just makes interacting with markdown too annoying.
+
+
+
+
+
+## Ok
+
 - [x] come up with a syntax that can handle things
 - [x] make a tight grammar (text -> CST)
 - [x] see if it can handle glsl? hmm yeah I think so
@@ -93,7 +214,7 @@ Well, it's ok to like /report/ it and such.
 When you're collecting annotations.
 But not keep it around / use it as a source of important info. right?
 
-- [ ] let's ditch this `.contents` nonsense. No need for it. we can just inline loc into the definitions.
+- [x] let's ditch this `.contents` nonsense. No need for it. we can just inline loc into the definitions.
 
 
 

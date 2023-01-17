@@ -1,70 +1,119 @@
-import generate from '@babel/generator';
 import { readdirSync, readFileSync } from 'fs';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, newCtx } from '../src/to-ast/to-ast';
-import { stmtToTs } from '../src/to-ast/to-ts';
+import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { newEvalCtx } from '../web/store';
-import * as t from '@babel/types';
-import { typeForExpr } from '../src/to-ast/typeForExpr';
-import { getLine, idxLines } from '../src/to-ast/utils';
-import { Node } from '../src/types/cst';
-import { transformNode } from '../src/types/transform-cst';
+import {
+    DecExpected,
+    getLine,
+    idxLines,
+    removeDecorators,
+} from '../src/to-ast/utils';
 
-const callWith = (node: Node, name: string): Node[] | void => {
-    if (
-        node.contents.type === 'list' &&
-        node.contents.values.length >= 1 &&
-        node.contents.values[0].contents.type === 'identifier' &&
-        node.contents.values[0].contents.text === name
-    ) {
-        return node.contents.values.slice(1);
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { getType, Report } from '../src/get-type/get-types-new';
+import { makeRCtx } from '../src/to-cst/nodeForExpr';
+import { nodeForType } from '../src/to-cst/nodeForType';
+import { nodeToString } from '../src/to-cst/nodeToString';
+import { validateExpr } from '../src/get-type/validate';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+declare global {
+    namespace jest {
+        interface Matchers<R> {
+            toMatchExpected(expected: DecExpected, ctx: Ctx): R;
+        }
     }
-};
+}
 
-const removeDecorators = (node: Node) => {
-    const result: {
-        errors: {
-            message: string;
-            idx: number;
-        }[];
-        expected: {
-            type: Node;
-            idx: number;
-        }[];
-    } = { errors: [], expected: [] };
-    node = transformNode(node, {
-        pre(node) {
-            const values = callWith(node, '@error');
-            if (!values) {
-                const values = callWith(node, '@type');
-                if (!values) {
-                    return;
+expect.extend({
+    toMatchExpected(report: Report, expected: DecExpected, ctx: Ctx) {
+        let lines: string[] = [];
+
+        const touched: { [key: number]: boolean } = {};
+        expected.errors.forEach((err) => {
+            touched[err.idx] = true;
+            const found = report.errors[err.idx];
+            if (!found) {
+                lines.push(
+                    `No error at idx ${err.idx}, expected ${err.message}`,
+                );
+                return;
+            }
+            if (found.length !== 1) {
+                lines.push(
+                    `Too many errors (${found.length}) at idx ${
+                        err.idx
+                    }, expected ${err.message}. ${found
+                        .map((f) => f.type)
+                        .join(', ')}`,
+                );
+                return;
+            }
+            if (found[0].type !== err.message) {
+                lines.push(
+                    `Expected error: ${err.message} at ${err.idx}, found ${found[0].type}`,
+                );
+            }
+        });
+
+        const rctx = makeRCtx(ctx);
+        Object.keys(report.errors).forEach((idx) => {
+            if (touched[+idx]) {
+                return;
+            }
+
+            report.errors[+idx].forEach((err) => {
+                switch (err.type) {
+                    case 'invalid type':
+                        lines.push(
+                            `Invalid type! Expected ${nodeToString(
+                                nodeForType(err.expected, rctx),
+                            )}, found ${nodeToString(
+                                nodeForType(err.found, rctx),
+                            )} at idx ${err.found.form.loc.idx}`,
+                        );
+                        break;
+                    default:
+                        lines.push(
+                            `Some error ${
+                                err.type
+                            } at ${idx} : ${JSON.stringify(err)}`,
+                        );
                 }
-                if (values.length !== 2) {
-                    throw new Error(`misconfigured, wrong size`);
-                }
-                result.expected.push({
-                    type: values[0],
-                    idx: values[1].loc.idx,
-                });
-                return values[1];
-            }
-            if (values.length !== 2) {
-                throw new Error(`misconfigured, wrong size`);
-            }
-            if (values[0].contents.type !== 'string') {
-                throw new Error(`error non a string`);
-            }
-            result.errors.push({
-                message: values[0].contents.first,
-                idx: values[1].loc.idx,
             });
-            return values[1];
-        },
-    });
-    return { ...result, node };
-};
+        });
+
+        expected.expected.forEach(({ idx, type }) => {
+            try {
+                expect(noForm(report.types[idx])).toEqual(noForm(type));
+            } catch (err) {
+                lines.push(
+                    `Expected type \`${nodeToString(
+                        nodeForType(type, rctx),
+                    )}\` at ${idx}, but found \`${nodeToString(
+                        nodeForType(report.types[idx], rctx),
+                    )}\``,
+                );
+            }
+        });
+
+        if (lines.length === 0) {
+            return {
+                message: () => `matched`,
+                pass: true,
+            };
+        } else {
+            lines.unshift(JSON.stringify(noForm({ report, expected })) + '\n');
+            return {
+                message: () => lines.join('\n'),
+                pass: false,
+            };
+        }
+    },
+});
 
 readdirSync(__dirname)
     .filter((m) => m.endsWith('.types.jd'))
@@ -73,15 +122,26 @@ readdirSync(__dirname)
             const raw = readFileSync(__dirname + '/' + name, 'utf8');
             const parsed = parse(raw);
             const ctx = newEvalCtx(newCtx());
-            const results = [];
             const lines = idxLines(raw);
 
             for (let node of parsed) {
-                const results = removeDecorators(node);
-                const res = nodeToExpr(node, ctx.ctx);
-
-                const types = {};
-                // getType(res, ctx.ctx, types);
+                if (node.type === 'comment') {
+                    continue;
+                }
+                it(`${name}:${getLine(lines, node.loc.start) + 1} ${raw.slice(
+                    node.loc.start,
+                    node.loc.end,
+                )}`, () => {
+                    const results = removeDecorators(node, ctx.ctx);
+                    const res = nodeToExpr(results.node, ctx.ctx);
+                    const report: Report = { types: {}, errors: {} };
+                    const _ = getType(res, ctx.ctx, report);
+                    validateExpr(res, ctx.ctx, report.errors);
+                    expect(report).toMatchExpected(results.expected, ctx.ctx);
+                    if (!Object.keys(report.errors).length) {
+                        ctx.ctx = addDef(res, ctx.ctx);
+                    }
+                });
             }
         });
     });

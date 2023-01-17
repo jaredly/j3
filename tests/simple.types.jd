@@ -1,11 +1,55 @@
-((@1 ==) 1 true)
-(@1 "no implementation of == found with args (int, bool)")
 
-(if (@error "not a bool" 4) 3 1)
+(@type 1 1)
 
-(def one 23)
+(@type int (+ 2 3))
 
-(if (@error "not a bool" one) 3 1)
+(
+	(fn [one :int] 3)
+	(@error "invalid type" true)
+)
 
-(if (@1 one) 3 1)
-(@1 "not a bool")
+(@type 3 ((fn [one :int] 3) 10))
+(@type int ((fn [one :int] :int 3) 10))
+
+(@error "unresolved" whatsit)
+
+(@type string "hello")
+
+(def name "j3")
+
+(@type string "hello${name}world")
+
+(@type 'Hello 'Hello )
+(@type ('Hello 23) ('Hello 23) )
+
+(def tagg (fn [one (: ['Hello 'Awesome ('Bye int)])] 23))
+
+(tagg 'Hello)
+(tagg (@error "invalid type" 'Hellos))
+
+(fn [one (: ['Hello 'Awesome])] (tagg one))
+
+(deftype option (tfn [T] [('Some T) 'None]))
+
+((fn [one (: option int)] 10) 'None)
+((fn [one (: option int)] 10) ('Some 100))
+((fn [one (: option int)] 10) (@error "invalid type" 'Nones))
+((fn [one (: option int)] 10) (@error "invalid type" ('Some "hi")))
+; I think this is the better place for it?
+; ((fn [one (: option int)] 10) ('Some (@error "invalid type" "hi")))
+
+(def ; a comment)
+	one 1)
+
+(== one 1)
+
+(deftype what ['One (@error "enum args mismatch" ('One 2))])
+
+(deftype what [('One 3) ('One 4)])
+
+((fn [one (: what)] one) ('One 10))
+;(deftype andhow (tfn [T (: [...])] ['How T]))
+; should be fine
+;(defn hi [one (: andHow 'Who)] one)
+; should fail
+;(defn hi [one (: andHow [('How int)])] one)

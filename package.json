@@ -16,6 +16,7 @@
         "esbuild": "^0.16.14",
         "generator": "link:@types/@babel/generator",
         "jest": "^29.3.1",
+        "localforage": "^1.10.0",
         "object-hash": "^3.0.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
@@ -26,6 +27,7 @@
     "scripts": {
         "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
         "web": "vite web --port 8221 --config vite.config.js",
-        "gram": "peggy --format es src/grammar.pegjs"
+        "gram": "peggy --format es src/grammar.pegjs -o src/grammar.mjs",
+        "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
     }
 }

@@ -3,23 +3,29 @@ import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { Node } from './Nodes';
-import { EvalCtx, initialStore, newEvalCtx } from './store';
+import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
-import { nodeForType } from '../src/to-cst/nodeForExpr';
+import { makeRCtx } from '../src/to-cst/nodeForExpr';
+import { nodeForType } from '../src/to-cst/nodeForType';
 import { Node as NodeT } from '../src/types/cst';
+import { errorToString } from '../src/to-cst/show-errors';
+import localforage from 'localforage';
+import { Type } from '../src/types/ast';
+import { applyAndResolve } from '../src/get-type/matchesType';
 
-const init = `
+const _init = `
 (one two )
 `;
 
-const init_ = `
+const init = `
 (def hello 10)
 (== hello 10)
 (== what 20)
+(switch 10 5 23 20 30)
 `;
 
-const _init = `(== 5 (+ 2 3))
+const __init = `(== 5 (+ 2 3))
 (== 5 5)
 
 ; let's get this going
@@ -35,11 +41,11 @@ const _init = `(== 5 (+ 2 3))
 	)
 	5
 )
-(\`Hello 10)
-(\`What)
-\`Yea
+('Hello 10)
+('What)
+'Yea
 3
-(let [(\`Ok x) (\`Ok 20)] (+ x 23))
+(let [('Ok x) ('Ok 20)] (+ x 23))
 
 (defn add2 [x :int] (+ x 2))
 (== (add2 23) 25)
@@ -48,7 +54,7 @@ const _init = `(== 5 (+ 2 3))
 (def yes (let [{yes} {yes 34}] yes))
 (== yes 34)`;
 
-const useLocalStorage = <T,>(key: string, initial: () => T) => {
+export const useLocalStorage = <T,>(key: string, initial: () => T) => {
     const [state, setState] = React.useState<T>(
         localStorage[key] ? JSON.parse(localStorage[key]) : initial(),
     );
@@ -71,14 +77,18 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
-export const App = () => {
+export const debounce = () => {};
+
+export const App = ({ store }: { store: Store }) => {
     const ctx = React.useMemo<EvalCtx>(() => newEvalCtx(newCtx()), []);
-    const last = React.useMemo<{ [key: number]: string }>(() => ({}), []);
-    const store = React.useMemo(() => {
-        const store = initialStore(parse(init));
-        compile(store, ctx);
-        return store;
-    }, []);
+
+    React.useMemo(() => compile(store, ctx), []);
+
+    // const store = React.useMemo(() => {
+    //     const store = initialStore(parse(init));
+    //     compile(store, ctx);
+    //     return store;
+    // }, []);
 
     const tick = React.useState(0);
 
@@ -88,9 +98,7 @@ export const App = () => {
         const fn = (evt: KeyboardEvent) => {
             if (evt.key === 'Alt') {
                 setAltDown(true);
-                console.log('good');
             }
-            console.log('ya');
         };
         const up = (evt: KeyboardEvent) => {
             if (evt.key === 'Alt') {
@@ -106,10 +114,11 @@ export const App = () => {
     }, []);
 
     React.useEffect(() => {
-        store.listeners[''] = [
+        store.listeners[':change'] = [
             () => {
                 compile(store, ctx);
                 tick[1]((x) => x + 1);
+                localforage.setItem('j3:app', { ...store, listeners: {} });
             },
         ];
     }, []);
@@ -118,43 +127,66 @@ export const App = () => {
 
     const best = React.useMemo(() => {
         for (let i = hover.length - 1; i >= 0; i--) {
-            if (ctx.types[hover[i].idx]) {
+            if (
+                (altDown && ctx.report.types[hover[i].idx]) ||
+                ctx.report.errors[hover[i].idx]
+            ) {
                 return hover[i];
             }
         }
-    }, [hover]);
+        return null;
+    }, [hover, altDown]);
+
+    // const showBest =
+    //     best && (altDown || ctx.report.errors[best.idx]) ? best : null;
+
+    const setHover2 = React.useCallback<SetHover>((hover) => {
+        setHover((h) => {
+            if (hover.box) {
+                return [...h, hover];
+            } else {
+                for (let i = h.length - 1; i >= 0; i--) {
+                    if (h[i].idx === hover.idx) {
+                        const res = [...h];
+                        res.splice(i, 1);
+                        return res;
+                    }
+                }
+                return h;
+            }
+        });
+    }, []);
+    const topPath = React.useMemo(() => [], []);
+    const emptyEvents = React.useMemo(
+        () => ({
+            onLeft() {},
+            onRight() {},
+        }),
+        [],
+    );
 
     return (
         <div style={{ margin: 24 }}>
+            <button
+                onClick={() => {
+                    localforage.removeItem('j3:app');
+                    location.reload();
+                }}
+                style={{ marginBottom: 20 }}
+            >
+                Clear
+            </button>
             <div>
                 <Node
                     idx={store.root}
                     store={store}
                     ctx={ctx}
-                    path={[]}
-                    setHover={(hover) => {
-                        setHover((h) => {
-                            if (hover.box) {
-                                return [...h, hover];
-                            } else {
-                                for (let i = h.length - 1; i >= 0; i--) {
-                                    if (h[i].idx === hover.idx) {
-                                        const res = [...h];
-                                        res.splice(i, 1);
-                                        return res;
-                                    }
-                                }
-                                return h;
-                            }
-                        });
-                    }}
-                    events={{
-                        onLeft() {},
-                        onRight() {},
-                    }}
+                    path={topPath}
+                    setHover={setHover2}
+                    events={emptyEvents}
                 />
             </div>
-            {best && altDown && (
+            {best && (
                 <div
                     style={{
                         position: 'absolute',
@@ -168,14 +200,22 @@ export const App = () => {
                         // boxShadow: '0 0 4px white',
                         border: '1px solid rgba(255,255,255,0.2)',
                         padding: 8,
+                        whiteSpace: 'pre',
                     }}
                 >
-                    Type:{' '}
-                    {nodeToString(nodeForType(ctx.types[best.idx], ctx.ctx))}
+                    {ctx.report.types[best.idx]
+                        ? 'Type: ' +
+                          showType(ctx.report.types[best.idx], ctx.ctx) +
+                          '\n'
+                        : ''}
+                    {ctx.report.errors[best.idx] &&
+                        ctx.report.errors[best.idx]
+                            .map((error) => errorToString(error, ctx.ctx))
+                            .join('\n')}
                     {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
                 </div>
             )}
-            {best && altDown && (
+            {best && (
                 <div
                     style={{
                         position: 'absolute',
@@ -195,4 +235,20 @@ export const App = () => {
     );
 };
 
+export const showType = (type: Type, ctx: Ctx): string => {
+    let text = nodeToString(nodeForType(type, makeRCtx(ctx)));
+    if (type.type === 'global') {
+        const res = applyAndResolve(type, ctx, []);
+        if (res.type !== 'error' && res.type !== 'local-bound') {
+            return text + ' = ' + nodeToString(nodeForType(res, makeRCtx(ctx)));
+        }
+    }
+    return text;
+};
+
 export type SetHover = (hover: { idx: number; box: any | null }) => void;
+
+window.clearJ3 = () => {
+    localforage.removeItem('j3:app');
+    location.reload();
+};

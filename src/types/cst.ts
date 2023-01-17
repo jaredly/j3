@@ -6,11 +6,6 @@ export type Loc = {
     idx: number;
 };
 
-export type Node = {
-    contents: NodeContents;
-    // decorators: { [key: string]: Node[] };
-    loc: Loc;
-};
 export type NodeList = { type: 'list'; values: Node[] };
 
 export type NodeContents =
@@ -43,10 +38,18 @@ export type NodeContents =
 
     // random stuff
     // | { type: 'spread'; contents: Node }
-    | {
-          type: 'string';
-          first: string;
-          templates: { expr: Node; suffix: string }[];
-      }
+    | CString
+    | stringText
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
+export type stringText = { type: 'stringText'; text: string; loc: Loc };
+export type CString = {
+    type: 'string';
+    first: stringText;
+    templates: { expr: Node; suffix: stringText }[];
+};
+
+export type Node = NodeContents & {
+    // decorators: { [key: string]: Node[] };
+    loc: Loc;
+};

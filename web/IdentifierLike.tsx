@@ -46,8 +46,30 @@ export const IdentifierLike = ({
         }
     }, [editing, text, editing ? store.selection!.loc : null]);
 
-    const dec =
-        ctx.types[idx]?.type === 'unresolved' ? 'underline red' : 'none';
+    const dec = ctx.report.errors[idx]
+        ? 'underline red'
+        : // : ctx.report.types[idx] == null
+          // ? 'underline gray'
+          'none';
+
+    const style =
+        ctx.ctx.styles[idx] === 'italic'
+            ? {
+                  fontStyle: 'italic',
+                  //   fontFamily: 'Monoid',
+                  //   fontSize: '80%',
+                  fontFamily: 'serif',
+                  //   fontFamily: 'Fira Code VF',
+                  //   fontFamily: 'Jet Brains Italic',
+                  //   fontVariationSettings: '"wght" 100',
+                  color: '#84a4a5',
+              }
+            : ctx.ctx.styles[idx] === 'bold'
+            ? {
+                  //   fontWeight: 'bold',
+                  fontVariationSettings: '"wght" 500',
+              }
+            : {};
 
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
@@ -58,6 +80,7 @@ export const IdentifierLike = ({
                 minHeight: '1.3em',
                 whiteSpace: 'pre-wrap',
                 textDecoration: dec,
+                ...style,
             }}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
@@ -79,6 +102,9 @@ export const IdentifierLike = ({
             data-idx={idx}
             contentEditable
             ref={ref}
+            autoCorrect="off"
+            spellCheck="false"
+            autoCapitalize="off"
             className="idlike"
             onMouseDown={(evt) => evt.stopPropagation()}
             onMouseOver={(evt) =>
@@ -104,8 +130,13 @@ export const IdentifierLike = ({
                 outline: 'none',
                 minHeight: '1.3em',
                 textDecoration: dec,
+                ...style,
             }}
             onKeyDown={(evt) => {
+                if (events.onKeyDown && events.onKeyDown(evt)) {
+                    // it's been handled
+                    return;
+                }
                 onKeyDown(evt, idx, path, events, store);
             }}
         />
@@ -113,7 +144,7 @@ export const IdentifierLike = ({
 };
 
 const nodeColor = (text: string, type: MNodeContents['type']) => {
-    if (text.startsWith(':')) {
+    if (text && text.startsWith(':')) {
         return colors[':'];
     }
     if (colors[text]) {
@@ -129,6 +160,7 @@ export const colors: {
     comment: '#616162',
     tag: '#82f682',
     number: '#4848a5',
+    string: 'yellow',
     unparsed: 'red',
     ':': 'orange',
 };
@@ -136,15 +168,16 @@ export const colors: {
 const ops = ['+', '-', '*', '/', '==', '<', '>', '<=', '>=', '!=', ','];
 ops.forEach((op) => (colors[op] = '#c9cac9'));
 
-const kwds = ['let', 'def', 'defn', 'fn'];
+const kwds = ['let', 'def', 'defn', 'fn', 'deftype', 'if', 'switch'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
-function focus(node: HTMLSpanElement, store: Store) {
-    console.log('a focus pls', node, store.selection!.loc);
+export function focus(node: HTMLSpanElement, store: Store) {
     node.focus();
+    if (!store.selection) {
+        return;
+    }
     if (typeof store.selection!.loc === 'number') {
         setPos(node, store.selection!.loc);
-        console.log('focusing the loc', store.selection!.loc);
         store.selection = { idx: store.selection!.idx, loc: undefined };
         return;
     }
@@ -180,61 +213,42 @@ function onInput(
     const text = evt.currentTarget.textContent ?? '';
     setEdit(text);
     const pos = getPos(evt.currentTarget);
+
+    let nw: Node;
     try {
         const parsed = parse(text);
-        if (parsed.length === 1) {
-            const nw = {
-                ...parsed[0],
-                loc: { ...parsed[0].loc, idx },
-            };
-            const mp: Map = {};
-            toMCST(nw, mp);
-            updateStore(
-                store,
-                {
-                    map: mp,
-                    selection: {
-                        idx,
-                        loc: pos,
-                    },
-                    prev: {
-                        idx,
-                        loc: presel.current ?? undefined,
-                    },
-                },
-                [path],
-            );
-        } else {
-            throw new Error('unparseable?');
-        }
+        nw = {
+            ...parsed[0],
+            loc: { ...parsed[0].loc, idx },
+        };
     } catch (err) {
-        const nw: Node = {
-            contents:
-                text.length === 0
-                    ? { type: 'identifier', text: '' }
-                    : {
-                          type: 'unparsed',
-                          raw: text,
-                      },
+        nw = {
+            ...(text.length === 0
+                ? { type: 'identifier', text: '' }
+                : {
+                      type: 'unparsed',
+                      raw: text,
+                  }),
             // decorators: {},
             loc: { start: 0, end: text.length, idx },
         };
-        const mp: Map = {};
-        toMCST(nw, mp);
-        updateStore(
-            store,
-            {
-                map: mp,
-                selection: {
-                    idx,
-                    loc: pos,
-                },
-                prev: {
-                    idx,
-                    loc: presel.current ?? undefined,
-                },
-            },
-            [path],
-        );
     }
+
+    const mp: Map = {};
+    toMCST(nw, mp);
+    updateStore(
+        store,
+        {
+            map: mp,
+            selection: {
+                idx,
+                loc: pos,
+            },
+            prev: {
+                idx,
+                loc: presel.current ?? undefined,
+            },
+        },
+        [path],
+    );
 }
