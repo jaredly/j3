@@ -282,8 +282,9 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     },
                     null,
                 );
+                report.types[expr.form.loc.idx] = expr.value;
             }
-            return nilt;
+            return expr.value;
         case 'array': {
             let res = null;
             // hmmmmm I should have a "ground" type ... for the empty array.

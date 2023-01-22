@@ -70,7 +70,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         Object.assign(allStyles, ctx.styles);
 
         if (hasErrors) {
-            console.log(idx, 'had errors I guess');
+            // console.log(idx, 'had errors I guess');
             results[idx] = {
                 status: 'errors',
                 expr: res,
@@ -160,7 +160,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             store,
             keys.map((k) => +k),
         );
-        console.log(changed);
+        // console.log(changed);
     }
 
     ectx.ctx = ctx;

@@ -20,7 +20,12 @@ export const nodeForType = (type: Type, ctx: RCtx): Node => {
             return {
                 loc: type.form.loc,
                 type: 'number',
-                raw: type.value.toString(),
+                raw:
+                    type.value.toString() +
+                    (type.kind === 'float' &&
+                    !type.value.toString().includes('.')
+                        ? '.'
+                        : ''),
             };
         case 'tag':
             if (type.args.length === 0) {

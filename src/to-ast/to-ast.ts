@@ -3,9 +3,7 @@
 import { Loc, Node } from '../types/cst';
 import { Expr, Term, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { typeForExpr_deprecated } from './typeForExpr';
 import { getType, Report } from '../get-type/get-types-new';
-import { validateType } from '../get-type/validate';
 
 export type Global = {
     builtins: {
