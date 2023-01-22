@@ -1,11 +1,7 @@
 import './poly';
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { App, updateIdxForStore } from './App';
-import { Debug } from './Debug';
-import localforage from 'localforage';
-import { initialStore, Store } from './store';
-import { parse, setIdx } from '../src/grammar';
+import { App } from './App';
 
 declare global {
     var root: Root;

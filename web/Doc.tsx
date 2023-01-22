@@ -1,18 +1,13 @@
 import * as React from 'react';
-import { parse } from '../src/grammar';
-import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
-import { Events, Node } from './Nodes';
-import { EvalCtx, initialStore, newEvalCtx, Path, Store } from './store';
-import { compile } from './compile';
-import { nodeToString } from '../src/to-cst/nodeToString';
+import { applyAndResolve } from '../src/get-type/matchesType';
+import { Ctx } from '../src/to-ast/to-ast';
 import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
-import { Node as NodeT } from '../src/types/cst';
+import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
-import localforage from 'localforage';
 import { Type } from '../src/types/ast';
-import { applyAndResolve } from '../src/get-type/matchesType';
+import { Events, Node } from './Nodes';
+import { EvalCtx, Path, Store } from './store';
 
 const topPath: Path[] = [];
 const emptyEvents: Events = {
@@ -23,25 +18,44 @@ const emptyEvents: Events = {
 export type SetHover = (hover: { idx: number; box: any | null }) => void;
 
 export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
-    const altDown = useAltDown();
+    const { setHover, hover } = useHover(ctx);
 
-    const [hover, setHoverInner] = React.useState(
+    return (
+        <div style={{ margin: 24 }}>
+            <div>
+                <Node
+                    idx={store.root}
+                    store={store}
+                    ctx={ctx}
+                    path={topPath}
+                    setHover={setHover}
+                    events={emptyEvents}
+                />
+            </div>
+            {hover && <ShowHover hover={hover} ctx={ctx} />}
+        </div>
+    );
+};
+
+function useHover(ctx: EvalCtx) {
+    const altDown = useAltDown();
+    const [hoverList, setHoverInner] = React.useState(
         [] as { idx: number; box: any }[],
     );
 
-    const best = React.useMemo(() => {
-        for (let i = hover.length - 1; i >= 0; i--) {
+    const hover = React.useMemo(() => {
+        for (let i = hoverList.length - 1; i >= 0; i--) {
             if (
-                (altDown && ctx.report.types[hover[i].idx]) ||
-                ctx.report.errors[hover[i].idx]
+                (altDown && ctx.report.types[hoverList[i].idx]) ||
+                ctx.report.errors[hoverList[i].idx]
             ) {
-                return hover[i];
+                return hoverList[i];
             }
         }
         return null;
-    }, [hover, altDown]);
+    }, [hoverList, altDown]);
 
-    const setHover2 = React.useCallback<SetHover>((hover) => {
+    const setHover = React.useCallback<SetHover>((hover) => {
         setHoverInner((h) => {
             if (hover.box) {
                 return [...h, hover];
@@ -58,38 +72,27 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
         });
     }, []);
 
-    return (
-        <div style={{ margin: 24 }}>
-            <div>
-                <Node
-                    idx={store.root}
-                    store={store}
-                    ctx={ctx}
-                    path={topPath}
-                    setHover={setHover2}
-                    events={emptyEvents}
-                />
-            </div>
-            {best && <ShowHover best={best} ctx={ctx} />}
-        </div>
-    );
-};
+    return { setHover, hover };
+}
 
 function ShowHover({
-    best,
+    hover,
     ctx,
 }: {
-    best: { idx: number; box: any };
+    hover: { idx: number; box: any };
     ctx: EvalCtx;
 }) {
+    const types = ctx.report.types[hover.idx];
+    const errors = ctx.report.errors[hover.idx];
+
     return (
         <>
             <div
                 style={{
                     position: 'absolute',
 
-                    left: best.box.left,
-                    top: best.box.bottom,
+                    left: hover.box.left,
+                    top: hover.box.bottom,
                     pointerEvents: 'none',
                     zIndex: 100,
                     backgroundColor: 'black',
@@ -99,24 +102,19 @@ function ShowHover({
                     whiteSpace: 'pre',
                 }}
             >
-                {ctx.report.types[best.idx]
-                    ? 'Type: ' +
-                      showType(ctx.report.types[best.idx], ctx.ctx) +
-                      '\n'
-                    : ''}
-                {ctx.report.errors[best.idx] &&
-                    ctx.report.errors[best.idx]
-                        .map((error) => errorToString(error, ctx.ctx))
-                        .join('\n')}
+                {types ? 'Type: ' + showType(types, ctx.ctx) + '\n' : ''}
+                {errors
+                    ?.map((error) => errorToString(error, ctx.ctx))
+                    .join('\n')}
             </div>
             <div
                 style={{
                     position: 'absolute',
 
-                    left: best.box.left,
-                    top: best.box.top,
-                    height: best.box.height,
-                    width: best.box.width,
+                    left: hover.box.left,
+                    top: hover.box.top,
+                    height: hover.box.height,
+                    width: hover.box.width,
                     pointerEvents: 'none',
                     zIndex: 50,
                     backgroundColor: 'transparent',
