@@ -33,6 +33,8 @@ Want.
 
 - [x] ${ actuall track the $, and split the string
 - [x] " should start a new string
+- [x] backspace on the right side of a `${}` removes it
+- [ ] backspace in an empty ${} should remove it
 
 # GENERICS
 

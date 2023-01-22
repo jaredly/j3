@@ -1,12 +1,14 @@
 import * as React from 'react';
-import { Map, MCString, toMCST } from '../src/types/mcst';
+import { Map, MCString, toMCST, WithLoc } from '../src/types/mcst';
 import {
     EvalCtx,
     Path,
     setSelection,
     Store,
+    UpdateMap,
     updateStore,
     useStore,
+    Selection,
 } from './store';
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
@@ -147,6 +149,31 @@ export const StringText = ({
                     return;
                 }
                 if (
+                    evt.key === 'Backspace' &&
+                    getPos(evt.currentTarget) === 0
+                ) {
+                    const last = path[path.length - 1];
+                    if (last.child.type !== 'text' || last.child.at === 0) {
+                        return;
+                    }
+                    evt.preventDefault();
+                    const { map, selection } = joinExprs(
+                        last.idx,
+                        last.child.at - 1,
+                        store,
+                        edit!,
+                    );
+                    updateStore(
+                        store,
+                        {
+                            map,
+                            selection,
+                            prev: { idx, loc: presel.current ?? undefined },
+                        },
+                        [path],
+                    );
+                }
+                if (
                     evt.key === 'ArrowLeft' ||
                     evt.key === 'ArrowRight' ||
                     evt.metaKey ||
@@ -159,6 +186,52 @@ export const StringText = ({
             }}
         />
     );
+};
+
+const joinExprs = (
+    idx: number,
+    templateIdx: number,
+    store: Store,
+    remaining: string,
+): {
+    map: UpdateMap;
+    selection: Selection;
+} => {
+    const node = store.map[idx].node as WithLoc<MCString>;
+    const map: UpdateMap = {};
+    const template = node.templates[templateIdx];
+    // TODO: Remove an expr (deeply pleaseee)
+    map[template.expr] = null;
+    map[template.suffix] = null;
+    const templates = node.templates;
+    templates.splice(templateIdx, 1);
+
+    map[idx] = {
+        ...store.map[idx],
+        node: {
+            ...node,
+            templates,
+        },
+    };
+
+    const prev =
+        templateIdx > 0 ? templates[templateIdx - 1].suffix : node.first;
+
+    const prevs = store.map[prev].node as stringText;
+    map[prev] = {
+        ...store.map[prev],
+        node: {
+            ...prevs,
+            text: prevs.text + remaining,
+        },
+    };
+    return {
+        map,
+        selection: {
+            idx: prev,
+            loc: prevs.text.length,
+        },
+    };
 };
 
 function maybeAddExpression(
@@ -180,9 +253,7 @@ function maybeAddExpression(
     evt.preventDefault();
 
     const last = path[path.length - 1];
-    const node = store.map[last.idx].node as MCString & {
-        loc: Loc;
-    };
+    const node = store.map[last.idx].node as WithLoc<MCString>;
     let nw = parse('_')[0];
     nw = { type: 'identifier', text: '', loc: nw.loc };
     const mp: Map = {};

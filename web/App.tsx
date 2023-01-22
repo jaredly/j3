@@ -181,7 +181,10 @@ export const App = () => {
                     alignItems: 'center',
                 }}
             >
-                <button style={{ cursor: 'pointer' }} onClick={() => addFile()}>
+                <button
+                    style={{ cursor: 'pointer', margin: 4 }}
+                    onClick={() => addFile()}
+                >
                     Add File
                 </button>
                 {files.map((name) => (
@@ -193,7 +196,8 @@ export const App = () => {
                         style={{
                             backgroundColor: hash === name ? '#555' : undefined,
                             cursor: 'pointer',
-                            padding: 8,
+                            padding: 4,
+                            margin: 4,
                         }}
                         className="hover"
                     >

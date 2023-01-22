@@ -38,6 +38,7 @@ export type MCString = {
     first: number;
     templates: { expr: number; suffix: number }[];
 };
+export type WithLoc<T> = T & { loc: Loc };
 
 export type Map = {
     [key: number]: {
