@@ -15,29 +15,6 @@ import { focus } from './IdentifierLike';
 import { getPos, onKeyDown } from './onKeyDown';
 import { nidx, parse } from '../src/grammar';
 
-// export const StringText = ({
-//     idx,
-//     ...props
-// }: {
-//     idx: number;
-//     store: Store;
-//     path: Path[];
-//     events: Events;
-//     ctx: EvalCtx;
-//     setHover: SetHover;
-// }) => {
-//     const { node } = useStore(props.store, idx);
-//     const snode = node as stringText;
-//     return (
-//         <IdentifierLike
-//             type="string"
-//             text={snode.text}
-//             idx={snode.loc.idx}
-//             {...props}
-//         />
-//     );
-// };
-
 export const StringText = ({
     idx,
     store,
@@ -173,50 +150,7 @@ export const StringText = ({
             }}
             onKeyDown={(evt) => {
                 if (evt.key === '{') {
-                    evt.preventDefault();
-                    const last = path[path.length - 1];
-                    const node = store.map[last.idx].node as MCString & {
-                        loc: Loc;
-                    };
-                    let nw = parse('_')[0];
-                    nw = { type: 'identifier', text: '', loc: nw.loc };
-                    const mp: Map = {};
-                    const eidx = toMCST(nw, mp);
-                    const sidx = toMCST(
-                        {
-                            type: 'stringText',
-                            text: '',
-                            loc: { idx: nidx(), start: 0, end: 0 },
-                        },
-                        mp,
-                    );
-                    mp[last.idx] = {
-                        node: {
-                            ...node,
-                            templates: [
-                                ...node.templates,
-                                {
-                                    expr: eidx,
-                                    suffix: sidx,
-                                },
-                            ],
-                        },
-                    };
-                    updateStore(
-                        store,
-                        {
-                            map: mp,
-                            selection: {
-                                idx: eidx,
-                                loc: 'start',
-                            },
-                            prev: {
-                                idx,
-                                loc: presel.current ?? undefined,
-                            },
-                        },
-                        [path],
-                    );
+                    maybeAddExpression(evt, edit!, path, store, idx, presel);
                     return;
                 }
                 if (
@@ -233,3 +167,72 @@ export const StringText = ({
         />
     );
 };
+
+function maybeAddExpression(
+    evt: React.KeyboardEvent<HTMLSpanElement>,
+    edit: string,
+    path: Path[],
+    store: Store,
+    idx: number,
+    presel: React.MutableRefObject<number | null>,
+) {
+    const pos = getPos(evt.currentTarget);
+    if (edit[pos - 1] !== '$') {
+        console.log(`ok`, edit, pos, edit[pos - 1]);
+        return;
+    }
+    const prefix = edit.slice(0, pos - 1);
+    const suffix = edit.slice(pos);
+
+    evt.preventDefault();
+
+    const last = path[path.length - 1];
+    const node = store.map[last.idx].node as MCString & {
+        loc: Loc;
+    };
+    let nw = parse('_')[0];
+    nw = { type: 'identifier', text: '', loc: nw.loc };
+    const mp: Map = {};
+    const eidx = toMCST(nw, mp);
+    const sidx = toMCST(
+        {
+            type: 'stringText',
+            text: suffix,
+            loc: { idx: nidx(), start: 0, end: 0 },
+        },
+        mp,
+    );
+    mp[idx] = {
+        node: {
+            ...(store.map[idx].node as stringText),
+            text: prefix,
+        },
+    };
+    mp[last.idx] = {
+        node: {
+            ...node,
+            templates: [
+                ...node.templates,
+                {
+                    expr: eidx,
+                    suffix: sidx,
+                },
+            ],
+        },
+    };
+    updateStore(
+        store,
+        {
+            map: mp,
+            selection: {
+                idx: eidx,
+                loc: 'start',
+            },
+            prev: {
+                idx,
+                loc: presel.current ?? undefined,
+            },
+        },
+        [path],
+    );
+}

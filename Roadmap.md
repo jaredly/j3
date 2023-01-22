@@ -1,4 +1,13 @@
 
+
+### DO THIS FIRST
+- [ ] !!!!! LAYOUT SHOULD NOT LIVE ON STORE
+#### THis will make it make more sense to format let [ ] bindings correctly
+
+- [ ] need '(' at the start of a thing to wrap it.
+- [ ] I should probably also do slurp and whatever else they've got.
+- [ ] .x needs a thing
+
 # So, about the editor terms
 
 I'm thinking about a "playground / workspace" distinction
@@ -12,8 +21,8 @@ That will also persist the tree of things it depends on.
 # Strings!
 Want.
 
-- [ ] ${ actuall track the $, and split the string
-- [ ] handle 
+- [x] ${ actuall track the $, and split the string
+- [ ] handle
 
 # GENERICS
 

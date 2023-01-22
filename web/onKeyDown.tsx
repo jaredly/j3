@@ -200,11 +200,6 @@ export const onKeyDown = (
     store: Store,
 ) => {
     console.log('ok', evt);
-    // if (evt.key === 'Enter') {
-    //     evt.preventDefault();
-    //     // TODO decide what to do here
-    //     return;
-    // }
     if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
         evt.preventDefault();
         return evt.shiftKey ? redo(store) : undo(store);
