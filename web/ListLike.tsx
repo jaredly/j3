@@ -3,7 +3,7 @@ import { Map } from '../src/types/mcst';
 import { EvalCtx, Path, setSelection, Store } from './store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
-import { SetHover } from './App';
+import { SetHover } from './Doc';
 import { Expr } from '../src/types/ast';
 import { Report } from '../src/get-type/get-types-new';
 import { errorToString } from '../src/to-cst/show-errors';

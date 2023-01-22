@@ -1,5 +1,5 @@
 import { Ctx, nilt } from '../to-ast/to-ast';
-import { RecordMap, recordMap } from '../to-ast/typeForExpr';
+import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';

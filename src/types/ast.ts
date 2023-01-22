@@ -1,5 +1,12 @@
 import { Node } from './cst';
-export type { Node, NodeContents, NodeList, Loc } from './cst';
+export type {
+    Node,
+    NodeContents,
+    NodeList,
+    Loc,
+    stringText,
+    CString,
+} from './cst';
 
 export type Term = {
     contents: Expr;

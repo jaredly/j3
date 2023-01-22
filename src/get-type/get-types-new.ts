@@ -1,5 +1,5 @@
 import { blank, Ctx, nilt } from '../to-ast/to-ast';
-import { Expr, Node, Pattern, Type } from '../types/ast';
+import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,
     applyTypeVariables,
@@ -8,7 +8,15 @@ import {
 import { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
-import { recordMap } from '../to-ast/typeForExpr';
+
+export type RecordMap = { [key: string]: TRecord['entries'][0] };
+export const recordMap = (record: TRecord) => {
+    const map: RecordMap = {};
+    record.entries.forEach((entry) => {
+        map[entry.name] = entry;
+    });
+    return map;
+};
 
 export type Report = {
     types: { [idx: number]: Type };

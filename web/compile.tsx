@@ -6,7 +6,6 @@ import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { EvalCtx, notify, Store } from './store';
 import objectHash from 'object-hash';
-import { CacheCtx, getCachedType } from '../src/types/check-types';
 import { getType, Report } from '../src/get-type/get-types-new';
 import { validateExpr } from '../src/get-type/validate';
 

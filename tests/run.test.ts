@@ -4,16 +4,15 @@ import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, newCtx } from '../src/to-ast/to-ast';
 import { stmtToTs } from '../src/to-ast/to-ts';
-import { getCachedType } from '../src/types/check-types';
 import { newEvalCtx } from '../web/store';
 import * as t from '@babel/types';
-import { typeForExpr_deprecated } from '../src/to-ast/typeForExpr';
 import { getLine, idxLines } from '../src/to-ast/utils';
 import { Node } from '../src/types/cst';
 import { Type } from '../src/types/ast';
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { getType } from '../src/get-type/get-types-new';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -36,8 +35,7 @@ readdirSync(__dirname)
                 // TODO: Go in, and see if we have any type errors
                 // like enumerate them.
                 // getCachedType(res, ctx);
-
-                const type = typeForExpr_deprecated(res, ctx.ctx);
+                const type = getType(res, ctx.ctx);
 
                 const ts = stmtToTs(res, ctx.ctx, 'top');
                 const code = generate(t.file(t.program([ts]))).code;
@@ -45,7 +43,7 @@ readdirSync(__dirname)
                     result?: any;
                     node: Node;
                     code: string;
-                    type: Type;
+                    type?: Type | void;
                     err?: Error;
                 };
                 try {
@@ -75,7 +73,7 @@ readdirSync(__dirname)
                         throw item.err;
                     }
                     if (
-                        item.type.type === 'builtin' &&
+                        item.type?.type === 'builtin' &&
                         item.type.name === 'bool'
                     ) {
                         expect(item.result).toEqual(true);

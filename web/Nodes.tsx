@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
-import { SetHover } from './App';
+import { SetHover } from './Doc';
 import { IdentifierLike } from './IdentifierLike';
 import { ListLike } from './ListLike';
 import { EvalCtx, Path, Store, useStore } from './store';

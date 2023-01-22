@@ -5,7 +5,7 @@ import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
 import { getPos, onKeyDown, setPos } from './onKeyDown';
-import { SetHover } from './App';
+import { SetHover } from './Doc';
 
 export const IdentifierLike = ({
     idx,
