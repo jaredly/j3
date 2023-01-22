@@ -9,7 +9,7 @@ import {
     useStore,
 } from './store';
 import { Events } from './Nodes';
-import { SetHover } from './App';
+import { SetHover } from './Doc';
 import { Loc, stringText } from '../src/types/cst';
 import { focus } from './IdentifierLike';
 import { getPos, onKeyDown } from './onKeyDown';
@@ -52,19 +52,13 @@ export const StringText = ({
         }
     }, [editing, text, editing ? store.selection!.loc : null]);
 
-    const dec = ctx.report.errors[idx]
-        ? 'underline red'
-        : // : ctx.report.types[idx] == null
-
-          // ? 'underline gray'
-          'none';
+    const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
 
     const style = {};
 
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
         <span
-            // className="idlike"
             style={{
                 color: 'yellow',
                 minHeight: '1.3em',
@@ -134,7 +128,6 @@ export const StringText = ({
                     },
                     [path],
                 );
-                // onInput(evt, setEdit, idx, path, store, presel);
             }}
             onBlur={() => {
                 setEdit(null);

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { parse } from '../src/grammar';
+import { parse, setIdx } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
 import { Node } from './Nodes';
@@ -13,6 +13,7 @@ import { errorToString } from '../src/to-cst/show-errors';
 import localforage from 'localforage';
 import { Type } from '../src/types/ast';
 import { applyAndResolve } from '../src/get-type/matchesType';
+import { Doc } from './Doc';
 
 const _init = `
 (one two )
@@ -79,176 +80,132 @@ export const getInitialState = () => {
 
 export const debounce = () => {};
 
-export const App = ({ store }: { store: Store }) => {
-    const ctx = React.useMemo<EvalCtx>(() => newEvalCtx(newCtx()), []);
+const useHash = () => {
+    const [hash, setHash] = React.useState(location.hash.slice(1));
+    React.useEffect(() => {
+        window.addEventListener('hashchange', () => {
+            setHash(location.hash.slice(1));
+        });
+    }, []);
+    return hash;
+};
 
-    React.useMemo(() => compile(store, ctx), []);
+export function updateIdxForStore(value: Store) {
+    let mx = Object.keys(value.map).reduce(
+        (mx, k) => Math.max(mx, parseInt(k)),
+        0,
+    );
+    setIdx(mx + 1);
+}
 
-    // const store = React.useMemo(() => {
-    //     const store = initialStore(parse(init));
-    //     compile(store, ctx);
-    //     return store;
-    // }, []);
+const filePrefix = 'j3:file:';
 
-    const tick = React.useState(0);
-
-    const [altDown, setAltDown] = React.useState(false);
+export const useFiles = () => {
+    const [files, setFiles] = React.useState([] as string[]);
 
     React.useEffect(() => {
-        const fn = (evt: KeyboardEvent) => {
-            if (evt.key === 'Alt') {
-                setAltDown(true);
-            }
-        };
-        const up = (evt: KeyboardEvent) => {
-            if (evt.key === 'Alt') {
-                setAltDown(false);
-            }
-        };
-        document.addEventListener('keydown', fn);
-        document.addEventListener('keyup', up);
-        return () => {
-            document.removeEventListener('keydown', fn);
-            document.removeEventListener('keyup', up);
-        };
+        localforage.keys().then((keys) => {
+            setFiles(keys.filter((k) => k.startsWith(filePrefix)));
+        });
     }, []);
 
+    const addFile = React.useCallback(() => {
+        const name = filePrefix + Math.random().toString(36).slice(2);
+        setFiles((files) => [...files, name]);
+    }, []);
+
+    return { files, addFile };
+};
+
+export const App = () => {
+    const hash = useHash();
+
+    const { files, addFile } = useFiles();
+
+    const [state, setState] = React.useState(
+        null as null | {
+            ctx: EvalCtx;
+            store: Store;
+            id: string;
+        },
+    );
+
     React.useEffect(() => {
+        if (!hash || !hash.startsWith(filePrefix)) {
+            setState(null);
+            return;
+        }
+        localforage.getItem(hash).then((value) => {
+            const ctx = newEvalCtx(newCtx());
+            if (!value) {
+                setIdx(0);
+                const store = initialStore(parse(`; A new file for you`));
+                compile(store, ctx);
+                setState({
+                    id: hash,
+                    store,
+                    ctx,
+                });
+                return;
+            }
+
+            updateIdxForStore(value as Store);
+            compile(value as Store, ctx);
+            setState({
+                store: value as Store,
+                id: hash,
+                ctx,
+            });
+        });
+    }, [hash]);
+
+    React.useEffect(() => {
+        if (!state) {
+            return;
+        }
+        const { store, id, ctx } = state;
         store.listeners[':change'] = [
             () => {
                 compile(store, ctx);
-                tick[1]((x) => x + 1);
-                localforage.setItem('j3:app', { ...store, listeners: {} });
+                localforage.setItem(id, { ...store, listeners: {} });
             },
         ];
-    }, []);
-
-    const [hover, setHover] = React.useState([] as { idx: number; box: any }[]);
-
-    const best = React.useMemo(() => {
-        for (let i = hover.length - 1; i >= 0; i--) {
-            if (
-                (altDown && ctx.report.types[hover[i].idx]) ||
-                ctx.report.errors[hover[i].idx]
-            ) {
-                return hover[i];
-            }
-        }
-        return null;
-    }, [hover, altDown]);
-
-    // const showBest =
-    //     best && (altDown || ctx.report.errors[best.idx]) ? best : null;
-
-    const setHover2 = React.useCallback<SetHover>((hover) => {
-        setHover((h) => {
-            if (hover.box) {
-                return [...h, hover];
-            } else {
-                for (let i = h.length - 1; i >= 0; i--) {
-                    if (h[i].idx === hover.idx) {
-                        const res = [...h];
-                        res.splice(i, 1);
-                        return res;
-                    }
-                }
-                return h;
-            }
-        });
-    }, []);
-    const topPath = React.useMemo(() => [], []);
-    const emptyEvents = React.useMemo(
-        () => ({
-            onLeft() {},
-            onRight() {},
-        }),
-        [],
-    );
+    }, [state]);
 
     return (
-        <div style={{ margin: 24 }}>
-            <button
-                onClick={() => {
-                    localforage.removeItem('j3:app');
-                    location.reload();
+        <div>
+            <div
+                style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
                 }}
-                style={{ marginBottom: 20 }}
             >
-                Clear
-            </button>
-            <div>
-                <Node
-                    idx={store.root}
-                    store={store}
-                    ctx={ctx}
-                    path={topPath}
-                    setHover={setHover2}
-                    events={emptyEvents}
-                />
+                <button style={{ cursor: 'pointer' }} onClick={() => addFile()}>
+                    Add File
+                </button>
+                {files.map((name) => (
+                    <div
+                        key={name}
+                        onClick={() => {
+                            location.hash = name;
+                        }}
+                        style={{
+                            backgroundColor: hash === name ? '#555' : undefined,
+                            cursor: 'pointer',
+                            padding: 8,
+                        }}
+                        className="hover"
+                    >
+                        {name}
+                    </div>
+                ))}
             </div>
-            {best && (
-                <div
-                    style={{
-                        position: 'absolute',
-
-                        left: best.box.left,
-                        top: best.box.bottom,
-                        pointerEvents: 'none',
-                        zIndex: 100,
-                        backgroundColor: 'black',
-                        fontSize: '80%',
-                        // boxShadow: '0 0 4px white',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        padding: 8,
-                        whiteSpace: 'pre',
-                    }}
-                >
-                    {ctx.report.types[best.idx]
-                        ? 'Type: ' +
-                          showType(ctx.report.types[best.idx], ctx.ctx) +
-                          '\n'
-                        : ''}
-                    {ctx.report.errors[best.idx] &&
-                        ctx.report.errors[best.idx]
-                            .map((error) => errorToString(error, ctx.ctx))
-                            .join('\n')}
-                    {/* {JSON.stringify(noForm(ctx.types[best.idx]))} */}
-                </div>
-            )}
-            {best && (
-                <div
-                    style={{
-                        position: 'absolute',
-
-                        left: best.box.left,
-                        top: best.box.top,
-                        height: best.box.height,
-                        width: best.box.width,
-                        pointerEvents: 'none',
-                        zIndex: 50,
-                        backgroundColor: 'transparent',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                    }}
-                ></div>
+            {state ? (
+                <Doc store={state.store} ctx={state.ctx} />
+            ) : (
+                'No file selected'
             )}
         </div>
     );
-};
-
-export const showType = (type: Type, ctx: Ctx): string => {
-    let text = nodeToString(nodeForType(type, makeRCtx(ctx)));
-    if (type.type === 'global') {
-        const res = applyAndResolve(type, ctx, []);
-        if (res.type !== 'error' && res.type !== 'local-bound') {
-            return text + ' = ' + nodeToString(nodeForType(res, makeRCtx(ctx)));
-        }
-    }
-    return text;
-};
-
-export type SetHover = (hover: { idx: number; box: any | null }) => void;
-
-window.clearJ3 = () => {
-    localforage.removeItem('j3:app');
-    location.reload();
 };

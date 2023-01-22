@@ -1,4 +1,14 @@
 
+## Larger editor
+
+- [x] lets have tabs, so I can have multiple things going
+
+## Self-execution
+Can I write the jerd-to-wasm or jerd-to-chez code in jerd?
+What would it take to make that work?
+
+BACKSPACE that clears an identifier should also delete the identifier
+if we're the FIRST item in a listlike
 
 ### DO THIS FIRST
 - [ ] !!!!! LAYOUT SHOULD NOT LIVE ON STORE
@@ -22,7 +32,7 @@ That will also persist the tree of things it depends on.
 Want.
 
 - [x] ${ actuall track the $, and split the string
-- [ ] handle
+- [x] " should start a new string
 
 # GENERICS
 

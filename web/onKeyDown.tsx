@@ -15,7 +15,7 @@ import {
     updateStore,
 } from './store';
 import { parse } from '../src/grammar';
-import { NodeContents } from '../src/types/cst';
+import { CString, Loc, NodeContents } from '../src/types/cst';
 import { Events } from './Nodes';
 
 export const handleBackspace = (
@@ -199,7 +199,6 @@ export const onKeyDown = (
     events: Events,
     store: Store,
 ) => {
-    console.log('ok', evt);
     if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
         evt.preventDefault();
         return evt.shiftKey ? redo(store) : undo(store);
@@ -213,6 +212,21 @@ export const onKeyDown = (
 
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         return handleSpace(evt, idx, path, events, store);
+    }
+
+    if (evt.currentTarget.textContent === '' && evt.key === '"') {
+        evt.preventDefault();
+        const nw = parse('""')[0] as CString & { loc: Loc };
+        nw.loc.idx = idx;
+        const mp: Map = {};
+        toMCST(nw, mp);
+        updateStore(
+            store,
+            { map: mp, selection: { idx: nw.first.loc.idx, loc: 'start' } },
+            [path],
+        );
+        evt.preventDefault();
+        return;
     }
 
     if (evt.key === ')' || evt.key === ']' || evt.key === '}') {
