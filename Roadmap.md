@@ -13,6 +13,8 @@ if we're the FIRST item in a listlike
 ### DO THIS FIRST
 - [ ] !!!!! LAYOUT SHOULD NOT LIVE ON STORE
 #### THis will make it make more sense to format let [ ] bindings correctly
+- [ ] Sooo do we ... want typeForExpr to populate errors?
+	I think we want to?
 
 - [ ] need '(' at the start of a thing to wrap it.
 - [ ] I should probably also do slurp and whatever else they've got.
@@ -26,6 +28,8 @@ And then you can click something to "commit" it, which means
 it persists, you can dismiss it, etc.
 That will also persist the tree of things it depends on.
 
+
+ugh why is the multi-doc thing being weird? idk
 
 
 # Strings!

@@ -203,8 +203,6 @@ export const nodeToPattern = (
                 };
             }
         }
-        case 'list':
-            return { type: 'unresolved', form, reason: 'pattern list' };
     }
     throw new Error(`nodeToPattern can't handle ${form.type}`);
 };

@@ -62,6 +62,7 @@ export type Expr =
           form: Node;
       }
     | { type: 'rest'; contents: Expr; form: Node }
+    | { type: 'attribute'; attr: string; target: Expr; form: Node }
     | {
           type: 'fn';
           name?: string;

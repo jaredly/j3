@@ -3,13 +3,14 @@ import { Expr, TRecord, Type } from '../types/ast';
 import { Ctx, blank, nilt } from './to-ast';
 import { Report } from '../get-type/get-types-new';
 import { Error } from '../types/types';
+import { applyAndResolve } from '../get-type/matchesType';
 
-export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
+export const typeForExpr_deprecated = (value: Expr, ctx: Ctx): Type => {
     switch (value.type) {
         case 'if': {
             return unifyTypes(
-                typeForExpr(value.yes, ctx),
-                typeForExpr(value.no, ctx),
+                typeForExpr_deprecated(value.yes, ctx),
+                typeForExpr_deprecated(value.no, ctx),
                 ctx,
                 value.form,
             );
@@ -39,11 +40,13 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 return {
                     type: 'tag',
                     name: value.target.name,
-                    args: value.args.map((arg) => typeForExpr(arg, ctx)),
+                    args: value.args.map((arg) =>
+                        typeForExpr_deprecated(arg, ctx),
+                    ),
                     form: value.form,
                 };
             }
-            const inner = typeForExpr(value.target, ctx);
+            const inner = typeForExpr_deprecated(value.target, ctx);
             if (inner.type === 'fn') {
                 return inner.body;
             }
@@ -61,7 +64,10 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 type: 'fn',
                 args: value.args.map((arg) => arg.type ?? nilt),
                 body: value.body.length
-                    ? typeForExpr(value.body[value.body.length - 1], ctx)
+                    ? typeForExpr_deprecated(
+                          value.body[value.body.length - 1],
+                          ctx,
+                      )
                     : nilt,
                 form: value.form,
             };
@@ -71,10 +77,64 @@ export const typeForExpr = (value: Expr, ctx: Ctx): Type => {
                 type: 'record',
                 entries: value.entries.map((entry) => ({
                     name: entry.name,
-                    value: typeForExpr(entry.value, ctx),
+                    value: typeForExpr_deprecated(entry.value, ctx),
                 })),
                 form: value.form,
                 open: false,
+            };
+        }
+        case 'attribute': {
+            const inner = typeForExpr_deprecated(value.target, ctx);
+            const resolved = applyAndResolve(inner, ctx, []);
+            if (resolved.type === 'error') {
+                return {
+                    type: 'unresolved',
+                    form: value.form,
+                    reason: 'error resolving inner',
+                };
+            }
+            if (resolved.type === 'local-bound') {
+                if (resolved.bound) {
+                    if (resolved.bound.type !== 'record') {
+                        return {
+                            type: 'unresolved',
+                            form: value.form,
+                            reason: 'local bound not a record',
+                        };
+                    }
+                    const map = recordMap(resolved.bound);
+                    if (!map[value.attr]) {
+                        return {
+                            type: 'unresolved',
+                            form: value.form,
+                            reason:
+                                'local bound record has no attr ' + value.attr,
+                        };
+                    }
+                    return map[value.attr].value;
+                } else {
+                    return {
+                        type: 'unresolved',
+                        form: value.form,
+                        reason: 'local with no type bound',
+                    };
+                }
+            }
+            if (resolved.type === 'record') {
+                const map = recordMap(resolved);
+                if (!map[value.attr]) {
+                    return {
+                        type: 'unresolved',
+                        form: value.form,
+                        reason: 'local bound record has no attr ' + value.attr,
+                    };
+                }
+                return map[value.attr].value;
+            }
+            return {
+                type: 'unresolved',
+                form: value.form,
+                reason: 'type not a record',
             };
         }
     }

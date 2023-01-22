@@ -1,9 +1,14 @@
 import { blank, Ctx, nilt } from '../to-ast/to-ast';
 import { Expr, Node, Pattern, Type } from '../types/ast';
-import { applyTypeVariables, matchesType } from './matchesType';
+import {
+    applyAndResolve,
+    applyTypeVariables,
+    matchesType,
+} from './matchesType';
 import { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
+import { recordMap } from '../to-ast/typeForExpr';
 
 export type Report = {
     types: { [idx: number]: Type };
@@ -370,8 +375,52 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 entries,
             };
         }
+        case 'attribute': {
+            const inner = getType(expr.target, ctx, report);
+            if (!inner) {
+                return;
+            }
+            let resolved = applyAndResolve(inner, ctx, []);
+            if (resolved.type === 'error') {
+                return report
+                    ? errf(report, expr.form, resolved.error)
+                    : undefined;
+            }
+            if (resolved.type === 'local-bound') {
+                if (!resolved.bound) {
+                    return report
+                        ? errf(report, expr.form, {
+                              type: 'misc',
+                              message:
+                                  'local has no bound, cannot take attribute',
+                          })
+                        : undefined;
+                }
+                resolved = resolved.bound;
+            }
+            if (resolved.type !== 'record') {
+                return report
+                    ? errf(report, expr.form, {
+                          type: 'misc',
+                          message:
+                              'cannot take attribute of a non-record ' +
+                              resolved.type,
+                      })
+                    : undefined;
+            }
+            const map = recordMap(resolved);
+            if (!map[expr.attr]) {
+                return report
+                    ? errf(report, expr.form, {
+                          type: 'misc',
+                          message: `record has no attribute ${expr.attr}`,
+                      })
+                    : undefined;
+            }
+            return map[expr.attr].value;
+        }
     }
-    console.log('getType is sorry about', expr.type);
+    console.error('getType is sorry about', expr.type);
 };
 
 export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {

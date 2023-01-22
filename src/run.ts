@@ -5,7 +5,7 @@ import { parse } from './grammar.mjs';
 import fs from 'fs';
 import { addDef, newCtx, noForm } from './to-ast/to-ast';
 import { nodeToExpr } from './to-ast/nodeToExpr';
-import { typeForExpr } from './to-ast/typeForExpr';
+import { typeForExpr_deprecated } from './to-ast/typeForExpr';
 import { Node } from './types/cst';
 import { toTs } from './to-ast/to-ts';
 
@@ -26,7 +26,7 @@ const exprs = cst.map((node) => {
     const res = nodeToExpr(node, ctx);
     ctx = addDef(res, ctx);
     console.log(JSON.stringify(noForm(res)));
-    console.log(typeForExpr(res, ctx));
+    console.log(typeForExpr_deprecated(res, ctx));
     return res;
 });
 

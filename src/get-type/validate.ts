@@ -101,6 +101,9 @@ export const validateExpr = (
         case 'array':
             expr.values.forEach((item) => validateExpr(item, ctx, errors));
             return;
+        case 'attribute':
+            validateExpr(expr.target, ctx, errors);
+            return;
     }
     throw new Error('not validated ' + expr.type);
 };

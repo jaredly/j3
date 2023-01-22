@@ -7,7 +7,7 @@ import { stmtToTs } from '../src/to-ast/to-ts';
 import { getCachedType } from '../src/types/check-types';
 import { newEvalCtx } from '../web/store';
 import * as t from '@babel/types';
-import { typeForExpr } from '../src/to-ast/typeForExpr';
+import { typeForExpr_deprecated } from '../src/to-ast/typeForExpr';
 import { getLine, idxLines } from '../src/to-ast/utils';
 import { Node } from '../src/types/cst';
 import { Type } from '../src/types/ast';
@@ -37,7 +37,7 @@ readdirSync(__dirname)
                 // like enumerate them.
                 // getCachedType(res, ctx);
 
-                const type = typeForExpr(res, ctx.ctx);
+                const type = typeForExpr_deprecated(res, ctx.ctx);
 
                 const ts = stmtToTs(res, ctx.ctx, 'top');
                 const code = generate(t.file(t.program([ts]))).code;
