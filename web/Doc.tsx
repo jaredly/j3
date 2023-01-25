@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { applyAndResolve } from '../src/get-type/matchesType';
-import { Ctx } from '../src/to-ast/to-ast';
+import { Ctx } from '../src/to-ast/Ctx';
 import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';

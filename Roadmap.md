@@ -52,7 +52,9 @@ show a list of simple shapes as svg?
     'bl {...rect minx pos.x maxy pos.y}
     'br {...rect maxx pos.x maxy pos.y})))
 
-(defn set-corner [rect (: rect) corner pos]
+(deftype corner ['tl 'tr 'bl 'br])
+
+(defn set-corner [rect :rect corner :corner pos :pos]
   (corners->rect (set-corner (rect->corners rect) corner pos)))
 
 (def set-corner/test1

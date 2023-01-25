@@ -1,4 +1,4 @@
-import type { Ctx } from '../to-ast/to-ast';
+import { Ctx } from '../to-ast/Ctx';
 import type { Expr, Loc, Type } from '../types/ast';
 import type { Error, MatchError } from '../types/types';
 import type { Report } from './get-types-new';

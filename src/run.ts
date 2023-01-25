@@ -3,7 +3,8 @@
 import { parse } from './grammar.mjs';
 
 import fs from 'fs';
-import { addDef, newCtx, noForm } from './to-ast/to-ast';
+import { addDef } from './to-ast/to-ast';
+import { newCtx, noForm } from './to-ast/Ctx';
 import { nodeToExpr } from './to-ast/nodeToExpr';
 import { Node } from './types/cst';
 import { toTs } from './to-ast/to-ts';

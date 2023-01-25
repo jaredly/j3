@@ -1,4 +1,4 @@
-import { blank, Ctx, nilt } from '../to-ast/to-ast';
+import { blank, Ctx, nilt } from '../to-ast/Ctx';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,

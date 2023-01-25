@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { Ctx, Local, nil, nilt, noForm } from './to-ast';
+import { Ctx, Local, nil, nilt, noForm } from './Ctx';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';

@@ -1,7 +1,8 @@
 import { Node } from '../types/cst';
 import { Expr, Record } from '../types/ast';
 import { specials } from './specials';
-import { Ctx, nil, resolveExpr } from './to-ast';
+import { resolveExpr } from './to-ast';
+import { Ctx, nil } from './Ctx';
 import { err } from './nodeToPattern';
 
 export const filterComments = (nodes: Node[]) =>

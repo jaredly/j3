@@ -1,4 +1,4 @@
-import { Ctx, nilt } from '../to-ast/to-ast';
+import { Ctx, nilt } from '../to-ast/Ctx';
 import { recordMap } from '../get-type/get-types-new';
 import {
     Expr,

@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { parse, setIdx } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
+import { addDef } from '../src/to-ast/to-ast';
+import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
 import { Node } from './Nodes';
 import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
 import { compile } from './compile';

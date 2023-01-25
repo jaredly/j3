@@ -1,4 +1,4 @@
-import { Ctx, nilt } from '../to-ast/to-ast';
+import { Ctx, nilt } from '../to-ast/Ctx';
 import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';

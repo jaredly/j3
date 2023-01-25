@@ -1,4 +1,4 @@
-import { blank, Ctx } from '../to-ast/to-ast';
+import { blank, Ctx } from '../to-ast/Ctx';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
 import { errf, Report } from './get-types-new';

@@ -1,6 +1,7 @@
 import { Node } from '../types/cst';
 import { Pattern, Type } from '../types/ast';
-import { Ctx, Local, nextSym, nilt } from './to-ast';
+import { nextSym } from './to-ast';
+import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
 import { Report } from '../get-type/get-types-new';
 import type { Error } from '../types/types';

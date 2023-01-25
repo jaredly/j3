@@ -1,4 +1,4 @@
-import { Ctx } from '../to-ast/to-ast';
+import { Ctx } from '../to-ast/Ctx';
 import type { Error } from '../types/types';
 import { makeRCtx } from './nodeForExpr';
 import { nodeForType } from './nodeForType';

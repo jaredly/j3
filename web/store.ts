@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Report } from '../src/get-type/get-types-new';
-import { Ctx } from '../src/to-ast/to-ast';
+import { Ctx } from '../src/to-ast/Ctx';
 import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';

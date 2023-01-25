@@ -1,7 +1,8 @@
 import generate from '@babel/generator';
 import * as t from '@babel/types';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, Ctx, nil, noForm } from '../src/to-ast/to-ast';
+import { addDef } from '../src/to-ast/to-ast';
+import { Ctx, nil, noForm } from '../src/to-ast/Ctx';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { EvalCtx, notify, Store } from './store';

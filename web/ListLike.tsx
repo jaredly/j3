@@ -7,7 +7,7 @@ import { SetHover } from './Doc';
 import { Expr } from '../src/types/ast';
 import { Report } from '../src/get-type/get-types-new';
 import { errorToString } from '../src/to-cst/show-errors';
-import { Ctx } from '../src/to-ast/to-ast';
+import { Ctx } from '../src/to-ast/Ctx';
 
 export const ListLike = ({
     left,

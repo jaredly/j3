@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { parse } from '../../src/grammar';
 import { nodeToType } from '../../src/to-ast/nodeToType';
-import { newCtx } from '../../src/to-ast/to-ast';
+import { newCtx } from '../../src/to-ast/Ctx';
 import { Render } from './type';
 
 export const SvgRender: Render = {

@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'fs';
 import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { addDef, Ctx, newCtx, noForm } from '../src/to-ast/to-ast';
+import { addDef } from '../src/to-ast/to-ast';
+import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
 import { newEvalCtx } from '../web/store';
 import {
     DecExpected,
