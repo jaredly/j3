@@ -64,7 +64,8 @@ export const Menu = ({
             {state.items.map((item, idx) => (
                 <div
                     key={idx}
-                    onClick={() => {
+                    onMouseDown={(evt) => {
+                        evt.preventDefault();
                         item.action();
                         onAction();
                     }}
@@ -79,10 +80,14 @@ export const Menu = ({
                         style={{
                             marginRight: 4,
                         }}
+                        className="hover"
                     >
                         {item.label.text}
                     </div>
-                    <div style={{ fontSize: '80%', opacity: 0.5 }}>
+                    <div
+                        style={{ fontSize: '80%', opacity: 0.5 }}
+                        className="hover"
+                    >
                         {item.label.ann
                             ? nodeToString(
                                   nodeForType(item.label.ann, makeRCtx(ctx)),
@@ -118,7 +123,6 @@ const getMenuState = (
                             },
                         },
                     };
-                    console.log('ok', map);
                     updateStore(
                         store,
                         {
@@ -207,7 +211,12 @@ export const IdentifierLike = ({
     const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
 
     const style =
-        ctx.ctx.display[idx]?.style === 'italic'
+        ctx.ctx.display[idx]?.style === 'inferred'
+            ? {
+                  opacity: 0.8,
+                  fontStyle: 'italic',
+              }
+            : ctx.ctx.display[idx]?.style === 'italic'
             ? {
                   fontStyle: 'italic',
                   fontFamily: 'serif',
@@ -217,7 +226,7 @@ export const IdentifierLike = ({
             ? {
                   fontVariationSettings: '"wght" 500',
               }
-            : {};
+            : { fontStyle: 'normal' };
 
     const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
@@ -401,7 +410,12 @@ function onInput(
             map: mp,
             selection: {
                 idx,
-                loc: pos,
+                loc:
+                    nw.type === 'array' ||
+                    nw.type === 'list' ||
+                    nw.type === 'record'
+                        ? 'end'
+                        : pos,
             },
             prev: {
                 idx,

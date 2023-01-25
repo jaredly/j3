@@ -60,10 +60,12 @@ export const resolveExpr = (
     hash: string | undefined,
     ctx: Ctx,
     form: Node,
+    suffix?: string,
 ): Expr => {
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
+    ctx.display[form.loc.idx] = {};
     if (!hash) {
         const results = allTerms(ctx);
         const withScores = results
@@ -73,17 +75,33 @@ export const resolveExpr = (
             }))
             .filter(({ score }) => score.full)
             .sort((a, b) => compareScores(a.score, b.score));
-        ctx.display[form.loc.idx] = {
-            autoComplete: withScores.map(({ result }) => ({
+        ctx.display[form.loc.idx].autoComplete = withScores.map(
+            ({ result }) => ({
                 type: 'replace',
-                text: result.name,
+                text: result.name + (suffix || ''),
                 hash: result.hash,
                 ann: result.typ,
-            })),
-        };
+            }),
+        );
     } else {
-        ctx.display[form.loc.idx] = { style: 'italic' };
+        if (hash.startsWith(':')) {
+            const sym = +hash.slice(1);
+            const local = ctx.local.terms.find((t) => t.sym === sym);
+            if (local) {
+                return { type: 'local', sym: local.sym, form };
+            }
+        } else {
+            const global = ctx.global.terms[hash];
+            if (global) {
+                return { type: 'global', hash, form };
+            }
+            const builtin = ctx.global.builtins.terms[hash];
+            if (builtin) {
+                return { type: 'builtin', hash, form };
+            }
+        }
     }
+    ctx.display[form.loc.idx].style = 'inferred';
     const local = ctx.local.terms.find((t) => t.name === text);
     if (local) {
         return { type: 'local', sym: local.sym, form };
@@ -102,7 +120,6 @@ export const resolveExpr = (
             form,
         };
     }
-    // console.log('setting idx', ctx.display[form.loc.idx]);
     return {
         type: 'unresolved',
         form,

@@ -13,6 +13,12 @@ And we don't want to recommend out of scope variables.
 Soooo where should that stuff get dumped?
 - same place as laytout ought to go. W/ style I thikng.
 
+- [x] basic autocomplete!
+- [ ] instead of just erroring the arguments of a call, if the function
+      could be different, maybe underline it too?
+      Like, if all arguments are wrong, assume it's the wrong function? idk.
+- [x] autocomplete for `a.b.c` things .. what do you do?
+
 ## UP AND DOWN arrows
 
 - [ ] up and down should move you up and down!

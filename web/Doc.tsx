@@ -7,6 +7,7 @@ import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Type } from '../src/types/ast';
+import { MNode } from '../src/types/mcst';
 import { Events, Node } from './Nodes';
 import { EvalCtx, Path, Store } from './store';
 
@@ -42,7 +43,13 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
                     top={top}
                 />
             </div>
-            {hover && <ShowHover hover={hover} ctx={ctx} />}
+            {hover && (
+                <ShowHover
+                    hover={hover}
+                    ctx={ctx}
+                    node={store.map[hover.idx].node}
+                />
+            )}
             <div
                 ref={(node) => {
                     if (node && !menuPortal.current) {
@@ -95,9 +102,11 @@ function useHover(ctx: EvalCtx) {
 function ShowHover({
     hover,
     ctx,
+    node,
 }: {
     hover: { idx: number; box: any };
     ctx: EvalCtx;
+    node: MNode;
 }) {
     const types = ctx.report.types[hover.idx];
     const errors = ctx.report.errors[hover.idx];
@@ -119,6 +128,9 @@ function ShowHover({
                     whiteSpace: 'pre',
                 }}
             >
+                {node.type === 'identifier' && node.hash
+                    ? 'Hash: ' + node.hash + '\n'
+                    : ''}
                 {types ? 'Type: ' + showType(types, ctx.ctx) + '\n' : ''}
                 {errors
                     ?.map((error) => errorToString(error, ctx.ctx))

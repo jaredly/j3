@@ -21,7 +21,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'identifier': {
             if (form.text.includes('.')) {
                 const [expr, ...rest] = form.text.split('.');
-                let inner: Expr = resolveExpr(expr, form.hash, ctx, form);
+                let inner: Expr = resolveExpr(
+                    expr,
+                    form.hash,
+                    ctx,
+                    form,
+                    '.' + rest.join('.'),
+                );
                 while (rest.length) {
                     const next = rest.shift()!;
                     inner = {

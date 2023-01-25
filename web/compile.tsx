@@ -49,11 +49,13 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
+
         if (last[idx] === hash) {
             const prev = results[idx];
             if (prev.status === 'errors') {
                 Object.assign(ectx.report.errors, prev.errors);
             }
+            prev.display = ctx.display;
             Object.assign(allStyles, prev.display);
             return;
         }
@@ -143,12 +145,12 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     });
 
     Object.keys(prevStyles).forEach((key) => {
-        if (allStyles[+key] !== prevStyles[+key]) {
+        if (allStyles[+key]?.style !== prevStyles[+key]?.style) {
             changed[+key] = true;
         }
     });
     Object.keys(allStyles).forEach((key) => {
-        if (allStyles[+key] !== prevStyles[+key]) {
+        if (allStyles[+key]?.style !== prevStyles[+key]?.style) {
             changed[+key] = true;
         }
     });
@@ -160,7 +162,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             store,
             keys.map((k) => +k),
         );
-        // console.log(changed);
     }
 
     ectx.ctx = ctx;
