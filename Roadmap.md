@@ -5,11 +5,23 @@
 Gotta have it.
 And so, also hash knowledge. But autocomplete first.
 
+Sooooo thinking about how to populate autocomplete
+I thiiink it makes most sense to do it in the moment, in nodeToExpr.
+Because that's where we have info about what locals are in scope.
+And we don't want to recommend out of scope variables.
+
+Soooo where should that stuff get dumped?
+- same place as laytout ought to go. W/ style I thikng.
+
+## UP AND DOWN arrows
+
 - [ ] up and down should move you up and down!
   - I think this will be, everything registers themselves into a big ol
     table, by idx, and then on up/down we like just traverse left or right
     along the tree and getBoundingClientRect all the things until we find
     a match. Then we can be fancy about selecting within it if we want.
+
+
 
 ##
 I think I want to be able to define visualization plugins ... in jerd. with react(?)

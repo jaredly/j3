@@ -39,7 +39,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'unparsed':
             return { type: 'unresolved', form };
         case 'tag':
-            ctx.styles[form.loc.idx] = 'bold';
+            ctx.display[form.loc.idx] = { style: 'bold' };
             return { type: 'tag', name: form.text, form };
         case 'string':
             return {
@@ -77,7 +77,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             name: item.text,
                             value: nodeToExpr(item, ctx),
                         });
-                        ctx.styles[item.loc.idx] = 'italic';
+                        ctx.display[item.loc.idx] = { style: 'italic' };
                     } else {
                         entries.push({
                             name: '_ignored',
@@ -92,7 +92,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             } else {
                 for (let i = 0; i < values.length; i += 2) {
                     const name = values[i];
-                    ctx.styles[name.loc.idx] = 'italic';
+                    ctx.display[name.loc.idx] = { style: 'italic' };
                     if (name.type !== 'identifier' && name.type !== 'number') {
                         continue;
                     }

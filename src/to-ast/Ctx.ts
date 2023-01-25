@@ -2,10 +2,23 @@ import { Loc, Node } from '../types/cst';
 import { Expr, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
+import { Layout } from '../types/mcst';
+
+export type AutoCompleteResult = {
+    type: 'replace';
+    text: string;
+    ann?: Type;
+}; // TODO also autofixers probably?
 
 export type Ctx = {
     errors: Report['errors'];
-    styles: { [idx: number]: NodeStyle };
+    display: {
+        [idx: number]: {
+            style?: NodeStyle;
+            layout?: Layout;
+            autoComplete?: AutoCompleteResult[];
+        };
+    };
     sym: { current: number };
     global: Global;
     local: Local;
@@ -94,7 +107,10 @@ export const addBuiltin = (
     name: string,
     type: Type,
 ) => {
-    const hash = objectHash(name + ' ' + noForm(type));
+    const hash = objectHash(name + ' ' + JSON.stringify(noForm(type)));
+    if (builtins.terms[hash]) {
+        throw new Error(`Dupliocate hash?? ${hash}`);
+    }
     builtins.names[name] = [hash].concat(builtins.names[name] ?? []);
     builtins.terms[hash] = type;
     builtins.namesBack[hash] = name;
@@ -142,6 +158,7 @@ addBuiltin(basicBuiltins, 'debugToString', {
     },
     form: blank,
 });
+console.log(basicBuiltins);
 
 export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {
@@ -160,7 +177,7 @@ export const newCtx = (): Ctx => {
         local: emptyLocal,
         localMap: { terms: {}, types: {} },
         errors: {},
-        styles: {},
+        display: {},
     };
 };
 

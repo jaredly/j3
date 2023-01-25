@@ -73,20 +73,20 @@ export type EvalCtx = {
                   value: any;
                   code: string;
                   expr: Expr;
-                  styles: Ctx['styles'];
+                  display: Ctx['display'];
               }
             | {
                   status: 'failure';
                   error: string;
                   code: string;
                   expr: Expr;
-                  styles: Ctx['styles'];
+                  display: Ctx['display'];
               }
             | {
                   status: 'errors';
                   expr: Expr;
                   errors: Report['errors'];
-                  styles: Ctx['styles'];
+                  display: Ctx['display'];
               };
     };
 };

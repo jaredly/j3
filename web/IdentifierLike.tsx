@@ -7,6 +7,13 @@ import { Node } from '../src/types/cst';
 import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
+import { AutoCompleteResult, Ctx } from '../src/to-ast/Ctx';
+import { Type } from '../src/types/ast';
+import { compareScores, fuzzyScore } from '../src/to-ast/fuzzy';
+import { allTerms } from '../src/to-ast/to-ast';
+import { nodeForType } from '../src/to-cst/nodeForType';
+import { makeRCtx } from '../src/to-cst/nodeForExpr';
+import { nodeToString } from '../src/to-cst/nodeToString';
 
 export type Top = {
     store: Store;
@@ -16,27 +23,110 @@ export type Top = {
 };
 
 type MenuState = {
-    pos: { top: number; left: number };
-    items: { label: string; action: () => void }[];
+    // pos: { top: number; left: number };
+    items: { label: AutoCompleteResult; action: () => void }[];
     selection: number;
 };
 
-export const Menu = ({ state }: { state: MenuState }) => {
+export const Menu = ({
+    state,
+    ctx,
+    pos,
+}: {
+    state: MenuState;
+    ctx: Ctx;
+    pos: { left: number; top: number };
+}) => {
     return (
         <div
             style={{
                 position: 'absolute',
-                top: state.pos.top,
+                top: pos.top,
                 zIndex: 2000,
-                left: state.pos.left,
+                left: pos.left,
                 backgroundColor: 'black',
-                padding: 4,
                 border: '1px solid white',
+                display: 'grid',
+                gridTemplateColumns: 'max-content max-content',
+                gap: 4,
+                padding: 8,
+                alignItems: 'center',
             }}
         >
-            A MENU
+            {state.items.map((item, idx) => (
+                <div
+                    key={idx}
+                    onClick={() => item.action()}
+                    style={{
+                        // display: 'flex',
+                        // alignItems: 'center',
+                        display: 'contents',
+                    }}
+                >
+                    <div
+                        style={{
+                            marginRight: 4,
+                        }}
+                    >
+                        {item.label.text}
+                    </div>
+                    <div style={{ fontSize: '80%', opacity: 0.5 }}>
+                        {item.label.ann
+                            ? nodeToString(
+                                  nodeForType(item.label.ann, makeRCtx(ctx)),
+                              )
+                            : 'no type'}
+                    </div>
+                </div>
+            ))}
         </div>
     );
+};
+
+const getMenuState = (
+    store: Store,
+    ctx: Ctx,
+    idx: number,
+    text: string,
+): MenuState | null => {
+    const display = ctx.display[idx];
+    if (display?.autoComplete) {
+        return {
+            items: display.autoComplete.map((item) => ({
+                label: item,
+                action: () => {},
+            })),
+            selection: 0,
+        };
+    } else {
+        return null;
+    }
+    // const node = store.map[idx].node;
+    // if (node.type !== 'identifier') {
+    //     return null;
+    // }
+    // if (text === 'defn') {
+    //     return null;
+    // }
+    // const results = allTerms(ctx);
+    // const withScores = results
+    //     .map((result) => ({
+    //         result,
+    //         score: fuzzyScore(0, text, result.name),
+    //     }))
+    //     .filter(({ score }) => score.full)
+    //     .sort((a, b) => compareScores(a.score, b.score));
+    // return withScores.length
+    //     ? {
+    //           items: withScores.map(({ result }) => ({
+    //               label: result.name,
+    //               action: () => {
+    //                   console.log(result);
+    //               },
+    //           })),
+    //           selection: 0,
+    //       }
+    //     : null;
 };
 
 export const IdentifierLike = ({
@@ -57,14 +147,26 @@ export const IdentifierLike = ({
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
 
-    const [menuState, setMenuState] = React.useState(null as null | MenuState);
+    const [menuState, setMenuState] = React.useState(
+        getMenuState(store, ctx.ctx, idx, text) as null | MenuState,
+    );
+
+    React.useEffect(() => {
+        if (!menuPortal.current || !editing || !ref.current) {
+            return;
+        }
+        const box = ref.current.getBoundingClientRect();
+        const pos = { left: box.left, top: box.bottom };
+        menuPortal.current.render(
+            menuState ? (
+                <Menu state={menuState} ctx={ctx.ctx} pos={pos} />
+            ) : null,
+        );
+    }, [menuState, editing]);
 
     React.useEffect(() => {
         if (editing) {
-            if (menuState) {
-                menuPortal.current?.render(<Menu state={menuState} />);
-                return () => menuPortal.current?.render(null);
-            }
+            // return () => menuPortal.current?.render(null);
         }
     }, [editing]);
 
@@ -88,13 +190,13 @@ export const IdentifierLike = ({
     const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
 
     const style =
-        ctx.ctx.styles[idx] === 'italic'
+        ctx.ctx.display[idx]?.style === 'italic'
             ? {
                   fontStyle: 'italic',
                   fontFamily: 'serif',
                   color: '#84a4a5',
               }
-            : ctx.ctx.styles[idx] === 'bold'
+            : ctx.ctx.display[idx]?.style === 'bold'
             ? {
                   fontVariationSettings: '"wght" 500',
               }
@@ -114,15 +216,6 @@ export const IdentifierLike = ({
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 setEdit(text);
-                const box = evt.currentTarget.getBoundingClientRect();
-                setMenuState({
-                    items: [],
-                    selection: 0,
-                    pos: {
-                        top: box.bottom,
-                        left: box.left,
-                    },
-                });
                 setSelection(store, { idx });
             }}
             onMouseOver={(evt) =>
@@ -154,9 +247,20 @@ export const IdentifierLike = ({
             onMouseUp={(evt) => {
                 presel.current = getPos(evt.currentTarget);
             }}
+            onSelect={(evt) => {
+                presel.current = getPos(evt.currentTarget);
+            }}
             onMouseLeave={() => setHover({ idx, box: null })}
             onInput={(evt) => {
                 onInput(evt, setEdit, idx, path, store, presel);
+                setMenuState(
+                    getMenuState(
+                        store,
+                        ctx.ctx,
+                        idx,
+                        evt.currentTarget.textContent!,
+                    ),
+                );
             }}
             onBlur={() => {
                 setEdit(null);

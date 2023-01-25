@@ -89,7 +89,7 @@ export const nodeToPattern = (
                     }
                     const namev =
                         name.type === 'identifier' ? name.text : name.raw;
-                    ctx.styles[name.loc.idx] = 'italic';
+                    ctx.display[name.loc.idx] = { style: 'italic' };
                     if (!prm[namev]) {
                         err(ctx.errors, form.values[i], {
                             type: 'misc',
@@ -165,7 +165,7 @@ export const nodeToPattern = (
                 };
             }
             if (first.type === 'tag') {
-                ctx.styles[first.loc.idx] = 'bold';
+                ctx.display[first.loc.idx] = { style: 'bold' };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
                     console.log('no t', t);

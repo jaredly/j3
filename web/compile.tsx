@@ -27,8 +27,8 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const prevErrors = ectx.report.errors;
 
     ectx.report.errors = {};
-    const allStyles: Ctx['styles'] = {};
-    const prevStyles = ctx.styles;
+    const allStyles: Ctx['display'] = {};
+    const prevStyles = ctx.display;
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.type === 'comment') {
@@ -37,7 +37,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 value: undefined,
                 code: '// a comment',
                 expr: nil,
-                styles: {},
+                display: {},
             };
             return;
         }
@@ -45,7 +45,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         const report: Report = { errors: {}, types: {} };
         ctx.errors = report.errors;
-        ctx.styles = {};
+        ctx.display = {};
 
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
@@ -54,7 +54,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             if (prev.status === 'errors') {
                 Object.assign(ectx.report.errors, prev.errors);
             }
-            Object.assign(allStyles, prev.styles);
+            Object.assign(allStyles, prev.display);
             return;
         }
 
@@ -67,7 +67,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         Object.assign(ectx.report.errors, report.errors);
         Object.assign(ectx.report.types, report.types);
-        Object.assign(allStyles, ctx.styles);
+        Object.assign(allStyles, ctx.display);
 
         if (hasErrors) {
             // console.log(idx, 'had errors I guess');
@@ -75,7 +75,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 status: 'errors',
                 expr: res,
                 errors: report.errors,
-                styles: ctx.styles,
+                display: ctx.display,
             };
             last[idx] = hash;
             return;
@@ -105,7 +105,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 }),
                 code,
                 expr: res,
-                styles: ctx.styles,
+                display: ctx.display,
             };
             last[idx] = hash;
         } catch (err) {
@@ -114,7 +114,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 error: (err as Error).message,
                 code,
                 expr: res,
-                styles: ctx.styles,
+                display: ctx.display,
             };
             last[idx] = hash;
             return;
@@ -152,7 +152,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             changed[+key] = true;
         }
     });
-    ctx.styles = allStyles;
+    ctx.display = allStyles;
 
     const keys = Object.keys(changed);
     if (keys.length) {

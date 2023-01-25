@@ -29,7 +29,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 ),
             };
         case 'tag':
-            ctx.styles[form.loc.idx] = 'bold';
+            ctx.display[form.loc.idx] = { style: 'bold' };
             return {
                 type: 'tag',
                 form,
@@ -49,7 +49,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     });
                     continue;
                 }
-                ctx.styles[name.loc.idx] = 'italic';
+                ctx.display[name.loc.idx] = { style: 'italic' };
                 entries.push({
                     name: name.text,
                     value: value ? nodeToType(value, ctx) : nilt,
@@ -70,7 +70,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'tag') {
-                ctx.styles[first.loc.idx] = 'bold';
+                ctx.display[first.loc.idx] = { style: 'bold' };
                 return {
                     type: 'tag',
                     form,

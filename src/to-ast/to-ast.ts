@@ -4,6 +4,51 @@ import { Node } from '../types/cst';
 import { Expr, Term, Type } from '../types/ast';
 import { getType } from '../get-type/get-types-new';
 import { Ctx } from './Ctx';
+import { compareScores, fuzzyScore } from './fuzzy';
+
+type Result =
+    | { type: 'local'; name: string; typ: Type }
+    | {
+          type: 'global' | 'builtin';
+          name: string;
+          hash: string;
+          typ: Type;
+      };
+
+// TODO cache this?
+export const allTerms = (ctx: Ctx): Result[] => {
+    const globals = Object.entries(ctx.global.names).flatMap(([name, hashes]) =>
+        hashes.map(
+            (hash) =>
+                ({
+                    type: 'global',
+                    name,
+                    hash,
+                    typ: ctx.global.termTypes[hash],
+                } satisfies Result),
+        ),
+    );
+    const builtins = Object.entries(ctx.global.builtins.names).flatMap(
+        ([name, hashes]) =>
+            hashes.map(
+                (hash) =>
+                    ({
+                        type: 'builtin',
+                        name,
+                        hash,
+                        typ: ctx.global.builtins.terms[hash],
+                    } satisfies Result),
+            ),
+    );
+    return [
+        ...builtins,
+        ...ctx.local.terms.map(
+            ({ name, type }) =>
+                ({ type: 'local', name, typ: type } satisfies Result),
+        ),
+        ...globals,
+    ];
+};
 
 export const resolveExpr = (
     text: string,
@@ -23,6 +68,21 @@ export const resolveExpr = (
         //     };
         // }
     }
+    const results = allTerms(ctx);
+    const withScores = results
+        .map((result) => ({
+            result,
+            score: fuzzyScore(0, text, result.name),
+        }))
+        .filter(({ score }) => score.full)
+        .sort((a, b) => compareScores(a.score, b.score));
+    ctx.display[form.loc.idx] = {
+        autoComplete: withScores.map(({ result }) => ({
+            type: 'replace',
+            text: result.name,
+            ann: result.typ,
+        })),
+    };
     const local = ctx.local.terms.find((t) => t.name === text);
     if (local) {
         return { type: 'local', sym: local.sym, form };
@@ -41,6 +101,7 @@ export const resolveExpr = (
             form,
         };
     }
+    // console.log('setting idx', ctx.display[form.loc.idx]);
     return {
         type: 'unresolved',
         form,

@@ -43,21 +43,22 @@ export type WithLoc<T> = T & { loc: Loc };
 export type Map = {
     [key: number]: {
         node: MNode;
-        layout?:
-            | {
-                  type: 'flat';
-                  width: number;
-                  pos: number;
-              }
-            | {
-                  type: 'multiline';
-                  pairs?: boolean;
-                  tightFirst: number;
-                  pos: number;
-                  // umm I can't remember. do we need something here?
-              };
+        layout?: Layout;
     };
 };
+export type Layout =
+    | {
+          type: 'flat';
+          width: number;
+          pos: number;
+      }
+    | {
+          type: 'multiline';
+          pairs?: boolean;
+          tightFirst: number;
+          pos: number;
+          // umm I can't remember. do we need something here?
+      };
 
 export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
     switch (node.type) {
