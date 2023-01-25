@@ -1,6 +1,13 @@
 import * as React from 'react';
 import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
+import {
+    EvalCtx,
+    Path,
+    setSelection,
+    Store,
+    UpdateMap,
+    updateStore,
+} from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
@@ -8,9 +15,6 @@ import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { AutoCompleteResult, Ctx } from '../src/to-ast/Ctx';
-import { Type } from '../src/types/ast';
-import { compareScores, fuzzyScore } from '../src/to-ast/fuzzy';
-import { allTerms } from '../src/to-ast/to-ast';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeToString } from '../src/to-cst/nodeToString';
@@ -32,10 +36,12 @@ export const Menu = ({
     state,
     ctx,
     pos,
+    onAction,
 }: {
     state: MenuState;
     ctx: Ctx;
     pos: { left: number; top: number };
+    onAction: () => void;
 }) => {
     return (
         <div
@@ -44,6 +50,8 @@ export const Menu = ({
                 top: pos.top,
                 zIndex: 2000,
                 left: pos.left,
+                maxHeight: 300,
+                overflow: 'auto',
                 backgroundColor: 'black',
                 border: '1px solid white',
                 display: 'grid',
@@ -56,11 +64,15 @@ export const Menu = ({
             {state.items.map((item, idx) => (
                 <div
                     key={idx}
-                    onClick={() => item.action()}
+                    onClick={() => {
+                        item.action();
+                        onAction();
+                    }}
                     style={{
                         // display: 'flex',
                         // alignItems: 'center',
                         display: 'contents',
+                        cursor: 'pointer',
                     }}
                 >
                     <div
@@ -94,39 +106,37 @@ const getMenuState = (
         return {
             items: display.autoComplete.map((item) => ({
                 label: item,
-                action: () => {},
+                action: () => {
+                    const map: UpdateMap = {
+                        [idx]: {
+                            ...store.map[idx],
+                            node: {
+                                type: 'identifier',
+                                text: item.text,
+                                hash: item.hash,
+                                loc: { start: -1, end: -1, idx },
+                            },
+                        },
+                    };
+                    console.log('ok', map);
+                    updateStore(
+                        store,
+                        {
+                            map,
+                            selection: {
+                                idx,
+                                loc: item.text.length,
+                            },
+                        },
+                        [],
+                    );
+                },
             })),
             selection: 0,
         };
     } else {
         return null;
     }
-    // const node = store.map[idx].node;
-    // if (node.type !== 'identifier') {
-    //     return null;
-    // }
-    // if (text === 'defn') {
-    //     return null;
-    // }
-    // const results = allTerms(ctx);
-    // const withScores = results
-    //     .map((result) => ({
-    //         result,
-    //         score: fuzzyScore(0, text, result.name),
-    //     }))
-    //     .filter(({ score }) => score.full)
-    //     .sort((a, b) => compareScores(a.score, b.score));
-    // return withScores.length
-    //     ? {
-    //           items: withScores.map(({ result }) => ({
-    //               label: result.name,
-    //               action: () => {
-    //                   console.log(result);
-    //               },
-    //           })),
-    //           selection: 0,
-    //       }
-    //     : null;
 };
 
 export const IdentifierLike = ({
@@ -159,14 +169,21 @@ export const IdentifierLike = ({
         const pos = { left: box.left, top: box.bottom };
         menuPortal.current.render(
             menuState ? (
-                <Menu state={menuState} ctx={ctx.ctx} pos={pos} />
+                <Menu
+                    state={menuState}
+                    onAction={() => {
+                        setMenuState(null);
+                    }}
+                    ctx={ctx.ctx}
+                    pos={pos}
+                />
             ) : null,
         );
     }, [menuState, editing]);
 
     React.useEffect(() => {
         if (editing) {
-            // return () => menuPortal.current?.render(null);
+            return () => menuPortal.current?.render(null);
         }
     }, [editing]);
 

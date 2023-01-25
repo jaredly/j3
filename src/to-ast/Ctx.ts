@@ -7,6 +7,7 @@ import { Layout } from '../types/mcst';
 export type AutoCompleteResult = {
     type: 'replace';
     text: string;
+    hash: string;
     ann?: Type;
 }; // TODO also autofixers probably?
 
@@ -132,7 +133,7 @@ export const builtinFn = (
 };
 const tint = btype('int');
 const tuint = btype('uint');
-const tfloat = btype('ufloat');
+const tfloat = btype('float');
 const tbool = btype('bool');
 const tstring = btype('string');
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
@@ -158,7 +159,6 @@ addBuiltin(basicBuiltins, 'debugToString', {
     },
     form: blank,
 });
-console.log(basicBuiltins);
 
 export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {

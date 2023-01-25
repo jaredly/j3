@@ -7,7 +7,7 @@ import { Ctx } from './Ctx';
 import { compareScores, fuzzyScore } from './fuzzy';
 
 type Result =
-    | { type: 'local'; name: string; typ: Type }
+    | { type: 'local'; name: string; typ: Type; hash: string }
     | {
           type: 'global' | 'builtin';
           name: string;
@@ -43,8 +43,13 @@ export const allTerms = (ctx: Ctx): Result[] => {
     return [
         ...builtins,
         ...ctx.local.terms.map(
-            ({ name, type }) =>
-                ({ type: 'local', name, typ: type } satisfies Result),
+            ({ name, type, sym }) =>
+                ({
+                    type: 'local',
+                    name,
+                    typ: type,
+                    hash: `:${sym}`,
+                } satisfies Result),
         ),
         ...globals,
     ];
@@ -59,30 +64,26 @@ export const resolveExpr = (
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
-    if (hash) {
-        // if (hash === '#builtin') {
-        //     return {
-        //         type: 'builtin',
-        //         hash: text,
-        //         form,
-        //     };
-        // }
+    if (!hash) {
+        const results = allTerms(ctx);
+        const withScores = results
+            .map((result) => ({
+                result,
+                score: fuzzyScore(0, text, result.name),
+            }))
+            .filter(({ score }) => score.full)
+            .sort((a, b) => compareScores(a.score, b.score));
+        ctx.display[form.loc.idx] = {
+            autoComplete: withScores.map(({ result }) => ({
+                type: 'replace',
+                text: result.name,
+                hash: result.hash,
+                ann: result.typ,
+            })),
+        };
+    } else {
+        ctx.display[form.loc.idx] = { style: 'italic' };
     }
-    const results = allTerms(ctx);
-    const withScores = results
-        .map((result) => ({
-            result,
-            score: fuzzyScore(0, text, result.name),
-        }))
-        .filter(({ score }) => score.full)
-        .sort((a, b) => compareScores(a.score, b.score));
-    ctx.display[form.loc.idx] = {
-        autoComplete: withScores.map(({ result }) => ({
-            type: 'replace',
-            text: result.name,
-            ann: result.typ,
-        })),
-    };
     const local = ctx.local.terms.find((t) => t.name === text);
     if (local) {
         return { type: 'local', sym: local.sym, form };
