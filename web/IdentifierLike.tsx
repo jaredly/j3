@@ -4,7 +4,7 @@ import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
-import { getPos, onKeyDown, setPos } from './onKeyDown';
+import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
 import { SetHover } from './Doc';
 
 export const IdentifierLike = ({
