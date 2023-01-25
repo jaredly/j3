@@ -34,6 +34,12 @@ export const nodeToPattern = (
         }
         case 'identifier': {
             const sym = nextSym(ctx);
+            ctx.display[form.loc.idx] = {
+                style: {
+                    type: 'id',
+                    hash: ':' + sym,
+                },
+            };
             bindings.push({
                 name: form.text,
                 sym,

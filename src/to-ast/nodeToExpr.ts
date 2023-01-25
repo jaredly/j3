@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { Expr, Record } from '../types/ast';
 import { specials } from './specials';
-import { resolveExpr } from './to-ast';
+import { resolveExpr } from './resolveExpr';
 import { Ctx, nil } from './Ctx';
 import { err } from './nodeToPattern';
 

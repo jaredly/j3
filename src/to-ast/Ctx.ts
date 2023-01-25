@@ -48,7 +48,15 @@ export type Local = {
     types: { sym: number; name: string; bound?: Type }[];
 };
 
-export type NodeStyle = 'italic' | 'pairs' | 'bold' | 'inferred';
+export type NodeStyle =
+    | 'italic'
+    | 'pairs'
+    | 'bold'
+    | {
+          type: 'id';
+          hash: string;
+          inferred?: boolean;
+      };
 
 export const blank: Node = {
     type: 'blank',

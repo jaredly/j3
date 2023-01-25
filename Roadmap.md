@@ -1,5 +1,33 @@
 
-- [ ] oh lets get rainbow coloring based on sym! And also for globals I guess?
+- [x] oh lets get rainbow coloring based on sym! And also for globals I guess?
+  - .style = {type: 'colored', idx: number} maybe
+- [ ] all IdentifierLikes should just have a .text
+  - yeahhh but I don't love having to change the CST
+
+
+do .. I .. ....
+
+what would it look like to have a tree-based evaluator like hazel?
+like ... holes ... what do we do with them.
+I could just say "a hole is a (! get-something)", but that would
+have impacts on the types of everything down the line ...
+
+I could just have it throw an exception, and hang the outcome...
+
+so, what about just tracing ~everything?
+like
+I could flip a switch, and trace everything.
+or just trace a single ~term (show me scope and valuesss)
+
+Would that be enough to make the quicksort demo make sense?
+seems like it ought to be at least mostly sufficient?
+The idea of hole-full programming is super appealing though.
+
+hmmmm I wonder if I could have a dual-evaluation model.
+Like if your term has holes, we evaluate with custom semantics,
+that can handle holes .. but otherwise, we can compile to
+something more performant.
+
 
 ## AUTOCOMPLETE
 
