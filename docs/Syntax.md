@@ -1,6 +1,27 @@
 
 ## Enumerating syntactic forms
 
+soooo thinking about comments.
+Given that we have structure, wny not make different types of comments? For code review would be cool
+- todo
+- question
+- review-comment
+- suggestion? idk
+
+BUT also, what about having them be attached to a specific node? That would make a lot of sense for code review.
+And when we represent them in the data structure, they'll be attached to a specific node. So why not make that explicit?
+SOOO how do we ~do it? Probably like cmd-m or something?
+Anddddd how do we display it?
+oh yeah like ... tooltip lookin things? How does traversal work? hmmm might need to be something special?
+
+hmm maybe when you're in documenting mode, you can sqitch selection between the comments?
+It's probably a normal mode thing.
+
+OK so POSITIONS:
+above, below, inside??
+
+
+
 ```clj
 ; EXPRESSIONS OR TYPES ;
 

@@ -1,4 +1,5 @@
 
+- [ ] oh lets get rainbow coloring based on sym! And also for globals I guess?
 
 ## AUTOCOMPLETE
 
@@ -25,7 +26,7 @@ Soooo where should that stuff get dumped?
 
 - [ ] spreading!
 - [ ] $ for record patterns
-- [ ] ERROR underline patterns that have no type
+- [x] ERROR underline patterns that have no type
 
 
 ## UP AND DOWN arrows
