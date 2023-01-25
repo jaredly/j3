@@ -35,7 +35,7 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
 
     return (
         <div style={{ margin: 24 }}>
-            <div>
+            <div style={{ marginBottom: 500 }}>
                 <Node
                     idx={store.root}
                     path={topPath}
@@ -115,7 +115,7 @@ function ShowHover({
         <>
             <div
                 style={{
-                    position: 'absolute',
+                    position: 'fixed',
 
                     left: hover.box.left,
                     top: hover.box.bottom,
@@ -138,7 +138,7 @@ function ShowHover({
             </div>
             <div
                 style={{
-                    position: 'absolute',
+                    position: 'fixed',
 
                     left: hover.box.left,
                     top: hover.box.top,

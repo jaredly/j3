@@ -19,6 +19,14 @@ Soooo where should that stuff get dumped?
       Like, if all arguments are wrong, assume it's the wrong function? idk.
 - [x] autocomplete for `a.b.c` things .. what do you do?
 
+
+## Things needed for my react stuff to happen
+
+- [ ] spreading!
+- [ ] $ for record patterns
+- [ ] ERROR underline patterns that have no type
+
+
 ## UP AND DOWN arrows
 
 - [ ] up and down should move you up and down!

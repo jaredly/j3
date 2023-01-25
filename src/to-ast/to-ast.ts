@@ -62,6 +62,9 @@ export const resolveExpr = (
     form: Node,
     suffix?: string,
 ): Expr => {
+    if (!text.length) {
+        return { type: 'unresolved', form, reason: 'blank' };
+    }
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }

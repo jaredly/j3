@@ -13,6 +13,25 @@ export const nodeToPattern = (
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
+        case 'list': {
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: 'list patterns not yet sorry',
+            });
+            return {
+                type: 'unresolved',
+                form,
+                reason: 'pattern list not yet sorry',
+            };
+        }
+        case 'tag': {
+            return {
+                type: 'tag',
+                name: form.text,
+                args: [],
+                form,
+            };
+        }
         case 'identifier': {
             const sym = nextSym(ctx);
             bindings.push({
@@ -37,7 +56,10 @@ export const nodeToPattern = (
             const entries: { name: string; value: Pattern }[] = [];
             const res = applyAndResolve(t, ctx, []);
             if (!res) {
-                console.log('no t', t);
+                err(ctx.errors, form, {
+                    type: 'misc',
+                    message: `bad type`,
+                });
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
 
@@ -49,14 +71,23 @@ export const nodeToPattern = (
                       }, {} as { [key: string]: Type })
                     : null;
             if (!prm) {
+                err(ctx.errors, form, {
+                    type: 'misc',
+                    message: `type ${t.type} not a record`,
+                });
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
-            console.log(prm, res);
             if (
                 form.values.length === 1 &&
                 form.values[0].type === 'identifier'
             ) {
                 const name = form.values[0].text;
+                if (!prm || !prm[name]) {
+                    err(ctx.errors, form, {
+                        type: 'misc',
+                        message: `attribute not in type`,
+                    });
+                }
                 entries.push({
                     name,
                     value: nodeToPattern(

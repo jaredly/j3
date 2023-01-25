@@ -75,7 +75,7 @@ export const ListLike = ({
 
     const contents = formatContents(isRoot, nodes, children, top, layout);
 
-    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.05)' : 'none';
+    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.2)' : 'none';
 
     return (
         <span

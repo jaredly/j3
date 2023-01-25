@@ -46,7 +46,7 @@ export const Menu = ({
     return (
         <div
             style={{
-                position: 'absolute',
+                position: 'fixed',
                 top: pos.top,
                 zIndex: 2000,
                 left: pos.left,

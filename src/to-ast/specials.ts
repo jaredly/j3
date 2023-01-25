@@ -37,6 +37,7 @@ export const specials: {
                 form,
             };
         }
+        console.log('FN');
         if (contents[0].type === 'array') {
             let args: { pattern: Pattern; type?: Type }[] = [];
             let locals: Local['terms'] = [];
@@ -79,11 +80,18 @@ export const specials: {
                           form: nil.form,
                           reason: 'not provided type',
                       };
+                if (t.type === 'unresolved') {
+                    err(ctx.errors, pat, {
+                        type: 'misc',
+                        message: `no type given`,
+                    });
+                }
                 args.push({
                     pattern: nodeToPattern(pat, t, ctx, locals),
                     type: t,
                 });
             });
+            console.log(pairs);
             locals.forEach(
                 (loc) =>
                     (ctx.localMap.terms[loc.sym] = {
