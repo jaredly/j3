@@ -6,28 +6,67 @@ import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
 import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
 import { SetHover } from './Doc';
+import { Root } from 'react-dom/client';
+
+export type Top = {
+    store: Store;
+    ctx: EvalCtx;
+    setHover: SetHover;
+    menuPortal: React.RefObject<null | Root>;
+};
+
+type MenuState = {
+    pos: { top: number; left: number };
+    items: { label: string; action: () => void }[];
+    selection: number;
+};
+
+export const Menu = ({ state }: { state: MenuState }) => {
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                top: state.pos.top,
+                zIndex: 2000,
+                left: state.pos.left,
+                backgroundColor: 'black',
+                padding: 4,
+                border: '1px solid white',
+            }}
+        >
+            A MENU
+        </div>
+    );
+};
 
 export const IdentifierLike = ({
     idx,
     type,
     text,
-    store,
     path,
     events,
-    ctx,
-    setHover,
+    top: { store, ctx, setHover, menuPortal },
 }: {
     type: MNodeContents['type'];
     text: string;
     idx: number;
-    store: Store;
     path: Path[];
     events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
+    top: Top;
 }) => {
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
+
+    const [menuState, setMenuState] = React.useState(null as null | MenuState);
+
+    React.useEffect(() => {
+        if (editing) {
+            if (menuState) {
+                menuPortal.current?.render(<Menu state={menuState} />);
+                return () => menuPortal.current?.render(null);
+            }
+        }
+    }, [editing]);
 
     edit = edit == null ? text : edit;
 
@@ -46,27 +85,17 @@ export const IdentifierLike = ({
         }
     }, [editing, text, editing ? store.selection!.loc : null]);
 
-    const dec = ctx.report.errors[idx]
-        ? 'underline red'
-        : // : ctx.report.types[idx] == null
-          // ? 'underline gray'
-          'none';
+    const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
 
     const style =
         ctx.ctx.styles[idx] === 'italic'
             ? {
                   fontStyle: 'italic',
-                  //   fontFamily: 'Monoid',
-                  //   fontSize: '80%',
                   fontFamily: 'serif',
-                  //   fontFamily: 'Fira Code VF',
-                  //   fontFamily: 'Jet Brains Italic',
-                  //   fontVariationSettings: '"wght" 100',
                   color: '#84a4a5',
               }
             : ctx.ctx.styles[idx] === 'bold'
             ? {
-                  //   fontWeight: 'bold',
                   fontVariationSettings: '"wght" 500',
               }
             : {};
@@ -85,6 +114,15 @@ export const IdentifierLike = ({
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 setEdit(text);
+                const box = evt.currentTarget.getBoundingClientRect();
+                setMenuState({
+                    items: [],
+                    selection: 0,
+                    pos: {
+                        top: box.bottom,
+                        left: box.left,
+                    },
+                });
                 setSelection(store, { idx });
             }}
             onMouseOver={(evt) =>

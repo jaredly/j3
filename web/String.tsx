@@ -6,26 +6,24 @@ import { Blinker } from './Blinker';
 import { SetHover } from './Doc';
 import { sideClick } from './ListLike';
 import { StringText } from './StringText';
+import { Top } from './IdentifierLike';
 
 export const StringView = ({
     node,
-    store,
     path,
+    top,
     // layout,
     idx,
     events,
-    ctx,
-    setHover,
 }: {
     node: MCString;
-    store: Store;
     path: Path[];
     // layout: Map[0]['layout'];
     events: Events;
     idx: number;
-    ctx: EvalCtx;
-    setHover: SetHover;
+    top: Top;
 }) => {
+    const { store, ctx, setHover } = top;
     return (
         <span>
             {store.selection?.idx === idx && store.selection.loc === 'start' ? (
@@ -99,7 +97,7 @@ export const StringView = ({
                 <Node
                     key={t.expr}
                     idx={t.expr}
-                    store={store}
+                    top={top}
                     path={path.concat([
                         { idx, child: { type: 'expr', at: i + 1 } },
                     ])}
@@ -124,8 +122,6 @@ export const StringView = ({
                             });
                         },
                     }}
-                    ctx={ctx}
-                    setHover={setHover}
                 />,
                 <span key={i + 'end'}>{'}'}</span>,
                 <StringText

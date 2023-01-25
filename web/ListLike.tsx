@@ -8,30 +8,28 @@ import { Expr } from '../src/types/ast';
 import { Report } from '../src/get-type/get-types-new';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Ctx } from '../src/to-ast/Ctx';
+import { Top } from './IdentifierLike';
 
 export const ListLike = ({
     left,
     right,
     children,
-    store,
     path,
     layout,
     idx,
     events,
-    ctx,
-    setHover,
+    top,
 }: {
     left: string;
     right: string;
     children: number[];
-    store: Store;
     path: Path[];
     layout: Map[0]['layout'];
     events: Events;
     idx: number;
-    ctx: EvalCtx;
-    setHover: SetHover;
+    top: Top;
 }) => {
+    const { store, ctx, setHover } = top;
     const isRoot = idx === store.root;
 
     const nodes = React.useMemo(
@@ -40,8 +38,7 @@ export const ListLike = ({
                 <Node
                     idx={cidx}
                     key={cidx}
-                    ctx={ctx}
-                    setHover={setHover}
+                    top={top}
                     path={path.concat({
                         idx,
                         child: {
@@ -49,7 +46,6 @@ export const ListLike = ({
                             at: i,
                         },
                     })}
-                    store={store}
                     events={{
                         onLeft() {
                             if (i > 0) {
@@ -77,15 +73,7 @@ export const ListLike = ({
         [children, idx],
     );
 
-    const contents = formatContents(
-        isRoot,
-        nodes,
-        children,
-        setHover,
-        store,
-        ctx,
-        layout,
-    );
+    const contents = formatContents(isRoot, nodes, children, top, layout);
 
     const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.05)' : 'none';
 
@@ -331,9 +319,7 @@ function formatContents(
     isRoot: boolean,
     nodes: JSX.Element[],
     children: number[],
-    setHover: SetHover,
-    store: Store,
-    ctx: EvalCtx,
+    top: Top,
     layout:
         | { type: 'flat'; width: number; pos: number }
         | {
@@ -344,6 +330,7 @@ function formatContents(
           }
         | undefined,
 ) {
+    const { store, setHover, ctx } = top;
     if (isRoot) {
         return (
             <div

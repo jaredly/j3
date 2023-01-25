@@ -1,4 +1,16 @@
 
+
+## AUTOCOMPLETE
+
+Gotta have it.
+And so, also hash knowledge. But autocomplete first.
+
+- [ ] up and down should move you up and down!
+  - I think this will be, everything registers themselves into a big ol
+    table, by idx, and then on up/down we like just traverse left or right
+    along the tree and getBoundingClientRect all the things until we find
+    a match. Then we can be fancy about selecting within it if we want.
+
 ##
 I think I want to be able to define visualization plugins ... in jerd. with react(?)
 

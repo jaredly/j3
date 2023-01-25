@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createRoot, Root } from 'react-dom/client';
 import { applyAndResolve } from '../src/get-type/matchesType';
 import { Ctx } from '../src/to-ast/Ctx';
 import { makeRCtx } from '../src/to-cst/nodeForExpr';
@@ -19,20 +20,36 @@ export type SetHover = (hover: { idx: number; box: any | null }) => void;
 
 export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
     const { setHover, hover } = useHover(ctx);
+    const menuPortal = React.useRef(null as null | Root);
+
+    const top = React.useMemo(
+        () => ({
+            menuPortal,
+            setHover,
+            store,
+            ctx,
+        }),
+        [],
+    );
 
     return (
         <div style={{ margin: 24 }}>
             <div>
                 <Node
                     idx={store.root}
-                    store={store}
-                    ctx={ctx}
                     path={topPath}
-                    setHover={setHover}
                     events={emptyEvents}
+                    top={top}
                 />
             </div>
             {hover && <ShowHover hover={hover} ctx={ctx} />}
+            <div
+                ref={(node) => {
+                    if (node && !menuPortal.current) {
+                        menuPortal.current = createRoot(node);
+                    }
+                }}
+            />
         </div>
     );
 };

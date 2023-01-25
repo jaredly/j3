@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
 import { SetHover } from './Doc';
-import { IdentifierLike } from './IdentifierLike';
+import { IdentifierLike, Top } from './IdentifierLike';
 import { ListLike } from './ListLike';
 import { EvalCtx, Path, Store, useStore } from './store';
 import { StringView } from './String';
@@ -63,20 +63,16 @@ const arrayItems = (
 export const Node = React.memo(
     ({
         idx,
-        store,
         path,
         events,
-        ctx,
-        setHover,
+        top,
     }: {
         idx: number;
-        store: Store;
         path: Path[];
         events: Events;
-        ctx: EvalCtx;
-        setHover: SetHover;
+        top: Top;
     }) => {
-        const both = useStore(store, idx);
+        const both = useStore(top.store, idx);
         if (!both) {
             return null;
         }
@@ -86,12 +82,10 @@ export const Node = React.memo(
             return (
                 <StringView
                     node={item}
-                    store={store}
+                    top={top}
                     idx={idx}
                     path={path}
                     events={events}
-                    ctx={ctx}
-                    setHover={setHover}
                 />
             );
         }
@@ -105,12 +99,10 @@ export const Node = React.memo(
                 <IdentifierLike
                     text={text}
                     type={item.type}
-                    store={store}
+                    top={top}
                     idx={idx}
                     path={path}
                     events={events}
-                    ctx={ctx}
-                    setHover={setHover}
                 />
             );
         }
@@ -125,13 +117,11 @@ export const Node = React.memo(
                         left,
                         right,
                         children,
-                        store,
+                        top,
                         path,
                         layout,
                         idx,
                         events,
-                        ctx,
-                        setHover,
                     }}
                 />
             );
