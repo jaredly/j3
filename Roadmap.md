@@ -18,6 +18,7 @@ Soooo where should that stuff get dumped?
       could be different, maybe underline it too?
       Like, if all arguments are wrong, assume it's the wrong function? idk.
 - [x] autocomplete for `a.b.c` things .. what do you do?
+- [ ] if there's only one exact match when you space, select it, why not
 
 
 ## Things needed for my react stuff to happen

@@ -207,7 +207,7 @@ export const App = () => {
                 ))}
             </div>
             {state ? (
-                <Doc store={state.store} ctx={state.ctx} />
+                <Doc key={state.id} store={state.store} ctx={state.ctx} />
             ) : (
                 'No file selected'
             )}
