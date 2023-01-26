@@ -4,6 +4,10 @@
 - [ ] now that we're locking down hashes, need
       to propagate hash changes to dependent dealios
 
+I want to make sure tasks make sense and are usable;
+can I do the movies example in-editor? See if it works??
+
+ALSO this would involve "making some platform-plugins".
 
 
 

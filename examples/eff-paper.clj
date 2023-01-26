@@ -32,6 +32,7 @@
 ; is the same as
 ((>< collect []) something)
 ; ?
+; (answer) NO that's too much magic
 
 "
 ok

@@ -106,14 +106,18 @@ For a more complex example:
 ## task types
 
 The algebraic effects system makes use of a type macro for convenience.
+
 ```clj
-(@task [('Read () string) ('Write string ()) 'Notify] int)
+(@task [('Read () string) ('Write string ()) 'Notify ('Failure string)] int)
 ; expands to
 (@loop [
 	('Return int)
   ('Read () (fn [string] @recur))
   ('Write string (fn [()] @recur))
   ('Notify () (fn [()] @recur))
+  ; Note no continuation here; this failure
+  ; is unresumable.
+  ('Failure string ())
 ])
 ```
 
