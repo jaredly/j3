@@ -1,4 +1,5 @@
 import { Node } from './cst';
+import { MNode } from './mcst';
 
 export const transformNode = (
     node: Node,

@@ -102,12 +102,20 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     values[0].type === 'identifier' &&
                     values[0].text.startsWith('...')
                 ) {
-                    spread = nodeToExpr(
-                        {
-                            ...values[0],
-                            text: values[0].text.slice(3),
-                        },
+                    // spread = nodeToExpr(
+                    //     {
+                    //         ...values[0],
+                    //         text: values[0].text.slice(3),
+                    //     },
+                    //     ctx,
+                    // );
+                    spread = resolveExpr(
+                        values[0].text.slice(3),
+                        values[0].hash,
                         ctx,
+                        values[0],
+                        undefined,
+                        '...',
                     );
                     values.shift();
                 }

@@ -488,6 +488,10 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
         let updatedNode = node;
 
         switch (node.type) {
+            case 'any': break;
+
+            case 'none': break;
+
             case 'builtin': break;
 
             case 'apply': {
@@ -1006,8 +1010,19 @@ export const transformRecord = <Ctx>(node: Record, visitor: Visitor<Ctx>, ctx: C
                     }
                 }
                 
+
+                
+        let updatedNode$spread = undefined;
+        const updatedNode$spread$current = node.spread;
+        if (updatedNode$spread$current != null) {
+            
+                const updatedNode$spread$1$ = transformExpr(updatedNode$spread$current, visitor, ctx);
+                changed1 = changed1 || updatedNode$spread$1$ !== updatedNode$spread$current;
+            updatedNode$spread = updatedNode$spread$1$;
+        }
+        
                 if (changed1) {
-                    updatedNode =  {...updatedNode, entries: updatedNode$entries};
+                    updatedNode =  {...updatedNode, entries: updatedNode$entries, spread: updatedNode$spread};
                     changed0 = true;
                 }
             }

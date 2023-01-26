@@ -76,7 +76,7 @@ export const Node = React.memo(
         if (!both) {
             return null;
         }
-        const { node: item, layout } = both;
+        const { node: item } = both;
 
         if (item.type === 'string') {
             return (
@@ -119,7 +119,6 @@ export const Node = React.memo(
                         children,
                         top,
                         path,
-                        layout,
                         idx,
                         events,
                     }}

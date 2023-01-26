@@ -5,10 +5,12 @@ import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, nil, noForm } from '../src/to-ast/Ctx';
 import { stmtToTs } from '../src/to-ast/to-ts';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { EvalCtx, notify, Store } from './store';
+import { EvalCtx, notify, Store, Toplevel } from './store';
 import objectHash from 'object-hash';
 import { getType, Report } from '../src/get-type/get-types-new';
 import { validateExpr } from '../src/get-type/validate';
+import { layout } from './layout';
+import { Expr } from '../src/types/ast';
 
 export const builtins = {
     toString: (t: number | boolean) => t + '',
@@ -19,16 +21,23 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root].node as ListLikeContents;
 
-    // const cctx: CacheCtx = {
-    //     ctx,
-    //     types: ectx.types,
-    //     globalTypes: ectx.globalTypes,
-    // };
     const prevErrors = ectx.report.errors;
 
     ectx.report.errors = {};
     const allStyles: Ctx['display'] = {};
     const prevStyles = ctx.display;
+
+    const usedHashes: { [hash: string]: number[] } = {};
+    Object.keys(store.map).forEach((ridx) => {
+        const idx = +ridx;
+        const node = store.map[idx].node;
+        if (node.type === 'identifier' && node.hash) {
+            if (!usedHashes[node.hash]) {
+                usedHashes[node.hash] = [];
+            }
+            usedHashes[node.hash].push(idx);
+        }
+    });
 
     root.values.forEach((idx) => {
         if (store.map[idx].node.type === 'comment') {
@@ -50,6 +59,8 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         const res = nodeToExpr(fromMCST(idx, store.map), ctx);
         const hash = objectHash(noForm(res));
 
+        layout(idx, 0, store.map, ctx.display, true);
+
         if (last[idx] === hash) {
             const prev = results[idx];
             if (prev.status === 'errors') {
@@ -58,6 +69,35 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             prev.display = ctx.display;
             Object.assign(allStyles, prev.display);
             return;
+        }
+
+        const prevHashes = getHashes(nodes[idx]);
+        const newHashes = exprHashes(res);
+        if (prevHashes && newHashes) {
+            // const map: {[prevHash:string]:string} = {}
+            // Object.entries(newHashes).forEach(([name, hash]) => {
+            //     map[newHashes[name]] = prevHashes[name];
+            // })
+            Object.entries(prevHashes).forEach(([name, hash]) => {
+                const newHash = newHashes[name];
+                if (!newHash) {
+                    return;
+                }
+                const idxs = usedHashes[hash];
+                if (idxs) {
+                    idxs.forEach((idx) => {
+                        // hmmmmmmmmmmmmm
+                        // hmmmmmmmmmmmm
+                        // hmmmmmmmmmmm
+                        // hmmmmmmmmmm
+                        // hmmmmmmmmm
+                        // ok, so I'm ... updating the store.
+                        // butttt I don't want it to be a separate
+                        // "undoable" action.
+                        // it should glom onto the most recent action.
+                    });
+                }
+            });
         }
 
         ctx = rmPrevious(ctx, nodes[idx]);
@@ -166,6 +206,23 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     }
 
     ectx.ctx = ctx;
+};
+
+const getHashes = (node?: Toplevel): { [name: string]: string } | null => {
+    if (node?.type === 'Def') {
+        return node.names;
+    }
+    if (node?.type === 'Deftype') {
+        return node.names;
+    }
+    return null;
+};
+
+const exprHashes = (res: Expr): null | { [name: string]: string } => {
+    if (res.type === 'def') {
+        return { [res.name]: res.hash };
+    }
+    return null;
 };
 
 const rmPrevious = (ctx: Ctx, node?: EvalCtx['nodes'][0]): Ctx => {

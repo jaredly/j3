@@ -15,7 +15,6 @@ export const ListLike = ({
     right,
     children,
     path,
-    layout,
     idx,
     events,
     top,
@@ -24,7 +23,6 @@ export const ListLike = ({
     right: string;
     children: number[];
     path: Path[];
-    layout: Map[0]['layout'];
     events: Events;
     idx: number;
     top: Top;
@@ -73,7 +71,13 @@ export const ListLike = ({
         [children, idx],
     );
 
-    const contents = formatContents(isRoot, nodes, children, top, layout);
+    const contents = formatContents(
+        isRoot,
+        nodes,
+        children,
+        top,
+        ctx.ctx.display[idx]?.layout,
+    );
 
     const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.2)' : 'none';
 

@@ -1,13 +1,15 @@
-import { Map, MNodeContents } from '../src/types/mcst';
+import { Ctx } from '../src/to-ast/Ctx';
+import { Layout, Map, MNodeContents } from '../src/types/mcst';
 
 const maxWidth = 50;
 
 export const calculateLayout = (
     node: MNodeContents,
     pos: number,
+    display: Ctx['display'],
     map: Map,
     recursive = false,
-): Map[0]['layout'] => {
+): Layout => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
@@ -18,21 +20,21 @@ export const calculateLayout = (
         case 'tag':
             return { type: 'flat', width: node.text.length + 1, pos };
         case 'record': {
-            const cw = childWidth(node.values, recursive, pos, map);
+            const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {
                 return { type: 'multiline', tightFirst: 0, pos, pairs: true };
             }
             return { type: 'flat', width: cw, pos };
         }
         case 'array': {
-            const cw = childWidth(node.values, recursive, pos, map);
+            const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {
                 return { type: 'multiline', tightFirst: 0, pos };
             }
             return { type: 'flat', width: cw, pos };
         }
         case 'list': {
-            const cw = childWidth(node.values, recursive, pos, map);
+            const cw = childWidth(node.values, recursive, pos, display, map);
             const firstName = idName(map[node.values[0]]);
             if (cw === false || cw + pos > maxWidth || firstName === 'let') {
                 return {
@@ -74,16 +76,18 @@ export const layout = (
     idx: number,
     pos: number,
     map: Map,
+    display: Ctx['display'],
     recursive = false,
 ) => {
-    const item = map[idx];
-    item.layout = calculateLayout(item.node, pos, map, recursive);
+    const item = display[idx] ?? (display[idx] = {});
+    item.layout = calculateLayout(map[idx].node, pos, display, map, recursive);
 };
 
 function childWidth(
     children: number[],
     recursive: boolean,
     pos: number,
+    display: Ctx['display'],
     map: Map,
 ) {
     return children.reduce((acc, idx) => {
@@ -91,9 +95,9 @@ function childWidth(
             return false;
         }
         if (recursive) {
-            layout(idx, pos, map, recursive);
+            layout(idx, pos, map, display, recursive);
         }
-        const { layout: l } = map[idx];
+        const { layout: l } = display[idx] ?? {};
         if (l?.type === 'flat') {
             return acc + l.width;
         }

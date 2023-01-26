@@ -12,6 +12,7 @@ export const resolveExpr = (
     ctx: Ctx,
     form: Node,
     suffix?: string,
+    prefix?: string,
 ): Expr => {
     if (!text.length) {
         return { type: 'unresolved', form, reason: 'blank' };
@@ -32,7 +33,7 @@ export const resolveExpr = (
         ctx.display[form.loc.idx].autoComplete = withScores.map(
             ({ result }) => ({
                 type: 'replace',
-                text: result.name + (suffix || ''),
+                text: (prefix || '') + result.name + (suffix || ''),
                 hash: result.hash,
                 ann: result.typ,
             }),

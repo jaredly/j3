@@ -43,7 +43,6 @@ export type WithLoc<T> = T & { loc: Loc };
 export type Map = {
     [key: number]: {
         node: MNode;
-        layout?: Layout;
     };
 };
 export type Layout =

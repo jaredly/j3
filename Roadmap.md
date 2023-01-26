@@ -1,6 +1,14 @@
 
 
-- [ ] OK time for layout to not be in .map
+- [x] OK time for layout to not be in .map
+- [ ] now that we're locking down hashes, need
+      to propagate hash changes to dependent dealios
+
+
+
+
+
+
 
 -----
 
