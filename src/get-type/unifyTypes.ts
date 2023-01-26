@@ -3,6 +3,7 @@ import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
+import { applyAndResolve } from './matchesType';
 
 export const unifyTypes = (
     one: Type,
@@ -41,6 +42,24 @@ export const _unifyTypes = (
 ): Type | { type: 'error'; error: MatchError } => {
     if (one.type === 'builtin' && two.type === 'builtin') {
         return one.name === two.name ? one : une(path, one, two);
+    }
+
+    if (one.type === 'global' && two.type === 'global') {
+        if (one.hash === two.hash) {
+            return one;
+        }
+        const oa = applyAndResolve(one, ctx, []);
+        const ta = applyAndResolve(two, ctx, []);
+        if (oa.type === 'error' || oa.type === 'local-bound') {
+            return une(path, one, two);
+        }
+        if (ta.type === 'error' || ta.type === 'local-bound') {
+            return une(path, one, two);
+        }
+        if (oa !== one || ta !== two) {
+            return _unifyTypes(oa, ta, ctx, path);
+        }
+        return une(path, one, two);
     }
 
     if (one.type === 'bool' && two.type === 'bool') {

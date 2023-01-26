@@ -113,6 +113,42 @@ export const nodeToPattern = (
                         bindings,
                     ),
                 });
+            } else if (
+                form.values.length >= 1 &&
+                form.values[0].type === 'identifier' &&
+                form.values[0].text === '$'
+            ) {
+                for (let i = 1; i < form.values.length; i++) {
+                    const name = form.values[i];
+                    if (name.type !== 'identifier') {
+                        err(ctx.errors, form.values[i], {
+                            type: 'misc',
+                            message: 'expected identifier',
+                        });
+                        continue;
+                    }
+
+                    const namev = name.text;
+                    ctx.display[name.loc.idx] = { style: 'italic' };
+                    if (!prm[namev]) {
+                        err(ctx.errors, form.values[i], {
+                            type: 'misc',
+                            message: `attribute not in type ${namev} ${Object.keys(
+                                prm,
+                            ).join(', ')}`,
+                        });
+                        continue;
+                    }
+                    entries.push({
+                        name: namev,
+                        value: nodeToPattern(
+                            name,
+                            prm[namev] ?? nilt,
+                            ctx,
+                            bindings,
+                        ),
+                    });
+                }
             } else {
                 for (let i = 0; i < form.values.length; i += 2) {
                     const name = form.values[i];
