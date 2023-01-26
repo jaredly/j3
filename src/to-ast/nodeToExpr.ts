@@ -67,6 +67,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'record': {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
+            let spread: Expr | undefined = undefined;
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
                     name: values[0].text,
@@ -96,6 +97,20 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
+                if (
+                    values.length &&
+                    values[0].type === 'identifier' &&
+                    values[0].text.startsWith('...')
+                ) {
+                    spread = nodeToExpr(
+                        {
+                            ...values[0],
+                            text: values[0].text.slice(3),
+                        },
+                        ctx,
+                    );
+                    values.shift();
+                }
                 for (let i = 0; i < values.length; i += 2) {
                     const name = values[i];
                     ctx.display[name.loc.idx] = { style: 'italic' };
@@ -117,7 +132,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     });
                 }
             }
-            return { type: 'record', entries, form };
+            return { type: 'record', entries, spread, form };
         }
         case 'list': {
             const values = filterComments(form.values);

@@ -367,16 +367,76 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return res;
         }
         case 'record': {
+            let spreadMap: null | RecordMap = null;
+            if (expr.spread) {
+                const spread = getType(expr.spread, ctx, report);
+                if (!spread) {
+                    return;
+                }
+                if (spread.type !== 'record') {
+                    const res = applyAndResolve(spread, ctx, []);
+                    if (res.type === 'error') {
+                        return report
+                            ? errf(report, spread.form, res.error)
+                            : undefined;
+                    }
+                    if (res.type === 'local-bound') {
+                        if (res.bound?.type !== 'record') {
+                            return report
+                                ? errf(report, spread.form, {
+                                      type: 'not a record',
+                                      form: spread.form,
+                                  })
+                                : undefined;
+                        }
+                        spreadMap = recordMap(res.bound);
+                    }
+                    if (res.type !== 'record') {
+                        return report
+                            ? errf(report, spread.form, {
+                                  type: 'not a record',
+                                  form: spread.form,
+                              })
+                            : undefined;
+                    }
+                    spreadMap = recordMap(res);
+                } else {
+                    spreadMap = recordMap(spread);
+                }
+            }
+            const seen: { [key: string]: true } = {};
             const entries: { name: string; value: Type }[] = [];
             expr.entries.forEach((entry) => {
-                const type = getType(entry.value, ctx, report);
+                let type = getType(entry.value, ctx, report);
                 if (type) {
+                    seen[entry.name] = true;
+                    const prev = spreadMap ? spreadMap[entry.name] : null;
+                    if (prev) {
+                        const un = unifyTypes(
+                            prev.value,
+                            type,
+                            ctx,
+                            entry.value.form,
+                            report,
+                        );
+                        if (!un) {
+                            return;
+                        }
+                        type = un;
+                    }
                     entries.push({
                         name: entry.name,
                         value: type,
                     });
                 }
             });
+            if (spreadMap) {
+                Object.values(spreadMap).forEach((entry) => {
+                    if (!seen[entry.name]) {
+                        entries.push(entry);
+                    }
+                });
+            }
             return {
                 type: 'record',
                 form: expr.form,

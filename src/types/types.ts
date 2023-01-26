@@ -54,6 +54,7 @@ export type Error =
           expected: number;
           received: number;
       }
+    | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }
     | { type: 'unresolved'; form: Node }
     | { type: 'misc'; message: string };

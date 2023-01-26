@@ -37,7 +37,7 @@ export const specials: {
                 form,
             };
         }
-        console.log('FN');
+        // console.log('FN');
         if (contents[0].type === 'array') {
             let args: { pattern: Pattern; type?: Type }[] = [];
             let locals: Local['terms'] = [];
@@ -91,7 +91,7 @@ export const specials: {
                     type: t,
                 });
             });
-            console.log(pairs);
+            // console.log(pairs);
             locals.forEach(
                 (loc) =>
                     (ctx.localMap.terms[loc.sym] = {
@@ -227,7 +227,7 @@ export const specials: {
                       })
                     : nil,
             });
-            console.log('boudn', bindings);
+            // console.log('boudn', bindings);
             bindings.forEach(
                 (loc) =>
                     (ctx.localMap.terms[loc.sym] = {

@@ -41,6 +41,8 @@ export const patternToCheck = (
                               ctx,
                           ),
                       )
+                    : pattern.args.length === 0
+                    ? []
                     : [
                           patternToCheck(
                               pattern.args[0],
@@ -118,6 +120,8 @@ export const patternToTs = (
                     ? t.arrayPattern(
                           pattern.args.map((arg) => patternToTs(arg, ctx)),
                       )
+                    : pattern.args.length === 0
+                    ? null
                     : patternToTs(pattern.args[0], ctx);
             return inner
                 ? t.objectPattern([

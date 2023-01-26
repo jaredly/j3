@@ -84,12 +84,13 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         }
 
         let code = 'failed to generate';
-        try {
-            const ts = stmtToTs(res, ctx, 'top');
-            code = generate(t.file(t.program([ts]))).code;
-        } catch (err) {
-            //
-        }
+        // try {
+        const ts = stmtToTs(res, ctx, 'top');
+        code = generate(t.file(t.program([ts]))).code;
+        // } catch (err) {
+        //     code = `Generation fail ${err.message}`;
+        //     //
+        // }
         // ok, so the increasing idx's are really coming to haunt me.
         // can I reset them?
         try {

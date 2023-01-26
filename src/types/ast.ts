@@ -116,6 +116,7 @@ export type Expr =
 export type Record = {
     type: 'record';
     entries: { name: string; value: Expr }[];
+    spread?: Expr;
     form: Node;
 };
 
@@ -173,5 +174,6 @@ export type TRecord = {
     type: 'record';
     entries: { name: string; value: Type; default?: Expr }[];
     open: boolean;
+    // spread?: Type | null | void;
     form: Node;
 };
