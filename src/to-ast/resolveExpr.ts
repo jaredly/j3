@@ -66,12 +66,13 @@ export const resolveExpr = (
         ctx.display[form.loc.idx].style = {
             type: 'id',
             hash: ':' + local.sym,
+            inferred: true,
         };
         return { type: 'local', sym: local.sym, form };
     }
     if (ctx.global.names[text]?.length) {
         const hash = ctx.global.names[text][0];
-        ctx.display[form.loc.idx].style = { type: 'id', hash };
+        ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
         return {
             type: 'global',
             hash,
@@ -80,7 +81,7 @@ export const resolveExpr = (
     }
     if (ctx.global.builtins.names[text]) {
         const hash = ctx.global.builtins.names[text][0];
-        ctx.display[form.loc.idx].style = { type: 'id', hash };
+        ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
         return { type: 'builtin', hash, form };
     }
     return {

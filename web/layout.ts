@@ -1,6 +1,6 @@
 import { Map, MNodeContents } from '../src/types/mcst';
 
-const maxWidth = 20;
+const maxWidth = 50;
 
 export const calculateLayout = (
     node: MNodeContents,

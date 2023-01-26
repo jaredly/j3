@@ -1,12 +1,19 @@
 
+
+- [ ] OK time for layout to not be in .map
+
+-----
+
 - [x] oh lets get rainbow coloring based on sym! And also for globals I guess?
   - .style = {type: 'colored', idx: number} maybe
 - [ ] all IdentifierLikes should just have a .text
   - yeahhh but I don't love having to change the CST
 
-- [ ] switch, we need to specializeeeee
+- [x] switch, we need to specializeeeee
   - do we do this in get-types-new?
 
+- [ ] autocomplete menu needs to know about ..., so spreads can be a thing
+- [ ] also, on 'space' or whatnot out of a term, "commit" inferred hashes for a thing.
 
 do .. I .. ....
 

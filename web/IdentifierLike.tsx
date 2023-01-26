@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
 import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
-import { Events, rainbow } from './Nodes';
+import { Events } from './Nodes';
 import { parse } from '../src/grammar';
 import { Node } from '../src/types/cst';
 import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
@@ -9,6 +9,7 @@ import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu } from './Menu';
 import objectHash from 'object-hash';
+import { rainbow } from './rainbow';
 
 export type Top = {
     store: Store;
@@ -93,7 +94,7 @@ export const IdentifierLike = ({
             style={{
                 color: nodeColor(edit, type),
                 minHeight: '1.3em',
-                whiteSpace: 'pre-wrap',
+                whiteSpace: 'pre',
                 textDecoration: dec,
                 ...style,
             }}
@@ -152,7 +153,7 @@ export const IdentifierLike = ({
             }}
             style={{
                 color: nodeColor(edit, type),
-                whiteSpace: 'pre-wrap',
+                whiteSpace: 'pre',
                 outline: 'none',
                 minHeight: '1.3em',
                 textDecoration: dec,
@@ -218,13 +219,14 @@ function getStyle(ctx: EvalCtx, idx: number) {
     switch (style.type) {
         case 'id':
             const idx = style.hash.startsWith(':')
-                ? +style.hash.slice(1)
-                : parseInt(style.hash, 36);
-            const color = rainbow[1 + (idx % (rainbow.length - 1))];
+                ? +style.hash.slice(1) * (rainbow.length / 5 - 1)
+                : parseInt(style.hash, 16);
+            const color = rainbow[idx % rainbow.length];
             return style.inferred
                 ? {
                       opacity: 0.8,
                       fontStyle: 'italic',
+                      textDecoration: 'underline dotted',
                       color,
                   }
                 : {

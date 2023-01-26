@@ -361,13 +361,15 @@ function formatContents(
                                     loc: 'end',
                                 });
                             }}
+                            style={{ marginBottom: 16 }}
                         >
                             {node}
                         </div>
-                        <ShowResult
+                        <div />
+                        {/* <ShowResult
                             result={ctx.results[children[i]]}
                             ctx={ctx.ctx}
-                        />
+                        /> */}
                     </React.Fragment>
                 ))}
             </div>
