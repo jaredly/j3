@@ -62,6 +62,21 @@ export const _unifyTypes = (
         return une(path, one, two);
     }
 
+    if (one.type === 'global') {
+        const oa = applyAndResolve(one, ctx, []);
+        if (oa.type === 'error' || oa.type === 'local-bound') {
+            return une(path, one, two);
+        }
+        one = oa;
+    }
+    if (two.type === 'global') {
+        const ta = applyAndResolve(two, ctx, []);
+        if (ta.type === 'error' || ta.type === 'local-bound') {
+            return une(path, one, two);
+        }
+        two = ta;
+    }
+
     if (one.type === 'bool' && two.type === 'bool') {
         return one.value === two.value
             ? one

@@ -6,6 +6,8 @@ import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
+import { patternType } from '../get-type/patternType';
+import { subtractType } from '../get-type/subtractType';
 
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
@@ -212,11 +214,13 @@ export const specials: {
         const [valueNode, ...cases] = contents;
         const pairs = [];
         const value = nodeToExpr(valueNode, ctx);
-        const typ = getType(value, ctx) ?? nilt;
+        let typ = getType(value, ctx) ?? nilt;
         for (let i = 0; i < cases.length; i += 2) {
             const bindings: Local['terms'] = [];
+            const pattern = nodeToPattern(cases[i], typ, ctx, bindings);
+            const pt = patternType(pattern);
             pairs.push({
-                pattern: nodeToPattern(cases[i], typ, ctx, bindings),
+                pattern: pattern,
                 body: cases[i + 1]
                     ? nodeToExpr(cases[i + 1], {
                           ...ctx,
@@ -227,7 +231,16 @@ export const specials: {
                       })
                     : nil,
             });
-            // console.log('boudn', bindings);
+            const subtracted = subtractType(typ, pt, ctx);
+            if (!subtracted) {
+                err(ctx.errors, cases[i], {
+                    type: 'misc',
+                    message: `unreachable case or something`,
+                });
+            } else {
+                typ = subtracted;
+            }
+
             bindings.forEach(
                 (loc) =>
                     (ctx.localMap.terms[loc.sym] = {
@@ -297,3 +310,15 @@ export const specials: {
         };
     },
 };
+
+/*
+
+so, maybe we need a type that's "anything"
+.. 'top'
+
+patternIsExhaustive
+
+patternType ...
+subtractType ...
+
+*/

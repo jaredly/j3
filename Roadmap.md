@@ -4,6 +4,9 @@
 - [ ] all IdentifierLikes should just have a .text
   - yeahhh but I don't love having to change the CST
 
+- [ ] switch, we need to specializeeeee
+  - do we do this in get-types-new?
+
 
 do .. I .. ....
 

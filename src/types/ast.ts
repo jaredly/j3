@@ -149,6 +149,8 @@ export type Shared =
 export type TypeArg = { sym: number; name: string; bound?: Type; form: Node };
 export type Type =
     | Shared
+    | { type: 'any'; form: Node }
+    | { type: 'none'; form: Node }
     | {
           type: 'builtin';
           name: string;
