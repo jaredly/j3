@@ -79,7 +79,10 @@ export const ListLike = ({
         ctx.ctx.display[idx]?.layout,
     );
 
-    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.2)' : 'none';
+    const dec =
+        ctx.report.errors[idx]?.length || ctx.results[idx]?.status === 'errors'
+            ? 'rgba(255,0,0,0.2)'
+            : 'none';
 
     return (
         <span

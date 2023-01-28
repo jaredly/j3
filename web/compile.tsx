@@ -23,6 +23,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const root = store.map[store.root].node as ListLikeContents;
 
     const prevErrors = ectx.report.errors;
+    const prevResults = { ...results };
 
     ectx.report.errors = {};
     const allStyles: Ctx['display'] = {};
@@ -219,6 +220,11 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     });
     Object.keys(allStyles).forEach((key) => {
         if (allStyles[+key]?.style !== prevStyles[+key]?.style) {
+            changed[+key] = true;
+        }
+    });
+    Object.keys(results).forEach((key) => {
+        if (results[key] !== prevResults[key]) {
             changed[+key] = true;
         }
     });
