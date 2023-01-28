@@ -13,17 +13,17 @@ export const nodeToPattern = (
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
-        case 'list': {
-            err(ctx.errors, form, {
-                type: 'misc',
-                message: 'list patterns not yet sorry',
-            });
-            return {
-                type: 'unresolved',
-                form,
-                reason: 'pattern list not yet sorry',
-            };
-        }
+        // case 'list': {
+        //     err(ctx.errors, form, {
+        //         type: 'misc',
+        //         message: 'list patterns not yet sorry',
+        //     });
+        //     return {
+        //         type: 'unresolved',
+        //         form,
+        //         reason: 'pattern list not yet sorry',
+        //     };
+        // }
         case 'tag': {
             return {
                 type: 'tag',
