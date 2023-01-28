@@ -14,8 +14,8 @@ import { Type } from '../src/types/ast';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getType } from '../src/get-type/get-types-new';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 
 // @ts-ignore // jest is being silly
 const generate: typeof generator = generator.default;

@@ -18,8 +18,8 @@ import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { validateExpr } from '../src/get-type/validate';
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
 
 declare global {
     namespace jest {
