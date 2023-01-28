@@ -44,8 +44,14 @@ export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
     report: { errors: {}, types: {} },
 });
 
+export type TopDef = {
+    type: 'Def';
+    node: Expr;
+    names: { [name: string]: string };
+};
+
 export type Toplevel =
-    | { type: 'Def'; node: Expr; names: { [name: string]: string } }
+    | TopDef
     | {
           type: 'Expr';
           node: Expr;

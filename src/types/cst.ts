@@ -8,14 +8,15 @@ export type Loc = {
 
 export type NodeList = { type: 'list'; values: Node[] };
 
+export type Identifier = {
+    type: 'identifier'; // likeThis
+    text: string;
+    hash?: string;
+};
+
 export type NodeContents =
     // identifier-like
-    | {
-          type: 'identifier'; // likeThis
-          text: string;
-          hash?: string;
-      }
-    // `LikeThis
+    | Identifier
     | { type: 'tag'; text: string }
     | { type: 'number'; raw: string }
 
