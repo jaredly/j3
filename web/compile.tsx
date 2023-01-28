@@ -4,13 +4,14 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, nil, noForm } from '../src/to-ast/Ctx';
 import { stmtToTs } from '../src/to-ast/to-ts';
-import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { EvalCtx, notify, Store, Toplevel } from './store';
+import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
+import { EvalCtx, notify, Store, Toplevel, UpdateMap } from './store';
 import objectHash from 'object-hash';
 import { getType, Report } from '../src/get-type/get-types-new';
 import { validateExpr } from '../src/get-type/validate';
 import { layout } from './layout';
 import { Expr } from '../src/types/ast';
+import { Identifier, Loc } from '../src/types/cst';
 
 export const builtins = {
     toString: (t: number | boolean) => t + '',
@@ -39,8 +40,13 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         }
     });
 
+    const updateMap: UpdateMap = {};
+    const tmpMap: Map = { ...store.map };
+
     root.values.forEach((idx) => {
-        if (store.map[idx].node.type === 'comment') {
+        // const map = {...store.map, ...updateMap} as Map;
+
+        if (tmpMap[idx].node.type === 'comment') {
             results[idx] = {
                 status: 'success',
                 value: undefined,
@@ -56,10 +62,10 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         ctx.errors = report.errors;
         ctx.display = {};
 
-        const res = nodeToExpr(fromMCST(idx, store.map), ctx);
+        const res = nodeToExpr(fromMCST(idx, tmpMap), ctx);
         const hash = objectHash(noForm(res));
 
-        layout(idx, 0, store.map, ctx.display, true);
+        layout(idx, 0, tmpMap, ctx.display, true);
 
         if (last[idx] === hash) {
             const prev = results[idx];
@@ -83,18 +89,17 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 if (!newHash) {
                     return;
                 }
+                // These are the idx's of identifiers
+                // that use the hash.
                 const idxs = usedHashes[hash];
                 if (idxs) {
                     idxs.forEach((idx) => {
-                        // hmmmmmmmmmmmmm
-                        // hmmmmmmmmmmmm
-                        // hmmmmmmmmmmm
-                        // hmmmmmmmmmm
-                        // hmmmmmmmmm
-                        // ok, so I'm ... updating the store.
-                        // butttt I don't want it to be a separate
-                        // "undoable" action.
-                        // it should glom onto the most recent action.
+                        const node = tmpMap[idx].node as Identifier & {
+                            loc: Loc;
+                        };
+                        updateMap[idx] = tmpMap[idx] = {
+                            node: { ...node, hash: newHash },
+                        };
                     });
                 }
             });
@@ -171,6 +176,28 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             };
         }
     });
+
+    const hashUpdates = Object.keys(updateMap);
+    if (hashUpdates.length) {
+        const map = { ...store.map, ...updateMap };
+        const last = store.history.items[store.history.idx];
+        if (!last) {
+            throw new Error(
+                `compile is changing things, but there's no history`,
+            );
+        }
+        hashUpdates.forEach((idx) => {
+            last.post[idx] = updateMap[idx];
+            if (!last.pre[idx]) {
+                last.pre[idx] = store.map[+idx];
+            }
+            if (updateMap[idx] == null) {
+                delete store.map[+idx];
+            } else {
+                store.map[+idx] = updateMap[idx]!;
+            }
+        });
+    }
 
     // Now figure out what's changed
     const changed: { [key: number]: true } = {};
