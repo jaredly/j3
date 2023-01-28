@@ -1,10 +1,24 @@
 
+## BUGS
+
+- [ ] I think hovers can get stale??
+- [ ] ALSO: caching of results in compile is /wrong/ if
+  it's depending on something that has changed, right?
+  althought the whole point is that dependencies can't change
+  from under you. So maybe that's fine.
+- [ ] 
+
+## Things to do
+
+- [ ] make a 'hover' thing on display, so I can do better hovers?
+  idk...
+
 - [x] OK time for layout to not be in .map
 - [x] now that we're locking down hashes, need
       to propagate hash changes to dependent dealios
   - [x] ok but for real, let's write a test for this.
     should be a thing one can do.
-  - [ ] whyy is it invalidating other things??
+  - [x] whyy is it invalidating other things??
 
 - [ ] whyyy am I tracking every little change to an identifier
       as its own history item? Doesn't seem like I need to.

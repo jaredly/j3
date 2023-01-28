@@ -212,7 +212,7 @@ export const undo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
-    console.log('presel', item.preSelection);
+    // console.log('presel', item.preSelection);
     updateStore(
         store,
         { map: item.pre, selection: item.preSelection },
@@ -229,7 +229,7 @@ export const redo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - store.history.idx];
-    console.log('postsel', item.postSelection);
+    // console.log('postsel', item.postSelection);
     updateStore(
         store,
         { map: item.post, selection: item.postSelection },
@@ -268,7 +268,7 @@ export const updateStore = (
         store.history.idx = 0;
     }
 
-    console.log('Store change', JSON.stringify(change));
+    // console.log('Store change', change);
     Object.keys(change).forEach((key) => {
         if (change[key] == null) {
             delete store.map[+key];

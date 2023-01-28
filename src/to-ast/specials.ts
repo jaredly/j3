@@ -180,7 +180,9 @@ export const specials: {
         const value = specials.fn(form, rest, ctx);
         const hash = objectHash(noForm(value));
         // console.log('hash', hash);
-        ctx.display[name.loc.idx] = { style: { type: 'id', hash } };
+        ctx.display[name.loc.idx] = {
+            style: { type: 'id', hash },
+        };
         return {
             type: 'def',
             name: name.text,

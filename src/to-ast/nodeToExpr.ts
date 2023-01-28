@@ -10,12 +10,9 @@ export const filterComments = (nodes: Node[]) =>
         (node) =>
             node.type !== 'comment' &&
             !(
-                (
-                    node.type === 'identifier' &&
-                    node.text === '' &&
-                    node.hash === ''
-                )
-                // (!node.hash || node.hash === '')
+                node.type === 'identifier' &&
+                node.text === '' &&
+                (!node.hash || node.hash === '')
             ),
     );
 

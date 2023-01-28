@@ -45,8 +45,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const tmpMap: Map = { ...store.map };
 
     root.values.forEach((idx) => {
-        // const map = {...store.map, ...updateMap} as Map;
-
         if (tmpMap[idx].node.type === 'comment') {
             results[idx] = {
                 status: 'success',
@@ -79,32 +77,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         }
 
         const prevHashes = getHashes(nodes[idx]);
-        const newHashes = exprHashes(res);
-        if (prevHashes && newHashes) {
-            // const map: {[prevHash:string]:string} = {}
-            // Object.entries(newHashes).forEach(([name, hash]) => {
-            //     map[newHashes[name]] = prevHashes[name];
-            // })
-            Object.entries(prevHashes).forEach(([name, hash]) => {
-                const newHash = newHashes[name];
-                if (!newHash) {
-                    return;
-                }
-                // These are the idx's of identifiers
-                // that use the hash.
-                const idxs = usedHashes[hash];
-                if (idxs) {
-                    idxs.forEach((idx) => {
-                        const node = tmpMap[idx].node as Identifier & {
-                            loc: Loc;
-                        };
-                        updateMap[idx] = tmpMap[idx] = {
-                            node: { ...node, hash: newHash },
-                        };
-                    });
-                }
-            });
-        }
 
         ctx = rmPrevious(ctx, nodes[idx]);
 
@@ -168,6 +140,34 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             last[idx] = hash;
             return;
         }
+
+        const newHashes = exprHashes(res);
+        if (prevHashes && newHashes) {
+            // const map: {[prevHash:string]:string} = {}
+            // Object.entries(newHashes).forEach(([name, hash]) => {
+            //     map[newHashes[name]] = prevHashes[name];
+            // })
+            Object.entries(prevHashes).forEach(([name, hash]) => {
+                const newHash = newHashes[name];
+                if (!newHash) {
+                    return;
+                }
+                // These are the idx's of identifiers
+                // that use the hash.
+                const idxs = usedHashes[hash];
+                if (idxs) {
+                    idxs.forEach((idx) => {
+                        const node = tmpMap[idx].node as Identifier & {
+                            loc: Loc;
+                        };
+                        updateMap[idx] = tmpMap[idx] = {
+                            node: { ...node, hash: newHash },
+                        };
+                    });
+                }
+            });
+        }
+
         ctx = addDef(res, ctx);
         if (res.type === 'def') {
             nodes[idx] = {
@@ -180,8 +180,10 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
     const hashUpdates = Object.keys(updateMap);
     if (hashUpdates.length) {
-        const map = { ...store.map, ...updateMap };
-        const last = store.history.items[store.history.idx];
+        const last =
+            store.history.items[
+                store.history.items.length - 1 - store.history.idx
+            ];
         if (!last) {
             throw new Error(
                 `compile is changing things, but there's no history`,
@@ -198,6 +200,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 store.map[+idx] = updateMap[idx]!;
             }
         });
+        // console.log('changed', last, hashUpdates);
     }
 
     // Now figure out what's changed
@@ -239,6 +242,9 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     }
 
     ectx.ctx = ctx;
+
+    // SSTART HERE: Log the HASHES of each toplevel thing
+    // console.log(root.values.map((idx) => ectx.results[idx]));
 };
 
 const getHashes = (node?: Toplevel): { [name: string]: string } | null => {
