@@ -3,7 +3,13 @@ import { newCtx, noForm } from '../src/to-ast/Ctx';
 import { Identifier, Loc, Node } from '../src/types/cst';
 import { ListLikeContents, Map, MNode } from '../src/types/mcst';
 import { compile } from './compile';
-import { initialStore, newEvalCtx, TopDef, updateStore } from './store';
+import {
+    initialStore,
+    newEvalCtx,
+    Success,
+    TopDef,
+    updateStore,
+} from './store';
 
 const xpath = (map: Map, root: number, path: string[]) => {
     let node = map[root].node;
@@ -80,6 +86,9 @@ describe('compile', () => {
         expect(xres.type).toBe('Def');
         const xhash = xres.names['x'];
 
+        expect((ctx.results[xi] as Success).value).toBe(10);
+        expect((ctx.results[yi] as Success).value).toEqual([10, 20]);
+
         // Setup
         /// No hash initially
         const xref = xpath(store.map, yi, ['2', '1'])!;
@@ -105,6 +114,8 @@ describe('compile', () => {
             },
             [],
         );
+        compile(store, ctx);
+        expect((ctx.results[yi] as Success).value).toEqual([10, 20]);
 
         /// Now there's a hash
         expect(noLoc(xpath(store.map, yi, ['2', '1']))).toEqual({
@@ -135,7 +146,16 @@ describe('compile', () => {
             },
             [],
         );
+        expect(store.history.items.length).toBe(2);
+
         compile(store, ctx);
+
+        // Assert
+        /// We haven't created a new history item
+        expect(store.history.items.length).toBe(2);
+
+        expect((ctx.results[xi] as Success).value).toBe(30);
+        expect((ctx.results[yi] as Success).value).toEqual([30, 20]);
 
         const xres2 = ctx.nodes[xi] as TopDef;
         expect(xres2.type).toBe('Def');
@@ -144,7 +164,6 @@ describe('compile', () => {
         // Hash is now changed
         expect(xhash2).not.toBe(xhash);
 
-        // Assert
         /// The hash is updated to the new one
         expect(noLoc(xpath(store.map, yi, ['2', '1']))).toEqual({
             type: 'identifier',

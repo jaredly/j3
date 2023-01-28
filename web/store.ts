@@ -66,6 +66,14 @@ export type Toplevel =
           node: Pattern;
       };
 
+export type Success = {
+    status: 'success';
+    value: any;
+    code: string;
+    expr: Expr;
+    display: Ctx['display'];
+};
+
 export type EvalCtx = {
     ctx: Ctx;
     // types: { [key: number]: Type };
@@ -78,13 +86,7 @@ export type EvalCtx = {
     report: Report;
     results: {
         [key: string]:
-            | {
-                  status: 'success';
-                  value: any;
-                  code: string;
-                  expr: Expr;
-                  display: Ctx['display'];
-              }
+            | Success
             | {
                   status: 'failure';
                   error: string;

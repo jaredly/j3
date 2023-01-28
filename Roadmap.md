@@ -5,6 +5,11 @@
   - [ ] ok but for real, let's write a test for this.
     should be a thing one can do.
 
+- [ ] whyyy am I tracking every little change to an identifier
+      as its own history item? Doesn't seem like I need to.
+      It makes some sense to track changes to literals, because
+      that can be re-evaluated down the line.
+
 - [ ] split '.' into CST nodes. Probably like an array of children
   THE HARD THING is that this node *does not have edges*. It is
   unlawful for 'start' or 'end' to be the selection.
