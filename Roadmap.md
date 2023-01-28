@@ -1,9 +1,10 @@
 
 - [x] OK time for layout to not be in .map
-- [ ] now that we're locking down hashes, need
+- [x] now that we're locking down hashes, need
       to propagate hash changes to dependent dealios
-  - [ ] ok but for real, let's write a test for this.
+  - [x] ok but for real, let's write a test for this.
     should be a thing one can do.
+  - [ ] whyy is it invalidating other things??
 
 - [ ] whyyy am I tracking every little change to an identifier
       as its own history item? Doesn't seem like I need to.

@@ -42,7 +42,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             for (let i = 0; i < values.length; i += 2) {
                 const name = values[i];
                 const value = values[i + 1];
-                if (name.type !== 'identifier') {
+                if (name.type !== 'identifier' && name.type !== 'number') {
                     err(ctx.errors, name, {
                         type: 'misc',
                         message: `record entry name must be an identifier`,
@@ -51,7 +51,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 }
                 ctx.display[name.loc.idx] = { style: 'italic' };
                 entries.push({
-                    name: name.text,
+                    name: name.type === 'number' ? name.raw : name.text,
                     value: value ? nodeToType(value, ctx) : nilt,
                 });
             }

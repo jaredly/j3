@@ -49,6 +49,7 @@ export const resolveExpr = (
                 };
                 return { type: 'local', sym: local.sym, form };
             }
+            return { type: 'unresolved', form, reason: 'local missing' };
         } else {
             const global = ctx.global.terms[hash];
             if (global) {
@@ -60,6 +61,11 @@ export const resolveExpr = (
                 ctx.display[form.loc.idx].style = { type: 'id', hash };
                 return { type: 'builtin', hash, form };
             }
+            return {
+                type: 'unresolved',
+                form,
+                reason: 'global or builtin missing',
+            };
         }
     }
     const local = ctx.local.terms.find((t) => t.name === text);

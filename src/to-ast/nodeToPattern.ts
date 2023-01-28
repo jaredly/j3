@@ -5,6 +5,7 @@ import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
 import { Report } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
+import { filterComments } from './nodeToExpr';
 
 export const nodeToPattern = (
     form: Node,
@@ -59,6 +60,7 @@ export const nodeToPattern = (
                 form,
             };
         case 'record': {
+            const values = filterComments(form.values);
             const entries: { name: string; value: Pattern }[] = [];
             const res = applyAndResolve(t, ctx, []);
             if (!res) {
@@ -83,11 +85,8 @@ export const nodeToPattern = (
                 });
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
-            if (
-                form.values.length === 1 &&
-                form.values[0].type === 'identifier'
-            ) {
-                const name = form.values[0].text;
+            if (values.length === 1 && values[0].type === 'identifier') {
+                const name = values[0].text;
                 if (!prm || !prm[name]) {
                     err(ctx.errors, form, {
                         type: 'misc',
@@ -97,7 +96,7 @@ export const nodeToPattern = (
                 entries.push({
                     name,
                     value: nodeToPattern(
-                        form.values[0],
+                        values[0],
                         prm
                             ? prm[name] ?? {
                                   type: 'unresolved',
@@ -114,14 +113,14 @@ export const nodeToPattern = (
                     ),
                 });
             } else if (
-                form.values.length >= 1 &&
-                form.values[0].type === 'identifier' &&
-                form.values[0].text === '$'
+                values.length >= 1 &&
+                values[0].type === 'identifier' &&
+                values[0].text === '$'
             ) {
-                for (let i = 1; i < form.values.length; i++) {
-                    const name = form.values[i];
+                for (let i = 1; i < values.length; i++) {
+                    const name = values[i];
                     if (name.type !== 'identifier') {
-                        err(ctx.errors, form.values[i], {
+                        err(ctx.errors, values[i], {
                             type: 'misc',
                             message: 'expected identifier',
                         });
@@ -131,7 +130,7 @@ export const nodeToPattern = (
                     const namev = name.text;
                     ctx.display[name.loc.idx] = { style: 'italic' };
                     if (!prm[namev]) {
-                        err(ctx.errors, form.values[i], {
+                        err(ctx.errors, values[i], {
                             type: 'misc',
                             message: `attribute not in type ${namev} ${Object.keys(
                                 prm,
@@ -150,11 +149,11 @@ export const nodeToPattern = (
                     });
                 }
             } else {
-                for (let i = 0; i < form.values.length; i += 2) {
-                    const name = form.values[i];
-                    const value = form.values[i + 1];
+                for (let i = 0; i < values.length; i += 2) {
+                    const name = values[i];
+                    const value = values[i + 1];
                     if (name.type !== 'identifier' && name.type !== 'number') {
-                        err(ctx.errors, form.values[i], {
+                        err(ctx.errors, values[i], {
                             type: 'misc',
                             message: 'expected identifier or integer literal',
                         });
@@ -164,7 +163,7 @@ export const nodeToPattern = (
                         name.type === 'identifier' ? name.text : name.raw;
                     ctx.display[name.loc.idx] = { style: 'italic' };
                     if (!prm[namev]) {
-                        err(ctx.errors, form.values[i], {
+                        err(ctx.errors, values[i], {
                             type: 'misc',
                             message: `attribute not in type ${namev} ${Object.keys(
                                 prm,
@@ -173,7 +172,7 @@ export const nodeToPattern = (
                         continue;
                     }
                     if (!value) {
-                        err(ctx.errors, form.values[i], {
+                        err(ctx.errors, values[i], {
                             type: 'misc',
                             message: 'expected value',
                         });
@@ -197,14 +196,15 @@ export const nodeToPattern = (
             };
         }
         case 'list': {
-            if (!form.values.length) {
+            const values = filterComments(form.values);
+            if (!values.length) {
                 return {
                     type: 'record',
                     form,
                     entries: [],
                 };
             }
-            const [first, ...rest] = form.values;
+            const [first, ...rest] = values;
             if (first.type === 'identifier' && first.text === ',') {
                 const prm =
                     t.type === 'record'

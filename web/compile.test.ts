@@ -8,6 +8,7 @@ import {
     newEvalCtx,
     Success,
     TopDef,
+    undo,
     updateStore,
 } from './store';
 
@@ -50,6 +51,43 @@ const xpath = (map: Map, root: number, path: string[]) => {
 };
 
 describe('compile', () => {
+    it.only('undo should restore hashes', () => {
+        const store = initialStore(parse('(def x 10) (def y (, x 20))'));
+        const ctx = newEvalCtx(newCtx());
+        const n10 = xpath(store.map, store.root, ['0', '2'])! as {
+            type: 'number';
+            raw: string;
+        } & { loc: Loc };
+        expect(noLoc(n10)).toEqual({
+            type: 'number',
+            raw: '10',
+        });
+        compile(store, ctx);
+        const xHash = ctx.ctx.global.names['x'];
+        const yHash = ctx.ctx.global.names['y'];
+        expect(xHash).toHaveLength(1);
+        const prevGlobal = { ...ctx.ctx.global };
+        const hashes = Object.keys(ctx.ctx.global.terms);
+        expect(hashes).toHaveLength(2);
+
+        // Act
+        const map = {
+            [n10!.loc.idx]: { node: { ...n10, raw: '30' } },
+        };
+        updateStore(store, { map }, []);
+        compile(store, ctx);
+
+        // Assert
+        expect(ctx.ctx.global.names['x']).not.toEqual(xHash);
+
+        // Act2
+        undo(store);
+        compile(store, ctx);
+        expect(ctx.ctx.global.names['x']).toEqual(xHash);
+        expect(ctx.ctx.global.names['y']).toEqual(yHash);
+        // expect(ctx.ctx.global).toEqual(prevGlobal);
+    });
+
     it('should record types for things', () => {
         const store = initialStore(parse('(def x 10) (def y (, x 20))'));
         const ctx = newEvalCtx(newCtx());
@@ -103,7 +141,6 @@ describe('compile', () => {
             store,
             {
                 map: {
-                    ...store.map,
                     [xref.loc.idx]: {
                         node: {
                             ...(xref as Identifier & { loc: Loc }),
@@ -135,7 +172,6 @@ describe('compile', () => {
             store,
             {
                 map: {
-                    ...store.map,
                     [x10!.loc.idx]: {
                         node: {
                             ...x10,

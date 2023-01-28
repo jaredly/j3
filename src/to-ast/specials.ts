@@ -179,9 +179,8 @@ export const specials: {
         }
         const value = specials.fn(form, rest, ctx);
         const hash = objectHash(noForm(value));
-        ctx.display[name.loc.idx] = {
-            style: { type: 'id', hash },
-        };
+        // console.log('hash', hash);
+        ctx.display[name.loc.idx] = { style: { type: 'id', hash } };
         return {
             type: 'def',
             name: name.text,
@@ -203,10 +202,13 @@ export const specials: {
             };
         }
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
+        const hash = objectHash(noForm(value));
+        // console.log('def hash', first.text, hash);
+        ctx.display[first.loc.idx] = { style: { type: 'id', hash } };
         return {
             type: 'def',
             name: first.text,
-            hash: objectHash(noForm(value)),
+            hash,
             value,
             form,
         };

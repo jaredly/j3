@@ -249,7 +249,7 @@ export const updateStore = (
     if (!skipHistory) {
         const pre: UpdateMap = {};
         Object.keys(change).forEach((item) => {
-            pre[+item] = store.map[+item];
+            pre[+item] = store.map[+item] ?? null;
         });
 
         const history: HistoryItem = {
@@ -268,6 +268,7 @@ export const updateStore = (
         store.history.idx = 0;
     }
 
+    console.log('Store change', JSON.stringify(change));
     Object.keys(change).forEach((key) => {
         if (change[key] == null) {
             delete store.map[+key];
