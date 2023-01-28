@@ -1,15 +1,106 @@
 
-
 - [x] OK time for layout to not be in .map
 - [ ] now that we're locking down hashes, need
       to propagate hash changes to dependent dealios
+  - [ ] ok but for real, let's write a test for this.
+    should be a thing one can do.
+
+- [ ] split '.' into CST nodes. Probably like an array of children
+  THE HARD THING is that this node *does not have edges*. It is
+  unlawful for 'start' or 'end' to be the selection.
+  setSelection must enforce this.
+- [ ] split '...xyz` as well. Similarly, it is unlawful for 'end'
+  to be selected on this node. but 'start' is fine.
+- [ ] locked-down identifiers should have their 'text' deleted. that
+  is what the autocomplete should do. This isn't something you can
+  do at parse time, but then again we don't have hashes at parse time
+  either, suckers.
+- [ ] the autocomplete menu should respond to the keyboard. enter to
+  select, up & down for the whatsit.
+- [ ] "completing" an ID should reify inference if possible.
+- [ ] I ... definitely need some tests. Do I try to use jsdom? Or should I just try to like emulate contentEditable? That might be better tbh. Oh it looks like maybe contentEditable has some amount of support? https://github.com/testing-library/user-event/issues/442
+
+Then I can try my updateable inference story.
 
 I want to make sure tasks make sense and are usable;
 can I do the movies example in-editor? See if it works??
 
 ALSO this would involve "making some platform-plugins".
+Ideally we write the type in jerd, and a tool generates
+the typescript harness of things we can expect.
+And then it's up to the developer to implement the
+expected functions. So it'll start with like:
+```clj
+(deftype http-result (Result string ['Timeout 'Offline ('Other string)]))
+(deftype http/get ('http/get-url string http-result))
+(deftype http/post ('http/post {url string data string} http-result))
+; ooh can we do like ./get in names to mean "relative to this namespace?"
+; or something
+```
+And then generate
+```ts
+type httpGet = {tag: 'http/get-url', payload: [string, kontinue]};
+type httpPost = {tag: 'http/post', payload: [{url: string, data: string}, kontinue]};
+export const handleHttpGet = (task: httpGet) => {
+  // impl this?
+}
+export const handlers = {
+  'http/get-url': (task: httpGet) => {
+    // handle it, and call the continuation or don't?
+  },
+  'http/post': (task: httpPost) => {
+    // handle it, and call the continuation or don't?
+  }
+}
+```
+seems like it would be something like that.
 
 
+We could also, idk, start targeting like go or something?
+Have some go glue.
+
+
+- [ ] hrm renaming variables should update uses.
+  hmm should I rethink my "the stored thing is the CST"?
+  🤔 so why did I do it that way.
+  Well, it means that I can have errors and stuff, and it
+  will preserve that. Very flexible.
+  It's also just a ton simpler of a data structure, I don't
+  have to write nearly as much react code? I mean ...
+  ... hmm so like, I could ... regenerate the CST from the
+  AST on every keystroke? Seems a bit excessive though,
+  and might be prone to breaking things. I could do it on
+  "rest", like with reformatting ... but I also don't love that.
+
+  SO one option here, is that in the CST, I just blank out
+  the "text" for identifiers that are locked down.
+  🤔 this wouldn't apply to ... the place where the name is defined?
+  eh well it would though. or it could. (oh but then
+  where does the text source of truth live? yeah it should
+  be right there. Ok.)
+  <!-- The IdLike could look up the name just like everyone else. -->
+  The question comes to what do we do when they start editing
+  the text on that. If it's the definition-place of that name,
+  then we're editing the name all over. Great.
+  If it's the usage-site, then we probably discard the hash?
+  And it's back to a text-only id?
+  Ok but we really do need '.' splits to be a real thing.
+  and '...'s? I'm actually not 100% sure how I'm going to handle
+  that. It just acts like a prefix, right?
+  hrm but do I need delimiters for my navigation calculation to work.
+  I mean so far I haven't had to a priori navigate the tree. But
+  that'll come w/ select I'm sure.
+  Andddd we do have "select the 'end' of this child".
+  Would it just complicate things terribly to have some 'end'
+  selections collapse into the child?
+  Seems like I could handle that in `setSelection` without
+  a whole ton of fuss.
+  And I do think it'll be necessary for `a.b`, not to mention
+  `...a`.
+  Ok yeah I think that's agreed.
+
+  ok but renaming *will* have to trigger updates for any nodes
+  that are using that dealio. So that's exciting.
 
 
 
