@@ -41,7 +41,7 @@ export const specials: {
         }
         // console.log('FN');
         if (contents[0].type === 'array') {
-            let args: { pattern: Pattern; type?: Type }[] = [];
+            let args: { pattern: Pattern; type: Type }[] = [];
             let locals: Local['terms'] = [];
 
             let pairs: { pat: Node; type?: Node }[] = [];

@@ -101,15 +101,15 @@ function useHover(ctx: EvalCtx) {
 
 const ShowResult = ({ result }: { result: EvalCtx['results'][0] }) => {
     if (result.status === 'failure') {
-        return 'Eval failed\n';
+        return <>{'Eval failed\n'}</>;
     }
     if (result.status === 'errors') {
-        return 'Errors in typing and such\n';
+        return <>{'Errors in typing and such\n'}</>;
     }
     if (result.expr.type === 'def') {
-        return `${result.expr.name} : ${result.expr.hash}\n`;
+        return <>{`${result.expr.name} : ${result.expr.hash}\n`}</>;
     }
-    return `Eval result: ${JSON.stringify(result.value)}\n`;
+    return <>{`Eval result: ${JSON.stringify(result.value)}\n`}</>;
 };
 
 function ShowHover({

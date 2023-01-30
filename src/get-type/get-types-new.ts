@@ -242,19 +242,10 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'fn': {
             const args: Type[] = [];
             expr.args.forEach((arg) => {
-                if (arg.type) {
-                    args.push(arg.type);
-                    if (report) {
-                        report.types[arg.type.form.loc.idx] = arg.type;
-                        report.types[arg.pattern.form.loc.idx] = arg.type;
-                    }
-                } else {
-                    if (report) {
-                        err(report, arg.pattern, {
-                            type: 'misc',
-                            message: 'missing type annotation',
-                        });
-                    }
+                args.push(arg.type);
+                if (report) {
+                    report.types[arg.type.form.loc.idx] = arg.type;
+                    report.types[arg.pattern.form.loc.idx] = arg.type;
                 }
             });
             if (args.length < expr.args.length) {

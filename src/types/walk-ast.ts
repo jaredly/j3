@@ -1288,15 +1288,8 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                 changed4 = changed4 || result$pattern !== updatedNode$0node$args$item2.pattern;
 
                 
-        let result$type = undefined;
-        const result$type$current = updatedNode$0node$args$item2.type;
-        if (result$type$current != null) {
-            
-                const result$type$4$ = transformType(result$type$current, visitor, ctx);
-                changed4 = changed4 || result$type$4$ !== result$type$current;
-            result$type = result$type$4$;
-        }
-        
+                const result$type = transformType(updatedNode$0node$args$item2.type, visitor, ctx);
+                changed4 = changed4 || result$type !== updatedNode$0node$args$item2.type;
                 if (changed4) {
                     result =  {...result, pattern: result$pattern, type: result$type};
                     changed3 = true;
