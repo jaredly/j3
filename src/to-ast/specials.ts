@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { Ctx, Local, nil, nilt, noForm } from './Ctx';
+import { Ctx, Local, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
@@ -75,13 +75,7 @@ export const specials: {
             });
 
             pairs.forEach(({ pat, type }) => {
-                const t: Type = type
-                    ? nodeToType(type, ctx)
-                    : {
-                          type: 'unresolved',
-                          form: nil.form,
-                          reason: 'not provided type',
-                      };
+                const t: Type = type ? nodeToType(type, ctx) : none;
                 if (t.type === 'unresolved') {
                     err(ctx.errors, pat, {
                         type: 'misc',
@@ -222,7 +216,7 @@ export const specials: {
         const [valueNode, ...cases] = contents;
         const pairs = [];
         const value = nodeToExpr(valueNode, ctx);
-        let typ = getType(value, ctx) ?? nilt;
+        let typ = getType(value, ctx) ?? none;
         for (let i = 0; i < cases.length; i += 2) {
             const bindings: Local['terms'] = [];
             const pattern = nodeToPattern(cases[i], typ, ctx, bindings);

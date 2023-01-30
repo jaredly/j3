@@ -134,6 +134,7 @@ export const validateType = (
             return ctx.global.builtins.types[type.name] != null
                 ? null
                 : type.form.loc;
+        case 'none':
         case 'bool':
         case 'number':
             return null;

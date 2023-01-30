@@ -201,6 +201,15 @@ export const nil: Expr = {
     },
 };
 
+export const none: Type = {
+    type: 'none',
+    form: {
+        type: 'identifier',
+        text: '⍉',
+        loc: noloc,
+    },
+};
+
 export const nilt: Type = {
     type: 'record',
     entries: [],

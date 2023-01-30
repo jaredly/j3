@@ -2,6 +2,13 @@
 ## BUGS
 
 - [ ] I think hovers can get stale??
+- [ ] AUTOCOMPLETE can be stale, which I don't love...
+    But only in a global context, oh yeah. So as long as
+    I retain enough information to re-do the global check
+    THat'll be fine.
+    SO:
+    - [ ] re-cacalculate the "global" part of autocomplete
+          on demand.
 - [ ] ALSO: caching of results in compile is /wrong/ if
   it's depending on something that has changed, right?
   althought the whole point is that dependencies can't change
