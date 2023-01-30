@@ -17,9 +17,6 @@ import { getType } from '../src/get-type/get-types-new';
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = dirname(__filename);
 
-// @ts-ignore // jest is being silly
-const generate: typeof generator = generator.default;
-
 readdirSync(__dirname)
     .filter((m) => m.endsWith('.jd') && !m.endsWith('.types.jd'))
     .forEach((name) => {
@@ -39,7 +36,7 @@ readdirSync(__dirname)
                 const type = getType(res, ctx.ctx);
 
                 const ts = stmtToTs(res, ctx.ctx, 'top');
-                const code = generate(t.file(t.program([ts]))).code;
+                const code = generator(t.file(t.program([ts]))).code;
                 let item: {
                     result?: any;
                     node: Node;

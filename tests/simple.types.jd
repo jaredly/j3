@@ -1,7 +1,7 @@
 
 (@type 1 1)
 
-(@type int (+ 2 3))
+(@type float (+ 2. 3.))
 
 (
 	(fn [one :int] 3)
@@ -39,9 +39,9 @@
 ; ((fn [one (: option int)] 10) ('Some (@error "invalid type" "hi")))
 
 (def ; a comment)
-	one 1)
+	one 1.)
 
-(== one 1)
+(== one 1.)
 
 (deftype what ['One (@error "enum args mismatch" ('One 2))])
 
