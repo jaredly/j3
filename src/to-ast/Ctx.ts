@@ -4,12 +4,14 @@ import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
 import { Layout } from '../types/mcst';
 
-export type AutoCompleteResult = {
-    type: 'replace';
-    text: string;
-    hash: string;
-    ann?: Type;
-}; // TODO also autofixers probably?
+export type AutoCompleteResult =
+    | {
+          type: 'replace';
+          text: string;
+          hash: string;
+          ann?: Type;
+      }
+    | { type: 'info'; text: string }; // TODO also autofixers probably?
 
 export type Ctx = {
     errors: Report['errors'];

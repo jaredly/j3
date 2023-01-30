@@ -1,6 +1,6 @@
 import { Node } from '../types/cst';
 import { Expr } from '../types/ast';
-import { Ctx } from './Ctx';
+import { AutoCompleteResult, Ctx } from './Ctx';
 import { compareScores, fuzzyScore } from './fuzzy';
 import { Result } from './to-ast';
 
@@ -138,10 +138,23 @@ function populateAutocomplete(
         }))
         .filter(({ score }) => score.full)
         .sort((a, b) => compareScores(a.score, b.score));
-    ctx.display[form.loc.idx].autoComplete = withScores.map(({ result }) => ({
-        type: 'replace',
-        text: (prefix || '') + result.name + (suffix || ''),
-        hash: result.hash,
-        ann: result.typ,
-    }));
+    ctx.display[form.loc.idx].autoComplete = [
+        ...withScores.map(
+            ({ result }) =>
+                ({
+                    type: 'replace',
+                    text: (prefix || '') + result.name + (suffix || ''),
+                    hash: result.hash,
+                    ann: result.typ,
+                } satisfies AutoCompleteResult),
+        ),
+        ...(withScores.length === 0
+            ? [
+                  {
+                      type: 'info',
+                      text: `No terms found matching the name "${text}"`,
+                  } satisfies AutoCompleteResult,
+              ]
+            : []),
+    ];
 }
