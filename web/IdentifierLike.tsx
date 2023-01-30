@@ -7,7 +7,7 @@ import { Node } from '../src/types/cst';
 import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
-import { getMenuState, MenuState, Menu } from './Menu';
+import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
 import objectHash from 'object-hash';
 import { rainbow } from './rainbow';
 
@@ -40,16 +40,24 @@ export const IdentifierLike = ({
         getMenuState(store, ctx.ctx, idx, text) as null | MenuState,
     );
 
-    React.useEffect(() => {
-        if (!menuPortal.current || !editing || !ref.current) {
+    const menuItems = React.useMemo(() => {
+        if (!editing || !ctx.ctx.display[idx].autoComplete) {
             return;
         }
+        return getMenuItems(ctx.ctx.display[idx].autoComplete!, idx, store);
+    }, [editing, ctx.ctx.display[idx]?.autoComplete]);
+
+    React.useEffect(() => {
+        if (!menuPortal.current || !ref.current) {
+            return;
+        }
+
         const box = ref.current.getBoundingClientRect();
         const pos = { left: box.left, top: box.bottom };
         menuPortal.current.render(
-            menuState ? (
+            menuItems ? (
                 <Menu
-                    state={menuState}
+                    state={{ items: menuItems, selection: 0 }}
                     onAction={() => {
                         setMenuState(null);
                     }}
@@ -58,7 +66,7 @@ export const IdentifierLike = ({
                 />
             ) : null,
         );
-    }, [menuState, editing]);
+    }, [menuItems]);
 
     React.useEffect(() => {
         if (editing) {

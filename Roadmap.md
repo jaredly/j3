@@ -9,10 +9,10 @@
     SO:
     - [ ] re-cacalculate the "global" part of autocomplete
           on demand.
-- [ ] ALSO: caching of results in compile is /wrong/ if
-  it's depending on something that has changed, right?
-  althought the whole point is that dependencies can't change
-  from under you. So maybe that's fine.
+- [x] ALSO: caching of results in compile is /wrong/ if
+      it's depending on something that has changed, right?
+      althought the whole point is that dependencies can't change
+      from under you. So maybe that's fine.
 - [ ] 
 
 ## Things to do
