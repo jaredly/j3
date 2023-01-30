@@ -51,7 +51,7 @@ const xpath = (map: Map, root: number, path: string[]) => {
 };
 
 describe('compile', () => {
-    it.only('undo should restore hashes', () => {
+    it('undo should restore hashes', () => {
         const store = initialStore(parse('(def x 10) (def y (, x 20))'));
         const ctx = newEvalCtx(newCtx());
         const n10 = xpath(store.map, store.root, ['0', '2'])! as {
