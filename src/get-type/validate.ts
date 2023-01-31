@@ -137,6 +137,7 @@ export const validateType = (
         case 'none':
         case 'bool':
         case 'number':
+        case 'any':
             return null;
         case 'tag':
             return type.args.forEach((arg) => validateType(arg, ctx, errors));
