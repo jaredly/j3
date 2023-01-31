@@ -122,7 +122,7 @@ builtin, `with-handler`, which takes a task `(@task [handled-effects other-effec
 ```clj
 (defnrec ignore-logs [task]
   (switch task
-    ('log _ k) (with-handler ignore-logs (k))
+    ('log _ k) (with-handler ignore-logs (k ()))
     ('Return r) ('Return r)
     _ task))
 ```
