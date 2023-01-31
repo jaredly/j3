@@ -1,6 +1,10 @@
 
 ## BUGS
 
+- [ ] ok, so "on autocomplete", we need to do our best effort to update relevant types.
+      this MIGHT happen across-terms if we're in the sandbox, so look out kids.
+- [ ] also, space etc. at the end of an identifier should trigger the on-autocomplete if there's something available.
+
 - [ ] I think hovers can get stale??
 - [ ] AUTOCOMPLETE can be stale, which I don't love...
     But only in a global context, oh yeah. So as long as

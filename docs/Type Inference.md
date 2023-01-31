@@ -1,10 +1,11 @@
 
-# Type Inference
+# Type Inference that sticks
 
-Type inference algorithms are given the daunting task of intuiting user intent from a file of plain text. This being essentially insurmountable, they instead use a deterministic algorithm for inferring a set of types for a file of plain text, and users are then required to mold their intent to fit this algorithm.
+Type inference algorithms are given the daunting task of intuiting the types a user intended to use, but was too lazy to write out, from a blob of unadorned text. This being essentially insurmountable, they instead settle on a deterministic algorithm for inferring a set of types for a file of plain text, and users are then required to mold their intent to fit this algorithm.
 
-They perform just as well (and just as poorly) on code entered & modified over time in an IDE as they do on a text file read from a disk. Or, for that matter, code written with pen & paper and then fed to a compiler character by character via teletype.
-That is to say, they have no knowledge of, or interest in, the process by which the code was written. They only feedback loop they recognize is receiving all of the code at once, and responding with the first error they come across, or if you're lucky, several independent errors. Fixing a given error, instead of being a context-sensitive conversation "here's the resolution to that error, please continue", is back to a clean-slate data dump of all the code (modulo some caching for performance, but caching does not -- must not -- change the semantics of type inference).
+These algorithms perform just as well (and just as poorly) on code entered & modified over time in an IDE as they do on a text file read from a disk. Or, for that matter, on code written with pen & paper and then fed to a compiler character by character via teletype.
+
+That is to say, they have no knowledge of, or interest in, the process by which the code was written. The only feedback loop they recognize is receiving all of the code at once, and responding with the first error they come across, or if you're lucky, several independent errors. Fixing a given error, instead of being a context-sensitive conversation ("here's the resolution to that error, please continue"), is back to a clean-slate data dump of all the code (modulo some caching for performance, but caching does not -- must not -- change the semantics of type inference).
 
 Sometimes in conversations about programming language development, people bring up a "sufficiently smart compiler" as the solution to verbose syntax or excessive boilerplate. A "sufficiently smart compiler" compiler would be able to figure out the right thing to do without the user having to specify it. The trouble of course comes when the compiler has an algorithm for "figuring it out" which doesn't match your internal algorithm for "the right thing to do". This is especially fraught in an inference situation, when the results that the compiler came up with are only made obvious to you if there's a type error in that general location, or if you happen to inspect the inferred type. (a recent example from roc development, the function being number-polymorphic)
 
@@ -22,27 +23,34 @@ Jerd takes a different approach, which I call a "sufficiently interactive compil
 Example: autocomplete. Isn't it funny that autocomplete can allow you to choose exactly what function you want to call, or what local variable you want to reference, but then when the compiler comes along, all it has to go on is the name, and it has to construct local scopes, or do name resolution, and if the term has been renamed it just fails?
 When typing an identifier in Jerd, if you select something from autocomplete, the ID of that term is stuck onto the identifier node, and then the compilation pass doesn't need to do any name resolution. And of course, if you change the name of a variable, it won't break any links to it.
 
-## So what does this look like?
+## So what does sticky type inference look like?
 
 Say you're writing a function
 ```clj
 (defn movieFromLine [line idx]
 	; so far we've no indication what the types are
-	; so they are inferred as the empty type,
-	; which is uninstantiable, but will unify with anything.
+	; so they are inferred as the universal type "𝕌".
 	)
+```
 
+Then, when you use one of the arguments, the type annotation for that
+argument gets updated, if possible, to the intersection of the current
+annotation and the type required by the new usage.
+
+```clj
 (defn movieFromLine [line idx]
 	(switch (split line "!")
-		; split was nailed down to (fn [string string] (array string))
-		; so at this point we lock down "line" as "string".
-		;
-		; As a variable encounters a use, we change the inferred type
-		; to be the "union" of the new type and the previous type.
-		; if they cannot be unified, this new use of the variable
-		; is in error.
+		; split has type (fn [string string] (array string))
+		; so at this point line's type annotation is `string`
 		))
+```
 
+If there is no intersection, then the new usage is marked as an error,
+but you're also given the option to switch the annotation to align with
+your new usage, and marking any other usages as erroneous. See how it's
+a conversation?
+
+```clj
 (defn movieFromLine [line idx]
 	(switch (split line "!")
 		[title year starring]
@@ -50,25 +58,15 @@ Say you're writing a function
 				('Ok year) {title $ year $ starring (split starring ",")}
 				('Err err) (! fail ('LineError idx line err)))
 		_ (! fail ('LineError idx line 'InvalidLine))))
-; now the function is complete, and we don't know the type of idx.
-; should it be generic? or should it be locked down to something?
-; there's a squiggle underneath it, and when you hover you can choose.
 ```
 
-<!-- With Jerd, I have decided to drop the requirement that text be a fully-supported representation of the source code. What does this mean? Practically, that you won't be able to just copy & paste code from stackoverflow or a listserv email and have it work without any questions. The Jerd IDE will certainly parse the code for you, but it may have questions for you to answer about types, or resolved identifiers. -->
-
-
+If we get to the end of the function, and there's an unconstrained argument,
+you either have the option to make it a type variable, or specify a concrete
+type for it.
 
 ## Prior Art
 
-Lamdu's pretty-printing feature (that can show or hide inferred types) is related to this idea, although I don't know whether the inferred types are reified in the source tree, or whether they are re-computed on every edit.
+Lamdu's editor has a similar interaction to this, where if you add a new use of a variable that's incompatible with current uses, then the new usage is marked as the error, although I don't know if they store the inferred types in the syntax tree, or if they re-compute them on every edit.
 
-So I'm not interested in a sufficiently smart compiler. I want a sufficiently *interactive* compiler. When the type inference algorithm finds somethign that could go one of two ways, I don't want it to fail with an "AmbiguityError"; I want it to ask me which I had in mind, so I can tell it and we can move on.
-
-In jerd, all types, type arguments, etc. are explicitly reified in the concrete syntax tree (which is our equivalent of source code).
-
-What this is leading up to is that, for jerd, there's some information that is necessary
-
-Lamdu has this cool thing where the type checker knows what the previous "good" state of the code was, so when you add a new term that conflicts with a "previously successful" token, the one you just entered is flagged as the error.
-
+## 
 
