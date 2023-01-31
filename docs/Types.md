@@ -33,7 +33,7 @@
 
 ## union (sum) types
 
-- `['One ('Two int)]` => either `'One` or `('Two 5)` etc.
+- `['One ('Two int)]` => either `'One` or `('Two 5)`
 - `[['One 'Two] ('Three 5)]` equivalent to `['One 'Two ('Three 5)]`, e.g. spreading is automatic
 - `[['One ('Two 5)] ('Two 6)]` if there are multiple items with the same tag, the bodies must unify. In this case the type is equivalent to `['One ('Two int)]` because two constant numeric types with the same kind and different values unify to the type of the kind. If the bodies are unable to unify, the type is invalid (e.g. if it were `5` and `6.2`)
 - `['One ('Two ['Three]) ('Two ['Four])]` => `['One ('Two ['Three 'Four])]` another example of body unification
@@ -62,8 +62,8 @@ Note that `tfn` is also the way to type-abstract an expression, but you need to 
 
 ```clj
 (@loop [
-	('Leaf int)
-	('Tree (array @recur))
+  ('Leaf int)
+  ('Tree (array @recur))
 ])
 ```
 
@@ -72,8 +72,8 @@ For non-enum recursive types, you can use a record w/ subitem access:
 ```clj
 
 (deftype asAndBs (@loop {
-	a (, int (array (.b @recur)))
-	b (, float (array (.a @recur)))
+  a (, int (array (.b @recur)))
+  b (, float (array (.a @recur)))
 }))
 ; a valid instance of asAndBs.a would be
 (, 1 [(, 1.1 []) (, 1.2 [(, 3 [])])]))
@@ -111,7 +111,7 @@ The algebraic effects system makes use of a type macro for convenience.
 (@task [('Read () string) ('Write string ()) 'Notify ('Failure string)] int)
 ; expands to
 (@loop [
-	('Return int)
+  ('Return int)
   ('Read () (fn [string] @recur))
   ('Write string (fn [()] @recur))
   ('Notify () (fn [()] @recur))

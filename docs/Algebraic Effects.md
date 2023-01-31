@@ -1,55 +1,133 @@
 
 # Algebraic Effects
 
-Effects are a way to represent side-effects in a pure language. There is a split between the runtime (which is not pure, and can perform side-effects) and user-level code, which cannot.
+Effects are a way to represent side-effects in a pure language. There is a split between user-level code, which us pure and cannot perform side-effects (such as interacting with the disk, or the network, or stdout) and the runtime, which does not have those restrictions.
 
-SYNTAX:
-`(! something)`
-Will transform the whole (something) into ContinuationPassingStyle.
-(something) is the nearest ancestor that's a `(begin)` or a `(fn)`.
-If you don't want the `begin` to "capture" the CPS-ness, you can always
-do `(! begin x y z)`, which will basically keep the thing going.
-`(!? something)` match on the `Result`, turning `Err` into the `Failure` task.
+Unlike unison, koka, and eff, where the Effects system is separate from the normal type system, Jerd's effects are first-class; effects are represented as values with continuation functions, and the syntax for performing effects in an imperative style is a straightforward sugar over normal values and lambda functions. As an example:
 
-
-Soooo task types don't ~currently declare their "error" conditions.
-Should I?
-Then 'Run would ... be ... more ... idk you could make a macro that tracks it, I mean.
-
-So
+(note: these examples assume some familiarity with the [syntax](./Syntax.md) and [types](./Types.md))
 
 ```clj
-(deftype http/get ('http/get string string ['Timeout 'Offline ('Other string)] string))
-(@run http/get) -> NO ('http/get string (Result string [x y z]) [])
-	('run [(@task [('http/get string string [])])])
-	...
-	...
-	...
-I'll need to write this all out tbh
-But yeah, I think that's what I need.
-
-UNLESS
-
-Actually maybe this is better.
-
-; (!? something)
-expects the something's response to be a Result, and if it's an Error it spits out a ('Failure ) effect.
-yeahhhhhh that seems much much cleaner.
-; so
-(!? sometask)
-; is equivalent to
-(switch (! sometask)
-	('Ok v) v
-	('Err err) (! 'Failure err ()))
-
-	yes yes yes yes.
-
-Ok what does this mean though
-like
-now we don't need run at all? Yes I think that's what it means.
-
+(defn talk []
+  (! 'log "Hello")
+  (! 'log "world."))
+```
+is sugar for
+```clj
+(defn talk [] (: @task [('log string ())] ())
+  ('log "Hello" (fn [_]
+    ('log "world." (fn [_] ('Return ()))))))
+```
+The `@task` macro is also just sugar -- you could have written this instead:
+```clj
+(: (@loop [('Return ()) ('log string (fn [()] @recur))]))
 ```
 
+Basically, `@task` takes `('tag input output)` and turns it into `('tag input (fn [output] @recur))`,
+and `('tag input)` (which doesn't have a continuation), becomes `('tag input ())`. And the "return"
+type of the computation is wrapped with the `'Return` tag.
+
+For a more complex example:
+```clj
+(defn parseInt [text] (: @task [('Failure [('NotAnInt string)])] int)
+  (switch (tryParseInt text)
+    ('Some int) ('Return int (fn [x] x))
+    'None ('Failure ('NotAnInt text) ())))
+
+(defn parseBool [text] (: @task [('Failure [('NotABool string)])] bool)
+  (switch text
+    "true" ('Return true (fn [x] x))
+    "false" ('Return false (fn [x] x))
+    _ ('Failure ('NotABool text) ())))
+
+(defn parse [text] (: @task [('is-available string (Result bool ['UnableToCheck]))
+                             ('log string ())
+                             ('Failure [('InvalidLine string)
+                                        ('NameIsTaken string)
+                                        ('NotAnInt string)
+                                        ('NotABool string)])]
+                      {name string age int local bool})
+  (switch (split text ",")
+    [name raw-age raw-local]
+      (let [age (! parseInt raw-age)
+            local (! parseBool raw-bool)]
+        (if (!? 'is-available name)
+          {name age local}
+          (begin 
+            (! 'log "Got a duplicate name")
+            (! 'Failure ('NameIsTaken name)))))
+    _ (! 'Failure ('InvalidLine string) ())))
+```
+
+Here, the `@task` macro expands to:
+```clj
+(@loop [('is-available string (fn [(Result bool ['UnableToCheck])] @recur))
+        ('log string (fn [()] @recur))
+        ('Failure [('InvalidLine string)
+                  ('NameIsTaken string)
+                  ('NotAnInt string)
+                  ('NotABool string)] ())
+        ('Return {name string age int local bool})])
+```
+
+Then we have `!` and `!?`.
+`!` is the basic "throw", while `!?` unwraps results, turning the `'Err` side into `'Failure` effects.
+
+This is what `parse` looks like, desugared. `and-then` is a builtin that takes a `(@task a-effects a-res)`
+and a `(fn [a-res] (@task b-effects b-res))` and returns a `(@task [a-effects b-effects] b-res)`.
+
+```clj
+(defn parse [text] (: @task [('is-available string (Result bool ['UnableToCheck]))
+                             ('log string ())
+                             ('Failure [('InvalidLine string)
+                                        ('NameIsTaken string)
+                                        ('NotAnInt string)
+                                        ('NotABool string)])]
+                      {name string age int local bool})
+  (switch (split text ",")
+    [name raw-age raw-local]
+      (and-then (parseInt raw-age)
+        (fn [age]
+          (and-then (parseBool raw-bool)
+            (fn [bool]
+              ('is-available name
+                (fn [result]
+                  (switch result
+                    ('Ok value)
+                      (if (!? 'is-available name)
+                        ('Return {name age local})
+                        ('log "Got a duplicate name"
+                          (fn [_]
+                            ('Failure ('NameIsTaken name) ()))))
+                    ('Err err) ('Failure err ()))))))))
+
+    _ ('Failure ('InvalidLine string) ())))
+```
+
+Because our effects are plainly represented as values and functions, you are saved the trouble of learning
+a whole new execution model and semantics. You can look at the desugared form, and reason it out yourself.
+
+Handling effects is also as simple as working with enums:
+```clj
+(defnrec ignore-logs [task (@task [('log string ()) ('Failure string)] int)] (: (@task [('Failure string)] int))
+  (switch task
+    ('log _ k) (ignore-logs (k ()))
+    ('Failure message ()) ('Failure message)
+    ('Return number) ('Return number)))
+```
+
+Now, dealing with effects generically, where you don't know all of the effects contained in a task, requires another
+builtin, `with-handler`, which takes a task `(@task [handled-effects other-effects] res)` and a handler `(fn [(@task [handled-effects other-effects] res)] (@task other-effects res2))` and returns a `(@task other-effects res2)`.
+
+```clj
+(defnrec ignore-logs [task]
+  (switch task
+    ('log _ k) (with-handler ignore-logs (k))
+    ('Return r) ('Return r)
+    _ task))
+```
+
+## An extended example of programming with algebraic effects
 
 ```clj
 ;; Based on https://gist.github.com/rtfeldman/120d0510c3a354dd9f9d3a3dda2f35b3
@@ -59,97 +137,70 @@ now we don't need run at all? Yes I think that's what it means.
 (deftype Result (tfn [ok err] [('Ok ok) ('Err err)]))
 
 (deftype httpResult (Result string ['Timeout 'Offline ('Other string)]))
-(deftype GetUrl ('GetUrl string httpResult))
 
+; our effect types
+(deftype GetUrl ('http/get string httpResult))
 (deftype Log ('Log string ()))
+(deftype Env/get ('env/get string (Result string ['Missing ('OSError string)])))
 
-;; (defn return (tfn [T] (fn [T] ('Return T))))
+; our effect instantiators
 (defn log [text :string] (: @task Log ())
-	(! 'Log text))
+  (! 'Log text))
 (defn get-url [url: string] (: @task GetUrl httpResult)
-	(! 'GetUrl url))
-
-(deftype Env/get ('Env/get string (Result string ['Missing ('OSError string)])))
+  (! 'GetUrl url))
 
 ; turn a Result into a Task
 (defn require (tfn [ok err]
-	(fn [value (: Result ok err)] (: @task [('Failure err)] ok)
-		(switch value
-			('Ok ok) ('Return ok)
-			('Err err) ('Failure err ())))))
+  (fn [value (: Result ok err)] (: @task [('Failure err)] ok)
+    (switch value
+      ('Ok ok) ('Return ok)
+      ('Err err) ('Failure err ())))))
 
 (defn mapErr [value (: Result ok err) map (: fn [err] err2)]
-	(switch value
-		'Ok $
-		('Err err) ('Err (map err))))
+  (switch value
+    'Ok $
+    ('Err err) ('Err (map err))))
 
 ;;;; domain code ;;;;
 
 (deftype Movie {title string year int starring (array string)})
 
 (defn get-api-key []
-	(switch (! 'Env/get "API_KEY")
-		('Err 'Missing) ('Err 'ApiKeyMissing)
-		$))
+  (switch (! 'env/get "API_KEY")
+    ('Err 'Missing) ('Err 'ApiKeyMissing)
+    $))
 
-; potential gotcha:
-; if you just do `(! 'Failure 10)`, it will be inferred
-; as (@task [('Failure 10 ())] ()) instead of (@task [('Failure 10)] ())
-; so if you want a non-returning task, you either need to break it
-; into a separate function, or do
-; (! 'Failure 10 ()) ?? Yeah I think that's reasonable.
-; that's kinda nice maybe, because then you could also have a mapper right there.
-; (! Read () (fn [value] ('Return "Read ${value}")))
-; ok that's cool then.
 (def fail (tfn [Err (: [...])] (fn [err] ('Failure err ()))))
 
 (defn movieFromLine [line :string idx :int]
-	(switch (split line "!")
-		[title year starring]
-			{title $
-			 year (!? require (-> year parseInt (mapErr (fn [err] ('LineError idx line err)))))
-			 starring (split starring ",")}
-		_ (! fail ('LineError idx line 'InvalidLine))))
+  (switch (split line "!")
+    [title year starring]
+      {title $
+       year (!? require (-> year parseInt (mapErr (fn [err] ('LineError idx line err)))))
+       starring (split starring ",")}
+    _ (! fail ('LineError idx line 'InvalidLine))))
 
 (defn getMovies [url :string]
-	(let [response (!? 'GetUrl url)]
-		(-> response
-			trim
-			(split "\n")
-			(!? mapTask movieFromLine))))
+  (let [response (!? 'GetUrl url)]
+    (-> response
+      trim
+      (split "\n")
+      (!? mapTask movieFromLine))))
 
 (defn writeOutput [movies (: Array Movie)]
-	('WriteFile "output.json" (jsonify movies)))
+  ('fs/write-file "output.json" (jsonify movies)))
 
 (defn task []
-	(let [apiKey (!? get-api-key)
-			  movies (!? get-movies "the-url${apiKey}")]
-		(!? writeOutput movies)))
+  (let [apiKey (!? get-api-key)
+        movies (!? get-movies "the-url${apiKey}")]
+    (!? writeOutput movies)))
 
 (defn main []
-	(switch (! task)
-		'Ok (log "Success! Wrote to output.json")
-		('Err 'ApiKeyMissing) (log "You need env API_KEY")
-		('Err ('parseInt v)) (log "Not an integer: ${v}")
-		('Err ('LineError idx line err)) (log "Error on line ${str idx}:\n${line}\n${debug err}")
-		('Err 'Http) (log "Http error")
-		('Err 'Disk) (log "Unable to write to disk")))
-
-; like you could just do
-(defn main []
-	(print (!? 'Http/get "url")))
-; and like there would be a warning that you haven't handled some errors.
-; right?
-; seems reasonable.
-; because now "main" could 'Failure
-; so when running a jerd app, you could pass a flag like run --dev, which would allow
-; a toplevel 'Failure
-; but otherwise it wouldn't.
-
-(defn writeOutput [movies (: Array Movie)]
-	(switch (! ('WriteFile "output.json" (fn [()] ())))
-		('Ok text) $
-		('Err ('Disk 'Full)) (! log "Disk is full! Ignoring lol")
-	))
-
+  (switch (! task)
+    'Ok (! log "Success! Wrote to output.json")
+    ('Err 'ApiKeyMissing) (! log "You need env API_KEY")
+    ('Err ('parseInt v)) (! log "Not an integer: ${v}")
+    ('Err ('LineError idx line err)) (! log "Error on line ${str idx}:\n${line}\n${debug err}")
+    ('Err 'http) (! log "Http error")
+    ('Err 'fs) (! log "Unable to write to disk")))
 ```

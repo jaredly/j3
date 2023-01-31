@@ -23,11 +23,11 @@ When typing an identifier in Jerd, if you select something from autocomplete, th
 
 ## So what does sticky type inference look like?
 
-Say you're writing a function
+Say you're writing a function with two arguments. Before the body is defined,
+the arguments have the universal type "𝕌".
+
 ```clj
 (defn movieFromLine [line idx]
-	; so far we've no indication what the types are
-	; so they are inferred as the universal type "𝕌".
 	)
 ```
 
@@ -66,8 +66,9 @@ type for it.
 
 Lamdu's editor has a similar interaction to this, where if you add a new use of a variable that's incompatible with current uses, then the new usage is marked as the error. I don't know if they store the inferred types in the syntax tree, or if they re-compute them on every edit.
 
-## What's next for Jerd?
+## Further reading
 
-I'm hoping to write more posts about jerd soon, especially the algebraic effects system, soon.
+- [jerd's types](https://github.com/jaredly/j3/blob/main/docs/Types.md)
+- [jerd's algebraic effects](https://github.com/jaredly/j3/blob/main/docs/Algebraic%20Effects.md)
 
 
