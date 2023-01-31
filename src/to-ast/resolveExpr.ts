@@ -23,6 +23,11 @@ export const resolveExpr = (
     ctx.display[form.loc.idx] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form, prefix, suffix);
+        return {
+            type: 'unresolved',
+            form,
+            reason: `No hash specified`,
+        };
     } else {
         if (hash.startsWith(':')) {
             const sym = +hash.slice(1);
@@ -55,34 +60,34 @@ export const resolveExpr = (
             };
         }
     }
-    const local = ctx.local.terms.find((t) => t.name === text);
-    if (local) {
-        ctx.display[form.loc.idx].style = {
-            type: 'id',
-            hash: ':' + local.sym,
-            inferred: true,
-        };
-        return { type: 'local', sym: local.sym, form };
-    }
-    if (ctx.global.names[text]?.length) {
-        const hash = ctx.global.names[text][0];
-        ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
-        return {
-            type: 'global',
-            hash,
-            form,
-        };
-    }
-    if (ctx.global.builtins.names[text]) {
-        const hash = ctx.global.builtins.names[text][0];
-        ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
-        return { type: 'builtin', hash, form };
-    }
-    return {
-        type: 'unresolved',
-        form,
-        reason: `id "${text}" not resolved`,
-    };
+    // const local = ctx.local.terms.find((t) => t.name === text);
+    // if (local) {
+    //     ctx.display[form.loc.idx].style = {
+    //         type: 'id',
+    //         hash: ':' + local.sym,
+    //         inferred: true,
+    //     };
+    //     return { type: 'local', sym: local.sym, form };
+    // }
+    // if (ctx.global.names[text]?.length) {
+    //     const hash = ctx.global.names[text][0];
+    //     ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
+    //     return {
+    //         type: 'global',
+    //         hash,
+    //         form,
+    //     };
+    // }
+    // if (ctx.global.builtins.names[text]) {
+    //     const hash = ctx.global.builtins.names[text][0];
+    //     ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
+    //     return { type: 'builtin', hash, form };
+    // }
+    // return {
+    //     type: 'unresolved',
+    //     form,
+    //     reason: `id "${text}" not resolved`,
+    // };
 };
 
 export const allTerms = (ctx: Ctx): Result[] => {

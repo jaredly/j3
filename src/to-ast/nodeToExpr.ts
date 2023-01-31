@@ -19,6 +19,9 @@ export const filterComments = (nodes: Node[]) =>
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
         case 'identifier': {
+            if (!form.text && !form.hash) {
+                return { type: 'blank', form };
+            }
             if (form.text.includes('.')) {
                 const [expr, ...rest] = form.text.split('.');
                 let inner: Expr = resolveExpr(

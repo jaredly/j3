@@ -22,6 +22,7 @@ export const validateExpr = (
 ): unknown => {
     switch (expr.type) {
         case 'unresolved':
+        case 'blank':
             // return err(errors, expr, { type: 'unresolved', form: expr.form });
             return;
         case 'deftype':

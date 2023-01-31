@@ -60,6 +60,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 });
             }
             return;
+        case 'blank':
+            return;
         case 'string':
             if (report) {
                 // Populate the map

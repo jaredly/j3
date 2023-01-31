@@ -41,10 +41,10 @@ export const IdentifierLike = ({
     );
 
     const menuItems = React.useMemo(() => {
-        if (!editing || !ctx.ctx.display[idx].autoComplete) {
+        if (!editing || !ctx.ctx.display[idx]?.autoComplete) {
             return;
         }
-        return getMenuItems(ctx.ctx.display[idx].autoComplete!, idx, store);
+        return getMenuItems(ctx.ctx.display[idx]?.autoComplete!, idx, store);
     }, [editing, ctx.ctx.display[idx]?.autoComplete]);
 
     React.useEffect(() => {

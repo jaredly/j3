@@ -17,12 +17,14 @@
       it's depending on something that has changed, right?
       althought the whole point is that dependencies can't change
       from under you. So maybe that's fine.
-- [ ] 
+- [ ] TBH maybe I just shouldn't cache in the sandbox?
 
 ## Things to do
 
-- [ ] make a 'hover' thing on display, so I can do better hovers?
-  idk...
+- [x] treat no-hash as just unresolved. no infering!
+- [x] when removing a thing, remove the hash from thigns that hashed it.
+- [ ] write tests that feed some code character-by-character to my editor stack, to make sure things work ok
+- [ ] write tests that create a tree node-by-node, 
 
 - [x] OK time for layout to not be in .map
 - [x] now that we're locking down hashes, need
