@@ -203,6 +203,15 @@ export const nil: Expr = {
     },
 };
 
+export const any: Type = {
+    type: 'any',
+    form: {
+        type: 'identifier',
+        text: '𝕌',
+        loc: noloc,
+    },
+};
+
 export const none: Type = {
     type: 'none',
     form: {
