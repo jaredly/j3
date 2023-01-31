@@ -13,7 +13,9 @@ export type Selection = {
 
 export type Store = {
     selection: Selection | null;
-    listeners: { [key: string]: Array<() => void> };
+    listeners: {
+        [key: string]: Array<(changed?: (number | null | undefined)[]) => void>;
+    };
     root: number;
     map: Map;
     history: History;
@@ -42,6 +44,36 @@ export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
     report: { errors: {}, types: {} },
 });
 
+export type TopDef = {
+    type: 'Def';
+    node: Expr;
+    names: { [name: string]: string };
+};
+
+export type Toplevel =
+    | TopDef
+    | {
+          type: 'Expr';
+          node: Expr;
+      }
+    | {
+          type: 'Deftype';
+          node: Type;
+          names: { [name: string]: string };
+      }
+    | {
+          type: 'Pattern';
+          node: Pattern;
+      };
+
+export type Success = {
+    status: 'success';
+    value: any;
+    code: string;
+    expr: Expr;
+    display: Ctx['display'];
+};
+
 export type EvalCtx = {
     ctx: Ctx;
     // types: { [key: number]: Type };
@@ -49,32 +81,12 @@ export type EvalCtx = {
     last: { [key: number]: string };
     terms: { [key: string]: any };
     nodes: {
-        [idx: number]:
-            | { type: 'Def'; node: Expr; names: { [name: string]: string } }
-            | {
-                  type: 'Expr';
-                  node: Expr;
-              }
-            | {
-                  type: 'Deftype';
-                  node: Type;
-                  names: { [name: string]: string };
-              }
-            | {
-                  type: 'Pattern';
-                  node: Pattern;
-              };
+        [idx: number]: Toplevel;
     };
     report: Report;
     results: {
         [key: string]:
-            | {
-                  status: 'success';
-                  value: any;
-                  code: string;
-                  expr: Expr;
-                  display: Ctx['display'];
-              }
+            | Success
             | {
                   status: 'failure';
                   error: string;
@@ -121,9 +133,6 @@ export const initialStore = (nodes: Node[]): Store => {
         },
         map,
     );
-    // const roots = nodes.map((node) => toMCST(node, map));
-    // roots.forEach((id) => layout(id, 0, map, true));
-    layout(root, 0, map, true);
     return {
         selection: { idx: root, loc: 'start' },
         root,
@@ -167,7 +176,7 @@ export const notify = (
         }
     });
     if (store.listeners['']) {
-        store.listeners[''].forEach((fn) => fn());
+        store.listeners[''].forEach((fn) => fn(idxs));
     }
     if (store.listeners[':change'] && change) {
         store.listeners[':change'].forEach((fn) => fn());
@@ -203,7 +212,7 @@ export const undo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
-    console.log('presel', item.preSelection);
+    // console.log('presel', item.preSelection);
     updateStore(
         store,
         { map: item.pre, selection: item.preSelection },
@@ -220,7 +229,7 @@ export const redo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - store.history.idx];
-    console.log('postsel', item.postSelection);
+    // console.log('postsel', item.postSelection);
     updateStore(
         store,
         { map: item.post, selection: item.postSelection },
@@ -240,7 +249,7 @@ export const updateStore = (
     if (!skipHistory) {
         const pre: UpdateMap = {};
         Object.keys(change).forEach((item) => {
-            pre[+item] = store.map[+item];
+            pre[+item] = store.map[+item] ?? null;
         });
 
         const history: HistoryItem = {
@@ -259,6 +268,7 @@ export const updateStore = (
         store.history.idx = 0;
     }
 
+    // console.log('Store change', change);
     Object.keys(change).forEach((key) => {
         if (change[key] == null) {
             delete store.map[+key];
@@ -267,16 +277,17 @@ export const updateStore = (
         }
     });
 
-    paths.forEach((path) => {
-        for (let i = path.length - 1; i >= 0; i--) {
-            layout(
-                path[i].idx,
-                store.map[path[i].idx].layout?.pos ?? 0,
-                store.map,
-                true,
-            );
-        }
-    });
+    // paths.forEach((path) => {
+    //     for (let i = path.length - 1; i >= 0; i--) {
+    //         layout(
+    //             path[i].idx,
+    //             ctx.display[path[i].idx]?.layout?.pos ?? 0,
+    //             store.map,
+    //             ctx,
+    //             true,
+    //         );
+    //     }
+    // });
 
     if (selection !== undefined) {
         setSelection(

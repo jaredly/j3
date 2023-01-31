@@ -169,6 +169,10 @@ export const App = () => {
             () => {
                 compile(store, ctx);
                 localforage.setItem(id, { ...store, listeners: {} });
+                // @ts-ignore
+                window.ctx = ctx;
+                // @ts-ignore
+                window.store = store;
             },
         ];
     }, [state]);

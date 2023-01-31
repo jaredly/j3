@@ -26,49 +26,80 @@ export const Menu = ({
                 maxHeight: 300,
                 overflow: 'auto',
                 backgroundColor: 'black',
-                border: '1px solid white',
+                border: '1px solid rgba(255,255,255,0.3)',
                 display: 'grid',
                 gridTemplateColumns: 'max-content max-content',
-                gap: 4,
-                padding: 8,
-                alignItems: 'center',
+                // gap: 4,
+                // padding: 8,
+                alignItems: 'stretch',
             }}
         >
-            {state.items.map((item, idx) => (
-                <div
-                    key={idx}
-                    onMouseDown={(evt) => {
-                        evt.preventDefault();
-                        item.action();
-                        onAction();
-                    }}
-                    style={{
-                        // display: 'flex',
-                        // alignItems: 'center',
-                        display: 'contents',
-                        cursor: 'pointer',
-                    }}
-                >
+            {state.items.map((item, idx) =>
+                item.label.type === 'replace' ? (
                     <div
-                        style={{
-                            marginRight: 4,
+                        key={idx}
+                        className={
+                            'menu-row' +
+                            (state.selection === idx ? ' selected' : '')
+                        }
+                        onMouseDown={(evt) => {
+                            evt.preventDefault();
+                            item.action();
+                            onAction();
                         }}
-                        className="hover"
+                        style={{
+                            display: 'contents',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div
+                            style={{
+                                padding: 8,
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                            }}
+                            className="hover"
+                        >
+                            {item.label.text}
+                        </div>
+                        <div
+                            style={{
+                                fontSize: '80%',
+                                opacity: 0.5,
+                                padding: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                            className="hover"
+                        >
+                            {item.label.ann
+                                ? nodeToString(
+                                      nodeForType(
+                                          item.label.ann,
+                                          makeRCtx(ctx),
+                                      ),
+                                  )
+                                : 'no type'}
+                        </div>
+                    </div>
+                ) : (
+                    <div
+                        key={idx}
+                        className={
+                            'menu-row' +
+                            (state.selection === idx ? ' selected' : '')
+                        }
+                        onMouseDown={(evt) => {}}
+                        style={{
+                            gridColumn: '1 2',
+                            fontFamily: 'system-ui',
+                            padding: 8,
+                        }}
                     >
                         {item.label.text}
                     </div>
-                    <div
-                        style={{ fontSize: '80%', opacity: 0.5 }}
-                        className="hover"
-                    >
-                        {item.label.ann
-                            ? nodeToString(
-                                  nodeForType(item.label.ann, makeRCtx(ctx)),
-                              )
-                            : 'no type'}
-                    </div>
-                </div>
-            ))}
+                ),
+            )}
         </div>
     );
 };
@@ -86,36 +117,47 @@ export const getMenuState = (
     const display = ctx.display[idx];
     if (display?.autoComplete) {
         return {
-            items: display.autoComplete.map((item) => ({
-                label: item,
-                action: () => {
-                    const map: UpdateMap = {
-                        [idx]: {
-                            ...store.map[idx],
-                            node: {
-                                type: 'identifier',
-                                text: item.text,
-                                hash: item.hash,
-                                loc: { start: -1, end: -1, idx },
-                            },
-                        },
-                    };
-                    updateStore(
-                        store,
-                        {
-                            map,
-                            selection: {
-                                idx,
-                                loc: item.text.length,
-                            },
-                        },
-                        [],
-                    );
-                },
-            })),
+            items: getMenuItems(display.autoComplete, idx, store),
             selection: 0,
         };
     } else {
         return null;
     }
 };
+
+export function getMenuItems(
+    autoComplete: AutoCompleteResult[],
+    idx: number,
+    store: Store,
+): { label: AutoCompleteResult; action: () => void }[] {
+    return autoComplete.map((item) => ({
+        label: item,
+        action:
+            item.type === 'replace'
+                ? () => {
+                      const map: UpdateMap = {
+                          [idx]: {
+                              ...store.map[idx],
+                              node: {
+                                  type: 'identifier',
+                                  text: item.text,
+                                  hash: item.hash,
+                                  loc: { start: -1, end: -1, idx },
+                              },
+                          },
+                      };
+                      updateStore(
+                          store,
+                          {
+                              map,
+                              selection: {
+                                  idx,
+                                  loc: item.text.length,
+                              },
+                          },
+                          [],
+                      );
+                  }
+                : () => {},
+    }));
+}

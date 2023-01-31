@@ -4,12 +4,14 @@ import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
 import { Layout } from '../types/mcst';
 
-export type AutoCompleteResult = {
-    type: 'replace';
-    text: string;
-    hash: string;
-    ann?: Type;
-}; // TODO also autofixers probably?
+export type AutoCompleteResult =
+    | {
+          type: 'replace';
+          text: string;
+          hash: string;
+          ann?: Type;
+      }
+    | { type: 'info'; text: string }; // TODO also autofixers probably?
 
 export type Ctx = {
     errors: Report['errors'];
@@ -197,6 +199,24 @@ export const nil: Expr = {
     form: {
         type: 'list',
         values: [],
+        loc: noloc,
+    },
+};
+
+export const any: Type = {
+    type: 'any',
+    form: {
+        type: 'identifier',
+        text: '𝕌',
+        loc: noloc,
+    },
+};
+
+export const none: Type = {
+    type: 'none',
+    form: {
+        type: 'identifier',
+        text: '⍉',
         loc: noloc,
     },
 };

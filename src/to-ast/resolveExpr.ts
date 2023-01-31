@@ -1,6 +1,6 @@
 import { Node } from '../types/cst';
 import { Expr } from '../types/ast';
-import { Ctx } from './Ctx';
+import { AutoCompleteResult, Ctx } from './Ctx';
 import { compareScores, fuzzyScore } from './fuzzy';
 import { Result } from './to-ast';
 
@@ -12,6 +12,7 @@ export const resolveExpr = (
     ctx: Ctx,
     form: Node,
     suffix?: string,
+    prefix?: string,
 ): Expr => {
     if (!text.length) {
         return { type: 'unresolved', form, reason: 'blank' };
@@ -21,22 +22,7 @@ export const resolveExpr = (
     }
     ctx.display[form.loc.idx] = {};
     if (!hash) {
-        const results = allTerms(ctx);
-        const withScores = results
-            .map((result) => ({
-                result,
-                score: fuzzyScore(0, text, result.name),
-            }))
-            .filter(({ score }) => score.full)
-            .sort((a, b) => compareScores(a.score, b.score));
-        ctx.display[form.loc.idx].autoComplete = withScores.map(
-            ({ result }) => ({
-                type: 'replace',
-                text: result.name + (suffix || ''),
-                hash: result.hash,
-                ann: result.typ,
-            }),
-        );
+        populateAutocomplete(ctx, text, form, prefix, suffix);
     } else {
         if (hash.startsWith(':')) {
             const sym = +hash.slice(1);
@@ -48,6 +34,8 @@ export const resolveExpr = (
                 };
                 return { type: 'local', sym: local.sym, form };
             }
+            populateAutocomplete(ctx, text, form, prefix, suffix);
+            return { type: 'unresolved', form, reason: 'local missing' };
         } else {
             const global = ctx.global.terms[hash];
             if (global) {
@@ -59,6 +47,12 @@ export const resolveExpr = (
                 ctx.display[form.loc.idx].style = { type: 'id', hash };
                 return { type: 'builtin', hash, form };
             }
+            populateAutocomplete(ctx, text, form, prefix, suffix);
+            return {
+                type: 'unresolved',
+                form,
+                reason: 'global or builtin missing',
+            };
         }
     }
     const local = ctx.local.terms.find((t) => t.name === text);
@@ -129,3 +123,38 @@ export const allTerms = (ctx: Ctx): Result[] => {
         ...globals,
     ];
 };
+function populateAutocomplete(
+    ctx: Ctx,
+    text: string,
+    form: Node,
+    prefix: string | undefined,
+    suffix: string | undefined,
+) {
+    const results = allTerms(ctx);
+    const withScores = results
+        .map((result) => ({
+            result,
+            score: fuzzyScore(0, text, result.name),
+        }))
+        .filter(({ score }) => score.full)
+        .sort((a, b) => compareScores(a.score, b.score));
+    ctx.display[form.loc.idx].autoComplete = [
+        ...withScores.map(
+            ({ result }) =>
+                ({
+                    type: 'replace',
+                    text: (prefix || '') + result.name + (suffix || ''),
+                    hash: result.hash,
+                    ann: result.typ,
+                } satisfies AutoCompleteResult),
+        ),
+        ...(withScores.length === 0
+            ? [
+                  {
+                      type: 'info',
+                      text: `No terms found matching the name "${text}"`,
+                  } satisfies AutoCompleteResult,
+              ]
+            : []),
+    ];
+}

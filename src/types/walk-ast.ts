@@ -488,6 +488,10 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
         let updatedNode = node;
 
         switch (node.type) {
+            case 'any': break;
+
+            case 'none': break;
+
             case 'builtin': break;
 
             case 'apply': {
@@ -1006,8 +1010,19 @@ export const transformRecord = <Ctx>(node: Record, visitor: Visitor<Ctx>, ctx: C
                     }
                 }
                 
+
+                
+        let updatedNode$spread = undefined;
+        const updatedNode$spread$current = node.spread;
+        if (updatedNode$spread$current != null) {
+            
+                const updatedNode$spread$1$ = transformExpr(updatedNode$spread$current, visitor, ctx);
+                changed1 = changed1 || updatedNode$spread$1$ !== updatedNode$spread$current;
+            updatedNode$spread = updatedNode$spread$1$;
+        }
+        
                 if (changed1) {
-                    updatedNode =  {...updatedNode, entries: updatedNode$entries};
+                    updatedNode =  {...updatedNode, entries: updatedNode$entries, spread: updatedNode$spread};
                     changed0 = true;
                 }
             }
@@ -1273,15 +1288,8 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                 changed4 = changed4 || result$pattern !== updatedNode$0node$args$item2.pattern;
 
                 
-        let result$type = undefined;
-        const result$type$current = updatedNode$0node$args$item2.type;
-        if (result$type$current != null) {
-            
-                const result$type$4$ = transformType(result$type$current, visitor, ctx);
-                changed4 = changed4 || result$type$4$ !== result$type$current;
-            result$type = result$type$4$;
-        }
-        
+                const result$type = transformType(updatedNode$0node$args$item2.type, visitor, ctx);
+                changed4 = changed4 || result$type !== updatedNode$0node$args$item2.type;
                 if (changed4) {
                     result =  {...result, pattern: result$pattern, type: result$type};
                     changed3 = true;

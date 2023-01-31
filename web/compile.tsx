@@ -4,11 +4,14 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, nil, noForm } from '../src/to-ast/Ctx';
 import { stmtToTs } from '../src/to-ast/to-ts';
-import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { EvalCtx, notify, Store } from './store';
+import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
+import { EvalCtx, notify, Store, Toplevel, UpdateMap } from './store';
 import objectHash from 'object-hash';
 import { getType, Report } from '../src/get-type/get-types-new';
 import { validateExpr } from '../src/get-type/validate';
+import { layout } from './layout';
+import { Expr } from '../src/types/ast';
+import { Identifier, Loc } from '../src/types/cst';
 
 export const builtins = {
     toString: (t: number | boolean) => t + '',
@@ -19,19 +22,30 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root].node as ListLikeContents;
 
-    // const cctx: CacheCtx = {
-    //     ctx,
-    //     types: ectx.types,
-    //     globalTypes: ectx.globalTypes,
-    // };
     const prevErrors = ectx.report.errors;
+    const prevResults = { ...results };
 
     ectx.report.errors = {};
     const allStyles: Ctx['display'] = {};
     const prevStyles = ctx.display;
 
+    const usedHashes: { [hash: string]: number[] } = {};
+    Object.keys(store.map).forEach((ridx) => {
+        const idx = +ridx;
+        const node = store.map[idx].node;
+        if (node.type === 'identifier' && node.hash) {
+            if (!usedHashes[node.hash]) {
+                usedHashes[node.hash] = [];
+            }
+            usedHashes[node.hash].push(idx);
+        }
+    });
+
+    const updateMap: UpdateMap = {};
+    const tmpMap: Map = { ...store.map };
+
     root.values.forEach((idx) => {
-        if (store.map[idx].node.type === 'comment') {
+        if (tmpMap[idx].node.type === 'comment') {
             results[idx] = {
                 status: 'success',
                 value: undefined,
@@ -47,8 +61,10 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         ctx.errors = report.errors;
         ctx.display = {};
 
-        const res = nodeToExpr(fromMCST(idx, store.map), ctx);
+        const res = nodeToExpr(fromMCST(idx, tmpMap), ctx);
         const hash = objectHash(noForm(res));
+
+        layout(idx, 0, tmpMap, ctx.display, true);
 
         if (last[idx] === hash) {
             const prev = results[idx];
@@ -59,6 +75,8 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             Object.assign(allStyles, prev.display);
             return;
         }
+
+        const prevHashes = getHashes(nodes[idx]);
 
         ctx = rmPrevious(ctx, nodes[idx]);
 
@@ -122,6 +140,34 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             last[idx] = hash;
             return;
         }
+
+        const newHashes = exprHashes(res);
+        if (prevHashes && newHashes) {
+            // const map: {[prevHash:string]:string} = {}
+            // Object.entries(newHashes).forEach(([name, hash]) => {
+            //     map[newHashes[name]] = prevHashes[name];
+            // })
+            Object.entries(prevHashes).forEach(([name, hash]) => {
+                const newHash = newHashes[name];
+                if (!newHash) {
+                    return;
+                }
+                // These are the idx's of identifiers
+                // that use the hash.
+                const idxs = usedHashes[hash];
+                if (idxs) {
+                    idxs.forEach((idx) => {
+                        const node = tmpMap[idx].node as Identifier & {
+                            loc: Loc;
+                        };
+                        updateMap[idx] = tmpMap[idx] = {
+                            node: { ...node, hash: newHash },
+                        };
+                    });
+                }
+            });
+        }
+
         ctx = addDef(res, ctx);
         if (res.type === 'def') {
             nodes[idx] = {
@@ -131,6 +177,31 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             };
         }
     });
+
+    const hashUpdates = Object.keys(updateMap);
+    if (hashUpdates.length) {
+        const last =
+            store.history.items[
+                store.history.items.length - 1 - store.history.idx
+            ];
+        if (!last) {
+            throw new Error(
+                `compile is changing things, but there's no history`,
+            );
+        }
+        hashUpdates.forEach((idx) => {
+            last.post[idx] = updateMap[idx];
+            if (!last.pre[idx]) {
+                last.pre[idx] = store.map[+idx];
+            }
+            if (updateMap[idx] == null) {
+                delete store.map[+idx];
+            } else {
+                store.map[+idx] = updateMap[idx]!;
+            }
+        });
+        // console.log('changed', last, hashUpdates);
+    }
 
     // Now figure out what's changed
     const changed: { [key: number]: true } = {};
@@ -155,6 +226,11 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             changed[+key] = true;
         }
     });
+    Object.keys(results).forEach((key) => {
+        if (results[key] !== prevResults[key]) {
+            changed[+key] = true;
+        }
+    });
     ctx.display = allStyles;
 
     const keys = Object.keys(changed);
@@ -166,6 +242,26 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     }
 
     ectx.ctx = ctx;
+
+    // SSTART HERE: Log the HASHES of each toplevel thing
+    // console.log(root.values.map((idx) => ectx.results[idx]));
+};
+
+const getHashes = (node?: Toplevel): { [name: string]: string } | null => {
+    if (node?.type === 'Def') {
+        return node.names;
+    }
+    if (node?.type === 'Deftype') {
+        return node.names;
+    }
+    return null;
+};
+
+const exprHashes = (res: Expr): null | { [name: string]: string } => {
+    if (res.type === 'def') {
+        return { [res.name]: res.hash };
+    }
+    return null;
 };
 
 const rmPrevious = (ctx: Ctx, node?: EvalCtx['nodes'][0]): Ctx => {

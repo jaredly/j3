@@ -4,6 +4,10 @@ import { RCtx, asTuple, id, loc } from './nodeForExpr';
 
 export const nodeForType = (type: Type, ctx: RCtx): Node => {
     switch (type.type) {
+        case 'none':
+            return { type: 'identifier', text: '⍉', loc: type.form.loc };
+        case 'any':
+            return { type: 'identifier', text: '𝕌', loc: type.form.loc };
         case 'builtin':
             return {
                 loc: type.form.loc,

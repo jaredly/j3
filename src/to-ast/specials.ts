@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { Ctx, Local, nil, nilt, noForm } from './Ctx';
+import { any, Ctx, Local, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
@@ -39,9 +39,8 @@ export const specials: {
                 form,
             };
         }
-        // console.log('FN');
         if (contents[0].type === 'array') {
-            let args: { pattern: Pattern; type?: Type }[] = [];
+            let args: { pattern: Pattern; type: Type }[] = [];
             let locals: Local['terms'] = [];
 
             let pairs: { pat: Node; type?: Node }[] = [];
@@ -75,13 +74,7 @@ export const specials: {
             });
 
             pairs.forEach(({ pat, type }) => {
-                const t: Type = type
-                    ? nodeToType(type, ctx)
-                    : {
-                          type: 'unresolved',
-                          form: nil.form,
-                          reason: 'not provided type',
-                      };
+                const t: Type = type ? nodeToType(type, ctx) : any;
                 if (t.type === 'unresolved') {
                     err(ctx.errors, pat, {
                         type: 'misc',
@@ -179,6 +172,7 @@ export const specials: {
         }
         const value = specials.fn(form, rest, ctx);
         const hash = objectHash(noForm(value));
+        // console.log('hash', hash);
         ctx.display[name.loc.idx] = {
             style: { type: 'id', hash },
         };
@@ -203,10 +197,13 @@ export const specials: {
             };
         }
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
+        const hash = objectHash(noForm(value));
+        // console.log('def hash', first.text, hash);
+        ctx.display[first.loc.idx] = { style: { type: 'id', hash } };
         return {
             type: 'def',
             name: first.text,
-            hash: objectHash(noForm(value)),
+            hash,
             value,
             form,
         };
@@ -218,7 +215,7 @@ export const specials: {
         const [valueNode, ...cases] = contents;
         const pairs = [];
         const value = nodeToExpr(valueNode, ctx);
-        let typ = getType(value, ctx) ?? nilt;
+        let typ = getType(value, ctx) ?? none;
         for (let i = 0; i < cases.length; i += 2) {
             const bindings: Local['terms'] = [];
             const pattern = nodeToPattern(cases[i], typ, ctx, bindings);

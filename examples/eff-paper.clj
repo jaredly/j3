@@ -32,6 +32,19 @@
 ; is the same as
 ((>< collect []) something)
 ; ?
+; (answer) NO that's too much magic
+; ok but really though, maybe I do want something like that?
+(collect (<> []) something)
+; andddd but how do we distinquish it ... from the other kind?
+; like
+(<> collect []) ; needs to be a way to type-apply *without* applying it.
+; maybe
+(collect (:<> []) something)
+; ... I mean I guess....
+; yeah I guess that wouldn't conflict with current syntax.
+; it's a little bit of a divergence from strict lispyness
+;
+; but I do want the ability to type-apply /after/ specifying the dealio.
 
 "
 ok
