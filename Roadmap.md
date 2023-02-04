@@ -1,6 +1,8 @@
 
 ## BUGS
 
+- [x] changing a name shouldn't break things
+
 - [ ] ok, so "on autocomplete", we need to do our best effort to update relevant types.
       this MIGHT happen across-terms if we're in the sandbox, so look out kids.
 - [ ] also, space etc. at the end of an identifier should trigger the on-autocomplete if there's something available.

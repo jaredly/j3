@@ -136,9 +136,19 @@ export const validateType = (
                 ? null
                 : type.form.loc;
         case 'none':
+            return err(errors, type, {
+                type: 'misc',
+                message: 'This has the empty type',
+            });
         case 'bool':
         case 'number':
+            return null;
         case 'any':
+            // return err(errors, type, {
+            //     type: 'misc',
+            //     message:
+            //         'This has the universal type type. Do you want to give it an explicit type, or create a type variable?',
+            // });
             return null;
         case 'tag':
             return type.args.forEach((arg) => validateType(arg, ctx, errors));
