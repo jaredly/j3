@@ -1,4 +1,15 @@
 
+## NEXT up
+
+- [ ] type annotations have to live on the CST as something special. a {type} attribute.
+  - when parsing from plain grammar, might need to do some magic there
+- [ ] pressing ':' takes you into the type attribute.
+  - as soon as you type just about anything in a function parameter, we'll generate the annotation for you
+
+- [ ] space/moving on commits a good autocomplete.
+- [ ] closing " at the end of a string should close.
+- [ ] tab should get you to the end of the string
+
 ## BUGS
 
 - [x] changing a name shouldn't break things

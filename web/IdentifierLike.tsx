@@ -36,9 +36,7 @@ export const IdentifierLike = ({
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
 
-    const [menuState, setMenuState] = React.useState(
-        getMenuState(store, ctx.ctx, idx, text) as null | MenuState,
-    );
+    const [menuSelection, setMenuSelection] = React.useState(0);
 
     const menuItems = React.useMemo(() => {
         if (!editing || !ctx.ctx.display[idx]?.autoComplete) {
@@ -57,16 +55,16 @@ export const IdentifierLike = ({
         menuPortal.current.render(
             menuItems ? (
                 <Menu
-                    state={{ items: menuItems, selection: 0 }}
+                    state={{ items: menuItems, selection: menuSelection }}
                     onAction={() => {
-                        setMenuState(null);
+                        // setMenuState(null);
                     }}
                     ctx={ctx.ctx}
                     pos={pos}
                 />
             ) : null,
         );
-    }, [menuItems]);
+    }, [menuItems, menuSelection]);
 
     React.useEffect(() => {
         if (editing) {
@@ -146,14 +144,14 @@ export const IdentifierLike = ({
             onMouseLeave={() => setHover({ idx, box: null })}
             onInput={(evt) => {
                 onInput(evt, setEdit, idx, path, store, presel);
-                setMenuState(
-                    getMenuState(
-                        store,
-                        ctx.ctx,
-                        idx,
-                        evt.currentTarget.textContent!,
-                    ),
-                );
+                // setMenuState(
+                //     getMenuState(
+                //         store,
+                //         ctx.ctx,
+                //         idx,
+                //         evt.currentTarget.textContent!,
+                //     ),
+                // );
             }}
             onBlur={() => {
                 setEdit(null);
@@ -171,6 +169,16 @@ export const IdentifierLike = ({
                 if (events.onKeyDown && events.onKeyDown(evt)) {
                     // it's been handled
                     return;
+                }
+                if (menuItems) {
+                    const item = menuItems[menuSelection];
+                    if (item) {
+                        if (evt.key === 'Enter') {
+                            evt.preventDefault();
+                            item.action();
+                            return;
+                        }
+                    }
                 }
                 onKeyDown(evt, idx, path, events, store);
             }}

@@ -158,6 +158,7 @@ export const stmtToTs = (
     shouldReturn: boolean | 'top',
 ): t.Statement => {
     switch (expr.type) {
+        case 'blank':
         case 'deftype':
             return t.emptyStatement();
         case 'def':
@@ -426,7 +427,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             ]);
         case 'builtin': {
             const name = ctx.global.builtins.namesBack[expr.hash];
-            return t.identifier(name);
+            return t.identifier(name.replace(/[-?']/g, '_'));
         }
     }
     return t.stringLiteral('exprToTs Not impl expr ' + expr.type);

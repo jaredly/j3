@@ -16,6 +16,7 @@ import { Identifier, Loc } from '../src/types/cst';
 export const builtins = {
     toString: (t: number | boolean) => t + '',
     debugToString: (t: any) => JSON.stringify(t),
+    has_prefix_: (a: string, b: string) => a.startsWith(b),
 };
 
 export const compile = (store: Store, ectx: EvalCtx) => {

@@ -176,6 +176,7 @@ export const StringText = ({
                 if (
                     evt.key === 'ArrowLeft' ||
                     evt.key === 'ArrowRight' ||
+                    evt.key === 'Tab' ||
                     evt.metaKey ||
                     evt.altKey ||
                     evt.ctrlKey

@@ -158,6 +158,7 @@ const tstring = btype('string');
 });
 builtinFn(basicBuiltins, 'toString', [tint], tstring);
 builtinFn(basicBuiltins, 'toString', [tbool], tstring);
+builtinFn(basicBuiltins, 'has-prefix?', [tstring, tstring], tbool);
 addBuiltin(basicBuiltins, 'debugToString', {
     type: 'tfn',
     args: [{ sym: 0, form: blank, name: 'Value' }],

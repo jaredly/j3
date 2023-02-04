@@ -19,6 +19,17 @@ export const onKeyDown = (
     events: Events,
     store: Store,
 ) => {
+    if (evt.key === 'Tab') {
+        evt.preventDefault();
+        const last = path[path.length - 1];
+        if (last.child.type === 'text') {
+            // if there's an expr after us, go to their start
+            // otherwise, go to the end of the containing string
+            setSelection(store, { idx: last.idx, loc: 'end' });
+            return;
+        }
+    }
+
     if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
         evt.preventDefault();
         return evt.shiftKey ? redo(store) : undo(store);

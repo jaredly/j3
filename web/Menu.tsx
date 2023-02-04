@@ -135,6 +135,14 @@ export function getMenuItems(
         action:
             item.type === 'replace'
                 ? () => {
+                      // OK here comes the tricky part.
+                      // IN OUR CONTEXT (??)
+                      // we want .. hmmm
+                      // no that's not right.
+                      // our CST needs to have the type annotations living within it.
+                      // SO any time we "parse" and see a fn arg w/o an annotation, we need to fill it in.
+                      // these are, by default, hidden (?) maybe not, maybe it's just "space" skips over them,
+                      // but ":" replaces the autocompleted one. Yeah that sounds right.
                       const map: UpdateMap = {
                           [idx]: {
                               ...store.map[idx],

@@ -260,22 +260,43 @@ export const OneLineResult = ({
 }) => {
     switch (result.status) {
         case 'success':
+            if (typeof result.value === 'function') {
+                return (
+                    <div
+                        style={{
+                            fontSize: '80%',
+                            color: '#6a6',
+                        }}
+                    >
+                        {result.type
+                            ? ': ' +
+                              nodeToString(
+                                  nodeForType(result.type, makeRCtx(ctx)),
+                              )
+                            : 'No type 🤔'}
+                    </div>
+                );
+            }
             return (
                 <div
                     style={{
                         fontSize: '80%',
-                        opacity: 0.5,
+                        color: '#00c4c4',
                     }}
                 >
-                    {result.type
-                        ? nodeToString(nodeForType(result.type, makeRCtx(ctx)))
-                        : 'No type 🤔'}
+                    {'-> '}
+                    {JSON.stringify(result.value)}
                 </div>
             );
+
         case 'errors':
             return <div>Errors found</div>;
         case 'failure':
-            return <div>Evaluation failed probably</div>;
+            return (
+                <div>
+                    Evaluation failed probably {result.error} {result.code}
+                </div>
+            );
     }
 };
 
