@@ -143,12 +143,17 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         const newHashes = exprHashes(res);
         if (prevHashes) {
-            // const map: {[prevHash:string]:string} = {}
-            // Object.entries(newHashes).forEach(([name, hash]) => {
-            //     map[newHashes[name]] = prevHashes[name];
-            // })
+            const newNames: { [key: string]: string } = {};
+            if (newHashes) {
+                Object.keys(newHashes).forEach(
+                    (name) => (newNames[newHashes[name]] = name),
+                );
+            }
             Object.entries(prevHashes).forEach(([name, hash]) => {
                 const newHash = newHashes?.[name];
+                if (newHash === hash || newNames[hash]) {
+                    return;
+                }
                 // These are the idx's of identifiers
                 // that use the hash.
                 const idxs = usedHashes[hash];
