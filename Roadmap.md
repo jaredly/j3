@@ -22,7 +22,9 @@
 ## Things to do
 
 - [x] treat no-hash as just unresolved. no infering!
-- [x] when removing a thing, remove the hash from thigns that hashed it.
+- [x] when removing a thing, remove the hash from things that hashed it.
+- [ ] autocomplete shouldn't know about things /below/ the current sandboxy whatsit.
+  I think this means that in the sandbox, I have to make a new sub-ctx each time.
 - [ ] write tests that feed some code character-by-character to my editor stack, to make sure things work ok
 - [ ] write tests that create a tree node-by-node, 
 
