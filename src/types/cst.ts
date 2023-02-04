@@ -43,14 +43,17 @@ export type NodeContents =
     | stringText
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
-export type stringText = { type: 'stringText'; text: string; loc: Loc };
+export type stringText = { type: 'stringText'; text: string };
 export type CString = {
     type: 'string';
-    first: stringText;
-    templates: { expr: Node; suffix: stringText }[];
+    first: stringText & NodeExtra;
+    templates: { expr: Node; suffix: stringText & NodeExtra }[];
 };
 
-export type Node = NodeContents & {
+export type NodeExtra = {
+    tannot?: Node;
+    tapply?: Node;
     // decorators: { [key: string]: Node[] };
     loc: Loc;
 };
+export type Node = NodeContents & NodeExtra;

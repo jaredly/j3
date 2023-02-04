@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, stringText, CString, Node} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, stringText, CString, Node, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -35,6 +35,8 @@ export type Visitor<Ctx> = {
     stringTextPost?: (node: stringText, ctx: Ctx) => null | stringText,
     CString?: (node: CString, ctx: Ctx) => null | false | CString | [CString | null, Ctx],
     CStringPost?: (node: CString, ctx: Ctx) => null | CString,
+    NodeExtra?: (node: NodeExtra, ctx: Ctx) => null | false | NodeExtra | [NodeExtra | null, Ctx],
+    NodeExtraPost?: (node: NodeExtra, ctx: Ctx) => null | NodeExtra,
     Pattern_number?: (node: Number, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
     PatternPost_number?: (node: Number, ctx: Ctx) => null | Pattern,
     Pattern_bool?: (node: Bool, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
@@ -1102,6 +1104,8 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
         switch (node.type) {
             case 'builtin': break;
 
+            case 'blank': break;
+
             case 'def': {
                     const updatedNode$0specified = node;
                     let changed1 = false;
@@ -1871,19 +1875,7 @@ export const transformstringText = <Ctx>(node: stringText, visitor: Visitor<Ctx>
         }
         
         let changed0 = false;
-        
-            let updatedNode = node;
-            {
-                let changed1 = false;
-                
-                const updatedNode$loc = transformLoc(node.loc, visitor, ctx);
-                changed1 = changed1 || updatedNode$loc !== node.loc;
-                if (changed1) {
-                    updatedNode =  {...updatedNode, loc: updatedNode$loc};
-                    changed0 = true;
-                }
-            }
-            
+        const updatedNode = node;
         
         node = updatedNode;
         if (visitor.stringTextPost) {
@@ -1919,50 +1911,57 @@ export const transformCString = <Ctx>(node: CString, visitor: Visitor<Ctx>, ctx:
         }
         
         let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.CStringPost) {
+            const transformed = visitor.CStringPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformNodeExtra = <Ctx>(node: NodeExtra, visitor: Visitor<Ctx>, ctx: Ctx): NodeExtra => {
+        if (!node) {
+            throw new Error('No NodeExtra provided');
+        }
+        
+        const transformed = visitor.NodeExtra ? visitor.NodeExtra(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
         
             let updatedNode = node;
             {
                 let changed1 = false;
                 
-                const updatedNode$first = transformstringText(node.first, visitor, ctx);
-                changed1 = changed1 || updatedNode$first !== node.first;
-
-                
-                let updatedNode$templates = node.templates;
-                {
-                    let changed2 = false;
-                    const arr1 = node.templates.map((updatedNode$templates$item1) => {
-                        
-            let result = updatedNode$templates$item1;
-            {
-                let changed3 = false;
-                
-                const result$suffix = transformstringText(updatedNode$templates$item1.suffix, visitor, ctx);
-                changed3 = changed3 || result$suffix !== updatedNode$templates$item1.suffix;
-                if (changed3) {
-                    result =  {...result, suffix: result$suffix};
-                    changed2 = true;
-                }
-            }
-            
-                        return result
-                    })
-                    if (changed2) {
-                        updatedNode$templates = arr1;
-                        changed1 = true;
-                    }
-                }
-                
+                const updatedNode$loc = transformLoc(node.loc, visitor, ctx);
+                changed1 = changed1 || updatedNode$loc !== node.loc;
                 if (changed1) {
-                    updatedNode =  {...updatedNode, first: updatedNode$first, templates: updatedNode$templates};
+                    updatedNode =  {...updatedNode, loc: updatedNode$loc};
                     changed0 = true;
                 }
             }
             
         
         node = updatedNode;
-        if (visitor.CStringPost) {
-            const transformed = visitor.CStringPost(node, ctx);
+        if (visitor.NodeExtraPost) {
+            const transformed = visitor.NodeExtraPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

@@ -6,6 +6,7 @@ export type {
     Loc,
     stringText,
     CString,
+    NodeExtra,
 } from './cst';
 
 export type Term = {

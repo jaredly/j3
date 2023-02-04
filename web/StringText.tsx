@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Map, MCString, toMCST, WithLoc } from '../src/types/mcst';
+import { Map, MCString, MNodeExtra, toMCST, WithLoc } from '../src/types/mcst';
 import {
     EvalCtx,
     Path,
@@ -218,7 +218,7 @@ const joinExprs = (
     const prev =
         templateIdx > 0 ? templates[templateIdx - 1].suffix : node.first;
 
-    const prevs = store.map[prev].node as stringText;
+    const prevs = store.map[prev].node as stringText & MNodeExtra;
     map[prev] = {
         ...store.map[prev],
         node: {
@@ -269,7 +269,7 @@ function maybeAddExpression(
     );
     mp[idx] = {
         node: {
-            ...(store.map[idx].node as stringText),
+            ...(store.map[idx].node as stringText & MNodeExtra),
             text: prefix,
         },
     };

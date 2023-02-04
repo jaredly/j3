@@ -1,7 +1,10 @@
-import { Loc, Node, NodeContents, stringText } from './cst';
+import { Loc, Node, NodeContents, NodeExtra, stringText } from './cst';
 
-export type MNode = MNodeContents & {
+export type MNode = MNodeContents & MNodeExtra;
+export type MNodeExtra = {
     loc: Loc;
+    tannot?: number;
+    tapply?: number;
 };
 
 export type Atom =
@@ -71,10 +74,10 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
         case 'string':
             return {
                 ...node,
-                first: fromMCST(node.first, map) as stringText,
+                first: fromMCST(node.first, map) as stringText & NodeExtra,
                 templates: node.templates.map(({ expr, suffix }) => ({
                     expr: fromMCST(expr, map),
-                    suffix: fromMCST(suffix, map) as stringText,
+                    suffix: fromMCST(suffix, map) as stringText & NodeExtra,
                 })),
             };
         // case 'spread':
@@ -88,6 +91,8 @@ export const fromMCST = (idx: number, map: Map): Node => {
     const { node } = map[idx];
     return {
         ...node,
+        tannot: node.tannot ? fromMCST(node.tannot, map) : undefined,
+        tapply: node.tapply ? fromMCST(node.tapply, map) : undefined,
         ...fromMNode(node, map),
     };
 };
@@ -122,7 +127,12 @@ export const toMCST = (node: Node, map: Map): number => {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
     map[node.loc.idx] = {
-        node: { ...node, ...toMNode(node, map) },
+        node: {
+            ...toMNode(node, map),
+            loc: node.loc,
+            tannot: node.tannot ? toMCST(node.tannot, map) : undefined,
+            tapply: node.tapply ? toMCST(node.tapply, map) : undefined,
+        },
     };
     return node.loc.idx;
 };
