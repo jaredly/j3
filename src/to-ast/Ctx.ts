@@ -15,6 +15,12 @@ export type AutoCompleteResult =
 
 export type Ctx = {
     errors: Report['errors'];
+    mods: {
+        [idx: number]: {
+            type: 'tannot';
+            node: Node;
+        };
+    };
     display: {
         [idx: number]: {
             style?: NodeStyle;
@@ -189,6 +195,7 @@ export const newCtx = (): Ctx => {
         localMap: { terms: {}, types: {} },
         errors: {},
         display: {},
+        mods: {},
     };
 };
 
@@ -204,25 +211,25 @@ export const nil: Expr = {
     },
 };
 
-export const any: Type = {
+export const any = {
     type: 'any',
     form: {
         type: 'identifier',
         text: '𝕌',
         loc: noloc,
     },
-};
+} satisfies Type;
 
-export const none: Type = {
+export const none = {
     type: 'none',
     form: {
         type: 'identifier',
         text: '⍉',
         loc: noloc,
     },
-};
+} satisfies Type;
 
-export const nilt: Type = {
+export const nilt = {
     type: 'record',
     entries: [],
     open: false,
@@ -231,4 +238,4 @@ export const nilt: Type = {
         values: [],
         loc: noloc,
     },
-};
+} satisfies Type;

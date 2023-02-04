@@ -95,7 +95,7 @@ export const Node = React.memo(
         // const decs = Object.entries(item.decorators);
 
         if (text != null) {
-            return (
+            const res = (
                 <IdentifierLike
                     text={text}
                     type={item.type}
@@ -105,6 +105,23 @@ export const Node = React.memo(
                     events={events}
                 />
             );
+            if (item.tannot) {
+                return (
+                    <>
+                        {res}
+                        {' :'}
+                        <Node
+                            idx={item.tannot}
+                            {...{
+                                top,
+                                path,
+                                events,
+                            }}
+                        />
+                    </>
+                );
+            }
+            return res;
         }
 
         const arr = arrayItems(item);

@@ -1,4 +1,13 @@
 
+## Type Annotation madness
+
+So,
+we're parsing a thing
+(fn [a])
+and then we add a single whatsit
+and we're like "holdup, needs an annotation"
+so in that compile-step, we up and add a modification. Right?
+
 ## NEXT up
 
 - [ ] type annotations have to live on the CST as something special. a {type} attribute.

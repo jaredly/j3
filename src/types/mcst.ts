@@ -1,3 +1,4 @@
+import { UpdateMap } from '../../web/store';
 import { Loc, Node, NodeContents, NodeExtra, stringText } from './cst';
 
 export type MNode = MNodeContents & MNodeExtra;
@@ -91,13 +92,13 @@ export const fromMCST = (idx: number, map: Map): Node => {
     const { node } = map[idx];
     return {
         ...node,
-        tannot: node.tannot ? fromMCST(node.tannot, map) : undefined,
-        tapply: node.tapply ? fromMCST(node.tapply, map) : undefined,
         ...fromMNode(node, map),
+        tannot: node.tannot != null ? fromMCST(node.tannot, map) : undefined,
+        tapply: node.tapply != null ? fromMCST(node.tapply, map) : undefined,
     };
 };
 
-export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
+export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
     switch (node.type) {
         case 'list':
         case 'array':
@@ -122,7 +123,7 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
     }
 };
 
-export const toMCST = (node: Node, map: Map): number => {
+export const toMCST = (node: Node, map: UpdateMap): number => {
     if (map[node.loc.idx]) {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }

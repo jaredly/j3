@@ -18,6 +18,7 @@ export const handleSpace = (
         if (gp && gp.child.type === 'child') {
             addSpaceBefore(gp, gp.child.at, store, evt, path);
             evt.preventDefault();
+            evt.stopPropagation();
             return;
         }
     }
@@ -26,6 +27,7 @@ export const handleSpace = (
     if (pos === 0 && parent.child.type === 'child') {
         addSpaceBefore(parent, parent.child.at, store, evt, path);
         evt.preventDefault();
+        evt.stopPropagation();
         return;
     }
 
@@ -50,6 +52,7 @@ export const handleSpace = (
         };
         updateStore(store, { map: mp, selection: { idx: nidx } }, [path]);
         evt.preventDefault();
+        evt.stopPropagation();
         return;
     }
     return;

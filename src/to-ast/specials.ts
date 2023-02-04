@@ -8,6 +8,7 @@ import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
+import { nidx } from '../grammar';
 
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
@@ -40,54 +41,74 @@ export const specials: {
             };
         }
         if (contents[0].type === 'array') {
-            let args: { pattern: Pattern; type: Type }[] = [];
             let locals: Local['terms'] = [];
-
-            let pairs: { pat: Node; type?: Node }[] = [];
-
-            contents[0].values.forEach((arg) => {
-                if (arg.type === 'identifier' && arg.text.startsWith(':')) {
-                    if (pairs.length) {
-                        pairs[pairs.length - 1].type = {
-                            ...arg,
-                            text: arg.text.slice(1),
+            let args: { pattern: Pattern; type: Type }[] =
+                contents[0].values.map((arg) => {
+                    let type;
+                    if (!arg.tannot) {
+                        ctx.mods[arg.loc.idx] = {
+                            type: 'tannot',
+                            node: {
+                                ...any.form,
+                                loc: {
+                                    ...arg.loc,
+                                    idx: nidx(),
+                                },
+                            },
                         };
+                        type = { ...any, form: arg };
+                    } else {
+                        type = nodeToType(arg.tannot, ctx);
                     }
-                } else if (
-                    arg.type === 'list' &&
-                    arg.values.length > 1 &&
-                    arg.values[0].type === 'identifier' &&
-                    arg.values[0].text === ':'
-                ) {
-                    if (pairs.length) {
-                        pairs[pairs.length - 1].type =
-                            arg.values.length > 2
-                                ? {
-                                      ...arg,
-                                      values: arg.values.slice(1),
-                                  }
-                                : arg.values[1];
-                    }
-                } else {
-                    pairs.push({ pat: arg });
-                }
-            });
-
-            pairs.forEach(({ pat, type }) => {
-                const t: Type = type
-                    ? nodeToType(type, ctx)
-                    : { ...any, form: pat };
-                if (t.type === 'unresolved') {
-                    err(ctx.errors, pat, {
-                        type: 'misc',
-                        message: `no type given`,
-                    });
-                }
-                args.push({
-                    pattern: nodeToPattern(pat, t, ctx, locals),
-                    type: t,
+                    const pattern = nodeToPattern(arg, type, ctx, locals);
+                    return { pattern, type };
                 });
-            });
+
+            // let pairs: { pat: Node; type?: Node }[] = [];
+            // contents[0].values.forEach((arg) => {
+            //     // if (arg.type === 'identifier' && arg.text.startsWith(':')) {
+            //     //     if (pairs.length) {
+            //     //         pairs[pairs.length - 1].type = {
+            //     //             ...arg,
+            //     //             text: arg.text.slice(1),
+            //     //         };
+            //     //     }
+            //     // } else if (
+            //     //     arg.type === 'list' &&
+            //     //     arg.values.length > 1 &&
+            //     //     arg.values[0].type === 'identifier' &&
+            //     //     arg.values[0].text === ':'
+            //     // ) {
+            //     //     if (pairs.length) {
+            //     //         pairs[pairs.length - 1].type =
+            //     //             arg.values.length > 2
+            //     //                 ? {
+            //     //                       ...arg,
+            //     //                       values: arg.values.slice(1),
+            //     //                   }
+            //     //                 : arg.values[1];
+            //     //     }
+            //     // } else {
+            //     //     pairs.push({ pat: arg });
+            //     // }
+            // });
+
+            // pairs.forEach(({ pat, type }) => {
+            //     const t: Type = type
+            //         ? nodeToType(type, ctx)
+            //         : { ...any, form: pat };
+            //     if (t.type === 'unresolved') {
+            //         err(ctx.errors, pat, {
+            //             type: 'misc',
+            //             message: `no type given`,
+            //         });
+            //     }
+            //     args.push({
+            //         pattern: nodeToPattern(pat, t, ctx, locals),
+            //         type: t,
+            //     });
+            // });
+
             // console.log(pairs);
             locals.forEach(
                 (loc) =>
@@ -105,20 +126,31 @@ export const specials: {
             };
             const body = contents.slice(1);
             let ret: Type | undefined;
-            if (
-                body.length > 0 &&
-                body[0].type === 'identifier' &&
-                body[0].text.startsWith(':')
-            ) {
-                ret = nodeToType(
-                    {
-                        ...body[0],
-                        text: body[0].text.slice(1),
-                    },
-                    ctx,
-                );
-                body.shift();
-            }
+
+            // Hmmmmmm
+            // do I need to lock down the `ret`?
+            // 🤔
+            // how would that work.
+            // it starts with ... "nothing", right?
+            // which unifies with anything
+            // but is also illegal to actually return
+            // yeah sure, let's lock it down? I mean
+            // what would that mean.
+
+            // if (
+            //     body.length > 0 &&
+            //     body[0].type === 'identifier' &&
+            //     body[0].text.startsWith(':')
+            // ) {
+            //     ret = nodeToType(
+            //         {
+            //             ...body[0],
+            //             text: body[0].text.slice(1),
+            //         },
+            //         ctx,
+            //     );
+            //     body.shift();
+            // }
             // parse fn args
             return {
                 type: 'fn',

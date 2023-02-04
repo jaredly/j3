@@ -184,6 +184,21 @@ export const IdentifierLike = ({
                             item.action();
                             return;
                         }
+                        if (evt.key === 'ArrowDown') {
+                            evt.preventDefault();
+                            const next = (menuSelection + 1) % menuItems.length;
+                            setMenuSelection(next);
+                            return;
+                        }
+                        if (evt.key === 'ArrowUp') {
+                            evt.preventDefault();
+                            const next =
+                                menuSelection === 0
+                                    ? menuItems.length - 1
+                                    : menuSelection - 1;
+                            setMenuSelection(next);
+                            return;
+                        }
                     }
                 }
                 onKeyDown(evt, idx, path, events, store);

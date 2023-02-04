@@ -4,7 +4,7 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, nil, noForm } from '../src/to-ast/Ctx';
 import { stmtToTs } from '../src/to-ast/to-ts';
-import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
+import { fromMCST, ListLikeContents, Map, toMCST } from '../src/types/mcst';
 import { EvalCtx, notify, Store, Toplevel, UpdateMap } from './store';
 import objectHash from 'object-hash';
 import { getType, Report } from '../src/get-type/get-types-new';
@@ -62,9 +62,23 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         const report: Report = { errors: {}, types: {} };
         ctx.errors = report.errors;
         ctx.display = {};
+        ctx.mods = {};
 
         const res = nodeToExpr(fromMCST(idx, tmpMap), ctx);
         const hash = objectHash(noForm(res));
+
+        Object.keys(ctx.mods).forEach((idx) => {
+            const mod = ctx.mods[+idx];
+            if (mod.type === 'tannot') {
+                const node = updateMap[+idx] ?? store.map[+idx];
+                updateMap[+idx] = {
+                    node: {
+                        ...node.node,
+                        tannot: toMCST(mod.node, updateMap),
+                    },
+                };
+            }
+        });
 
         layout(idx, 0, tmpMap, ctx.display, true);
 
