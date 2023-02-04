@@ -2,12 +2,12 @@ import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { applyAndResolve } from '../src/get-type/matchesType';
 import { Ctx } from '../src/to-ast/Ctx';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
+import { makeRCtx, nodeForExpr } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
-import { Type } from '../src/types/ast';
-import { MNode } from '../src/types/mcst';
+import { NodeList, Type } from '../src/types/ast';
+import { fromMCST, MNode } from '../src/types/mcst';
 import { Events, Node } from './Nodes';
 import { EvalCtx, Path, Store } from './store';
 
@@ -35,6 +35,23 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
 
     return (
         <div style={{ margin: 24 }}>
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                }}
+                onClick={() => {
+                    const root = fromMCST(store.root, store.map) as NodeList;
+                    navigator.clipboard.writeText(
+                        root.values
+                            .map((node) => nodeToString(node))
+                            .join('\n\n'),
+                    );
+                }}
+            >
+                Copy
+            </div>
             <div style={{ marginBottom: 500 }}>
                 <Node
                     idx={store.root}

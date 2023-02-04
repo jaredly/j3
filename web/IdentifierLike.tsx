@@ -89,7 +89,13 @@ export const IdentifierLike = ({
         }
     }, [editing, text, editing ? store.selection!.loc : null]);
 
-    const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
+    const dec = ctx.report.errors[idx]
+        ? `underline ${
+              ctx.report.errors[idx].some((e) => e.type !== 'misc')
+                  ? 'red'
+                  : '#a77924 wavy 1px'
+          }`
+        : 'none';
 
     const style = getStyle(ctx, idx);
 
