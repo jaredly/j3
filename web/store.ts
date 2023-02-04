@@ -69,6 +69,7 @@ export type Toplevel =
 export type Success = {
     status: 'success';
     value: any;
+    type: Type | void;
     code: string;
     expr: Expr;
     display: Ctx['display'];

@@ -9,6 +9,9 @@ import { Report } from '../src/get-type/get-types-new';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Ctx } from '../src/to-ast/Ctx';
 import { Top } from './IdentifierLike';
+import { nodeToString } from '../src/to-cst/nodeToString';
+import { nodeForType } from '../src/to-cst/nodeForType';
+import { makeRCtx } from '../src/to-cst/nodeForExpr';
 
 export const ListLike = ({
     left,
@@ -79,10 +82,7 @@ export const ListLike = ({
         ctx.ctx.display[idx]?.layout,
     );
 
-    const dec =
-        ctx.report.errors[idx]?.length || ctx.results[idx]?.status === 'errors'
-            ? 'rgba(255,0,0,0.2)'
-            : 'none';
+    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.2)' : 'none';
 
     return (
         <span
@@ -251,15 +251,40 @@ export const sideClick =
         fn(x < rect.width / 2);
     };
 
+export const OneLineResult = ({
+    result,
+    ctx,
+}: {
+    ctx: Ctx;
+    result: EvalCtx['results'][0];
+}) => {
+    switch (result.status) {
+        case 'success':
+            return (
+                <div
+                    style={{
+                        fontSize: '80%',
+                        opacity: 0.5,
+                    }}
+                >
+                    {result.type
+                        ? nodeToString(nodeForType(result.type, makeRCtx(ctx)))
+                        : 'No type 🤔'}
+                </div>
+            );
+        case 'errors':
+            return <div>Errors found</div>;
+        case 'failure':
+            return <div>Evaluation failed probably</div>;
+    }
+};
+
 export const ShowResult = ({
     result,
     ctx,
 }: {
     ctx: Ctx;
-    result:
-        | { status: 'success'; value: any; code: string; expr: Expr }
-        | { status: 'failure'; error: string; code: string; expr: Expr }
-        | { status: 'errors'; expr: Expr; errors: Report['errors'] };
+    result: EvalCtx['results'][0];
 }) => {
     let body;
     if (result.status === 'success') {
@@ -370,7 +395,14 @@ function formatContents(
                             }}
                             style={{ marginBottom: 16 }}
                         >
-                            {node}
+                            <div>
+                                {node}
+                                <div style={{ height: 16 }} />
+                                <OneLineResult
+                                    result={ctx.results[children[i]]}
+                                    ctx={ctx.ctx}
+                                />
+                            </div>
                         </div>
                         <div />
                         {/* <ShowResult

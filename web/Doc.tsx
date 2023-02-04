@@ -135,11 +135,12 @@ function ShowHover({
                     top: hover.box.bottom,
                     pointerEvents: 'none',
                     zIndex: 100,
+                    maxWidth: 400,
                     backgroundColor: 'black',
                     fontSize: '80%',
                     border: '1px solid rgba(255,255,255,0.2)',
                     padding: 8,
-                    whiteSpace: 'pre',
+                    whiteSpace: 'pre-wrap',
                 }}
             >
                 {result !== undefined ? <ShowResult result={result} /> : ''}

@@ -9,12 +9,12 @@ import ubahn from 'react-ubahn';
 // };
 
 export default defineConfig({
-    plugins: [
-        react({
-            babel: {
-                plugins: [ubahn],
-            },
-        }),
-    ],
+    // plugins: [
+    //     react({
+    //         babel: {
+    //             plugins: [ubahn],
+    //         },
+    //     }),
+    // ],
     define: { 'process.env': {} },
 });

@@ -50,6 +50,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 status: 'success',
                 value: undefined,
                 code: '// a comment',
+                type: undefined,
                 expr: nil,
                 display: {},
             };
@@ -80,7 +81,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         ctx = rmPrevious(ctx, nodes[idx]);
 
-        const _ = getType(res, ctx, report);
+        const resType = getType(res, ctx, report);
         validateExpr(res, ctx, report.errors);
 
         const hasErrors = Object.keys(report.errors).length > 0;
@@ -124,6 +125,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                     // console.log(`Encountered a compilation failure: `, message);
                     throw new Error(message);
                 }),
+                type: resType,
                 code,
                 expr: res,
                 display: ctx.display,

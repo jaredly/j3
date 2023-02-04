@@ -74,7 +74,9 @@ export const specials: {
             });
 
             pairs.forEach(({ pat, type }) => {
-                const t: Type = type ? nodeToType(type, ctx) : any;
+                const t: Type = type
+                    ? nodeToType(type, ctx)
+                    : { ...any, form: pat };
                 if (t.type === 'unresolved') {
                     err(ctx.errors, pat, {
                         type: 'misc',

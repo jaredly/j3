@@ -144,12 +144,12 @@ export const validateType = (
         case 'number':
             return null;
         case 'any':
-            // return err(errors, type, {
-            //     type: 'misc',
-            //     message:
-            //         'This has the universal type type. Do you want to give it an explicit type, or create a type variable?',
-            // });
-            return null;
+            return err(errors, type, {
+                type: 'misc',
+                message:
+                    'This has the universal type. Do you want to give it an explicit type, or create a type variable?',
+            });
+        // return null;
         case 'tag':
             return type.args.forEach((arg) => validateType(arg, ctx, errors));
         case 'fn':
