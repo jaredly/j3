@@ -8,6 +8,10 @@ and then we add a single whatsit
 and we're like "holdup, needs an annotation"
 so in that compile-step, we up and add a modification. Right?
 
+- [ ] flag duplicate identifiers?
+- [ ] update the annotation to match the pattern
+- [ ] auto-add :1 sym hashes to patterny things
+
 ## NEXT up
 
 - [ ] type annotations have to live on the CST as something special. a {type} attribute.

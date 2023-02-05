@@ -186,10 +186,25 @@ export const notify = (
 
 export const setSelection = (
     store: Store,
-    selection: Store['selection'],
+    selection: (Selection & { from?: 'left' | 'right' }) | null,
     extras?: (number | null | undefined)[],
     change = false,
 ) => {
+    // hmmmmmmmmmmmmmmmmmmmm oh here's where it gets tricky
+    // because it's different if you're coming from the right
+    // or the left
+    // right?
+    if (
+        selection?.from === 'right' &&
+        selection.idx &&
+        selection.loc === 'end'
+    ) {
+        const node = store.map[selection.idx].node;
+        if (node.tannot) {
+            selection = { idx: node.tannot, loc: 'end' };
+        }
+    }
+
     const old = store.selection;
     if (old?.idx === selection?.idx && old?.loc === selection?.loc) {
         return notify(store, [selection?.idx, ...(extras || [])], change);

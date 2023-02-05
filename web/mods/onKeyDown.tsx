@@ -5,7 +5,15 @@ import {
     MNodeContents,
     toMCST,
 } from '../../src/types/mcst';
-import { Path, redo, setSelection, Store, undo, updateStore } from '../store';
+import {
+    Path,
+    redo,
+    setSelection,
+    Store,
+    undo,
+    UpdateMap,
+    updateStore,
+} from '../store';
 import { parse } from '../../src/grammar';
 import { CString, Loc, NodeContents } from '../../src/types/cst';
 import { Events } from '../Nodes';
@@ -19,6 +27,24 @@ export const onKeyDown = (
     events: Events,
     store: Store,
 ) => {
+    if (evt.key === ':') {
+        evt.preventDefault();
+        let tannot = store.map[idx].node.tannot;
+        if (tannot != null) {
+            return setSelection(store, { idx: tannot, loc: 'start' });
+        }
+        for (let i = path.length - 1; i >= 0; i--) {
+            let tannot = store.map[path[i].idx].node.tannot;
+            if (tannot != null) {
+                return setSelection(store, { idx: tannot, loc: 'start' });
+            }
+        }
+        return;
+        // assume we're going to the thing
+        // if (node.tannot) {
+        // }
+    }
+
     if (evt.key === 'Tab') {
         evt.preventDefault();
         const last = path[path.length - 1];
@@ -232,6 +258,22 @@ function newListLike(
     idx: number,
     store: Store,
 ) {
+    if (evt.currentTarget.textContent === '') {
+        const mp: UpdateMap = {};
+        const nw = parse(
+            evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',
+        )[0];
+        nw.loc.idx = idx;
+        toMCST(nw, mp);
+        updateStore(
+            store,
+            { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
+            [path],
+        );
+        evt.preventDefault();
+        return;
+    }
+
     const overwrite =
         evt.currentTarget.textContent === '' &&
         path[path.length - 1].child.type === 'child';

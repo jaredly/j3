@@ -53,9 +53,14 @@ export const ListLike = ({
                                 setSelection(store, {
                                     idx: children[i - 1],
                                     loc: 'end',
+                                    from: 'right',
                                 });
                             } else if (!isRoot) {
-                                setSelection(store, { idx, loc: 'start' });
+                                setSelection(store, {
+                                    idx,
+                                    loc: 'start',
+                                    from: 'right',
+                                });
                             }
                         },
                         onRight() {
@@ -63,9 +68,14 @@ export const ListLike = ({
                                 setSelection(store, {
                                     idx: children[i + 1],
                                     loc: 'start',
+                                    from: 'left',
                                 });
                             } else if (!isRoot) {
-                                setSelection(store, { idx, loc: 'end' });
+                                setSelection(store, {
+                                    idx,
+                                    loc: 'end',
+                                    from: 'left',
+                                });
                             }
                         },
                     }}
@@ -102,7 +112,7 @@ export const ListLike = ({
                 evt.stopPropagation();
                 evt.preventDefault();
                 if (!isRoot) {
-                    setSelection(store, { idx, loc: 'end' });
+                    setSelection(store, { idx, loc: 'end', from: 'right' });
                     console.log('OK');
                 }
             }}
@@ -124,8 +134,9 @@ export const ListLike = ({
                                     ? {
                                           idx: children[0],
                                           loc: 'start',
+                                          from: 'left',
                                       }
-                                    : { idx, loc: 'inside' },
+                                    : { idx, loc: 'inside', from: 'left' },
                             );
                         },
                     }}
@@ -144,6 +155,7 @@ export const ListLike = ({
                             setSelection(store, {
                                 idx,
                                 loc: 'start',
+                                from: 'right',
                             });
                         } else {
                             setSelection(
@@ -152,8 +164,9 @@ export const ListLike = ({
                                     ? {
                                           idx: children[0],
                                           loc: 'start',
+                                          from: 'left',
                                       }
-                                    : { idx, loc: 'inside' },
+                                    : { idx, loc: 'inside', from: 'left' },
                             );
                         }
                     })}
@@ -170,10 +183,18 @@ export const ListLike = ({
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
                         onLeft() {
-                            setSelection(store, { idx, loc: 'start' });
+                            setSelection(store, {
+                                idx,
+                                loc: 'start',
+                                from: 'right',
+                            });
                         },
                         onRight() {
-                            setSelection(store, { idx, loc: 'end' });
+                            setSelection(store, {
+                                idx,
+                                loc: 'end',
+                                from: 'left',
+                            });
                         },
                     }}
                 />
@@ -196,13 +217,15 @@ export const ListLike = ({
                                     ? {
                                           idx: children[children.length - 1],
                                           loc: 'end',
+                                          from: 'right',
                                       }
-                                    : { idx, loc: 'inside' },
+                                    : { idx, loc: 'inside', from: 'right' },
                             );
                         } else {
                             setSelection(store, {
                                 idx,
                                 loc: 'end',
+                                from: 'left',
                             });
                         }
                     })}
@@ -227,6 +250,7 @@ export const ListLike = ({
                                     ? {
                                           idx: children[children.length - 1],
                                           loc: 'end',
+                                          from: 'right',
                                       }
                                     : { idx, loc: 'inside' },
                             );

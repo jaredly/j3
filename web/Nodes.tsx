@@ -2,8 +2,8 @@ import * as React from 'react';
 import { MNodeContents } from '../src/types/mcst';
 import { SetHover } from './Doc';
 import { IdentifierLike, Top } from './IdentifierLike';
-import { ListLike } from './ListLike';
-import { EvalCtx, Path, Store, useStore } from './store';
+import { ListLike, sideClick } from './ListLike';
+import { EvalCtx, Path, setSelection, Store, useStore } from './store';
 import { StringView } from './String';
 
 // ListLike
@@ -92,6 +92,69 @@ export const Node = React.memo(
 
         const text = idText(item);
 
+        const tannot = item.tannot ? (
+            <>
+                <span
+                    style={{
+                        opacity: 0.5,
+                        alignSelf: 'flex-end',
+                        paddingLeft: '0.75em',
+                    }}
+                    onMouseDown={sideClick((left) => {
+                        if (left) {
+                            setSelection(
+                                top.store,
+                                // children.length
+                                //     ? {
+                                //           idx: children[children.length - 1],
+                                //           loc: 'end',
+                                //           from: 'right',
+                                //       }
+                                //     : { idx, loc: 'inside', from: 'right' },
+                                { idx, loc: 'end' },
+                            );
+                        } else {
+                            setSelection(top.store, {
+                                idx: item.tannot!,
+                                loc: 'start',
+                                from: 'left',
+                            });
+                        }
+                    })}
+                >
+                    :
+                </span>
+                <Node
+                    idx={item.tannot}
+                    events={{
+                        ...events,
+                        onLeft() {
+                            setSelection(top.store, {
+                                idx,
+                                loc: 'end',
+                            });
+                        },
+                    }}
+                    {...{
+                        top,
+                        path,
+                    }}
+                />
+            </>
+        ) : null;
+
+        events = tannot
+            ? {
+                  ...events,
+                  onRight() {
+                      setSelection(top.store, {
+                          idx: item.tannot!,
+                          loc: 'start',
+                      });
+                  },
+              }
+            : events;
+
         // const decs = Object.entries(item.decorators);
 
         if (text != null) {
@@ -109,15 +172,7 @@ export const Node = React.memo(
                 return (
                     <>
                         {res}
-                        {' :'}
-                        <Node
-                            idx={item.tannot}
-                            {...{
-                                top,
-                                path,
-                                events,
-                            }}
-                        />
+                        {tannot}
                     </>
                 );
             }
@@ -128,7 +183,7 @@ export const Node = React.memo(
 
         if (arr) {
             const [left, right, children] = arr;
-            return (
+            const res = (
                 <ListLike
                     {...{
                         left,
@@ -141,6 +196,22 @@ export const Node = React.memo(
                     }}
                 />
             );
+            if (item.tannot) {
+                return (
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'flex-start',
+                            whiteSpace: 'pre',
+                        }}
+                    >
+                        {res}
+                        {tannot}
+                    </div>
+                );
+            }
+            return res;
         }
 
         return <span>{JSON.stringify(item)}</span>;
