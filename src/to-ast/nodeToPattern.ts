@@ -47,7 +47,7 @@ export const nodeToPattern = (
             }
             ctx.display[form.loc.idx] = {
                 style: {
-                    type: 'id',
+                    type: 'id-decl',
                     hash: ':' + sym,
                 },
             };

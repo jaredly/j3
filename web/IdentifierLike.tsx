@@ -10,6 +10,7 @@ import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
 import objectHash from 'object-hash';
 import { rainbow } from './rainbow';
+import { NodeStyle } from '../src/to-ast/Ctx';
 
 export type Top = {
     store: Store;
@@ -125,7 +126,11 @@ export const IdentifierLike = ({
             }
             onMouseLeave={() => setHover({ idx, box: null })}
         >
-            {text}
+            {text === ''
+                ? displayStyle?.type === 'id'
+                    ? displayStyle.hash
+                    : text
+                : text}
         </span>
     ) : (
         <span
@@ -151,15 +156,7 @@ export const IdentifierLike = ({
             }}
             onMouseLeave={() => setHover({ idx, box: null })}
             onInput={(evt) => {
-                onInput(evt, setEdit, idx, path, store, presel);
-                // setMenuState(
-                //     getMenuState(
-                //         store,
-                //         ctx.ctx,
-                //         idx,
-                //         evt.currentTarget.textContent!,
-                //     ),
-                // );
+                onInput(evt, displayStyle, setEdit, idx, path, store, presel);
             }}
             onBlur={() => {
                 setEdit(null);
@@ -252,22 +249,12 @@ function getStyle(ctx: EvalCtx, idx: number) {
                 fontVariationSettings: '"wght" 500',
             };
         case 'id':
+        case 'id-decl':
             const idx = style.hash.startsWith(':')
                 ? +style.hash.slice(1) * (rainbow.length / 5 - 1)
                 : parseInt(style.hash, 16);
             const color = rainbow[idx % rainbow.length];
-            return style.inferred
-                ? {
-                      opacity: 0.8,
-                      fontStyle: 'italic',
-                      textDecoration: 'underline dotted',
-                      color,
-                  }
-                : {
-                      fontStyle: 'normal',
-                      //   textDecoration: 'underline',
-                      color,
-                  };
+            return { fontStyle: 'normal', color };
     }
     return { fontStyle: 'normal' };
 }
@@ -305,6 +292,7 @@ export function focus(node: HTMLSpanElement, store: Store) {
 
 function onInput(
     evt: React.FormEvent<HTMLSpanElement>,
+    displayStyle: NodeStyle | void,
     setEdit: React.Dispatch<React.SetStateAction<string | null>>,
     idx: number,
     path: Path[],
@@ -345,7 +333,8 @@ function onInput(
     // Waaaait I need to know here ... if
     // ... OH YEAH ok so, if the old id has text,
     // then we carry over. Otherwise we don't.
-    if (old.type === 'identifier' && old.text) {
+
+    if (old.type === 'identifier' && displayStyle?.type === 'id-decl') {
         (mp[idx].node as Identifier).hash = old.hash;
     }
 

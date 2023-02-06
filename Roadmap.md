@@ -1,7 +1,7 @@
 
 ## INTERACTION BUGS
 
-- [ ] if you fully delete the text of a pattern id, then it loses track of who you were. I need a `display` that distinguishes.
+- [x] if you fully delete the text of a pattern id, then it loses track of who you were. I need a `display` that distinguishes.
 
 ## Type Annotation madness
 
@@ -22,7 +22,7 @@ interaction with autocomplete
 I should think.
 so like
 
-`(fn [one] (+ one one))
+`(fn [one] (+ one one))`
 
 after "+" you do "autocomplete w/ type `(fn [uint uint] uint)`, right?
 `(`, `fn`, `[`, `one`, `]`, `(`, `+`, (autocomplete)

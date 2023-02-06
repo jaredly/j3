@@ -64,11 +64,11 @@ export type NodeStyle =
     | { type: 'tag' }
     | { type: 'record-attr' }
     | { type: 'let-pairs' }
+    | { type: 'id-decl'; hash: string }
     | {
           type: 'id';
           hash: string;
           text?: string;
-          inferred?: boolean;
       };
 
 export const blank: Node = {
