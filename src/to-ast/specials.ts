@@ -53,7 +53,7 @@ export const specials: {
             let args: { pattern: Pattern; type: Type }[] =
                 contents[0].values.map((arg) => {
                     let type;
-                    if (!arg.tannot) {
+                    if (arg.tannot == null) {
                         addMod(ctx, arg.loc.idx, {
                             type: 'tannot',
                             node: {

@@ -12,6 +12,27 @@ so in that compile-step, we up and add a modification. Right?
 - [x] args auto-get a :sym too, gotta have it.
 - [x] set ctx.sym.current to 1 + the max sym in the nodes atm.
 
+A test of the things
+would include
+interaction with autocomplete
+I should think.
+so like
+
+`(fn [one] (+ one one))
+
+after "+" you do "autocomplete w/ type `(fn [uint uint] uint)`, right?
+`(`, `fn`, `[`, `one`, `]`, `(`, `+`, (autocomplete)
+yeah I can just tokenize, right?
+
+it would be nice ... to be able ...
+... to have the engine abstracted away from the React components?
+not sure if that makes sense though.
+or if I'd be implementing my own little DLS on top of react
+although that doesn't sound terrible 🤔
+
+
+
+
 - [ ] flag duplicate identifiers?
 - [ ] update the annotation to match the pattern
   - [ ] 

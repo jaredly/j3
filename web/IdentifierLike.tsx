@@ -3,7 +3,7 @@ import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
 import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
 import { Events } from './Nodes';
 import { parse } from '../src/grammar';
-import { Node } from '../src/types/cst';
+import { Identifier, Node } from '../src/types/cst';
 import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
@@ -318,6 +318,8 @@ function onInput(
     setEdit(text);
     const pos = getPos(evt.currentTarget);
 
+    const old = store.map[idx].node;
+
     let nw: Node;
     try {
         const parsed = parse(text);
@@ -340,6 +342,13 @@ function onInput(
 
     const mp: Map = {};
     toMCST(nw, mp);
+    mp[idx].node.tannot = old.tannot;
+    mp[idx].node.tapply = old.tapply;
+
+    if (old.type === 'identifier') {
+        (mp[idx].node as Identifier).hash = old.hash;
+    }
+
     updateStore(
         store,
         {
