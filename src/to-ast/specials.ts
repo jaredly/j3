@@ -299,7 +299,7 @@ export const specials: {
         if (!first || first.type !== 'array') {
             return { type: 'unresolved', form, reason: 'first not array' };
         }
-        ctx.display[first.loc.idx] = { style: 'pairs' };
+        ctx.display[first.loc.idx] = { style: { type: 'let-pairs' } };
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         for (let i = 0; i < first.values.length - 1; i += 2) {

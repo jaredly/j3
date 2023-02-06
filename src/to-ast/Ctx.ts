@@ -61,9 +61,9 @@ export type Local = {
 };
 
 export type NodeStyle =
-    | 'italic'
-    | 'pairs'
-    | 'bold'
+    | { type: 'tag' }
+    | { type: 'record-attr' }
+    | { type: 'let-pairs' }
     | {
           type: 'id';
           hash: string;

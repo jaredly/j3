@@ -38,11 +38,7 @@ export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
         case 'identifier':
             if (node.text === '' && node.hash) {
                 const style = ctx.display[idx]?.style;
-                if (
-                    typeof style === 'object' &&
-                    style?.type === 'id' &&
-                    style.text != null
-                ) {
+                if (style?.type === 'id' && style.text != null) {
                     return style.text;
                 }
                 return ``;

@@ -240,22 +240,17 @@ kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 function getStyle(ctx: EvalCtx, idx: number) {
     const style = ctx.ctx.display[idx]?.style;
     if (!style) return { fontStyle: 'normal' };
-    if (typeof style === 'string') {
-        switch (style) {
-            case 'italic':
-                return {
-                    fontStyle: 'italic',
-                    fontFamily: 'serif',
-                    color: '#84a4a5',
-                };
-            case 'bold':
-                return {
-                    fontVariationSettings: '"wght" 500',
-                };
-        }
-        return { fontStyle: 'normal' };
-    }
     switch (style.type) {
+        case 'record-attr':
+            return {
+                fontStyle: 'italic',
+                fontFamily: 'serif',
+                color: '#84a4a5',
+            };
+        case 'tag':
+            return {
+                fontVariationSettings: '"wght" 500',
+            };
         case 'id':
             const idx = style.hash.startsWith(':')
                 ? +style.hash.slice(1) * (rainbow.length / 5 - 1)

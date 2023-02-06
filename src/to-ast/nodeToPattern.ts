@@ -138,7 +138,9 @@ export const nodeToPattern = (
                     }
 
                     const namev = name.text;
-                    ctx.display[name.loc.idx] = { style: 'italic' };
+                    ctx.display[name.loc.idx] = {
+                        style: { type: 'record-attr' },
+                    };
                     if (!prm[namev]) {
                         err(ctx.errors, values[i], {
                             type: 'misc',
@@ -171,7 +173,9 @@ export const nodeToPattern = (
                     }
                     const namev =
                         name.type === 'identifier' ? name.text : name.raw;
-                    ctx.display[name.loc.idx] = { style: 'italic' };
+                    ctx.display[name.loc.idx] = {
+                        style: { type: 'record-attr' },
+                    };
                     if (!prm[namev]) {
                         err(ctx.errors, values[i], {
                             type: 'misc',
@@ -248,7 +252,7 @@ export const nodeToPattern = (
                 };
             }
             if (first.type === 'tag') {
-                ctx.display[first.loc.idx] = { style: 'bold' };
+                ctx.display[first.loc.idx] = { style: { type: 'tag' } };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
                     console.log('no t', t);
