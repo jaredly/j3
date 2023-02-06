@@ -286,7 +286,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.booleanLiteral(expr.value);
         case 'apply': {
             if (expr.target.type === 'builtin') {
-                const name = ctx.global.builtins.namesBack[expr.target.hash];
+                const name = ctx.global.reverseNames[expr.target.hash];
                 if (
                     (name === '==' ||
                         name === '!=' ||
@@ -426,7 +426,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 t.stringLiteral('unresolved ' + expr.reason),
             ]);
         case 'builtin': {
-            const name = ctx.global.builtins.namesBack[expr.hash];
+            const name = ctx.global.reverseNames[expr.hash];
             return t.identifier(name.replace(/[-?']/g, '_'));
         }
     }

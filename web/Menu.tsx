@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Store, UpdateMap, updateStore } from './store';
 import { AutoCompleteResult, Ctx } from '../src/to-ast/Ctx';
 import { nodeForType } from '../src/to-cst/nodeForType';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
+// import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeToString } from '../src/to-cst/nodeToString';
 
 export const Menu = ({
@@ -73,12 +73,7 @@ export const Menu = ({
                             className="hover"
                         >
                             {item.label.ann
-                                ? nodeToString(
-                                      nodeForType(
-                                          item.label.ann,
-                                          makeRCtx(ctx),
-                                      ),
-                                  )
+                                ? nodeToString(nodeForType(item.label.ann, ctx))
                                 : 'no type'}
                         </div>
                     </div>
@@ -148,7 +143,7 @@ export function getMenuItems(
                               ...store.map[idx],
                               node: {
                                   type: 'identifier',
-                                  text: item.text,
+                                  text: '',
                                   hash: item.hash,
                                   loc: { start: -1, end: -1, idx },
                               },

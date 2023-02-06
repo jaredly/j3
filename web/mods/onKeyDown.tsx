@@ -258,7 +258,8 @@ function newListLike(
     idx: number,
     store: Store,
 ) {
-    if (evt.currentTarget.textContent === '') {
+    const last = path[path.length - 1];
+    if (evt.currentTarget.textContent === '' && last.child.type === 'child') {
         const mp: UpdateMap = {};
         const nw = parse(
             evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',
@@ -275,8 +276,7 @@ function newListLike(
     }
 
     const overwrite =
-        evt.currentTarget.textContent === '' &&
-        path[path.length - 1].child.type === 'child';
+        evt.currentTarget.textContent === '' && last.child.type === 'child';
 
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
@@ -301,6 +301,14 @@ function newListLike(
                 ...pnode.node,
                 ...modChildren(pnode.node, (items) => {
                     if (overwrite && child.type === 'child') {
+                        items[child.at] = nw.loc.idx;
+                    } else if (
+                        last.child.type === 'start' &&
+                        child.type === 'child'
+                    ) {
+                        (mp[nw.loc.idx].node as ListLikeContents).values = [
+                            items[child.at],
+                        ];
                         items[child.at] = nw.loc.idx;
                     } else {
                         items.splice(

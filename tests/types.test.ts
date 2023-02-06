@@ -14,7 +14,7 @@ import {
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getType, Report } from '../src/get-type/get-types-new';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
+// import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { validateExpr } from '../src/get-type/validate';
@@ -60,7 +60,6 @@ expect.extend({
             }
         });
 
-        const rctx = makeRCtx(ctx);
         Object.keys(report.errors).forEach((idx) => {
             if (touched[+idx]) {
                 return;
@@ -71,9 +70,9 @@ expect.extend({
                     case 'invalid type':
                         lines.push(
                             `Invalid type! Expected ${nodeToString(
-                                nodeForType(err.expected, rctx),
+                                nodeForType(err.expected, ctx),
                             )}, found ${nodeToString(
-                                nodeForType(err.found, rctx),
+                                nodeForType(err.found, ctx),
                             )} at idx ${err.found.form.loc.idx}`,
                         );
                         break;
@@ -93,9 +92,9 @@ expect.extend({
             } catch (err) {
                 lines.push(
                     `Expected type \`${nodeToString(
-                        nodeForType(type, rctx),
+                        nodeForType(type, ctx),
                     )}\` at ${idx}, but found \`${nodeToString(
-                        nodeForType(report.types[idx], rctx),
+                        nodeForType(report.types[idx], ctx),
                     )}\``,
                 );
             }

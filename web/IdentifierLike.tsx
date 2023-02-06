@@ -72,6 +72,8 @@ export const IdentifierLike = ({
         }
     }, [editing]);
 
+    const displayStyle = ctx.ctx.display[idx]?.style;
+
     edit = edit == null ? text : edit;
 
     const presel = React.useRef(null as null | number);
@@ -345,7 +347,10 @@ function onInput(
     mp[idx].node.tannot = old.tannot;
     mp[idx].node.tapply = old.tapply;
 
-    if (old.type === 'identifier') {
+    // Waaaait I need to know here ... if
+    // ... OH YEAH ok so, if the old id has text,
+    // then we carry over. Otherwise we don't.
+    if (old.type === 'identifier' && old.text) {
         (mp[idx].node as Identifier).hash = old.hash;
     }
 

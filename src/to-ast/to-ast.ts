@@ -75,6 +75,10 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
                         ...(ctx.global.typeNames[res.name] || []),
                     ],
                 },
+                reverseNames: {
+                    ...ctx.global.reverseNames,
+                    [res.hash]: res.name,
+                },
             },
         };
     }
@@ -102,6 +106,10 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
                         res.hash,
                         ...(ctx.global.names[res.name] || []),
                     ],
+                },
+                reverseNames: {
+                    ...ctx.global.reverseNames,
+                    [res.hash]: res.name,
                 },
             },
         };

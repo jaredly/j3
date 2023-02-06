@@ -11,7 +11,7 @@ import { Ctx } from '../src/to-ast/Ctx';
 import { Top } from './IdentifierLike';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForType } from '../src/to-cst/nodeForType';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
+// import { makeRCtx } from '../src/to-cst/nodeForExpr';
 
 export const ListLike = ({
     left,
@@ -293,10 +293,7 @@ export const OneLineResult = ({
                         }}
                     >
                         {result.type
-                            ? ': ' +
-                              nodeToString(
-                                  nodeForType(result.type, makeRCtx(ctx)),
-                              )
+                            ? ': ' + nodeToString(nodeForType(result.type, ctx))
                             : 'No type 🤔'}
                     </div>
                 );

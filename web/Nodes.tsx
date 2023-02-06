@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Ctx } from '../src/to-ast/Ctx';
 import { MNodeContents } from '../src/types/mcst';
 import { SetHover } from './Doc';
 import { IdentifierLike, Top } from './IdentifierLike';
@@ -32,9 +33,20 @@ export type Events = {
     // other things? idk
 };
 
-export const idText = (node: MNodeContents) => {
+export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
     switch (node.type) {
         case 'identifier':
+            if (node.text === '' && node.hash) {
+                const style = ctx.display[idx]?.style;
+                if (
+                    typeof style === 'object' &&
+                    style?.type === 'id' &&
+                    style.text != null
+                ) {
+                    return style.text;
+                }
+                return ``;
+            }
         case 'comment':
             return node.text;
         case 'number':
@@ -90,7 +102,7 @@ export const Node = React.memo(
             );
         }
 
-        const text = idText(item);
+        const text = idText(item, idx, top.ctx.ctx);
 
         const tannot = item.tannot ? (
             <>

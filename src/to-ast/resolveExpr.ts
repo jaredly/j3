@@ -14,7 +14,7 @@ export const resolveExpr = (
     suffix?: string,
     prefix?: string,
 ): Expr => {
-    if (!text.length) {
+    if (!text.length && !hash) {
         return { type: 'unresolved', form, reason: 'blank' };
     }
     if (text === 'true' || text === 'false') {
@@ -36,6 +36,7 @@ export const resolveExpr = (
                 ctx.display[form.loc.idx].style = {
                     type: 'id',
                     hash: ':' + local.sym,
+                    text: local.name,
                 };
                 return { type: 'local', sym: local.sym, form };
             }
@@ -44,12 +45,20 @@ export const resolveExpr = (
         } else {
             const global = ctx.global.terms[hash];
             if (global) {
-                ctx.display[form.loc.idx].style = { type: 'id', hash };
+                ctx.display[form.loc.idx].style = {
+                    type: 'id',
+                    hash,
+                    text: ctx.global.reverseNames[hash],
+                };
                 return { type: 'global', hash, form };
             }
             const builtin = ctx.global.builtins.terms[hash];
             if (builtin) {
-                ctx.display[form.loc.idx].style = { type: 'id', hash };
+                ctx.display[form.loc.idx].style = {
+                    type: 'id',
+                    hash,
+                    text: ctx.global.reverseNames[hash],
+                };
                 return { type: 'builtin', hash, form };
             }
             populateAutocomplete(ctx, text, form, prefix, suffix);

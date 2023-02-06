@@ -1,4 +1,8 @@
 
+## INTERACTION BUGS
+
+- [ ] if you fully delete the text of a pattern id, then it loses track of who you were. I need a `display` that distinguishes.
+
 ## Type Annotation madness
 
 So,
@@ -31,12 +35,18 @@ or if I'd be implementing my own little DLS on top of react
 although that doesn't sound terrible 🤔
 
 
-
+- [x] refs don't keep texts.
+- [ ] ok but now each dealio needs it's own localMap. ish.
 
 - [ ] flag duplicate identifiers?
 - [ ] update the annotation to match the pattern
   - [ ] 
-- [ ] auto-add :1 sym hashes to patterny things
+- [x] auto-add :1 sym hashes to patterny things
+
+- [ ] oooops ok so localMap is only valid for the given toplevel
+  - SOO we need .. an rmap ... that works .... as we're rendering these nodes
+  - do I really construct it all the time? like again?
+  - ok that's a bit of a pain.
 
 ## NEXT up
 

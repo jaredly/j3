@@ -1,8 +1,8 @@
-import { noloc } from '../to-ast/Ctx';
+import { Ctx, noloc } from '../to-ast/Ctx';
 import { Node, Type } from '../types/ast';
-import { RCtx, asTuple, id, loc } from './nodeForExpr';
+import { asTuple, id, loc } from './nodeForExpr';
 
-export const nodeForType = (type: Type, ctx: RCtx): Node => {
+export const nodeForType = (type: Type, ctx: Ctx): Node => {
     switch (type.type) {
         case 'none':
             return { type: 'identifier', text: '⍉', loc: type.form.loc };
@@ -81,7 +81,8 @@ export const nodeForType = (type: Type, ctx: RCtx): Node => {
                             map[arg.sym] = arg.name;
                             return [
                                 id(
-                                    ctx.reverseNames[arg.sym] ?? arg.name,
+                                    // ctx.reverseNames[arg.sym] ??
+                                    arg.name,
                                     noloc,
                                 ),
                                 ...(arg.bound
@@ -92,7 +93,7 @@ export const nodeForType = (type: Type, ctx: RCtx): Node => {
                     }),
                     nodeForType(type.body, {
                         ...ctx,
-                        reverseNames: { ...ctx.reverseNames, ...map },
+                        // reverseNames: { ...ctx.reverseNames, ...map },
                     }),
                 ],
             });
@@ -130,7 +131,7 @@ export const nodeForType = (type: Type, ctx: RCtx): Node => {
         case 'global':
             return {
                 type: 'identifier',
-                text: ctx.reverseNames[type.hash],
+                text: ctx.global.reverseNames[type.hash],
                 loc: type.form.loc,
             };
         case 'local':
@@ -142,7 +143,8 @@ export const nodeForType = (type: Type, ctx: RCtx): Node => {
                 // 🤔
                 // Does that apply to local values?
                 // no just types I think.
-                text: ctx.reverseNames[type.sym] ?? `tvar${type.sym}`,
+                // ctx.reverseNames[type.sym] ??
+                text: `tvar${type.sym}`,
                 loc: type.form.loc,
             };
     }

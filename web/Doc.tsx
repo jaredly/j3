@@ -2,7 +2,7 @@ import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { applyAndResolve } from '../src/get-type/matchesType';
 import { Ctx } from '../src/to-ast/Ctx';
-import { makeRCtx, nodeForExpr } from '../src/to-cst/nodeForExpr';
+// import { makeRCtx, nodeForExpr } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
@@ -212,11 +212,11 @@ function useAltDown() {
 }
 
 export const showType = (type: Type, ctx: Ctx): string => {
-    let text = nodeToString(nodeForType(type, makeRCtx(ctx)));
+    let text = nodeToString(nodeForType(type, ctx));
     if (type.type === 'global') {
         const res = applyAndResolve(type, ctx, []);
         if (res.type !== 'error' && res.type !== 'local-bound') {
-            return text + ' = ' + nodeToString(nodeForType(res, makeRCtx(ctx)));
+            return text + ' = ' + nodeToString(nodeForType(res, ctx));
         }
     }
     return text;

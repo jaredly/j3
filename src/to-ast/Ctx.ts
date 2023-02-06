@@ -45,7 +45,6 @@ export type Global = {
     builtins: {
         terms: { [hash: string]: Type };
         names: { [name: string]: string[] };
-        namesBack: { [hash: string]: string };
         types: { [name: string]: TVar[] };
     };
     terms: { [hash: string]: Expr };
@@ -53,6 +52,7 @@ export type Global = {
     names: { [name: string]: string[] };
     types: { [hash: string]: Type };
     typeNames: { [name: string]: string[] };
+    reverseNames: { [hash: string]: string };
 };
 
 export type Local = {
@@ -67,6 +67,7 @@ export type NodeStyle =
     | {
           type: 'id';
           hash: string;
+          text?: string;
           inferred?: boolean;
       };
 
@@ -103,7 +104,6 @@ export const basicBuiltins: Global['builtins'] = {
         ],
     },
     names: {},
-    namesBack: {},
     terms: {},
 };
 
@@ -125,6 +125,7 @@ export const noForm = (obj: any): any => {
 
 export const addBuiltin = (
     builtins: Global['builtins'],
+    reverseNames: { [key: string]: string },
     name: string,
     type: Type,
 ) => {
@@ -134,17 +135,18 @@ export const addBuiltin = (
     }
     builtins.names[name] = [hash].concat(builtins.names[name] ?? []);
     builtins.terms[hash] = type;
-    builtins.namesBack[hash] = name;
+    reverseNames[hash] = name;
 };
 
 export const builtinFn = (
     builtins: Global['builtins'],
+    reverseNames: { [key: string]: string },
 
     name: string,
     args: Type[],
     body: Type,
 ) => {
-    addBuiltin(builtins, name, {
+    addBuiltin(builtins, reverseNames, name, {
         type: 'fn',
         args,
         body,
@@ -156,20 +158,29 @@ const tuint = btype('uint');
 const tfloat = btype('float');
 const tbool = btype('bool');
 const tstring = btype('string');
+
+const basicReverse: { [key: string]: string } = {};
+
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
-    builtinFn(basicBuiltins, name, [tint, tint], tbool);
-    builtinFn(basicBuiltins, name, [tuint, tuint], tbool);
-    builtinFn(basicBuiltins, name, [tfloat, tfloat], tbool);
+    builtinFn(basicBuiltins, basicReverse, name, [tint, tint], tbool);
+    builtinFn(basicBuiltins, basicReverse, name, [tuint, tuint], tbool);
+    builtinFn(basicBuiltins, basicReverse, name, [tfloat, tfloat], tbool);
 });
 ['+', '-', '*', '/'].map((name) => {
-    builtinFn(basicBuiltins, name, [tint, tint], tint);
-    builtinFn(basicBuiltins, name, [tuint, tuint], tuint);
-    builtinFn(basicBuiltins, name, [tfloat, tfloat], tfloat);
+    builtinFn(basicBuiltins, basicReverse, name, [tint, tint], tint);
+    builtinFn(basicBuiltins, basicReverse, name, [tuint, tuint], tuint);
+    builtinFn(basicBuiltins, basicReverse, name, [tfloat, tfloat], tfloat);
 });
-builtinFn(basicBuiltins, 'toString', [tint], tstring);
-builtinFn(basicBuiltins, 'toString', [tbool], tstring);
-builtinFn(basicBuiltins, 'has-prefix?', [tstring, tstring], tbool);
-addBuiltin(basicBuiltins, 'debugToString', {
+builtinFn(basicBuiltins, basicReverse, 'toString', [tint], tstring);
+builtinFn(basicBuiltins, basicReverse, 'toString', [tbool], tstring);
+builtinFn(
+    basicBuiltins,
+    basicReverse,
+    'has-prefix?',
+    [tstring, tstring],
+    tbool,
+);
+addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
     type: 'tfn',
     args: [{ sym: 0, form: blank, name: 'Value' }],
     body: {
@@ -189,6 +200,7 @@ export const initialGlobal: Global = {
     names: {},
     types: {},
     typeNames: {},
+    reverseNames: { ...basicReverse },
 };
 
 export const newCtx = (): Ctx => {

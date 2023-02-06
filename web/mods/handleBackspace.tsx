@@ -14,7 +14,7 @@ const removeEmptyPrev = (
     const children = mnodeChildren(store.map[gp.idx].node);
     const prev = children[at - 1];
     const pnode = store.map[prev].node;
-    if (pnode.type === 'identifier' && pnode.text === '') {
+    if (pnode.type === 'identifier' && pnode.text === '' && !pnode.hash) {
         const values = children.slice();
         values.splice(at - 1, 1);
         const mp: UpdateMap = {

@@ -7,7 +7,7 @@ import { Node } from './Nodes';
 import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
+// import { makeRCtx } from '../src/to-cst/nodeForExpr';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { Node as NodeT } from '../src/types/cst';
 import { errorToString } from '../src/to-cst/show-errors';
