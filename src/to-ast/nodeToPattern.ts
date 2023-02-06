@@ -6,6 +6,7 @@ import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
 import { Report } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';
+import { addMod } from './specials';
 
 export const nodeToPattern = (
     form: Node,
@@ -34,7 +35,16 @@ export const nodeToPattern = (
             };
         }
         case 'identifier': {
-            const sym = nextSym(ctx);
+            let sym;
+            if (!form.hash) {
+                sym = nextSym(ctx);
+                addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
+            } else {
+                sym = +form.hash.slice(1);
+                if (isNaN(sym)) {
+                    throw new Error(`non-number sym? ${form.hash}`);
+                }
+            }
             ctx.display[form.loc.idx] = {
                 style: {
                     type: 'id',

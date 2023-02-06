@@ -12,6 +12,7 @@ import { validateExpr } from '../src/get-type/validate';
 import { layout } from './layout';
 import { Expr } from '../src/types/ast';
 import { Identifier, Loc } from '../src/types/cst';
+import { transformNode } from '../src/types/transform-cst';
 
 export const builtins = {
     toString: (t: number | boolean) => t + '',
@@ -57,27 +58,54 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             };
             return;
         }
+
         ctx.sym.current = 0;
+        const node = fromMCST(idx, tmpMap);
+        transformNode(node, {
+            pre(node) {
+                if (
+                    node.type === 'identifier' &&
+                    node.hash &&
+                    node.hash.startsWith(':')
+                ) {
+                    const sym = +node.hash.slice(1);
+                    if (!isNaN(sym) && sym >= ctx.sym.current) {
+                        ctx.sym.current = sym + 1;
+                    }
+                }
+            },
+        });
 
         const report: Report = { errors: {}, types: {} };
         ctx.errors = report.errors;
         ctx.display = {};
         ctx.mods = {};
 
-        const res = nodeToExpr(fromMCST(idx, tmpMap), ctx);
+        const res = nodeToExpr(node, ctx);
         const hash = objectHash(noForm(res));
 
         Object.keys(ctx.mods).forEach((idx) => {
-            const mod = ctx.mods[+idx];
-            if (mod.type === 'tannot') {
-                const node = updateMap[+idx] ?? store.map[+idx];
-                updateMap[+idx] = {
-                    node: {
-                        ...node.node,
-                        tannot: toMCST(mod.node, updateMap),
-                    },
-                };
-            }
+            ctx.mods[+idx].forEach((mod) => {
+                if (mod.type === 'tannot') {
+                    const node = updateMap[+idx] ?? store.map[+idx];
+                    updateMap[+idx] = {
+                        node: {
+                            ...node.node,
+                            tannot: toMCST(mod.node, updateMap),
+                        },
+                    };
+                } else if (mod.type === 'hash') {
+                    const node = updateMap[+idx] ?? store.map[+idx];
+                    if (node.node.type === 'identifier') {
+                        updateMap[+idx] = {
+                            node: {
+                                ...node.node,
+                                hash: mod.hash,
+                            },
+                        };
+                    }
+                }
+            });
         });
 
         layout(idx, 0, tmpMap, ctx.display, true);

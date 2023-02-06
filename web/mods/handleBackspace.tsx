@@ -59,7 +59,11 @@ export const handleBackspace = (
         return;
     }
 
-    if (parent.child.type === 'child' && getPos(evt.currentTarget) === 0) {
+    if (
+        parent.child.type === 'child' &&
+        getPos(evt.currentTarget) === 0 &&
+        parent.child.at > 0
+    ) {
         if (removeEmptyPrev(parent, parent.child.at, store, evt, path)) {
             return;
         }

@@ -8,8 +8,13 @@ and then we add a single whatsit
 and we're like "holdup, needs an annotation"
 so in that compile-step, we up and add a modification. Right?
 
+- [x] args auto-get a .tannot
+- [x] args auto-get a :sym too, gotta have it.
+- [x] set ctx.sym.current to 1 + the max sym in the nodes atm.
+
 - [ ] flag duplicate identifiers?
 - [ ] update the annotation to match the pattern
+  - [ ] 
 - [ ] auto-add :1 sym hashes to patterny things
 
 ## NEXT up

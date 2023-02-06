@@ -13,13 +13,17 @@ export type AutoCompleteResult =
       }
     | { type: 'info'; text: string }; // TODO also autofixers probably?
 
+export type Mod =
+    | {
+          type: 'tannot';
+          node: Node;
+      }
+    | { type: 'hash'; hash: string };
+
 export type Ctx = {
     errors: Report['errors'];
     mods: {
-        [idx: number]: {
-            type: 'tannot';
-            node: Node;
-        };
+        [idx: number]: Mod[];
     };
     display: {
         [idx: number]: {
