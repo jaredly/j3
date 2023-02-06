@@ -3,7 +3,6 @@ import { parse, setIdx } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
-import { Node } from './Nodes';
 import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
@@ -14,7 +13,7 @@ import { errorToString } from '../src/to-cst/show-errors';
 import localforage from 'localforage';
 import { Type } from '../src/types/ast';
 import { applyAndResolve } from '../src/get-type/matchesType';
-import { Doc } from './Doc';
+import { Doc } from './old/Doc';
 
 const _init = `
 (one two )

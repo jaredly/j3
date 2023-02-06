@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Map, toMCST } from '../../src/types/mcst';
 import { Path, Store, updateStore } from '../store';
 import { parse } from '../../src/grammar';
-import { Events } from '../Nodes';
+import { Events } from '../old/Nodes';
 import { getPos, modChildren } from './onKeyDown';
 
 export const handleSpace = (

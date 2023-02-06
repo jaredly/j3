@@ -16,7 +16,7 @@ import {
 } from '../store';
 import { parse } from '../../src/grammar';
 import { CString, Loc, NodeContents } from '../../src/types/cst';
-import { Events } from '../Nodes';
+import { Events } from '../old/Nodes';
 import { handleBackspace } from './handleBackspace';
 import { handleSpace } from './handleSpace';
 

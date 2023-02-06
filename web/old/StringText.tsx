@@ -1,5 +1,11 @@
 import * as React from 'react';
-import { Map, MCString, MNodeExtra, toMCST, WithLoc } from '../src/types/mcst';
+import {
+    Map,
+    MCString,
+    MNodeExtra,
+    toMCST,
+    WithLoc,
+} from '../../src/types/mcst';
 import {
     EvalCtx,
     Path,
@@ -9,13 +15,13 @@ import {
     updateStore,
     useStore,
     Selection,
-} from './store';
+} from '../store';
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
-import { Loc, stringText } from '../src/types/cst';
+import { Loc, stringText } from '../../src/types/cst';
 import { focus } from './IdentifierLike';
-import { getPos, onKeyDown } from './mods/onKeyDown';
-import { nidx, parse } from '../src/grammar';
+import { getPos, onKeyDown } from '../mods/onKeyDown';
+import { nidx, parse } from '../../src/grammar';
 
 export const StringText = ({
     idx,

@@ -1,16 +1,13 @@
 import * as React from 'react';
-import { Map } from '../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store } from './store';
+import { EvalCtx, Path, setSelection, Store } from '../store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './Doc';
-import { Expr } from '../src/types/ast';
-import { Report } from '../src/get-type/get-types-new';
-import { errorToString } from '../src/to-cst/show-errors';
-import { Ctx } from '../src/to-ast/Ctx';
+import { errorToString } from '../../src/to-cst/show-errors';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { Top } from './IdentifierLike';
-import { nodeToString } from '../src/to-cst/nodeToString';
-import { nodeForType } from '../src/to-cst/nodeForType';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { nodeForType } from '../../src/to-cst/nodeForType';
 // import { makeRCtx } from '../src/to-cst/nodeForExpr';
 
 export const ListLike = ({

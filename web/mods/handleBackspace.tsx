@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ListLikeContents, Map } from '../../src/types/mcst';
 import { Path, Store, UpdateMap, updateStore } from '../store';
-import { Events } from '../Nodes';
+import { Events } from '../old/Nodes';
 import { mnodeChildren, rmChild, isAtStart, getPos } from './onKeyDown';
 
 const removeEmptyPrev = (

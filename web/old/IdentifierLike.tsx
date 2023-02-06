@@ -1,16 +1,16 @@
 import * as React from 'react';
-import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
+import { Map, MNode, MNodeContents, toMCST } from '../../src/types/mcst';
+import { EvalCtx, Path, setSelection, Store, updateStore } from '../store';
 import { Events } from './Nodes';
-import { parse } from '../src/grammar';
-import { Identifier, Node } from '../src/types/cst';
-import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
+import { parse } from '../../src/grammar';
+import { Identifier, Node } from '../../src/types/cst';
+import { getPos, onKeyDown, setPos } from '../mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
 import objectHash from 'object-hash';
-import { rainbow } from './rainbow';
-import { NodeStyle } from '../src/to-ast/Ctx';
+import { rainbow } from '../rainbow';
+import { NodeStyle } from '../../src/to-ast/Ctx';
 
 export type Top = {
     store: Store;

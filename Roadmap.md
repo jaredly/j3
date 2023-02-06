@@ -1,4 +1,53 @@
 
+## WHOLE EDITOR SIMLUATION
+
+ok so what I'm considering, is having a whole
+editor virtual machine essentially.
+Like we have an internal ...
+... dom? representation? heh maybe actually
+tbh this would make it easier to self-host maybe
+idk
+
+
+because
+I would love to be able to
+say "headless render this interface"
+and then "here's the selection"
+and then "process this keystroke, and menu selection" and stuff.
+
+
+So, I already have "selection" modeled, at least somewhat.
+We don't have "within a node" modelered 100% of the time,
+but we do actually somewhat. If you're making changes we do.
+
+Ok, so
+THIGNS we need to know/think about:
+UI nodes of some kind.
+and like a function for "idx -> nodes"
+and then a simple node -> react whatsit
+
+also, "context menu"
+which we kindof have.
+
+hmmmm waht would this look like.
+
+Am I going to embark on this most fraught of activities
+the whole editor rewrite?
+perhaps.
+
+anyway because then my editor could say, "hey $node for $currently selected idx"
+whats happenin, handle this keypress please.
+
+Right?
+Ok so we'd build up the whole tree of idx->nodes, because
+we need parentage and stuff, as parents pass in `onLeft` and `onRight`
+(and should do `onBackspace` and `onTab`)
+
+
+
+
+
+
 ## INTERACTION BUGS
 
 - [x] if you fully delete the text of a pattern id, then it loses track of who you were. I need a `display` that distinguishes.

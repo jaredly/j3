@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { applyAndResolve } from '../src/get-type/matchesType';
-import { Ctx } from '../src/to-ast/Ctx';
+import { applyAndResolve } from '../../src/get-type/matchesType';
+import { Ctx } from '../../src/to-ast/Ctx';
 // import { makeRCtx, nodeForExpr } from '../src/to-cst/nodeForExpr';
-import { nodeForType } from '../src/to-cst/nodeForType';
-import { nodeToString } from '../src/to-cst/nodeToString';
-import { errorToString } from '../src/to-cst/show-errors';
-import { NodeList, Type } from '../src/types/ast';
-import { fromMCST, MNode } from '../src/types/mcst';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { errorToString } from '../../src/to-cst/show-errors';
+import { NodeList, Type } from '../../src/types/ast';
+import { fromMCST, MNode } from '../../src/types/mcst';
 import { Events, Node } from './Nodes';
-import { EvalCtx, Path, Store } from './store';
+import { EvalCtx, Path, Store } from '../store';
 
 const topPath: Path[] = [];
 const emptyEvents: Events = {

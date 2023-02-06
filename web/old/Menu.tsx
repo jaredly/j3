@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { Store, UpdateMap, updateStore } from './store';
-import { AutoCompleteResult, Ctx } from '../src/to-ast/Ctx';
-import { nodeForType } from '../src/to-cst/nodeForType';
+import { Store, UpdateMap, updateStore } from '../store';
+import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
+import { nodeForType } from '../../src/to-cst/nodeForType';
 // import { makeRCtx } from '../src/to-cst/nodeForExpr';
-import { nodeToString } from '../src/to-cst/nodeToString';
+import { nodeToString } from '../../src/to-cst/nodeToString';
 
 export const Menu = ({
     state,

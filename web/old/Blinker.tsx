@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { Map, toMCST } from '../src/types/mcst';
-import { Path, Store, updateStore } from './store';
+import { Map, toMCST } from '../../src/types/mcst';
+import { Path, Store, updateStore } from '../store';
 import { Events } from './Nodes';
-import { modChildren, onKeyDown } from './mods/onKeyDown';
-import { parse } from '../src/grammar';
+import { modChildren, onKeyDown } from '../mods/onKeyDown';
+import { parse } from '../../src/grammar';
 
 export const parseKey = (text: string) => {
     try {
