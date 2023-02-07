@@ -1,16 +1,7 @@
 // So types for things I guess
 
-export type NodeCommon = {
-    idx: number;
-    events: {
-        onLeft(): void;
-        onRight(): void;
-        onBackspace(): void;
-        // Maybe this is just onRight?
-        // onTab(): void,
-    };
-    path: PathItem[];
-};
+import { AutoCompleteResult } from '../../src/to-ast/Ctx';
+import { Selection, UpdateMap } from '../store';
 
 /*
 CST
@@ -19,16 +10,8 @@ CST
 - string 'prefix' / 'suffix' at / 'expr' at / 'start' / 'end'
 - spread 'contents' / 'start'
 - attrs 'attr' at
-
+- [all] tannot tapply
 */
-
-// So, you can be a >child of a list-like (list array record)
-// OR a start/end of a group (listlike or )
-// you can also be an item of a attr.things
-// or the value of a ...spread
-// ^ should those be folded into listlikes somehow? prolly not.
-// but they render as 'group's anyway
-// OH you can also be in a `:tannot` or a `<tapply>`
 export type PathItem = PathItemInner & {
     pidx: number;
 };
@@ -50,20 +33,66 @@ export type PathItemInner =
           type: 'string:prefix';
       };
 
+export type Node = NodeInner & NodeCommon;
+
+export type Update = { map?: UpdateMap; selection?: Selection };
+
+export type NodeCommon = {
+    // TODO: Should these actually return like a command?
+    // or like an updateMap? Probably tbh
+    // onSelect: (pos: number) => void;
+    // path: PathItem[];
+    // events: {
+    //     onLeft(): void;
+    //     onRight(): void;
+    //     onBackspace(): void;
+    //     // Maybe this is just onRight?
+    //     // onTab(): void,
+    // };
+    style?: React.CSSProperties;
+};
+
+export type Input = {
+    type: 'input';
+    text: string;
+    idx: number;
+    onKeyDown: (key: string) => Update;
+    onInput: (text: string) => Update;
+};
+export type Blinker = {
+    type: 'blinker';
+    onKeyDown: (key: string) => Update;
+};
+
 export type NodeInner =
-    | {
-          type: 'input';
-          text: string;
-      }
-    | {
-          type: 'blinker';
-      }
+    | Input
+    | Blinker
     | {
           type: 'group';
           children: Node[];
-          left?: string; // TODO styling for this
-          right?: string;
+          idx: number;
       }
     | {
           type: 'dressing';
+          onMouseDown: (left: boolean) => Selection;
       };
+
+// ok but
+/*
+would it be nodes: {[idx: number]: Node}?
+but then ... I wouldnt be able to do 'dressing'
+- which btw dressing doesn't have onBackspaceeeeeee
+  and it doesn't super have onLeft or onRight I mean
+or 'blinker'
+so
+WAIT
+maybe events don't live on there.
+it's just 'onKeyDown' and 'onInput' and stuff
+I think?
+*/
+export type UIState = {
+    tree: Node;
+    map: { [idx: number]: (Input | Blinker) & NodeCommon };
+    menu: { selection: number; items: AutoCompleteResult }[];
+    hover: string[];
+};
