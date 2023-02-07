@@ -49,12 +49,8 @@ export const Blinker = ({
                     if (parent.child.type === 'inside') {
                         const pnode = store.map[parent.idx];
                         mp[parent.idx] = {
-                            node: {
-                                ...pnode.node,
-                                ...modChildren(pnode.node, (items) =>
-                                    items.push(nidx),
-                                ),
-                            },
+                            ...pnode,
+                            ...modChildren(pnode, (items) => items.push(nidx)),
                         };
                         updateStore(
                             store,
@@ -70,19 +66,15 @@ export const Blinker = ({
                     if (child.type === 'child') {
                         const pnode = store.map[gp.idx];
                         mp[gp.idx] = {
-                            node: {
-                                ...pnode.node,
-                                ...modChildren(pnode.node, (items) => {
-                                    items.splice(
-                                        child.at +
-                                            (parent.child.type === 'start'
-                                                ? 0
-                                                : 1),
-                                        0,
-                                        nidx,
-                                    );
-                                }),
-                            },
+                            ...pnode,
+                            ...modChildren(pnode, (items) => {
+                                items.splice(
+                                    child.at +
+                                        (parent.child.type === 'start' ? 0 : 1),
+                                    0,
+                                    nidx,
+                                );
+                            }),
                         };
                         updateStore(
                             store,

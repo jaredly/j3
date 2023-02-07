@@ -80,11 +80,10 @@ export const Node = React.memo(
         events: Events;
         top: Top;
     }) => {
-        const both = useStore(top.store, idx);
-        if (!both) {
+        const item = useStore(top.store, idx);
+        if (!item) {
             return null;
         }
-        const { node: item } = both;
 
         if (item.type === 'string') {
             return (

@@ -140,13 +140,10 @@ export function getMenuItems(
                       // but ":" replaces the autocompleted one. Yeah that sounds right.
                       const map: UpdateMap = {
                           [idx]: {
-                              ...store.map[idx],
-                              node: {
-                                  type: 'identifier',
-                                  text: '',
-                                  hash: item.hash,
-                                  loc: { start: -1, end: -1, idx },
-                              },
+                              type: 'identifier',
+                              text: '',
+                              hash: item.hash,
+                              loc: { start: -1, end: -1, idx },
                           },
                       };
                       updateStore(

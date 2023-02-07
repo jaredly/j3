@@ -22,7 +22,7 @@ export const builtins = {
 
 export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
-    const root = store.map[store.root].node as ListLikeContents;
+    const root = store.map[store.root] as ListLikeContents;
 
     const prevErrors = ectx.report.errors;
     const prevResults = { ...results };
@@ -34,7 +34,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const usedHashes: { [hash: string]: number[] } = {};
     Object.keys(store.map).forEach((ridx) => {
         const idx = +ridx;
-        const node = store.map[idx].node;
+        const node = store.map[idx];
         if (node.type === 'identifier' && node.hash) {
             if (!usedHashes[node.hash]) {
                 usedHashes[node.hash] = [];
@@ -47,7 +47,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const tmpMap: Map = { ...store.map };
 
     root.values.forEach((idx) => {
-        if (tmpMap[idx].node.type === 'comment') {
+        if (tmpMap[idx].type === 'comment') {
             results[idx] = {
                 status: 'success',
                 value: undefined,
@@ -89,19 +89,15 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 if (mod.type === 'tannot') {
                     const node = updateMap[+idx] ?? store.map[+idx];
                     updateMap[+idx] = {
-                        node: {
-                            ...node.node,
-                            tannot: toMCST(mod.node, updateMap),
-                        },
+                        ...node,
+                        tannot: toMCST(mod.node, updateMap),
                     };
                 } else if (mod.type === 'hash') {
                     const node = updateMap[+idx] ?? store.map[+idx];
-                    if (node.node.type === 'identifier') {
+                    if (node.type === 'identifier') {
                         updateMap[+idx] = {
-                            node: {
-                                ...node.node,
-                                hash: mod.hash,
-                            },
+                            ...node,
+                            hash: mod.hash,
                         };
                     }
                 }
@@ -204,11 +200,12 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 const idxs = usedHashes[hash];
                 if (idxs) {
                     idxs.forEach((idx) => {
-                        const node = tmpMap[idx].node as Identifier & {
+                        const node = tmpMap[idx] as Identifier & {
                             loc: Loc;
                         };
                         updateMap[idx] = tmpMap[idx] = {
-                            node: { ...node, hash: newHash },
+                            ...node,
+                            hash: newHash,
                         };
                     });
                 }

@@ -303,7 +303,7 @@ function onInput(
     setEdit(text);
     const pos = getPos(evt.currentTarget);
 
-    const old = store.map[idx].node;
+    const old = store.map[idx];
 
     let nw: Node;
     try {
@@ -327,15 +327,15 @@ function onInput(
 
     const mp: Map = {};
     toMCST(nw, mp);
-    mp[idx].node.tannot = old.tannot;
-    mp[idx].node.tapply = old.tapply;
+    mp[idx].tannot = old.tannot;
+    mp[idx].tapply = old.tapply;
 
     // Waaaait I need to know here ... if
     // ... OH YEAH ok so, if the old id has text,
     // then we carry over. Otherwise we don't.
 
     if (old.type === 'identifier' && displayStyle?.type === 'id-decl') {
-        (mp[idx].node as Identifier).hash = old.hash;
+        (mp[idx] as Identifier).hash = old.hash;
     }
 
     updateStore(

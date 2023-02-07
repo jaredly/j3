@@ -45,9 +45,7 @@ export type MCString = {
 export type WithLoc<T> = T & { loc: Loc };
 
 export type Map = {
-    [key: number]: {
-        node: MNode;
-    };
+    [key: number]: MNode;
 };
 export type Layout =
     | {
@@ -89,7 +87,7 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
 };
 
 export const fromMCST = (idx: number, map: Map): Node => {
-    const { node } = map[idx];
+    const node = map[idx];
     return {
         ...node,
         ...fromMNode(node, map),
@@ -128,12 +126,10 @@ export const toMCST = (node: Node, map: UpdateMap): number => {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
     map[node.loc.idx] = {
-        node: {
-            ...toMNode(node, map),
-            loc: node.loc,
-            tannot: node.tannot ? toMCST(node.tannot, map) : undefined,
-            tapply: node.tapply ? toMCST(node.tapply, map) : undefined,
-        },
+        ...toMNode(node, map),
+        loc: node.loc,
+        tannot: node.tannot ? toMCST(node.tannot, map) : undefined,
+        tapply: node.tapply ? toMCST(node.tapply, map) : undefined,
     };
     return node.loc.idx;
 };

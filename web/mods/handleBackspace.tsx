@@ -11,9 +11,9 @@ const removeEmptyPrev = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
     path: Path[],
 ) => {
-    const children = mnodeChildren(store.map[gp.idx].node);
+    const children = mnodeChildren(store.map[gp.idx]);
     const prev = children[at - 1];
-    const pnode = store.map[prev].node;
+    const pnode = store.map[prev];
     if (pnode.type === 'identifier' && pnode.text === '' && !pnode.hash) {
         const values = children.slice();
         values.splice(at - 1, 1);
@@ -21,13 +21,9 @@ const removeEmptyPrev = (
             [prev]: null,
             [gp.idx]: {
                 ...store.map[gp.idx],
-                node: {
-                    ...store.map[gp.idx].node,
-                    ...{
-                        type: store.map[gp.idx].node
-                            .type as ListLikeContents['type'],
-                        values,
-                    },
+                ...{
+                    type: store.map[gp.idx].type as ListLikeContents['type'],
+                    values,
                 },
             },
         };
@@ -74,10 +70,7 @@ export const handleBackspace = (
         const mp: Map = {
             [idx]: {
                 ...store.map[idx],
-                node: {
-                    ...store.map[idx].node,
-                    ...{ type: 'identifier', text: '' },
-                },
+                ...{ type: 'identifier', text: '' },
             },
         };
         updateStore(store, { map: mp }, [path]);
@@ -89,17 +82,15 @@ export const handleBackspace = (
         if (evt.currentTarget.textContent === '') {
             const mp: UpdateMap = {};
             const pnode = store.map[parent.idx];
-            const res = rmChild(pnode.node, parent.child.at);
+            const res = rmChild(pnode, parent.child.at);
             if (!res) {
                 return;
             }
             const { contents, nidx } = res;
             if (contents.values.length === 0) {
                 mp[parent.idx] = {
-                    node: {
-                        ...pnode.node,
-                        ...{ type: 'identifier', text: '' },
-                    },
+                    ...pnode,
+                    ...{ type: 'identifier', text: '' },
                 };
                 updateStore(
                     store,
@@ -114,7 +105,7 @@ export const handleBackspace = (
                 evt.preventDefault();
                 return;
             }
-            mp[parent.idx] = { node: { ...pnode.node, ...contents } };
+            mp[parent.idx] = { ...pnode, ...contents };
             updateStore(
                 store,
                 {

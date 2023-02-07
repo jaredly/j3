@@ -1,4 +1,3 @@
-import { useLocalStorage } from './App';
 import * as React from 'react';
 import { parse } from '../src/grammar';
 import { newEvalCtx } from './store';
@@ -8,6 +7,18 @@ import { nodeToType } from '../src/to-ast/nodeToType';
 import { idxLines, removeDecorators } from '../src/to-ast/utils';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { getType, Report } from '../src/get-type/get-types-new';
+
+export const useLocalStorage = <T,>(key: string, initial: () => T) => {
+    const [state, setState] = React.useState<T>(
+        localStorage[key] ? JSON.parse(localStorage[key]) : initial(),
+    );
+    React.useEffect(() => {
+        if (state) {
+            localStorage[key] = JSON.stringify(state);
+        }
+    }, [state]);
+    return [state, setState] as const;
+};
 
 export const Debug = () => {
     const [text, setText] = useLocalStorage('text', () => '23');

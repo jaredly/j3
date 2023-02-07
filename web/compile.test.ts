@@ -13,7 +13,7 @@ import {
 } from './store';
 
 const xpath = (map: Map, root: number, path: string[]) => {
-    let node = map[root].node;
+    let node = map[root];
     for (let i = 0; i < path.length; i++) {
         const next = path[i];
         if (
@@ -25,12 +25,12 @@ const xpath = (map: Map, root: number, path: string[]) => {
             if (isNaN(idx) || idx >= node.values.length) {
                 return null;
             }
-            node = map[node.values[+next]].node;
+            node = map[node.values[+next]];
             continue;
         }
         if (node.type === 'string') {
             if (next === 'first') {
-                node = map[node.first].node;
+                node = map[node.first];
                 continue;
             }
             const idx = +next;
@@ -42,7 +42,7 @@ const xpath = (map: Map, root: number, path: string[]) => {
             if (!second || (second !== 'expr' && second !== 'suffix')) {
                 return null;
             }
-            node = map[node.templates[idx][second]].node;
+            node = map[node.templates[idx][second]];
             continue;
         }
         return null;
@@ -72,7 +72,7 @@ describe('compile', () => {
 
         // Act
         const map = {
-            [n10!.loc.idx]: { node: { ...n10, raw: '30' } },
+            [n10!.loc.idx]: { ...n10, raw: '30' },
         };
         updateStore(store, { map }, []);
         compile(store, ctx);
@@ -92,7 +92,7 @@ describe('compile', () => {
         const store = initialStore(parse('(def x 10) (def y (, x 20))'));
         const ctx = newEvalCtx(newCtx());
         compile(store, ctx);
-        const root = store.map[store.root].node as ListLikeContents;
+        const root = store.map[store.root] as ListLikeContents;
         root.values.forEach((idx) =>
             expect(ctx.results[idx].status === 'success'),
         );
@@ -117,7 +117,7 @@ describe('compile', () => {
         const store = initialStore(parse('(def x 10) (def y (, x 20))'));
         const ctx = newEvalCtx(newCtx());
         compile(store, ctx);
-        const root = store.map[store.root].node as ListLikeContents;
+        const root = store.map[store.root] as ListLikeContents;
         const [xi, yi] = root.values;
 
         const xres = ctx.nodes[xi] as TopDef;
@@ -142,10 +142,8 @@ describe('compile', () => {
             {
                 map: {
                     [xref.loc.idx]: {
-                        node: {
-                            ...(xref as Identifier & { loc: Loc }),
-                            hash: xhash,
-                        },
+                        ...(xref as Identifier & { loc: Loc }),
+                        hash: xhash,
                     },
                 },
             },
@@ -173,10 +171,8 @@ describe('compile', () => {
             {
                 map: {
                     [x10!.loc.idx]: {
-                        node: {
-                            ...x10,
-                            raw: '30',
-                        },
+                        ...x10,
+                        raw: '30',
                     },
                 },
             },

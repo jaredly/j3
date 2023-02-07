@@ -29,12 +29,12 @@ export const onKeyDown = (
 ) => {
     if (evt.key === ':') {
         evt.preventDefault();
-        let tannot = store.map[idx].node.tannot;
+        let tannot = store.map[idx].tannot;
         if (tannot != null) {
             return setSelection(store, { idx: tannot, loc: 'start' });
         }
         for (let i = path.length - 1; i >= 0; i--) {
-            let tannot = store.map[path[i].idx].node.tannot;
+            let tannot = store.map[path[i].idx].tannot;
             if (tannot != null) {
                 return setSelection(store, { idx: tannot, loc: 'start' });
             }
@@ -65,7 +65,7 @@ export const onKeyDown = (
         return handleBackspace(evt, idx, path, events, store);
     }
 
-    const isComment = store.map[idx].node.type === 'comment';
+    const isComment = store.map[idx].type === 'comment';
 
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         return handleSpace(evt, idx, path, events, store);
@@ -94,7 +94,7 @@ export const onKeyDown = (
             if (parent.child.type === 'end') {
                 continue;
             }
-            const node = store.map[parent.idx].node;
+            const node = store.map[parent.idx];
             if (node.type === looking) {
                 return setSelection(store, {
                     idx: parent.idx,
@@ -297,29 +297,27 @@ function newListLike(
         toMCST(nw, mp);
         const pnode = store.map[parent.idx];
         mp[parent.idx] = {
-            node: {
-                ...pnode.node,
-                ...modChildren(pnode.node, (items) => {
-                    if (overwrite && child.type === 'child') {
-                        items[child.at] = nw.loc.idx;
-                    } else if (
-                        last.child.type === 'start' &&
-                        child.type === 'child'
-                    ) {
-                        (mp[nw.loc.idx].node as ListLikeContents).values = [
-                            items[child.at],
-                        ];
-                        items[child.at] = nw.loc.idx;
-                    } else {
-                        items.splice(
-                            child.type === 'child' ? child.at + 1 : 0,
-                            0,
-                            nw.loc.idx,
-                        );
-                    }
-                    return items;
-                }),
-            },
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                if (overwrite && child.type === 'child') {
+                    items[child.at] = nw.loc.idx;
+                } else if (
+                    last.child.type === 'start' &&
+                    child.type === 'child'
+                ) {
+                    (mp[nw.loc.idx] as ListLikeContents).values = [
+                        items[child.at],
+                    ];
+                    items[child.at] = nw.loc.idx;
+                } else {
+                    items.splice(
+                        child.type === 'child' ? child.at + 1 : 0,
+                        0,
+                        nw.loc.idx,
+                    );
+                }
+                return items;
+            }),
         };
         updateStore(
             store,
@@ -344,15 +342,13 @@ function wrapWithParens(
         const nw = parse('()')[0];
         const mp: Map = {};
         const nidx = toMCST(nw, mp);
-        (mp[nw.loc.idx].node as ListLikeContents).values.push(idx);
+        (mp[nw.loc.idx] as ListLikeContents).values.push(idx);
         const pnode = store.map[parent.idx];
         mp[parent.idx] = {
-            node: {
-                ...pnode.node,
-                ...modChildren(pnode.node, (items) => {
-                    items.splice(child.at, 1, nidx);
-                }),
-            },
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                items.splice(child.at, 1, nidx);
+            }),
         };
         updateStore(store, { map: mp, selection: { idx, loc: 'end' } }, [path]);
     }

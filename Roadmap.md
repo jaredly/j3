@@ -1,4 +1,13 @@
 
+# Thoughts about persistence
+
+I think ... that maybe *only* the sandbox should be persisting the CST
+and the "codebase" should persist the AST.
+e.g. the codebase needs to be well-formed and stuff.
+
+- [x] map, unnest the 'node'
+- [x] add a version to store
+
 ## WHOLE EDITOR SIMLUATION
 
 ok so what I'm considering, is having a whole

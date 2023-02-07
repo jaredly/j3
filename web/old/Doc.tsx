@@ -64,7 +64,7 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
                 <ShowHover
                     hover={hover}
                     ctx={ctx}
-                    node={store.map[hover.idx].node}
+                    node={store.map[hover.idx]}
                 />
             )}
             <div

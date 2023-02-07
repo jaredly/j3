@@ -3,7 +3,13 @@ import { parse, setIdx } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
-import { EvalCtx, initialStore, newEvalCtx, Store } from './store';
+import {
+    EvalCtx,
+    initialStore,
+    migrateStore,
+    newEvalCtx,
+    Store,
+} from './store';
 import { compile } from './compile';
 import { nodeToString } from '../src/to-cst/nodeToString';
 // import { makeRCtx } from '../src/to-cst/nodeForExpr';
@@ -54,18 +60,6 @@ const __init = `(== 5 (+ 2 3))
 (def ok {23 100 yes 34})
 (def yes (let [{yes} {yes 34}] yes))
 (== yes 34)`;
-
-export const useLocalStorage = <T,>(key: string, initial: () => T) => {
-    const [state, setState] = React.useState<T>(
-        localStorage[key] ? JSON.parse(localStorage[key]) : initial(),
-    );
-    React.useEffect(() => {
-        if (state) {
-            localStorage[key] = JSON.stringify(state);
-        }
-    }, [state]);
-    return [state, setState] as const;
-};
 
 export const getInitialState = () => {
     const cst: NodeT[] = parse(init);
@@ -149,13 +143,11 @@ export const App = () => {
                 return;
             }
 
-            updateIdxForStore(value as Store);
-            compile(value as Store, ctx);
-            setState({
-                store: value as Store,
-                id: hash,
-                ctx,
-            });
+            const store = migrateStore(value as Store);
+
+            updateIdxForStore(store);
+            compile(store, ctx);
+            setState({ store, id: hash, ctx });
         });
     }, [hash]);
 

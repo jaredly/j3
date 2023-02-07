@@ -11,7 +11,19 @@ export type Selection = {
     loc?: 'start' | 'end' | 'change' | 'inside' | number;
 };
 
+export const migrateStore = (store: Store): Store => {
+    if (!store.version) {
+        store.version = 1;
+        Object.keys(store.map).forEach((key) => {
+            // @ts-ignore
+            store.map[+key] = store.map[+key].node;
+        });
+    }
+    return store;
+};
+
 export type Store = {
+    version: 1;
     selection: Selection | null;
     listeners: {
         [key: string]: Array<(changed?: (number | null | undefined)[]) => void>;
@@ -135,6 +147,7 @@ export const initialStore = (nodes: Node[]): Store => {
         map,
     );
     return {
+        version: 1,
         selection: { idx: root, loc: 'start' },
         root,
         listeners: {},
@@ -199,7 +212,7 @@ export const setSelection = (
         selection.idx &&
         selection.loc === 'end'
     ) {
-        const node = store.map[selection.idx].node;
+        const node = store.map[selection.idx];
         if (node.tannot) {
             selection = { idx: node.tannot, loc: 'end' };
         }

@@ -43,12 +43,10 @@ export const handleSpace = (
         const nidx = toMCST(nw, mp);
         const pnode = store.map[parent.idx];
         mp[parent.idx] = {
-            node: {
-                ...pnode.node,
-                ...modChildren(pnode.node, (items) => {
-                    items.splice(child.at + 1, 0, nidx);
-                }),
-            },
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                items.splice(child.at + 1, 0, nidx);
+            }),
         };
         updateStore(store, { map: mp, selection: { idx: nidx } }, [path]);
         evt.preventDefault();
@@ -71,12 +69,10 @@ function addSpaceBefore(
     const nidx = toMCST(nw, mp);
     const pnode = store.map[gp.idx];
     mp[gp.idx] = {
-        node: {
-            ...pnode.node,
-            ...modChildren(pnode.node, (items) => {
-                items.splice(at, 0, nidx);
-            }),
-        },
+        ...pnode,
+        ...modChildren(pnode, (items) => {
+            items.splice(at, 0, nidx);
+        }),
     };
     updateStore(
         store,

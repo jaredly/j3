@@ -38,7 +38,7 @@ export const StringText = ({
     ctx: EvalCtx;
     setHover: SetHover;
 }) => {
-    const { node } = useStore(store, idx);
+    const node = useStore(store, idx);
     const text = (node as stringText).text;
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
@@ -114,11 +114,9 @@ export const StringText = ({
                 const pos = getPos(evt.currentTarget);
                 const mp: Map = {
                     [node.loc.idx]: {
-                        node: {
-                            type: 'stringText',
-                            loc: node.loc,
-                            text,
-                        },
+                        type: 'stringText',
+                        loc: node.loc,
+                        text,
                     },
                 };
                 updateStore(
@@ -204,7 +202,7 @@ const joinExprs = (
     map: UpdateMap;
     selection: Selection;
 } => {
-    const node = store.map[idx].node as WithLoc<MCString>;
+    const node = store.map[idx] as WithLoc<MCString>;
     const map: UpdateMap = {};
     const template = node.templates[templateIdx];
     // TODO: Remove an expr (deeply pleaseee)
@@ -214,23 +212,17 @@ const joinExprs = (
     templates.splice(templateIdx, 1);
 
     map[idx] = {
-        ...store.map[idx],
-        node: {
-            ...node,
-            templates,
-        },
+        ...node,
+        templates,
     };
 
     const prev =
         templateIdx > 0 ? templates[templateIdx - 1].suffix : node.first;
 
-    const prevs = store.map[prev].node as stringText & MNodeExtra;
+    const prevs = store.map[prev] as stringText & MNodeExtra;
     map[prev] = {
-        ...store.map[prev],
-        node: {
-            ...prevs,
-            text: prevs.text + remaining,
-        },
+        ...prevs,
+        text: prevs.text + remaining,
     };
     return {
         map,
@@ -260,7 +252,7 @@ function maybeAddExpression(
     evt.preventDefault();
 
     const last = path[path.length - 1];
-    const node = store.map[last.idx].node as WithLoc<MCString>;
+    const node = store.map[last.idx] as WithLoc<MCString>;
     let nw = parse('_')[0];
     nw = { type: 'identifier', text: '', loc: nw.loc };
     const mp: Map = {};
@@ -274,22 +266,18 @@ function maybeAddExpression(
         mp,
     );
     mp[idx] = {
-        node: {
-            ...(store.map[idx].node as stringText & MNodeExtra),
-            text: prefix,
-        },
+        ...(store.map[idx] as stringText & MNodeExtra),
+        text: prefix,
     };
     mp[last.idx] = {
-        node: {
-            ...node,
-            templates: [
-                ...node.templates,
-                {
-                    expr: eidx,
-                    suffix: sidx,
-                },
-            ],
-        },
+        ...node,
+        templates: [
+            ...node.templates,
+            {
+                expr: eidx,
+                suffix: sidx,
+            },
+        ],
     };
     updateStore(
         store,
