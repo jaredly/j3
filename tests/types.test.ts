@@ -18,6 +18,7 @@ import { getType, Report } from '../src/get-type/get-types-new';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { validateExpr } from '../src/get-type/validate';
+import { preprocess } from './preprocess';
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = dirname(__filename);
 
@@ -120,7 +121,7 @@ readdirSync(__dirname)
     .forEach((name) => {
         describe(name, () => {
             const raw = readFileSync(__dirname + '/' + name, 'utf8');
-            const parsed = parse(raw);
+            const parsed = parse(raw).map(preprocess);
             const ctx = newEvalCtx(newCtx());
             const lines = idxLines(raw);
 

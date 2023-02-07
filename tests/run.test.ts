@@ -14,6 +14,7 @@ import { Type } from '../src/types/ast';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { getType } from '../src/get-type/get-types-new';
+import { preprocess } from './preprocess';
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = dirname(__filename);
 
@@ -22,7 +23,7 @@ readdirSync(__dirname)
     .forEach((name) => {
         describe(name, () => {
             const raw = readFileSync(__dirname + '/' + name, 'utf8');
-            const parsed = parse(raw);
+            const parsed = parse(raw).map(preprocess);
             const ctx = newEvalCtx(newCtx());
             const results = [];
             const lines = idxLines(raw);

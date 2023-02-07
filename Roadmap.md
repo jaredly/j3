@@ -10,6 +10,12 @@ e.g. the codebase needs to be well-formed and stuff.
 
 ## WHOLE EDITOR SIMLUATION
 
+UMMM maybe not? At least not yet.
+Let's instead spend time on making it more usable
+and maybe refactoring things just a little bit.
+But I can probably use testing-library
+well enough.
+
 ok so what I'm considering, is having a whole
 editor virtual machine essentially.
 Like we have an internal ...

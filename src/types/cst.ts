@@ -14,6 +14,11 @@ export type Identifier = {
     hash?: string;
 };
 
+export type NodeArray = {
+    type: 'array';
+    values: Node[];
+};
+
 export type NodeContents =
     // identifier-like
     | Identifier
@@ -23,18 +28,7 @@ export type NodeContents =
     // list-like
     | NodeList
     | { type: 'record'; values: Node[] }
-    | { type: 'array'; values: Node[] }
-
-    // Ok so the plan is to convert comments to
-    // decorators, post-hoc.
-    // filling either the `comment:before` or
-    // `comment:after` decorators, as arrays.
-    // I think comment:after is usually going to be
-    // an EOL thing?
-    // idk
-    // now, there are some places, where it's ok
-    // for comments just to be standalone c/ast nodes.
-    //
+    | NodeArray
     | { type: 'comment'; text: string }
 
     // random stuff
