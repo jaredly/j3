@@ -1,4 +1,11 @@
 
+# Ok, so writing a test
+
+- [ ] do I go through the autocomplete menu?
+  - I guess I probably do?
+  - I think I want ...
+    ok, so I'm like, incrementally ... building up ...
+    the tree? I think that sounds right.
 # Thoughts about persistence
 
 I think ... that maybe *only* the sandbox should be persisting the CST
