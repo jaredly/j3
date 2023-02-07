@@ -41,6 +41,7 @@ export type Pattern =
           entries: {
               name: string;
               value: Pattern;
+              form: Node;
           }[];
       }
     | { type: 'unresolved'; form: Node; reason?: string }

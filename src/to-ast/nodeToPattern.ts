@@ -45,6 +45,7 @@ export const nodeToPattern = (
                     throw new Error(`non-number sym? ${form.hash}`);
                 }
             }
+            // ctx.
             ctx.display[form.loc.idx] = {
                 style: {
                     type: 'id-decl',
@@ -71,7 +72,7 @@ export const nodeToPattern = (
             };
         case 'record': {
             const values = filterComments(form.values);
-            const entries: { name: string; value: Pattern }[] = [];
+            const entries: { name: string; form: Node; value: Pattern }[] = [];
             const res = applyAndResolve(t, ctx, []);
             if (!res) {
                 err(ctx.errors, form, {
@@ -105,6 +106,7 @@ export const nodeToPattern = (
                 }
                 entries.push({
                     name,
+                    form: values[0],
                     value: nodeToPattern(
                         values[0],
                         prm
@@ -152,6 +154,7 @@ export const nodeToPattern = (
                     }
                     entries.push({
                         name: namev,
+                        form: name,
                         value: nodeToPattern(
                             name,
                             prm[namev] ?? nilt,
@@ -194,6 +197,7 @@ export const nodeToPattern = (
                     }
                     entries.push({
                         name: namev,
+                        form: name,
                         value: nodeToPattern(
                             value,
                             prm[namev] ?? nilt,
@@ -232,6 +236,7 @@ export const nodeToPattern = (
                     form,
                     entries: rest.map((item, i) => ({
                         name: i.toString(),
+                        form: item,
                         value: nodeToPattern(
                             item,
                             prm
