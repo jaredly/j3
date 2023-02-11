@@ -45,6 +45,7 @@ export const specials: {
                 type: 'fn',
                 args: [],
                 body: [],
+                ret: none,
                 form,
             };
         }
@@ -133,7 +134,7 @@ export const specials: {
                 },
             };
             const body = contents.slice(1);
-            let ret: Type | undefined;
+            let ret: Type = none;
 
             // Hmmmmmm
             // do I need to lock down the `ret`?
@@ -145,20 +146,20 @@ export const specials: {
             // yeah sure, let's lock it down? I mean
             // what would that mean.
 
-            // if (
-            //     body.length > 0 &&
-            //     body[0].type === 'identifier' &&
-            //     body[0].text.startsWith(':')
-            // ) {
-            //     ret = nodeToType(
-            //         {
-            //             ...body[0],
-            //             text: body[0].text.slice(1),
-            //         },
-            //         ctx,
-            //     );
-            //     body.shift();
-            // }
+            if (
+                body.length > 0 &&
+                body[0].type === 'identifier' &&
+                body[0].text.startsWith(':')
+            ) {
+                ret = nodeToType(
+                    {
+                        ...body[0],
+                        text: body[0].text.slice(1),
+                    },
+                    ctx,
+                );
+                body.shift();
+            }
             // parse fn args
             return {
                 type: 'fn',
@@ -172,6 +173,7 @@ export const specials: {
             type: 'fn',
             args: [],
             body: contents.map((child) => nodeToExpr(child, ctx)),
+            ret: none,
             form,
         };
     },

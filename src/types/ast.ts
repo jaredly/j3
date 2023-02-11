@@ -78,7 +78,7 @@ export type Expr =
           name?: string;
           // TODO: um type?
           args: { pattern: Pattern; type: Type }[];
-          ret?: Type;
+          ret: Type;
           body: Expr[];
           form: Node;
       }

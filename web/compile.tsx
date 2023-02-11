@@ -80,7 +80,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         ctx.errors = report.errors;
         ctx.display = {};
         ctx.mods = {};
-        // ok
 
         const res = nodeToExpr(node, ctx);
         const hash = objectHash(noForm(res));
