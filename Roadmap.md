@@ -1,11 +1,18 @@
 
 # Ok, so writing a test
 
-- [ ] do I go through the autocomplete menu?
+- [x] do I go through the autocomplete menu?
   - I guess I probably do?
   - I think I want ...
     ok, so I'm like, incrementally ... building up ...
     the tree? I think that sounds right.
+
+- [x] have a test, that incrementally builds
+- [x] autoclick the first autocomplete item
+- [ ] but, only if it's unambiguous folks
+- [ ] OH BTW like why is this happening?
+- [x] OH failure is "js eval failed sorry folx"
+
 # Thoughts about persistence
 
 I think ... that maybe *only* the sandbox should be persisting the CST

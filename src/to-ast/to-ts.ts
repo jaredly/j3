@@ -287,18 +287,9 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
         case 'apply': {
             if (expr.target.type === 'builtin') {
                 const name = ctx.global.reverseNames[expr.target.hash];
-                if (
-                    (name === '==' ||
-                        name === '!=' ||
-                        name === '+' ||
-                        name === '*' ||
-                        name === '/' ||
-                        name === '<' ||
-                        name === '>') &&
-                    expr.args.length === 2
-                ) {
+                if (binops.includes(name as '+') && expr.args.length === 2) {
                     return t.binaryExpression(
-                        name,
+                        name as typeof binops[0],
                         exprToTs(expr.args[0], ctx),
                         exprToTs(expr.args[1], ctx),
                     );
@@ -427,6 +418,16 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             ]);
         case 'builtin': {
             const name = ctx.global.reverseNames[expr.hash];
+            if (binops.includes(name as '+')) {
+                return t.arrowFunctionExpression(
+                    [t.identifier('x'), t.identifier('y')],
+                    t.binaryExpression(
+                        name as typeof binops[0],
+                        t.identifier('x'),
+                        t.identifier('y'),
+                    ),
+                );
+            }
             return t.identifier(name.replace(/[-?']/g, '_'));
         }
     }
@@ -445,6 +446,8 @@ export const tupleRecord = <T>(entries: { name: string; value: T }[]) => {
     }
     return items;
 };
+
+export const binops = ['==', '!=', '+', '-', '*', '/', '<', '>'] as const;
 
 export const toTs = (exprs: Expr[], ctx: Ctx): string => {
     const nodes = exprs.flatMap((expr) => stmtToTs(expr, ctx, false));

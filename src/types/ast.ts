@@ -7,6 +7,7 @@ export type {
     stringText,
     CString,
     NodeExtra,
+    NodeArray,
 } from './cst';
 
 export type Term = {

@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, stringText, CString, Node, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, NodeArray, Node, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -31,6 +31,8 @@ export type Visitor<Ctx> = {
     TRecordPost?: (node: TRecord, ctx: Ctx) => null | TRecord,
     Loc?: (node: Loc, ctx: Ctx) => null | false | Loc | [Loc | null, Ctx],
     LocPost?: (node: Loc, ctx: Ctx) => null | Loc,
+    NodeArray?: (node: NodeArray, ctx: Ctx) => null | false | NodeArray | [NodeArray | null, Ctx],
+    NodeArrayPost?: (node: NodeArray, ctx: Ctx) => null | NodeArray,
     stringText?: (node: stringText, ctx: Ctx) => null | false | stringText | [stringText | null, Ctx],
     stringTextPost?: (node: stringText, ctx: Ctx) => null | stringText,
     CString?: (node: CString, ctx: Ctx) => null | false | CString | [CString | null, Ctx],
@@ -1310,15 +1312,8 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                 
 
                 
-        let updatedNode$0node$ret = undefined;
-        const updatedNode$0node$ret$current = updatedNode$0specified.ret;
-        if (updatedNode$0node$ret$current != null) {
-            
-                const updatedNode$0node$ret$2$ = transformType(updatedNode$0node$ret$current, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$ret$2$ !== updatedNode$0node$ret$current;
-            updatedNode$0node$ret = updatedNode$0node$ret$2$;
-        }
-        
+                const updatedNode$0node$ret = transformType(updatedNode$0specified.ret, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$ret !== updatedNode$0specified.ret;
 
                 
                 let updatedNode$0node$body = updatedNode$0specified.body;
@@ -1854,6 +1849,42 @@ export const transformLoc = <Ctx>(node: Loc, visitor: Visitor<Ctx>, ctx: Ctx): L
         
     }
 
+// no transformer for Node
+
+export const transformNodeArray = <Ctx>(node: NodeArray, visitor: Visitor<Ctx>, ctx: Ctx): NodeArray => {
+        if (!node) {
+            throw new Error('No NodeArray provided');
+        }
+        
+        const transformed = visitor.NodeArray ? visitor.NodeArray(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.NodeArrayPost) {
+            const transformed = visitor.NodeArrayPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformstringText = <Ctx>(node: stringText, visitor: Visitor<Ctx>, ctx: Ctx): stringText => {
         if (!node) {
             throw new Error('No stringText provided');
@@ -1887,8 +1918,6 @@ export const transformstringText = <Ctx>(node: stringText, visitor: Visitor<Ctx>
         return node;
         
     }
-
-// no transformer for Node
 
 export const transformCString = <Ctx>(node: CString, visitor: Visitor<Ctx>, ctx: Ctx): CString => {
         if (!node) {

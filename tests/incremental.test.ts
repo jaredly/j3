@@ -98,6 +98,8 @@ const testValid = (text: string) =>
 testValid('(def x 10) (def y (, x 20))');
 // So, what do we do here ...
 testValid('(defn what [x :int] 100)');
+testValid('+');
+// testValid('(+ 1. 2.)');
 
 export function incrementallyBuildTree(
     store: Store,
@@ -147,6 +149,7 @@ export function incrementallyBuildTree(
         ) {
             const replace = display.autoComplete[0];
             (store.map[nidx] as Identifier).hash = replace.hash;
+            compile(store, ectx);
         }
 
         if (path.length === 1 && path[0].idx === -1) {
