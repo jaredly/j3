@@ -1,13 +1,22 @@
 import { Node } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { any, Ctx, Local, nil, nilt, noForm, none } from './Ctx';
+import { any, Ctx, Local, Mod, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType } from './nodeToType';
 import { nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
+import { nidx } from '../grammar';
+
+export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
+    if (!ctx.mods[idx]) {
+        ctx.mods[idx] = [mod];
+    } else {
+        ctx.mods[idx].push(mod);
+    }
+};
 
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
@@ -36,56 +45,79 @@ export const specials: {
                 type: 'fn',
                 args: [],
                 body: [],
+                ret: none,
                 form,
             };
         }
         if (contents[0].type === 'array') {
-            let args: { pattern: Pattern; type: Type }[] = [];
             let locals: Local['terms'] = [];
-
-            let pairs: { pat: Node; type?: Node }[] = [];
-
-            contents[0].values.forEach((arg) => {
-                if (arg.type === 'identifier' && arg.text.startsWith(':')) {
-                    if (pairs.length) {
-                        pairs[pairs.length - 1].type = {
-                            ...arg,
-                            text: arg.text.slice(1),
-                        };
+            let args: { pattern: Pattern; type: Type }[] =
+                contents[0].values.map((arg) => {
+                    let type;
+                    if (arg.tannot == null) {
+                        addMod(ctx, arg.loc.idx, {
+                            type: 'tannot',
+                            node: {
+                                ...any.form,
+                                loc: {
+                                    ...arg.loc,
+                                    idx: nidx(),
+                                },
+                            },
+                        });
+                        type = { ...any, form: arg };
+                    } else {
+                        type = nodeToType(arg.tannot, ctx);
                     }
-                } else if (
-                    arg.type === 'list' &&
-                    arg.values.length > 1 &&
-                    arg.values[0].type === 'identifier' &&
-                    arg.values[0].text === ':'
-                ) {
-                    if (pairs.length) {
-                        pairs[pairs.length - 1].type =
-                            arg.values.length > 2
-                                ? {
-                                      ...arg,
-                                      values: arg.values.slice(1),
-                                  }
-                                : arg.values[1];
-                    }
-                } else {
-                    pairs.push({ pat: arg });
-                }
-            });
-
-            pairs.forEach(({ pat, type }) => {
-                const t: Type = type ? nodeToType(type, ctx) : any;
-                if (t.type === 'unresolved') {
-                    err(ctx.errors, pat, {
-                        type: 'misc',
-                        message: `no type given`,
-                    });
-                }
-                args.push({
-                    pattern: nodeToPattern(pat, t, ctx, locals),
-                    type: t,
+                    const pattern = nodeToPattern(arg, type, ctx, locals);
+                    return { pattern, type };
                 });
-            });
+
+            // let pairs: { pat: Node; type?: Node }[] = [];
+            // contents[0].values.forEach((arg) => {
+            //     // if (arg.type === 'identifier' && arg.text.startsWith(':')) {
+            //     //     if (pairs.length) {
+            //     //         pairs[pairs.length - 1].type = {
+            //     //             ...arg,
+            //     //             text: arg.text.slice(1),
+            //     //         };
+            //     //     }
+            //     // } else if (
+            //     //     arg.type === 'list' &&
+            //     //     arg.values.length > 1 &&
+            //     //     arg.values[0].type === 'identifier' &&
+            //     //     arg.values[0].text === ':'
+            //     // ) {
+            //     //     if (pairs.length) {
+            //     //         pairs[pairs.length - 1].type =
+            //     //             arg.values.length > 2
+            //     //                 ? {
+            //     //                       ...arg,
+            //     //                       values: arg.values.slice(1),
+            //     //                   }
+            //     //                 : arg.values[1];
+            //     //     }
+            //     // } else {
+            //     //     pairs.push({ pat: arg });
+            //     // }
+            // });
+
+            // pairs.forEach(({ pat, type }) => {
+            //     const t: Type = type
+            //         ? nodeToType(type, ctx)
+            //         : { ...any, form: pat };
+            //     if (t.type === 'unresolved') {
+            //         err(ctx.errors, pat, {
+            //             type: 'misc',
+            //             message: `no type given`,
+            //         });
+            //     }
+            //     args.push({
+            //         pattern: nodeToPattern(pat, t, ctx, locals),
+            //         type: t,
+            //     });
+            // });
+
             // console.log(pairs);
             locals.forEach(
                 (loc) =>
@@ -102,7 +134,18 @@ export const specials: {
                 },
             };
             const body = contents.slice(1);
-            let ret: Type | undefined;
+            let ret: Type = none;
+
+            // Hmmmmmm
+            // do I need to lock down the `ret`?
+            // 🤔
+            // how would that work.
+            // it starts with ... "nothing", right?
+            // which unifies with anything
+            // but is also illegal to actually return
+            // yeah sure, let's lock it down? I mean
+            // what would that mean.
+
             if (
                 body.length > 0 &&
                 body[0].type === 'identifier' &&
@@ -130,6 +173,7 @@ export const specials: {
             type: 'fn',
             args: [],
             body: contents.map((child) => nodeToExpr(child, ctx)),
+            ret: none,
             form,
         };
     },
@@ -257,7 +301,7 @@ export const specials: {
         if (!first || first.type !== 'array') {
             return { type: 'unresolved', form, reason: 'first not array' };
         }
-        ctx.display[first.loc.idx] = { style: 'pairs' };
+        ctx.display[first.loc.idx] = { style: { type: 'let-pairs' } };
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         for (let i = 0; i < first.values.length - 1; i += 2) {

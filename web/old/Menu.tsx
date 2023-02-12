@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { Store, UpdateMap, updateStore } from './store';
-import { AutoCompleteResult, Ctx } from '../src/to-ast/Ctx';
-import { nodeForType } from '../src/to-cst/nodeForType';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
-import { nodeToString } from '../src/to-cst/nodeToString';
+import { Store, UpdateMap, updateStore } from '../store';
+import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+// import { makeRCtx } from '../src/to-cst/nodeForExpr';
+import { nodeToString } from '../../src/to-cst/nodeToString';
 
 export const Menu = ({
     state,
@@ -73,12 +73,7 @@ export const Menu = ({
                             className="hover"
                         >
                             {item.label.ann
-                                ? nodeToString(
-                                      nodeForType(
-                                          item.label.ann,
-                                          makeRCtx(ctx),
-                                      ),
-                                  )
+                                ? nodeToString(nodeForType(item.label.ann, ctx))
                                 : 'no type'}
                         </div>
                     </div>
@@ -135,15 +130,20 @@ export function getMenuItems(
         action:
             item.type === 'replace'
                 ? () => {
+                      // OK here comes the tricky part.
+                      // IN OUR CONTEXT (??)
+                      // we want .. hmmm
+                      // no that's not right.
+                      // our CST needs to have the type annotations living within it.
+                      // SO any time we "parse" and see a fn arg w/o an annotation, we need to fill it in.
+                      // these are, by default, hidden (?) maybe not, maybe it's just "space" skips over them,
+                      // but ":" replaces the autocompleted one. Yeah that sounds right.
                       const map: UpdateMap = {
                           [idx]: {
-                              ...store.map[idx],
-                              node: {
-                                  type: 'identifier',
-                                  text: item.text,
-                                  hash: item.hash,
-                                  loc: { start: -1, end: -1, idx },
-                              },
+                              type: 'identifier',
+                              text: '',
+                              hash: item.hash,
+                              loc: { start: -1, end: -1, idx },
                           },
                       };
                       updateStore(

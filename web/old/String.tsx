@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { MCString } from '../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store } from './store';
+import { MCString } from '../../src/types/mcst';
+import { EvalCtx, Path, setSelection, Store } from '../store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './Doc';

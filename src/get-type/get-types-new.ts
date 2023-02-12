@@ -60,6 +60,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 });
             }
             return;
+        case 'blank':
+            return;
         case 'string':
             if (report) {
                 // Populate the map
@@ -246,6 +248,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 if (report) {
                     report.types[arg.type.form.loc.idx] = arg.type;
                     report.types[arg.pattern.form.loc.idx] = arg.type;
+                    getPatternTypes(arg.pattern, arg.type, report.types);
                 }
             });
             if (args.length < expr.args.length) {
@@ -509,5 +512,26 @@ export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {
                 walkPattern(arg, ctx, report);
             });
             return;
+    }
+};
+
+export const getPatternTypes = (
+    pattern: Pattern,
+    type: Type,
+    types: { [key: string]: Type },
+) => {
+    switch (pattern.type) {
+        case 'record': {
+            const map: { [name: string]: Type } = {};
+            if (type.type === 'record') {
+                type.entries.forEach((entry) => {
+                    map[entry.name] = entry.value;
+                });
+            }
+            pattern.entries.forEach((entry) => {
+                types[entry.form.loc.idx] = map[entry.name];
+            });
+            return;
+        }
     }
 };

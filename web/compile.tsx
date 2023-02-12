@@ -4,7 +4,7 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, nil, noForm } from '../src/to-ast/Ctx';
 import { stmtToTs } from '../src/to-ast/to-ts';
-import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
+import { fromMCST, ListLikeContents, Map, toMCST } from '../src/types/mcst';
 import { EvalCtx, notify, Store, Toplevel, UpdateMap } from './store';
 import objectHash from 'object-hash';
 import { getType, Report } from '../src/get-type/get-types-new';
@@ -12,15 +12,17 @@ import { validateExpr } from '../src/get-type/validate';
 import { layout } from './layout';
 import { Expr } from '../src/types/ast';
 import { Identifier, Loc } from '../src/types/cst';
+import { transformNode } from '../src/types/transform-cst';
 
 export const builtins = {
     toString: (t: number | boolean) => t + '',
     debugToString: (t: any) => JSON.stringify(t),
+    has_prefix_: (a: string, b: string) => a.startsWith(b),
 };
 
 export const compile = (store: Store, ectx: EvalCtx) => {
     let { ctx, last, terms, nodes, results } = ectx;
-    const root = store.map[store.root].node as ListLikeContents;
+    const root = store.map[store.root] as ListLikeContents;
 
     const prevErrors = ectx.report.errors;
     const prevResults = { ...results };
@@ -32,7 +34,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const usedHashes: { [hash: string]: number[] } = {};
     Object.keys(store.map).forEach((ridx) => {
         const idx = +ridx;
-        const node = store.map[idx].node;
+        const node = store.map[idx];
         if (node.type === 'identifier' && node.hash) {
             if (!usedHashes[node.hash]) {
                 usedHashes[node.hash] = [];
@@ -45,24 +47,62 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const tmpMap: Map = { ...store.map };
 
     root.values.forEach((idx) => {
-        if (tmpMap[idx].node.type === 'comment') {
+        if (tmpMap[idx].type === 'comment') {
             results[idx] = {
                 status: 'success',
                 value: undefined,
                 code: '// a comment',
+                type: undefined,
                 expr: nil,
                 display: {},
             };
             return;
         }
+
         ctx.sym.current = 0;
+        const node = fromMCST(idx, tmpMap);
+        transformNode(node, {
+            pre(node) {
+                if (
+                    node.type === 'identifier' &&
+                    node.hash &&
+                    node.hash.startsWith(':')
+                ) {
+                    const sym = +node.hash.slice(1);
+                    if (!isNaN(sym) && sym >= ctx.sym.current) {
+                        ctx.sym.current = sym + 1;
+                    }
+                }
+            },
+        });
 
         const report: Report = { errors: {}, types: {} };
         ctx.errors = report.errors;
         ctx.display = {};
+        ctx.mods = {};
 
-        const res = nodeToExpr(fromMCST(idx, tmpMap), ctx);
+        const res = nodeToExpr(node, ctx);
         const hash = objectHash(noForm(res));
+
+        Object.keys(ctx.mods).forEach((idx) => {
+            ctx.mods[+idx].forEach((mod) => {
+                if (mod.type === 'tannot') {
+                    const node = updateMap[+idx] ?? store.map[+idx];
+                    updateMap[+idx] = {
+                        ...node,
+                        tannot: toMCST(mod.node, updateMap),
+                    };
+                } else if (mod.type === 'hash') {
+                    const node = updateMap[+idx] ?? store.map[+idx];
+                    if (node.type === 'identifier') {
+                        updateMap[+idx] = {
+                            ...node,
+                            hash: mod.hash,
+                        };
+                    }
+                }
+            });
+        });
 
         layout(idx, 0, tmpMap, ctx.display, true);
 
@@ -80,7 +120,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         ctx = rmPrevious(ctx, nodes[idx]);
 
-        const _ = getType(res, ctx, report);
+        const resType = getType(res, ctx, report);
         validateExpr(res, ctx, report.errors);
 
         const hasErrors = Object.keys(report.errors).length > 0;
@@ -124,6 +164,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                     // console.log(`Encountered a compilation failure: `, message);
                     throw new Error(message);
                 }),
+                type: resType,
                 code,
                 expr: res,
                 display: ctx.display,
@@ -142,14 +183,16 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         }
 
         const newHashes = exprHashes(res);
-        if (prevHashes && newHashes) {
-            // const map: {[prevHash:string]:string} = {}
-            // Object.entries(newHashes).forEach(([name, hash]) => {
-            //     map[newHashes[name]] = prevHashes[name];
-            // })
+        if (prevHashes) {
+            const newNames: { [key: string]: string } = {};
+            if (newHashes) {
+                Object.keys(newHashes).forEach(
+                    (name) => (newNames[newHashes[name]] = name),
+                );
+            }
             Object.entries(prevHashes).forEach(([name, hash]) => {
-                const newHash = newHashes[name];
-                if (!newHash) {
+                const newHash = newHashes?.[name];
+                if (newHash === hash || newNames[hash]) {
                     return;
                 }
                 // These are the idx's of identifiers
@@ -157,11 +200,12 @@ export const compile = (store: Store, ectx: EvalCtx) => {
                 const idxs = usedHashes[hash];
                 if (idxs) {
                     idxs.forEach((idx) => {
-                        const node = tmpMap[idx].node as Identifier & {
+                        const node = tmpMap[idx] as Identifier & {
                             loc: Loc;
                         };
                         updateMap[idx] = tmpMap[idx] = {
-                            node: { ...node, hash: newHash },
+                            ...node,
+                            hash: newHash,
                         };
                     });
                 }

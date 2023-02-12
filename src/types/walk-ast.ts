@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, stringText, CString, Node} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, NodeArray, Node, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -31,10 +31,14 @@ export type Visitor<Ctx> = {
     TRecordPost?: (node: TRecord, ctx: Ctx) => null | TRecord,
     Loc?: (node: Loc, ctx: Ctx) => null | false | Loc | [Loc | null, Ctx],
     LocPost?: (node: Loc, ctx: Ctx) => null | Loc,
+    NodeArray?: (node: NodeArray, ctx: Ctx) => null | false | NodeArray | [NodeArray | null, Ctx],
+    NodeArrayPost?: (node: NodeArray, ctx: Ctx) => null | NodeArray,
     stringText?: (node: stringText, ctx: Ctx) => null | false | stringText | [stringText | null, Ctx],
     stringTextPost?: (node: stringText, ctx: Ctx) => null | stringText,
     CString?: (node: CString, ctx: Ctx) => null | false | CString | [CString | null, Ctx],
     CStringPost?: (node: CString, ctx: Ctx) => null | CString,
+    NodeExtra?: (node: NodeExtra, ctx: Ctx) => null | false | NodeExtra | [NodeExtra | null, Ctx],
+    NodeExtraPost?: (node: NodeExtra, ctx: Ctx) => null | NodeExtra,
     Pattern_number?: (node: Number, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
     PatternPost_number?: (node: Number, ctx: Ctx) => null | Pattern,
     Pattern_bool?: (node: Bool, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
@@ -1102,6 +1106,8 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
         switch (node.type) {
             case 'builtin': break;
 
+            case 'blank': break;
+
             case 'def': {
                     const updatedNode$0specified = node;
                     let changed1 = false;
@@ -1306,15 +1312,8 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                 
 
                 
-        let updatedNode$0node$ret = undefined;
-        const updatedNode$0node$ret$current = updatedNode$0specified.ret;
-        if (updatedNode$0node$ret$current != null) {
-            
-                const updatedNode$0node$ret$2$ = transformType(updatedNode$0node$ret$current, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$ret$2$ !== updatedNode$0node$ret$current;
-            updatedNode$0node$ret = updatedNode$0node$ret$2$;
-        }
-        
+                const updatedNode$0node$ret = transformType(updatedNode$0specified.ret, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$ret !== updatedNode$0specified.ret;
 
                 
                 let updatedNode$0node$body = updatedNode$0specified.body;
@@ -1850,12 +1849,116 @@ export const transformLoc = <Ctx>(node: Loc, visitor: Visitor<Ctx>, ctx: Ctx): L
         
     }
 
+// no transformer for Node
+
+export const transformNodeArray = <Ctx>(node: NodeArray, visitor: Visitor<Ctx>, ctx: Ctx): NodeArray => {
+        if (!node) {
+            throw new Error('No NodeArray provided');
+        }
+        
+        const transformed = visitor.NodeArray ? visitor.NodeArray(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.NodeArrayPost) {
+            const transformed = visitor.NodeArrayPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformstringText = <Ctx>(node: stringText, visitor: Visitor<Ctx>, ctx: Ctx): stringText => {
         if (!node) {
             throw new Error('No stringText provided');
         }
         
         const transformed = visitor.stringText ? visitor.stringText(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.stringTextPost) {
+            const transformed = visitor.stringTextPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformCString = <Ctx>(node: CString, visitor: Visitor<Ctx>, ctx: Ctx): CString => {
+        if (!node) {
+            throw new Error('No CString provided');
+        }
+        
+        const transformed = visitor.CString ? visitor.CString(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.CStringPost) {
+            const transformed = visitor.CStringPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformNodeExtra = <Ctx>(node: NodeExtra, visitor: Visitor<Ctx>, ctx: Ctx): NodeExtra => {
+        if (!node) {
+            throw new Error('No NodeExtra provided');
+        }
+        
+        const transformed = visitor.NodeExtra ? visitor.NodeExtra(node, ctx) : null;
         if (transformed === false) {
             return node;
         }
@@ -1886,83 +1989,8 @@ export const transformstringText = <Ctx>(node: stringText, visitor: Visitor<Ctx>
             
         
         node = updatedNode;
-        if (visitor.stringTextPost) {
-            const transformed = visitor.stringTextPost(node, ctx);
-            if (transformed != null) {
-                node = transformed;
-            }
-        }
-        return node;
-        
-    }
-
-// no transformer for Node
-
-export const transformCString = <Ctx>(node: CString, visitor: Visitor<Ctx>, ctx: Ctx): CString => {
-        if (!node) {
-            throw new Error('No CString provided');
-        }
-        
-        const transformed = visitor.CString ? visitor.CString(node, ctx) : null;
-        if (transformed === false) {
-            return node;
-        }
-        if (transformed != null) {
-            if (Array.isArray(transformed)) {
-                ctx = transformed[1];
-                if (transformed[0] != null) {
-                    node = transformed[0];
-                }
-            } else {
-                node = transformed;
-            }
-        }
-        
-        let changed0 = false;
-        
-            let updatedNode = node;
-            {
-                let changed1 = false;
-                
-                const updatedNode$first = transformstringText(node.first, visitor, ctx);
-                changed1 = changed1 || updatedNode$first !== node.first;
-
-                
-                let updatedNode$templates = node.templates;
-                {
-                    let changed2 = false;
-                    const arr1 = node.templates.map((updatedNode$templates$item1) => {
-                        
-            let result = updatedNode$templates$item1;
-            {
-                let changed3 = false;
-                
-                const result$suffix = transformstringText(updatedNode$templates$item1.suffix, visitor, ctx);
-                changed3 = changed3 || result$suffix !== updatedNode$templates$item1.suffix;
-                if (changed3) {
-                    result =  {...result, suffix: result$suffix};
-                    changed2 = true;
-                }
-            }
-            
-                        return result
-                    })
-                    if (changed2) {
-                        updatedNode$templates = arr1;
-                        changed1 = true;
-                    }
-                }
-                
-                if (changed1) {
-                    updatedNode =  {...updatedNode, first: updatedNode$first, templates: updatedNode$templates};
-                    changed0 = true;
-                }
-            }
-            
-        
-        node = updatedNode;
-        if (visitor.CStringPost) {
-            const transformed = visitor.CStringPost(node, ctx);
+        if (visitor.NodeExtraPost) {
+            const transformed = visitor.NodeExtraPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

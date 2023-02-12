@@ -3,7 +3,7 @@
 import { Node } from '../types/cst';
 import { Expr, Term, Type } from '../types/ast';
 import { getType } from '../get-type/get-types-new';
-import { Ctx } from './Ctx';
+import { any, Ctx, none } from './Ctx';
 
 export type Result =
     | { type: 'local'; name: string; typ: Type; hash: string }
@@ -20,6 +20,12 @@ export const resolveType = (
     ctx: Ctx,
     form: Node,
 ): Type => {
+    if (!hash && text === any.form.text) {
+        return { ...any, form };
+    }
+    if (!hash && text === none.form.text) {
+        return { ...none, form };
+    }
     if (hash) {
         if (hash === '#builtin') {
             return {
@@ -69,6 +75,10 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
                         ...(ctx.global.typeNames[res.name] || []),
                     ],
                 },
+                reverseNames: {
+                    ...ctx.global.reverseNames,
+                    [res.hash]: res.name,
+                },
             },
         };
     }
@@ -96,6 +106,10 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
                         res.hash,
                         ...(ctx.global.names[res.name] || []),
                     ],
+                },
+                reverseNames: {
+                    ...ctx.global.reverseNames,
+                    [res.hash]: res.name,
                 },
             },
         };

@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { applyAndResolve } from '../src/get-type/matchesType';
-import { Ctx } from '../src/to-ast/Ctx';
-import { makeRCtx } from '../src/to-cst/nodeForExpr';
-import { nodeForType } from '../src/to-cst/nodeForType';
-import { nodeToString } from '../src/to-cst/nodeToString';
-import { errorToString } from '../src/to-cst/show-errors';
-import { Type } from '../src/types/ast';
-import { MNode } from '../src/types/mcst';
+import { applyAndResolve } from '../../src/get-type/matchesType';
+import { Ctx } from '../../src/to-ast/Ctx';
+// import { makeRCtx, nodeForExpr } from '../src/to-cst/nodeForExpr';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { errorToString } from '../../src/to-cst/show-errors';
+import { NodeList, Type } from '../../src/types/ast';
+import { fromMCST, MNode } from '../../src/types/mcst';
 import { Events, Node } from './Nodes';
-import { EvalCtx, Path, Store } from './store';
+import { EvalCtx, Path, Store } from '../store';
 
 const topPath: Path[] = [];
 const emptyEvents: Events = {
@@ -35,6 +35,23 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
 
     return (
         <div style={{ margin: 24 }}>
+            <div
+                style={{
+                    position: 'absolute',
+                    top: 8,
+                    right: 8,
+                }}
+                onClick={() => {
+                    const root = fromMCST(store.root, store.map) as NodeList;
+                    navigator.clipboard.writeText(
+                        root.values
+                            .map((node) => nodeToString(node))
+                            .join('\n\n'),
+                    );
+                }}
+            >
+                Copy
+            </div>
             <div style={{ marginBottom: 500 }}>
                 <Node
                     idx={store.root}
@@ -47,7 +64,7 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
                 <ShowHover
                     hover={hover}
                     ctx={ctx}
-                    node={store.map[hover.idx].node}
+                    node={store.map[hover.idx]}
                 />
             )}
             <div
@@ -135,11 +152,12 @@ function ShowHover({
                     top: hover.box.bottom,
                     pointerEvents: 'none',
                     zIndex: 100,
+                    maxWidth: 400,
                     backgroundColor: 'black',
                     fontSize: '80%',
                     border: '1px solid rgba(255,255,255,0.2)',
                     padding: 8,
-                    whiteSpace: 'pre',
+                    whiteSpace: 'pre-wrap',
                 }}
             >
                 {result !== undefined ? <ShowResult result={result} /> : ''}
@@ -194,11 +212,11 @@ function useAltDown() {
 }
 
 export const showType = (type: Type, ctx: Ctx): string => {
-    let text = nodeToString(nodeForType(type, makeRCtx(ctx)));
+    let text = nodeToString(nodeForType(type, ctx));
     if (type.type === 'global') {
         const res = applyAndResolve(type, ctx, []);
         if (res.type !== 'error' && res.type !== 'local-bound') {
-            return text + ' = ' + nodeToString(nodeForType(res, makeRCtx(ctx)));
+            return text + ' = ' + nodeToString(nodeForType(res, ctx));
         }
     }
     return text;

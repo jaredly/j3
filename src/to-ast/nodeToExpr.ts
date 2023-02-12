@@ -19,6 +19,9 @@ export const filterComments = (nodes: Node[]) =>
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
         case 'identifier': {
+            if (!form.text && !form.hash) {
+                return { type: 'blank', form };
+            }
             if (form.text.includes('.')) {
                 const [expr, ...rest] = form.text.split('.');
                 let inner: Expr = resolveExpr(
@@ -45,7 +48,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'unparsed':
             return { type: 'unresolved', form };
         case 'tag':
-            ctx.display[form.loc.idx] = { style: 'bold' };
+            ctx.display[form.loc.idx] = { style: { type: 'tag' } };
             return { type: 'tag', name: form.text, form };
         case 'string':
             return {
@@ -84,7 +87,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             name: item.text,
                             value: nodeToExpr(item, ctx),
                         });
-                        ctx.display[item.loc.idx] = { style: 'italic' };
+                        ctx.display[item.loc.idx] = {
+                            style: { type: 'record-attr' },
+                        };
                     } else {
                         entries.push({
                             name: '_ignored',
@@ -121,7 +126,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 }
                 for (let i = 0; i < values.length; i += 2) {
                     const name = values[i];
-                    ctx.display[name.loc.idx] = { style: 'italic' };
+                    ctx.display[name.loc.idx] = {
+                        style: { type: 'record-attr' },
+                    };
                     if (name.type !== 'identifier' && name.type !== 'number') {
                         continue;
                     }

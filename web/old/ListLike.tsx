@@ -1,14 +1,14 @@
 import * as React from 'react';
-import { Map } from '../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store } from './store';
+import { EvalCtx, Path, setSelection, Store } from '../store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './Doc';
-import { Expr } from '../src/types/ast';
-import { Report } from '../src/get-type/get-types-new';
-import { errorToString } from '../src/to-cst/show-errors';
-import { Ctx } from '../src/to-ast/Ctx';
+import { errorToString } from '../../src/to-cst/show-errors';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { Top } from './IdentifierLike';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+// import { makeRCtx } from '../src/to-cst/nodeForExpr';
 
 export const ListLike = ({
     left,
@@ -50,9 +50,14 @@ export const ListLike = ({
                                 setSelection(store, {
                                     idx: children[i - 1],
                                     loc: 'end',
+                                    from: 'right',
                                 });
                             } else if (!isRoot) {
-                                setSelection(store, { idx, loc: 'start' });
+                                setSelection(store, {
+                                    idx,
+                                    loc: 'start',
+                                    from: 'right',
+                                });
                             }
                         },
                         onRight() {
@@ -60,9 +65,14 @@ export const ListLike = ({
                                 setSelection(store, {
                                     idx: children[i + 1],
                                     loc: 'start',
+                                    from: 'left',
                                 });
                             } else if (!isRoot) {
-                                setSelection(store, { idx, loc: 'end' });
+                                setSelection(store, {
+                                    idx,
+                                    loc: 'end',
+                                    from: 'left',
+                                });
                             }
                         },
                     }}
@@ -79,10 +89,7 @@ export const ListLike = ({
         ctx.ctx.display[idx]?.layout,
     );
 
-    const dec =
-        ctx.report.errors[idx]?.length || ctx.results[idx]?.status === 'errors'
-            ? 'rgba(255,0,0,0.2)'
-            : 'none';
+    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.2)' : 'none';
 
     return (
         <span
@@ -102,7 +109,7 @@ export const ListLike = ({
                 evt.stopPropagation();
                 evt.preventDefault();
                 if (!isRoot) {
-                    setSelection(store, { idx, loc: 'end' });
+                    setSelection(store, { idx, loc: 'end', from: 'right' });
                     console.log('OK');
                 }
             }}
@@ -124,8 +131,9 @@ export const ListLike = ({
                                     ? {
                                           idx: children[0],
                                           loc: 'start',
+                                          from: 'left',
                                       }
-                                    : { idx, loc: 'inside' },
+                                    : { idx, loc: 'inside', from: 'left' },
                             );
                         },
                     }}
@@ -144,6 +152,7 @@ export const ListLike = ({
                             setSelection(store, {
                                 idx,
                                 loc: 'start',
+                                from: 'right',
                             });
                         } else {
                             setSelection(
@@ -152,8 +161,9 @@ export const ListLike = ({
                                     ? {
                                           idx: children[0],
                                           loc: 'start',
+                                          from: 'left',
                                       }
-                                    : { idx, loc: 'inside' },
+                                    : { idx, loc: 'inside', from: 'left' },
                             );
                         }
                     })}
@@ -170,10 +180,18 @@ export const ListLike = ({
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
                         onLeft() {
-                            setSelection(store, { idx, loc: 'start' });
+                            setSelection(store, {
+                                idx,
+                                loc: 'start',
+                                from: 'right',
+                            });
                         },
                         onRight() {
-                            setSelection(store, { idx, loc: 'end' });
+                            setSelection(store, {
+                                idx,
+                                loc: 'end',
+                                from: 'left',
+                            });
                         },
                     }}
                 />
@@ -196,13 +214,15 @@ export const ListLike = ({
                                     ? {
                                           idx: children[children.length - 1],
                                           loc: 'end',
+                                          from: 'right',
                                       }
-                                    : { idx, loc: 'inside' },
+                                    : { idx, loc: 'inside', from: 'right' },
                             );
                         } else {
                             setSelection(store, {
                                 idx,
                                 loc: 'end',
+                                from: 'left',
                             });
                         }
                     })}
@@ -227,6 +247,7 @@ export const ListLike = ({
                                     ? {
                                           idx: children[children.length - 1],
                                           loc: 'end',
+                                          from: 'right',
                                       }
                                     : { idx, loc: 'inside' },
                             );
@@ -251,15 +272,58 @@ export const sideClick =
         fn(x < rect.width / 2);
     };
 
+export const OneLineResult = ({
+    result,
+    ctx,
+}: {
+    ctx: Ctx;
+    result: EvalCtx['results'][0];
+}) => {
+    switch (result.status) {
+        case 'success':
+            if (typeof result.value === 'function') {
+                return (
+                    <div
+                        style={{
+                            fontSize: '80%',
+                            color: '#6a6',
+                        }}
+                    >
+                        {result.type
+                            ? ': ' + nodeToString(nodeForType(result.type, ctx))
+                            : 'No type 🤔'}
+                    </div>
+                );
+            }
+            return (
+                <div
+                    style={{
+                        fontSize: '80%',
+                        color: '#00c4c4',
+                    }}
+                >
+                    {'-> '}
+                    {JSON.stringify(result.value)}
+                </div>
+            );
+
+        case 'errors':
+            return <div>Errors found</div>;
+        case 'failure':
+            return (
+                <div>
+                    Evaluation failed probably {result.error} {result.code}
+                </div>
+            );
+    }
+};
+
 export const ShowResult = ({
     result,
     ctx,
 }: {
     ctx: Ctx;
-    result:
-        | { status: 'success'; value: any; code: string; expr: Expr }
-        | { status: 'failure'; error: string; code: string; expr: Expr }
-        | { status: 'errors'; expr: Expr; errors: Report['errors'] };
+    result: EvalCtx['results'][0];
 }) => {
     let body;
     if (result.status === 'success') {
@@ -370,7 +434,14 @@ function formatContents(
                             }}
                             style={{ marginBottom: 16 }}
                         >
-                            {node}
+                            <div>
+                                {node}
+                                <div style={{ height: 16 }} />
+                                <OneLineResult
+                                    result={ctx.results[children[i]]}
+                                    ctx={ctx.ctx}
+                                />
+                            </div>
                         </div>
                         <div />
                         {/* <ShowResult

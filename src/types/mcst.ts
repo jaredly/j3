@@ -1,7 +1,11 @@
-import { Loc, Node, NodeContents, stringText } from './cst';
+import { UpdateMap } from '../../web/store';
+import { Loc, Node, NodeContents, NodeExtra, stringText } from './cst';
 
-export type MNode = MNodeContents & {
+export type MNode = MNodeContents & MNodeExtra;
+export type MNodeExtra = {
     loc: Loc;
+    tannot?: number;
+    tapply?: number;
 };
 
 export type Atom =
@@ -41,9 +45,7 @@ export type MCString = {
 export type WithLoc<T> = T & { loc: Loc };
 
 export type Map = {
-    [key: number]: {
-        node: MNode;
-    };
+    [key: number]: MNode;
 };
 export type Layout =
     | {
@@ -71,10 +73,10 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
         case 'string':
             return {
                 ...node,
-                first: fromMCST(node.first, map) as stringText,
+                first: fromMCST(node.first, map) as stringText & NodeExtra,
                 templates: node.templates.map(({ expr, suffix }) => ({
                     expr: fromMCST(expr, map),
-                    suffix: fromMCST(suffix, map) as stringText,
+                    suffix: fromMCST(suffix, map) as stringText & NodeExtra,
                 })),
             };
         // case 'spread':
@@ -85,14 +87,16 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
 };
 
 export const fromMCST = (idx: number, map: Map): Node => {
-    const { node } = map[idx];
+    const node = map[idx];
     return {
         ...node,
         ...fromMNode(node, map),
+        tannot: node.tannot != null ? fromMCST(node.tannot, map) : undefined,
+        tapply: node.tapply != null ? fromMCST(node.tapply, map) : undefined,
     };
 };
 
-export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
+export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
     switch (node.type) {
         case 'list':
         case 'array':
@@ -117,12 +121,15 @@ export const toMNode = (node: NodeContents, map: Map): MNodeContents => {
     }
 };
 
-export const toMCST = (node: Node, map: Map): number => {
+export const toMCST = (node: Node, map: UpdateMap): number => {
     if (map[node.loc.idx]) {
         console.error(`Duplicate node in map??`, node.loc.idx, map);
     }
     map[node.loc.idx] = {
-        node: { ...node, ...toMNode(node, map) },
+        ...toMNode(node, map),
+        loc: node.loc,
+        tannot: node.tannot ? toMCST(node.tannot, map) : undefined,
+        tapply: node.tapply ? toMCST(node.tapply, map) : undefined,
     };
     return node.loc.idx;
 };

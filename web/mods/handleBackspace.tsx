@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { ListLikeContents, Map } from '../../src/types/mcst';
 import { Path, Store, UpdateMap, updateStore } from '../store';
-import { Events } from '../Nodes';
+import { Events } from '../old/Nodes';
 import { mnodeChildren, rmChild, isAtStart, getPos } from './onKeyDown';
 
 const removeEmptyPrev = (
@@ -11,23 +11,19 @@ const removeEmptyPrev = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
     path: Path[],
 ) => {
-    const children = mnodeChildren(store.map[gp.idx].node);
+    const children = mnodeChildren(store.map[gp.idx]);
     const prev = children[at - 1];
-    const pnode = store.map[prev].node;
-    if (pnode.type === 'identifier' && pnode.text === '') {
+    const pnode = store.map[prev];
+    if (pnode.type === 'identifier' && pnode.text === '' && !pnode.hash) {
         const values = children.slice();
         values.splice(at - 1, 1);
         const mp: UpdateMap = {
             [prev]: null,
             [gp.idx]: {
                 ...store.map[gp.idx],
-                node: {
-                    ...store.map[gp.idx].node,
-                    ...{
-                        type: store.map[gp.idx].node
-                            .type as ListLikeContents['type'],
-                        values,
-                    },
+                ...{
+                    type: store.map[gp.idx].type as ListLikeContents['type'],
+                    values,
                 },
             },
         };
@@ -59,7 +55,11 @@ export const handleBackspace = (
         return;
     }
 
-    if (parent.child.type === 'child' && getPos(evt.currentTarget) === 0) {
+    if (
+        parent.child.type === 'child' &&
+        getPos(evt.currentTarget) === 0 &&
+        parent.child.at > 0
+    ) {
         if (removeEmptyPrev(parent, parent.child.at, store, evt, path)) {
             return;
         }
@@ -70,10 +70,7 @@ export const handleBackspace = (
         const mp: Map = {
             [idx]: {
                 ...store.map[idx],
-                node: {
-                    ...store.map[idx].node,
-                    ...{ type: 'identifier', text: '' },
-                },
+                ...{ type: 'identifier', text: '' },
             },
         };
         updateStore(store, { map: mp }, [path]);
@@ -85,17 +82,15 @@ export const handleBackspace = (
         if (evt.currentTarget.textContent === '') {
             const mp: UpdateMap = {};
             const pnode = store.map[parent.idx];
-            const res = rmChild(pnode.node, parent.child.at);
+            const res = rmChild(pnode, parent.child.at);
             if (!res) {
                 return;
             }
             const { contents, nidx } = res;
             if (contents.values.length === 0) {
                 mp[parent.idx] = {
-                    node: {
-                        ...pnode.node,
-                        ...{ type: 'identifier', text: '' },
-                    },
+                    ...pnode,
+                    ...{ type: 'identifier', text: '' },
                 };
                 updateStore(
                     store,
@@ -110,7 +105,7 @@ export const handleBackspace = (
                 evt.preventDefault();
                 return;
             }
-            mp[parent.idx] = { node: { ...pnode.node, ...contents } };
+            mp[parent.idx] = { ...pnode, ...contents };
             updateStore(
                 store,
                 {

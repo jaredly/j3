@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { Map, toMCST } from '../src/types/mcst';
-import { Path, Store, updateStore } from './store';
+import { Map, toMCST } from '../../src/types/mcst';
+import { Path, Store, updateStore } from '../store';
 import { Events } from './Nodes';
-import { modChildren, onKeyDown } from './mods/onKeyDown';
-import { parse } from '../src/grammar';
+import { modChildren, onKeyDown } from '../mods/onKeyDown';
+import { parse } from '../../src/grammar';
 
 export const parseKey = (text: string) => {
     try {
@@ -49,12 +49,8 @@ export const Blinker = ({
                     if (parent.child.type === 'inside') {
                         const pnode = store.map[parent.idx];
                         mp[parent.idx] = {
-                            node: {
-                                ...pnode.node,
-                                ...modChildren(pnode.node, (items) =>
-                                    items.push(nidx),
-                                ),
-                            },
+                            ...pnode,
+                            ...modChildren(pnode, (items) => items.push(nidx)),
                         };
                         updateStore(
                             store,
@@ -70,19 +66,15 @@ export const Blinker = ({
                     if (child.type === 'child') {
                         const pnode = store.map[gp.idx];
                         mp[gp.idx] = {
-                            node: {
-                                ...pnode.node,
-                                ...modChildren(pnode.node, (items) => {
-                                    items.splice(
-                                        child.at +
-                                            (parent.child.type === 'start'
-                                                ? 0
-                                                : 1),
-                                        0,
-                                        nidx,
-                                    );
-                                }),
-                            },
+                            ...pnode,
+                            ...modChildren(pnode, (items) => {
+                                items.splice(
+                                    child.at +
+                                        (parent.child.type === 'start' ? 0 : 1),
+                                    0,
+                                    nidx,
+                                );
+                            }),
                         };
                         updateStore(
                             store,

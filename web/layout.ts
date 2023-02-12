@@ -52,7 +52,7 @@ export const calculateLayout = (
 };
 
 const idName = (item?: Map[0]) =>
-    item?.node.type === 'identifier' ? item.node.text : null;
+    item?.type === 'identifier' ? item.text : null;
 
 const tightFirsts: { [key: string]: number } = {
     fn: 2,
@@ -66,8 +66,8 @@ const tightFirsts: { [key: string]: number } = {
 };
 
 function howTight(item?: Map[0]) {
-    if (item?.node.type === 'identifier') {
-        return tightFirsts[item.node.text] ?? 1;
+    if (item?.type === 'identifier') {
+        return tightFirsts[item.text] ?? 1;
     }
     return 1;
 }
@@ -80,7 +80,7 @@ export const layout = (
     recursive = false,
 ) => {
     const item = display[idx] ?? (display[idx] = {});
-    item.layout = calculateLayout(map[idx].node, pos, display, map, recursive);
+    item.layout = calculateLayout(map[idx], pos, display, map, recursive);
 };
 
 function childWidth(

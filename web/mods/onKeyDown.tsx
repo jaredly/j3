@@ -5,10 +5,18 @@ import {
     MNodeContents,
     toMCST,
 } from '../../src/types/mcst';
-import { Path, redo, setSelection, Store, undo, updateStore } from '../store';
+import {
+    Path,
+    redo,
+    setSelection,
+    Store,
+    undo,
+    UpdateMap,
+    updateStore,
+} from '../store';
 import { parse } from '../../src/grammar';
 import { CString, Loc, NodeContents } from '../../src/types/cst';
-import { Events } from '../Nodes';
+import { Events } from '../old/Nodes';
 import { handleBackspace } from './handleBackspace';
 import { handleSpace } from './handleSpace';
 
@@ -19,6 +27,35 @@ export const onKeyDown = (
     events: Events,
     store: Store,
 ) => {
+    if (evt.key === ':') {
+        evt.preventDefault();
+        let tannot = store.map[idx].tannot;
+        if (tannot != null) {
+            return setSelection(store, { idx: tannot, loc: 'start' });
+        }
+        for (let i = path.length - 1; i >= 0; i--) {
+            let tannot = store.map[path[i].idx].tannot;
+            if (tannot != null) {
+                return setSelection(store, { idx: tannot, loc: 'start' });
+            }
+        }
+        return;
+        // assume we're going to the thing
+        // if (node.tannot) {
+        // }
+    }
+
+    if (evt.key === 'Tab') {
+        evt.preventDefault();
+        const last = path[path.length - 1];
+        if (last.child.type === 'text') {
+            // if there's an expr after us, go to their start
+            // otherwise, go to the end of the containing string
+            setSelection(store, { idx: last.idx, loc: 'end' });
+            return;
+        }
+    }
+
     if (evt.key === 'z' && (evt.ctrlKey || evt.metaKey)) {
         evt.preventDefault();
         return evt.shiftKey ? redo(store) : undo(store);
@@ -28,7 +65,7 @@ export const onKeyDown = (
         return handleBackspace(evt, idx, path, events, store);
     }
 
-    const isComment = store.map[idx].node.type === 'comment';
+    const isComment = store.map[idx].type === 'comment';
 
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         return handleSpace(evt, idx, path, events, store);
@@ -57,7 +94,7 @@ export const onKeyDown = (
             if (parent.child.type === 'end') {
                 continue;
             }
-            const node = store.map[parent.idx].node;
+            const node = store.map[parent.idx];
             if (node.type === looking) {
                 return setSelection(store, {
                     idx: parent.idx,
@@ -221,9 +258,25 @@ function newListLike(
     idx: number,
     store: Store,
 ) {
+    const last = path[path.length - 1];
+    if (evt.currentTarget.textContent === '' && last.child.type === 'child') {
+        const mp: UpdateMap = {};
+        const nw = parse(
+            evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',
+        )[0];
+        nw.loc.idx = idx;
+        toMCST(nw, mp);
+        updateStore(
+            store,
+            { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
+            [path],
+        );
+        evt.preventDefault();
+        return;
+    }
+
     const overwrite =
-        evt.currentTarget.textContent === '' &&
-        path[path.length - 1].child.type === 'child';
+        evt.currentTarget.textContent === '' && last.child.type === 'child';
 
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
@@ -244,21 +297,27 @@ function newListLike(
         toMCST(nw, mp);
         const pnode = store.map[parent.idx];
         mp[parent.idx] = {
-            node: {
-                ...pnode.node,
-                ...modChildren(pnode.node, (items) => {
-                    if (overwrite && child.type === 'child') {
-                        items[child.at] = nw.loc.idx;
-                    } else {
-                        items.splice(
-                            child.type === 'child' ? child.at + 1 : 0,
-                            0,
-                            nw.loc.idx,
-                        );
-                    }
-                    return items;
-                }),
-            },
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                if (overwrite && child.type === 'child') {
+                    items[child.at] = nw.loc.idx;
+                } else if (
+                    last.child.type === 'start' &&
+                    child.type === 'child'
+                ) {
+                    (mp[nw.loc.idx] as ListLikeContents).values = [
+                        items[child.at],
+                    ];
+                    items[child.at] = nw.loc.idx;
+                } else {
+                    items.splice(
+                        child.type === 'child' ? child.at + 1 : 0,
+                        0,
+                        nw.loc.idx,
+                    );
+                }
+                return items;
+            }),
         };
         updateStore(
             store,
@@ -283,15 +342,13 @@ function wrapWithParens(
         const nw = parse('()')[0];
         const mp: Map = {};
         const nidx = toMCST(nw, mp);
-        (mp[nw.loc.idx].node as ListLikeContents).values.push(idx);
+        (mp[nw.loc.idx] as ListLikeContents).values.push(idx);
         const pnode = store.map[parent.idx];
         mp[parent.idx] = {
-            node: {
-                ...pnode.node,
-                ...modChildren(pnode.node, (items) => {
-                    items.splice(child.at, 1, nidx);
-                }),
-            },
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                items.splice(child.at, 1, nidx);
+            }),
         };
         updateStore(store, { map: mp, selection: { idx, loc: 'end' } }, [path]);
     }

@@ -1,15 +1,16 @@
 import * as React from 'react';
-import { Map, MNode, MNodeContents, toMCST } from '../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store, updateStore } from './store';
+import { Map, MNode, MNodeContents, toMCST } from '../../src/types/mcst';
+import { EvalCtx, Path, setSelection, Store, updateStore } from '../store';
 import { Events } from './Nodes';
-import { parse } from '../src/grammar';
-import { Node } from '../src/types/cst';
-import { getPos, onKeyDown, setPos } from './mods/onKeyDown';
+import { parse } from '../../src/grammar';
+import { Identifier, Node } from '../../src/types/cst';
+import { getPos, onKeyDown, setPos } from '../mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
 import objectHash from 'object-hash';
-import { rainbow } from './rainbow';
+import { rainbow } from '../rainbow';
+import { NodeStyle } from '../../src/to-ast/Ctx';
 
 export type Top = {
     store: Store;
@@ -36,15 +37,13 @@ export const IdentifierLike = ({
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
 
-    const [menuState, setMenuState] = React.useState(
-        getMenuState(store, ctx.ctx, idx, text) as null | MenuState,
-    );
+    const [menuSelection, setMenuSelection] = React.useState(0);
 
     const menuItems = React.useMemo(() => {
-        if (!editing || !ctx.ctx.display[idx].autoComplete) {
+        if (!editing || !ctx.ctx.display[idx]?.autoComplete) {
             return;
         }
-        return getMenuItems(ctx.ctx.display[idx].autoComplete!, idx, store);
+        return getMenuItems(ctx.ctx.display[idx]?.autoComplete!, idx, store);
     }, [editing, ctx.ctx.display[idx]?.autoComplete]);
 
     React.useEffect(() => {
@@ -57,22 +56,24 @@ export const IdentifierLike = ({
         menuPortal.current.render(
             menuItems ? (
                 <Menu
-                    state={{ items: menuItems, selection: 0 }}
+                    state={{ items: menuItems, selection: menuSelection }}
                     onAction={() => {
-                        setMenuState(null);
+                        // setMenuState(null);
                     }}
                     ctx={ctx.ctx}
                     pos={pos}
                 />
             ) : null,
         );
-    }, [menuItems]);
+    }, [menuItems, menuSelection]);
 
     React.useEffect(() => {
         if (editing) {
             return () => menuPortal.current?.render(null);
         }
     }, [editing]);
+
+    const displayStyle = ctx.ctx.display[idx]?.style;
 
     edit = edit == null ? text : edit;
 
@@ -91,7 +92,13 @@ export const IdentifierLike = ({
         }
     }, [editing, text, editing ? store.selection!.loc : null]);
 
-    const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
+    const dec = ctx.report.errors[idx]
+        ? `underline ${
+              ctx.report.errors[idx].some((e) => e.type !== 'misc')
+                  ? 'red'
+                  : '#a77924 wavy 1px'
+          }`
+        : 'none';
 
     const style = getStyle(ctx, idx);
 
@@ -119,7 +126,11 @@ export const IdentifierLike = ({
             }
             onMouseLeave={() => setHover({ idx, box: null })}
         >
-            {text}
+            {text === ''
+                ? displayStyle?.type === 'id'
+                    ? displayStyle.hash
+                    : text
+                : text}
         </span>
     ) : (
         <span
@@ -145,15 +156,7 @@ export const IdentifierLike = ({
             }}
             onMouseLeave={() => setHover({ idx, box: null })}
             onInput={(evt) => {
-                onInput(evt, setEdit, idx, path, store, presel);
-                setMenuState(
-                    getMenuState(
-                        store,
-                        ctx.ctx,
-                        idx,
-                        evt.currentTarget.textContent!,
-                    ),
-                );
+                onInput(evt, displayStyle, setEdit, idx, path, store, presel);
             }}
             onBlur={() => {
                 setEdit(null);
@@ -171,6 +174,31 @@ export const IdentifierLike = ({
                 if (events.onKeyDown && events.onKeyDown(evt)) {
                     // it's been handled
                     return;
+                }
+                if (menuItems) {
+                    const item = menuItems[menuSelection];
+                    if (item) {
+                        if (evt.key === 'Enter') {
+                            evt.preventDefault();
+                            item.action();
+                            return;
+                        }
+                        if (evt.key === 'ArrowDown') {
+                            evt.preventDefault();
+                            const next = (menuSelection + 1) % menuItems.length;
+                            setMenuSelection(next);
+                            return;
+                        }
+                        if (evt.key === 'ArrowUp') {
+                            evt.preventDefault();
+                            const next =
+                                menuSelection === 0
+                                    ? menuItems.length - 1
+                                    : menuSelection - 1;
+                            setMenuSelection(next);
+                            return;
+                        }
+                    }
                 }
                 onKeyDown(evt, idx, path, events, store);
             }}
@@ -209,39 +237,24 @@ kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 function getStyle(ctx: EvalCtx, idx: number) {
     const style = ctx.ctx.display[idx]?.style;
     if (!style) return { fontStyle: 'normal' };
-    if (typeof style === 'string') {
-        switch (style) {
-            case 'italic':
-                return {
-                    fontStyle: 'italic',
-                    fontFamily: 'serif',
-                    color: '#84a4a5',
-                };
-            case 'bold':
-                return {
-                    fontVariationSettings: '"wght" 500',
-                };
-        }
-        return { fontStyle: 'normal' };
-    }
     switch (style.type) {
+        case 'record-attr':
+            return {
+                fontStyle: 'italic',
+                fontFamily: 'serif',
+                color: '#84a4a5',
+            };
+        case 'tag':
+            return {
+                fontVariationSettings: '"wght" 500',
+            };
         case 'id':
+        case 'id-decl':
             const idx = style.hash.startsWith(':')
                 ? +style.hash.slice(1) * (rainbow.length / 5 - 1)
                 : parseInt(style.hash, 16);
             const color = rainbow[idx % rainbow.length];
-            return style.inferred
-                ? {
-                      opacity: 0.8,
-                      fontStyle: 'italic',
-                      textDecoration: 'underline dotted',
-                      color,
-                  }
-                : {
-                      fontStyle: 'normal',
-                      //   textDecoration: 'underline',
-                      color,
-                  };
+            return { fontStyle: 'normal', color };
     }
     return { fontStyle: 'normal' };
 }
@@ -279,6 +292,7 @@ export function focus(node: HTMLSpanElement, store: Store) {
 
 function onInput(
     evt: React.FormEvent<HTMLSpanElement>,
+    displayStyle: NodeStyle | void,
     setEdit: React.Dispatch<React.SetStateAction<string | null>>,
     idx: number,
     path: Path[],
@@ -288,6 +302,8 @@ function onInput(
     const text = evt.currentTarget.textContent ?? '';
     setEdit(text);
     const pos = getPos(evt.currentTarget);
+
+    const old = store.map[idx];
 
     let nw: Node;
     try {
@@ -311,6 +327,17 @@ function onInput(
 
     const mp: Map = {};
     toMCST(nw, mp);
+    mp[idx].tannot = old.tannot;
+    mp[idx].tapply = old.tapply;
+
+    // Waaaait I need to know here ... if
+    // ... OH YEAH ok so, if the old id has text,
+    // then we carry over. Otherwise we don't.
+
+    if (old.type === 'identifier' && displayStyle?.type === 'id-decl') {
+        (mp[idx] as Identifier).hash = old.hash;
+    }
+
     updateStore(
         store,
         {

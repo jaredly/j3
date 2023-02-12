@@ -1,5 +1,151 @@
 
+# Ok, so writing a test
+
+- [x] do I go through the autocomplete menu?
+  - I guess I probably do?
+  - I think I want ...
+    ok, so I'm like, incrementally ... building up ...
+    the tree? I think that sounds right.
+
+- [x] have a test, that incrementally builds
+- [x] autoclick the first autocomplete item
+- [x] but, only if it's unambiguous folks
+- [x] OH BTW like why is this happening?
+- [x] OH failure is "js eval failed sorry folx"
+- [ ] LETS provide a way to say "when you get an ambiguous autocomplete for (text), choose (number #)"
+
+# Thoughts about persistence
+
+I think ... that maybe *only* the sandbox should be persisting the CST
+and the "codebase" should persist the AST.
+e.g. the codebase needs to be well-formed and stuff.
+
+- [x] map, unnest the 'node'
+- [x] add a version to store
+
+## WHOLE EDITOR SIMLUATION
+
+UMMM maybe not? At least not yet.
+Let's instead spend time on making it more usable
+and maybe refactoring things just a little bit.
+But I can probably use testing-library
+well enough.
+
+ok so what I'm considering, is having a whole
+editor virtual machine essentially.
+Like we have an internal ...
+... dom? representation? heh maybe actually
+tbh this would make it easier to self-host maybe
+idk
+
+
+because
+I would love to be able to
+say "headless render this interface"
+and then "here's the selection"
+and then "process this keystroke, and menu selection" and stuff.
+
+
+So, I already have "selection" modeled, at least somewhat.
+We don't have "within a node" modelered 100% of the time,
+but we do actually somewhat. If you're making changes we do.
+
+Ok, so
+THIGNS we need to know/think about:
+UI nodes of some kind.
+and like a function for "idx -> nodes"
+and then a simple node -> react whatsit
+
+also, "context menu"
+which we kindof have.
+
+hmmmm waht would this look like.
+
+Am I going to embark on this most fraught of activities
+the whole editor rewrite?
+perhaps.
+
+anyway because then my editor could say, "hey $node for $currently selected idx"
+whats happenin, handle this keypress please.
+
+Right?
+Ok so we'd build up the whole tree of idx->nodes, because
+we need parentage and stuff, as parents pass in `onLeft` and `onRight`
+(and should do `onBackspace` and `onTab`)
+
+
+
+
+
+
+## INTERACTION BUGS
+
+- [x] if you fully delete the text of a pattern id, then it loses track of who you were. I need a `display` that distinguishes.
+
+## Type Annotation madness
+
+So,
+we're parsing a thing
+(fn [a])
+and then we add a single whatsit
+and we're like "holdup, needs an annotation"
+so in that compile-step, we up and add a modification. Right?
+
+- [x] args auto-get a .tannot
+- [x] args auto-get a :sym too, gotta have it.
+- [x] set ctx.sym.current to 1 + the max sym in the nodes atm.
+
+A test of the things
+would include
+interaction with autocomplete
+I should think.
+so like
+
+`(fn [one] (+ one one))`
+
+after "+" you do "autocomplete w/ type `(fn [uint uint] uint)`, right?
+`(`, `fn`, `[`, `one`, `]`, `(`, `+`, (autocomplete)
+yeah I can just tokenize, right?
+
+it would be nice ... to be able ...
+... to have the engine abstracted away from the React components?
+not sure if that makes sense though.
+or if I'd be implementing my own little DLS on top of react
+although that doesn't sound terrible 🤔
+
+
+- [x] refs don't keep texts.
+- [ ] ok but now each dealio needs it's own localMap. ish.
+
+- [ ] flag duplicate identifiers?
+- [ ] update the annotation to match the pattern
+  - [ ] 
+- [x] auto-add :1 sym hashes to patterny things
+
+- [ ] oooops ok so localMap is only valid for the given toplevel
+  - SOO we need .. an rmap ... that works .... as we're rendering these nodes
+  - do I really construct it all the time? like again?
+  - ok that's a bit of a pain.
+
+## NEXT up
+
+- [ ] type annotations have to live on the CST as something special. a {type} attribute.
+  - when parsing from plain grammar, might need to do some magic there
+- [ ] pressing ':' takes you into the type attribute.
+  - as soon as you type just about anything in a function parameter, we'll generate the annotation for you
+
+- [ ] space/moving on commits a good autocomplete.
+- [ ] closing " at the end of a string should close.
+- [ ] tab should get you to the end of the string
+
 ## BUGS
+
+- [x] changing a name shouldn't break things
+
+- [ ] I want different levels for "errors".
+  - Some should only show up when you're ... done? Or at least be less loud.
+    maybe all errors should make a little one-liner below the form ... actually I like that.
+    nice and inline
 
 - [ ] ok, so "on autocomplete", we need to do our best effort to update relevant types.
       this MIGHT happen across-terms if we're in the sandbox, so look out kids.
@@ -17,12 +163,16 @@
       it's depending on something that has changed, right?
       althought the whole point is that dependencies can't change
       from under you. So maybe that's fine.
-- [ ] 
+- [ ] TBH maybe I just shouldn't cache in the sandbox?
 
 ## Things to do
 
-- [ ] make a 'hover' thing on display, so I can do better hovers?
-  idk...
+- [x] treat no-hash as just unresolved. no infering!
+- [x] when removing a thing, remove the hash from things that hashed it.
+- [ ] autocomplete shouldn't know about things /below/ the current sandboxy whatsit.
+  I think this means that in the sandbox, I have to make a new sub-ctx each time.
+- [ ] write tests that feed some code character-by-character to my editor stack, to make sure things work ok
+- [ ] write tests that create a tree node-by-node, 
 
 - [x] OK time for layout to not be in .map
 - [x] now that we're locking down hashes, need

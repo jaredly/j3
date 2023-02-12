@@ -6,6 +6,7 @@ import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
 import { Report } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';
+import { addMod } from './specials';
 
 export const nodeToPattern = (
     form: Node,
@@ -34,10 +35,20 @@ export const nodeToPattern = (
             };
         }
         case 'identifier': {
-            const sym = nextSym(ctx);
+            let sym;
+            if (!form.hash) {
+                sym = nextSym(ctx);
+                addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
+            } else {
+                sym = +form.hash.slice(1);
+                if (isNaN(sym)) {
+                    throw new Error(`non-number sym? ${form.hash}`);
+                }
+            }
+            // ctx.
             ctx.display[form.loc.idx] = {
                 style: {
-                    type: 'id',
+                    type: 'id-decl',
                     hash: ':' + sym,
                 },
             };
@@ -61,7 +72,7 @@ export const nodeToPattern = (
             };
         case 'record': {
             const values = filterComments(form.values);
-            const entries: { name: string; value: Pattern }[] = [];
+            const entries: { name: string; form: Node; value: Pattern }[] = [];
             const res = applyAndResolve(t, ctx, []);
             if (!res) {
                 err(ctx.errors, form, {
@@ -95,6 +106,7 @@ export const nodeToPattern = (
                 }
                 entries.push({
                     name,
+                    form: values[0],
                     value: nodeToPattern(
                         values[0],
                         prm
@@ -128,7 +140,9 @@ export const nodeToPattern = (
                     }
 
                     const namev = name.text;
-                    ctx.display[name.loc.idx] = { style: 'italic' };
+                    ctx.display[name.loc.idx] = {
+                        style: { type: 'record-attr' },
+                    };
                     if (!prm[namev]) {
                         err(ctx.errors, values[i], {
                             type: 'misc',
@@ -140,6 +154,7 @@ export const nodeToPattern = (
                     }
                     entries.push({
                         name: namev,
+                        form: name,
                         value: nodeToPattern(
                             name,
                             prm[namev] ?? nilt,
@@ -161,7 +176,9 @@ export const nodeToPattern = (
                     }
                     const namev =
                         name.type === 'identifier' ? name.text : name.raw;
-                    ctx.display[name.loc.idx] = { style: 'italic' };
+                    ctx.display[name.loc.idx] = {
+                        style: { type: 'record-attr' },
+                    };
                     if (!prm[namev]) {
                         err(ctx.errors, values[i], {
                             type: 'misc',
@@ -180,6 +197,7 @@ export const nodeToPattern = (
                     }
                     entries.push({
                         name: namev,
+                        form: name,
                         value: nodeToPattern(
                             value,
                             prm[namev] ?? nilt,
@@ -218,6 +236,7 @@ export const nodeToPattern = (
                     form,
                     entries: rest.map((item, i) => ({
                         name: i.toString(),
+                        form: item,
                         value: nodeToPattern(
                             item,
                             prm
@@ -238,7 +257,7 @@ export const nodeToPattern = (
                 };
             }
             if (first.type === 'tag') {
-                ctx.display[first.loc.idx] = { style: 'bold' };
+                ctx.display[first.loc.idx] = { style: { type: 'tag' } };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
                     console.log('no t', t);

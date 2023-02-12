@@ -1,9 +1,10 @@
 import * as React from 'react';
-import { MNodeContents } from '../src/types/mcst';
+import { Ctx } from '../../src/to-ast/Ctx';
+import { MNodeContents } from '../../src/types/mcst';
 import { SetHover } from './Doc';
 import { IdentifierLike, Top } from './IdentifierLike';
-import { ListLike } from './ListLike';
-import { EvalCtx, Path, Store, useStore } from './store';
+import { ListLike, sideClick } from './ListLike';
+import { EvalCtx, Path, setSelection, Store, useStore } from '../store';
 import { StringView } from './String';
 
 // ListLike
@@ -32,9 +33,16 @@ export type Events = {
     // other things? idk
 };
 
-export const idText = (node: MNodeContents) => {
+export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
     switch (node.type) {
         case 'identifier':
+            if (node.text === '' && node.hash) {
+                const style = ctx.display[idx]?.style;
+                if (style?.type === 'id' && style.text != null) {
+                    return style.text;
+                }
+                return ``;
+            }
         case 'comment':
             return node.text;
         case 'number':
@@ -72,11 +80,10 @@ export const Node = React.memo(
         events: Events;
         top: Top;
     }) => {
-        const both = useStore(top.store, idx);
-        if (!both) {
+        const item = useStore(top.store, idx);
+        if (!item) {
             return null;
         }
-        const { node: item } = both;
 
         if (item.type === 'string') {
             return (
@@ -90,12 +97,75 @@ export const Node = React.memo(
             );
         }
 
-        const text = idText(item);
+        const text = idText(item, idx, top.ctx.ctx);
+
+        const tannot = item.tannot ? (
+            <>
+                <span
+                    style={{
+                        opacity: 0.5,
+                        alignSelf: 'flex-end',
+                        paddingLeft: '0.75em',
+                    }}
+                    onMouseDown={sideClick((left) => {
+                        if (left) {
+                            setSelection(
+                                top.store,
+                                // children.length
+                                //     ? {
+                                //           idx: children[children.length - 1],
+                                //           loc: 'end',
+                                //           from: 'right',
+                                //       }
+                                //     : { idx, loc: 'inside', from: 'right' },
+                                { idx, loc: 'end' },
+                            );
+                        } else {
+                            setSelection(top.store, {
+                                idx: item.tannot!,
+                                loc: 'start',
+                                from: 'left',
+                            });
+                        }
+                    })}
+                >
+                    :
+                </span>
+                <Node
+                    idx={item.tannot}
+                    events={{
+                        ...events,
+                        onLeft() {
+                            setSelection(top.store, {
+                                idx,
+                                loc: 'end',
+                            });
+                        },
+                    }}
+                    {...{
+                        top,
+                        path,
+                    }}
+                />
+            </>
+        ) : null;
+
+        events = tannot
+            ? {
+                  ...events,
+                  onRight() {
+                      setSelection(top.store, {
+                          idx: item.tannot!,
+                          loc: 'start',
+                      });
+                  },
+              }
+            : events;
 
         // const decs = Object.entries(item.decorators);
 
         if (text != null) {
-            return (
+            const res = (
                 <IdentifierLike
                     text={text}
                     type={item.type}
@@ -105,13 +175,22 @@ export const Node = React.memo(
                     events={events}
                 />
             );
+            if (item.tannot) {
+                return (
+                    <>
+                        {res}
+                        {tannot}
+                    </>
+                );
+            }
+            return res;
         }
 
         const arr = arrayItems(item);
 
         if (arr) {
             const [left, right, children] = arr;
-            return (
+            const res = (
                 <ListLike
                     {...{
                         left,
@@ -124,6 +203,22 @@ export const Node = React.memo(
                     }}
                 />
             );
+            if (item.tannot) {
+                return (
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'flex-start',
+                            whiteSpace: 'pre',
+                        }}
+                    >
+                        {res}
+                        {tannot}
+                    </div>
+                );
+            }
+            return res;
         }
 
         return <span>{JSON.stringify(item)}</span>;

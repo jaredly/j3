@@ -6,6 +6,8 @@ export type {
     Loc,
     stringText,
     CString,
+    NodeExtra,
+    NodeArray,
 } from './cst';
 
 export type Term = {
@@ -40,6 +42,7 @@ export type Pattern =
           entries: {
               name: string;
               value: Pattern;
+              form: Node;
           }[];
       }
     | { type: 'unresolved'; form: Node; reason?: string }
@@ -58,6 +61,7 @@ export type Expr =
           hash: string;
           form: Node;
       }
+    | { type: 'blank'; form: Node }
     | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
     | { type: 'deftype'; name: string; hash: string; value: Type; form: Node }
     | String
@@ -75,7 +79,7 @@ export type Expr =
           name?: string;
           // TODO: um type?
           args: { pattern: Pattern; type: Type }[];
-          ret?: Type;
+          ret: Type;
           body: Expr[];
           form: Node;
       }

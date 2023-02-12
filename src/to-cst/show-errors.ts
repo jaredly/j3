@@ -1,11 +1,11 @@
 import { Ctx } from '../to-ast/Ctx';
 import type { Error } from '../types/types';
-import { makeRCtx } from './nodeForExpr';
+// import { makeRCtx } from './nodeForExpr';
 import { nodeForType } from './nodeForType';
 import { nodeToString } from './nodeToString';
 
 export const errorToString = (error: Error, ctx: Ctx): string => {
-    const rctx = makeRCtx(ctx);
+    // const rctx = makeRCtx(ctx);
     switch (error.type) {
         case 'cannot apply local':
             return `Cannot apply local ${error.path.join('.')}`;
@@ -13,9 +13,9 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
             return `Enum mismatch at ${error.path.join('.')} - ('${
                 error.tag
             } ${error.one
-                .map((x) => nodeToString(nodeForType(x, rctx)))
+                .map((x) => nodeToString(nodeForType(x, ctx)))
                 .join(', ')}) vs ('${error.tag} ${error.two
-                .map((x) => nodeToString(nodeForType(x, rctx)))
+                .map((x) => nodeToString(nodeForType(x, ctx)))
                 .join(', ')}')`;
         case 'unresolved':
             return `Unresolved identifier: ${nodeToString(error.form)}`;
@@ -23,8 +23,8 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
             return error.message;
         case 'invalid type':
             return `Invalid type.\nExpected: ${nodeToString(
-                nodeForType(error.expected, rctx),
-            )}\nFound: ${nodeToString(nodeForType(error.found, rctx))}`;
+                nodeForType(error.expected, ctx),
+            )}\nFound: ${nodeToString(nodeForType(error.found, ctx))}`;
     }
     return `Some error happened ${error.type} : ${JSON.stringify(error)}`;
 };

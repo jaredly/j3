@@ -1,8 +1,8 @@
 import { Node } from '../types/cst';
 import { Expr } from '../types/ast';
-import { AutoCompleteResult, Ctx } from './Ctx';
-import { compareScores, fuzzyScore } from './fuzzy';
+import { Ctx } from './Ctx';
 import { Result } from './to-ast';
+import { populateAutocomplete } from './populateAutocomplete';
 
 // TODO cache this?
 
@@ -14,7 +14,7 @@ export const resolveExpr = (
     suffix?: string,
     prefix?: string,
 ): Expr => {
-    if (!text.length) {
+    if (!text.length && !hash) {
         return { type: 'unresolved', form, reason: 'blank' };
     }
     if (text === 'true' || text === 'false') {
@@ -23,6 +23,11 @@ export const resolveExpr = (
     ctx.display[form.loc.idx] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form, prefix, suffix);
+        return {
+            type: 'unresolved',
+            form,
+            reason: `No hash specified`,
+        };
     } else {
         if (hash.startsWith(':')) {
             const sym = +hash.slice(1);
@@ -31,6 +36,7 @@ export const resolveExpr = (
                 ctx.display[form.loc.idx].style = {
                     type: 'id',
                     hash: ':' + local.sym,
+                    text: local.name,
                 };
                 return { type: 'local', sym: local.sym, form };
             }
@@ -39,12 +45,20 @@ export const resolveExpr = (
         } else {
             const global = ctx.global.terms[hash];
             if (global) {
-                ctx.display[form.loc.idx].style = { type: 'id', hash };
+                ctx.display[form.loc.idx].style = {
+                    type: 'id',
+                    hash,
+                    text: ctx.global.reverseNames[hash],
+                };
                 return { type: 'global', hash, form };
             }
             const builtin = ctx.global.builtins.terms[hash];
             if (builtin) {
-                ctx.display[form.loc.idx].style = { type: 'id', hash };
+                ctx.display[form.loc.idx].style = {
+                    type: 'id',
+                    hash,
+                    text: ctx.global.reverseNames[hash],
+                };
                 return { type: 'builtin', hash, form };
             }
             populateAutocomplete(ctx, text, form, prefix, suffix);
@@ -55,34 +69,34 @@ export const resolveExpr = (
             };
         }
     }
-    const local = ctx.local.terms.find((t) => t.name === text);
-    if (local) {
-        ctx.display[form.loc.idx].style = {
-            type: 'id',
-            hash: ':' + local.sym,
-            inferred: true,
-        };
-        return { type: 'local', sym: local.sym, form };
-    }
-    if (ctx.global.names[text]?.length) {
-        const hash = ctx.global.names[text][0];
-        ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
-        return {
-            type: 'global',
-            hash,
-            form,
-        };
-    }
-    if (ctx.global.builtins.names[text]) {
-        const hash = ctx.global.builtins.names[text][0];
-        ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
-        return { type: 'builtin', hash, form };
-    }
-    return {
-        type: 'unresolved',
-        form,
-        reason: `id "${text}" not resolved`,
-    };
+    // const local = ctx.local.terms.find((t) => t.name === text);
+    // if (local) {
+    //     ctx.display[form.loc.idx].style = {
+    //         type: 'id',
+    //         hash: ':' + local.sym,
+    //         inferred: true,
+    //     };
+    //     return { type: 'local', sym: local.sym, form };
+    // }
+    // if (ctx.global.names[text]?.length) {
+    //     const hash = ctx.global.names[text][0];
+    //     ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
+    //     return {
+    //         type: 'global',
+    //         hash,
+    //         form,
+    //     };
+    // }
+    // if (ctx.global.builtins.names[text]) {
+    //     const hash = ctx.global.builtins.names[text][0];
+    //     ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
+    //     return { type: 'builtin', hash, form };
+    // }
+    // return {
+    //     type: 'unresolved',
+    //     form,
+    //     reason: `id "${text}" not resolved`,
+    // };
 };
 
 export const allTerms = (ctx: Ctx): Result[] => {
@@ -123,38 +137,3 @@ export const allTerms = (ctx: Ctx): Result[] => {
         ...globals,
     ];
 };
-function populateAutocomplete(
-    ctx: Ctx,
-    text: string,
-    form: Node,
-    prefix: string | undefined,
-    suffix: string | undefined,
-) {
-    const results = allTerms(ctx);
-    const withScores = results
-        .map((result) => ({
-            result,
-            score: fuzzyScore(0, text, result.name),
-        }))
-        .filter(({ score }) => score.full)
-        .sort((a, b) => compareScores(a.score, b.score));
-    ctx.display[form.loc.idx].autoComplete = [
-        ...withScores.map(
-            ({ result }) =>
-                ({
-                    type: 'replace',
-                    text: (prefix || '') + result.name + (suffix || ''),
-                    hash: result.hash,
-                    ann: result.typ,
-                } satisfies AutoCompleteResult),
-        ),
-        ...(withScores.length === 0
-            ? [
-                  {
-                      type: 'info',
-                      text: `No terms found matching the name "${text}"`,
-                  } satisfies AutoCompleteResult,
-              ]
-            : []),
-    ];
-}

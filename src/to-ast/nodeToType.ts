@@ -29,7 +29,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 ),
             };
         case 'tag':
-            ctx.display[form.loc.idx] = { style: 'bold' };
+            ctx.display[form.loc.idx] = { style: { type: 'tag' } };
             return {
                 type: 'tag',
                 form,
@@ -49,7 +49,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     });
                     continue;
                 }
-                ctx.display[name.loc.idx] = { style: 'italic' };
+                ctx.display[name.loc.idx] = { style: { type: 'record-attr' } };
                 entries.push({
                     name: name.type === 'number' ? name.raw : name.text,
                     value: value ? nodeToType(value, ctx) : nilt,
@@ -70,7 +70,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'tag') {
-                ctx.display[first.loc.idx] = { style: 'bold' };
+                ctx.display[first.loc.idx] = { style: { type: 'tag' } };
                 return {
                     type: 'tag',
                     form,
@@ -78,6 +78,28 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     args: args.map((arg) => nodeToType(arg, ctx)),
                 };
             }
+
+            if (first.type === 'identifier' && first.text === 'fn') {
+                const targs = args.shift()!;
+                if (targs.type !== 'array') {
+                    return {
+                        type: 'unresolved',
+                        form,
+                        reason: `fn needs array as second item`,
+                    };
+                }
+                const tvalues = filterComments(targs.values);
+                const parsed = tvalues.map((arg) => {
+                    return nodeToType(arg, ctx);
+                });
+                return {
+                    type: 'fn',
+                    args: parsed,
+                    body: nodeToType(args[0], ctx),
+                    form,
+                };
+            }
+
             if (first.type === 'identifier' && first.text === 'tfn') {
                 const targs = args.shift()!;
                 if (targs.type !== 'array') {

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Map, toMCST } from '../../src/types/mcst';
 import { Path, Store, updateStore } from '../store';
 import { parse } from '../../src/grammar';
-import { Events } from '../Nodes';
+import { Events } from '../old/Nodes';
 import { getPos, modChildren } from './onKeyDown';
 
 export const handleSpace = (
@@ -18,6 +18,7 @@ export const handleSpace = (
         if (gp && gp.child.type === 'child') {
             addSpaceBefore(gp, gp.child.at, store, evt, path);
             evt.preventDefault();
+            evt.stopPropagation();
             return;
         }
     }
@@ -26,6 +27,7 @@ export const handleSpace = (
     if (pos === 0 && parent.child.type === 'child') {
         addSpaceBefore(parent, parent.child.at, store, evt, path);
         evt.preventDefault();
+        evt.stopPropagation();
         return;
     }
 
@@ -41,15 +43,14 @@ export const handleSpace = (
         const nidx = toMCST(nw, mp);
         const pnode = store.map[parent.idx];
         mp[parent.idx] = {
-            node: {
-                ...pnode.node,
-                ...modChildren(pnode.node, (items) => {
-                    items.splice(child.at + 1, 0, nidx);
-                }),
-            },
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                items.splice(child.at + 1, 0, nidx);
+            }),
         };
         updateStore(store, { map: mp, selection: { idx: nidx } }, [path]);
         evt.preventDefault();
+        evt.stopPropagation();
         return;
     }
     return;
@@ -68,12 +69,10 @@ function addSpaceBefore(
     const nidx = toMCST(nw, mp);
     const pnode = store.map[gp.idx];
     mp[gp.idx] = {
-        node: {
-            ...pnode.node,
-            ...modChildren(pnode.node, (items) => {
-                items.splice(at, 0, nidx);
-            }),
-        },
+        ...pnode,
+        ...modChildren(pnode, (items) => {
+            items.splice(at, 0, nidx);
+        }),
     };
     updateStore(
         store,
