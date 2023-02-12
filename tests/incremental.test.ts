@@ -13,10 +13,13 @@ import {
 } from '../src/types/mcst';
 import { Identifier, Node } from '../src/types/cst';
 import { compile } from '../web/compile';
-import { newCtx } from '../src/to-ast/Ctx';
+import { AutoCompleteReplace, newCtx } from '../src/to-ast/Ctx';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { nodeForExpr } from '../src/to-cst/nodeForExpr';
 import { xpath } from '../web/xpath';
+import { Type } from '../src/types/ast';
+import { matchesType } from '../src/get-type/matchesType';
+import { nodeToType } from '../src/to-ast/nodeToType';
 
 it('ok', () => {});
 
@@ -57,7 +60,26 @@ const getRoot = (text: string) => {
     return { root, omap };
 };
 
-const testValid = (text: string) =>
+export type AutoDisambiguation =
+    | {
+          type: 'local';
+          ann?: Type;
+      }
+    | {
+          type: 'global';
+          ann?: Type;
+      };
+
+const testValid = (
+    text: string,
+    autoCompleteChoices?: {
+        // hmmm, what should I do here?
+        // a type signature?
+        // for functions, that will work.
+        //
+        [key: string]: AutoDisambiguation;
+    },
+) =>
     describe(text, () => {
         const { root, omap } = getRoot(text);
         const ectx = newEvalCtx(newCtx());
@@ -70,15 +92,21 @@ const testValid = (text: string) =>
         });
 
         it('innner', () => {
-            incrementallyBuildTree(store, omap, ectx, () => {
-                root.values.forEach((top) => {
-                    if (ectx.results[top.loc.idx]) {
-                        expect(ectx.results[top.loc.idx].status).toEqual(
-                            'success',
-                        );
-                    }
-                });
-            });
+            incrementallyBuildTree(
+                store,
+                omap,
+                ectx,
+                autoCompleteChoices,
+                () => {
+                    root.values.forEach((top) => {
+                        if (ectx.results[top.loc.idx]) {
+                            expect(ectx.results[top.loc.idx].status).toEqual(
+                                'success',
+                            );
+                        }
+                    });
+                },
+            );
         });
 
         compile(store, ectx);
@@ -95,16 +123,30 @@ const testValid = (text: string) =>
         });
     });
 
+const parseType = (raw: string) => {
+    const ctx = newCtx();
+    const node = parse(raw)[0];
+    return nodeToType(node, ctx);
+};
+
 testValid('(def x 10) (def y (, x 20))');
 // So, what do we do here ...
 testValid('(defn what [x :int] 100)');
-testValid('+');
+testValid('+', {
+    '+': {
+        type: 'global',
+        ann: parseType('(fn [float float] float)'),
+    },
+});
 // testValid('(+ 1. 2.)');
 
 export function incrementallyBuildTree(
     store: Store,
     omap: Map,
     ectx: EvalCtx,
+    autoCompleteChoices?: {
+        [key: string]: AutoDisambiguation;
+    },
     finishedATop?: () => void,
 ) {
     const path: { idx: number; child: number }[] = [
@@ -143,13 +185,43 @@ export function incrementallyBuildTree(
         compile(store, ectx);
 
         const display = ectx.ctx.display[nidx];
-        if (
-            display?.autoComplete &&
-            display.autoComplete[0].type === 'replace'
-        ) {
-            const replace = display.autoComplete[0];
-            (store.map[nidx] as Identifier).hash = replace.hash;
-            compile(store, ectx);
+        if (display?.autoComplete) {
+            let matching = display.autoComplete.filter(
+                (item) => item.type === 'replace' && item.exact,
+            ) as AutoCompleteReplace[];
+            if (matching.length === 1) {
+                (store.map[nidx] as Identifier).hash = matching[0].hash;
+                compile(store, ectx);
+            } else if (
+                matching.length &&
+                autoCompleteChoices &&
+                autoCompleteChoices[matching[0].text]
+            ) {
+                //
+                const choice = autoCompleteChoices[matching[0].text];
+                if (choice.type === 'global') {
+                    matching = matching.filter((m) => !m.hash.startsWith(':'));
+                } else {
+                    matching = matching.filter((m) => !m.hash.startsWith(':'));
+                }
+                if (choice.ann) {
+                    matching = matching.filter((m) =>
+                        matchesType(m.ann, choice.ann!, ectx.ctx, {
+                            type: 'blank',
+                            loc: {
+                                idx: -2,
+                                start: 0,
+                                end: 0,
+                            },
+                        }),
+                    );
+                }
+                if (matching.length !== 1) {
+                    throw new Error(`No match for autocomplete choice?`);
+                }
+                (store.map[nidx] as Identifier).hash = matching[0].hash;
+                compile(store, ectx);
+            }
         }
 
         if (path.length === 1 && path[0].idx === -1) {

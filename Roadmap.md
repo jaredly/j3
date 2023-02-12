@@ -9,9 +9,10 @@
 
 - [x] have a test, that incrementally builds
 - [x] autoclick the first autocomplete item
-- [ ] but, only if it's unambiguous folks
-- [ ] OH BTW like why is this happening?
+- [x] but, only if it's unambiguous folks
+- [x] OH BTW like why is this happening?
 - [x] OH failure is "js eval failed sorry folx"
+- [ ] LETS provide a way to say "when you get an ambiguous autocomplete for (text), choose (number #)"
 
 # Thoughts about persistence
 

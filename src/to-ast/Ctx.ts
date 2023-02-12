@@ -4,13 +4,16 @@ import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
 import { Layout } from '../types/mcst';
 
+export type AutoCompleteReplace = {
+    type: 'replace';
+    text: string;
+    hash: string;
+    exact: boolean;
+    ann: Type;
+};
+
 export type AutoCompleteResult =
-    | {
-          type: 'replace';
-          text: string;
-          hash: string;
-          ann?: Type;
-      }
+    | AutoCompleteReplace
     | { type: 'info'; text: string }; // TODO also autofixers probably?
 
 export type Mod =

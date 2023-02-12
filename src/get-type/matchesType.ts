@@ -267,6 +267,35 @@ export const _matchesType = (
                 }
                 return true;
             }
+            return inv(candidate, expected, path);
+        }
+        case 'fn': {
+            if (expected.type !== 'fn') {
+                return inv(candidate, expected, path);
+            }
+            if (candidate.args.length !== expected.args.length) {
+                return inv(candidate, expected, path);
+            }
+            for (let i = 0; i < candidate.args.length; i++) {
+                const can = candidate.args[i];
+                const exp = expected.args[i];
+                // TODO: I think this needs to be reversed?
+                const res = _matchOrExpand(
+                    can,
+                    exp,
+                    ctx,
+                    path.concat([i.toString()]),
+                );
+                if (res !== true) {
+                    return res;
+                }
+            }
+            return _matchOrExpand(
+                candidate.body,
+                expected.body,
+                ctx,
+                path.concat(['body']),
+            );
         }
     }
     return inv(candidate, expected, path);

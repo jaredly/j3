@@ -78,6 +78,28 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     args: args.map((arg) => nodeToType(arg, ctx)),
                 };
             }
+
+            if (first.type === 'identifier' && first.text === 'fn') {
+                const targs = args.shift()!;
+                if (targs.type !== 'array') {
+                    return {
+                        type: 'unresolved',
+                        form,
+                        reason: `fn needs array as second item`,
+                    };
+                }
+                const tvalues = filterComments(targs.values);
+                const parsed = tvalues.map((arg) => {
+                    return nodeToType(arg, ctx);
+                });
+                return {
+                    type: 'fn',
+                    args: parsed,
+                    body: nodeToType(args[0], ctx),
+                    form,
+                };
+            }
+
             if (first.type === 'identifier' && first.text === 'tfn') {
                 const targs = args.shift()!;
                 if (targs.type !== 'array') {
