@@ -113,7 +113,7 @@ const testInvalid = (
         [key: string]: AutoDisambiguation;
     },
 ) =>
-    describe(text, () => {
+    describe('invalid ' + text, () => {
         const { root, omap } = getRoot(text);
         const ectx = newEvalCtx(newCtx());
         const store = initialStore([]);
@@ -142,7 +142,10 @@ const testInvalid = (
                 // expect(strings).toEqual(errors);
                 strings.forEach((string, i) => {
                     const h = errors[i];
-                    if (h.__proto__.constructor === RegExp) {
+                    if (
+                        // @ts-ignore
+                        h.__proto__.constructor === RegExp
+                    ) {
                         expect(string).toMatch(h);
                     } else {
                         expect(string).toEqual(h);
