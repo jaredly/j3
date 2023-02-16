@@ -1,4 +1,15 @@
 
+# Very next stuff
+
+- [ ] adding an argument (space?) to a function that's not resolved, should resolve it?
+  - So, this is like ... "when you space off of a thing, that you have just modified probably(??)", it might 
+    - like (== 1)
+    - is it right when it gets parsed as a 1? And like, if you then change it to a `1.`, does it re-evaluate the whole thing?
+    I guess that could be fine.
+    Ok, so there's a `reEvaluateFunctionCall` function, that, when parsing an identifierlike, looks at the function it's a part of, and potentially autoselects something **even if** there was something previously selected. Right? Yeah sounds legit.
+  - OK yeah so, what we want is the [path] of the thing that was updated, so we can walk it back and do any updates of functions and stuff.
+
+
 # Ok, so writing a test
 
 - [x] do I go through the autocomplete menu?
@@ -12,7 +23,90 @@
 - [x] but, only if it's unambiguous folks
 - [x] OH BTW like why is this happening?
 - [x] OH failure is "js eval failed sorry folx"
-- [ ] LETS provide a way to say "when you get an ambiguous autocomplete for (text), choose (number #)"
+- [x] LETS provide a way to say "when you get an ambiguous autocomplete for (text), choose (the one with type X)"
+- [x] yay we actually have some tests!
+
+# NOW that's what I call music
+time for some ... auto- typo- mania
+
+- [ ] using an arg in a place that wants a type
+  - [ ] should update the arg to have that type
+
+- [ ] once the body of the function, has a type
+  that's real, reify it in the response dealio
+
+ok so how do we do this.
+is it like, on every `compile` we check to see if
+anything's changed, that can now be locked down?
+
+egh I guess that's a somewhat simpler algorithm,
+or something, but it's not actually what I had planned.
+Let's try to do the "actions directly impact stuff"
+and see how far I can get.
+
+OK SO: fundamental "operations" are:
+
+- adding a locked-down termmm
+  - [ ] if a local vbl, and this "hole" has an expected type
+    - ok so currently I don't really ahve the concept of
+      a hole having an expected type
+    - but I'm gonna need it, for autocomplete bonanzas.
+      So, a hole could have multiple options, for types,
+      right?
+      So this ... is a place where I'm like,
+      having the AST instead of the CST could be nice.
+      maybe?
+
+### Holes, for a function call, maintaining consistency
+
+Ok so the consistency question:
+- we have a `()`
+- we add in id `(party)`, and on "lockdown", we add holes for the arguments.
+- `(party _ _ _)`
+- then, we change `party` to something else.
+  Do the holes disappear? I think so, yeah. They readjust
+  as needed. ok.
+
+- 'space/return/tab' when there's a hole in front of you just takes you to the hole.
+
+### How about ... the function return value stuffs?
+
+```clj
+(defn hello [x :int]
+  ) ; none
+(defn hello [x :int]
+  ()) ; empty record
+(defn hello [x :int]
+  (if)) ; errors, waiting changes
+(defn hello [x :int]
+  (if true)) ; (none, which unifies into empty record)
+(defn hello [x :int]
+  (if true 10)) ; now we have a ~conflict between the previous
+  ; return value `()`, and the new one `10`. HOw do we know that
+  ; the previous one is no longer needed?
+  ; we could keep track of the originating IDX, to see if it has
+  ; been deleted, but then this one won't have been. 🤔
+  ; Yeahhh I kinda think that, for the return value, you'll
+  ; want to just re-compute all the times
+```
+
+Ok, so like the variable-in-multiple-places thing, though
+
+```clj
+(let [arr []]
+  ()
+)
+```
+
+eh, maybe they're right that just having a normal inference algorithm makes more sense 🤔.
+
+Like, if we require that things be locked down ...
+
+
+
+- deleting a termmm
+- selecting from autocomplete what something should be...
+
 
 # Thoughts about persistence
 
@@ -22,6 +116,10 @@ e.g. the codebase needs to be well-formed and stuff.
 
 - [x] map, unnest the 'node'
 - [x] add a version to store
+
+^^^^ so the codebase AST, how to tell if a type annotation
+was inferred, vs specified by the user?
+Well, inferred ones will have the -1 loc idx.
 
 ## WHOLE EDITOR SIMLUATION
 

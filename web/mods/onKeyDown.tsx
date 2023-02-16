@@ -6,6 +6,7 @@ import {
     toMCST,
 } from '../../src/types/mcst';
 import {
+    EvalCtx,
     Path,
     redo,
     setSelection,
@@ -19,6 +20,7 @@ import { CString, Loc, NodeContents } from '../../src/types/cst';
 import { Events } from '../old/Nodes';
 import { handleBackspace } from './handleBackspace';
 import { handleSpace } from './handleSpace';
+import { walkBackTree } from '../../tests/incrementallyBuildTree';
 
 export const onKeyDown = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
@@ -26,6 +28,7 @@ export const onKeyDown = (
     path: Path[],
     events: Events,
     store: Store,
+    ectx: EvalCtx,
 ) => {
     if (evt.key === ':') {
         evt.preventDefault();
@@ -68,7 +71,19 @@ export const onKeyDown = (
     const isComment = store.map[idx].type === 'comment';
 
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
-        return handleSpace(evt, idx, path, events, store);
+        handleSpace(evt, idx, path, events, store);
+
+        walkBackTree(
+            path.slice(1).map((p) => ({
+                idx: p.idx,
+                child: p.child.type === 'child' ? p.child.at : -1,
+            })),
+            idx,
+            store,
+            ectx,
+        );
+
+        return;
     }
 
     if (evt.currentTarget.textContent === '' && evt.key === '"') {

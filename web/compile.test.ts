@@ -1,22 +1,16 @@
-import { parse } from '../src/grammar';
-import { newCtx, noForm } from '../src/to-ast/Ctx';
-import { Identifier, Loc, Node } from '../src/types/cst';
+import { noForm } from '../src/to-ast/Ctx';
+import { Loc } from '../src/types/cst';
 import { ListLikeContents, MNode } from '../src/types/mcst';
+import { loadIncremental } from '../tests/incrementallyBuildTree';
 import { compile } from './compile';
-import {
-    initialStore,
-    newEvalCtx,
-    Success,
-    TopDef,
-    undo,
-    updateStore,
-} from './store';
+import { Success, TopDef, undo, updateStore } from './store';
 import { xpath } from './xpath';
 
-describe.skip('compile', () => {
+describe('compile', () => {
     it('undo should restore hashes', () => {
-        const store = initialStore(parse('(def x 10) (def y (, x 20))'));
-        const ctx = newEvalCtx(newCtx());
+        const { store, ectx: ctx } = loadIncremental(
+            '(def x 10) (def y (, x 20))',
+        );
         const n10 = xpath(store.map, store.root, ['0', '2'])! as {
             type: 'number';
             raw: string;
@@ -33,9 +27,6 @@ describe.skip('compile', () => {
         const xHash = ctx.ctx.global.names['x'];
         const yHash = ctx.ctx.global.names['y'];
         expect(xHash).toHaveLength(1);
-        const prevGlobal = { ...ctx.ctx.global };
-        const hashes = Object.keys(ctx.ctx.global.terms);
-        expect(hashes).toHaveLength(2);
 
         // Act
         const map = {
@@ -52,12 +43,12 @@ describe.skip('compile', () => {
         compile(store, ctx);
         expect(ctx.ctx.global.names['x']).toEqual(xHash);
         expect(ctx.ctx.global.names['y']).toEqual(yHash);
-        // expect(ctx.ctx.global).toEqual(prevGlobal);
     });
 
     it('should record types for things', () => {
-        const store = initialStore(parse('(def x 10) (def y (, x 20))'));
-        const ctx = newEvalCtx(newCtx());
+        const { store, ectx: ctx } = loadIncremental(
+            '(def x 10) (def y (, x 20))',
+        );
         compile(store, ctx);
         const root = store.map[store.root] as ListLikeContents;
         root.values.forEach((idx) =>
@@ -81,8 +72,9 @@ describe.skip('compile', () => {
     });
 
     it('should propagate hash changes', () => {
-        const store = initialStore(parse('(def x 10) (def y (, x 20))'));
-        const ctx = newEvalCtx(newCtx());
+        const { store, ectx: ctx } = loadIncremental(
+            '(def x 10) (def y (, x 20))',
+        );
         compile(store, ctx);
         const root = store.map[store.root] as ListLikeContents;
         const [xi, yi] = root.values;
@@ -95,28 +87,6 @@ describe.skip('compile', () => {
         expect((ctx.results[yi] as Success).value).toEqual([10, 20]);
 
         // Setup
-        /// No hash initially
-        const xref = xpath(store.map, yi, ['2', '1'])!;
-        expect(noLoc(xref)).toEqual({
-            type: 'identifier',
-            text: 'x',
-            hash: '',
-        });
-
-        /// Lock it down
-        updateStore(
-            store,
-            {
-                map: {
-                    [xref.loc.idx]: {
-                        ...(xref as Identifier & { loc: Loc }),
-                        hash: xhash,
-                    },
-                },
-            },
-            [],
-        );
-        compile(store, ctx);
         expect((ctx.results[yi] as Success).value).toEqual([10, 20]);
 
         /// Now there's a hash

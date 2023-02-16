@@ -200,7 +200,7 @@ export const IdentifierLike = ({
                         }
                     }
                 }
-                onKeyDown(evt, idx, path, events, store);
+                onKeyDown(evt, idx, path, events, store, ctx);
             }}
         />
     );

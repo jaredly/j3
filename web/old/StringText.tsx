@@ -185,7 +185,7 @@ export const StringText = ({
                     evt.altKey ||
                     evt.ctrlKey
                 ) {
-                    onKeyDown(evt, idx, path, events, store);
+                    onKeyDown(evt, idx, path, events, store, ctx);
                     return;
                 }
             }}

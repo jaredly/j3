@@ -105,7 +105,7 @@ export const Node = React.memo(
                     style={{
                         opacity: 0.5,
                         alignSelf: 'flex-end',
-                        paddingLeft: '0.75em',
+                        // paddingLeft: '0.75em',
                     }}
                     onMouseDown={sideClick((left) => {
                         if (left) {

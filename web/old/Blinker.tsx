@@ -38,7 +38,7 @@ export const Blinker = ({
             ref={ref}
             style={{ ...style, width: 1, marginRight: -1 }}
             onKeyDown={(evt) => {
-                onKeyDown(evt, idx, path, events, store);
+                onKeyDown(evt, idx, path, events, store, null);
                 if (!evt.defaultPrevented && fullAscii.includes(evt.key)) {
                     const nw = parseKey(evt.key);
                     if (!nw) return;

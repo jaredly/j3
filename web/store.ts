@@ -246,7 +246,7 @@ export const undo = (store: Store) => {
         store,
         { map: item.pre, selection: item.preSelection },
         [],
-        true,
+        'skip',
     );
     store.history.idx += 1;
 };
@@ -263,7 +263,7 @@ export const redo = (store: Store) => {
         store,
         { map: item.post, selection: item.postSelection },
         [],
-        true,
+        'skip',
     );
     store.history.idx -= 1;
 };
@@ -272,10 +272,11 @@ export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,
     paths: Path[][],
-    skipHistory = false,
+    historyMode = 'add' as 'add' | 'update' | 'skip',
+    // skipHistory = false,
 ) => {
     // console.log('UP', change, selection);
-    if (!skipHistory) {
+    if (historyMode === 'add') {
         const pre: UpdateMap = {};
         Object.keys(change).forEach((item) => {
             pre[+item] = store.map[+item] ?? null;
@@ -295,6 +296,17 @@ export const updateStore = (
         }
         store.history.items.push(history);
         store.history.idx = 0;
+    } else if (historyMode === 'update') {
+        const last =
+            store.history.items[
+                store.history.items.length - 1 - store.history.idx
+            ];
+        Object.keys(change).forEach((key) => {
+            if (!last.pre[key]) {
+                last.pre[key] = store.map[+key];
+            }
+            last.post[key] = change[key];
+        });
     }
 
     // console.log('Store change', change);
