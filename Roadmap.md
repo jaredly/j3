@@ -1,14 +1,18 @@
 
 # Very next stuff
 
-- [ ] adding an argument (space?) to a function that's not resolved, should resolve it?
+- [x] adding an argument (space?) to a function that's not resolved, should resolve it?
   - So, this is like ... "when you space off of a thing, that you have just modified probably(??)", it might 
     - like (== 1)
     - is it right when it gets parsed as a 1? And like, if you then change it to a `1.`, does it re-evaluate the whole thing?
     I guess that could be fine.
     Ok, so there's a `reEvaluateFunctionCall` function, that, when parsing an identifierlike, looks at the function it's a part of, and potentially autoselects something **even if** there was something previously selected. Right? Yeah sounds legit.
   - OK yeah so, what we want is the [path] of the thing that was updated, so we can walk it back and do any updates of functions and stuff.
+  - IDK if I need to do the whole path, or if just the most
+    recent thing suffices? I guess walking the whole thing would be good.
 
+- [ ] so, I should walk back up the tree too, I thikn
+- [ ] Ok but let's get these tests passing now, ok folks?
 
 # Ok, so writing a test
 

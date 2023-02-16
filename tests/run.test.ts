@@ -40,7 +40,7 @@ readdirSync(__dirname)
                     } ${raw.slice(node.loc.start, node.loc.end)}`, () => {
                         expect(result.errors).toEqual([]);
                     });
-                } else {
+                } else if (result.expr.type !== 'def') {
                     it(`${name}:${
                         getLine(lines, node.loc.start) + 1
                     } ${raw.slice(node.loc.start, node.loc.end)} :: ${

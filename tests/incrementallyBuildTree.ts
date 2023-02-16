@@ -163,7 +163,7 @@ export function incrementallyBuildTree(
             }
         }
 
-        walkBackTree(path, nidx, store, ectx);
+        walkBackTree(path.slice(1), nidx, store, ectx);
 
         if (path.length === 1 && path[0].idx === -1) {
             // We're (back) at the top level
