@@ -78,10 +78,11 @@ export const getRoot = (text: string) => {
     return { root, omap };
 };
 
-export type PathItem = {
+export type PosItem = {
     idx: number;
     // If `child` is -1, that means .tannot
     child: number;
+    path: { idx: number; child: number }[];
 };
 
 export function incrementallyBuildTree(
@@ -93,10 +94,18 @@ export function incrementallyBuildTree(
     },
     finishedATop?: () => void,
 ) {
-    const path: PathItem[] = [{ idx: -1, child: 0 }];
-    while (path.length) {
-        const last = path[path.length - 1];
+    const pos: PosItem[] = [{ idx: -1, child: 0, path: [] }];
+
+    // Hmmmm
+    // ok, so the problem is:
+    // path is like a stack trace, with eliminated tail calls.
+    //
+
+    while (pos.length) {
+        const last = pos[pos.length - 1];
         let nidx;
+        let lastChild = last.child;
+        let path;
         if (last.child === -1) {
             // tannot time
             nidx = omap[last.idx].tannot!;
@@ -104,8 +113,9 @@ export function incrementallyBuildTree(
                 throw new Error(`no bueno`);
             }
             const next = omap[nidx];
-            path.pop();
-            addNext(next, nidx);
+            pos.pop();
+            path = last.path.concat([{ idx: last.idx, child: lastChild }]);
+            addNext(next, nidx, path);
             store.map[last.idx].tannot = nidx;
         } else {
             const parent = store.map[last.idx] as ListLikeContents;
@@ -115,9 +125,10 @@ export function incrementallyBuildTree(
             if (oparent.values.length - 1 > last.child) {
                 last.child++;
             } else {
-                path.pop();
+                pos.pop();
             }
-            addNext(next, nidx);
+            path = last.path.concat([{ idx: last.idx, child: lastChild }]);
+            addNext(next, nidx, path);
             parent.values.push(nidx);
         }
 
@@ -165,13 +176,17 @@ export function incrementallyBuildTree(
 
         walkBackTree(path.slice(1), nidx, store, ectx);
 
-        if (path.length === 1 && path[0].idx === -1) {
+        if (pos.length === 1 && pos[0].idx === -1) {
             // We're (back) at the top level
             finishedATop?.();
         }
     }
 
-    function addNext(next: MNode, nidx: number) {
+    function addNext(
+        next: MNode,
+        nidx: number,
+        path: { idx: number; child: number }[],
+    ) {
         if (
             next.type === 'list' ||
             next.type === 'array' ||
@@ -179,11 +194,11 @@ export function incrementallyBuildTree(
         ) {
             const nchild = { ...next, values: [] };
             store.map[nidx] = nchild;
-            path.push({ idx: next.loc.idx, child: 0 });
+            pos.push({ idx: next.loc.idx, child: 0, path });
         } else {
             if (next.tannot != null) {
                 const nchild = { ...next, tannot: undefined };
-                path.push({ idx: next.loc.idx, child: -1 });
+                pos.push({ idx: next.loc.idx, child: -1, path });
                 store.map[nidx] = nchild;
             } else {
                 store.map[nidx] = next;
@@ -204,7 +219,7 @@ export function incrementallyBuildTree(
  *       if it's warranted?
  */
 export const walkBackTree = (
-    path: PathItem[],
+    path: { idx: number; child: number }[],
     idx: number,
     store: Store,
     ectx: EvalCtx,
@@ -218,14 +233,14 @@ export const walkBackTree = (
 
     const type = ectx.report.types[idx];
     if (!type || type.type === 'unresolved') {
-        console.log('no type', idx, type);
+        // console.log('no type', idx, type);
         return;
     }
 
     const first = path[0].idx;
     const top = ectx.results[first]?.expr;
     if (!top) {
-        console.error('no top', first, ectx.nodes);
+        console.error('no top', path, ectx.nodes);
         return;
     }
 
@@ -234,7 +249,7 @@ export const walkBackTree = (
 
     const firstAuto = ectx.ctx.display[firstSiblingIdx]?.autoComplete;
     if (!firstAuto) {
-        console.log('no auto for', firstSiblingIdx, firstSibling);
+        // console.log('no auto for', firstSiblingIdx, firstSibling);
         return;
     }
 
@@ -260,6 +275,7 @@ export const walkBackTree = (
                 return (
                     item.type === 'replace' &&
                     item.ann.type === 'fn' &&
+                    item.exact &&
                     item.ann.args.length >= last.child &&
                     matchesType(
                         type,
@@ -269,7 +285,7 @@ export const walkBackTree = (
                     )
                 );
             }) as AutoCompleteReplace[];
-            console.log('available', available);
+            // console.log('available', available);
             if (available.length === 1) {
                 updateStore(
                     store,
@@ -292,7 +308,7 @@ export const walkBackTree = (
             }
         }
     }
-    console.log(parent);
+    // console.log(parent);
 };
 
 function constructExprMap(expr: Expr) {

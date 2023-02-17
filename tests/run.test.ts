@@ -26,6 +26,9 @@ readdirSync(__dirname)
             for (let idx of root.values) {
                 const node = store.map[idx];
                 const result = ectx.results[idx];
+                if (node.type === 'comment') {
+                    return;
+                }
                 if (result.status === 'failure') {
                     it(`${name}:${
                         getLine(lines, node.loc.start) + 1

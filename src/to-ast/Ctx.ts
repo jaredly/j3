@@ -174,6 +174,7 @@ const basicReverse: { [key: string]: string } = {};
     builtinFn(basicBuiltins, basicReverse, name, [tuint, tuint], tuint);
     builtinFn(basicBuiltins, basicReverse, name, [tfloat, tfloat], tfloat);
 });
+builtinFn(basicBuiltins, basicReverse, '==', [tbool, tbool], tbool);
 builtinFn(basicBuiltins, basicReverse, 'toString', [tint], tstring);
 builtinFn(basicBuiltins, basicReverse, 'toString', [tbool], tstring);
 builtinFn(
