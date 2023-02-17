@@ -174,7 +174,11 @@ export function incrementallyBuildTree(
             }
         }
 
-        walkBackTree(path.slice(1), nidx, store, ectx);
+        const tmp = path.slice(1);
+        while (tmp.length) {
+            walkBackTree(tmp, nidx, store, ectx);
+            tmp.pop();
+        }
 
         if (pos.length === 1 && pos[0].idx === -1) {
             // We're (back) at the top level

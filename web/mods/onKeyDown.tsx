@@ -73,15 +73,15 @@ export const onKeyDown = (
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         handleSpace(evt, idx, path, events, store);
 
-        walkBackTree(
-            path.slice(1).map((p) => ({
-                idx: p.idx,
-                child: p.child.type === 'child' ? p.child.at : -1,
-            })),
-            idx,
-            store,
-            ectx,
-        );
+        const tmp = path.slice(1).map((p) => ({
+            idx: p.idx,
+            child: p.child.type === 'child' ? p.child.at : -1,
+        }));
+
+        while (tmp.length) {
+            walkBackTree(tmp, idx, store, ectx);
+            tmp.pop();
+        }
 
         return;
     }
