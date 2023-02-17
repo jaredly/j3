@@ -118,6 +118,7 @@ export const ListLike = ({
                 <Blinker
                     idx={idx}
                     store={store}
+                    ectx={top.ctx}
                     path={path.concat([{ idx, child: { type: 'start' } }])}
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
@@ -176,6 +177,7 @@ export const ListLike = ({
                 <Blinker
                     idx={idx}
                     store={store}
+                    ectx={top.ctx}
                     path={path.concat([{ idx, child: { type: 'inside' } }])}
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
@@ -234,6 +236,7 @@ export const ListLike = ({
                 <Blinker
                     idx={idx}
                     store={store}
+                    ectx={top.ctx}
                     path={path.concat([{ idx, child: { type: 'end' } }])}
                     style={{
                         color: rainbow[path.length % rainbow.length],

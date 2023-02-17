@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Map, toMCST } from '../../src/types/mcst';
-import { Path, Store, updateStore } from '../store';
+import { EvalCtx, Path, Store, updateStore } from '../store';
 import { Events } from './Nodes';
 import { modChildren, onKeyDown } from '../mods/onKeyDown';
 import { parse } from '../../src/grammar';
@@ -19,12 +19,14 @@ export const Blinker = ({
     idx,
     path,
     store,
+    ectx,
 }: {
     events: Events;
     style: React.CSSProperties;
     idx: number;
     path: Path[];
     store: Store;
+    ectx: EvalCtx;
 }) => {
     const ref = React.useRef<HTMLSpanElement>(null);
 
@@ -38,7 +40,7 @@ export const Blinker = ({
             ref={ref}
             style={{ ...style, width: 1, marginRight: -1 }}
             onKeyDown={(evt) => {
-                onKeyDown(evt, idx, path, events, store, null);
+                onKeyDown(evt, idx, path, events, store, ectx);
                 if (!evt.defaultPrevented && fullAscii.includes(evt.key)) {
                     const nw = parseKey(evt.key);
                     if (!nw) return;

@@ -30,6 +30,7 @@ export const StringView = ({
                 <Blinker
                     idx={idx}
                     store={store}
+                    ectx={top.ctx}
                     path={path.concat([{ idx, child: { type: 'start' } }])}
                     style={{ color: rainbow[path.length % rainbow.length] }}
                     events={{
@@ -189,6 +190,7 @@ export const StringView = ({
             {store.selection?.idx === idx && store.selection.loc === 'end' ? (
                 <Blinker
                     idx={idx}
+                    ectx={top.ctx}
                     store={store}
                     path={path.concat([{ idx, child: { type: 'end' } }])}
                     style={{ color: rainbow[path.length % rainbow.length] }}
