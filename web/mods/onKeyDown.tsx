@@ -18,11 +18,13 @@ import {
     updateStore,
 } from '../store';
 import { parse } from '../../src/grammar';
-import { CString, Loc, NodeContents } from '../../src/types/cst';
+import { CString, Identifier, Loc, NodeContents } from '../../src/types/cst';
 import { Events } from '../old/Nodes';
 import { handleBackspace } from './handleBackspace';
 import { handleSpace } from './handleSpace';
 import { walkBackTree } from '../../tests/incrementallyBuildTree';
+import { compile } from '../compile';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 
 export const onKeyDown = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
@@ -96,10 +98,13 @@ export const onKeyDown = (
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         handleSpace(evt, idx, path, events, store);
 
+        console.log('walking back');
         const tmp = path.slice(1).map((p) => ({
             idx: p.idx,
             child: p.child.type === 'child' ? p.child.at : -1,
         }));
+
+        maybeCommitAutoComplete(idx, ectx, store);
 
         while (tmp.length) {
             walkBackTree(tmp, idx, store, ectx);
@@ -133,6 +138,7 @@ export const onKeyDown = (
             }
             const node = store.map[parent.idx];
             if (node.type === looking) {
+                maybeCommitAutoComplete(idx, ectx, store);
                 return setSelection(store, {
                     idx: parent.idx,
                     loc: 'end',
@@ -288,6 +294,27 @@ export const rmChild = (
     }
     return null;
 };
+
+function maybeCommitAutoComplete(idx: number, ectx: EvalCtx, store: Store) {
+    const display = ectx.ctx.display[idx];
+    if (display?.autoComplete) {
+        let matching = display.autoComplete.filter(
+            (item) => item.type === 'replace' && item.exact,
+        ) as AutoCompleteReplace[];
+        if (matching.length === 1) {
+            // STOPSHIP: FIX
+            // ahh gottta update history here folks
+            const node = store.map[idx] as Identifier & MNodeExtra;
+            updateStore(
+                store,
+                { map: { [idx]: { ...node, hash: matching[0].hash } } },
+                'update',
+            );
+            // (store.map[idx] as Identifier).hash =
+            compile(store, ectx);
+        }
+    }
+}
 
 function newListLike(
     evt: React.KeyboardEvent<HTMLSpanElement>,

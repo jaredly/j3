@@ -18,3 +18,12 @@
 (defn add2 [x :int] (+ x 2))
 
 (== (add2 23) 25)
+
+(== 10 (switch ('Hello 10) ('Hello v) v))
+
+(== 43 (let [('Ok x) ('Ok 20)] (+ x 23)))
+
+(def ok {23 100 yes 34})
+; why is `yes` not resolving?
+(def yes (let [{yes what} ok] what))
+(== yes 34)
