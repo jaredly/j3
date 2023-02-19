@@ -3,7 +3,8 @@ keyboards:
 - [x] '(' at the start should wrap
 - [ ] dunno about '(' in the middle
 - [ ] '(' at the end should do a space first
-- [ ] space in the middle of a word should split it
+- [x] space in the middle of a word should split it
+  - [x] hang on to prev selection thanks
 - ([{}])
   - at start
   - at end
