@@ -1,8 +1,14 @@
 import * as React from 'react';
-import { ListLikeContents, Map } from '../../src/types/mcst';
-import { Path, Store, UpdateMap, updateStore } from '../store';
+import {
+    ListLikeContents,
+    Map,
+    MCString,
+    MNodeExtra,
+} from '../../src/types/mcst';
+import { Path, Store, StoreUpdate, UpdateMap, updateStore } from '../store';
 import { Events } from '../old/Nodes';
 import { mnodeChildren, rmChild, isAtStart, getPos } from './onKeyDown';
+import { stringText } from '../../src/types/cst';
 
 const removeEmptyPrev = (
     gp: Path,
@@ -52,6 +58,48 @@ export const handleBackspace = (
 
         evt.preventDefault();
         events.onLeft();
+        return;
+    }
+
+    // Deleting an expr, joining it up
+    if (
+        parent.child.type === 'expr' &&
+        evt.currentTarget.textContent!.length === 0
+    ) {
+        const node = store.map[parent.idx] as MCString & MNodeExtra;
+        const templates = node.templates.slice();
+        const prev = templates[parent.child.at - 1].suffix;
+        const prevText = (store.map[prev] as stringText).text;
+        templates.splice(parent.child.at - 1, 1);
+        const update: StoreUpdate = { map: {} };
+        if (parent.child.at > 1) {
+            const suffix = templates[parent.child.at - 2].suffix;
+            const pt = (store.map[suffix] as stringText).text;
+            const text = pt + prevText;
+            update.map[suffix] = {
+                ...(store.map[suffix] as stringText & MNodeExtra),
+                text,
+            };
+            update.selection = {
+                idx: suffix,
+                loc: pt.length,
+            };
+        } else {
+            const pt = (store.map[node.first] as stringText).text;
+            const text = pt + prevText;
+            update.map[node.first] = {
+                ...(store.map[node.first] as stringText & MNodeExtra),
+                text,
+            };
+            update.selection = {
+                idx: node.first,
+                loc: pt.length,
+            };
+        }
+        update.map[parent.idx] = { ...node, templates };
+        updateStore(store, update);
+        evt.preventDefault();
+        evt.stopPropagation();
         return;
     }
 

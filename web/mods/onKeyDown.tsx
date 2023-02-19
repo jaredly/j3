@@ -296,7 +296,10 @@ function newListLike(
     store: Store,
 ) {
     const last = path[path.length - 1];
-    if (evt.currentTarget.textContent === '' && last.child.type === 'child') {
+    if (
+        evt.currentTarget.textContent === '' &&
+        (last.child.type === 'child' || last.child.type === 'expr')
+    ) {
         const mp: UpdateMap = {};
         const nw = parse(
             evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',

@@ -261,16 +261,10 @@ function maybeAddExpression(
         ...(store.map[idx] as stringText & MNodeExtra),
         text: prefix,
     };
-    mp[last.idx] = {
-        ...node,
-        templates: [
-            ...node.templates,
-            {
-                expr: eidx,
-                suffix: sidx,
-            },
-        ],
-    };
+    const templates = node.templates.slice();
+    const ok = last.child.type === 'text' ? last.child.at : 0;
+    templates.splice(ok, 0, { expr: eidx, suffix: sidx });
+    mp[last.idx] = { ...node, templates };
     updateStore(store, {
         map: mp,
         selection: {

@@ -6,6 +6,8 @@ keyboards:
 - [x] space in the middle of a word should split it
   - [x] hang on to prev selection thanks
 - [x] wrapWithParens in a string
+- [x] click on '${' or '}' isn't selecting right
+- [ ] space in a string expr should work
 - ([{}])
   - at start
   - at end
