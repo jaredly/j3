@@ -32,7 +32,7 @@ describe('compile', () => {
         const map = {
             [n10!.loc.idx]: { ...n10, raw: '30' },
         };
-        updateStore(store, { map }, []);
+        updateStore(store, { map });
         compile(store, ctx);
 
         // Assert
@@ -103,18 +103,14 @@ describe('compile', () => {
             raw: string;
             loc: Loc;
         };
-        updateStore(
-            store,
-            {
-                map: {
-                    [x10!.loc.idx]: {
-                        ...x10,
-                        raw: '30',
-                    },
+        updateStore(store, {
+            map: {
+                [x10!.loc.idx]: {
+                    ...x10,
+                    raw: '30',
                 },
             },
-            [],
-        );
+        });
         expect(store.history.items.length).toBe(2);
 
         compile(store, ctx);

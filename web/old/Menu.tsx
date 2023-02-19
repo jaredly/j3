@@ -146,17 +146,13 @@ export function getMenuItems(
                               loc: { start: -1, end: -1, idx },
                           },
                       };
-                      updateStore(
-                          store,
-                          {
-                              map,
-                              selection: {
-                                  idx,
-                                  loc: item.text.length,
-                              },
+                      updateStore(store, {
+                          map,
+                          selection: {
+                              idx,
+                              loc: item.text.length,
                           },
-                          [],
-                      );
+                      });
                   }
                 : () => {},
     }));

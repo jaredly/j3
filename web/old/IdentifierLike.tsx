@@ -338,24 +338,20 @@ function onInput(
         (mp[idx] as Identifier).hash = old.hash;
     }
 
-    updateStore(
-        store,
-        {
-            map: mp,
-            selection: {
-                idx,
-                loc:
-                    nw.type === 'array' ||
-                    nw.type === 'list' ||
-                    nw.type === 'record'
-                        ? 'end'
-                        : pos,
-            },
-            prev: {
-                idx,
-                loc: presel.current ?? undefined,
-            },
+    updateStore(store, {
+        map: mp,
+        selection: {
+            idx,
+            loc:
+                nw.type === 'array' ||
+                nw.type === 'list' ||
+                nw.type === 'record'
+                    ? 'end'
+                    : pos,
         },
-        [path],
-    );
+        prev: {
+            idx,
+            loc: presel.current ?? undefined,
+        },
+    });
 }

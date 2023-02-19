@@ -1,4 +1,18 @@
 
+keyboards:
+- [x] '(' at the start should wrap
+- [ ] dunno about '(' in the middle
+- [ ] '(' at the end should do a space first
+- [ ] space in the middle of a word should split it
+- ([{}])
+  - at start
+  - at end
+  - ...in the midlle?
+- left/right arrow keys
+- up/down arrow keys
+- selectttt
+
+
 # Very next stuff
 
 - [x] adding an argument (space?) to a function that's not resolved, should resolve it?
@@ -11,8 +25,8 @@
   - IDK if I need to do the whole path, or if just the most
     recent thing suffices? I guess walking the whole thing would be good.
 
-- [ ] so, I should walk back up the tree too, I thikn
-- [ ] Ok but let's get these tests passing now, ok folks?
+- [x] so, I should walk back up the tree too, I thikn
+- [x] Ok but let's get these tests passing now, ok folks?
 
 # Ok, so writing a test
 

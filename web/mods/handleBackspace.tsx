@@ -27,7 +27,7 @@ const removeEmptyPrev = (
                 },
             },
         };
-        updateStore(store, { map: mp }, [path]);
+        updateStore(store, { map: mp });
         evt.preventDefault();
         return true;
     }
@@ -73,7 +73,7 @@ export const handleBackspace = (
                 ...{ type: 'identifier', text: '' },
             },
         };
-        updateStore(store, { map: mp }, [path]);
+        updateStore(store, { map: mp });
         evt.preventDefault();
         return;
     }
@@ -92,31 +92,23 @@ export const handleBackspace = (
                     ...pnode,
                     ...{ type: 'identifier', text: '' },
                 };
-                updateStore(
-                    store,
-                    {
-                        map: mp,
-                        selection: {
-                            idx: parent.idx,
-                        },
+                updateStore(store, {
+                    map: mp,
+                    selection: {
+                        idx: parent.idx,
                     },
-                    [path],
-                );
+                });
                 evt.preventDefault();
                 return;
             }
             mp[parent.idx] = { ...pnode, ...contents };
-            updateStore(
-                store,
-                {
-                    map: mp,
-                    selection:
-                        nidx != null
-                            ? { idx: nidx, loc: 'end' }
-                            : { idx: parent.idx, loc: 'start' },
-                },
-                [path],
-            );
+            updateStore(store, {
+                map: mp,
+                selection:
+                    nidx != null
+                        ? { idx: nidx, loc: 'end' }
+                        : { idx: parent.idx, loc: 'start' },
+            });
             evt.preventDefault();
         } else if (isAtStart(evt.currentTarget)) {
             // Can we merge with the previous child?

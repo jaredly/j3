@@ -133,7 +133,7 @@ export const App = () => {
             const ctx = newEvalCtx(newCtx());
             if (!value) {
                 setIdx(0);
-                const store = initialStore(parse(`; A new file for you`));
+                const store = initialStore(parse(`"hello"`));
                 compile(store, ctx);
                 setState({
                     id: hash,

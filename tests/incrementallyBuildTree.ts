@@ -302,7 +302,6 @@ export const walkBackTree = (
                             },
                         },
                     },
-                    [],
                     'update',
                 );
                 // (store.map[firstSiblingIdx] as Identifier).hash =

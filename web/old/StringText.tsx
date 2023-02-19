@@ -119,21 +119,17 @@ export const StringText = ({
                         text,
                     },
                 };
-                updateStore(
-                    store,
-                    {
-                        map: mp,
-                        selection: {
-                            idx,
-                            loc: pos,
-                        },
-                        prev: {
-                            idx,
-                            loc: presel.current ?? undefined,
-                        },
+                updateStore(store, {
+                    map: mp,
+                    selection: {
+                        idx,
+                        loc: pos,
                     },
-                    [path],
-                );
+                    prev: {
+                        idx,
+                        loc: presel.current ?? undefined,
+                    },
+                });
             }}
             onBlur={() => {
                 setEdit(null);
@@ -167,15 +163,11 @@ export const StringText = ({
                         store,
                         edit!,
                     );
-                    updateStore(
-                        store,
-                        {
-                            map,
-                            selection,
-                            prev: { idx, loc: presel.current ?? undefined },
-                        },
-                        [path],
-                    );
+                    updateStore(store, {
+                        map,
+                        selection,
+                        prev: { idx, loc: presel.current ?? undefined },
+                    });
                 }
                 if (
                     evt.key === 'ArrowLeft' ||
@@ -279,19 +271,15 @@ function maybeAddExpression(
             },
         ],
     };
-    updateStore(
-        store,
-        {
-            map: mp,
-            selection: {
-                idx: eidx,
-                loc: 'start',
-            },
-            prev: {
-                idx,
-                loc: presel.current ?? undefined,
-            },
+    updateStore(store, {
+        map: mp,
+        selection: {
+            idx: eidx,
+            loc: 'start',
         },
-        [path],
-    );
+        prev: {
+            idx,
+            loc: presel.current ?? undefined,
+        },
+    });
 }

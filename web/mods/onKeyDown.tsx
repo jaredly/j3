@@ -30,6 +30,25 @@ export const onKeyDown = (
     store: Store,
     ectx: EvalCtx,
 ) => {
+    const last = path[path.length - 1];
+    if (last.child.type === 'child') {
+        if (
+            '([{'.includes(evt.key) &&
+            getPos(evt.currentTarget) === 0 &&
+            evt.currentTarget.textContent!.length !== 0
+        ) {
+            wrapWithParens(
+                evt,
+                path,
+                idx,
+                store,
+                { '(': '()', '[': '[]', '{': '{}' }[evt.key]!,
+                'start',
+            );
+            return;
+        }
+    }
+
     if (evt.key === ':') {
         evt.preventDefault();
         let tannot = store.map[idx].tannot;
@@ -92,11 +111,10 @@ export const onKeyDown = (
         nw.loc.idx = idx;
         const mp: Map = {};
         toMCST(nw, mp);
-        updateStore(
-            store,
-            { map: mp, selection: { idx: nw.first.loc.idx, loc: 'start' } },
-            [path],
-        );
+        updateStore(store, {
+            map: mp,
+            selection: { idx: nw.first.loc.idx, loc: 'start' },
+        });
         evt.preventDefault();
         return;
     }
@@ -120,7 +138,7 @@ export const onKeyDown = (
     }
 
     if (evt.key === '·' || (evt.key === '(' && evt.altKey)) {
-        return wrapWithParens(evt, path, idx, store);
+        return wrapWithParens(evt, path, idx, store, '()');
     }
 
     if (evt.key === '(' || evt.key === '[' || evt.key === '{') {
@@ -281,11 +299,10 @@ function newListLike(
         )[0];
         nw.loc.idx = idx;
         toMCST(nw, mp);
-        updateStore(
-            store,
-            { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
-            [path],
-        );
+        updateStore(store, {
+            map: mp,
+            selection: { idx: nw.loc.idx, loc: 'inside' },
+        });
         evt.preventDefault();
         return;
     }
@@ -334,11 +351,10 @@ function newListLike(
                 return items;
             }),
         };
-        updateStore(
-            store,
-            { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
-            [path],
-        );
+        updateStore(store, {
+            map: mp,
+            selection: { idx: nw.loc.idx, loc: 'inside' },
+        });
         evt.preventDefault();
         return;
     }
@@ -349,12 +365,14 @@ function wrapWithParens(
     path: Path[],
     idx: number,
     store: Store,
+    kind: string,
+    loc: 'start' | 'end' = 'end',
 ) {
     evt.preventDefault();
     const parent = path[path.length - 1];
     if (parent.child.type === 'child') {
         const child = parent.child;
-        const nw = parse('()')[0];
+        const nw = parse(kind)[0];
         const mp: Map = {};
         const nidx = toMCST(nw, mp);
         (mp[nw.loc.idx] as ListLikeContents).values.push(idx);
@@ -365,7 +383,7 @@ function wrapWithParens(
                 items.splice(child.at, 1, nidx);
             }),
         };
-        updateStore(store, { map: mp, selection: { idx, loc: 'end' } }, [path]);
+        updateStore(store, { map: mp, selection: { idx, loc } });
     }
     return;
 }

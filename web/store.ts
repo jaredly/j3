@@ -242,12 +242,7 @@ export const undo = (store: Store) => {
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
     // console.log('presel', item.preSelection);
-    updateStore(
-        store,
-        { map: item.pre, selection: item.preSelection },
-        [],
-        'skip',
-    );
+    updateStore(store, { map: item.pre, selection: item.preSelection }, 'skip');
     store.history.idx += 1;
 };
 
@@ -258,11 +253,9 @@ export const redo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - store.history.idx];
-    // console.log('postsel', item.postSelection);
     updateStore(
         store,
         { map: item.post, selection: item.postSelection },
-        [],
         'skip',
     );
     store.history.idx -= 1;
@@ -271,7 +264,7 @@ export const redo = (store: Store) => {
 export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,
-    paths: Path[][],
+    // paths: Path[][],
     historyMode = 'add' as 'add' | 'update' | 'skip',
     // skipHistory = false,
 ) => {
@@ -334,17 +327,15 @@ export const updateStore = (
         setSelection(
             store,
             selection,
-            Object.keys(change)
-                .map(Number)
-                .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            Object.keys(change).map(Number),
+            // .concat(paths.flatMap((p) => p.map((i) => i.idx))),
             true,
         );
     } else {
         notify(
             store,
-            Object.keys(change)
-                .map(Number)
-                .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            Object.keys(change).map(Number),
+            // .concat(paths.flatMap((p) => p.map((i) => i.idx))),
             true,
         );
     }
