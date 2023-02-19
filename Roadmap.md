@@ -16,6 +16,9 @@ keyboards:
 - up/down arrow keys
 - selectttt
 
+- [ ] let's do spreads! like, seems like I want it.
+- [ ] and, dot.things
+
 
 # Very next stuff
 

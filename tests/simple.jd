@@ -14,3 +14,7 @@
 (!= one 2)
 
 (== 3 (if true 3 4))
+
+(defn add2 [x :int] (+ x 2))
+
+(== (add2 23) 25)
