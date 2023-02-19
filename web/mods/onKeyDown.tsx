@@ -2,7 +2,9 @@ import * as React from 'react';
 import {
     ListLikeContents,
     Map,
+    MCString,
     MNodeContents,
+    MNodeExtra,
     toMCST,
 } from '../../src/types/mcst';
 import {
@@ -31,12 +33,14 @@ export const onKeyDown = (
     ectx: EvalCtx,
 ) => {
     const last = path[path.length - 1];
-    if (last.child.type === 'child') {
+    console.log('what', last.child);
+    if (last.child.type === 'child' || last.child.type === 'expr') {
         if (
             '([{'.includes(evt.key) &&
             getPos(evt.currentTarget) === 0 &&
             evt.currentTarget.textContent!.length !== 0
         ) {
+            console.log('trying to wrap');
             wrapWithParens(
                 evt,
                 path,
@@ -370,19 +374,30 @@ function wrapWithParens(
 ) {
     evt.preventDefault();
     const parent = path[path.length - 1];
-    if (parent.child.type === 'child') {
+    if (parent.child.type === 'child' || parent.child.type === 'expr') {
         const child = parent.child;
         const nw = parse(kind)[0];
         const mp: Map = {};
         const nidx = toMCST(nw, mp);
         (mp[nw.loc.idx] as ListLikeContents).values.push(idx);
-        const pnode = store.map[parent.idx];
-        mp[parent.idx] = {
-            ...pnode,
-            ...modChildren(pnode, (items) => {
-                items.splice(child.at, 1, nidx);
-            }),
-        };
+        if (parent.child.type === 'child') {
+            const pnode = store.map[parent.idx];
+            mp[parent.idx] = {
+                ...pnode,
+                ...modChildren(pnode, (items) => {
+                    items.splice(child.at, 1, nidx);
+                }),
+            };
+        } else {
+            const pnode = store.map[parent.idx] as MCString & MNodeExtra;
+            console.log(pnode);
+            const templates = pnode.templates.slice();
+            templates[child.at - 1] = {
+                expr: nidx,
+                suffix: templates[child.at - 1].suffix,
+            };
+            mp[parent.idx] = { ...pnode, templates };
+        }
         updateStore(store, { map: mp, selection: { idx, loc } });
     }
     return;

@@ -5,6 +5,7 @@ keyboards:
 - [ ] '(' at the end should do a space first
 - [x] space in the middle of a word should split it
   - [x] hang on to prev selection thanks
+- [x] wrapWithParens in a string
 - ([{}])
   - at start
   - at end

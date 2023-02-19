@@ -289,7 +289,6 @@ export const walkBackTree = (
                     )
                 );
             }) as AutoCompleteReplace[];
-            // console.log('available', available);
             if (available.length === 1) {
                 updateStore(
                     store,
@@ -304,14 +303,10 @@ export const walkBackTree = (
                     },
                     'update',
                 );
-                // (store.map[firstSiblingIdx] as Identifier).hash =
-                //     available[0].hash;
-                // compile(store, ectx);
                 return;
             }
         }
     }
-    // console.log(parent);
 };
 
 function constructExprMap(expr: Expr) {
