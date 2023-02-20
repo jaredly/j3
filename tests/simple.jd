@@ -27,3 +27,5 @@
 ; why is `yes` not resolving?
 (def yes (let [{yes what} ok] what))
 (== yes 34)
+
+(== 10 (.one {one 10}))

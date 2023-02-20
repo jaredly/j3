@@ -16,19 +16,9 @@
 
 File = _ contents:(@Form _)* _ { return contents}
 
-// Form = inner:FormInner decorators:(_ @Decorator _)* {
-// 	decorators.forEach(dec => {
-// 		inner.decorators[dec.name] = dec.args
-// 	})
-// 	return inner
-// }
-Form = tag / number / list / array / comment / string / identifier / macro / record
+Form = tag / number / list / array / comment / string / spread / recordAccess / fullRecordAccess / identifier / macro / record
 
 record = "{" _ values:(@Form _)* "}" { return wrap({type: 'record', values})}
-
-// TypeDec = ":" form:Form { return {name: 'type', args:[form]} }
-// FullDecorator = "@" "(" _ name:$idtext args:(_ @Form)* _ ")" { return {name, args} }
-// Decorator = FullDecorator / TypeDec
 
 macro = "@" name:$idtext { return wrap({type: 'macro', name})}
 
@@ -45,8 +35,16 @@ array = "[" _ values:(@Form _)* "]"  {return wrap({type: 'array', values})}
 
 comment = text:$(commenttext / finalLineComment) {return wrap({type: 'comment', text})}
 
-// TODO figure this out
-// spread = "..." contents:Form {return wrap({type: 'spread', contents})}
+spread = "..." contents:Form {return wrap({type: 'spread', contents})}
+
+// identWithRecord = jjjjjjjjjjjj
+
+fullRecordAccess = target:identifier record:recordAccess {
+    return {...record, target, loc: newLoc()}
+}
+
+recordAccess = items:dotPair+ {return wrap({type: 'recordAccess', target: null, items})}
+dotPair = "." text:$idtext {return wrap({type: 'accessText', text})}
 
 string = "\"" first:stringText templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
 stringText = text:$tplStringChars {return {type: 'stringText', text, loc: newLoc()}}
@@ -59,7 +57,7 @@ tplStringChars = $(!"\${" stringChar)*
 stringChar = $( escapedChar / [^"\\] / __)
 escapedChar = "\\" .
 
-idtext = [@:a-zA-Z0-9_<>!=$%*/+~&.|,?-]+
+idtext = [@:a-zA-Z0-9_<>!=$%*/+~&|,?-]+
 
 // newline = "\n"
 // _nonnewline = [ \t\r]* (comment [ \t\r]*)*

@@ -18,30 +18,38 @@ export const filterComments = (nodes: Node[]) =>
 
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
+        case 'recordAccess': {
+            return {
+                type: 'recordAccess',
+                items: form.items.map((item) => item.text),
+                form,
+                target: form.target ? nodeToExpr(form.target, ctx) : null,
+            };
+        }
         case 'identifier': {
             if (!form.text && !form.hash) {
                 return { type: 'blank', form };
             }
-            if (form.text.includes('.')) {
-                const [expr, ...rest] = form.text.split('.');
-                let inner: Expr = resolveExpr(
-                    expr,
-                    form.hash,
-                    ctx,
-                    form,
-                    '.' + rest.join('.'),
-                );
-                while (rest.length) {
-                    const next = rest.shift()!;
-                    inner = {
-                        type: 'attribute',
-                        target: inner,
-                        attr: next,
-                        form,
-                    };
-                }
-                return inner;
-            }
+            // if (form.text.includes('.')) {
+            //     const [expr, ...rest] = form.text.split('.');
+            //     let inner: Expr = resolveExpr(
+            //         expr,
+            //         form.hash,
+            //         ctx,
+            //         form,
+            //         '.' + rest.join('.'),
+            //     );
+            //     while (rest.length) {
+            //         const next = rest.shift()!;
+            //         inner = {
+            //             type: 'attribute',
+            //             target: inner,
+            //             attr: next,
+            //             form,
+            //         };
+            //     }
+            //     return inner;
+            // }
 
             return resolveExpr(form.text, form.hash, ctx, form);
         }

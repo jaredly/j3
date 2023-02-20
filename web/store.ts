@@ -203,10 +203,7 @@ export const setSelection = (
     extras?: (number | null | undefined)[],
     change = false,
 ) => {
-    // hmmmmmmmmmmmmmmmmmmmm oh here's where it gets tricky
-    // because it's different if you're coming from the right
-    // or the left
-    // right?
+    // tannot is glommed onto the end
     if (
         selection?.from === 'right' &&
         selection.idx &&

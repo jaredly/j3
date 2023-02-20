@@ -252,12 +252,12 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.arrayExpression(
                 expr.values.map((item) => exprToTs(item, ctx)),
             );
-        case 'attribute':
-            return t.memberExpression(
-                exprToTs(expr.target, ctx),
-                t.identifier(expr.attr),
-                false,
-            );
+        // case 'attribute':
+        //     return t.memberExpression(
+        //         exprToTs(expr.target, ctx),
+        //         t.identifier(expr.attr),
+        //         false,
+        //     );
         case 'type-apply':
             return exprToTs(expr.target, ctx);
         // case 'tfn': return exprToTs(expr.body, ctx);

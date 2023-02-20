@@ -8,6 +8,8 @@ export type {
     CString,
     NodeExtra,
     NodeArray,
+    accessText,
+    spread,
 } from './cst';
 
 export type Term = {
@@ -54,6 +56,14 @@ export type String = {
     templates: { expr: Expr; suffix: { text: string; form: Node } }[];
     form: Node;
 };
+
+export type recordAccess = {
+    type: 'recordAccess';
+    target: Expr | null;
+    items: string[];
+    form: Node;
+};
+
 export type Expr =
     | Shared
     | {
@@ -73,7 +83,8 @@ export type Expr =
           form: Node;
       }
     | { type: 'rest'; contents: Expr; form: Node }
-    | { type: 'attribute'; attr: string; target: Expr; form: Node }
+    | recordAccess
+    // | { type: 'attribute'; attr: string; target: Expr; form: Node }
     | {
           type: 'fn';
           name?: string;

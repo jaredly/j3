@@ -73,6 +73,16 @@ const modFnArgs = (node: Node, fn: (args: Node[]) => Node[]) => {
 export const preprocess = (node: Node) => {
     return transformNode(node, {
         pre(node) {
+            if (node.type === 'identifier') {
+                // if (node.text.startsWith('...')) {
+                //     return {
+                //         type: 'spread',
+                //         contents:
+                //     }
+                // }
+                if (node.text.includes('.')) {
+                }
+            }
             return modFnArgs(node, attachAnnotations);
         },
     });

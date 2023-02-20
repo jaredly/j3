@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, NodeArray, Node, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, NodeArray, Node, spread, accessText, recordAccess, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -33,6 +33,12 @@ export type Visitor<Ctx> = {
     LocPost?: (node: Loc, ctx: Ctx) => null | Loc,
     NodeArray?: (node: NodeArray, ctx: Ctx) => null | false | NodeArray | [NodeArray | null, Ctx],
     NodeArrayPost?: (node: NodeArray, ctx: Ctx) => null | NodeArray,
+    spread?: (node: spread, ctx: Ctx) => null | false | spread | [spread | null, Ctx],
+    spreadPost?: (node: spread, ctx: Ctx) => null | spread,
+    accessText?: (node: accessText, ctx: Ctx) => null | false | accessText | [accessText | null, Ctx],
+    accessTextPost?: (node: accessText, ctx: Ctx) => null | accessText,
+    recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | recordAccess | [recordAccess | null, Ctx],
+    recordAccessPost?: (node: recordAccess, ctx: Ctx) => null | recordAccess,
     stringText?: (node: stringText, ctx: Ctx) => null | false | stringText | [stringText | null, Ctx],
     stringTextPost?: (node: stringText, ctx: Ctx) => null | stringText,
     CString?: (node: CString, ctx: Ctx) => null | false | CString | [CString | null, Ctx],
@@ -45,6 +51,8 @@ export type Visitor<Ctx> = {
     PatternPost_bool?: (node: Bool, ctx: Ctx) => null | Pattern,
     Expr_string?: (node: String, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_string?: (node: String, ctx: Ctx) => null | Expr,
+    Expr_recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
+    ExprPost_recordAccess?: (node: recordAccess, ctx: Ctx) => null | Expr,
     Expr_record?: (node: Record, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_record?: (node: Record, ctx: Ctx) => null | Expr,
     Shared_number?: (node: Number, ctx: Ctx) => null | false | Shared | [Shared | null, Ctx],
@@ -1083,6 +1091,23 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                             break
                         }
 
+            case 'recordAccess': {
+                            const transformed = visitor.Expr_recordAccess ? visitor.Expr_recordAccess(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
             case 'record': {
                             const transformed = visitor.Expr_record ? visitor.Expr_record(node, ctx) : null;
                             if (transformed != null) {
@@ -1253,7 +1278,7 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                     break;
                 }
 
-            case 'attribute': {
+            case 'recordAccess': {
                     const updatedNode$0specified = node;
                     let changed1 = false;
                     
@@ -1261,8 +1286,15 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
             {
                 let changed2 = false;
                 
-                const updatedNode$0node$target = transformExpr(updatedNode$0specified.target, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$target !== updatedNode$0specified.target;
+        let updatedNode$0node$target = null;
+        const updatedNode$0node$target$current = updatedNode$0specified.target;
+        if (updatedNode$0node$target$current != null) {
+            
+                const updatedNode$0node$target$2$ = transformExpr(updatedNode$0node$target$current, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$target$2$ !== updatedNode$0node$target$current;
+            updatedNode$0node$target = updatedNode$0node$target$2$;
+        }
+        
                 if (changed2) {
                     updatedNode$0node =  {...updatedNode$0node, target: updatedNode$0node$target};
                     changed1 = true;
@@ -1665,6 +1697,14 @@ switch (updatedNode.type) {
                             break
                         }
 
+            case 'recordAccess': {
+                            const transformed = visitor.ExprPost_recordAccess ? visitor.ExprPost_recordAccess(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
             case 'record': {
                             const transformed = visitor.ExprPost_record ? visitor.ExprPost_record(updatedNode, ctx) : null;
                             if (transformed != null) {
@@ -1877,6 +1917,108 @@ export const transformNodeArray = <Ctx>(node: NodeArray, visitor: Visitor<Ctx>, 
         node = updatedNode;
         if (visitor.NodeArrayPost) {
             const transformed = visitor.NodeArrayPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformspread = <Ctx>(node: spread, visitor: Visitor<Ctx>, ctx: Ctx): spread => {
+        if (!node) {
+            throw new Error('No spread provided');
+        }
+        
+        const transformed = visitor.spread ? visitor.spread(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.spreadPost) {
+            const transformed = visitor.spreadPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformaccessText = <Ctx>(node: accessText, visitor: Visitor<Ctx>, ctx: Ctx): accessText => {
+        if (!node) {
+            throw new Error('No accessText provided');
+        }
+        
+        const transformed = visitor.accessText ? visitor.accessText(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.accessTextPost) {
+            const transformed = visitor.accessTextPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformrecordAccess = <Ctx>(node: recordAccess, visitor: Visitor<Ctx>, ctx: Ctx): recordAccess => {
+        if (!node) {
+            throw new Error('No recordAccess provided');
+        }
+        
+        const transformed = visitor.recordAccess ? visitor.recordAccess(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.recordAccessPost) {
+            const transformed = visitor.recordAccessPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

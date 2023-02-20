@@ -17,7 +17,13 @@ keyboards:
 - selectttt
 
 - [ ] let's do spreads! like, seems like I want it.
+  - ok, so I need ... if the text becomes '...', then we're doing this
+    - now, in some contexts (at the _end_ of a record type decl) we allow an empty '...', so gotta be context aware.
 - [ ] and, dot.things
+
+- [ ] I should autocomplete 'def/defn/deftype'
+
+- [ ] oh btw, I think I do want rest args. like because you really wantt to be able to (+ 1 2 3)
 
 
 # Very next stuff

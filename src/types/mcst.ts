@@ -1,5 +1,13 @@
 import { UpdateMap } from '../../web/store';
-import { Loc, Node, NodeContents, NodeExtra, stringText } from './cst';
+import {
+    accessText,
+    Identifier,
+    Loc,
+    Node,
+    NodeContents,
+    NodeExtra,
+    stringText,
+} from './cst';
 
 export type MNode = MNodeContents & MNodeExtra;
 export type MNodeExtra = {
@@ -32,6 +40,16 @@ export type MNodeContents =
 
     // list-like
     | { type: 'comment'; text: string }
+    | {
+          type: 'spread';
+          contents: number;
+      }
+    | {
+          type: 'recordAccess';
+          target: number | null;
+          items: number[];
+      }
+    | { type: 'accessText'; text: string }
 
     // random stuff
     // | { type: 'spread'; contents: number }
@@ -79,8 +97,19 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
                     suffix: fromMCST(suffix, map) as stringText & NodeExtra,
                 })),
             };
-        // case 'spread':
-        //     return { ...node, contents: fromMCST(node.contents, map) };
+        case 'recordAccess':
+            return {
+                ...node,
+                target:
+                    node.target != null
+                        ? (fromMCST(node.target, map) as Identifier & NodeExtra)
+                        : null,
+                items: node.items.map(
+                    (idx) => fromMCST(idx, map) as accessText & NodeExtra,
+                ),
+            };
+        case 'spread':
+            return { ...node, contents: fromMCST(node.contents, map) };
         default:
             return node;
     }
@@ -114,8 +143,16 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
                     suffix: toMCST(suffix, map),
                 })),
             };
-        // case 'spread':
-        //     return { ...node, contents: toMCST(node.contents, map) };
+        case 'accessText':
+            return node;
+        case 'recordAccess':
+            return {
+                ...node,
+                target: node.target != null ? toMCST(node.target, map) : null,
+                items: node.items.map((item) => toMCST(item, map)),
+            };
+        case 'spread':
+            return { ...node, contents: toMCST(node.contents, map) };
         default:
             return node;
     }

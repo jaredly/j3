@@ -31,12 +31,32 @@ export type NodeContents =
     | NodeArray
     | { type: 'comment'; text: string }
 
-    // random stuff
-    // | { type: 'spread'; contents: Node }
+    // special
     | CString
     | stringText
+    | recordAccess
+    | accessText
+    | spread
+
+    // Emptyish
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
+
+export type spread = {
+    type: 'spread';
+    contents: Node;
+};
+export type accessText = {
+    type: 'accessText';
+    text: string;
+};
+
+export type recordAccess = {
+    type: 'recordAccess';
+    target: (Identifier & NodeExtra) | null;
+    items: (accessText & NodeExtra)[];
+};
+
 export type stringText = { type: 'stringText'; text: string };
 export type CString = {
     type: 'string';
