@@ -144,8 +144,8 @@ export const RecordText = ({
                 ...style,
             }}
             onKeyDown={(evt) => {
-                if (evt.key === '{') {
-                    maybeAddExpression(evt, edit!, path, store, idx, presel);
+                if (evt.key === '.') {
+                    splitAttr(evt, edit!, path, store, idx, presel);
                     return;
                 }
                 if (
@@ -157,17 +157,17 @@ export const RecordText = ({
                         return;
                     }
                     evt.preventDefault();
-                    const { map, selection } = joinExprs(
-                        last.idx,
-                        last.child.at - 1,
-                        store,
-                        edit!,
-                    );
-                    updateStore(store, {
-                        map,
-                        selection,
-                        prev: { idx, loc: presel.current ?? undefined },
-                    });
+                    // const { map, selection } = joinExprs(
+                    //     last.idx,
+                    //     last.child.at - 1,
+                    //     store,
+                    //     edit!,
+                    // );
+                    // updateStore(store, {
+                    //     map,
+                    //     selection,
+                    //     prev: { idx, loc: presel.current ?? undefined },
+                    // });
                 }
                 if (
                     evt.key === 'ArrowLeft' ||
@@ -225,7 +225,7 @@ const joinExprs = (
     };
 };
 
-function maybeAddExpression(
+function splitAttr(
     evt: React.KeyboardEvent<HTMLSpanElement>,
     edit: string,
     path: Path[],

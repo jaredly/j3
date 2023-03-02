@@ -258,6 +258,19 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
         //         t.identifier(expr.attr),
         //         false,
         //     );
+        case 'recordAccess':
+            if (!expr.target) {
+                let res: t.Expression = t.identifier('arg');
+                for (let attr of expr.items) {
+                    res = t.memberExpression(res, t.identifier(attr), false);
+                }
+                return t.arrowFunctionExpression([t.identifier('arg')], res);
+            }
+            let res = exprToTs(expr.target, ctx);
+            for (let attr of expr.items) {
+                res = t.memberExpression(res, t.identifier(attr), false);
+            }
+            return res;
         case 'type-apply':
             return exprToTs(expr.target, ctx);
         // case 'tfn': return exprToTs(expr.body, ctx);

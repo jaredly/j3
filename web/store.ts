@@ -216,6 +216,20 @@ export const setSelection = (
         }
     }
 
+    if (selection) {
+        const node = store.map[selection.idx];
+        if (node.type === 'recordAccess') {
+            if (selection.loc === 'start') {
+                selection = { idx: node.target, loc: 'start' };
+            } else {
+                selection = {
+                    idx: node.items[node.items.length - 1],
+                    loc: 'end',
+                };
+            }
+        }
+    }
+
     const old = store.selection;
     if (old?.idx === selection?.idx && old?.loc === selection?.loc) {
         return notify(store, [selection?.idx, ...(extras || [])], change);

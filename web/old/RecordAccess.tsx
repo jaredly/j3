@@ -48,7 +48,7 @@ export const RecordAccess = ({
                 <React.Fragment key={item}>
                     <span
                         style={{
-                            color: 'yellow',
+                            color: '#00ff58',
                             fontVariationSettings:
                                 store.selection?.idx === idx
                                     ? '"wght" 900'
