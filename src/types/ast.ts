@@ -82,7 +82,7 @@ export type Expr =
           cases: { pattern: Pattern; body: Expr }[];
           form: Node;
       }
-    | { type: 'rest'; contents: Expr; form: Node }
+    // | { type: 'rest'; contents: Expr; form: Node }
     | recordAccess
     // | { type: 'attribute'; attr: string; target: Expr; form: Node }
     | {

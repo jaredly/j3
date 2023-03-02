@@ -187,14 +187,20 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         }
         case 'comment':
+        case 'blank':
             throw new Error(
-                `How did we get here? Comments should be filtered out`,
+                `How did we get here? Comments and blanks should be filtered out`,
             );
         case 'stringText':
-            throw new Error('stringText isnt really a thing');
+        case 'accessText':
+            throw new Error(`${form.type} shouldnt be dangling`);
+        case 'spread':
+            throw new Error('not yet impl');
     }
-    let m: never = form;
+    let _: never = form;
     throw new Error(
-        `nodeToExpr is ashamed to admit it can't handle ${form.type}`,
+        `nodeToExpr is ashamed to admit it can't handle ${JSON.stringify(
+            form,
+        )}`,
     );
 };

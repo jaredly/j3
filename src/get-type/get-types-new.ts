@@ -476,7 +476,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                         return report
                             ? errf(report, expr.form, {
                                   type: 'misc',
-                                  message: `record has no attribute ${expr.attr}`,
+                                  message: `record has no attribute ${attr}`,
                               })
                             : undefined;
                     }
@@ -538,9 +538,16 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         //     }
         //     return map[expr.attr].value;
         // }
+        // case 'spre'
+        case 'recur':
+            throw new Error('Not recur yet');
+        case 'type-fn':
+            throw new Error('what the heck');
+        case 'let-type':
+            throw new Error('ok');
     }
     let _: never = expr;
-    console.error('getType is sorry about', expr.type);
+    console.error('getType is sorry about', expr);
 };
 
 export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {

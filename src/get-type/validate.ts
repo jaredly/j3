@@ -110,9 +110,20 @@ export const validateExpr = (
                 validateExpr(expr.target, ctx, errors);
             }
             return;
+        case 'recur':
+            return;
+        case 'type-fn':
+            validateExpr(expr.target, ctx, errors);
+            return;
+        case 'let-type':
+            expr.bindings.forEach((bound) => {
+                validateType(bound.type, ctx, errors);
+            });
+            expr.body.forEach((expr) => validateExpr(expr, ctx, errors));
+            return;
     }
     let _: never = expr;
-    throw new Error('not validated ' + expr.type);
+    throw new Error('not validated ' + JSON.stringify(expr));
 };
 
 export const validateType = (
