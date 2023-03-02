@@ -114,7 +114,7 @@ export const noForm = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(noForm);
     }
-    if (typeof obj === 'object') {
+    if (obj && typeof obj === 'object') {
         const res: any = {};
         Object.keys(obj).forEach((k) => {
             if (k !== 'form') {

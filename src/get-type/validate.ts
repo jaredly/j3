@@ -105,7 +105,13 @@ export const validateExpr = (
         // case 'attribute':
         //     validateExpr(expr.target, ctx, errors);
         //     return;
+        case 'recordAccess':
+            if (expr.target) {
+                validateExpr(expr.target, ctx, errors);
+            }
+            return;
     }
+    let _: never = expr;
     throw new Error('not validated ' + expr.type);
 };
 

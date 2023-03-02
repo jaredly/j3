@@ -438,6 +438,62 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 entries,
             };
         }
+        case 'recordAccess':
+            if (expr.target) {
+                let inner = getType(expr.target, ctx, report);
+                if (!inner) return;
+                for (let attr of expr.items) {
+                    let resolved = applyAndResolve(inner, ctx, []);
+                    if (resolved.type === 'error') {
+                        return report
+                            ? errf(report, expr.form, resolved.error)
+                            : undefined;
+                    }
+                    if (resolved.type === 'local-bound') {
+                        if (!resolved.bound) {
+                            return report
+                                ? errf(report, expr.form, {
+                                      type: 'misc',
+                                      message:
+                                          'local has no bound, cannot take attribute',
+                                  })
+                                : undefined;
+                        }
+                        resolved = resolved.bound;
+                    }
+                    if (resolved.type !== 'record') {
+                        return report
+                            ? errf(report, expr.form, {
+                                  type: 'misc',
+                                  message:
+                                      'cannot take attribute of a non-record ' +
+                                      resolved.type,
+                              })
+                            : undefined;
+                    }
+                    const map = recordMap(resolved);
+                    if (!map[attr]) {
+                        return report
+                            ? errf(report, expr.form, {
+                                  type: 'misc',
+                                  message: `record has no attribute ${expr.attr}`,
+                              })
+                            : undefined;
+                    }
+                    inner = map[attr].value;
+                }
+                return inner;
+            } else {
+                // Ok so this is like very polymorphic, right?
+                // and what do I do with that.
+                // ok so
+                // .a.b.c is shorthand for...
+                // <V, T: {a {b {c V ...} ...} ...}>(m: T) => V
+                // right? And then you call it with something
+                // and we can figure out what's going on, with
+                // some degree of reliability
+                return;
+            }
         // case 'attribute': {
         //     const inner = getType(expr.target, ctx, report);
         //     if (!inner) {
@@ -483,6 +539,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         //     return map[expr.attr].value;
         // }
     }
+    let _: never = expr;
     console.error('getType is sorry about', expr.type);
 };
 

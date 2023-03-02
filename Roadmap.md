@@ -1,4 +1,15 @@
 
+buuuuuut also, can we not agree that I super need tests?
+
+
+## Record Access
+- [x] grammar
+- [x] types for non-anon
+- [ ] types for anon (v generic)
+- [ ] display! and such
+- [ ] make sure selections (start/end) bias appropriately
+
+
 keyboards:
 - [x] '(' at the start should wrap
 - [ ] dunno about '(' in the middle
@@ -17,9 +28,13 @@ keyboards:
 - selectttt
 
 - [ ] let's do spreads! like, seems like I want it.
+  - Sooo I feel like 2 dots is enough to express "spread"? Yeah let's just straight up do that. BUT we need attribute dealios firsrt, because `.` starts an anon attribute getter, and then a second `.` gets you into spread-land.
   - ok, so I need ... if the text becomes '...', then we're doing this
     - now, in some contexts (at the _end_ of a record type decl) we allow an empty '...', so gotta be context aware.
+
 - [ ] and, dot.things
+  - so for this, you can have .one.two or one.two.three
+  - 
 
 - [ ] I should autocomplete 'def/defn/deftype'
 

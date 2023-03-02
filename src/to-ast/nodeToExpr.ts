@@ -186,7 +186,14 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 form,
             };
         }
+        case 'comment':
+            throw new Error(
+                `How did we get here? Comments should be filtered out`,
+            );
+        case 'stringText':
+            throw new Error('stringText isnt really a thing');
     }
+    let m: never = form;
     throw new Error(
         `nodeToExpr is ashamed to admit it can't handle ${form.type}`,
     );

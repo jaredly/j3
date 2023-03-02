@@ -302,15 +302,12 @@ function maybeCommitAutoComplete(idx: number, ectx: EvalCtx, store: Store) {
             (item) => item.type === 'replace' && item.exact,
         ) as AutoCompleteReplace[];
         if (matching.length === 1) {
-            // STOPSHIP: FIX
-            // ahh gottta update history here folks
             const node = store.map[idx] as Identifier & MNodeExtra;
             updateStore(
                 store,
                 { map: { [idx]: { ...node, hash: matching[0].hash } } },
                 'update',
             );
-            // (store.map[idx] as Identifier).hash =
             compile(store, ectx);
         }
     }

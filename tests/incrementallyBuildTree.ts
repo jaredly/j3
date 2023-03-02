@@ -229,7 +229,7 @@ export const walkBackTree = (
     ectx: EvalCtx,
 ) => {
     if (!path.length) return;
-    const node = store.map[idx];
+    // const node = store.map[idx];
     const last = path[path.length - 1];
     if (last.child === -1) {
         return; // idk
@@ -249,7 +249,7 @@ export const walkBackTree = (
     }
 
     const firstSiblingIdx = (store.map[last.idx] as ListLikeContents).values[0];
-    const firstSibling = store.map[firstSiblingIdx];
+    // const firstSibling = store.map[firstSiblingIdx];
 
     const firstAuto = ectx.ctx.display[firstSiblingIdx]?.autoComplete;
     if (!firstAuto) {
