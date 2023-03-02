@@ -23,7 +23,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 type: 'recordAccess',
                 items: form.items.map((item) => item.text),
                 form,
-                target: form.target ? nodeToExpr(form.target, ctx) : null,
+                target:
+                    form.target.type !== 'blank'
+                        ? nodeToExpr(form.target, ctx)
+                        : null,
             };
         }
         case 'identifier': {

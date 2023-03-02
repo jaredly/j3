@@ -126,7 +126,8 @@ export type PathChild =
           at: number;
       }
     | { type: 'inside' | 'start' | 'end' }
-    | { type: 'expr' | 'text'; at: number }
+    | { type: 'expr' | 'text' | 'attribute'; at: number }
+    | { type: 'record-target' }
     | {
           type: 'decorator';
           key: string;

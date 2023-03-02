@@ -6,6 +6,7 @@ import { IdentifierLike, Top } from './IdentifierLike';
 import { ListLike, sideClick } from './ListLike';
 import { EvalCtx, Path, setSelection, Store, useStore } from '../store';
 import { StringView } from './String';
+import { RecordAccess } from './RecordAccess';
 
 // ListLike
 // array, list, record
@@ -49,6 +50,10 @@ export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
         case 'number':
         case 'unparsed':
             return node.raw;
+        case 'accessText':
+            return node.text;
+        case 'blank':
+            return '';
         case 'tag':
             return "'" + node.text;
     }
@@ -148,6 +153,18 @@ export const Node = React.memo(
                   },
               }
             : events;
+
+        if (item.type === 'recordAccess') {
+            return (
+                <RecordAccess
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
 
         if (item.type === 'string') {
             return (
