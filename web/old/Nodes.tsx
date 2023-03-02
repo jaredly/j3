@@ -86,20 +86,6 @@ export const Node = React.memo(
             return null;
         }
 
-        if (item.type === 'string') {
-            return (
-                <StringView
-                    node={item}
-                    top={top}
-                    idx={idx}
-                    path={path}
-                    events={events}
-                />
-            );
-        }
-
-        const text = idText(item, idx, top.ctx.ctx);
-
         const tannot = item.tannot ? (
             <>
                 <span
@@ -162,6 +148,20 @@ export const Node = React.memo(
                   },
               }
             : events;
+
+        if (item.type === 'string') {
+            return (
+                <StringView
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        const text = idText(item, idx, top.ctx.ctx);
 
         // const decs = Object.entries(item.decorators);
 

@@ -238,8 +238,8 @@ function peg$parse(input, options) {
   var peg$f9 = function(target, record) {
     return {...record, target, loc: newLoc()}
 };
-  var peg$f10 = function(items) {return wrap({type: 'recordAccess', target: null, items})};
-  var peg$f11 = function(text) {return wrap({type: 'recordText', text})};
+  var peg$f10 = function(items) {return wrap({type: 'recordAccess', target: wrap({type: 'blank'}), items})};
+  var peg$f11 = function(text) {return wrap({type: 'accessText', text})};
   var peg$f12 = function(first, templates) {return wrap({type: 'string', first, templates})};
   var peg$f13 = function(text) {return {type: 'stringText', text, loc: newLoc()}};
   var peg$f14 = function(text, hash) {return wrap({type: 'identifier', text, hash})};

@@ -44,11 +44,7 @@ export type MNodeContents =
           type: 'spread';
           contents: number;
       }
-    | {
-          type: 'recordAccess';
-          target: number | null;
-          items: number[];
-      }
+    | MCRecordAccess
     | { type: 'accessText'; text: string }
 
     // random stuff
@@ -59,6 +55,11 @@ export type MCString = {
     type: 'string';
     first: number;
     templates: { expr: number; suffix: number }[];
+};
+export type MCRecordAccess = {
+    type: 'recordAccess';
+    target: number;
+    items: number[];
 };
 export type WithLoc<T> = T & { loc: Loc };
 
@@ -100,10 +101,7 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
         case 'recordAccess':
             return {
                 ...node,
-                target:
-                    node.target != null
-                        ? (fromMCST(node.target, map) as Identifier & NodeExtra)
-                        : null,
+                target: fromMCST(node.target, map) as Identifier & NodeExtra,
                 items: node.items.map(
                     (idx) => fromMCST(idx, map) as accessText & NodeExtra,
                 ),
@@ -148,7 +146,7 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
         case 'recordAccess':
             return {
                 ...node,
-                target: node.target != null ? toMCST(node.target, map) : null,
+                target: toMCST(node.target, map),
                 items: node.items.map((item) => toMCST(item, map)),
             };
         case 'spread':

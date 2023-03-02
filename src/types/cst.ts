@@ -53,7 +53,7 @@ export type accessText = {
 
 export type recordAccess = {
     type: 'recordAccess';
-    target: (Identifier & NodeExtra) | null;
+    target: Identifier & NodeExtra;
     items: (accessText & NodeExtra)[];
 };
 

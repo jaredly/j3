@@ -3,8 +3,6 @@
 import { Type } from './ast';
 import { Loc, Node } from './cst';
 
-export {};
-
 export type MatchError =
     | {
           type: 'invalid type';

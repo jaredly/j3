@@ -5,7 +5,7 @@ import {
     applyTypeVariables,
     matchesType,
 } from './matchesType';
-import { Error } from '../types/types';
+import type { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 

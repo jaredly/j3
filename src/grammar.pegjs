@@ -43,7 +43,7 @@ fullRecordAccess = target:identifier record:recordAccess {
     return {...record, target, loc: newLoc()}
 }
 
-recordAccess = items:dotPair+ {return wrap({type: 'recordAccess', target: null, items})}
+recordAccess = items:dotPair+ {return wrap({type: 'recordAccess', target: wrap({type: 'blank'}), items})}
 dotPair = "." text:$idtext {return wrap({type: 'accessText', text})}
 
 string = "\"" first:stringText templates:TemplatePair* "\"" {return wrap({type: 'string', first, templates})}
