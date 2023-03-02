@@ -30,6 +30,19 @@ export const ListLike = ({
     const { store, ctx, setHover } = top;
     const isRoot = idx === store.root;
 
+    const [_, tap] = React.useState(0);
+
+    // Rerender the root when anything changes
+    // so that toplevel evals work again
+    React.useEffect(() => {
+        if (isRoot) {
+            store.listeners[':change'] = store.listeners[':change'] || [];
+            store.listeners[':change'].push(() => {
+                tap((x) => x + 1);
+            });
+        }
+    }, []);
+
     const nodes = React.useMemo(
         () =>
             children.map((cidx, i) => (

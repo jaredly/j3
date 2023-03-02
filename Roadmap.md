@@ -6,8 +6,13 @@ buuuuuut also, can we not agree that I super need tests?
 - [x] grammar
 - [x] types for non-anon
 - [ ] types for anon (v generic)
-- [ ] display! and such
-- [ ] make sure selections (start/end) bias appropriately
+- [x] display! and such
+  - [x] the target, the things
+  - [x] make sure selections (start/end) bias appropriately
+  - [ ] split on dot
+  - [ ] auto the complete pls
+  - [ ] backspace it empty
+
 
 
 keyboards:
