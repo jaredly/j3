@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Attachment as ATT } from '../../src/types/cst';
 import { MNodeExtra } from '../../src/types/mcst';
-import { maybeRemoveEmptyPrev } from '../mods/handleBackspace';
+import { handleBackspace, maybeRemoveEmptyPrev } from '../mods/handleBackspace';
 import { addSpace, maybeUpdate } from '../mods/handleSpace';
 import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
 import { Path, setSelection, Store, UpdateMap, updateStore } from '../store';
@@ -24,6 +24,8 @@ export const Attachment = ({
     top: Top;
 }) => {
     const [loading, setLoading] = useState(false);
+
+    const [expanded, setExpanded] = useState(false);
 
     const [url, setUrl] = useState(null as null | string);
 
@@ -90,53 +92,94 @@ export const Attachment = ({
     return (
         <div
             style={{
-                display: 'inline-block',
-                padding: 8,
+                // padding: '0 8px',
                 backgroundColor: '#777',
+                display: 'inline-flex',
+                alignItems: 'center',
                 borderRadius: 4,
+                ...(expanded
+                    ? {
+                          flexDirection: 'column',
+                      }
+                    : {}),
+            }}
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+                setSelection(top.store, { idx, loc: 'end' });
             }}
         >
-            <div>
-                <AttachmentLabel
-                    top={top}
-                    text={node.name ?? 'Hello'}
-                    idx={idx}
-                    events={events}
-                    onBackspace={(empty) => {
-                        if (!empty) {
-                            maybeRemoveEmptyPrev(
-                                path[path.length - 1],
-                                top.store,
-                            ) || events.onLeft();
-                        }
-                    }}
-                    onInput={(pos, text, presel) => {
-                        const mp: UpdateMap = {
-                            [node.loc.idx]: {
-                                ...node,
-                                name: text,
-                            },
-                        };
-                        updateStore(top.store, {
-                            map: mp,
-                            selection: { idx, loc: pos },
-                            prev: { idx, loc: presel ?? undefined },
-                        });
-                    }}
-                    onEnter={(start) => {
-                        const parent = path[path.length - 1];
-                        const update = addSpace(top.store, path, !start);
-                        maybeUpdate(top.store, update);
-                        return;
-                    }}
-                />
-            </div>
+            <AttachmentLabel
+                top={top}
+                text={node.name ?? 'Hello'}
+                idx={idx}
+                events={events}
+                onBackspace={(empty) => {
+                    if (!empty) {
+                        maybeRemoveEmptyPrev(
+                            path[path.length - 1],
+                            top.store,
+                        ) || events.onLeft();
+                    } else {
+                        handleBackspace('', true, idx, path, events, top.store);
+                    }
+                }}
+                onInput={(pos, text, presel) => {
+                    const mp: UpdateMap = {
+                        [node.loc.idx]: {
+                            ...node,
+                            name: text,
+                        },
+                    };
+                    updateStore(top.store, {
+                        map: mp,
+                        selection: { idx, loc: pos },
+                        prev: { idx, loc: presel ?? undefined },
+                    });
+                }}
+                onEnter={(start) => {
+                    const parent = path[path.length - 1];
+                    const update = addSpace(top.store, path, !start);
+                    maybeUpdate(top.store, update);
+                    return;
+                }}
+            />
 
             <img
                 src={url}
-                style={{ maxWidth: 300, borderRadius: 3, marginTop: 8 }}
+                onMouseDown={(evt) => {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    setExpanded(!expanded);
+                }}
+                style={{
+                    transition: 'max-height .3s ease',
+                    maxHeight: expanded ? 200 : 24,
+                    borderRadius: 3,
+                    marginInlineStart: expanded ? 0 : 8,
+                    marginBlockStart: expanded ? 8 : 0,
+                    // marginTop: 8,
+                }}
             />
-            <div>{node.file.meta.mime}</div>
+            {expanded ? (
+                <div>
+                    {node.file.meta.mime}
+                    <button
+                        onClick={() => {
+                            updateStore(top.store, {
+                                map: {
+                                    [idx]: {
+                                        ...node,
+                                        file: null,
+                                    },
+                                },
+                            });
+                        }}
+                    >
+                        Clear
+                    </button>
+                </div>
+            ) : null}
         </div>
     );
 };
@@ -183,6 +226,7 @@ export const AttachmentLabel = ({
                 color: 'yellow',
                 minHeight: '1.3em',
                 whiteSpace: 'pre-wrap',
+                paddingLeft: 8,
             }}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
@@ -208,6 +252,15 @@ export const AttachmentLabel = ({
             spellCheck="false"
             autoCapitalize="off"
             className="idlike"
+            style={{
+                color: 'yellow',
+                whiteSpace: 'pre-wrap',
+                outline: 'none',
+                minHeight: '1.3em',
+                paddingLeft: 8,
+                // textDecoration: dec,
+                // ...style,
+            }}
             onMouseDown={(evt) => evt.stopPropagation()}
             onMouseOver={(evt) =>
                 top.setHover({
@@ -228,14 +281,6 @@ export const AttachmentLabel = ({
             onBlur={() => {
                 setEdit(null);
                 setSelection(top.store, null);
-            }}
-            style={{
-                color: 'yellow',
-                whiteSpace: 'pre-wrap',
-                outline: 'none',
-                minHeight: '1.3em',
-                // textDecoration: dec,
-                // ...style,
             }}
             onKeyDown={(evt) => {
                 if (evt.key === 'ArrowLeft' && isAtStart(evt.currentTarget)) {

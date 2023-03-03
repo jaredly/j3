@@ -9,7 +9,7 @@ It could be ... just an expr type. Yeah.
 So how do you trigger it? Would it be `//`?
 Nope, let's do `\`.
 
-- [ ] so `\` can trigger a markdown node.
+- [x] so `\` can trigger a markdown node.
   Are there other specialty nodes I might want?
   hmmmm
   oh yeah, an image! or like an audio file.
@@ -23,6 +23,8 @@ Nope, let's do `\`.
     `{...meta id uint}`
     But like, so the actuall CST node would just have the handle.
     which would go into indexeddb right
+- [ ] so image attachments, I should probably make it so you can change
+  the rendered size?
 
 
 buuuuuut also, can we not agree that I super need tests?
