@@ -138,14 +138,21 @@ export function getMenuItems(
                       // SO any time we "parse" and see a fn arg w/o an annotation, we need to fill it in.
                       // these are, by default, hidden (?) maybe not, maybe it's just "space" skips over them,
                       // but ":" replaces the autocompleted one. Yeah that sounds right.
-                      const map: UpdateMap = {
-                          [idx]: {
+                      const map: UpdateMap = {};
+                      const current = store.map[idx];
+                      if (current.type === 'accessText') {
+                          map[idx] = {
+                              ...current,
+                              text: item.text,
+                          };
+                      } else {
+                          map[idx] = {
                               type: 'identifier',
                               text: '',
                               hash: item.hash,
                               loc: { start: -1, end: -1, idx },
-                          },
-                      };
+                          };
+                      }
                       updateStore(store, {
                           map,
                           selection: {
