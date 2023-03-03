@@ -4,7 +4,13 @@ import { EvalCtx, Path, setSelection, Store, updateStore } from '../store';
 import { Events } from './Nodes';
 import { parse } from '../../src/grammar';
 import { Identifier, Node } from '../../src/types/cst';
-import { getPos, isAtEnd, onKeyDown, setPos } from '../mods/onKeyDown';
+import {
+    getPos,
+    isAtEnd,
+    maybeCommitAutoComplete,
+    onKeyDown,
+    setPos,
+} from '../mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
@@ -13,6 +19,7 @@ import { rainbow } from '../rainbow';
 import { AutoCompleteResult, NodeStyle } from '../../src/to-ast/Ctx';
 import { replacePath } from './RecordText';
 import { nidx } from '../../src/grammar-raw';
+import { walkBackTree } from '../../tests/incrementallyBuildTree';
 
 export type Top = {
     store: Store;
@@ -149,7 +156,21 @@ export const IdentifierLike = ({
 
                 if (evt.key === '.') {
                     if (isAtEnd(evt.currentTarget)) {
-                        return createRecordAccess(path, idx, store, evt);
+                        createRecordAccess(path, idx, store, evt);
+
+                        console.log('walking back');
+                        const tmp = path.slice(1).map((p) => ({
+                            idx: p.idx,
+                            child: p.child.type === 'child' ? p.child.at : -1,
+                        }));
+
+                        maybeCommitAutoComplete(idx, ctx, store);
+
+                        while (tmp.length) {
+                            walkBackTree(tmp, idx, store, ctx);
+                            tmp.pop();
+                        }
+                        return;
                     }
                 }
 

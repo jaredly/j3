@@ -295,7 +295,11 @@ export const rmChild = (
     return null;
 };
 
-function maybeCommitAutoComplete(idx: number, ectx: EvalCtx, store: Store) {
+export function maybeCommitAutoComplete(
+    idx: number,
+    ectx: EvalCtx,
+    store: Store,
+) {
     const display = ectx.ctx.display[idx];
     if (display?.autoComplete) {
         let matching = display.autoComplete.filter(
