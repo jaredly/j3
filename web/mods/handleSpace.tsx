@@ -6,7 +6,7 @@ import { Events } from '../old/Nodes';
 import { getPos, modChildren } from './onKeyDown';
 import { Identifier, Node, NodeExtra } from '../../src/types/cst';
 
-const addSpace = (
+export const addSpace = (
     store: Store,
     path: Path[],
     after = false,

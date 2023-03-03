@@ -1,0 +1,338 @@
+import React, { useEffect, useState } from 'react';
+import { Attachment as ATT } from '../../src/types/cst';
+import { MNodeExtra } from '../../src/types/mcst';
+import { maybeRemoveEmptyPrev } from '../mods/handleBackspace';
+import { addSpace, maybeUpdate } from '../mods/handleSpace';
+import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
+import { Path, setSelection, Store, UpdateMap, updateStore } from '../store';
+import { focus, Top } from './IdentifierLike';
+import { Events } from './Nodes';
+
+export const Attachment = ({
+    node,
+    path,
+    top,
+    // layout,
+    idx,
+    events,
+}: {
+    node: ATT & MNodeExtra;
+    path: Path[];
+    // layout: Map[0]['layout'];
+    events: Events;
+    idx: number;
+    top: Top;
+}) => {
+    const [loading, setLoading] = useState(false);
+
+    const [url, setUrl] = useState(null as null | string);
+
+    useEffect(() => {
+        if (!node.file?.handle) {
+            setUrl(null);
+            return;
+        }
+        top.ctx.attachments.retrieve(node.file.handle).then((blob) => {
+            setUrl(URL.createObjectURL(blob));
+        });
+    }, [node.file?.handle]);
+
+    if (loading) {
+        return <span>loading...</span>;
+    }
+
+    if (!node.file) {
+        return (
+            <div>
+                <input
+                    type="file"
+                    accept="image/*, *"
+                    multiple={false}
+                    onInput={(evt) => {
+                        // BTW would be cool to like support
+                        // multiple files?
+                        if (evt.currentTarget.files?.length === 1) {
+                            const reader = new FileReader();
+                            const file = evt.currentTarget.files[0];
+                            const imageMeta = getImageMeta(file);
+                            setLoading(true);
+                            top.ctx.attachments.store(file).then(async (id) => {
+                                setLoading(false);
+                                const meta = await imageMeta;
+                                updateStore(top.store, {
+                                    map: {
+                                        [idx]: {
+                                            ...node,
+                                            name: node.name || file.name,
+                                            file: {
+                                                handle: id,
+                                                meta: {
+                                                    type: 'image',
+                                                    ...meta,
+                                                    mime: file.type,
+                                                },
+                                            },
+                                        },
+                                    },
+                                });
+                            });
+                        }
+                    }}
+                />
+            </div>
+        );
+    }
+
+    if (!url) {
+        return <span>Loading</span>;
+    }
+
+    return (
+        <div
+            style={{
+                display: 'inline-block',
+                padding: 8,
+                backgroundColor: '#777',
+                borderRadius: 4,
+            }}
+        >
+            <div>
+                <AttachmentLabel
+                    top={top}
+                    text={node.name ?? 'Hello'}
+                    idx={idx}
+                    events={events}
+                    onBackspace={(empty) => {
+                        if (!empty) {
+                            maybeRemoveEmptyPrev(
+                                path[path.length - 1],
+                                top.store,
+                            ) || events.onLeft();
+                        }
+                    }}
+                    onInput={(pos, text, presel) => {
+                        const mp: UpdateMap = {
+                            [node.loc.idx]: {
+                                ...node,
+                                name: text,
+                            },
+                        };
+                        updateStore(top.store, {
+                            map: mp,
+                            selection: { idx, loc: pos },
+                            prev: { idx, loc: presel ?? undefined },
+                        });
+                    }}
+                    onEnter={(start) => {
+                        const parent = path[path.length - 1];
+                        const update = addSpace(top.store, path, !start);
+                        maybeUpdate(top.store, update);
+                        return;
+                    }}
+                />
+            </div>
+
+            <img
+                src={url}
+                style={{ maxWidth: 300, borderRadius: 3, marginTop: 8 }}
+            />
+            <div>{node.file.meta.mime}</div>
+        </div>
+    );
+};
+
+export const AttachmentLabel = ({
+    top,
+    text,
+    idx,
+    onInput,
+    events,
+    onEnter,
+    onBackspace,
+}: {
+    top: Top;
+    text: string;
+    idx: number;
+    onInput: (pos: number, text: string, presel: number | null) => void;
+    events: Events;
+    onEnter: (start: boolean) => void;
+    onBackspace: (empty: boolean) => void;
+}) => {
+    const editing = top.store.selection?.idx === idx;
+    let [edit, setEdit] = React.useState(null as null | string);
+    edit = edit == null ? text : edit;
+
+    const presel = React.useRef(null as null | number);
+    const ref = React.useRef(null as null | HTMLSpanElement);
+    React.useLayoutEffect(() => {
+        if (!ref.current) {
+            return;
+        }
+        if (editing) {
+            ref.current.textContent = text;
+            if (ref.current !== document.activeElement || true) {
+                focus(ref.current, top.store);
+            }
+            presel.current = getPos(ref.current);
+        }
+    }, [editing, text, editing ? top.store.selection!.loc : null]);
+
+    return !editing ? (
+        <span
+            style={{
+                color: 'yellow',
+                minHeight: '1.3em',
+                whiteSpace: 'pre-wrap',
+            }}
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                setEdit(text);
+                setSelection(top.store, { idx });
+            }}
+            onMouseOver={(evt) =>
+                top.setHover({
+                    idx,
+                    box: evt.currentTarget.getBoundingClientRect(),
+                })
+            }
+            onMouseLeave={() => top.setHover({ idx, box: null })}
+        >
+            {text}
+        </span>
+    ) : (
+        <span
+            data-idx={idx}
+            contentEditable
+            ref={ref}
+            autoCorrect="off"
+            spellCheck="false"
+            autoCapitalize="off"
+            className="idlike"
+            onMouseDown={(evt) => evt.stopPropagation()}
+            onMouseOver={(evt) =>
+                top.setHover({
+                    idx,
+                    box: evt.currentTarget.getBoundingClientRect(),
+                })
+            }
+            onMouseUp={(evt) => {
+                presel.current = getPos(evt.currentTarget);
+            }}
+            onMouseLeave={() => top.setHover({ idx, box: null })}
+            onInput={(evt) => {
+                const text = evt.currentTarget.textContent ?? '';
+                setEdit(text);
+                const pos = getPos(evt.currentTarget);
+                onInput(pos, text, presel.current);
+            }}
+            onBlur={() => {
+                setEdit(null);
+                setSelection(top.store, null);
+            }}
+            style={{
+                color: 'yellow',
+                whiteSpace: 'pre-wrap',
+                outline: 'none',
+                minHeight: '1.3em',
+                // textDecoration: dec,
+                // ...style,
+            }}
+            onKeyDown={(evt) => {
+                if (evt.key === 'ArrowLeft' && isAtStart(evt.currentTarget)) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    events.onLeft();
+                    return;
+                }
+                if (evt.key === 'ArrowRight' && isAtEnd(evt.currentTarget)) {
+                    console.log('righting');
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    events.onRight();
+                    return;
+                }
+                if (evt.key === 'Backspace' && isAtStart(evt.currentTarget)) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    return onBackspace(evt.currentTarget.textContent! === '');
+                }
+                if (evt.key === ' ') {
+                    if (isAtEnd(evt.currentTarget)) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        onEnter(false);
+                        return;
+                    }
+                    if (isAtStart(evt.currentTarget)) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        onEnter(true);
+                        return;
+                    }
+                }
+                if (evt.key === 'Enter') {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    onEnter(
+                        isAtStart(evt.currentTarget) &&
+                            !isAtEnd(evt.currentTarget),
+                    );
+                    return;
+                }
+                // if (evt.key === '{') {
+                //     maybeAddExpression(evt, edit!, path, store, idx, presel);
+                //     return;
+                // }
+                // if (
+                //     evt.key === 'Backspace' &&
+                //     getPos(evt.currentTarget) === 0
+                // ) {
+                //     const last = path[path.length - 1];
+                //     if (last.child.type !== 'text' || last.child.at === 0) {
+                //         return;
+                //     }
+                //     evt.preventDefault();
+                //     const { map, selection } = joinExprs(
+                //         last.idx,
+                //         last.child.at - 1,
+                //         store,
+                //         edit!,
+                //     );
+                //     updateStore(store, {
+                //         map,
+                //         selection,
+                //         prev: { idx, loc: presel.current ?? undefined },
+                //     });
+                // }
+                // if (
+                //     evt.key === 'ArrowLeft' ||
+                //     evt.key === 'ArrowRight' ||
+                //     evt.key === 'Tab' ||
+                //     evt.metaKey ||
+                //     evt.altKey ||
+                //     evt.ctrlKey
+                // ) {
+                //     onKeyDown(evt, idx, path, events, store, ctx);
+                //     return;
+                // }
+            }}
+        />
+    );
+};
+
+const getImageMeta = (
+    file: Blob,
+): Promise<{ width: number; height: number }> => {
+    return new Promise((res, rej) => {
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = () => {
+            res({
+                width: img.naturalWidth,
+                height: img.naturalHeight,
+            });
+            URL.revokeObjectURL(img.src);
+        };
+        img.onerror = (err) => rej(err);
+    });
+};

@@ -45,8 +45,19 @@ export type HistoryItem = {
     postSelection: Selection | null | undefined;
 };
 
-export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
+export const newEvalCtx = (
+    ctx: Ctx,
+    attachments: EvalCtx['attachments'] = {
+        store(blob) {
+            throw new Error('attachemtns not supported');
+        },
+        retrieve(id) {
+            throw new Error('also no retrieving attachments');
+        },
+    },
+): EvalCtx => ({
     ctx,
+    attachments,
     last: {},
     terms: {},
     nodes: {},
@@ -89,8 +100,10 @@ export type Success = {
 
 export type EvalCtx = {
     ctx: Ctx;
-    // types: { [key: number]: Type };
-    // globalTypes: { [hash: string]: Type };
+    attachments: {
+        store: (blob: Blob) => Promise<string>;
+        retrieve: (id: string) => Promise<Blob>;
+    };
     last: { [key: number]: string };
     terms: { [key: string]: any };
     nodes: {

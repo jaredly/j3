@@ -2,7 +2,7 @@ import { Node } from '../types/cst';
 import { Expr, Record, Type } from '../types/ast';
 import { specials } from './specials';
 import { resolveExpr } from './resolveExpr';
-import { AutoCompleteResult, Ctx, nil } from './Ctx';
+import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
@@ -115,8 +115,38 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             return resolveExpr(form.text, form.hash, ctx, form);
         }
         case 'unparsed':
-            if (form.raw === '\\') {
+            if (form.raw.startsWith('\\')) {
                 ensure(ctx.display, form.loc.idx, {}).autoComplete = [
+                    {
+                        type: 'replace',
+                        exact: false,
+                        ann: {
+                            type: 'builtin',
+                            name: 'string',
+                            form: nilt.form,
+                        },
+                        text: 'Markdown',
+                        node: {
+                            type: 'markdown',
+                            text: '',
+                        },
+                    },
+                    {
+                        type: 'replace',
+                        exact: false,
+                        ann: {
+                            type: 'builtin',
+                            name: 'image-i-guess',
+                            form: nilt.form,
+                        },
+                        text: 'Attachment',
+                        node: {
+                            type: 'attachment',
+                            name: '',
+                            file: null,
+                            lazy: false,
+                        },
+                    },
                     {
                         type: 'info',
                         text: 'Whats up folks',

@@ -10,13 +10,7 @@ import { Events } from '../old/Nodes';
 import { mnodeChildren, rmChild, isAtStart, getPos } from './onKeyDown';
 import { stringText } from '../../src/types/cst';
 
-const removeEmptyPrev = (
-    gp: Path,
-    at: number,
-    store: Store,
-    evt: React.KeyboardEvent<HTMLSpanElement>,
-    path: Path[],
-) => {
+const removeEmptyPrev = (gp: Path, at: number, store: Store) => {
     const children = mnodeChildren(store.map[gp.idx]);
     const prev = children[at - 1];
     const pnode = store.map[prev];
@@ -34,10 +28,15 @@ const removeEmptyPrev = (
             },
         };
         updateStore(store, { map: mp });
-        evt.preventDefault();
         return true;
     }
     return false;
+};
+
+export const maybeRemoveEmptyPrev = (parent: Path, store: Store) => {
+    if (parent.child.type === 'child' && parent.child.at > 0) {
+        return removeEmptyPrev(parent, parent.child.at, store);
+    }
 };
 
 export const handleBackspace = (
@@ -51,7 +50,8 @@ export const handleBackspace = (
     if (parent.child.type === 'start') {
         const gp = path[path.length - 2];
         if (gp.child.type === 'child' && gp.child.at > 0) {
-            if (removeEmptyPrev(gp, gp.child.at, store, evt, path)) {
+            if (removeEmptyPrev(gp, gp.child.at, store)) {
+                evt.preventDefault();
                 return;
             }
         }
@@ -108,7 +108,8 @@ export const handleBackspace = (
         getPos(evt.currentTarget) === 0 &&
         parent.child.at > 0
     ) {
-        if (removeEmptyPrev(parent, parent.child.at, store, evt, path)) {
+        if (removeEmptyPrev(parent, parent.child.at, store)) {
+            evt.preventDefault();
             return;
         }
     }

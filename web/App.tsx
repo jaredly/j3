@@ -104,7 +104,7 @@ export const useFiles = () => {
     }, []);
 
     const addFile = React.useCallback(() => {
-        const name = filePrefix + Math.random().toString(36).slice(2);
+        const name = filePrefix + randomString();
         setFiles((files) => [...files, name]);
     }, []);
 
@@ -130,7 +130,22 @@ export const App = () => {
             return;
         }
         localforage.getItem(hash).then((value) => {
-            const ctx = newEvalCtx(newCtx());
+            const ctx = newEvalCtx(newCtx(), {
+                async store(blob) {
+                    const id = randomString();
+                    await localforage.setItem(attachmentKey(hash, id), blob);
+                    return id;
+                },
+                async retrieve(id) {
+                    const res = await localforage.getItem(
+                        attachmentKey(hash, id),
+                    );
+                    if (!res) {
+                        throw new Error(`No attachment ${id}`);
+                    }
+                    return res as Blob;
+                },
+            });
             if (!value) {
                 setIdx(0);
                 const store = initialStore(parse(`"hello"`));
@@ -209,3 +224,10 @@ export const App = () => {
         </div>
     );
 };
+function attachmentKey(hash: string, id: string): string {
+    return 'attachment:' + hash + ':' + id;
+}
+
+function randomString() {
+    return Math.random().toString(36).slice(2);
+}

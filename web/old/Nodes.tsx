@@ -7,6 +7,7 @@ import { ListLike, sideClick } from './ListLike';
 import { EvalCtx, Path, setSelection, Store, useStore } from '../store';
 import { StringView } from './String';
 import { RecordAccess } from './RecordAccess';
+import { Attachment } from './Attachment';
 
 // ListLike
 // array, list, record
@@ -157,6 +158,18 @@ export const Node = React.memo(
         if (item.type === 'recordAccess') {
             return (
                 <RecordAccess
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        if (item.type === 'attachment') {
+            return (
+                <Attachment
                     node={item}
                     top={top}
                     idx={idx}
