@@ -24,6 +24,7 @@ import { accessText, Identifier, Loc, Node } from '../../src/types/cst';
 import { focus, handleMenu, Top, useMenuStuff } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
+import { rainbow } from '../rainbow';
 
 export const RecordText = ({
     idx,
@@ -61,7 +62,9 @@ export const RecordText = ({
 
     const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
 
-    const style = {};
+    const style = {
+        color: rainbow[parseInt(text, 36) % rainbow.length],
+    };
 
     const ref = React.useRef(null as null | HTMLSpanElement);
 
@@ -77,10 +80,11 @@ export const RecordText = ({
     return !editing ? (
         <span
             style={{
-                color: '#00ff58',
+                // color: '#00ff58',
                 minHeight: '1.3em',
                 whiteSpace: 'pre-wrap',
                 textDecoration: dec,
+                ...style,
             }}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
@@ -145,7 +149,7 @@ export const RecordText = ({
                 setSelection(store, null);
             }}
             style={{
-                color: '#00ff58',
+                // color: '#00ff58',
                 whiteSpace: 'pre-wrap',
                 outline: 'none',
                 minHeight: '1.3em',

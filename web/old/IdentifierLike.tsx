@@ -284,13 +284,18 @@ function getStyle(ctx: EvalCtx, idx: number) {
             };
         case 'id':
         case 'id-decl':
-            const idx = style.hash.startsWith(':')
-                ? +style.hash.slice(1) * (rainbow.length / 5 - 1)
-                : parseInt(style.hash, 16);
-            const color = rainbow[idx % rainbow.length];
+            const color = getRainbowHashColor(style.hash);
             return { fontStyle: 'normal', color };
     }
     return { fontStyle: 'normal' };
+}
+
+export function getRainbowHashColor(hash: string) {
+    const idx = hash.startsWith(':')
+        ? +hash.slice(1) * (rainbow.length / 5 - 1)
+        : parseInt(hash, 16);
+    const color = rainbow[idx % rainbow.length];
+    return color;
 }
 
 export function focus(node: HTMLSpanElement, store: Store) {
