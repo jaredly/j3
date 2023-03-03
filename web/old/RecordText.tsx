@@ -21,7 +21,7 @@ import {
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
 import { accessText, Identifier, Loc, Node } from '../../src/types/cst';
-import { focus, Top, useMenuStuff } from './IdentifierLike';
+import { focus, handleMenu, Top, useMenuStuff } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
 
@@ -65,7 +65,7 @@ export const RecordText = ({
 
     const ref = React.useRef(null as null | HTMLSpanElement);
 
-    const { menuItems, menuSelection, setMenuSelection } = useMenuStuff(
+    const menuStuff = useMenuStuff(
         editing,
         ctx,
         idx,
@@ -154,7 +154,17 @@ export const RecordText = ({
             }}
             onKeyDown={(evt) => {
                 if (evt.key === '.') {
-                    splitAttr(evt, edit!, path, store, idx, presel);
+                    splitAttr(
+                        evt,
+                        evt.currentTarget.textContent!,
+                        path,
+                        store,
+                        idx,
+                        presel,
+                    );
+                    return;
+                }
+                if (handleMenu(evt, menuStuff)) {
                     return;
                 }
                 if (

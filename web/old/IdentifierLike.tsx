@@ -10,7 +10,7 @@ import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
 import objectHash from 'object-hash';
 import { rainbow } from '../rainbow';
-import { NodeStyle } from '../../src/to-ast/Ctx';
+import { AutoCompleteResult, NodeStyle } from '../../src/to-ast/Ctx';
 
 export type Top = {
     store: Store;
@@ -38,14 +38,7 @@ export const IdentifierLike = ({
     let [edit, setEdit] = React.useState(null as null | string);
     const ref = React.useRef(null as null | HTMLSpanElement);
 
-    const { menuItems, menuSelection, setMenuSelection } = useMenuStuff(
-        editing,
-        ctx,
-        idx,
-        store,
-        menuPortal,
-        ref,
-    );
+    const menuStuff = useMenuStuff(editing, ctx, idx, store, menuPortal, ref);
 
     const displayStyle = ctx.ctx.display[idx]?.style;
 
@@ -148,35 +141,46 @@ export const IdentifierLike = ({
                     // it's been handled
                     return;
                 }
-                if (menuItems) {
-                    const item = menuItems[menuSelection];
-                    if (item) {
-                        if (evt.key === 'Enter') {
-                            evt.preventDefault();
-                            item.action();
-                            return;
-                        }
-                        if (evt.key === 'ArrowDown') {
-                            evt.preventDefault();
-                            const next = (menuSelection + 1) % menuItems.length;
-                            setMenuSelection(next);
-                            return;
-                        }
-                        if (evt.key === 'ArrowUp') {
-                            evt.preventDefault();
-                            const next =
-                                menuSelection === 0
-                                    ? menuItems.length - 1
-                                    : menuSelection - 1;
-                            setMenuSelection(next);
-                            return;
-                        }
-                    }
+                if (handleMenu(evt, menuStuff)) {
+                    return;
                 }
                 onKeyDown(evt, idx, path, events, store, ctx);
             }}
         />
     );
+};
+
+export const handleMenu = (
+    evt: React.KeyboardEvent,
+    menuStuff: MenuStuff,
+): boolean => {
+    const { menuItems, menuSelection, setMenuSelection } = menuStuff;
+    if (menuItems) {
+        const item = menuItems[menuSelection];
+        if (item) {
+            if (evt.key === 'Enter') {
+                evt.preventDefault();
+                item.action();
+                return true;
+            }
+            if (evt.key === 'ArrowDown') {
+                evt.preventDefault();
+                const next = (menuSelection + 1) % menuItems.length;
+                setMenuSelection(next);
+                return true;
+            }
+            if (evt.key === 'ArrowUp') {
+                evt.preventDefault();
+                const next =
+                    menuSelection === 0
+                        ? menuItems.length - 1
+                        : menuSelection - 1;
+                setMenuSelection(next);
+                return true;
+            }
+        }
+    }
+    return false;
 };
 
 const nodeColor = (text: string, type: MNodeContents['type']) => {
@@ -207,6 +211,17 @@ ops.forEach((op) => (colors[op] = '#c9cac9'));
 const kwds = ['let', 'def', 'defn', 'fn', 'deftype', 'if', 'switch'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
 
+export type MenuStuff = {
+    menuItems:
+        | {
+              label: AutoCompleteResult;
+              action: () => void;
+          }[]
+        | undefined;
+    menuSelection: number;
+    setMenuSelection: React.Dispatch<React.SetStateAction<number>>;
+};
+
 export function useMenuStuff(
     editing: boolean,
     ctx: EvalCtx,
@@ -214,7 +229,7 @@ export function useMenuStuff(
     store: Store,
     menuPortal: React.RefObject<Root | null>,
     ref: React.MutableRefObject<HTMLSpanElement | null>,
-) {
+): MenuStuff {
     const [menuSelection, setMenuSelection] = React.useState(0);
 
     const menuItems = React.useMemo(() => {
