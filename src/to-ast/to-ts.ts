@@ -4,6 +4,9 @@ import { Expr, Pattern, Record } from '../types/ast';
 import { Ctx } from './Ctx';
 import { nodeToExpr } from './nodeToExpr';
 
+const isValidIdentifier = (text: string) =>
+    !!text.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*$/);
+
 export const patternToCheck = (
     pattern: Pattern,
     target: t.Expression,
@@ -262,13 +265,23 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             if (!expr.target) {
                 let res: t.Expression = t.identifier('arg');
                 for (let attr of expr.items) {
-                    res = t.memberExpression(res, t.identifier(attr), false);
+                    const wrap = !isValidIdentifier(attr);
+                    res = t.memberExpression(
+                        res,
+                        wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                        wrap,
+                    );
                 }
                 return t.arrowFunctionExpression([t.identifier('arg')], res);
             }
             let res = exprToTs(expr.target, ctx);
             for (let attr of expr.items) {
-                res = t.memberExpression(res, t.identifier(attr), false);
+                const wrap = !isValidIdentifier(attr);
+                res = t.memberExpression(
+                    res,
+                    wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                    wrap,
+                );
             }
             return res;
         case 'type-apply':
@@ -369,12 +382,15 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 );
             }
             return t.objectExpression(
-                expr.entries.map((entry) =>
-                    t.objectProperty(
-                        t.identifier(entry.name),
+                expr.entries.map((entry) => {
+                    const wrap = !isValidIdentifier(entry.name);
+                    return t.objectProperty(
+                        wrap
+                            ? t.stringLiteral(entry.name)
+                            : t.identifier(entry.name),
                         exprToTs(entry.value, ctx),
-                    ),
-                ),
+                    );
+                }),
             );
         }
         case 'if': {

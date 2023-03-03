@@ -13,6 +13,7 @@ buuuuuut also, can we not agree that I super need tests?
   - [x] backspace remove
   - [x] backspace it empty
   - [ ] auto the complete pls
+  - [ ] empty ... accessText, with a menu ... does weird things? it's unselectable?
 
 
 

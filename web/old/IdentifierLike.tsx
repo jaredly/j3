@@ -4,13 +4,15 @@ import { EvalCtx, Path, setSelection, Store, updateStore } from '../store';
 import { Events } from './Nodes';
 import { parse } from '../../src/grammar';
 import { Identifier, Node } from '../../src/types/cst';
-import { getPos, onKeyDown, setPos } from '../mods/onKeyDown';
+import { getPos, isAtEnd, onKeyDown, setPos } from '../mods/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
 import objectHash from 'object-hash';
 import { rainbow } from '../rainbow';
 import { AutoCompleteResult, NodeStyle } from '../../src/to-ast/Ctx';
+import { replacePath } from './RecordText';
+import { nidx } from '../../src/grammar-raw';
 
 export type Top = {
     store: Store;
@@ -144,6 +146,13 @@ export const IdentifierLike = ({
                 if (handleMenu(evt, menuStuff)) {
                     return;
                 }
+
+                if (evt.key === '.') {
+                    if (isAtEnd(evt.currentTarget)) {
+                        return createRecordAccess(path, idx, store, evt);
+                    }
+                }
+
                 onKeyDown(evt, idx, path, events, store, ctx);
             }}
         />
@@ -221,6 +230,38 @@ export type MenuStuff = {
     menuSelection: number;
     setMenuSelection: React.Dispatch<React.SetStateAction<number>>;
 };
+
+export function createRecordAccess(
+    path: Path[],
+    idx: number,
+    store: Store,
+    evt: React.KeyboardEvent<HTMLSpanElement>,
+) {
+    const last = path[path.length - 1];
+    const nw = {
+        type: 'recordAccess',
+        items: [] as number[],
+        target: idx,
+        loc: { start: 0, end: 0, idx: nidx() },
+    } satisfies MNode;
+    const map = replacePath(last, nw.loc.idx, store);
+    map[nw.loc.idx] = nw;
+    const attr = {
+        type: 'accessText',
+        text: '',
+        loc: { start: 0, end: 0, idx: nidx() },
+    } satisfies MNode;
+    nw.items.push(attr.loc.idx);
+    map[attr.loc.idx] = attr;
+    evt.preventDefault();
+    evt.stopPropagation();
+    return updateStore(store, {
+        map,
+        selection: {
+            idx: attr.loc.idx,
+        },
+    });
+}
 
 export function useMenuStuff(
     editing: boolean,
