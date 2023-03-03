@@ -88,10 +88,7 @@ export const RecordAccess = ({
                     </span>
                     <RecordText
                         idx={item}
-                        // top={top}
-                        store={top.store}
-                        ctx={top.ctx}
-                        setHover={top.setHover}
+                        top={top}
                         path={path.concat([
                             { idx, child: { type: 'attribute', at: i + 1 } },
                         ])}

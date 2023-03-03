@@ -36,42 +36,16 @@ export const IdentifierLike = ({
 }) => {
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
+    const ref = React.useRef(null as null | HTMLSpanElement);
 
-    const [menuSelection, setMenuSelection] = React.useState(0);
-
-    const menuItems = React.useMemo(() => {
-        if (!editing || !ctx.ctx.display[idx]?.autoComplete) {
-            return;
-        }
-        return getMenuItems(ctx.ctx.display[idx]?.autoComplete!, idx, store);
-    }, [editing, ctx.ctx.display[idx]?.autoComplete]);
-
-    React.useEffect(() => {
-        if (!menuPortal.current || !ref.current) {
-            return;
-        }
-
-        const box = ref.current.getBoundingClientRect();
-        const pos = { left: box.left, top: box.bottom };
-        menuPortal.current.render(
-            menuItems ? (
-                <Menu
-                    state={{ items: menuItems, selection: menuSelection }}
-                    onAction={() => {
-                        // setMenuState(null);
-                    }}
-                    ctx={ctx.ctx}
-                    pos={pos}
-                />
-            ) : null,
-        );
-    }, [menuItems, menuSelection]);
-
-    React.useEffect(() => {
-        if (editing) {
-            return () => menuPortal.current?.render(null);
-        }
-    }, [editing]);
+    const { menuItems, menuSelection, setMenuSelection } = useMenuStuff(
+        editing,
+        ctx,
+        idx,
+        store,
+        menuPortal,
+        ref,
+    );
 
     const displayStyle = ctx.ctx.display[idx]?.style;
 
@@ -102,7 +76,6 @@ export const IdentifierLike = ({
 
     const style = getStyle(ctx, idx);
 
-    const ref = React.useRef(null as null | HTMLSpanElement);
     return !editing ? (
         <span
             className="idlike"
@@ -233,6 +206,52 @@ ops.forEach((op) => (colors[op] = '#c9cac9'));
 
 const kwds = ['let', 'def', 'defn', 'fn', 'deftype', 'if', 'switch'];
 kwds.forEach((kwd) => (colors[kwd] = '#df4fa2'));
+
+export function useMenuStuff(
+    editing: boolean,
+    ctx: EvalCtx,
+    idx: number,
+    store: Store,
+    menuPortal: React.RefObject<Root | null>,
+    ref: React.MutableRefObject<HTMLSpanElement | null>,
+) {
+    const [menuSelection, setMenuSelection] = React.useState(0);
+
+    const menuItems = React.useMemo(() => {
+        if (!editing || !ctx.ctx.display[idx]?.autoComplete) {
+            return;
+        }
+        return getMenuItems(ctx.ctx.display[idx]?.autoComplete!, idx, store);
+    }, [editing, ctx.ctx.display[idx]?.autoComplete]);
+
+    React.useEffect(() => {
+        if (!menuPortal.current || !ref.current) {
+            return;
+        }
+
+        const box = ref.current.getBoundingClientRect();
+        const pos = { left: box.left, top: box.bottom };
+        menuPortal.current.render(
+            menuItems ? (
+                <Menu
+                    state={{ items: menuItems, selection: menuSelection }}
+                    onAction={() => {
+                        // setMenuState(null);
+                    }}
+                    ctx={ctx.ctx}
+                    pos={pos}
+                />
+            ) : null,
+        );
+    }, [menuItems, menuSelection]);
+
+    React.useEffect(() => {
+        if (editing) {
+            return () => menuPortal.current?.render(null);
+        }
+    }, [editing]);
+    return { menuItems, menuSelection, setMenuSelection };
+}
 
 function getStyle(ctx: EvalCtx, idx: number) {
     const style = ctx.ctx.display[idx]?.style;

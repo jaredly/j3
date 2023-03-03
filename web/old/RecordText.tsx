@@ -21,25 +21,22 @@ import {
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
 import { accessText, Identifier, Loc, Node } from '../../src/types/cst';
-import { focus } from './IdentifierLike';
+import { focus, Top, useMenuStuff } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
 
 export const RecordText = ({
     idx,
-    store,
     path,
     events,
-    ctx,
-    setHover,
+    top,
 }: {
     idx: number;
-    store: Store;
     path: Path[];
     events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
+    top: Top;
 }) => {
+    const { store, ctx, setHover } = top;
     const node = useStore(store, idx);
     const text = (node as accessText).text;
     const editing = store.selection?.idx === idx;
@@ -67,6 +64,16 @@ export const RecordText = ({
     const style = {};
 
     const ref = React.useRef(null as null | HTMLSpanElement);
+
+    const { menuItems, menuSelection, setMenuSelection } = useMenuStuff(
+        editing,
+        ctx,
+        idx,
+        store,
+        top.menuPortal,
+        ref,
+    );
+
     return !editing ? (
         <span
             style={{
@@ -272,7 +279,7 @@ export const joinExprs = (
         text: prevText + remaining,
     };
     if (prevs.type === 'identifier' && remaining.length) {
-        map[prev].hash = null;
+        (map[prev] as Identifier).hash = undefined;
     }
 
     return {

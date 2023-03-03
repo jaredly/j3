@@ -9,9 +9,10 @@ buuuuuut also, can we not agree that I super need tests?
 - [x] display! and such
   - [x] the target, the things
   - [x] make sure selections (start/end) bias appropriately
-  - [ ] split on dot
+  - [x] split on dot
+  - [x] backspace remove
+  - [x] backspace it empty
   - [ ] auto the complete pls
-  - [ ] backspace it empty
 
 
 

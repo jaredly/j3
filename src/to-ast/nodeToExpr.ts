@@ -1,9 +1,11 @@
 import { Node } from '../types/cst';
-import { Expr, Record } from '../types/ast';
+import { Expr, Record, Type } from '../types/ast';
 import { specials } from './specials';
 import { resolveExpr } from './resolveExpr';
-import { Ctx, nil } from './Ctx';
+import { AutoCompleteResult, Ctx, nil } from './Ctx';
 import { err } from './nodeToPattern';
+import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
+import { applyAndResolve } from '../get-type/matchesType';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter(
@@ -16,17 +18,70 @@ export const filterComments = (nodes: Node[]) =>
             ),
     );
 
+export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
+    if (!type) {
+        return null;
+    }
+    let res = applyAndResolve(type, ctx, []);
+    if (res.type === 'local-bound' && res.bound) {
+        res = res.bound;
+    }
+    if (res.type === 'record') {
+        return recordMap(res);
+    }
+    return null;
+};
+
+export const ensure = <T, K>(
+    map: { [key: string]: T },
+    key: string | number,
+    dv: T,
+) => {
+    if (!map[key]) {
+        map[key] = dv;
+    }
+    return map[key];
+};
+
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
         case 'recordAccess': {
+            const target =
+                form.target.type !== 'blank'
+                    ? nodeToExpr(form.target, ctx)
+                    : null;
+            if (target) {
+                let ttype = getType(target, ctx);
+                if (ttype) {
+                    for (let item of form.items) {
+                        const options = getRecordMap(ttype, ctx);
+                        if (!options) {
+                            break;
+                        }
+                        if (options[item.text]) {
+                            ttype = options[item.text].value;
+                        } else {
+                            ensure(ctx.display, item.loc.idx, {}).autoComplete =
+                                Object.entries(options).map(
+                                    ([name, { value }]) =>
+                                        ({
+                                            type: 'replace',
+                                            text: name,
+                                            hash: '',
+                                            exact: false,
+                                            ann: value,
+                                        } satisfies AutoCompleteResult),
+                                );
+                            ctx.display[item.loc.idx];
+                        }
+                    }
+                }
+            }
             return {
                 type: 'recordAccess',
                 items: form.items.map((item) => item.text),
                 form,
-                target:
-                    form.target.type !== 'blank'
-                        ? nodeToExpr(form.target, ctx)
-                        : null,
+                target,
             };
         }
         case 'identifier': {
