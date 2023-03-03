@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {
     Map,
+    MCRecordAccess,
     MCString,
     MNodeExtra,
     toMCST,
@@ -18,7 +19,7 @@ import {
 } from '../store';
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
-import { accessText, Loc } from '../../src/types/cst';
+import { accessText, Loc, Node } from '../../src/types/cst';
 import { focus } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
@@ -157,17 +158,6 @@ export const RecordText = ({
                         return;
                     }
                     evt.preventDefault();
-                    // const { map, selection } = joinExprs(
-                    //     last.idx,
-                    //     last.child.at - 1,
-                    //     store,
-                    //     edit!,
-                    // );
-                    // updateStore(store, {
-                    //     map,
-                    //     selection,
-                    //     prev: { idx, loc: presel.current ?? undefined },
-                    // });
                 }
                 if (
                     evt.key === 'ArrowLeft' ||
@@ -234,46 +224,34 @@ function splitAttr(
     presel: React.MutableRefObject<number | null>,
 ) {
     const pos = getPos(evt.currentTarget);
-    if (edit[pos - 1] !== '$') {
-        console.log(`ok`, edit, pos, edit[pos - 1]);
-        return;
-    }
-    const prefix = edit.slice(0, pos - 1);
+    const prefix = edit.slice(0, pos);
     const suffix = edit.slice(pos);
 
     evt.preventDefault();
 
     const last = path[path.length - 1];
-    const node = store.map[last.idx] as WithLoc<MCString>;
-    let nw = parse('_')[0];
-    nw = { type: 'identifier', text: '', loc: nw.loc };
+    const node = store.map[last.idx] as WithLoc<MCRecordAccess>;
+    let nw: Node = {
+        type: 'accessText',
+        text: suffix,
+        loc: { start: 0, end: 0, idx: nidx() },
+    };
     const mp: Map = {};
     const eidx = toMCST(nw, mp);
-    const sidx = toMCST(
-        {
-            type: 'accessText',
-            text: suffix,
-            loc: { idx: nidx(), start: 0, end: 0 },
-        },
-        mp,
-    );
     mp[idx] = {
         ...(store.map[idx] as accessText & MNodeExtra),
         text: prefix,
     };
-    const templates = node.templates.slice();
-    const ok = last.child.type === 'text' ? last.child.at : 0;
-    templates.splice(ok, 0, { expr: eidx, suffix: sidx });
-    mp[last.idx] = { ...node, templates };
+    const items = node.items.slice();
+    const loc = last.child.type === 'attribute' ? last.child.at : 0;
+    items.splice(loc, 0, eidx);
+    mp[last.idx] = { ...node, items };
     updateStore(store, {
         map: mp,
         selection: {
             idx: eidx,
             loc: 'start',
         },
-        prev: {
-            idx,
-            loc: presel.current ?? undefined,
-        },
+        prev: { idx, loc: presel.current ?? undefined },
     });
 }
