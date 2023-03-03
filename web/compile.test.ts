@@ -92,7 +92,7 @@ describe('compile', () => {
         /// Now there's a hash
         expect(noLoc(xpath(store.map, yi, ['2', '1']))).toEqual({
             type: 'identifier',
-            text: 'x',
+            text: '',
             hash: xhash,
         });
 
@@ -132,7 +132,7 @@ describe('compile', () => {
         /// The hash is updated to the new one
         expect(noLoc(xpath(store.map, yi, ['2', '1']))).toEqual({
             type: 'identifier',
-            text: 'x',
+            text: '',
             hash: xhash2,
         });
     });

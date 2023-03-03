@@ -67,7 +67,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                                         ({
                                             type: 'replace',
                                             text: name,
-                                            hash: '',
+                                            node: {
+                                                type: 'accessText',
+                                                text: name,
+                                            },
                                             exact: false,
                                             ann: value,
                                         } satisfies AutoCompleteResult),

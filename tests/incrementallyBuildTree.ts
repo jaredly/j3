@@ -140,7 +140,10 @@ export function incrementallyBuildTree(
                 (item) => item.type === 'replace' && item.exact,
             ) as AutoCompleteReplace[];
             if (matching.length === 1) {
-                (store.map[nidx] as Identifier).hash = matching[0].hash;
+                store.map[nidx] = {
+                    ...store.map[nidx],
+                    ...matching[0].node,
+                };
                 compile(store, ectx);
             } else if (
                 matching.length &&
@@ -150,9 +153,17 @@ export function incrementallyBuildTree(
                 //
                 const choice = autoCompleteChoices[matching[0].text];
                 if (choice.type === 'global') {
-                    matching = matching.filter((m) => !m.hash.startsWith(':'));
+                    matching = matching.filter(
+                        (m) =>
+                            m.node.type === 'identifier' &&
+                            !m.node.hash?.startsWith(':'),
+                    );
                 } else {
-                    matching = matching.filter((m) => !m.hash.startsWith(':'));
+                    matching = matching.filter(
+                        (m) =>
+                            m.node.type === 'identifier' &&
+                            !m.node.hash?.startsWith(':'),
+                    );
                 }
                 if (choice.ann) {
                     matching = matching.filter((m) =>
@@ -169,7 +180,10 @@ export function incrementallyBuildTree(
                 if (matching.length !== 1) {
                     throw new Error(`No match for autocomplete choice?`);
                 }
-                (store.map[nidx] as Identifier).hash = matching[0].hash;
+                store.map[nidx] = {
+                    ...store.map[nidx],
+                    ...matching[0].node,
+                };
                 compile(store, ectx);
             }
         }
@@ -295,9 +309,8 @@ export const walkBackTree = (
                     {
                         map: {
                             [firstSiblingIdx]: {
-                                ...(store.map[firstSiblingIdx] as Identifier &
-                                    MNodeExtra),
-                                hash: available[0].hash,
+                                ...store.map[firstSiblingIdx],
+                                ...available[0].node,
                             },
                         },
                     },

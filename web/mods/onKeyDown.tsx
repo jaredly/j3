@@ -309,7 +309,7 @@ export function maybeCommitAutoComplete(
             const node = store.map[idx] as Identifier & MNodeExtra;
             updateStore(
                 store,
-                { map: { [idx]: { ...node, hash: matching[0].hash } } },
+                { map: { [idx]: { ...node, ...matching[0].node } } },
                 'update',
             );
             compile(store, ectx);

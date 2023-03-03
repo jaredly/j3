@@ -147,9 +147,10 @@ export function getMenuItems(
                           };
                       } else {
                           map[idx] = {
-                              type: 'identifier',
-                              text: '',
-                              hash: item.hash,
+                              ...item.node,
+                              //   type: 'identifier',
+                              //   text: '',
+                              //   hash: item.hash,
                               loc: { start: -1, end: -1, idx },
                           };
                       }
