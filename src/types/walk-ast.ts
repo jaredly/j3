@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, Record, TVar, Loc, NodeArray, Node, spread, accessText, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, Record, TVar, Loc, NodeArray, Node, Attachment, Markdown, spread, accessText, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -35,6 +35,10 @@ export type Visitor<Ctx> = {
     LocPost?: (node: Loc, ctx: Ctx) => null | Loc,
     NodeArray?: (node: NodeArray, ctx: Ctx) => null | false | NodeArray | [NodeArray | null, Ctx],
     NodeArrayPost?: (node: NodeArray, ctx: Ctx) => null | NodeArray,
+    Attachment?: (node: Attachment, ctx: Ctx) => null | false | Attachment | [Attachment | null, Ctx],
+    AttachmentPost?: (node: Attachment, ctx: Ctx) => null | Attachment,
+    Markdown?: (node: Markdown, ctx: Ctx) => null | false | Markdown | [Markdown | null, Ctx],
+    MarkdownPost?: (node: Markdown, ctx: Ctx) => null | Markdown,
     spread?: (node: spread, ctx: Ctx) => null | false | spread | [spread | null, Ctx],
     spreadPost?: (node: spread, ctx: Ctx) => null | spread,
     accessText?: (node: accessText, ctx: Ctx) => null | false | accessText | [accessText | null, Ctx],
@@ -1685,6 +1689,10 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
 
             case 'tag': break;
 
+            case 'markdown': break;
+
+            case 'attachment': break;
+
             case 'record': {
                         updatedNode = transformRecord(node, visitor, ctx);
                         changed0 = changed0 || updatedNode !== node;
@@ -1929,6 +1937,74 @@ export const transformNodeArray = <Ctx>(node: NodeArray, visitor: Visitor<Ctx>, 
         node = updatedNode;
         if (visitor.NodeArrayPost) {
             const transformed = visitor.NodeArrayPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformAttachment = <Ctx>(node: Attachment, visitor: Visitor<Ctx>, ctx: Ctx): Attachment => {
+        if (!node) {
+            throw new Error('No Attachment provided');
+        }
+        
+        const transformed = visitor.Attachment ? visitor.Attachment(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.AttachmentPost) {
+            const transformed = visitor.AttachmentPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformMarkdown = <Ctx>(node: Markdown, visitor: Visitor<Ctx>, ctx: Ctx): Markdown => {
+        if (!node) {
+            throw new Error('No Markdown provided');
+        }
+        
+        const transformed = visitor.Markdown ? visitor.Markdown(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.MarkdownPost) {
+            const transformed = visitor.MarkdownPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

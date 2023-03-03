@@ -265,6 +265,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'spread':
             throw new Error('not yet impl');
+        case 'markdown':
+            return { type: 'markdown', form };
+        case 'attachment':
+            return { type: 'attachment', form };
     }
     let _: never = form;
     throw new Error(

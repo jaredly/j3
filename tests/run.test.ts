@@ -20,8 +20,14 @@ readdirSync(__dirname)
             const raw = readFileSync(__dirname + '/' + name, 'utf8');
             const lines = idxLines(raw);
 
-            const { store, ectx } = loadIncremental(raw, undefined, false);
-
+            let res;
+            try {
+                res = loadIncremental(raw, undefined, false);
+            } catch (err) {
+                console.log(name, raw);
+                throw new Error(`Failed to load ${name} ${raw}`);
+            }
+            const { store, ectx } = res;
             const root = store.map[store.root] as ListLikeContents;
             for (let idx of root.values) {
                 const node = store.map[idx];

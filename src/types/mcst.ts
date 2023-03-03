@@ -1,8 +1,10 @@
 import { UpdateMap } from '../../web/store';
 import {
     accessText,
+    Attachment,
     Identifier,
     Loc,
+    Markdown,
     Node,
     NodeContents,
     NodeExtra,
@@ -37,6 +39,8 @@ export type MNodeContents =
     | Atom
     | ListLikeContents
     | stringText
+    | Markdown
+    | Attachment
 
     // list-like
     | { type: 'comment'; text: string }
@@ -115,6 +119,10 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
 
 export const fromMCST = (idx: number, map: Map): Node => {
     const node = map[idx];
+    if (!node) {
+        return { type: 'blank', loc: { idx: -1, start: 0, end: 0 } };
+        // throw new Error(`idx not in map ${idx} ${Object.keys(map).join(',')}`);
+    }
     return {
         ...node,
         ...fromMNode(node, map),

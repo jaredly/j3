@@ -9,6 +9,22 @@ It could be ... just an expr type. Yeah.
 So how do you trigger it? Would it be `//`?
 Nope, let's do `\`.
 
+- [ ] so `\` can trigger a markdown node.
+  Are there other specialty nodes I might want?
+  hmmmm
+  oh yeah, an image! or like an audio file.
+  - so for an image ... I can imagine there being
+    a runtime use for lazy loading them.
+    oh, but I could like just indicate that, right? in the UI?
+    yeah. Like a checkbox or something. it would change the
+    `type` of the thing, which is fine.
+    `meta {name string width uint height uint}`
+    `{...meta data bytes}` or
+    `{...meta id uint}`
+    But like, so the actuall CST node would just have the handle.
+    which would go into indexeddb right
+
+
 buuuuuut also, can we not agree that I super need tests?
 - oh now a little bit of tests
 

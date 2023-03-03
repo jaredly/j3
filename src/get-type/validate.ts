@@ -121,6 +121,11 @@ export const validateExpr = (
             });
             expr.body.forEach((expr) => validateExpr(expr, ctx, errors));
             return;
+        case 'attachment':
+        case 'markdown':
+            // TODO: Markdown will maybe have embedded expressions
+            // and stuff? Yeah I think it will ....
+            return;
     }
     let _: never = expr;
     throw new Error('not validated ' + JSON.stringify(expr));

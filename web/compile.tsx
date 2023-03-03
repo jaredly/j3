@@ -321,3 +321,12 @@ const rmPrevious = (ctx: Ctx, node?: EvalCtx['nodes'][0]): Ctx => {
     }
     return ctx;
 };
+
+const tryIt = <T,>(v: () => T, mod: (err: unknown) => void) => {
+    try {
+        return v();
+    } catch (err) {
+        mod(err);
+        throw err;
+    }
+};

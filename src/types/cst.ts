@@ -19,6 +19,26 @@ export type NodeArray = {
     values: Node[];
 };
 
+export type Attachment = {
+    type: 'attachment';
+    mime: string;
+    name: string;
+    lazy: boolean;
+    meta:
+        | {
+              type: 'image';
+              width: number;
+              height: number;
+          }
+        | { type: 'generic' };
+    handle: string;
+};
+
+export type Markdown = {
+    type: 'markdown';
+    text: string;
+};
+
 export type NodeContents =
     // identifier-like
     | Identifier
@@ -37,8 +57,8 @@ export type NodeContents =
     | recordAccess
     | accessText
     | spread
-
-    // Emptyish
+    | Markdown
+    | Attachment
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
 
