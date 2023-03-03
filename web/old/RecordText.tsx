@@ -200,6 +200,8 @@ export const RecordText = ({
                     evt.key === 'ArrowLeft' ||
                     evt.key === 'ArrowRight' ||
                     evt.key === 'Tab' ||
+                    evt.key === 'Enter' ||
+                    evt.key === ' ' ||
                     evt.metaKey ||
                     evt.altKey ||
                     evt.ctrlKey

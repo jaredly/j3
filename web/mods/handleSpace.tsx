@@ -50,9 +50,18 @@ export const handleSpace = (
     evt.preventDefault();
     evt.stopPropagation();
 
-    const parent = path[path.length - 1];
+    let parent = path[path.length - 1];
     if (parent.child.type === 'start' || parent.child.type === 'end') {
         const update = addSpace(store, path, parent.child.type === 'end');
+        maybeUpdate(store, update);
+        return;
+    }
+
+    if (parent.child.type === 'attribute') {
+        // idx = parent.idx;
+        // parent = path[path.length - 2];
+        // console.log('attr', parent, idx);
+        const update = addSpace(store, path.slice(0, -1), true);
         maybeUpdate(store, update);
         return;
     }

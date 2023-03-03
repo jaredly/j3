@@ -54,10 +54,17 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         }
         case 'unresolved':
             if (report) {
-                err(report, expr, {
-                    type: 'unresolved',
-                    form: expr.form,
-                });
+                if (expr.form.type === 'unparsed') {
+                    err(report, expr, {
+                        type: 'unparsed',
+                        form: expr.form,
+                    });
+                } else {
+                    err(report, expr, {
+                        type: 'unresolved',
+                        form: expr.form,
+                    });
+                }
             }
             return;
         case 'blank':

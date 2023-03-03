@@ -112,6 +112,14 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             return resolveExpr(form.text, form.hash, ctx, form);
         }
         case 'unparsed':
+            if (form.raw === '\\') {
+                ensure(ctx.display, form.loc.idx, {}).autoComplete = [
+                    {
+                        type: 'info',
+                        text: 'Whats up folks',
+                    },
+                ];
+            }
             return { type: 'unresolved', form };
         case 'tag':
             ctx.display[form.loc.idx] = { style: { type: 'tag' } };

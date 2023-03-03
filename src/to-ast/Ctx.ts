@@ -2,12 +2,13 @@ import { Loc, Node } from '../types/cst';
 import { Expr, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
-import { Layout } from '../types/mcst';
+import { Layout, MNodeContents } from '../types/mcst';
 
 export type AutoCompleteReplace = {
     type: 'replace';
     text: string;
     hash: string;
+    // node: MNodeContents,
     exact: boolean;
     ann: Type;
 };

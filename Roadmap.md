@@ -1,5 +1,16 @@
 
+Thinking about a more of a demo,
+let's get markdown rendered blocks.
+What's the way to do it?
+Like a toplevel kind, right? And it can be Named
+Or maybe it doesn't even have to be a toplevel type.
+It could be ... just an expr type. Yeah.
+
+So how do you trigger it? Would it be `//`?
+Nope, let's do `\`.
+
 buuuuuut also, can we not agree that I super need tests?
+- oh now a little bit of tests
 
 
 ## Record Access

@@ -55,4 +55,5 @@ export type Error =
     | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }
     | { type: 'unresolved'; form: Node }
+    | { type: 'unparsed'; form: Node }
     | { type: 'misc'; message: string };

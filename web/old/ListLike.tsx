@@ -8,6 +8,7 @@ import { Ctx } from '../../src/to-ast/Ctx';
 import { Top } from './IdentifierLike';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
+import { Error } from '../../src/types/types';
 // import { makeRCtx } from '../src/to-cst/nodeForExpr';
 
 export const ListLike = ({
@@ -324,7 +325,17 @@ export const OneLineResult = ({
             );
 
         case 'errors':
-            return <div>Errors found</div>;
+            const allErrors = Object.keys(result.errors).flatMap(
+                (k) => result.errors[+k],
+            );
+            return (
+                <div>
+                    {errorToString(allErrors[0], ctx)}
+                    {allErrors.length > 1
+                        ? ` and ${allErrors.length - 1} more`
+                        : ''}
+                </div>
+            );
         case 'failure':
             return (
                 <div>
