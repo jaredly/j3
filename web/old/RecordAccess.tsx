@@ -37,10 +37,15 @@ export const RecordAccess = ({
                         return events.onLeft();
                     },
                     onRight() {
-                        setSelection(store, {
-                            idx: node.items[0],
-                            loc: 'start',
-                        });
+                        if (node.items.length) {
+                            setSelection(store, {
+                                idx: node.items[0],
+                                loc: 'start',
+                            });
+                        } else {
+                            console.error(`A RecordAccess with no children??`);
+                            return events.onRight();
+                        }
                     },
                 }}
             />

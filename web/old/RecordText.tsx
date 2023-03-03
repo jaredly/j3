@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {
+    ListLikeContents,
     Map,
     MCRecordAccess,
     MCString,
@@ -159,9 +160,11 @@ export const RecordText = ({
                         return;
                     }
                     const { map, selection } = joinExprs(
+                        path[path.length - 2],
                         last.idx,
                         last.child.at - 1,
                         store,
+                        ctx,
                         edit!,
                     );
                     evt.preventDefault();
@@ -188,40 +191,95 @@ export const RecordText = ({
     );
 };
 
+export const replacePath = (
+    parent: Path,
+    newIdx: number,
+    store: Store,
+): UpdateMap => {
+    const map: UpdateMap = {};
+    const pnode = store.map[parent.idx];
+    switch (parent.child.type) {
+        case 'child': {
+            const values = (pnode as ListLikeContents).values.slice();
+            values[parent.child.at] = newIdx;
+            map[parent.idx] = {
+                ...(pnode as ListLikeContents & MNodeExtra),
+                values,
+            };
+            break;
+        }
+        case 'expr': {
+            const templates = (pnode as MCString).templates.slice();
+            templates[parent.child.at] = {
+                ...templates[parent.child.at],
+                expr: newIdx,
+            };
+            map[parent.idx] = {
+                ...(pnode as MCString & MNodeExtra),
+                templates,
+            };
+            break;
+        }
+        default:
+            throw new Error(
+                `Can't replace parent. . is this a valid place for an expr?`,
+            );
+    }
+    return map;
+};
+
 export const joinExprs = (
+    grandParent: Path,
     parentIdx: number,
     itemIdx: number,
     store: Store,
+    ctx: EvalCtx,
     remaining: string,
 ): {
     map: UpdateMap;
     selection: Selection;
 } => {
-    console.log('joinplx');
     const node = store.map[parentIdx] as WithLoc<MCRecordAccess>;
     const map: UpdateMap = {};
     map[node.items[itemIdx]] = null;
-    const items = node.items;
-    items.splice(itemIdx, 1);
 
-    map[parentIdx] = {
-        ...node,
-        items,
-    };
+    if (node.items.length === 1) {
+        Object.assign(map, replacePath(grandParent, node.target, store));
+    } else {
+        const items = node.items;
+        items.splice(itemIdx, 1);
+        map[parentIdx] = {
+            ...node,
+            items,
+        };
+    }
 
-    const prev = itemIdx > 0 ? items[itemIdx - 1] : node.target;
+    const prev = itemIdx > 0 ? node.items[itemIdx - 1] : node.target;
 
     const prevs = store.map[prev] as (accessText | Identifier) & MNodeExtra;
+    let prevText = prevs.text;
+    if (prevs.type === 'identifier' && remaining.length) {
+        const idText = ctx.ctx.display[prev]?.style;
+        if (idText?.type === 'id' && idText.text) {
+            prevText = idText.text;
+            console.log('got it', prevText);
+        } else {
+            console.log('no display sad', ctx.ctx.display, prev);
+        }
+    }
     map[prev] = {
         ...prevs,
-        text: prevs.text + remaining,
+        text: prevText + remaining,
     };
-    // console.log(prevs, map[prev], remaining);
+    if (prevs.type === 'identifier' && remaining.length) {
+        map[prev].hash = null;
+    }
+
     return {
         map,
         selection: {
             idx: prev,
-            loc: prevs.text.length,
+            loc: remaining.length ? prevText.length : 'end',
         },
     };
 };
