@@ -255,6 +255,17 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.arrayExpression(
                 expr.values.map((item) => exprToTs(item, ctx)),
             );
+        case 'attachment':
+            return t.objectExpression([
+                t.objectProperty(
+                    t.identifier('name'),
+                    t.stringLiteral(expr.form.name),
+                ),
+                t.objectProperty(
+                    t.identifier('mime'),
+                    t.stringLiteral(expr.form.file?.meta.mime ?? ''),
+                ),
+            ]);
         // case 'attribute':
         //     return t.memberExpression(
         //         exprToTs(expr.target, ctx),
