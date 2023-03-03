@@ -19,7 +19,7 @@ import {
 } from '../store';
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
-import { accessText, Loc, Node } from '../../src/types/cst';
+import { accessText, Identifier, Loc, Node } from '../../src/types/cst';
 import { focus } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
@@ -154,10 +154,23 @@ export const RecordText = ({
                     getPos(evt.currentTarget) === 0
                 ) {
                     const last = path[path.length - 1];
-                    if (last.child.type !== 'text' || last.child.at === 0) {
+                    if (last.child.type !== 'attribute') {
+                        console.log('idkno');
                         return;
                     }
+                    const { map, selection } = joinExprs(
+                        last.idx,
+                        last.child.at - 1,
+                        store,
+                        edit!,
+                    );
                     evt.preventDefault();
+                    updateStore(store, {
+                        map,
+                        selection,
+                        prev: { idx, loc: presel.current ?? undefined },
+                    });
+                    return;
                 }
                 if (
                     evt.key === 'ArrowLeft' ||
@@ -175,37 +188,35 @@ export const RecordText = ({
     );
 };
 
-const joinExprs = (
-    idx: number,
-    templateIdx: number,
+export const joinExprs = (
+    parentIdx: number,
+    itemIdx: number,
     store: Store,
     remaining: string,
 ): {
     map: UpdateMap;
     selection: Selection;
 } => {
-    const node = store.map[idx] as WithLoc<MCString>;
+    console.log('joinplx');
+    const node = store.map[parentIdx] as WithLoc<MCRecordAccess>;
     const map: UpdateMap = {};
-    const template = node.templates[templateIdx];
-    // TODO: Remove an expr (deeply pleaseee)
-    map[template.expr] = null;
-    map[template.suffix] = null;
-    const templates = node.templates;
-    templates.splice(templateIdx, 1);
+    map[node.items[itemIdx]] = null;
+    const items = node.items;
+    items.splice(itemIdx, 1);
 
-    map[idx] = {
+    map[parentIdx] = {
         ...node,
-        templates,
+        items,
     };
 
-    const prev =
-        templateIdx > 0 ? templates[templateIdx - 1].suffix : node.first;
+    const prev = itemIdx > 0 ? items[itemIdx - 1] : node.target;
 
-    const prevs = store.map[prev] as accessText & MNodeExtra;
+    const prevs = store.map[prev] as (accessText | Identifier) & MNodeExtra;
     map[prev] = {
         ...prevs,
         text: prevs.text + remaining,
     };
+    // console.log(prevs, map[prev], remaining);
     return {
         map,
         selection: {
