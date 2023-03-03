@@ -245,7 +245,6 @@ export const AttachmentLabel = ({
                     return;
                 }
                 if (evt.key === 'ArrowRight' && isAtEnd(evt.currentTarget)) {
-                    console.log('righting');
                     evt.preventDefault();
                     evt.stopPropagation();
                     events.onRight();
@@ -279,42 +278,6 @@ export const AttachmentLabel = ({
                     );
                     return;
                 }
-                // if (evt.key === '{') {
-                //     maybeAddExpression(evt, edit!, path, store, idx, presel);
-                //     return;
-                // }
-                // if (
-                //     evt.key === 'Backspace' &&
-                //     getPos(evt.currentTarget) === 0
-                // ) {
-                //     const last = path[path.length - 1];
-                //     if (last.child.type !== 'text' || last.child.at === 0) {
-                //         return;
-                //     }
-                //     evt.preventDefault();
-                //     const { map, selection } = joinExprs(
-                //         last.idx,
-                //         last.child.at - 1,
-                //         store,
-                //         edit!,
-                //     );
-                //     updateStore(store, {
-                //         map,
-                //         selection,
-                //         prev: { idx, loc: presel.current ?? undefined },
-                //     });
-                // }
-                // if (
-                //     evt.key === 'ArrowLeft' ||
-                //     evt.key === 'ArrowRight' ||
-                //     evt.key === 'Tab' ||
-                //     evt.metaKey ||
-                //     evt.altKey ||
-                //     evt.ctrlKey
-                // ) {
-                //     onKeyDown(evt, idx, path, events, store, ctx);
-                //     return;
-                // }
             }}
         />
     );
