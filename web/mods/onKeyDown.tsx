@@ -90,7 +90,19 @@ export const onKeyDown = (
     }
 
     if (evt.key === 'Backspace' && path.length) {
-        return handleBackspace(evt, idx, path, events, store);
+        const handled = handleBackspace(
+            evt.currentTarget.textContent!,
+            isAtStart(evt.currentTarget),
+            idx,
+            path,
+            events,
+            store,
+        );
+        if (handled) {
+            evt.preventDefault();
+            evt.stopPropagation();
+        }
+        return;
     }
 
     const isComment = store.map[idx].type === 'comment';
