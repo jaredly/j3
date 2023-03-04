@@ -22,7 +22,7 @@ export const Blinker = ({
     ectx,
 }: {
     events: Events;
-    style: React.CSSProperties;
+    style?: React.CSSProperties;
     idx: number;
     path: Path[];
     store: Store;

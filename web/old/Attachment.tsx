@@ -5,6 +5,7 @@ import { handleBackspace, maybeRemoveEmptyPrev } from '../mods/handleBackspace';
 import { addSpace, maybeUpdate } from '../mods/handleSpace';
 import { Path, setSelection, UpdateMap, updateStore } from '../store';
 import { AttachmentLabel } from './AttachmentLabel';
+import { Blinker } from './Blinker';
 import { Top } from './IdentifierLike';
 import { Events } from './Nodes';
 
@@ -48,6 +49,7 @@ export const Attachment = ({
                     type="file"
                     accept="image/*"
                     multiple={false}
+                    style={{ width: 90 }}
                     onInput={(evt) => {
                         // BTW would be cool to like support
                         // multiple files?
@@ -78,6 +80,22 @@ export const Attachment = ({
                         }
                     }}
                 />
+                {top.store.selection?.idx === idx ? (
+                    <Blinker
+                        idx={idx}
+                        store={top.store}
+                        ectx={top.ctx}
+                        path={path.concat([{ idx, child: { type: 'end' } }])}
+                        events={{
+                            onLeft() {
+                                events.onLeft();
+                            },
+                            onRight() {
+                                events.onRight();
+                            },
+                        }}
+                    />
+                ) : null}
             </div>
         );
     }
