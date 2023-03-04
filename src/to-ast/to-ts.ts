@@ -256,16 +256,36 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 expr.values.map((item) => exprToTs(item, ctx)),
             );
         case 'attachment':
-            return t.objectExpression([
+            if (!expr.form.file) {
+                return t.identifier('invalid attachment with no file');
+            }
+            const props = [
                 t.objectProperty(
                     t.identifier('name'),
                     t.stringLiteral(expr.form.name),
                 ),
                 t.objectProperty(
                     t.identifier('mime'),
-                    t.stringLiteral(expr.form.file?.meta.mime ?? ''),
+                    t.stringLiteral(expr.form.file.meta.mime),
                 ),
-            ]);
+                t.objectProperty(
+                    t.identifier('handle'),
+                    t.stringLiteral(expr.form.file.handle),
+                ),
+            ];
+            if (expr.form.file.meta.type === 'image') {
+                props.push(
+                    t.objectProperty(
+                        t.identifier('width'),
+                        t.numericLiteral(expr.form.file.meta.width),
+                    ),
+                    t.objectProperty(
+                        t.identifier('height'),
+                        t.numericLiteral(expr.form.file.meta.height),
+                    ),
+                );
+            }
+            return t.objectExpression(props);
         // case 'attribute':
         //     return t.memberExpression(
         //         exprToTs(expr.target, ctx),

@@ -1,4 +1,12 @@
-import { blank, Ctx, nilt } from '../to-ast/Ctx';
+import {
+    blank,
+    Ctx,
+    file,
+    fileLazy,
+    imageFile,
+    imageFileLazy,
+    nilt,
+} from '../to-ast/Ctx';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,
@@ -499,13 +507,32 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 // right? And then you call it with something
                 // and we can figure out what's going on, with
                 // some degree of reliability
+                if (report) {
+                    errf(report, expr.form, {
+                        type: 'misc',
+                        message: 'not yet impl',
+                    });
+                }
                 return;
             }
         // TODO: This will probably be more complex?
         case 'markdown':
             return { type: 'builtin', name: 'string', form: expr.form };
         case 'attachment':
-            return { type: 'builtin', name: 'bytes', form: expr.form };
+            // return { type: 'builtin', name: 'bytes', form: expr.form };
+            if (!expr.form.file) {
+                if (report) {
+                    errf(report, expr.form, {
+                        type: 'misc',
+                        message: 'empty attachment',
+                    });
+                }
+                return;
+            }
+            if (expr.form.file.meta.type === 'image') {
+                return expr.form.lazy ? imageFileLazy : imageFile;
+            }
+            return expr.form.lazy ? file : fileLazy;
         case 'recur':
             throw new Error('Not recur yet');
         case 'type-fn':

@@ -35,7 +35,6 @@ export const onKeyDown = (
     ectx: EvalCtx,
 ) => {
     const last = path[path.length - 1];
-    console.log('what', last.child);
     if (last.child.type === 'child' || last.child.type === 'expr') {
         if (
             '([{'.includes(evt.key) &&
@@ -433,7 +432,6 @@ function wrapWithParens(
             };
         } else {
             const pnode = store.map[parent.idx] as MCString & MNodeExtra;
-            console.log(pnode);
             const templates = pnode.templates.slice();
             templates[child.at - 1] = {
                 expr: nidx,

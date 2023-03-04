@@ -1,5 +1,5 @@
 import { Loc, Node } from '../types/cst';
-import { Expr, TVar, Type } from '../types/ast';
+import { Expr, TRecord, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
@@ -93,6 +93,7 @@ export const basicBuiltins: Global['builtins'] = {
         float: [],
         bool: [],
         string: [],
+        bytes: [],
         Array: [
             { sym: 0, form: blank, name: 'Value' },
             {
@@ -162,6 +163,48 @@ const tuint = btype('uint');
 const tfloat = btype('float');
 const tbool = btype('bool');
 const tstring = btype('string');
+const tbytes = btype('bytes');
+
+export const fileBase: Type = {
+    type: 'record',
+    form: blank,
+    open: false,
+    entries: [
+        {
+            name: 'name',
+            value: tstring,
+        },
+        {
+            name: 'mime',
+            value: tstring,
+        },
+    ],
+};
+
+export const extendRecord = (
+    t: TRecord,
+    entries: TRecord['entries'],
+): TRecord => ({
+    ...t,
+    entries: t.entries.concat(entries),
+});
+
+export const file = extendRecord(fileBase, [{ name: 'data', value: tbytes }]);
+export const fileLazy = extendRecord(fileBase, [
+    { name: 'handle', value: tstring },
+]);
+
+export const imageFileBase = extendRecord(fileBase, [
+    { name: 'width', value: tuint },
+    { name: 'height', value: tuint },
+]);
+
+export const imageFile = extendRecord(imageFileBase, [
+    { name: 'data', value: tbytes },
+]);
+export const imageFileLazy = extendRecord(imageFileBase, [
+    { name: 'handle', value: tstring },
+]);
 
 const basicReverse: { [key: string]: string } = {};
 
