@@ -116,7 +116,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         }
         case 'unparsed':
             if (form.raw.startsWith('\\')) {
-                ensure(ctx.display, form.loc.idx, {}).autoComplete = [
+                let options: AutoCompleteResult[] = [
                     {
                         type: 'replace',
                         exact: false,
@@ -136,7 +136,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         exact: false,
                         ann: {
                             type: 'builtin',
-                            name: 'image-i-guess',
+                            name: 'file',
                             form: nilt.form,
                         },
                         text: 'Attachment',
@@ -147,11 +147,15 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             lazy: false,
                         },
                     },
-                    {
-                        type: 'info',
-                        text: 'Whats up folks',
-                    },
                 ];
+                if (form.raw.length > 1) {
+                    options = options.filter((option) =>
+                        option.text
+                            .toLowerCase()
+                            .startsWith(form.raw.slice(1).toLowerCase()),
+                    );
+                }
+                ensure(ctx.display, form.loc.idx, {}).autoComplete = options;
             }
             return { type: 'unresolved', form };
         case 'tag':
