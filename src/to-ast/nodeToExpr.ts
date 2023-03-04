@@ -298,7 +298,16 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'markdown':
             return { type: 'markdown', form };
         case 'attachment':
-            return { type: 'attachment', form };
+            if (!form.file) {
+                return { type: 'unresolved', form, reason: 'empty attachment' };
+            }
+            return {
+                type: 'attachment',
+                form,
+                file: form.file,
+                lazy: form.lazy,
+                name: form.name,
+            };
     }
     let _: never = form;
     throw new Error(

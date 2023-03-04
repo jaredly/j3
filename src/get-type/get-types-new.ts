@@ -67,6 +67,11 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                         type: 'unparsed',
                         form: expr.form,
                     });
+                } else if (expr.form.type === 'attachment') {
+                    err(report, expr, {
+                        type: 'misc',
+                        message: 'empty attachment',
+                    });
                 } else {
                     err(report, expr, {
                         type: 'unresolved',
@@ -520,7 +525,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return { type: 'builtin', name: 'string', form: expr.form };
         case 'attachment':
             // return { type: 'builtin', name: 'bytes', form: expr.form };
-            if (!expr.form.file) {
+            if (!expr.file) {
                 if (report) {
                     errf(report, expr.form, {
                         type: 'misc',
@@ -529,10 +534,10 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 }
                 return;
             }
-            if (expr.form.file.meta.type === 'image') {
-                return expr.form.lazy ? imageFileLazy : imageFile;
+            if (expr.file.meta.type === 'image') {
+                return expr.lazy ? imageFileLazy : imageFile;
             }
-            return expr.form.lazy ? file : fileLazy;
+            return expr.lazy ? file : fileLazy;
         case 'recur':
             throw new Error('Not recur yet');
         case 'type-fn':

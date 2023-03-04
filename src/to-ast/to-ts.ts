@@ -256,32 +256,29 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 expr.values.map((item) => exprToTs(item, ctx)),
             );
         case 'attachment':
-            if (!expr.form.file) {
-                return t.identifier('invalid attachment with no file');
-            }
             const props = [
                 t.objectProperty(
                     t.identifier('name'),
-                    t.stringLiteral(expr.form.name),
+                    t.stringLiteral(expr.name),
                 ),
                 t.objectProperty(
                     t.identifier('mime'),
-                    t.stringLiteral(expr.form.file.meta.mime),
+                    t.stringLiteral(expr.file.meta.mime),
                 ),
                 t.objectProperty(
                     t.identifier('handle'),
-                    t.stringLiteral(expr.form.file.handle),
+                    t.stringLiteral(expr.file.handle),
                 ),
             ];
-            if (expr.form.file.meta.type === 'image') {
+            if (expr.file.meta.type === 'image') {
                 props.push(
                     t.objectProperty(
                         t.identifier('width'),
-                        t.numericLiteral(expr.form.file.meta.width),
+                        t.numericLiteral(expr.file.meta.width),
                     ),
                     t.objectProperty(
                         t.identifier('height'),
-                        t.numericLiteral(expr.form.file.meta.height),
+                        t.numericLiteral(expr.file.meta.height),
                     ),
                 );
             }

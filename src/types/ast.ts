@@ -1,4 +1,4 @@
-import { Attachment, Markdown, Node, NodeExtra } from './cst';
+import { AttachedFile, Attachment, Markdown, Node, NodeExtra } from './cst';
 export type {
     Node,
     NodeContents,
@@ -131,7 +131,13 @@ export type Expr =
       }
     | { type: 'tag'; name: string; form: Node } // by itself, this is a constructor function
     | { type: 'markdown'; form: Markdown & NodeExtra }
-    | { type: 'attachment'; form: Attachment & NodeExtra }
+    | {
+          type: 'attachment';
+          form: Node;
+          file: AttachedFile;
+          name: string;
+          lazy: boolean;
+      }
     | Record;
 export type Record = {
     type: 'record';

@@ -23,8 +23,19 @@ Nope, let's do `\`.
     `{...meta id uint}`
     But like, so the actuall CST node would just have the handle.
     which would go into indexeddb right
-- [ ] so image attachments, I should probably make it so you can change
+- [x] so image attachments, I should probably make it so you can change
   the rendered size?
+- [ ] why aren't the errors on attachments being recomputed :thinking:
+- [ ] I kindof want to be able to select the "end" of an attachment. So
+  that I can do `.`, ya know? Yeah I think that's valuable.
+
+#### Markdown
+- [ ] make a little whatsit
+- [ ] ok maybe I actually want to treat it like a template string?
+  So that we can have little templaty deals. you know?
+  but there's a question, of like different ways to render those
+  templates. Like it could be "just show the result"
+  or "
 
 
 buuuuuut also, can we not agree that I super need tests?

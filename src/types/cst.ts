@@ -19,21 +19,26 @@ export type NodeArray = {
     values: Node[];
 };
 
+export type AttachedFile = {
+    handle: string;
+    meta:
+        | {
+              type: 'image';
+              width: number;
+              mime: string;
+              height: number;
+          }
+        | {
+              type: 'generic';
+              mime: string;
+          };
+};
+
 export type Attachment = {
     type: 'attachment';
     lazy: boolean;
     name: string;
-    file: {
-        handle: string;
-        meta:
-            | {
-                  type: 'image';
-                  width: number;
-                  mime: string;
-                  height: number;
-              }
-            | { type: 'generic'; mime: string };
-    } | null;
+    file: AttachedFile | null;
 };
 
 export type Markdown = {
