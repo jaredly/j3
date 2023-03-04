@@ -126,19 +126,12 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             form: nilt.form,
                         },
                         text: 'Markdown',
-                        node: {
-                            type: 'markdown',
-                            text: '',
-                        },
+                        node: { type: 'markdown', text: '' },
                     },
                     {
                         type: 'replace',
                         exact: false,
-                        ann: {
-                            type: 'builtin',
-                            name: 'file',
-                            form: nilt.form,
-                        },
+                        ann: { type: 'builtin', name: 'file', form: nilt.form },
                         text: 'Attachment',
                         node: {
                             type: 'attachment',

@@ -21,7 +21,8 @@ export const AttachmentLabel = ({
     onEnter: (start: boolean) => void;
     onBackspace: (empty: boolean) => void;
 }) => {
-    const editing = top.store.selection?.idx === idx;
+    const editing =
+        top.store.selection?.idx === idx && top.store.selection.loc !== 'end';
     let [edit, setEdit] = React.useState(null as null | string);
     edit = edit == null ? text : edit;
 
@@ -112,7 +113,11 @@ export const AttachmentLabel = ({
                 if (evt.key === 'ArrowRight' && isAtEnd(evt.currentTarget)) {
                     evt.preventDefault();
                     evt.stopPropagation();
-                    events.onRight();
+                    // events.onRight();
+                    setSelection(top.store, {
+                        idx,
+                        loc: 'end',
+                    });
                     return;
                 }
                 if (evt.key === 'Backspace' && isAtStart(evt.currentTarget)) {

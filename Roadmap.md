@@ -25,9 +25,19 @@ Nope, let's do `\`.
     which would go into indexeddb right
 - [x] so image attachments, I should probably make it so you can change
   the rendered size?
-- [ ] why aren't the errors on attachments being recomputed :thinking:
-- [ ] I kindof want to be able to select the "end" of an attachment. So
+- [x] why aren't the errors on attachments being recomputed :thinking:
+- [x] I kindof want to be able to select the "end" of an attachment. So
   that I can do `.`, ya know? Yeah I think that's valuable.
+  - [ ] so actually, I can't do `.`, because that only works with identifiers.
+    which I think is useful
+  - [x] uh the blinker looks silly when the image is expanded
+  - [ ] so, do I have a really good reason that ... attribute dealios
+    should only be doable to identifiers?
+    yeah I think that's a fine constraint.
+- [ ] 🤔 so, I'm wondering if an attachment should ever be just "there"
+  Like is there a reason to have it be embedded, or can I just always
+  treat them as lazy, and requiring an Effect to load?
+  Kinda makes sense to me idk
 
 #### Markdown
 - [ ] make a little whatsit

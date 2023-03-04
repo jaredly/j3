@@ -108,15 +108,10 @@ export const Attachment = ({
         <div
             style={{
                 // padding: '0 8px',
-                backgroundColor: 'rgb(47 47 47)',
                 display: 'inline-flex',
-                alignItems: 'center',
+                backgroundColor: 'rgb(47 47 47)',
                 borderRadius: 4,
-                ...(expanded
-                    ? {
-                          flexDirection: 'column',
-                      }
-                    : {}),
+                paddingRight: 4,
             }}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
@@ -124,76 +119,116 @@ export const Attachment = ({
                 setSelection(top.store, { idx, loc: 'end' });
             }}
         >
-            <AttachmentLabel
-                top={top}
-                text={node.name ?? 'Hello'}
-                idx={idx}
-                events={events}
-                onBackspace={(empty) => {
-                    if (!empty) {
-                        maybeRemoveEmptyPrev(
-                            path[path.length - 1],
-                            top.store,
-                        ) || events.onLeft();
-                    } else {
-                        handleBackspace('', true, idx, path, events, top.store);
-                    }
-                }}
-                onInput={(pos, text, presel) => {
-                    const mp: UpdateMap = {
-                        [node.loc.idx]: { ...node, name: text },
-                    };
-                    updateStore(top.store, {
-                        map: mp,
-                        selection: { idx, loc: pos },
-                        prev: { idx, loc: presel ?? undefined },
-                    });
-                }}
-                onEnter={(start) => {
-                    const parent = path[path.length - 1];
-                    const update = addSpace(top.store, path, !start);
-                    maybeUpdate(top.store, update);
-                    return;
-                }}
-            />
-
-            <img
-                src={url}
-                onMouseDown={(evt) => {
-                    evt.stopPropagation();
-                    evt.preventDefault();
-                    setExpanded(!expanded);
-                }}
+            <div
                 style={{
-                    transition: 'max-height .1s ease',
-                    maxHeight: expanded ? 200 : 24,
-                    borderRadius: 3,
-                    marginInlineStart: expanded ? 0 : 8,
-                    marginBlockStart: expanded ? 8 : 0,
-                    // marginTop: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    ...(expanded
+                        ? {
+                              flexDirection: 'column',
+                          }
+                        : {}),
                 }}
-            />
-            {expanded ? (
-                <div
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        alignSelf: 'stretch',
-                        paddingLeft: 8,
+            >
+                <AttachmentLabel
+                    top={top}
+                    text={node.name ?? 'Hello'}
+                    idx={idx}
+                    events={events}
+                    onBackspace={(empty) => {
+                        if (!empty) {
+                            maybeRemoveEmptyPrev(
+                                path[path.length - 1],
+                                top.store,
+                            ) || events.onLeft();
+                        } else {
+                            handleBackspace(
+                                '',
+                                true,
+                                idx,
+                                path,
+                                events,
+                                top.store,
+                            );
+                        }
                     }}
-                >
-                    {node.file.meta.mime}
-                    <button
-                        onClick={() => {
-                            updateStore(top.store, {
-                                map: { [idx]: { ...node, file: null } },
-                            });
+                    onInput={(pos, text, presel) => {
+                        const mp: UpdateMap = {
+                            [node.loc.idx]: { ...node, name: text },
+                        };
+                        updateStore(top.store, {
+                            map: mp,
+                            selection: { idx, loc: pos },
+                            prev: { idx, loc: presel ?? undefined },
+                        });
+                    }}
+                    onEnter={(start) => {
+                        const parent = path[path.length - 1];
+                        const update = addSpace(top.store, path, !start);
+                        maybeUpdate(top.store, update);
+                        return;
+                    }}
+                />
+
+                <img
+                    src={url}
+                    onMouseDown={(evt) => {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        setExpanded(!expanded);
+                    }}
+                    style={{
+                        transition: 'max-height .1s ease',
+                        maxHeight: expanded ? 200 : 24,
+                        borderRadius: 3,
+                        marginInlineStart: expanded ? 0 : 8,
+                        marginBlockStart: expanded ? 8 : 0,
+                        // marginTop: 8,
+                    }}
+                />
+                {expanded ? (
+                    <div
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            alignSelf: 'stretch',
+                            paddingLeft: 8,
                         }}
                     >
-                        Clear
-                    </button>
-                </div>
+                        {node.file.meta.mime}
+                        <button
+                            onClick={() => {
+                                updateStore(top.store, {
+                                    map: { [idx]: { ...node, file: null } },
+                                });
+                            }}
+                        >
+                            Clear
+                        </button>
+                    </div>
+                ) : null}
+            </div>
+            <div style={{ flexBasis: 2, flexShrink: 0 }} />
+            {top.store.selection?.idx === idx &&
+            top.store.selection.loc === 'end' ? (
+                <Blinker
+                    idx={idx}
+                    store={top.store}
+                    ectx={top.ctx}
+                    path={path.concat([{ idx, child: { type: 'end' } }])}
+                    events={{
+                        onLeft() {
+                            setSelection(top.store, {
+                                idx,
+                                loc: node.name.length,
+                            });
+                        },
+                        onRight() {
+                            events.onRight();
+                        },
+                    }}
+                />
             ) : null}
         </div>
     );
