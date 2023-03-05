@@ -31,13 +31,17 @@ Nope, let's do `\`.
   - [ ] so actually, I can't do `.`, because that only works with identifiers.
     which I think is useful
   - [x] uh the blinker looks silly when the image is expanded
-  - [ ] so, do I have a really good reason that ... attribute dealios
+  - [x] so, do I have a really good reason that ... attribute dealios
     should only be doable to identifiers?
     yeah I think that's a fine constraint.
 - [ ] 🤔 so, I'm wondering if an attachment should ever be just "there"
   Like is there a reason to have it be embedded, or can I just always
   treat them as lazy, and requiring an Effect to load?
   Kinda makes sense to me idk
+  yeah ok, all attachments are lazy
+- [ ] but, should I have a "start" blinker?
+
+
 
 #### Markdown
 - [ ] make a little whatsit

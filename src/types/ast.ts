@@ -136,7 +136,6 @@ export type Expr =
           form: Node;
           file: AttachedFile;
           name: string;
-          lazy: boolean;
       }
     | Record;
 export type Record = {

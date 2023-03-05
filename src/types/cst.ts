@@ -36,7 +36,6 @@ export type AttachedFile = {
 
 export type Attachment = {
     type: 'attachment';
-    lazy: boolean;
     name: string;
     file: AttachedFile | null;
 };

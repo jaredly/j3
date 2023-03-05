@@ -94,6 +94,7 @@ export const basicBuiltins: Global['builtins'] = {
         bool: [],
         string: [],
         bytes: [],
+        'attachment-handle': [],
         Array: [
             { sym: 0, form: blank, name: 'Value' },
             {
@@ -164,6 +165,7 @@ const tfloat = btype('float');
 const tbool = btype('bool');
 const tstring = btype('string');
 const tbytes = btype('bytes');
+const thandle = btype('attachment-handle');
 
 export const fileBase: Type = {
     type: 'record',
@@ -189,9 +191,8 @@ export const extendRecord = (
     entries: t.entries.concat(entries),
 });
 
-export const file = extendRecord(fileBase, [{ name: 'data', value: tbytes }]);
 export const fileLazy = extendRecord(fileBase, [
-    { name: 'handle', value: tstring },
+    { name: 'handle', value: thandle },
 ]);
 
 export const imageFileBase = extendRecord(fileBase, [
@@ -199,11 +200,8 @@ export const imageFileBase = extendRecord(fileBase, [
     { name: 'height', value: tuint },
 ]);
 
-export const imageFile = extendRecord(imageFileBase, [
-    { name: 'data', value: tbytes },
-]);
 export const imageFileLazy = extendRecord(imageFileBase, [
-    { name: 'handle', value: tstring },
+    { name: 'handle', value: thandle },
 ]);
 
 const basicReverse: { [key: string]: string } = {};

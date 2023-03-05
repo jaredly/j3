@@ -535,9 +535,9 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 return;
             }
             if (expr.file.meta.type === 'image') {
-                return expr.lazy ? imageFileLazy : imageFile;
+                return imageFileLazy;
             }
-            return expr.lazy ? file : fileLazy;
+            return fileLazy;
         case 'recur':
             throw new Error('Not recur yet');
         case 'type-fn':

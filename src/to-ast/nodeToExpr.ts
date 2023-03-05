@@ -133,12 +133,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         exact: false,
                         ann: { type: 'builtin', name: 'file', form: nilt.form },
                         text: 'Attachment',
-                        node: {
-                            type: 'attachment',
-                            name: '',
-                            file: null,
-                            lazy: false,
-                        },
+                        node: { type: 'attachment', name: '', file: null },
                     },
                 ];
                 if (form.raw.length > 1) {
@@ -302,7 +297,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 type: 'attachment',
                 form,
                 file: form.file,
-                lazy: form.lazy,
                 name: form.name,
             };
     }
