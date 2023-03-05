@@ -34,6 +34,8 @@ import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { TRANSFORMERS } from '@lexical/markdown';
+import { handleSpace } from '../mods/handleSpace';
+import { handleBackspace } from '../mods/handleBackspace';
 
 const theme = {
     ltr: 'ltr',
@@ -79,7 +81,10 @@ const initialConfig = {
     ],
 };
 
-export function Markdown({}: {
+export function Markdown_({
+    node,
+    top,
+}: {
     path: Path[];
     top: Top;
     node: MDT & MNodeExtra;
@@ -91,7 +96,12 @@ export function Markdown({}: {
             onMouseDown={(evt) => evt.stopPropagation()}
             onClick={(evt) => evt.stopPropagation()}
         >
-            <LexicalComposer initialConfig={initialConfig}>
+            <LexicalComposer
+                initialConfig={{
+                    ...initialConfig,
+                    editorState: JSON.parse(node.text),
+                }}
+            >
                 <div className="editor-container">
                     {/* <PlainTextPlugin
                         contentEditable={<ContentEditable />}
@@ -119,7 +129,7 @@ export function Markdown({}: {
     );
 }
 
-export const Markdown_ = ({
+export const Markdown = ({
     top,
     node,
     idx,
@@ -235,9 +245,20 @@ export const Markdown_ = ({
                     return;
                 }
                 if (evt.key === 'Backspace' && isAtStart(evt.currentTarget)) {
+                    handleBackspace(
+                        evt.currentTarget.textContent!,
+                        true,
+                        idx,
+                        path,
+                        events,
+                        top.store,
+                    );
                     evt.preventDefault();
                     evt.stopPropagation();
-                    // return onBackspace(evt.currentTarget.textContent! === '');
+                    return;
+                }
+                if (evt.key === 'Enter' && evt.metaKey) {
+                    handleSpace(evt, idx, path, events, top.store);
                 }
                 // if (evt.key === ' ') {
                 //     if (isAtEnd(evt.currentTarget)) {

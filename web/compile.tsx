@@ -107,7 +107,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         layout(idx, 0, tmpMap, ctx.display, true);
 
         if (last[idx] === hash) {
-            console.log('same hash as last time', hash);
             const prev = results[idx];
             if (prev.status === 'errors') {
                 Object.assign(ectx.report.errors, prev.errors);
