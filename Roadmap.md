@@ -50,6 +50,9 @@ Nope, let's do `\`.
   but there's a question, of like different ways to render those
   templates. Like it could be "just show the result"
   or "
+- [ ] UMMM ok so I'm getting distracted by looking up lexical's API and stuff
+  because I think I do want some rich text editor, not really markdown. So I can
+  have rich embeds.
 
 
 buuuuuut also, can we not agree that I super need tests?
