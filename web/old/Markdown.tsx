@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Markdown, Markdown as MDT } from '../../src/types/cst';
+import { RichText, RichText as MDT } from '../../src/types/cst';
 import { MNodeExtra } from '../../src/types/mcst';
 import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
 import {
@@ -207,7 +207,7 @@ const MyPlugin = ({
                 if (undid && undid.pre[idx]) {
                     editor.setEditorState(
                         editor.parseEditorState(
-                            (undid.pre[idx] as Markdown).lexicalJSON,
+                            (undid.pre[idx] as RichText).lexicalJSON,
                         ),
                         { tag: 'historic' },
                     );
@@ -226,7 +226,7 @@ const MyPlugin = ({
                 if (redid && redid.post[idx]) {
                     editor.setEditorState(
                         editor.parseEditorState(
-                            (redid.post[idx] as Markdown).lexicalJSON,
+                            (redid.post[idx] as RichText).lexicalJSON,
                         ),
                         { tag: 'historic' },
                     );
@@ -242,7 +242,7 @@ const MyPlugin = ({
     return null;
 };
 
-export function Markdown({
+export function RichText({
     idx,
     node,
     top,
@@ -442,7 +442,7 @@ export const Markdown_ = ({
     );
 };
 
-function onChange(node: Markdown & MNodeExtra, top: Top, idx: number) {
+function onChange(node: RichText & MNodeExtra, top: Top, idx: number) {
     return (editorState: EditorState, editor: LexicalEditor) => {
         const lexicalJSON = editorState.toJSON();
         if (equal(lexicalJSON, node.lexicalJSON)) {

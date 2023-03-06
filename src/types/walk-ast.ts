@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, Record, TVar, Loc, NodeArray, Node, Attachment, Markdown, spread, accessText, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -35,10 +35,12 @@ export type Visitor<Ctx> = {
     LocPost?: (node: Loc, ctx: Ctx) => null | Loc,
     NodeArray?: (node: NodeArray, ctx: Ctx) => null | false | NodeArray | [NodeArray | null, Ctx],
     NodeArrayPost?: (node: NodeArray, ctx: Ctx) => null | NodeArray,
+    AttachedFile?: (node: AttachedFile, ctx: Ctx) => null | false | AttachedFile | [AttachedFile | null, Ctx],
+    AttachedFilePost?: (node: AttachedFile, ctx: Ctx) => null | AttachedFile,
     Attachment?: (node: Attachment, ctx: Ctx) => null | false | Attachment | [Attachment | null, Ctx],
     AttachmentPost?: (node: Attachment, ctx: Ctx) => null | Attachment,
-    Markdown?: (node: Markdown, ctx: Ctx) => null | false | Markdown | [Markdown | null, Ctx],
-    MarkdownPost?: (node: Markdown, ctx: Ctx) => null | Markdown,
+    RichText?: (node: RichText, ctx: Ctx) => null | false | RichText | [RichText | null, Ctx],
+    RichTextPost?: (node: RichText, ctx: Ctx) => null | RichText,
     spread?: (node: spread, ctx: Ctx) => null | false | spread | [spread | null, Ctx],
     spreadPost?: (node: spread, ctx: Ctx) => null | spread,
     accessText?: (node: accessText, ctx: Ctx) => null | false | accessText | [accessText | null, Ctx],
@@ -1028,6 +1030,40 @@ export const transformrecordAccess = <Ctx>(node: recordAccess, visitor: Visitor<
         
     }
 
+export const transformAttachedFile = <Ctx>(node: AttachedFile, visitor: Visitor<Ctx>, ctx: Ctx): AttachedFile => {
+        if (!node) {
+            throw new Error('No AttachedFile provided');
+        }
+        
+        const transformed = visitor.AttachedFile ? visitor.AttachedFile(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.AttachedFilePost) {
+            const transformed = visitor.AttachedFilePost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformRecord = <Ctx>(node: Record, visitor: Visitor<Ctx>, ctx: Ctx): Record => {
         if (!node) {
             throw new Error('No Record provided');
@@ -1689,9 +1725,27 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
 
             case 'tag': break;
 
-            case 'markdown': break;
+            case 'rich-text': break;
 
-            case 'attachment': break;
+            case 'attachment': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                const updatedNode$0node$file = transformAttachedFile(updatedNode$0specified.file, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$file !== updatedNode$0specified.file;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, file: updatedNode$0node$file};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
 
             case 'record': {
                         updatedNode = transformRecord(node, visitor, ctx);
@@ -1966,7 +2020,26 @@ export const transformAttachment = <Ctx>(node: Attachment, visitor: Visitor<Ctx>
         }
         
         let changed0 = false;
-        const updatedNode = node;
+        
+            let updatedNode = node;
+            {
+                let changed1 = false;
+                
+        let updatedNode$file = null;
+        const updatedNode$file$current = node.file;
+        if (updatedNode$file$current != null) {
+            
+                const updatedNode$file$1$ = transformAttachedFile(updatedNode$file$current, visitor, ctx);
+                changed1 = changed1 || updatedNode$file$1$ !== updatedNode$file$current;
+            updatedNode$file = updatedNode$file$1$;
+        }
+        
+                if (changed1) {
+                    updatedNode =  {...updatedNode, file: updatedNode$file};
+                    changed0 = true;
+                }
+            }
+            
         
         node = updatedNode;
         if (visitor.AttachmentPost) {
@@ -1979,12 +2052,12 @@ export const transformAttachment = <Ctx>(node: Attachment, visitor: Visitor<Ctx>
         
     }
 
-export const transformMarkdown = <Ctx>(node: Markdown, visitor: Visitor<Ctx>, ctx: Ctx): Markdown => {
+export const transformRichText = <Ctx>(node: RichText, visitor: Visitor<Ctx>, ctx: Ctx): RichText => {
         if (!node) {
-            throw new Error('No Markdown provided');
+            throw new Error('No RichText provided');
         }
         
-        const transformed = visitor.Markdown ? visitor.Markdown(node, ctx) : null;
+        const transformed = visitor.RichText ? visitor.RichText(node, ctx) : null;
         if (transformed === false) {
             return node;
         }
@@ -2003,8 +2076,8 @@ export const transformMarkdown = <Ctx>(node: Markdown, visitor: Visitor<Ctx>, ct
         const updatedNode = node;
         
         node = updatedNode;
-        if (visitor.MarkdownPost) {
-            const transformed = visitor.MarkdownPost(node, ctx);
+        if (visitor.RichTextPost) {
+            const transformed = visitor.RichTextPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

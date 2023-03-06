@@ -1,4 +1,4 @@
-import { AttachedFile, Attachment, Markdown, Node, NodeExtra } from './cst';
+import { AttachedFile, Attachment, RichText, Node, NodeExtra } from './cst';
 export type {
     Node,
     NodeContents,
@@ -10,8 +10,9 @@ export type {
     NodeArray,
     accessText,
     spread,
-    Markdown,
+    RichText,
     Attachment,
+    AttachedFile,
 } from './cst';
 
 export type Term = {
@@ -130,7 +131,7 @@ export type Expr =
           body: Expr[];
       }
     | { type: 'tag'; name: string; form: Node } // by itself, this is a constructor function
-    | { type: 'markdown'; lexicalJSON: any; form: Markdown & NodeExtra }
+    | { type: 'rich-text'; lexicalJSON: any; form: RichText & NodeExtra }
     | {
           type: 'attachment';
           form: Node;

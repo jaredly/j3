@@ -125,9 +125,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             name: 'string',
                             form: nilt.form,
                         },
-                        text: 'Markdown',
+                        text: 'Rich Text',
                         node: {
-                            type: 'markdown',
+                            type: 'rich-text',
                             lexicalJSON: {
                                 root: {
                                     children: [
@@ -308,8 +308,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'spread':
             throw new Error('not yet impl');
-        case 'markdown':
-            return { type: 'markdown', form, lexicalJSON: form.lexicalJSON };
+        case 'rich-text':
+            return { type: 'rich-text', form, lexicalJSON: form.lexicalJSON };
         case 'attachment':
             if (!form.file) {
                 return { type: 'unresolved', form, reason: 'empty attachment' };

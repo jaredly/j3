@@ -4,7 +4,7 @@ import {
     Attachment,
     Identifier,
     Loc,
-    Markdown,
+    RichText,
     Node,
     NodeContents,
     NodeExtra,
@@ -39,7 +39,7 @@ export type MNodeContents =
     | Atom
     | ListLikeContents
     | stringText
-    | Markdown
+    | RichText
     | Attachment
 
     // list-like

@@ -8,7 +8,7 @@ import { EvalCtx, Path, setSelection, Store, useStore } from '../store';
 import { StringView } from './String';
 import { RecordAccess } from './RecordAccess';
 import { Attachment } from './Attachment';
-import { Markdown } from './Markdown';
+import { RichText } from './Markdown';
 
 // ListLike
 // array, list, record
@@ -149,9 +149,9 @@ export const Node = React.memo(
             );
         }
 
-        if (item.type === 'markdown') {
+        if (item.type === 'rich-text') {
             return (
-                <Markdown
+                <RichText
                     node={item}
                     top={top}
                     idx={idx}

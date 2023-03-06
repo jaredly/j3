@@ -40,8 +40,8 @@ export type Attachment = {
     file: AttachedFile | null;
 };
 
-export type Markdown = {
-    type: 'markdown';
+export type RichText = {
+    type: 'rich-text';
     lexicalJSON: any;
 };
 
@@ -63,7 +63,7 @@ export type NodeContents =
     | recordAccess
     | accessText
     | spread
-    | Markdown
+    | RichText
     | Attachment
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };

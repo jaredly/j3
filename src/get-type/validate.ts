@@ -122,7 +122,7 @@ export const validateExpr = (
             expr.body.forEach((expr) => validateExpr(expr, ctx, errors));
             return;
         case 'attachment':
-        case 'markdown':
+        case 'rich-text':
             // TODO: Markdown will maybe have embedded expressions
             // and stuff? Yeah I think it will ....
             return;

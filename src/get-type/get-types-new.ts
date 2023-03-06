@@ -513,7 +513,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 return;
             }
         // TODO: This will probably be more complex?
-        case 'markdown':
+        case 'rich-text':
             return { type: 'builtin', name: 'string', form: expr.form };
         case 'attachment':
             // return { type: 'builtin', name: 'bytes', form: expr.form };
