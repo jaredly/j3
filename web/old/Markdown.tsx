@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Markdown, Markdown as MDT } from '../../src/types/cst';
 import { MNodeExtra } from '../../src/types/mcst';
 import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
@@ -239,17 +239,25 @@ export function Markdown({
     idx: number;
     events: Events;
 }) {
+    const initial = useMemo(
+        () => ({
+            ...initialConfig,
+            editorState: JSON.stringify(node.lexicalJSON),
+        }),
+        [],
+    );
     return (
         <div
-            onMouseDown={(evt) => evt.stopPropagation()}
             onClick={(evt) => evt.stopPropagation()}
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+                if (top.store.selection?.idx !== idx) {
+                    setSelection(top.store, { idx, loc: 'end' });
+                }
+            }}
         >
-            <LexicalComposer
-                initialConfig={{
-                    ...initialConfig,
-                    editorState: JSON.stringify(node.lexicalJSON),
-                }}
-            >
+            <LexicalComposer initialConfig={initial}>
                 <div className="editor-container">
                     <MyPlugin
                         events={events}
@@ -268,7 +276,7 @@ export function Markdown({
                         contentEditable={
                             <ContentEditable className="editor-input" />
                         }
-                        placeholder={<Placeholder />}
+                        placeholder={null}
                         ErrorBoundary={LexicalErrorBoundary}
                     />
                     <OnChangePlugin onChange={onChange(node, top, idx)} />
