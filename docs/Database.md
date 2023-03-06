@@ -1,4 +1,13 @@
 
+- important distinctions -
+
+> erlang nodes have "mnesia" database built in. This is the same concept as javascript web env having 'localStorage', and isn't quite what I mean. But it does go part of the way. This is "the language *runtime* has a bundled database", which is nice. like userdefaults on iOS.
+> unison has a database of code, but not data
+
+I'm thikning of a *programming environment* that has a database built into it, such that, when you distribute your program, the database comes along too. Does that make sense? Is it desirable?
+
+
+
 # Colocated Database
 
 ## Inspiration
