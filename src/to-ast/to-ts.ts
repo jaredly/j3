@@ -1,5 +1,6 @@
 import generate from '@babel/generator';
 import * as t from '@babel/types';
+import { SerializedEditorState } from 'lexical';
 import { Expr, Pattern, Record } from '../types/ast';
 import { Ctx } from './Ctx';
 import { nodeToExpr } from './nodeToExpr';
@@ -249,6 +250,35 @@ export const bodyToTs = (
     return t.blockStatement(res);
 };
 
+const childToMarkdown = (child: any) =>
+    child.type === 'text'
+        ? child.format === 1
+            ? `**${child.text}**`
+            : child.format === 2
+            ? `*${child.text}*`
+            : child.format === 16
+            ? '`' + child.text + '`'
+            : child.format === 0
+            ? child.text
+            : '!!!' + child.format + child.text
+        : child.type === 'link'
+        ? `[${child.children.map(childToMarkdown)}](${child.url})`
+        : JSON.stringify(child);
+
+const lexicalStateToMarkdown = (state: any): string => {
+    return state.root.children
+        .map((child: any) =>
+            child.type === 'paragraph'
+                ? child.children.map(childToMarkdown).join('')
+                : child.type === 'heading'
+                ? `${'#'.repeat(+child.tag.slice(1))} ${child.children
+                      .map(childToMarkdown)
+                      .join('')}`
+                : child.type,
+        )
+        .join('\n');
+};
+
 export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
     switch (expr.type) {
         case 'array':
@@ -283,12 +313,8 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 );
             }
             return t.objectExpression(props);
-        // case 'attribute':
-        //     return t.memberExpression(
-        //         exprToTs(expr.target, ctx),
-        //         t.identifier(expr.attr),
-        //         false,
-        //     );
+        case 'rich-text':
+            return t.stringLiteral(lexicalStateToMarkdown(expr.lexicalJSON));
         case 'recordAccess':
             if (!expr.target) {
                 let res: t.Expression = t.identifier('arg');
