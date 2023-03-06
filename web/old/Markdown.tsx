@@ -51,6 +51,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 // import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary";
 // import TreeViewPlugin from "./plugins/TreeViewPlugin";
 // import ToolbarPlugin from "./plugins/ToolbarPlugin";
+import { TRANSFORMERS } from '@lexical/markdown';
 
 // @ts-ignore
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
@@ -65,7 +66,7 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 
 // import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 // import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-// import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 // import { $generateHtmlFromNodes } from '@lexical/html';
 import { addSpace, handleSpace, maybeUpdate } from '../mods/handleSpace';
 import { handleBackspace } from '../mods/handleBackspace';
@@ -153,9 +154,9 @@ const MyPlugin = ({
             KEY_ARROW_LEFT_COMMAND,
             (event: KeyboardEvent) => {
                 if (isLexAtStart(editor.getEditorState())) {
-                    events.onLeft();
                     event.preventDefault();
                     event.stopPropagation();
+                    events.onLeft();
                     return true;
                 }
                 // Handle event here
@@ -172,9 +173,9 @@ const MyPlugin = ({
                     // event.key === 'ArrowRight' &&
                     isLexAtEnd(editor.getEditorState())
                 ) {
-                    events.onRight();
                     event.preventDefault();
                     event.stopPropagation();
+                    events.onRight();
                     return true;
                 }
                 // Handle event here
@@ -261,6 +262,7 @@ export function Markdown({
                         top={top}
                         idx={idx}
                     />
+                    <MarkdownShortcutPlugin transformers={TRANSFORMERS} />
 
                     <RichTextPlugin
                         contentEditable={
@@ -463,7 +465,6 @@ export const isLexAtStart = (state: EditorState) => {
 export const isLexAtEnd = (state: EditorState) => {
     const sel = state._selection;
     if (!sel || !('isCollapsed' in sel) || !sel.isCollapsed()) {
-        console.log('no bad');
         return false;
     }
     const anchor = state._nodeMap.get(sel.anchor.key);

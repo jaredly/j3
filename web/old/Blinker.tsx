@@ -41,7 +41,13 @@ export const Blinker = ({
             style={{ ...style, width: 1, marginRight: -1 }}
             onKeyDown={(evt) => {
                 onKeyDown(evt, idx, path, events, store, ectx);
-                if (!evt.defaultPrevented && fullAscii.includes(evt.key)) {
+                if (
+                    !evt.defaultPrevented &&
+                    fullAscii.includes(evt.key) &&
+                    !evt.metaKey &&
+                    !evt.altKey &&
+                    !evt.ctrlKey
+                ) {
                     const nw = parseKey(evt.key);
                     if (!nw) return;
                     const mp: Map = {};
