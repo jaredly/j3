@@ -251,14 +251,25 @@ export function Markdown({
             onClick={(evt) => evt.stopPropagation()}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
-                evt.preventDefault();
+                console.log(evt.currentTarget, evt.target);
                 if (top.store.selection?.idx !== idx) {
-                    setSelection(top.store, { idx, loc: 'end' });
+                    // evt.preventDefault();
+                    // setSelection(top.store, { idx, loc: 'end' });
                 }
             }}
         >
             <LexicalComposer initialConfig={initial}>
-                <div className="editor-container">
+                <div
+                    className="editor-container"
+                    onMouseDown={(evt) => {
+                        if (top.store.selection?.idx !== idx) {
+                            if (evt.target === evt.currentTarget) {
+                                evt.preventDefault();
+                            }
+                            setSelection(top.store, { idx, loc: 'end' });
+                        }
+                    }}
+                >
                     <MyPlugin
                         events={events}
                         selection={
