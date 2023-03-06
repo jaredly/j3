@@ -18,13 +18,19 @@ import equal from 'fast-deep-equal';
 import {
     $getRoot,
     $getSelection,
+    COMMAND_PRIORITY_CRITICAL,
     COMMAND_PRIORITY_EDITOR,
     COMMAND_PRIORITY_LOW,
     EditorState,
+    KEY_ARROW_LEFT_COMMAND,
+    KEY_ARROW_RIGHT_COMMAND,
     KEY_DOWN_COMMAND,
+    KEY_ENTER_COMMAND,
     LexicalEditor,
     LexicalNode,
+    RangeSelection,
     REDO_COMMAND,
+    TextNode,
     UNDO_COMMAND,
 } from 'lexical';
 import { useEffect } from 'react';
@@ -106,16 +112,18 @@ const initialConfig = {
     ],
 };
 
-const UndoPlugin = ({
+const MyPlugin = ({
     top: { store },
     idx,
     path,
     selection,
+    events,
 }: {
     selection: Selection | null;
     top: Top;
     path: Path[];
     idx: number;
+    events: Events;
 }) => {
     const [editor] = useLexicalComposerContext();
 
@@ -127,9 +135,9 @@ const UndoPlugin = ({
 
     useEffect(() => {
         editor.registerCommand(
-            KEY_DOWN_COMMAND,
+            KEY_ENTER_COMMAND,
             (event: KeyboardEvent) => {
-                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                if (event.metaKey || event.ctrlKey) {
                     console.log('yes wow ok like ');
                     const update = addSpace(store, path, true);
                     maybeUpdate(store, update);
@@ -139,6 +147,40 @@ const UndoPlugin = ({
                 return false;
             },
             COMMAND_PRIORITY_LOW,
+        );
+
+        editor.registerCommand(
+            KEY_ARROW_LEFT_COMMAND,
+            (event: KeyboardEvent) => {
+                if (isLexAtStart(editor.getEditorState())) {
+                    events.onLeft();
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return true;
+                }
+                // Handle event here
+                return false;
+            },
+            COMMAND_PRIORITY_LOW,
+        );
+
+        editor.registerCommand(
+            KEY_ARROW_RIGHT_COMMAND,
+            (event: KeyboardEvent) => {
+                console.log('keyd', event.key);
+                if (
+                    // event.key === 'ArrowRight' &&
+                    isLexAtEnd(editor.getEditorState())
+                ) {
+                    events.onRight();
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return true;
+                }
+                // Handle event here
+                return false;
+            },
+            COMMAND_PRIORITY_CRITICAL,
         );
 
         editor.registerCommand(
@@ -188,6 +230,7 @@ export function Markdown({
     node,
     top,
     path,
+    events,
 }: {
     path: Path[];
     top: Top;
@@ -207,7 +250,8 @@ export function Markdown({
                 }}
             >
                 <div className="editor-container">
-                    <UndoPlugin
+                    <MyPlugin
+                        events={events}
                         selection={
                             top.store.selection?.idx === idx
                                 ? top.store.selection
@@ -391,3 +435,55 @@ function onChange(node: Markdown & MNodeExtra, top: Top, idx: number) {
         );
     };
 }
+
+export const isLexAtStart = (state: EditorState) => {
+    const sel = state._selection;
+    if (
+        !sel ||
+        !('isCollapsed' in sel) ||
+        !sel.isCollapsed() ||
+        sel.anchor.offset !== 0
+    ) {
+        return false;
+    }
+    let id = 'root';
+    while (id) {
+        const got = state._nodeMap.get(id);
+        if (!got || got.__first == null) {
+            return false;
+        }
+        if (got.__first === sel.anchor.key) {
+            return true;
+        }
+        id = got.__first;
+    }
+    return false;
+};
+
+export const isLexAtEnd = (state: EditorState) => {
+    const sel = state._selection;
+    if (!sel || !('isCollapsed' in sel) || !sel.isCollapsed()) {
+        console.log('no bad');
+        return false;
+    }
+    const anchor = state._nodeMap.get(sel.anchor.key);
+    if (!anchor) {
+        return false;
+    }
+    if ('__text' in anchor && sel.anchor.offset !== anchor.__text.length) {
+        return false;
+    }
+    let id = 'root';
+    while (id) {
+        const got = state._nodeMap.get(id);
+        if (!got || got.__last == null) {
+            return false;
+        }
+        if (got.__last === sel.anchor.key) {
+            return true;
+        }
+        id = got.__last;
+    }
+    console.log('ran out of first idk');
+    return false;
+};
