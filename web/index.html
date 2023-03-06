@@ -4,6 +4,10 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <!-- <link
+            rel="stylesheet"
+            href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Merriweather:200,200i,400,400i,700,700i/Open+Sans:400,400i,700,700i"
+        /> -->
         <title>j3 playground</title>
         <link rel="favorite icon" href="favicon.png" />
         <style>
@@ -15,6 +19,48 @@
                 src: url('./FiraCode-VF.woff2') format('woff2-variations');
                 font-weight: 100 900;
                 font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('./Merriweather-Regular.ttf');
+                font-weight: normal;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('./Merriweather-Italic.ttf');
+                font-weight: normal;
+                font-style: italic;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('./Merriweather-Bold.ttf');
+                font-weight: bold;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('./Merriweather-BoldItalic.ttf');
+                font-weight: bold;
+                font-style: italic;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('./Merriweather-Light.ttf');
+                font-weight: 200;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('./Merriweather-LightItalic.ttf');
+                font-weight: 200;
+                font-style: italic;
             }
 
             @font-face {
@@ -118,7 +164,8 @@
                 background: #2d2d2d;
                 position: relative;
                 padding: 0 6px;
-                font-family: system-ui;
+                font-family: 'Merriweather';
+                font-weight: 200;
                 border-radius: 3px;
                 /* min-width: 50px; */
             }
@@ -130,9 +177,9 @@
                 margin: 0;
             }
 
-            strong {
+            /* strong {
                 font-family: Arial, Helvetica, sans-serif;
-            }
+            } */
 
             .editor-input {
                 /* min-height: 150px; */

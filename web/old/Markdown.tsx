@@ -24,6 +24,7 @@ import {
     EditorState,
     KEY_ARROW_LEFT_COMMAND,
     KEY_ARROW_RIGHT_COMMAND,
+    KEY_BACKSPACE_COMMAND,
     KEY_DOWN_COMMAND,
     KEY_ENTER_COMMAND,
     LexicalEditor,
@@ -151,6 +152,21 @@ const MyPlugin = ({
         );
 
         editor.registerCommand(
+            KEY_BACKSPACE_COMMAND,
+            (event: KeyboardEvent) => {
+                if (isEmpty(editor.getEditorState())) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleBackspace('', true, idx, path, events, store);
+                    return true;
+                }
+                // Handle event here
+                return false;
+            },
+            COMMAND_PRIORITY_LOW,
+        );
+
+        editor.registerCommand(
             KEY_ARROW_LEFT_COMMAND,
             (event: KeyboardEvent) => {
                 if (isLexAtStart(editor.getEditorState())) {
@@ -249,14 +265,7 @@ export function Markdown({
     return (
         <div
             onClick={(evt) => evt.stopPropagation()}
-            onMouseDown={(evt) => {
-                evt.stopPropagation();
-                console.log(evt.currentTarget, evt.target);
-                if (top.store.selection?.idx !== idx) {
-                    // evt.preventDefault();
-                    // setSelection(top.store, { idx, loc: 'end' });
-                }
-            }}
+            onMouseDown={(evt) => evt.stopPropagation()}
         >
             <LexicalComposer initialConfig={initial}>
                 <div
@@ -456,6 +465,14 @@ function onChange(node: Markdown & MNodeExtra, top: Top, idx: number) {
         );
     };
 }
+
+export const isEmpty = (state: EditorState) => {
+    const root = state._nodeMap.get('root')!;
+    if (!root.__first) return true;
+    if (root.__first !== root.__last) return false;
+    const child = state._nodeMap.get(root.__first)!;
+    return child.__first == null;
+};
 
 export const isLexAtStart = (state: EditorState) => {
     const sel = state._selection;
