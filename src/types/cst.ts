@@ -19,6 +19,32 @@ export type NodeArray = {
     values: Node[];
 };
 
+export type AttachedFile = {
+    handle: string;
+    meta:
+        | {
+              type: 'image';
+              width: number;
+              mime: string;
+              height: number;
+          }
+        | {
+              type: 'generic';
+              mime: string;
+          };
+};
+
+export type Attachment = {
+    type: 'attachment';
+    name: string;
+    file: AttachedFile | null;
+};
+
+export type Markdown = {
+    type: 'markdown';
+    text: string;
+};
+
 export type NodeContents =
     // identifier-like
     | Identifier
@@ -31,12 +57,32 @@ export type NodeContents =
     | NodeArray
     | { type: 'comment'; text: string }
 
-    // random stuff
-    // | { type: 'spread'; contents: Node }
+    // special
     | CString
     | stringText
+    | recordAccess
+    | accessText
+    | spread
+    | Markdown
+    | Attachment
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
+
+export type spread = {
+    type: 'spread';
+    contents: Node;
+};
+export type accessText = {
+    type: 'accessText';
+    text: string;
+};
+
+export type recordAccess = {
+    type: 'recordAccess';
+    target: (Identifier | { type: 'blank' }) & NodeExtra;
+    items: (accessText & NodeExtra)[];
+};
+
 export type stringText = { type: 'stringText'; text: string };
 export type CString = {
     type: 'string';

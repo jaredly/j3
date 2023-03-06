@@ -1,9 +1,11 @@
 import { Node } from '../types/cst';
-import { Expr, Record } from '../types/ast';
+import { Expr, Record, Type } from '../types/ast';
 import { specials } from './specials';
 import { resolveExpr } from './resolveExpr';
-import { Ctx, nil } from './Ctx';
+import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
+import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
+import { applyAndResolve } from '../get-type/matchesType';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter(
@@ -16,36 +18,133 @@ export const filterComments = (nodes: Node[]) =>
             ),
     );
 
+export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
+    if (!type) {
+        return null;
+    }
+    let res = applyAndResolve(type, ctx, []);
+    if (res.type === 'local-bound' && res.bound) {
+        res = res.bound;
+    }
+    if (res.type === 'record') {
+        return recordMap(res);
+    }
+    return null;
+};
+
+export const ensure = <T, K>(
+    map: { [key: string]: T },
+    key: string | number,
+    dv: T,
+) => {
+    if (!map[key]) {
+        map[key] = dv;
+    }
+    return map[key];
+};
+
 export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
+        case 'recordAccess': {
+            const target =
+                form.target.type !== 'blank'
+                    ? nodeToExpr(form.target, ctx)
+                    : null;
+            if (target) {
+                let ttype = getType(target, ctx);
+                if (ttype) {
+                    for (let item of form.items) {
+                        const options = getRecordMap(ttype, ctx);
+                        if (!options) {
+                            break;
+                        }
+                        if (options[item.text]) {
+                            ttype = options[item.text].value;
+                        } else {
+                            ensure(ctx.display, item.loc.idx, {}).autoComplete =
+                                Object.entries(options).map(
+                                    ([name, { value }]) =>
+                                        ({
+                                            type: 'replace',
+                                            text: name,
+                                            node: {
+                                                type: 'accessText',
+                                                text: name,
+                                            },
+                                            exact: false,
+                                            ann: value,
+                                        } satisfies AutoCompleteResult),
+                                );
+                            ctx.display[item.loc.idx];
+                        }
+                    }
+                }
+            }
+            return {
+                type: 'recordAccess',
+                items: form.items.map((item) => item.text),
+                form,
+                target,
+            };
+        }
         case 'identifier': {
             if (!form.text && !form.hash) {
                 return { type: 'blank', form };
             }
-            if (form.text.includes('.')) {
-                const [expr, ...rest] = form.text.split('.');
-                let inner: Expr = resolveExpr(
-                    expr,
-                    form.hash,
-                    ctx,
-                    form,
-                    '.' + rest.join('.'),
-                );
-                while (rest.length) {
-                    const next = rest.shift()!;
-                    inner = {
-                        type: 'attribute',
-                        target: inner,
-                        attr: next,
-                        form,
-                    };
-                }
-                return inner;
-            }
+            // if (form.text.includes('.')) {
+            //     const [expr, ...rest] = form.text.split('.');
+            //     let inner: Expr = resolveExpr(
+            //         expr,
+            //         form.hash,
+            //         ctx,
+            //         form,
+            //         '.' + rest.join('.'),
+            //     );
+            //     while (rest.length) {
+            //         const next = rest.shift()!;
+            //         inner = {
+            //             type: 'attribute',
+            //             target: inner,
+            //             attr: next,
+            //             form,
+            //         };
+            //     }
+            //     return inner;
+            // }
 
             return resolveExpr(form.text, form.hash, ctx, form);
         }
         case 'unparsed':
+            if (form.raw.startsWith('\\')) {
+                let options: AutoCompleteResult[] = [
+                    {
+                        type: 'replace',
+                        exact: false,
+                        ann: {
+                            type: 'builtin',
+                            name: 'string',
+                            form: nilt.form,
+                        },
+                        text: 'Markdown',
+                        node: { type: 'markdown', text: '' },
+                    },
+                    {
+                        type: 'replace',
+                        exact: false,
+                        ann: { type: 'builtin', name: 'file', form: nilt.form },
+                        text: 'Attachment',
+                        node: { type: 'attachment', name: '', file: null },
+                    },
+                ];
+                if (form.raw.length > 1) {
+                    options = options.filter((option) =>
+                        option.text
+                            .toLowerCase()
+                            .startsWith(form.raw.slice(1).toLowerCase()),
+                    );
+                }
+                ensure(ctx.display, form.loc.idx, {}).autoComplete = options;
+            }
             return { type: 'unresolved', form };
         case 'tag':
             ctx.display[form.loc.idx] = { style: { type: 'tag' } };
@@ -178,8 +277,33 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 form,
             };
         }
+        case 'comment':
+        case 'blank':
+            throw new Error(
+                `How did we get here? Comments and blanks should be filtered out`,
+            );
+        case 'stringText':
+        case 'accessText':
+            throw new Error(`${form.type} shouldnt be dangling`);
+        case 'spread':
+            throw new Error('not yet impl');
+        case 'markdown':
+            return { type: 'markdown', form };
+        case 'attachment':
+            if (!form.file) {
+                return { type: 'unresolved', form, reason: 'empty attachment' };
+            }
+            return {
+                type: 'attachment',
+                form,
+                file: form.file,
+                name: form.name,
+            };
     }
+    let _: never = form;
     throw new Error(
-        `nodeToExpr is ashamed to admit it can't handle ${form.type}`,
+        `nodeToExpr is ashamed to admit it can't handle ${JSON.stringify(
+            form,
+        )}`,
     );
 };

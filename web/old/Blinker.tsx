@@ -22,7 +22,7 @@ export const Blinker = ({
     ectx,
 }: {
     events: Events;
-    style: React.CSSProperties;
+    style?: React.CSSProperties;
     idx: number;
     path: Path[];
     store: Store;
@@ -54,11 +54,10 @@ export const Blinker = ({
                             ...pnode,
                             ...modChildren(pnode, (items) => items.push(nidx)),
                         };
-                        updateStore(
-                            store,
-                            { map: mp, selection: { idx: nidx, loc: 'end' } },
-                            [path],
-                        );
+                        updateStore(store, {
+                            map: mp,
+                            selection: { idx: nidx, loc: 'end' },
+                        });
                         evt.preventDefault();
                         return;
                     }
@@ -78,14 +77,10 @@ export const Blinker = ({
                                 );
                             }),
                         };
-                        updateStore(
-                            store,
-                            {
-                                map: mp,
-                                selection: { idx: nidx, loc: 'end' },
-                            },
-                            [path],
-                        );
+                        updateStore(store, {
+                            map: mp,
+                            selection: { idx: nidx, loc: 'end' },
+                        });
                         evt.preventDefault();
                     }
                 }

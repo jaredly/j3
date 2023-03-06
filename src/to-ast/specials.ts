@@ -160,11 +160,19 @@ export const specials: {
                 );
                 body.shift();
             }
+            const bodies = body.map((child) => nodeToExpr(child, ct2));
+            if (bodies.length) {
+                const last = bodies[bodies.length - 1];
+                const t = getType(last, ctx);
+                if (t) {
+                    ret = t;
+                }
+            }
             // parse fn args
             return {
                 type: 'fn',
                 args,
-                body: body.map((child) => nodeToExpr(child, ct2)),
+                body: bodies,
                 ret,
                 form,
             };

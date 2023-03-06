@@ -281,11 +281,6 @@ export const nodeToPattern = (
                     console.log('badres', res);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
-                // const argt = t.type === 'tag' ? t.args : null;
-                // if (!argt) {
-                //     console.log('no switch bad', t);
-                // }
-                console.log('yay', first.text, args);
                 return {
                     type: 'tag',
                     name: first.text,

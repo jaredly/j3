@@ -94,7 +94,35 @@ export const StringView = ({
                 setHover={setHover}
             />
             {node.templates.flatMap((t, i) => [
-                <span key={i}>{'${'}</span>,
+                <span
+                    key={i}
+                    onMouseDown={sideClick((left) => {
+                        if (left) {
+                            if (i === 0) {
+                                setSelection(store, {
+                                    idx: node.first,
+                                    loc: 'end',
+                                    from: 'right',
+                                });
+                            } else {
+                                const suffix = node.templates[i - 1].suffix;
+                                setSelection(store, {
+                                    idx: suffix,
+                                    loc: 'end',
+                                    from: 'right',
+                                });
+                            }
+                        } else {
+                            setSelection(store, {
+                                idx: t.expr,
+                                loc: 'start',
+                                from: 'left',
+                            });
+                        }
+                    })}
+                >
+                    {'${'}
+                </span>,
                 <Node
                     key={t.expr}
                     idx={t.expr}
@@ -124,7 +152,26 @@ export const StringView = ({
                         },
                     }}
                 />,
-                <span key={i + 'end'}>{'}'}</span>,
+                <span
+                    key={i + 'end'}
+                    onMouseDown={sideClick((left) => {
+                        if (left) {
+                            setSelection(store, {
+                                idx: t.expr,
+                                loc: 'end',
+                                from: 'right',
+                            });
+                        } else {
+                            setSelection(store, {
+                                idx: t.suffix,
+                                loc: 'start',
+                                from: 'left',
+                            });
+                        }
+                    })}
+                >
+                    {'}'}
+                </span>,
                 <StringText
                     key={t.suffix}
                     idx={t.suffix}

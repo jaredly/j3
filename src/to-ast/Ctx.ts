@@ -1,13 +1,14 @@
 import { Loc, Node } from '../types/cst';
-import { Expr, TVar, Type } from '../types/ast';
+import { Expr, TRecord, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
-import { Layout } from '../types/mcst';
+import { Layout, MNodeContents } from '../types/mcst';
 
 export type AutoCompleteReplace = {
     type: 'replace';
     text: string;
-    hash: string;
+    // hash: string;
+    node: MNodeContents;
     exact: boolean;
     ann: Type;
 };
@@ -92,6 +93,8 @@ export const basicBuiltins: Global['builtins'] = {
         float: [],
         bool: [],
         string: [],
+        bytes: [],
+        'attachment-handle': [],
         Array: [
             { sym: 0, form: blank, name: 'Value' },
             {
@@ -114,7 +117,7 @@ export const noForm = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(noForm);
     }
-    if (typeof obj === 'object') {
+    if (obj && typeof obj === 'object') {
         const res: any = {};
         Object.keys(obj).forEach((k) => {
             if (k !== 'form') {
@@ -161,6 +164,45 @@ const tuint = btype('uint');
 const tfloat = btype('float');
 const tbool = btype('bool');
 const tstring = btype('string');
+const tbytes = btype('bytes');
+const thandle = btype('attachment-handle');
+
+export const fileBase: Type = {
+    type: 'record',
+    form: blank,
+    open: false,
+    entries: [
+        {
+            name: 'name',
+            value: tstring,
+        },
+        {
+            name: 'mime',
+            value: tstring,
+        },
+    ],
+};
+
+export const extendRecord = (
+    t: TRecord,
+    entries: TRecord['entries'],
+): TRecord => ({
+    ...t,
+    entries: t.entries.concat(entries),
+});
+
+export const fileLazy = extendRecord(fileBase, [
+    { name: 'handle', value: thandle },
+]);
+
+export const imageFileBase = extendRecord(fileBase, [
+    { name: 'width', value: tuint },
+    { name: 'height', value: tuint },
+]);
+
+export const imageFileLazy = extendRecord(imageFileBase, [
+    { name: 'handle', value: thandle },
+]);
 
 const basicReverse: { [key: string]: string } = {};
 

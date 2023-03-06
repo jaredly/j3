@@ -8,6 +8,7 @@ import { Ctx } from '../../src/to-ast/Ctx';
 import { Top } from './IdentifierLike';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
+import { Error } from '../../src/types/types';
 // import { makeRCtx } from '../src/to-cst/nodeForExpr';
 
 export const ListLike = ({
@@ -29,6 +30,19 @@ export const ListLike = ({
 }) => {
     const { store, ctx, setHover } = top;
     const isRoot = idx === store.root;
+
+    const [_, tap] = React.useState(0);
+
+    // Rerender the root when anything changes
+    // so that toplevel evals work again
+    React.useEffect(() => {
+        if (isRoot) {
+            store.listeners[':change'] = store.listeners[':change'] || [];
+            store.listeners[':change'].push(() => {
+                tap((x) => x + 1);
+            });
+        }
+    }, []);
 
     const nodes = React.useMemo(
         () =>
@@ -311,7 +325,17 @@ export const OneLineResult = ({
             );
 
         case 'errors':
-            return <div>Errors found</div>;
+            const allErrors = Object.keys(result.errors).flatMap(
+                (k) => result.errors[+k],
+            );
+            return (
+                <div>
+                    {errorToString(allErrors[0], ctx)}
+                    {allErrors.length > 1
+                        ? ` and ${allErrors.length - 1} more`
+                        : ''}
+                </div>
+            );
         case 'failure':
             return (
                 <div>

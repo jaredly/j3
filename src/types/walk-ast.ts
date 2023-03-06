@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, Record, TVar, Loc, NodeArray, Node, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, Record, TVar, Loc, NodeArray, Node, Attachment, Markdown, spread, accessText, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -13,6 +13,8 @@ export type Visitor<Ctx> = {
     PatternPost?: (node: Pattern, ctx: Ctx) => null | Pattern,
     String?: (node: String, ctx: Ctx) => null | false | String | [String | null, Ctx],
     StringPost?: (node: String, ctx: Ctx) => null | String,
+    recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | recordAccess | [recordAccess | null, Ctx],
+    recordAccessPost?: (node: recordAccess, ctx: Ctx) => null | recordAccess,
     Expr?: (node: Expr, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost?: (node: Expr, ctx: Ctx) => null | Expr,
     Record?: (node: Record, ctx: Ctx) => null | false | Record | [Record | null, Ctx],
@@ -33,6 +35,14 @@ export type Visitor<Ctx> = {
     LocPost?: (node: Loc, ctx: Ctx) => null | Loc,
     NodeArray?: (node: NodeArray, ctx: Ctx) => null | false | NodeArray | [NodeArray | null, Ctx],
     NodeArrayPost?: (node: NodeArray, ctx: Ctx) => null | NodeArray,
+    Attachment?: (node: Attachment, ctx: Ctx) => null | false | Attachment | [Attachment | null, Ctx],
+    AttachmentPost?: (node: Attachment, ctx: Ctx) => null | Attachment,
+    Markdown?: (node: Markdown, ctx: Ctx) => null | false | Markdown | [Markdown | null, Ctx],
+    MarkdownPost?: (node: Markdown, ctx: Ctx) => null | Markdown,
+    spread?: (node: spread, ctx: Ctx) => null | false | spread | [spread | null, Ctx],
+    spreadPost?: (node: spread, ctx: Ctx) => null | spread,
+    accessText?: (node: accessText, ctx: Ctx) => null | false | accessText | [accessText | null, Ctx],
+    accessTextPost?: (node: accessText, ctx: Ctx) => null | accessText,
     stringText?: (node: stringText, ctx: Ctx) => null | false | stringText | [stringText | null, Ctx],
     stringTextPost?: (node: stringText, ctx: Ctx) => null | stringText,
     CString?: (node: CString, ctx: Ctx) => null | false | CString | [CString | null, Ctx],
@@ -45,6 +55,8 @@ export type Visitor<Ctx> = {
     PatternPost_bool?: (node: Bool, ctx: Ctx) => null | Pattern,
     Expr_string?: (node: String, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_string?: (node: String, ctx: Ctx) => null | Expr,
+    Expr_recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
+    ExprPost_recordAccess?: (node: recordAccess, ctx: Ctx) => null | Expr,
     Expr_record?: (node: Record, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_record?: (node: Record, ctx: Ctx) => null | Expr,
     Shared_number?: (node: Number, ctx: Ctx) => null | false | Shared | [Shared | null, Ctx],
@@ -963,6 +975,59 @@ switch (updatedNode.type) {
         
     }
 
+export const transformrecordAccess = <Ctx>(node: recordAccess, visitor: Visitor<Ctx>, ctx: Ctx): recordAccess => {
+        if (!node) {
+            throw new Error('No recordAccess provided');
+        }
+        
+        const transformed = visitor.recordAccess ? visitor.recordAccess(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        
+            let updatedNode = node;
+            {
+                let changed1 = false;
+                
+        let updatedNode$target = null;
+        const updatedNode$target$current = node.target;
+        if (updatedNode$target$current != null) {
+            
+                const updatedNode$target$1$ = transformExpr(updatedNode$target$current, visitor, ctx);
+                changed1 = changed1 || updatedNode$target$1$ !== updatedNode$target$current;
+            updatedNode$target = updatedNode$target$1$;
+        }
+        
+                if (changed1) {
+                    updatedNode =  {...updatedNode, target: updatedNode$target};
+                    changed0 = true;
+                }
+            }
+            
+        
+        node = updatedNode;
+        if (visitor.recordAccessPost) {
+            const transformed = visitor.recordAccessPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformRecord = <Ctx>(node: Record, visitor: Visitor<Ctx>, ctx: Ctx): Record => {
         if (!node) {
             throw new Error('No Record provided');
@@ -1068,6 +1133,23 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
         switch (node.type) {
             case 'string': {
                             const transformed = visitor.Expr_string ? visitor.Expr_string(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
+            case 'recordAccess': {
+                            const transformed = visitor.Expr_recordAccess ? visitor.Expr_recordAccess(node, ctx) : null;
                             if (transformed != null) {
                                 if (Array.isArray(transformed)) {
                                     ctx = transformed[1];
@@ -1233,45 +1315,11 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                     break;
                 }
 
-            case 'rest': {
-                    const updatedNode$0specified = node;
-                    let changed1 = false;
-                    
-            let updatedNode$0node = updatedNode$0specified;
-            {
-                let changed2 = false;
-                
-                const updatedNode$0node$contents = transformExpr(updatedNode$0specified.contents, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$contents !== updatedNode$0specified.contents;
-                if (changed2) {
-                    updatedNode$0node =  {...updatedNode$0node, contents: updatedNode$0node$contents};
-                    changed1 = true;
-                }
-            }
-            
-                    updatedNode = updatedNode$0node;
-                    break;
-                }
-
-            case 'attribute': {
-                    const updatedNode$0specified = node;
-                    let changed1 = false;
-                    
-            let updatedNode$0node = updatedNode$0specified;
-            {
-                let changed2 = false;
-                
-                const updatedNode$0node$target = transformExpr(updatedNode$0specified.target, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$target !== updatedNode$0specified.target;
-                if (changed2) {
-                    updatedNode$0node =  {...updatedNode$0node, target: updatedNode$0node$target};
-                    changed1 = true;
-                }
-            }
-            
-                    updatedNode = updatedNode$0node;
-                    break;
-                }
+            case 'recordAccess': {
+                        updatedNode = transformrecordAccess(node, visitor, ctx);
+                        changed0 = changed0 || updatedNode !== node;
+                        break;
+                    }
 
             case 'fn': {
                     const updatedNode$0specified = node;
@@ -1641,6 +1689,10 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
 
             case 'tag': break;
 
+            case 'markdown': break;
+
+            case 'attachment': break;
+
             case 'record': {
                         updatedNode = transformRecord(node, visitor, ctx);
                         changed0 = changed0 || updatedNode !== node;
@@ -1659,6 +1711,14 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
 switch (updatedNode.type) {
             case 'string': {
                             const transformed = visitor.ExprPost_string ? visitor.ExprPost_string(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
+            case 'recordAccess': {
+                            const transformed = visitor.ExprPost_recordAccess ? visitor.ExprPost_recordAccess(updatedNode, ctx) : null;
                             if (transformed != null) {
                                 updatedNode = transformed;
                             }
@@ -1877,6 +1937,142 @@ export const transformNodeArray = <Ctx>(node: NodeArray, visitor: Visitor<Ctx>, 
         node = updatedNode;
         if (visitor.NodeArrayPost) {
             const transformed = visitor.NodeArrayPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformAttachment = <Ctx>(node: Attachment, visitor: Visitor<Ctx>, ctx: Ctx): Attachment => {
+        if (!node) {
+            throw new Error('No Attachment provided');
+        }
+        
+        const transformed = visitor.Attachment ? visitor.Attachment(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.AttachmentPost) {
+            const transformed = visitor.AttachmentPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformMarkdown = <Ctx>(node: Markdown, visitor: Visitor<Ctx>, ctx: Ctx): Markdown => {
+        if (!node) {
+            throw new Error('No Markdown provided');
+        }
+        
+        const transformed = visitor.Markdown ? visitor.Markdown(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.MarkdownPost) {
+            const transformed = visitor.MarkdownPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformspread = <Ctx>(node: spread, visitor: Visitor<Ctx>, ctx: Ctx): spread => {
+        if (!node) {
+            throw new Error('No spread provided');
+        }
+        
+        const transformed = visitor.spread ? visitor.spread(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.spreadPost) {
+            const transformed = visitor.spreadPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformaccessText = <Ctx>(node: accessText, visitor: Visitor<Ctx>, ctx: Ctx): accessText => {
+        if (!node) {
+            throw new Error('No accessText provided');
+        }
+        
+        const transformed = visitor.accessText ? visitor.accessText(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.accessTextPost) {
+            const transformed = visitor.accessTextPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

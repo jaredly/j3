@@ -1,6 +1,8 @@
 import * as React from 'react';
 import {
+    ListLikeContents,
     Map,
+    MCRecordAccess,
     MCString,
     MNodeExtra,
     toMCST,
@@ -18,28 +20,26 @@ import {
 } from '../store';
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
-import { Loc, stringText } from '../../src/types/cst';
-import { focus } from './IdentifierLike';
+import { accessText, Identifier, Loc, Node } from '../../src/types/cst';
+import { focus, handleMenu, Top, useMenuStuff } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
+import { rainbow } from '../rainbow';
 
-export const StringText = ({
+export const RecordText = ({
     idx,
-    store,
     path,
     events,
-    ctx,
-    setHover,
+    top,
 }: {
     idx: number;
-    store: Store;
     path: Path[];
     events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
+    top: Top;
 }) => {
+    const { store, ctx, setHover } = top;
     const node = useStore(store, idx);
-    const text = (node as stringText).text;
+    const text = (node as accessText).text;
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
 
@@ -62,16 +62,29 @@ export const StringText = ({
 
     const dec = ctx.report.errors[idx] ? 'underline red' : 'none';
 
-    const style = {};
+    const style = {
+        color: rainbow[parseInt(text, 36) % rainbow.length],
+    };
 
     const ref = React.useRef(null as null | HTMLSpanElement);
+
+    const menuStuff = useMenuStuff(
+        editing,
+        ctx,
+        idx,
+        store,
+        top.menuPortal,
+        ref,
+    );
+
     return !editing ? (
         <span
             style={{
-                color: 'yellow',
+                // color: '#00ff58',
                 minHeight: '1.3em',
                 whiteSpace: 'pre-wrap',
                 textDecoration: dec,
+                ...style,
             }}
             onMouseDown={(evt) => {
                 evt.stopPropagation();
@@ -114,7 +127,7 @@ export const StringText = ({
                 const pos = getPos(evt.currentTarget);
                 const mp: Map = {
                     [node.loc.idx]: {
-                        type: 'stringText',
+                        type: 'accessText',
                         loc: node.loc,
                         text,
                     },
@@ -136,7 +149,7 @@ export const StringText = ({
                 setSelection(store, null);
             }}
             style={{
-                color: 'yellow',
+                // color: '#00ff58',
                 whiteSpace: 'pre-wrap',
                 outline: 'none',
                 minHeight: '1.3em',
@@ -144,8 +157,18 @@ export const StringText = ({
                 ...style,
             }}
             onKeyDown={(evt) => {
-                if (evt.key === '{') {
-                    maybeAddExpression(evt, edit!, path, store, idx, presel);
+                if (evt.key === '.') {
+                    splitAttr(
+                        evt,
+                        evt.currentTarget.textContent!,
+                        path,
+                        store,
+                        idx,
+                        presel,
+                    );
+                    return;
+                }
+                if (handleMenu(evt, menuStuff)) {
                     return;
                 }
                 if (
@@ -153,26 +176,32 @@ export const StringText = ({
                     getPos(evt.currentTarget) === 0
                 ) {
                     const last = path[path.length - 1];
-                    if (last.child.type !== 'text' || last.child.at === 0) {
+                    if (last.child.type !== 'attribute') {
+                        console.log('idkno');
                         return;
                     }
-                    evt.preventDefault();
                     const { map, selection } = joinExprs(
+                        path[path.length - 2],
                         last.idx,
                         last.child.at - 1,
                         store,
+                        ctx,
                         edit!,
                     );
+                    evt.preventDefault();
                     updateStore(store, {
                         map,
                         selection,
                         prev: { idx, loc: presel.current ?? undefined },
                     });
+                    return;
                 }
                 if (
                     evt.key === 'ArrowLeft' ||
                     evt.key === 'ArrowRight' ||
                     evt.key === 'Tab' ||
+                    evt.key === 'Enter' ||
+                    evt.key === ' ' ||
                     evt.metaKey ||
                     evt.altKey ||
                     evt.ctrlKey
@@ -185,47 +214,100 @@ export const StringText = ({
     );
 };
 
-const joinExprs = (
-    idx: number,
-    templateIdx: number,
+export const replacePath = (
+    parent: Path,
+    newIdx: number,
     store: Store,
+): UpdateMap => {
+    const map: UpdateMap = {};
+    const pnode = store.map[parent.idx];
+    switch (parent.child.type) {
+        case 'child': {
+            const values = (pnode as ListLikeContents).values.slice();
+            values[parent.child.at] = newIdx;
+            map[parent.idx] = {
+                ...(pnode as ListLikeContents & MNodeExtra),
+                values,
+            };
+            break;
+        }
+        case 'expr': {
+            const templates = (pnode as MCString).templates.slice();
+            templates[parent.child.at] = {
+                ...templates[parent.child.at],
+                expr: newIdx,
+            };
+            map[parent.idx] = {
+                ...(pnode as MCString & MNodeExtra),
+                templates,
+            };
+            break;
+        }
+        default:
+            throw new Error(
+                `Can't replace parent. . is this a valid place for an expr?`,
+            );
+    }
+    return map;
+};
+
+export const joinExprs = (
+    grandParent: Path,
+    parentIdx: number,
+    itemIdx: number,
+    store: Store,
+    ctx: EvalCtx,
     remaining: string,
 ): {
     map: UpdateMap;
     selection: Selection;
 } => {
-    const node = store.map[idx] as WithLoc<MCString>;
+    const node = store.map[parentIdx] as WithLoc<MCRecordAccess>;
     const map: UpdateMap = {};
-    const template = node.templates[templateIdx];
-    // TODO: Remove an expr (deeply pleaseee)
-    map[template.expr] = null;
-    map[template.suffix] = null;
-    const templates = node.templates;
-    templates.splice(templateIdx, 1);
+    map[node.items[itemIdx]] = null;
 
-    map[idx] = {
-        ...node,
-        templates,
-    };
+    if (node.items.length === 1) {
+        Object.assign(map, replacePath(grandParent, node.target, store));
+    } else {
+        const items = node.items;
+        items.splice(itemIdx, 1);
+        map[parentIdx] = {
+            ...node,
+            items,
+        };
+    }
 
-    const prev =
-        templateIdx > 0 ? templates[templateIdx - 1].suffix : node.first;
+    const prev = itemIdx > 0 ? node.items[itemIdx - 1] : node.target;
 
-    const prevs = store.map[prev] as stringText & MNodeExtra;
+    const prevs = store.map[prev] as (accessText | Identifier) & MNodeExtra;
+    let prevText = prevs.text;
+    if (prevs.type === 'identifier' && remaining.length) {
+        const idText = ctx.ctx.display[prev]?.style;
+        if (idText?.type === 'id' && idText.text) {
+            prevText = idText.text;
+            console.log('got it', prevText);
+        } else {
+            console.log('no display sad', ctx.ctx.display, prev);
+        }
+    }
     map[prev] = {
         ...prevs,
-        text: prevs.text + remaining,
+        text: prevText + remaining,
     };
+    if (prevs.type === 'identifier' && remaining.length) {
+        (map[prev] as Identifier).hash = undefined;
+    }
+
     return {
         map,
         selection: {
             idx: prev,
-            loc: prevs.text.length,
+            loc: remaining.length ? prevText.length : 'end',
         },
     };
 };
 
-function maybeAddExpression(
+function splitAttr(
     evt: React.KeyboardEvent<HTMLSpanElement>,
     edit: string,
     path: Path[],
@@ -234,46 +316,34 @@ function maybeAddExpression(
     presel: React.MutableRefObject<number | null>,
 ) {
     const pos = getPos(evt.currentTarget);
-    if (edit[pos - 1] !== '$') {
-        console.log(`ok`, edit, pos, edit[pos - 1]);
-        return;
-    }
-    const prefix = edit.slice(0, pos - 1);
+    const prefix = edit.slice(0, pos);
     const suffix = edit.slice(pos);
 
     evt.preventDefault();
 
     const last = path[path.length - 1];
-    const node = store.map[last.idx] as WithLoc<MCString>;
-    let nw = parse('_')[0];
-    nw = { type: 'identifier', text: '', loc: nw.loc };
+    const node = store.map[last.idx] as WithLoc<MCRecordAccess>;
+    let nw: Node = {
+        type: 'accessText',
+        text: suffix,
+        loc: { start: 0, end: 0, idx: nidx() },
+    };
     const mp: Map = {};
     const eidx = toMCST(nw, mp);
-    const sidx = toMCST(
-        {
-            type: 'stringText',
-            text: suffix,
-            loc: { idx: nidx(), start: 0, end: 0 },
-        },
-        mp,
-    );
     mp[idx] = {
-        ...(store.map[idx] as stringText & MNodeExtra),
+        ...(store.map[idx] as accessText & MNodeExtra),
         text: prefix,
     };
-    const templates = node.templates.slice();
-    const ok = last.child.type === 'text' ? last.child.at : 0;
-    templates.splice(ok, 0, { expr: eidx, suffix: sidx });
-    mp[last.idx] = { ...node, templates };
+    const items = node.items.slice();
+    const loc = last.child.type === 'attribute' ? last.child.at : 0;
+    items.splice(loc, 0, eidx);
+    mp[last.idx] = { ...node, items };
     updateStore(store, {
         map: mp,
         selection: {
             idx: eidx,
             loc: 'start',
         },
-        prev: {
-            idx,
-            loc: presel.current ?? undefined,
-        },
+        prev: { idx, loc: presel.current ?? undefined },
     });
 }

@@ -1,11 +1,19 @@
-import { blank, Ctx, nilt } from '../to-ast/Ctx';
+import {
+    blank,
+    Ctx,
+    file,
+    fileLazy,
+    imageFile,
+    imageFileLazy,
+    nilt,
+} from '../to-ast/Ctx';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,
     applyTypeVariables,
     matchesType,
 } from './matchesType';
-import { Error } from '../types/types';
+import type { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 
@@ -54,10 +62,22 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         }
         case 'unresolved':
             if (report) {
-                err(report, expr, {
-                    type: 'unresolved',
-                    form: expr.form,
-                });
+                if (expr.form.type === 'unparsed') {
+                    err(report, expr, {
+                        type: 'unparsed',
+                        form: expr.form,
+                    });
+                } else if (expr.form.type === 'attachment') {
+                    err(report, expr, {
+                        type: 'misc',
+                        message: 'empty attachment',
+                    });
+                } else {
+                    err(report, expr, {
+                        type: 'unresolved',
+                        form: expr.form,
+                    });
+                }
             }
             return;
         case 'blank':
@@ -438,52 +458,95 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 entries,
             };
         }
-        case 'attribute': {
-            const inner = getType(expr.target, ctx, report);
-            if (!inner) {
+        case 'recordAccess':
+            if (expr.target) {
+                let inner = getType(expr.target, ctx, report);
+                if (!inner) return;
+                for (let attr of expr.items) {
+                    let resolved = applyAndResolve(inner, ctx, []);
+                    if (resolved.type === 'error') {
+                        return report
+                            ? errf(report, expr.form, resolved.error)
+                            : undefined;
+                    }
+                    if (resolved.type === 'local-bound') {
+                        if (!resolved.bound) {
+                            return report
+                                ? errf(report, expr.form, {
+                                      type: 'misc',
+                                      message:
+                                          'local has no bound, cannot take attribute',
+                                  })
+                                : undefined;
+                        }
+                        resolved = resolved.bound;
+                    }
+                    if (resolved.type !== 'record') {
+                        return report
+                            ? errf(report, expr.form, {
+                                  type: 'misc',
+                                  message:
+                                      'cannot take attribute of a non-record ' +
+                                      resolved.type,
+                              })
+                            : undefined;
+                    }
+                    const map = recordMap(resolved);
+                    if (!map[attr]) {
+                        return report
+                            ? errf(report, expr.form, {
+                                  type: 'misc',
+                                  message: `record has no attribute ${attr}`,
+                              })
+                            : undefined;
+                    }
+                    inner = map[attr].value;
+                }
+                return inner;
+            } else {
+                // Ok so this is like very polymorphic, right?
+                // and what do I do with that.
+                // ok so
+                // .a.b.c is shorthand for...
+                // <V, T: {a {b {c V ...} ...} ...}>(m: T) => V
+                // right? And then you call it with something
+                // and we can figure out what's going on, with
+                // some degree of reliability
+                if (report) {
+                    errf(report, expr.form, {
+                        type: 'misc',
+                        message: 'not yet impl',
+                    });
+                }
                 return;
             }
-            let resolved = applyAndResolve(inner, ctx, []);
-            if (resolved.type === 'error') {
-                return report
-                    ? errf(report, expr.form, resolved.error)
-                    : undefined;
-            }
-            if (resolved.type === 'local-bound') {
-                if (!resolved.bound) {
-                    return report
-                        ? errf(report, expr.form, {
-                              type: 'misc',
-                              message:
-                                  'local has no bound, cannot take attribute',
-                          })
-                        : undefined;
+        // TODO: This will probably be more complex?
+        case 'markdown':
+            return { type: 'builtin', name: 'string', form: expr.form };
+        case 'attachment':
+            // return { type: 'builtin', name: 'bytes', form: expr.form };
+            if (!expr.file) {
+                if (report) {
+                    errf(report, expr.form, {
+                        type: 'misc',
+                        message: 'empty attachment',
+                    });
                 }
-                resolved = resolved.bound;
+                return;
             }
-            if (resolved.type !== 'record') {
-                return report
-                    ? errf(report, expr.form, {
-                          type: 'misc',
-                          message:
-                              'cannot take attribute of a non-record ' +
-                              resolved.type,
-                      })
-                    : undefined;
+            if (expr.file.meta.type === 'image') {
+                return imageFileLazy;
             }
-            const map = recordMap(resolved);
-            if (!map[expr.attr]) {
-                return report
-                    ? errf(report, expr.form, {
-                          type: 'misc',
-                          message: `record has no attribute ${expr.attr}`,
-                      })
-                    : undefined;
-            }
-            return map[expr.attr].value;
-        }
+            return fileLazy;
+        case 'recur':
+            throw new Error('Not recur yet');
+        case 'type-fn':
+            throw new Error('what the heck');
+        case 'let-type':
+            throw new Error('ok');
     }
-    console.error('getType is sorry about', expr.type);
+    let _: never = expr;
+    console.error('getType is sorry about', expr);
 };
 
 export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {

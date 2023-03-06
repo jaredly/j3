@@ -115,6 +115,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             Object.assign(allStyles, prev.display);
             return;
         }
+        console.log('recomputing and such');
 
         const prevHashes = getHashes(nodes[idx]);
 
@@ -320,4 +321,13 @@ const rmPrevious = (ctx: Ctx, node?: EvalCtx['nodes'][0]): Ctx => {
         return { ...ctx, global: { ...ctx.global, names } };
     }
     return ctx;
+};
+
+const tryIt = <T,>(v: () => T, mod: (err: unknown) => void) => {
+    try {
+        return v();
+    } catch (err) {
+        mod(err);
+        throw err;
+    }
 };

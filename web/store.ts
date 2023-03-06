@@ -45,8 +45,19 @@ export type HistoryItem = {
     postSelection: Selection | null | undefined;
 };
 
-export const newEvalCtx = (ctx: Ctx): EvalCtx => ({
+export const newEvalCtx = (
+    ctx: Ctx,
+    attachments: EvalCtx['attachments'] = {
+        store(blob) {
+            throw new Error('attachemtns not supported');
+        },
+        retrieve(id) {
+            throw new Error('also no retrieving attachments');
+        },
+    },
+): EvalCtx => ({
     ctx,
+    attachments,
     last: {},
     terms: {},
     nodes: {},
@@ -89,8 +100,10 @@ export type Success = {
 
 export type EvalCtx = {
     ctx: Ctx;
-    // types: { [key: number]: Type };
-    // globalTypes: { [hash: string]: Type };
+    attachments: {
+        store: (blob: Blob) => Promise<string>;
+        retrieve: (id: string) => Promise<Blob>;
+    };
     last: { [key: number]: string };
     terms: { [key: string]: any };
     nodes: {
@@ -126,7 +139,8 @@ export type PathChild =
           at: number;
       }
     | { type: 'inside' | 'start' | 'end' }
-    | { type: 'expr' | 'text'; at: number }
+    | { type: 'expr' | 'text' | 'attribute'; at: number }
+    | { type: 'record-target' }
     | {
           type: 'decorator';
           key: string;
@@ -203,10 +217,7 @@ export const setSelection = (
     extras?: (number | null | undefined)[],
     change = false,
 ) => {
-    // hmmmmmmmmmmmmmmmmmmmm oh here's where it gets tricky
-    // because it's different if you're coming from the right
-    // or the left
-    // right?
+    // tannot is glommed onto the end
     if (
         selection?.from === 'right' &&
         selection.idx &&
@@ -215,6 +226,20 @@ export const setSelection = (
         const node = store.map[selection.idx];
         if (node.tannot) {
             selection = { idx: node.tannot, loc: 'end' };
+        }
+    }
+
+    if (selection) {
+        const node = store.map[selection.idx];
+        if (node.type === 'recordAccess') {
+            if (selection.loc === 'start') {
+                selection = { idx: node.target, loc: 'start' };
+            } else {
+                selection = {
+                    idx: node.items[node.items.length - 1],
+                    loc: 'end',
+                };
+            }
         }
     }
 
@@ -242,12 +267,7 @@ export const undo = (store: Store) => {
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
     // console.log('presel', item.preSelection);
-    updateStore(
-        store,
-        { map: item.pre, selection: item.preSelection },
-        [],
-        'skip',
-    );
+    updateStore(store, { map: item.pre, selection: item.preSelection }, 'skip');
     store.history.idx += 1;
 };
 
@@ -258,11 +278,9 @@ export const redo = (store: Store) => {
     }
     const item =
         store.history.items[store.history.items.length - store.history.idx];
-    // console.log('postsel', item.postSelection);
     updateStore(
         store,
         { map: item.post, selection: item.postSelection },
-        [],
         'skip',
     );
     store.history.idx -= 1;
@@ -271,7 +289,7 @@ export const redo = (store: Store) => {
 export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,
-    paths: Path[][],
+    // paths: Path[][],
     historyMode = 'add' as 'add' | 'update' | 'skip',
     // skipHistory = false,
 ) => {
@@ -334,17 +352,15 @@ export const updateStore = (
         setSelection(
             store,
             selection,
-            Object.keys(change)
-                .map(Number)
-                .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            Object.keys(change).map(Number),
+            // .concat(paths.flatMap((p) => p.map((i) => i.idx))),
             true,
         );
     } else {
         notify(
             store,
-            Object.keys(change)
-                .map(Number)
-                .concat(paths.flatMap((p) => p.map((i) => i.idx))),
+            Object.keys(change).map(Number),
+            // .concat(paths.flatMap((p) => p.map((i) => i.idx))),
             true,
         );
     }

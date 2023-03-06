@@ -2,7 +2,9 @@ import * as React from 'react';
 import {
     ListLikeContents,
     Map,
+    MCString,
     MNodeContents,
+    MNodeExtra,
     toMCST,
 } from '../../src/types/mcst';
 import {
@@ -16,11 +18,13 @@ import {
     updateStore,
 } from '../store';
 import { parse } from '../../src/grammar';
-import { CString, Loc, NodeContents } from '../../src/types/cst';
+import { CString, Identifier, Loc, NodeContents } from '../../src/types/cst';
 import { Events } from '../old/Nodes';
 import { handleBackspace } from './handleBackspace';
 import { handleSpace } from './handleSpace';
 import { walkBackTree } from '../../tests/incrementallyBuildTree';
+import { compile } from '../compile';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 
 export const onKeyDown = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
@@ -30,6 +34,26 @@ export const onKeyDown = (
     store: Store,
     ectx: EvalCtx,
 ) => {
+    const last = path[path.length - 1];
+    if (last.child.type === 'child' || last.child.type === 'expr') {
+        if (
+            '([{'.includes(evt.key) &&
+            getPos(evt.currentTarget) === 0 &&
+            evt.currentTarget.textContent!.length !== 0
+        ) {
+            console.log('trying to wrap');
+            wrapWithParens(
+                evt,
+                path,
+                idx,
+                store,
+                { '(': '()', '[': '[]', '{': '{}' }[evt.key]!,
+                'start',
+            );
+            return;
+        }
+    }
+
     if (evt.key === ':') {
         evt.preventDefault();
         let tannot = store.map[idx].tannot;
@@ -65,7 +89,19 @@ export const onKeyDown = (
     }
 
     if (evt.key === 'Backspace' && path.length) {
-        return handleBackspace(evt, idx, path, events, store);
+        const handled = handleBackspace(
+            evt.currentTarget.textContent!,
+            isAtStart(evt.currentTarget),
+            idx,
+            path,
+            events,
+            store,
+        );
+        if (handled) {
+            evt.preventDefault();
+            evt.stopPropagation();
+        }
+        return;
     }
 
     const isComment = store.map[idx].type === 'comment';
@@ -73,10 +109,13 @@ export const onKeyDown = (
     if ((evt.key === ' ' && !isComment) || evt.key === 'Enter') {
         handleSpace(evt, idx, path, events, store);
 
+        console.log('walking back');
         const tmp = path.slice(1).map((p) => ({
             idx: p.idx,
             child: p.child.type === 'child' ? p.child.at : -1,
         }));
+
+        maybeCommitAutoComplete(idx, ectx, store);
 
         while (tmp.length) {
             walkBackTree(tmp, idx, store, ectx);
@@ -92,11 +131,10 @@ export const onKeyDown = (
         nw.loc.idx = idx;
         const mp: Map = {};
         toMCST(nw, mp);
-        updateStore(
-            store,
-            { map: mp, selection: { idx: nw.first.loc.idx, loc: 'start' } },
-            [path],
-        );
+        updateStore(store, {
+            map: mp,
+            selection: { idx: nw.first.loc.idx, loc: 'start' },
+        });
         evt.preventDefault();
         return;
     }
@@ -111,6 +149,7 @@ export const onKeyDown = (
             }
             const node = store.map[parent.idx];
             if (node.type === looking) {
+                maybeCommitAutoComplete(idx, ectx, store);
                 return setSelection(store, {
                     idx: parent.idx,
                     loc: 'end',
@@ -120,7 +159,7 @@ export const onKeyDown = (
     }
 
     if (evt.key === '·' || (evt.key === '(' && evt.altKey)) {
-        return wrapWithParens(evt, path, idx, store);
+        return wrapWithParens(evt, path, idx, store, '()');
     }
 
     if (evt.key === '(' || evt.key === '[' || evt.key === '{') {
@@ -267,6 +306,28 @@ export const rmChild = (
     return null;
 };
 
+export function maybeCommitAutoComplete(
+    idx: number,
+    ectx: EvalCtx,
+    store: Store,
+) {
+    const display = ectx.ctx.display[idx];
+    if (display?.autoComplete) {
+        let matching = display.autoComplete.filter(
+            (item) => item.type === 'replace' && item.exact,
+        ) as AutoCompleteReplace[];
+        if (matching.length === 1) {
+            const node = store.map[idx] as Identifier & MNodeExtra;
+            updateStore(
+                store,
+                { map: { [idx]: { ...node, ...matching[0].node } } },
+                'update',
+            );
+            compile(store, ectx);
+        }
+    }
+}
+
 function newListLike(
     evt: React.KeyboardEvent<HTMLSpanElement>,
     path: Path[],
@@ -274,18 +335,20 @@ function newListLike(
     store: Store,
 ) {
     const last = path[path.length - 1];
-    if (evt.currentTarget.textContent === '' && last.child.type === 'child') {
+    if (
+        evt.currentTarget.textContent === '' &&
+        (last.child.type === 'child' || last.child.type === 'expr')
+    ) {
         const mp: UpdateMap = {};
         const nw = parse(
             evt.key === '(' ? '()' : evt.key === '[' ? '[]' : '{}',
         )[0];
         nw.loc.idx = idx;
         toMCST(nw, mp);
-        updateStore(
-            store,
-            { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
-            [path],
-        );
+        updateStore(store, {
+            map: mp,
+            selection: { idx: nw.loc.idx, loc: 'inside' },
+        });
         evt.preventDefault();
         return;
     }
@@ -334,11 +397,10 @@ function newListLike(
                 return items;
             }),
         };
-        updateStore(
-            store,
-            { map: mp, selection: { idx: nw.loc.idx, loc: 'inside' } },
-            [path],
-        );
+        updateStore(store, {
+            map: mp,
+            selection: { idx: nw.loc.idx, loc: 'inside' },
+        });
         evt.preventDefault();
         return;
     }
@@ -349,23 +411,35 @@ function wrapWithParens(
     path: Path[],
     idx: number,
     store: Store,
+    kind: string,
+    loc: 'start' | 'end' = 'end',
 ) {
     evt.preventDefault();
     const parent = path[path.length - 1];
-    if (parent.child.type === 'child') {
+    if (parent.child.type === 'child' || parent.child.type === 'expr') {
         const child = parent.child;
-        const nw = parse('()')[0];
+        const nw = parse(kind)[0];
         const mp: Map = {};
         const nidx = toMCST(nw, mp);
         (mp[nw.loc.idx] as ListLikeContents).values.push(idx);
-        const pnode = store.map[parent.idx];
-        mp[parent.idx] = {
-            ...pnode,
-            ...modChildren(pnode, (items) => {
-                items.splice(child.at, 1, nidx);
-            }),
-        };
-        updateStore(store, { map: mp, selection: { idx, loc: 'end' } }, [path]);
+        if (parent.child.type === 'child') {
+            const pnode = store.map[parent.idx];
+            mp[parent.idx] = {
+                ...pnode,
+                ...modChildren(pnode, (items) => {
+                    items.splice(child.at, 1, nidx);
+                }),
+            };
+        } else {
+            const pnode = store.map[parent.idx] as MCString & MNodeExtra;
+            const templates = pnode.templates.slice();
+            templates[child.at - 1] = {
+                expr: nidx,
+                suffix: templates[child.at - 1].suffix,
+            };
+            mp[parent.idx] = { ...pnode, templates };
+        }
+        updateStore(store, { map: mp, selection: { idx, loc } });
     }
     return;
 }

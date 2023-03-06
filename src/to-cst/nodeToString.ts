@@ -12,8 +12,16 @@ export const nodeToString = (node: Node): string => {
             return `${node.text}${node.hash ? '#' + node.hash : ''}`;
         case 'number':
             return node.raw;
+        case 'blank':
+            return '';
         case 'tag':
             return `'${node.text}`;
+        case 'recordAccess':
+            return `${nodeToString(node.target)}${node.items
+                .map((item) => '.' + item.text)
+                .join()}`;
+        case 'unparsed':
+            return node.raw;
     }
     return `NOP(${node.type})`;
 };

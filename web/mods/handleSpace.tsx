@@ -1,9 +1,44 @@
 import * as React from 'react';
-import { Map, toMCST } from '../../src/types/mcst';
-import { Path, Store, updateStore } from '../store';
-import { parse } from '../../src/grammar';
+import { Map, MNodeExtra, toMCST } from '../../src/types/mcst';
+import { Path, Selection, Store, StoreUpdate, updateStore } from '../store';
+import { nidx, parse } from '../../src/grammar';
 import { Events } from '../old/Nodes';
 import { getPos, modChildren } from './onKeyDown';
+import { Identifier, Node, NodeExtra } from '../../src/types/cst';
+
+export const addSpace = (
+    store: Store,
+    path: Path[],
+    after = false,
+): StoreUpdate | void => {
+    const last = path[path.length - 1];
+    if (last.child.type === 'child') {
+        return addSpaceAdjacent(
+            last,
+            last.child.at + (after ? 1 : 0),
+            store,
+            after,
+        );
+    }
+
+    if (last.child.type === 'start' || last.child.type === 'end') {
+        return addSpace(store, path.slice(0, -1), after);
+    }
+    // ok, so ...
+};
+
+export const maybeUpdate = (
+    store: Store,
+    update: StoreUpdate | void,
+    prev?: Selection,
+) => {
+    if (update) {
+        if (prev) {
+            update.prev = prev;
+        }
+        updateStore(store, update);
+    }
+};
 
 export const handleSpace = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
@@ -12,74 +47,78 @@ export const handleSpace = (
     events: Events,
     store: Store,
 ) => {
-    const parent = path[path.length - 1];
-    if (parent.child.type === 'start') {
-        const gp = path[path.length - 2];
-        if (gp && gp.child.type === 'child') {
-            addSpaceBefore(gp, gp.child.at, store, evt, path);
-            evt.preventDefault();
-            evt.stopPropagation();
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    let parent = path[path.length - 1];
+    if (parent.child.type === 'start' || parent.child.type === 'end') {
+        const update = addSpace(store, path, parent.child.type === 'end');
+        maybeUpdate(store, update);
+        return;
+    }
+
+    if (parent.child.type === 'attribute') {
+        // idx = parent.idx;
+        // parent = path[path.length - 2];
+        // console.log('attr', parent, idx);
+        const update = addSpace(store, path.slice(0, -1), true);
+        maybeUpdate(store, update);
+        return;
+    }
+
+    if (parent.child.type === 'child') {
+        const pos = getPos(evt.currentTarget);
+        if (pos === 0) {
+            const update = addSpace(store, path, false);
+            maybeUpdate(store, update, { idx, loc: pos });
             return;
         }
-    }
-
-    const pos = getPos(evt.currentTarget);
-    if (pos === 0 && parent.child.type === 'child') {
-        addSpaceBefore(parent, parent.child.at, store, evt, path);
-        evt.preventDefault();
-        evt.stopPropagation();
-        return;
-    }
-
-    for (let i = path.length - 1; i >= 0; i--) {
-        const parent = path[i];
-        if (parent.child.type !== 'child') {
-            continue;
+        if (pos === evt.currentTarget.textContent!.length) {
+            const update = addSpace(store, path, true);
+            maybeUpdate(store, update, { idx, loc: pos });
+            return;
         }
-        const child = parent.child;
-        let nw = parse('_')[0];
-        nw = { type: 'identifier', text: '', loc: nw.loc };
-        const mp: Map = {};
-        const nidx = toMCST(nw, mp);
-        const pnode = store.map[parent.idx];
-        mp[parent.idx] = {
-            ...pnode,
-            ...modChildren(pnode, (items) => {
-                items.splice(child.at + 1, 0, nidx);
-            }),
-        };
-        updateStore(store, { map: mp, selection: { idx: nidx } }, [path]);
-        evt.preventDefault();
-        evt.stopPropagation();
-        return;
+        const update = addSpaceAdjacent(
+            parent,
+            parent.child.at + 1,
+            store,
+            true,
+            evt.currentTarget.textContent!.slice(pos),
+        );
+        const node = store.map[idx] as Identifier & MNodeExtra;
+        update.map[idx] = { ...node, text: node.text.slice(0, pos) };
+        update.prev = { idx, loc: pos };
+        updateStore(store, update);
     }
-    return;
 };
 
-function addSpaceBefore(
+export function addSpaceAdjacent(
     gp: Path,
     at: number,
     store: Store,
-    evt: React.KeyboardEvent<HTMLSpanElement>,
-    path: Path[],
-) {
-    let nw = parse('_')[0];
-    nw = { type: 'identifier', text: '', loc: nw.loc };
+    selectSpace = false,
+    text = '',
+): StoreUpdate {
+    const nw: Node = {
+        type: 'identifier',
+        text,
+        loc: {
+            idx: nidx(),
+            start: 0,
+            end: text.length,
+        },
+    };
     const mp: Map = {};
-    const nidx = toMCST(nw, mp);
+    const idx = toMCST(nw, mp);
     const pnode = store.map[gp.idx];
     mp[gp.idx] = {
         ...pnode,
         ...modChildren(pnode, (items) => {
-            items.splice(at, 0, nidx);
+            items.splice(at, 0, idx);
         }),
     };
-    updateStore(
-        store,
-        {
-            map: mp,
-            selection: undefined,
-        },
-        [path],
-    );
+    return {
+        map: mp,
+        selection: selectSpace ? { idx, loc: 'start' } : undefined,
+    };
 }

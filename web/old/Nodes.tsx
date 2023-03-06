@@ -6,6 +6,9 @@ import { IdentifierLike, Top } from './IdentifierLike';
 import { ListLike, sideClick } from './ListLike';
 import { EvalCtx, Path, setSelection, Store, useStore } from '../store';
 import { StringView } from './String';
+import { RecordAccess } from './RecordAccess';
+import { Attachment } from './Attachment';
+import { Markdown } from './Markdown';
 
 // ListLike
 // array, list, record
@@ -30,6 +33,7 @@ export type Events = {
     onRight: () => void;
     onLeft: () => void;
     onKeyDown?: (evt: React.KeyboardEvent) => true | void;
+    // onBackspace?: (isEmpty: boolean) => void;
     // other things? idk
 };
 
@@ -48,6 +52,10 @@ export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
         case 'number':
         case 'unparsed':
             return node.raw;
+        case 'accessText':
+            return node.text;
+        case 'blank':
+            return '';
         case 'tag':
             return "'" + node.text;
     }
@@ -85,41 +93,13 @@ export const Node = React.memo(
             return null;
         }
 
-        if (item.type === 'string') {
-            return (
-                <StringView
-                    node={item}
-                    top={top}
-                    idx={idx}
-                    path={path}
-                    events={events}
-                />
-            );
-        }
-
-        const text = idText(item, idx, top.ctx.ctx);
-
         const tannot = item.tannot ? (
             <>
                 <span
-                    style={{
-                        opacity: 0.5,
-                        alignSelf: 'flex-end',
-                        // paddingLeft: '0.75em',
-                    }}
+                    style={{ opacity: 0.5, alignSelf: 'flex-end' }}
                     onMouseDown={sideClick((left) => {
                         if (left) {
-                            setSelection(
-                                top.store,
-                                // children.length
-                                //     ? {
-                                //           idx: children[children.length - 1],
-                                //           loc: 'end',
-                                //           from: 'right',
-                                //       }
-                                //     : { idx, loc: 'inside', from: 'right' },
-                                { idx, loc: 'end' },
-                            );
+                            setSelection(top.store, { idx, loc: 'end' });
                         } else {
                             setSelection(top.store, {
                                 idx: item.tannot!,
@@ -132,19 +112,14 @@ export const Node = React.memo(
                     :
                 </span>
                 <Node
+                    top={top}
+                    path={path}
                     idx={item.tannot}
                     events={{
                         ...events,
                         onLeft() {
-                            setSelection(top.store, {
-                                idx,
-                                loc: 'end',
-                            });
+                            setSelection(top.store, { idx, loc: 'end' });
                         },
-                    }}
-                    {...{
-                        top,
-                        path,
                     }}
                 />
             </>
@@ -161,6 +136,56 @@ export const Node = React.memo(
                   },
               }
             : events;
+
+        if (item.type === 'recordAccess') {
+            return (
+                <RecordAccess
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        if (item.type === 'markdown') {
+            return (
+                <Markdown
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        if (item.type === 'attachment') {
+            return (
+                <Attachment
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        if (item.type === 'string') {
+            return (
+                <StringView
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        const text = idText(item, idx, top.ctx.ctx);
 
         // const decs = Object.entries(item.decorators);
 

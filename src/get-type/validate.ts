@@ -102,11 +102,33 @@ export const validateExpr = (
         case 'array':
             expr.values.forEach((item) => validateExpr(item, ctx, errors));
             return;
-        case 'attribute':
+        // case 'attribute':
+        //     validateExpr(expr.target, ctx, errors);
+        //     return;
+        case 'recordAccess':
+            if (expr.target) {
+                validateExpr(expr.target, ctx, errors);
+            }
+            return;
+        case 'recur':
+            return;
+        case 'type-fn':
             validateExpr(expr.target, ctx, errors);
             return;
+        case 'let-type':
+            expr.bindings.forEach((bound) => {
+                validateType(bound.type, ctx, errors);
+            });
+            expr.body.forEach((expr) => validateExpr(expr, ctx, errors));
+            return;
+        case 'attachment':
+        case 'markdown':
+            // TODO: Markdown will maybe have embedded expressions
+            // and stuff? Yeah I think it will ....
+            return;
     }
-    throw new Error('not validated ' + expr.type);
+    let _: never = expr;
+    throw new Error('not validated ' + JSON.stringify(expr));
 };
 
 export const validateType = (

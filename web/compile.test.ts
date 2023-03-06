@@ -32,7 +32,7 @@ describe('compile', () => {
         const map = {
             [n10!.loc.idx]: { ...n10, raw: '30' },
         };
-        updateStore(store, { map }, []);
+        updateStore(store, { map });
         compile(store, ctx);
 
         // Assert
@@ -92,7 +92,7 @@ describe('compile', () => {
         /// Now there's a hash
         expect(noLoc(xpath(store.map, yi, ['2', '1']))).toEqual({
             type: 'identifier',
-            text: 'x',
+            text: '',
             hash: xhash,
         });
 
@@ -103,18 +103,14 @@ describe('compile', () => {
             raw: string;
             loc: Loc;
         };
-        updateStore(
-            store,
-            {
-                map: {
-                    [x10!.loc.idx]: {
-                        ...x10,
-                        raw: '30',
-                    },
+        updateStore(store, {
+            map: {
+                [x10!.loc.idx]: {
+                    ...x10,
+                    raw: '30',
                 },
             },
-            [],
-        );
+        });
         expect(store.history.items.length).toBe(2);
 
         compile(store, ctx);
@@ -136,7 +132,7 @@ describe('compile', () => {
         /// The hash is updated to the new one
         expect(noLoc(xpath(store.map, yi, ['2', '1']))).toEqual({
             type: 'identifier',
-            text: 'x',
+            text: '',
             hash: xhash2,
         });
     });

@@ -33,6 +33,18 @@ export const xpath = (map: Map, root: number, path: string[]) => {
             node = map[node.templates[idx][second]];
             continue;
         }
+        if (node.type === 'recordAccess') {
+            if (next === 'target') {
+                node = map[node.target];
+                continue;
+            }
+            const idx = +next;
+            if (isNaN(idx) || idx >= node.items.length) {
+                return null;
+            }
+            node = map[node.items[idx]];
+            continue;
+        }
         return null;
     }
     return node;

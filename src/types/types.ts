@@ -3,8 +3,6 @@
 import { Type } from './ast';
 import { Loc, Node } from './cst';
 
-export {};
-
 export type MatchError =
     | {
           type: 'invalid type';
@@ -57,4 +55,5 @@ export type Error =
     | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }
     | { type: 'unresolved'; form: Node }
+    | { type: 'unparsed'; form: Node }
     | { type: 'misc'; message: string };

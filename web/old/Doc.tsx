@@ -10,6 +10,7 @@ import { NodeList, Type } from '../../src/types/ast';
 import { fromMCST, MNode } from '../../src/types/mcst';
 import { Events, Node } from './Nodes';
 import { EvalCtx, Path, Store } from '../store';
+import { KeyMonitor } from './KeyMonitor';
 
 const topPath: Path[] = [];
 const emptyEvents: Events = {
@@ -59,6 +60,7 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
                     events={emptyEvents}
                     top={top}
                 />
+                <KeyMonitor />
             </div>
             {hover && (
                 <ShowHover

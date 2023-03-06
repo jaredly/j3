@@ -4,6 +4,9 @@ import { Expr, Pattern, Record } from '../types/ast';
 import { Ctx } from './Ctx';
 import { nodeToExpr } from './nodeToExpr';
 
+const isValidIdentifier = (text: string) =>
+    !!text.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*$/);
+
 export const patternToCheck = (
     pattern: Pattern,
     target: t.Expression,
@@ -252,12 +255,63 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.arrayExpression(
                 expr.values.map((item) => exprToTs(item, ctx)),
             );
-        case 'attribute':
-            return t.memberExpression(
-                exprToTs(expr.target, ctx),
-                t.identifier(expr.attr),
-                false,
-            );
+        case 'attachment':
+            const props = [
+                t.objectProperty(
+                    t.identifier('name'),
+                    t.stringLiteral(expr.name),
+                ),
+                t.objectProperty(
+                    t.identifier('mime'),
+                    t.stringLiteral(expr.file.meta.mime),
+                ),
+                t.objectProperty(
+                    t.identifier('handle'),
+                    t.stringLiteral(expr.file.handle),
+                ),
+            ];
+            if (expr.file.meta.type === 'image') {
+                props.push(
+                    t.objectProperty(
+                        t.identifier('width'),
+                        t.numericLiteral(expr.file.meta.width),
+                    ),
+                    t.objectProperty(
+                        t.identifier('height'),
+                        t.numericLiteral(expr.file.meta.height),
+                    ),
+                );
+            }
+            return t.objectExpression(props);
+        // case 'attribute':
+        //     return t.memberExpression(
+        //         exprToTs(expr.target, ctx),
+        //         t.identifier(expr.attr),
+        //         false,
+        //     );
+        case 'recordAccess':
+            if (!expr.target) {
+                let res: t.Expression = t.identifier('arg');
+                for (let attr of expr.items) {
+                    const wrap = !isValidIdentifier(attr);
+                    res = t.memberExpression(
+                        res,
+                        wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                        wrap,
+                    );
+                }
+                return t.arrowFunctionExpression([t.identifier('arg')], res);
+            }
+            let res = exprToTs(expr.target, ctx);
+            for (let attr of expr.items) {
+                const wrap = !isValidIdentifier(attr);
+                res = t.memberExpression(
+                    res,
+                    wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                    wrap,
+                );
+            }
+            return res;
         case 'type-apply':
             return exprToTs(expr.target, ctx);
         // case 'tfn': return exprToTs(expr.body, ctx);
@@ -356,12 +410,15 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 );
             }
             return t.objectExpression(
-                expr.entries.map((entry) =>
-                    t.objectProperty(
-                        t.identifier(entry.name),
+                expr.entries.map((entry) => {
+                    const wrap = !isValidIdentifier(entry.name);
+                    return t.objectProperty(
+                        wrap
+                            ? t.stringLiteral(entry.name)
+                            : t.identifier(entry.name),
                         exprToTs(entry.value, ctx),
-                    ),
-                ),
+                    );
+                }),
             );
         }
         case 'if': {

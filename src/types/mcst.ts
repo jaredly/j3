@@ -1,5 +1,15 @@
 import { UpdateMap } from '../../web/store';
-import { Loc, Node, NodeContents, NodeExtra, stringText } from './cst';
+import {
+    accessText,
+    Attachment,
+    Identifier,
+    Loc,
+    Markdown,
+    Node,
+    NodeContents,
+    NodeExtra,
+    stringText,
+} from './cst';
 
 export type MNode = MNodeContents & MNodeExtra;
 export type MNodeExtra = {
@@ -29,9 +39,17 @@ export type MNodeContents =
     | Atom
     | ListLikeContents
     | stringText
+    | Markdown
+    | Attachment
 
     // list-like
     | { type: 'comment'; text: string }
+    | {
+          type: 'spread';
+          contents: number;
+      }
+    | MCRecordAccess
+    | { type: 'accessText'; text: string }
 
     // random stuff
     // | { type: 'spread'; contents: number }
@@ -41,6 +59,11 @@ export type MCString = {
     type: 'string';
     first: number;
     templates: { expr: number; suffix: number }[];
+};
+export type MCRecordAccess = {
+    type: 'recordAccess';
+    target: number;
+    items: number[];
 };
 export type WithLoc<T> = T & { loc: Loc };
 
@@ -79,8 +102,16 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
                     suffix: fromMCST(suffix, map) as stringText & NodeExtra,
                 })),
             };
-        // case 'spread':
-        //     return { ...node, contents: fromMCST(node.contents, map) };
+        case 'recordAccess':
+            return {
+                ...node,
+                target: fromMCST(node.target, map) as Identifier & NodeExtra,
+                items: node.items.map(
+                    (idx) => fromMCST(idx, map) as accessText & NodeExtra,
+                ),
+            };
+        case 'spread':
+            return { ...node, contents: fromMCST(node.contents, map) };
         default:
             return node;
     }
@@ -88,6 +119,10 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
 
 export const fromMCST = (idx: number, map: Map): Node => {
     const node = map[idx];
+    if (!node) {
+        return { type: 'blank', loc: { idx: -1, start: 0, end: 0 } };
+        // throw new Error(`idx not in map ${idx} ${Object.keys(map).join(',')}`);
+    }
     return {
         ...node,
         ...fromMNode(node, map),
@@ -114,8 +149,16 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
                     suffix: toMCST(suffix, map),
                 })),
             };
-        // case 'spread':
-        //     return { ...node, contents: toMCST(node.contents, map) };
+        case 'accessText':
+            return node;
+        case 'recordAccess':
+            return {
+                ...node,
+                target: toMCST(node.target, map),
+                items: node.items.map((item) => toMCST(item, map)),
+            };
+        case 'spread':
+            return { ...node, contents: toMCST(node.contents, map) };
         default:
             return node;
     }

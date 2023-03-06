@@ -1,4 +1,4 @@
-import { Node } from './cst';
+import { AttachedFile, Attachment, Markdown, Node, NodeExtra } from './cst';
 export type {
     Node,
     NodeContents,
@@ -8,6 +8,10 @@ export type {
     CString,
     NodeExtra,
     NodeArray,
+    accessText,
+    spread,
+    Markdown,
+    Attachment,
 } from './cst';
 
 export type Term = {
@@ -54,6 +58,14 @@ export type String = {
     templates: { expr: Expr; suffix: { text: string; form: Node } }[];
     form: Node;
 };
+
+export type recordAccess = {
+    type: 'recordAccess';
+    target: Expr | null;
+    items: string[];
+    form: Node;
+};
+
 export type Expr =
     | Shared
     | {
@@ -72,8 +84,9 @@ export type Expr =
           cases: { pattern: Pattern; body: Expr }[];
           form: Node;
       }
-    | { type: 'rest'; contents: Expr; form: Node }
-    | { type: 'attribute'; attr: string; target: Expr; form: Node }
+    // | { type: 'rest'; contents: Expr; form: Node }
+    | recordAccess
+    // | { type: 'attribute'; attr: string; target: Expr; form: Node }
     | {
           type: 'fn';
           name?: string;
@@ -117,6 +130,13 @@ export type Expr =
           body: Expr[];
       }
     | { type: 'tag'; name: string; form: Node } // by itself, this is a constructor function
+    | { type: 'markdown'; form: Markdown & NodeExtra }
+    | {
+          type: 'attachment';
+          form: Node;
+          file: AttachedFile;
+          name: string;
+      }
     | Record;
 export type Record = {
     type: 'record';
@@ -181,6 +201,6 @@ export type TRecord = {
     type: 'record';
     entries: { name: string; value: Type; default?: Expr }[];
     open: boolean;
-    // spread?: Type | null | void;
+    // spreads: Type[],
     form: Node;
 };

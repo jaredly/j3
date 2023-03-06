@@ -1,4 +1,110 @@
 
+Thinking about a more of a demo,
+let's get markdown rendered blocks.
+What's the way to do it?
+Like a toplevel kind, right? And it can be Named
+Or maybe it doesn't even have to be a toplevel type.
+It could be ... just an expr type. Yeah.
+
+So how do you trigger it? Would it be `//`?
+Nope, let's do `\`.
+
+- [x] so `\` can trigger a markdown node.
+  Are there other specialty nodes I might want?
+  hmmmm
+  oh yeah, an image! or like an audio file.
+  - so for an image ... I can imagine there being
+    a runtime use for lazy loading them.
+    oh, but I could like just indicate that, right? in the UI?
+    yeah. Like a checkbox or something. it would change the
+    `type` of the thing, which is fine.
+    `meta {name string width uint height uint}`
+    `{...meta data bytes}` or
+    `{...meta id uint}`
+    But like, so the actuall CST node would just have the handle.
+    which would go into indexeddb right
+- [x] so image attachments, I should probably make it so you can change
+  the rendered size?
+- [x] why aren't the errors on attachments being recomputed :thinking:
+- [x] I kindof want to be able to select the "end" of an attachment. So
+  that I can do `.`, ya know? Yeah I think that's valuable.
+  - [ ] so actually, I can't do `.`, because that only works with identifiers.
+    which I think is useful
+  - [x] uh the blinker looks silly when the image is expanded
+  - [x] so, do I have a really good reason that ... attribute dealios
+    should only be doable to identifiers?
+    yeah I think that's a fine constraint.
+- [ ] 🤔 so, I'm wondering if an attachment should ever be just "there"
+  Like is there a reason to have it be embedded, or can I just always
+  treat them as lazy, and requiring an Effect to load?
+  Kinda makes sense to me idk
+  yeah ok, all attachments are lazy
+- [ ] but, should I have a "start" blinker?
+
+
+
+#### Markdown
+- [ ] make a little whatsit
+- [ ] ok maybe I actually want to treat it like a template string?
+  So that we can have little templaty deals. you know?
+  but there's a question, of like different ways to render those
+  templates. Like it could be "just show the result"
+  or "
+- [ ] UMMM ok so I'm getting distracted by looking up lexical's API and stuff
+  because I think I do want some rich text editor, not really markdown. So I can
+  have rich embeds.
+
+
+buuuuuut also, can we not agree that I super need tests?
+- oh now a little bit of tests
+
+
+## Record Access
+- [x] grammar
+- [x] types for non-anon
+- [ ] types for anon (v generic)
+- [x] display! and such
+  - [x] the target, the things
+  - [x] make sure selections (start/end) bias appropriately
+  - [x] split on dot
+  - [x] backspace remove
+  - [x] backspace it empty
+  - [ ] auto the complete pls
+  - [ ] empty ... accessText, with a menu ... does weird things? it's unselectable?
+
+
+
+keyboards:
+- [x] '(' at the start should wrap
+- [ ] dunno about '(' in the middle
+- [ ] '(' at the end should do a space first
+- [x] space in the middle of a word should split it
+  - [x] hang on to prev selection thanks
+- [x] wrapWithParens in a string
+- [x] click on '${' or '}' isn't selecting right
+- [ ] space in a string expr should work
+- ([{}])
+  - at start
+  - at end
+  - ...in the midlle?
+- left/right arrow keys
+- up/down arrow keys
+- selectttt
+
+- [ ] let's do spreads! like, seems like I want it.
+  - Sooo I feel like 2 dots is enough to express "spread"? Yeah let's just straight up do that. BUT we need attribute dealios firsrt, because `.` starts an anon attribute getter, and then a second `.` gets you into spread-land.
+  - ok, so I need ... if the text becomes '...', then we're doing this
+    - now, in some contexts (at the _end_ of a record type decl) we allow an empty '...', so gotta be context aware.
+
+- [ ] and, dot.things
+  - so for this, you can have .one.two or one.two.three
+  - 
+
+- [ ] I should autocomplete 'def/defn/deftype'
+
+- [ ] oh btw, I think I do want rest args. like because you really wantt to be able to (+ 1 2 3)
+
+
 # Very next stuff
 
 - [x] adding an argument (space?) to a function that's not resolved, should resolve it?
@@ -11,8 +117,8 @@
   - IDK if I need to do the whole path, or if just the most
     recent thing suffices? I guess walking the whole thing would be good.
 
-- [ ] so, I should walk back up the tree too, I thikn
-- [ ] Ok but let's get these tests passing now, ok folks?
+- [x] so, I should walk back up the tree too, I thikn
+- [x] Ok but let's get these tests passing now, ok folks?
 
 # Ok, so writing a test
 
