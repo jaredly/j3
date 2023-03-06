@@ -72,8 +72,6 @@ export const getInitialState = () => {
     return { exprs, ctx };
 };
 
-export const debounce = () => {};
-
 const useHash = () => {
     const [hash, setHash] = React.useState(location.hash.slice(1));
     React.useEffect(() => {

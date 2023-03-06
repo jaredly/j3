@@ -1,18 +1,38 @@
-import React from 'react';
-import { Markdown as MDT } from '../../src/types/cst';
+import React, { useCallback } from 'react';
+import { Markdown, Markdown as MDT } from '../../src/types/cst';
 import { MNodeExtra } from '../../src/types/mcst';
 import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
-import { Path, setSelection, UpdateMap, updateStore } from '../store';
+import {
+    Path,
+    redo,
+    Selection,
+    setSelection,
+    undo,
+    UpdateMap,
+    updateStore,
+} from '../store';
 import { focus, Top } from './IdentifierLike';
 import { Events } from './Nodes';
+import equal from 'fast-deep-equal';
 
-import { $getRoot, $getSelection } from 'lexical';
+import {
+    $getRoot,
+    $getSelection,
+    COMMAND_PRIORITY_EDITOR,
+    COMMAND_PRIORITY_LOW,
+    EditorState,
+    KEY_DOWN_COMMAND,
+    LexicalEditor,
+    LexicalNode,
+    REDO_COMMAND,
+    UNDO_COMMAND,
+} from 'lexical';
 import { useEffect } from 'react';
 
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { PlainTextPlugin } from '@lexical/react/LexicalPlainTextPlugin';
+// import { PlainTextPlugin } from '@lexical/react/LexicalPlainTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+// import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
@@ -21,20 +41,27 @@ import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 // import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 // import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
-import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
+// import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
 // import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary";
 // import TreeViewPlugin from "./plugins/TreeViewPlugin";
 // import ToolbarPlugin from "./plugins/ToolbarPlugin";
+
+// @ts-ignore
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+// @ts-ignore
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
+// @ts-ignore
 import { ListItemNode, ListNode } from '@lexical/list';
+// @ts-ignore
 import { CodeHighlightNode, CodeNode } from '@lexical/code';
+// @ts-ignore
 import { AutoLinkNode, LinkNode } from '@lexical/link';
-import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
-import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
-import { TRANSFORMERS } from '@lexical/markdown';
-import { handleSpace } from '../mods/handleSpace';
+
+// import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
+// import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+// import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
+// import { $generateHtmlFromNodes } from '@lexical/html';
+import { addSpace, handleSpace, maybeUpdate } from '../mods/handleSpace';
 import { handleBackspace } from '../mods/handleBackspace';
 
 const theme = {
@@ -44,20 +71,18 @@ const theme = {
     paragraph: 'editor-paragraph',
 };
 
-function MyCustomAutoFocusPlugin() {
-    const [editor] = useLexicalComposerContext();
-
-    useEffect(() => {
-        console.log('focusing');
-        // Focus the editor when the effect fires!
-        editor.focus();
-    }, [editor]);
-
-    return null;
-}
+// function MyCustomAutoFocusPlugin() {
+//     const [editor] = useLexicalComposerContext();
+//     useEffect(() => {
+//         console.log('focusing');
+//         // Focus the editor when the effect fires!
+//         editor.focus();
+//     }, [editor]);
+//     return null;
+// }
 
 function Placeholder() {
-    return <div className="editor-placeholder">Enter some plain text...</div>;
+    return <div className="editor-placeholder">Enter some rich text</div>;
 }
 
 const initialConfig = {
@@ -81,9 +106,88 @@ const initialConfig = {
     ],
 };
 
-export function Markdown_({
+const UndoPlugin = ({
+    top: { store },
+    idx,
+    path,
+    selection,
+}: {
+    selection: Selection | null;
+    top: Top;
+    path: Path[];
+    idx: number;
+}) => {
+    const [editor] = useLexicalComposerContext();
+
+    useEffect(() => {
+        if (selection) {
+            editor.focus();
+        }
+    }, [editor, selection]);
+
+    useEffect(() => {
+        editor.registerCommand(
+            KEY_DOWN_COMMAND,
+            (event: KeyboardEvent) => {
+                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                    console.log('yes wow ok like ');
+                    const update = addSpace(store, path, true);
+                    maybeUpdate(store, update);
+                    return true;
+                }
+
+                return false;
+            },
+            COMMAND_PRIORITY_LOW,
+        );
+
+        editor.registerCommand(
+            UNDO_COMMAND,
+            () => {
+                const undid = undo(store);
+                if (undid && undid.pre[idx]) {
+                    editor.setEditorState(
+                        editor.parseEditorState(
+                            (undid.pre[idx] as Markdown).lexicalJSON,
+                        ),
+                        { tag: 'historic' },
+                    );
+                    editor.focus();
+                    console.log('yeah undidness');
+                }
+                return true;
+            },
+            COMMAND_PRIORITY_EDITOR,
+        );
+
+        editor.registerCommand(
+            REDO_COMMAND,
+            () => {
+                const redid = redo(store);
+                if (redid && redid.post[idx]) {
+                    editor.setEditorState(
+                        editor.parseEditorState(
+                            (redid.post[idx] as Markdown).lexicalJSON,
+                        ),
+                        { tag: 'historic' },
+                    );
+                    editor.focus();
+                    console.log('yeah redidness');
+                }
+                return true;
+            },
+            COMMAND_PRIORITY_EDITOR,
+        );
+    }, []);
+
+    return null;
+};
+
+export function Markdown({
+    idx,
     node,
     top,
+    path,
 }: {
     path: Path[];
     top: Top;
@@ -99,15 +203,20 @@ export function Markdown_({
             <LexicalComposer
                 initialConfig={{
                     ...initialConfig,
-                    editorState: JSON.parse(node.text),
+                    editorState: JSON.stringify(node.lexicalJSON),
                 }}
             >
                 <div className="editor-container">
-                    {/* <PlainTextPlugin
-                        contentEditable={<ContentEditable />}
-                        placeholder={<Placeholder />}
-                        ErrorBoundary={LexicalErrorBoundary}
-                    /> */}
+                    <UndoPlugin
+                        selection={
+                            top.store.selection?.idx === idx
+                                ? top.store.selection
+                                : null
+                        }
+                        path={path}
+                        top={top}
+                        idx={idx}
+                    />
 
                     <RichTextPlugin
                         contentEditable={
@@ -116,20 +225,14 @@ export function Markdown_({
                         placeholder={<Placeholder />}
                         ErrorBoundary={LexicalErrorBoundary}
                     />
-                    <OnChangePlugin
-                        onChange={() => {
-                            console.log('Changed');
-                        }}
-                    />
-                    <HistoryPlugin />
-                    <MyCustomAutoFocusPlugin />
+                    <OnChangePlugin onChange={onChange(node, top, idx)} />
                 </div>
             </LexicalComposer>
         </div>
     );
 }
 
-export const Markdown = ({
+export const Markdown_ = ({
     top,
     node,
     idx,
@@ -138,7 +241,7 @@ export const Markdown = ({
 }: {
     path: Path[];
     top: Top;
-    node: MDT & MNodeExtra;
+    node: { text: string; loc: MNodeExtra['loc'] };
     idx: number;
     events: Events;
 }) => {
@@ -153,7 +256,7 @@ export const Markdown = ({
             return;
         }
         if (editing) {
-            ref.current.textContent = node.text;
+            ref.current.textContent = node.text.trim();
             if (ref.current !== document.activeElement || true) {
                 focus(ref.current, top.store);
             }
@@ -217,15 +320,15 @@ export const Markdown = ({
                 const text = evt.currentTarget.textContent ?? '';
                 setEdit(text);
                 const pos = getPos(evt.currentTarget);
-                // onInput(pos, text, presel.current);
-                const mp: UpdateMap = {
-                    [node.loc.idx]: { ...node, text },
-                };
-                updateStore(top.store, {
-                    map: mp,
-                    selection: { idx, loc: pos },
-                    prev: { idx, loc: presel.current ?? undefined },
-                });
+
+                // const mp: UpdateMap = {
+                //     [node.loc.idx]: { ...node, text },
+                // };
+                // updateStore(top.store, {
+                //     map: mp,
+                //     selection: { idx, loc: pos },
+                //     prev: { idx, loc: presel.current ?? undefined },
+                // });
             }}
             onBlur={() => {
                 setEdit(null);
@@ -260,30 +363,31 @@ export const Markdown = ({
                 if (evt.key === 'Enter' && evt.metaKey) {
                     handleSpace(evt, idx, path, events, top.store);
                 }
-                // if (evt.key === ' ') {
-                //     if (isAtEnd(evt.currentTarget)) {
-                //         evt.preventDefault();
-                //         evt.stopPropagation();
-                //         // onEnter(false);
-                //         return;
-                //     }
-                //     if (isAtStart(evt.currentTarget)) {
-                //         evt.preventDefault();
-                //         evt.stopPropagation();
-                //         // onEnter(true);
-                //         return;
-                //     }
-                // }
-                // if (evt.key === 'Enter') {
-                //     evt.preventDefault();
-                //     evt.stopPropagation();
-                //     // onEnter(
-                //     //     isAtStart(evt.currentTarget) &&
-                //     //         !isAtEnd(evt.currentTarget),
-                //     // );
-                //     return;
-                // }
             }}
         />
     );
 };
+
+function onChange(node: Markdown & MNodeExtra, top: Top, idx: number) {
+    return (editorState: EditorState, editor: LexicalEditor) => {
+        const lexicalJSON = editorState.toJSON();
+        if (equal(lexicalJSON, node.lexicalJSON)) {
+            console.log('ignoreee');
+            return;
+        }
+        const now = Date.now();
+        updateStore(
+            top.store,
+            { map: { [idx]: { ...node, lexicalJSON } } },
+            (last) => {
+                if (!last) {
+                    return 'add';
+                }
+                if (now - last.ts < 500 && last.post[idx] != null) {
+                    return 'update';
+                }
+                return 'add';
+            },
+        );
+    };
+}

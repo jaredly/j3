@@ -130,7 +130,7 @@ export type Expr =
           body: Expr[];
       }
     | { type: 'tag'; name: string; form: Node } // by itself, this is a constructor function
-    | { type: 'markdown'; form: Markdown & NodeExtra }
+    | { type: 'markdown'; lexicalJSON: any; form: Markdown & NodeExtra }
     | {
           type: 'attachment';
           form: Node;

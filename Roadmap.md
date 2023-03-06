@@ -42,6 +42,10 @@ Nope, let's do `\`.
 - [ ] but, should I have a "start" blinker?
 
 
+UMMMM ok so what about like per-node undo stack? stuff?
+like what does that look like.
+should we go to snapshots at that point?
+
 
 #### Markdown
 - [ ] make a little whatsit
@@ -53,6 +57,9 @@ Nope, let's do `\`.
 - [ ] UMMM ok so I'm getting distracted by looking up lexical's API and stuff
   because I think I do want some rich text editor, not really markdown. So I can
   have rich embeds.
+- [x] lexical does seem legit
+- [ ] my updateStore should merge with the previous one, but like only if the previous
+  one was also a change to this dealiwhap. Right? And within a certain number of miliseconds?
 
 
 buuuuuut also, can we not agree that I super need tests?

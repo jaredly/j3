@@ -25,6 +25,7 @@ export const addSpace = (
         return addSpace(store, path.slice(0, -1), after);
     }
     // ok, so ...
+    console.log('Why cant I add a space', last);
 };
 
 export const maybeUpdate = (

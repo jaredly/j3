@@ -64,6 +64,7 @@ export const emptyHistoryItem = () => ({
     postSelection: null,
     pre: {},
     preSelection: null,
+    ts: Date.now(),
 });
 
 export const getRoot = (text: string) => {

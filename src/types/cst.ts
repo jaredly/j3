@@ -42,7 +42,7 @@ export type Attachment = {
 
 export type Markdown = {
     type: 'markdown';
-    text: string;
+    lexicalJSON: any;
 };
 
 export type NodeContents =

@@ -5,6 +5,14 @@ const effects = `[
     ('string/get string (result string 'NotFound))
 ]`;
 
+const whatsits = `
+(defn string/set [id :string value :string]
+    ('string/set {$ id value} (fn [x] x)))
+
+(defn string/get [id :string]
+    ('string/get id (fn [x] x)))
+`;
+
 export const platform = {
     id: 'string',
     effects: effects,

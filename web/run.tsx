@@ -3,6 +3,7 @@ import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { App } from './App';
 import ubahn from 'react-ubahn/runtime';
+import { Markdown } from './old/Markdown';
 
 ubahn.disable();
 

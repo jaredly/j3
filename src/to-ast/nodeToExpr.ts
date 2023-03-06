@@ -126,7 +126,28 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             form: nilt.form,
                         },
                         text: 'Markdown',
-                        node: { type: 'markdown', text: '' },
+                        node: {
+                            type: 'markdown',
+                            lexicalJSON: {
+                                root: {
+                                    children: [
+                                        {
+                                            children: [],
+                                            direction: null,
+                                            format: '',
+                                            indent: 0,
+                                            type: 'paragraph',
+                                            version: 1,
+                                        },
+                                    ],
+                                    direction: null,
+                                    format: '',
+                                    indent: 0,
+                                    type: 'root',
+                                    version: 1,
+                                },
+                            },
+                        },
                     },
                     {
                         type: 'replace',
@@ -288,7 +309,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'spread':
             throw new Error('not yet impl');
         case 'markdown':
-            return { type: 'markdown', form };
+            return { type: 'markdown', form, lexicalJSON: form.lexicalJSON };
         case 'attachment':
             if (!form.file) {
                 return { type: 'unresolved', form, reason: 'empty attachment' };

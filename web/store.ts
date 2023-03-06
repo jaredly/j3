@@ -43,6 +43,7 @@ export type HistoryItem = {
     post: UpdateMap;
     preSelection: Selection | null;
     postSelection: Selection | null | undefined;
+    ts: number;
 };
 
 export const newEvalCtx = (
@@ -259,40 +260,58 @@ export type StoreUpdate = {
     prev?: Store['selection'] | null;
 };
 
-export const undo = (store: Store) => {
+export const undo = (store: Store, check?: (item: HistoryItem) => boolean) => {
     if (store.history.idx >= store.history.items.length) {
         console.log('too far, its the end of history');
         return;
     }
     const item =
         store.history.items[store.history.items.length - 1 - store.history.idx];
+    if (check && !check(item)) {
+        return;
+    }
     // console.log('presel', item.preSelection);
     updateStore(store, { map: item.pre, selection: item.preSelection }, 'skip');
     store.history.idx += 1;
+    return item;
 };
 
-export const redo = (store: Store) => {
+export const redo = (store: Store, check?: (item: HistoryItem) => boolean) => {
     if (store.history.idx <= 0) {
         console.log('too far, its the end of history');
         return;
     }
     const item =
         store.history.items[store.history.items.length - store.history.idx];
+    if (check && !check(item)) {
+        return;
+    }
     updateStore(
         store,
         { map: item.post, selection: item.postSelection },
         'skip',
     );
     store.history.idx -= 1;
+    return item;
 };
 
 export const updateStore = (
     store: Store,
     { map: change, selection, prev }: StoreUpdate,
-    // paths: Path[][],
-    historyMode = 'add' as 'add' | 'update' | 'skip',
-    // skipHistory = false,
+    historyMode = 'add' as
+        | 'add'
+        | 'update'
+        | 'skip'
+        | ((prev?: HistoryItem) => 'add' | 'update' | 'skip'),
 ) => {
+    if (typeof historyMode === 'function') {
+        const last =
+            store.history.items[
+                store.history.items.length - 1 - store.history.idx
+            ];
+        historyMode = historyMode(last);
+    }
+
     // console.log('UP', change, selection);
     if (historyMode === 'add') {
         const pre: UpdateMap = {};
@@ -305,6 +324,7 @@ export const updateStore = (
             post: change,
             preSelection: prev != undefined ? prev : store.selection,
             postSelection: selection,
+            ts: Date.now(),
         };
         if (store.history.idx > 0) {
             store.history.items = store.history.items.slice(
@@ -325,6 +345,7 @@ export const updateStore = (
             }
             last.post[key] = change[key];
         });
+        last.ts = Date.now();
     }
 
     // console.log('Store change', change);
