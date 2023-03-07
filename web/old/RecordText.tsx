@@ -19,11 +19,10 @@ import {
     Selection,
 } from '../store';
 import { Events } from './Nodes';
-import { SetHover } from './Doc';
-import { accessText, Identifier, Loc, Node } from '../../src/types/cst';
+import { accessText, Identifier, Node } from '../../src/types/cst';
 import { focus, handleMenu, Top, useMenuStuff } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
-import { nidx, parse } from '../../src/grammar';
+import { nidx } from '../../src/grammar';
 import { rainbow } from '../rainbow';
 
 export const RecordText = ({
@@ -323,6 +322,32 @@ function splitAttr(
 
     const last = path[path.length - 1];
     const node = store.map[last.idx] as WithLoc<MCRecordAccess>;
+
+    if (!edit.length) {
+        if (node.items.length === 1) {
+            const target = store.map[node.target] as Identifier & MNodeExtra;
+            if (target.text === '') {
+                const spreadId = nidx();
+                const update = replacePath(
+                    path[path.length - 2],
+                    spreadId,
+                    store,
+                );
+                update[spreadId] = {
+                    type: 'spread',
+                    contents: node.target,
+                    loc: { start: 0, end: 0, idx: spreadId },
+                };
+                updateStore(store, {
+                    map: update,
+                    selection: { idx: node.target, loc: 'start' },
+                });
+            }
+        }
+
+        return;
+    }
+
     let nw: Node = {
         type: 'accessText',
         text: suffix,
