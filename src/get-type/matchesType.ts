@@ -1,7 +1,7 @@
 import { blank, Ctx } from '../to-ast/Ctx';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
-import { errf, Report } from './get-types-new';
+import { errf, recordMap, Report } from './get-types-new';
 import { transformType } from '../types/walk-ast';
 import { unifyTypes, _unifyTypes } from './unifyTypes';
 
@@ -70,18 +70,12 @@ export const _matchesType = (
     switch (candidate.type) {
         case 'record': {
             if (expected.type === 'record') {
-                const map = expected.entries.reduce((map, entry) => {
-                    map[entry.name] = entry.value;
-                    return map;
-                }, {} as { [key: string]: Type });
-                const cmap = candidate.entries.reduce((map, entry) => {
-                    map[entry.name] = entry.value;
-                    return map;
-                }, {} as { [key: string]: Type });
+                const map = recordMap(expected, ctx);
+                const cmap = recordMap(candidate, ctx);
                 for (const entry of expected.entries) {
                     if (cmap[entry.name]) {
                         const result = _matchOrExpand(
-                            cmap[entry.name],
+                            cmap[entry.name].value,
                             entry.value,
                             ctx,
                             path,

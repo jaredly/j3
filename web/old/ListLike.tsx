@@ -312,6 +312,20 @@ export const OneLineResult = ({
                     </div>
                 );
             }
+            if (result.expr.type === 'deftype') {
+                return (
+                    <div
+                        style={{
+                            fontSize: '80%',
+                            color: '#6a6',
+                        }}
+                    >
+                        {result.type
+                            ? ': ' + nodeToString(nodeForType(result.type, ctx))
+                            : 'No type 🤔'}
+                    </div>
+                );
+            }
             return (
                 <div
                     style={{
