@@ -20,6 +20,7 @@ const select = (
 ): Selection | null => {
     switch (node.type) {
         case 'punct':
+        case 'extra':
             return null;
         // case 'atom':
         //     return {idx: node.id, loc}
@@ -148,6 +149,20 @@ export const Overheat = ({
                                 events={childEvents}
                             />
                         );
+                    case 'extra': {
+                        const Component = node.component;
+                        return (
+                            <Component
+                                key={'extra:' + i}
+                                idx={idx}
+                                node={mnode}
+                                top={top}
+                                path={path}
+                                events={childEvents}
+                                {...(node.props ?? {})}
+                            />
+                        );
+                    }
                     case 'render': {
                         const Component = node.component;
                         return (
@@ -180,7 +195,7 @@ function makeChildEvents(
             for (let ti = i - 1; ti >= 0; ti--) {
                 const sel = select(nodes[ti], idx, 'end');
                 if (sel) {
-                    console.log('doing a select', ti, i, sel);
+                    console.log('doing a select', ti, i, sel, idx);
                     setSelection(top.store, {
                         ...sel,
                         from: nodes[i].innerLeft ? undefined : 'right',

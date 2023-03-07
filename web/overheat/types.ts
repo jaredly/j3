@@ -19,6 +19,12 @@ export type ONode =
           innerLeft?: boolean;
       }
     | {
+          type: 'extra';
+          component: React.ComponentType<RenderProps<any>>;
+          props?: any;
+          innerLeft?: boolean;
+      }
+    | {
           type: 'ref';
           id: number;
           path: Path['child'];

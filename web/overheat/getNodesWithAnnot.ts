@@ -65,7 +65,7 @@ export const getNodes = (node: MNode, isRoot?: boolean): ONode[] | null => {
                 return node.values.flatMap((id, i): ONode[] => [
                     { type: 'ref', id, path: { type: 'child', at: i } },
                     {
-                        type: 'render',
+                        type: 'extra',
                         component: OutputWatcher,
                         props: { idx: id },
                     },

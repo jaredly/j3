@@ -3,7 +3,7 @@
 maybe think of a better name idk
 
 - [x] rendering stuff! Very cool
-- [ ] setSelection is still ad-hoc
+- [ ] setSelection (left/right, is start/end allowed) is still ad-hoc
 - [ ] backspace on a spread doesn't work anymore
   - can I have `onBackspace` in `events` work reasonably?
 - [x] oh backspace on attriutes not working?
