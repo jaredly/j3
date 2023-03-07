@@ -1,4 +1,19 @@
 
+- [ ] lol you can't decimal anymore now because of attributes
+
+# Broad strokes
+
+- [x] attributes are working
+  - [ ] anon attributes are not
+- [x] decimals are broken
+- [x] negative numbers don't work also
+- [ ] spreads are needed
+  and then? idk what comes next tbh
+  - [ ] so recursion, and especially type recursion, will be pretty important in a minute.
+  - [ ] also, I wonder if it's ~time to abstract out my cst editing library? Or something?
+- [x] I uh would like to be able to give my files names. pls?
+
+
 Thinking about a more of a demo,
 let's get markdown rendered blocks.
 What's the way to do it?

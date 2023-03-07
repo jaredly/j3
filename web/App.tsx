@@ -93,26 +93,50 @@ export function updateIdxForStore(value: Store) {
 const filePrefix = 'j3:file:';
 
 export const useFiles = () => {
-    const [files, setFiles] = React.useState([] as string[]);
+    const [files, setFiles] = React.useState(
+        [] as { key: string; name: string }[],
+    );
 
     React.useEffect(() => {
-        localforage.keys().then((keys) => {
-            setFiles(keys.filter((k) => k.startsWith(filePrefix)));
-        });
+        localforage
+            .getItem('j3:files')
+            .then((value) => {
+                if (!value) {
+                    return localforage.keys().then((keys) => {
+                        return keys
+                            .filter((k) => k.startsWith(filePrefix))
+                            .map((key) => ({ key, name: key }));
+                    });
+                }
+                return value;
+            })
+            .then((files) => setFiles(files));
     }, []);
+
+    React.useEffect(() => {
+        if (files.length) {
+            localforage.setItem('j3:files', files);
+        }
+    }, [files]);
 
     const addFile = React.useCallback(() => {
         const name = filePrefix + randomString();
-        setFiles((files) => [...files, name]);
+        setFiles((files) => [...files, { key: name, name }]);
     }, []);
 
-    return { files, addFile };
+    const setName = React.useCallback((key: string, name: string) => {
+        setFiles((files) =>
+            files.map((f) => (f.key === key ? { ...f, name } : f)),
+        );
+    }, []);
+
+    return { files, addFile, setName };
 };
 
 export const App = () => {
     const hash = useHash();
 
-    const { files, addFile } = useFiles();
+    const { files, addFile, setName } = useFiles();
 
     const [state, setState] = React.useState(
         null as null | {
@@ -196,21 +220,28 @@ export const App = () => {
                 >
                     Add File
                 </button>
-                {files.map((name) => (
+                {files.map(({ key, name }) => (
                     <div
-                        key={name}
+                        key={key}
                         onClick={() => {
-                            location.hash = name;
+                            if (hash !== key) {
+                                location.hash = key;
+                            } else {
+                                const newName = prompt('New name', name);
+                                if (newName?.trim()) {
+                                    setName(key, newName);
+                                }
+                            }
                         }}
                         style={{
-                            backgroundColor: hash === name ? '#555' : undefined,
+                            backgroundColor: hash === key ? '#555' : undefined,
                             cursor: 'pointer',
                             padding: 4,
                             margin: 4,
                         }}
                         className="hover"
                     >
-                        {name}
+                        {name ?? key}
                     </div>
                 ))}
             </div>

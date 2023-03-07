@@ -155,6 +155,10 @@ export const IdentifierLike = ({
                 }
 
                 if (evt.key === '.') {
+                    const num = parseInt(evt.currentTarget.textContent!);
+                    if (!isNaN(num)) {
+                        return;
+                    }
                     if (isAtEnd(evt.currentTarget)) {
                         createRecordAccess(path, idx, store, evt);
 

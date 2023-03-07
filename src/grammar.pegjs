@@ -27,7 +27,7 @@ tag = "'" text:$idtext? { return wrap({type: 'tag', text: text || '' })}
 number = raw:$(dotStart / dotEnd) {return wrap({type: 'number', raw})}
 
 dotStart = "." [0-9]+
-dotEnd = [0-9]+ ("." [0-9]*)?
+dotEnd = "-"? [0-9]+ ("." [0-9]*)?
 
 list = "(" _ values:(@Form _)* ")"  {return wrap({type: 'list', values})}
 
