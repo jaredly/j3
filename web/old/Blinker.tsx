@@ -3,9 +3,28 @@ import { Map, toMCST } from '../../src/types/mcst';
 import { EvalCtx, Path, Store, updateStore } from '../store';
 import { Events } from './Nodes';
 import { modChildren, onKeyDown } from '../mods/onKeyDown';
-import { parse } from '../../src/grammar';
+import { nidx, parse } from '../../src/grammar';
+import { Node } from '../../src/types/cst';
 
-export const parseKey = (text: string) => {
+export const parseKey = (text: string): null | Node => {
+    if (text === '.') {
+        return {
+            type: 'recordAccess',
+            target: {
+                type: 'identifier',
+                text: '',
+                loc: { start: 0, end: 0, idx: nidx() },
+            },
+            items: [
+                {
+                    type: 'accessText',
+                    text: '',
+                    loc: { start: 0, end: 0, idx: nidx() },
+                },
+            ],
+            loc: { start: 0, end: 0, idx: nidx() },
+        };
+    }
     try {
         return parse(text)[0];
     } catch (e) {
@@ -41,8 +60,10 @@ export const Blinker = ({
             style={{ ...style, width: 1, marginRight: -1 }}
             onKeyDown={(evt) => {
                 onKeyDown(evt, idx, path, events, store, ectx);
+                if (evt.defaultPrevented) {
+                    return;
+                }
                 if (
-                    !evt.defaultPrevented &&
                     fullAscii.includes(evt.key) &&
                     !evt.metaKey &&
                     !evt.altKey &&
@@ -65,6 +86,7 @@ export const Blinker = ({
                             selection: { idx: nidx, loc: 'end' },
                         });
                         evt.preventDefault();
+                        evt.stopPropagation();
                         return;
                     }
 
@@ -88,6 +110,7 @@ export const Blinker = ({
                             selection: { idx: nidx, loc: 'end' },
                         });
                         evt.preventDefault();
+                        evt.stopPropagation();
                     }
                 }
             }}

@@ -24,6 +24,9 @@ export const addSpace = (
     if (last.child.type === 'start' || last.child.type === 'end') {
         return addSpace(store, path.slice(0, -1), after);
     }
+    if (last.child.type === 'spread-contents') {
+        return addSpace(store, path.slice(0, -1), after);
+    }
     // ok, so ...
     console.log('Why cant I add a space', last);
 };
@@ -63,6 +66,14 @@ export const handleSpace = (
         // parent = path[path.length - 2];
         // console.log('attr', parent, idx);
         const update = addSpace(store, path.slice(0, -1), true);
+        maybeUpdate(store, update);
+        return;
+    }
+
+    if (parent.child.type === 'spread-contents') {
+        // parent = path[path.length - 2];
+        // console.log('spread up', parent);
+        const update = addSpace(store, path, true);
         maybeUpdate(store, update);
         return;
     }

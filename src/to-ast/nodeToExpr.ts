@@ -190,6 +190,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'record': {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
+            console.log('record values', values);
             let spreads: Expr[] = [];
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
@@ -222,41 +223,42 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                if (
-                    values.length &&
-                    values[0].type === 'identifier' &&
-                    values[0].text.startsWith('...')
-                ) {
-                    // spread = nodeToExpr(
-                    //     {
-                    //         ...values[0],
-                    //         text: values[0].text.slice(3),
-                    //     },
-                    //     ctx,
-                    // );
-                    spreads = [
-                        resolveExpr(
-                            values[0].text.slice(3),
-                            values[0].hash,
-                            ctx,
-                            values[0],
-                            undefined,
-                            '...',
-                        ),
-                    ];
-                    values.shift();
-                }
-                for (let i = 0; i < values.length; i += 2) {
+                // if (
+                //     values.length &&
+                //     values[0].type === 'identifier' &&
+                //     values[0].text.startsWith('...')
+                // ) {
+                //     spreads = [
+                //         resolveExpr(
+                //             values[0].text.slice(3),
+                //             values[0].hash,
+                //             ctx,
+                //             values[0],
+                //             undefined,
+                //             '...',
+                //         ),
+                //     ];
+                //     values.shift();
+                // }
+                for (let i = 0; i < values.length; ) {
                     const name = values[i];
+                    if (name.type === 'spread') {
+                        spreads.push(nodeToExpr(name.contents, ctx));
+                        i++;
+                        continue;
+                    }
+
                     ctx.display[name.loc.idx] = {
                         style: { type: 'record-attr' },
                     };
                     if (name.type !== 'identifier' && name.type !== 'number') {
+                        i += 1;
                         continue;
                     }
                     const namev =
                         name.type === 'identifier' ? name.text : name.raw;
                     const value = values[i + 1];
+                    i += 2;
                     if (!value) {
                         err(ctx.errors, name, {
                             type: 'misc',
@@ -268,6 +270,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }
+            }
+            if (spreads.length) {
+                console.log('yes it is');
             }
             return { type: 'record', entries, spreads, form };
         }

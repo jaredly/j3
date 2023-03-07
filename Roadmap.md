@@ -14,8 +14,11 @@
   - [ ] parse a spread array expr
   - [x] .. turns into spread
   - [x] delete in a spread should back out
-  - [ ] so I kinda think expr should also allow multiple spreads.
-  - [ ] because we could be inheriting different things. right?
+  - [x] so I kinda think expr should also allow multiple spreads.
+  - [ ] '{' in spread body isn't working
+  - [ ] single item with spread isn't showing upt
+
+- [x] BUG if you do `{}` then `.` we infinite loop! Not sure where.
 
   and then? idk what comes next tbh
   - [ ] so recursion, and especially type recursion, will be pretty important in a minute.

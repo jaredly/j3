@@ -10,6 +10,7 @@ import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
+// TODO: do we want to error report here?
 export const recordMap = (record: TRecord, ctx: Ctx): RecordMap => {
     const map: RecordMap = {};
     record.spreads.forEach((spread) => {
@@ -380,10 +381,12 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         }
         case 'record': {
             const spreadMap: RecordMap = {};
+            // console.log('a rec', expr);
             if (expr.spreads) {
                 for (let sprex of expr.spreads) {
                     const spread = getType(sprex, ctx, report);
                     if (!spread) {
+                        console.log('nope sorry');
                         return;
                     }
                     if (spread.type !== 'record') {

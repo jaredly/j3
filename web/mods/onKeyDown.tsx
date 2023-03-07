@@ -35,7 +35,7 @@ export const onKeyDown = (
     ectx: EvalCtx,
 ) => {
     const last = path[path.length - 1];
-    if (last.child.type === 'child' || last.child.type === 'expr') {
+    if (last && (last.child.type === 'child' || last.child.type === 'expr')) {
         if (
             '([{'.includes(evt.key) &&
             getPos(evt.currentTarget) === 0 &&
@@ -337,7 +337,9 @@ function newListLike(
     const last = path[path.length - 1];
     if (
         evt.currentTarget.textContent === '' &&
-        (last.child.type === 'child' || last.child.type === 'expr')
+        (last.child.type === 'child' ||
+            last.child.type === 'expr' ||
+            last.child.type === 'spread-contents')
     ) {
         const mp: UpdateMap = {};
         const nw = parse(

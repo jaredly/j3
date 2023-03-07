@@ -3,6 +3,7 @@ import {
     ListLikeContents,
     Map,
     MCRecordAccess,
+    MCSpread,
     MCString,
     MNodeExtra,
     toMCST,
@@ -239,6 +240,13 @@ export const replacePath = (
             map[parent.idx] = {
                 ...(pnode as MCString & MNodeExtra),
                 templates,
+            };
+            break;
+        }
+        case 'spread-contents': {
+            map[parent.idx] = {
+                ...(pnode as MCSpread & MNodeExtra),
+                contents: newIdx,
             };
             break;
         }

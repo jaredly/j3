@@ -429,14 +429,18 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             );
         }
         case 'record': {
-            const items = tupleRecord(expr.entries);
+            const items =
+                expr.spreads.length === 0 ? tupleRecord(expr.entries) : null;
             if (items) {
                 return t.arrayExpression(
                     items.map((item) => exprToTs(item, ctx)),
                 );
             }
-            return t.objectExpression(
-                expr.entries.map((entry) => {
+            return t.objectExpression([
+                ...expr.spreads.map((spread) =>
+                    t.spreadElement(exprToTs(spread, ctx)),
+                ),
+                ...expr.entries.map((entry) => {
                     const wrap = !isValidIdentifier(entry.name);
                     return t.objectProperty(
                         wrap
@@ -445,7 +449,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                         exprToTs(entry.value, ctx),
                     );
                 }),
-            );
+            ]);
         }
         case 'if': {
             return t.conditionalExpression(

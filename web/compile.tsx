@@ -21,6 +21,7 @@ export const builtins = {
 };
 
 export const compile = (store: Store, ectx: EvalCtx) => {
+    console.log('compile');
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root] as ListLikeContents;
 
