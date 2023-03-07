@@ -223,27 +223,27 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                // if (
-                //     values.length &&
-                //     values[0].type === 'identifier' &&
-                //     values[0].text.startsWith('...')
-                // ) {
-                //     spreads = [
-                //         resolveExpr(
-                //             values[0].text.slice(3),
-                //             values[0].hash,
-                //             ctx,
-                //             values[0],
-                //             undefined,
-                //             '...',
-                //         ),
-                //     ];
-                //     values.shift();
-                // }
                 for (let i = 0; i < values.length; ) {
                     const name = values[i];
                     if (name.type === 'spread') {
-                        spreads.push(nodeToExpr(name.contents, ctx));
+                        const spread = nodeToExpr(name.contents, ctx);
+                        const t = getType(spread, ctx);
+                        if (t) {
+                            const tt = applyAndResolve(t, ctx, []);
+                            if (tt.type === 'record') {
+                                spreads.push(spread);
+                            } else {
+                                err(ctx.errors, name, {
+                                    type: 'misc',
+                                    message: `can only spread records, not ${tt.type}`,
+                                });
+                            }
+                        } else {
+                            err(ctx.errors, name, {
+                                type: 'misc',
+                                message: `illegal spread`,
+                            });
+                        }
                         i++;
                         continue;
                     }

@@ -80,6 +80,12 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             }
             return;
         case 'blank':
+            if (report) {
+                err(report, expr, {
+                    type: 'unparsed',
+                    form: expr.form,
+                });
+            }
             return;
         case 'string':
             if (report) {

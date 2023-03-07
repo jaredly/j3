@@ -26,7 +26,7 @@ export const Spread = ({
     const { store, ctx, setHover } = top;
 
     return (
-        <span>
+        <span style={{ display: 'flex' }}>
             {top.store.selection?.idx === idx &&
             top.store.selection.loc === 'start' ? (
                 <Blinker
