@@ -8,6 +8,8 @@ maybe think of a better name idk
   - can I have `onBackspace` in `events` work reasonably?
 - [x] oh backspace on attriutes not working?
 
+- [ ] 
+
 - [x] lol you can't decimal anymore now because of attributes
 
 # Broad strokes

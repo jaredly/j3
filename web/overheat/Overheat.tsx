@@ -10,7 +10,8 @@ import { Top } from '../old/IdentifierLike';
 import { sideClick } from '../old/ListLike';
 import { Events, rainbow } from '../old/Nodes';
 import { Path, Selection, setSelection, useStore } from '../store';
-import { getNodes, getNodesWithAnnot, ONode } from './types';
+import { ONode } from './types';
+import { getNodes, getNodesWithAnnot } from './getNodesWithAnnot';
 
 const select = (
     node: ONode,
@@ -67,7 +68,21 @@ export const Overheat = ({
                 })
             }
             onMouseLeave={() => top.setHover({ idx, box: null })}
-            style={{ background: dec }}
+            style={
+                path.length === 1
+                    ? {
+                          display: 'block',
+                          cursor: 'text',
+                      }
+                    : { background: dec }
+            }
+            onMouseDown={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+                if (path.length) {
+                    setSelection(top.store, { idx, loc: 'end', from: 'right' });
+                }
+            }}
         >
             {/* <span style={{ fontSize: '50%' }}>{idx}</span> */}
             {nodes.map((node, i) => {
@@ -143,6 +158,7 @@ export const Overheat = ({
                                 top={top}
                                 path={path}
                                 events={childEvents}
+                                {...(node.props ?? {})}
                             />
                         );
                     }
