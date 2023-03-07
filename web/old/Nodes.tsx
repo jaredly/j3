@@ -34,7 +34,7 @@ export type Events = {
     onRight: () => void;
     onLeft: () => void;
     onKeyDown?: (evt: React.KeyboardEvent) => true | void;
-    // onBackspace?: (isEmpty: boolean) => void;
+    onBackspace?: (isEmpty: boolean) => boolean | void;
     // other things? idk
 };
 

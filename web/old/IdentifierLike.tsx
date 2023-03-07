@@ -7,6 +7,7 @@ import { Identifier, Node } from '../../src/types/cst';
 import {
     getPos,
     isAtEnd,
+    isAtStart,
     maybeCommitAutoComplete,
     onKeyDown,
     setPos,
@@ -152,6 +153,21 @@ export const IdentifierLike = ({
                 }
                 if (handleMenu(evt, menuStuff)) {
                     return;
+                }
+
+                if (
+                    evt.key === 'Backspace' &&
+                    events.onBackspace &&
+                    isAtStart(evt.currentTarget)
+                ) {
+                    const handled = events.onBackspace(
+                        evt.currentTarget.textContent!.length === 0,
+                    );
+                    if (handled) {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        return;
+                    }
                 }
 
                 if (evt.key === '.') {

@@ -12,6 +12,8 @@
   - [ ] parse a spread record type
   - [ ] parse a spread record expr
   - [ ] parse a spread array expr
+  - [x] .. turns into spread
+  - [ ] delete in a spread should back out
 
   and then? idk what comes next tbh
   - [ ] so recursion, and especially type recursion, will be pretty important in a minute.

@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { MCRecordAccess, MCSpread, MCString } from '../../src/types/mcst';
-import { EvalCtx, Path, setSelection, Store } from '../store';
+import { EvalCtx, Path, setSelection, Store, updateStore } from '../store';
 import { Events, Node, rainbow } from './Nodes';
 import { Blinker } from './Blinker';
 import { SetHover } from './Doc';
 import { sideClick } from './ListLike';
 import { StringText } from './StringText';
 import { Top } from './IdentifierLike';
-import { RecordText } from './RecordText';
+import { RecordText, replacePath } from './RecordText';
 
 export const Spread = ({
     node,
@@ -49,11 +49,7 @@ export const Spread = ({
                 />
             ) : null}
             <span
-                style={{
-                    color: '#00ff58',
-                    // fontVariationSettings:
-                    //     store.selection?.idx === idx ? '"wght" 900' : '',
-                }}
+                style={{ color: '#00ff58' }}
                 onMouseDown={sideClick((left) => {
                     if (left) {
                         setSelection(store, { idx, loc: 'start' });
@@ -80,6 +76,20 @@ export const Spread = ({
                     },
                     onRight() {
                         return events.onRight();
+                    },
+                    onBackspace(isEmpty) {
+                        if (isEmpty) {
+                            const map = replacePath(
+                                path[path.length - 1],
+                                node.contents,
+                                store,
+                            );
+                            updateStore(store, {
+                                map,
+                                selection: { idx: node.contents, loc: 'start' },
+                            });
+                            return true;
+                        }
                     },
                 }}
             />
