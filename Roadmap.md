@@ -9,11 +9,13 @@
 - [x] negative numbers don't work also
 - [ ] spreads are needed
   - [x] basic render n stuff
-  - [ ] parse a spread record type
-  - [ ] parse a spread record expr
+  - [x] parse a spread record type
+  - [x] parse a spread record expr
   - [ ] parse a spread array expr
   - [x] .. turns into spread
-  - [ ] delete in a spread should back out
+  - [x] delete in a spread should back out
+  - [ ] so I kinda think expr should also allow multiple spreads.
+  - [ ] because we could be inheriting different things. right?
 
   and then? idk what comes next tbh
   - [ ] so recursion, and especially type recursion, will be pretty important in a minute.
