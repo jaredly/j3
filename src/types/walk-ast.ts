@@ -183,8 +183,25 @@ export const transformTRecord = <Ctx>(node: TRecord, visitor: Visitor<Ctx>, ctx:
                     }
                 }
                 
+
+                
+                let updatedNode$spreads = node.spreads;
+                {
+                    let changed2 = false;
+                    const arr1 = node.spreads.map((updatedNode$spreads$item1) => {
+                        
+                const result = transformType(updatedNode$spreads$item1, visitor, ctx);
+                changed2 = changed2 || result !== updatedNode$spreads$item1;
+                        return result
+                    })
+                    if (changed2) {
+                        updatedNode$spreads = arr1;
+                        changed1 = true;
+                    }
+                }
+                
                 if (changed1) {
-                    updatedNode =  {...updatedNode, entries: updatedNode$entries};
+                    updatedNode =  {...updatedNode, entries: updatedNode$entries, spreads: updatedNode$spreads};
                     changed0 = true;
                 }
             }
@@ -1117,17 +1134,23 @@ export const transformRecord = <Ctx>(node: Record, visitor: Visitor<Ctx>, ctx: C
                 
 
                 
-        let updatedNode$spread = undefined;
-        const updatedNode$spread$current = node.spread;
-        if (updatedNode$spread$current != null) {
-            
-                const updatedNode$spread$1$ = transformExpr(updatedNode$spread$current, visitor, ctx);
-                changed1 = changed1 || updatedNode$spread$1$ !== updatedNode$spread$current;
-            updatedNode$spread = updatedNode$spread$1$;
-        }
-        
+                let updatedNode$spreads = node.spreads;
+                {
+                    let changed2 = false;
+                    const arr1 = node.spreads.map((updatedNode$spreads$item1) => {
+                        
+                const result = transformExpr(updatedNode$spreads$item1, visitor, ctx);
+                changed2 = changed2 || result !== updatedNode$spreads$item1;
+                        return result
+                    })
+                    if (changed2) {
+                        updatedNode$spreads = arr1;
+                        changed1 = true;
+                    }
+                }
+                
                 if (changed1) {
-                    updatedNode =  {...updatedNode, entries: updatedNode$entries, spread: updatedNode$spread};
+                    updatedNode =  {...updatedNode, entries: updatedNode$entries, spreads: updatedNode$spreads};
                     changed0 = true;
                 }
             }

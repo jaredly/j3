@@ -267,6 +267,7 @@ export const noloc: Loc = { start: -1, end: -1, idx: -1 };
 export const nil: Expr = {
     type: 'record',
     entries: [],
+    spreads: [],
     form: {
         type: 'list',
         values: [],

@@ -142,7 +142,7 @@ export type Expr =
 export type Record = {
     type: 'record';
     entries: { name: string; value: Expr }[];
-    spread?: Expr;
+    spreads: Expr[];
     form: Node;
 };
 

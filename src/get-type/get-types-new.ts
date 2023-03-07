@@ -379,21 +379,32 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return res;
         }
         case 'record': {
-            let spreadMap: null | RecordMap = null;
-            if (expr.spread) {
-                const spread = getType(expr.spread, ctx, report);
-                if (!spread) {
-                    return;
-                }
-                if (spread.type !== 'record') {
-                    const res = applyAndResolve(spread, ctx, []);
-                    if (res.type === 'error') {
-                        return report
-                            ? errf(report, spread.form, res.error)
-                            : undefined;
+            const spreadMap: RecordMap = {};
+            if (expr.spreads) {
+                for (let sprex of expr.spreads) {
+                    const spread = getType(sprex, ctx, report);
+                    if (!spread) {
+                        return;
                     }
-                    if (res.type === 'local-bound') {
-                        if (res.bound?.type !== 'record') {
+                    if (spread.type !== 'record') {
+                        const res = applyAndResolve(spread, ctx, []);
+                        if (res.type === 'error') {
+                            return report
+                                ? errf(report, spread.form, res.error)
+                                : undefined;
+                        }
+                        if (res.type === 'local-bound') {
+                            if (res.bound?.type !== 'record') {
+                                return report
+                                    ? errf(report, spread.form, {
+                                          type: 'not a record',
+                                          form: spread.form,
+                                      })
+                                    : undefined;
+                            }
+                            Object.assign(spreadMap, recordMap(res.bound, ctx));
+                        }
+                        if (res.type !== 'record') {
                             return report
                                 ? errf(report, spread.form, {
                                       type: 'not a record',
@@ -401,19 +412,10 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                                   })
                                 : undefined;
                         }
-                        spreadMap = recordMap(res.bound, ctx);
+                        Object.assign(spreadMap, recordMap(res, ctx));
+                    } else {
+                        Object.assign(spreadMap, recordMap(spread, ctx));
                     }
-                    if (res.type !== 'record') {
-                        return report
-                            ? errf(report, spread.form, {
-                                  type: 'not a record',
-                                  form: spread.form,
-                              })
-                            : undefined;
-                    }
-                    spreadMap = recordMap(res, ctx);
-                } else {
-                    spreadMap = recordMap(spread, ctx);
                 }
             }
             const seen: { [key: string]: true } = {};

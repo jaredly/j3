@@ -190,7 +190,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'record': {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
-            let spread: Expr | undefined = undefined;
+            let spreads: Expr[] = [];
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
                     name: values[0].text,
@@ -234,14 +234,16 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     //     },
                     //     ctx,
                     // );
-                    spread = resolveExpr(
-                        values[0].text.slice(3),
-                        values[0].hash,
-                        ctx,
-                        values[0],
-                        undefined,
-                        '...',
-                    );
+                    spreads = [
+                        resolveExpr(
+                            values[0].text.slice(3),
+                            values[0].hash,
+                            ctx,
+                            values[0],
+                            undefined,
+                            '...',
+                        ),
+                    ];
                     values.shift();
                 }
                 for (let i = 0; i < values.length; i += 2) {
@@ -267,12 +269,12 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     });
                 }
             }
-            return { type: 'record', entries, spread, form };
+            return { type: 'record', entries, spreads, form };
         }
         case 'list': {
             const values = filterComments(form.values);
             if (!values.length) {
-                return { type: 'record', entries: [], form };
+                return { type: 'record', entries: [], form, spreads: [] };
             }
             const first = values[0];
             if (first.type === 'identifier') {

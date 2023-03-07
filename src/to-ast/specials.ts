@@ -356,6 +356,7 @@ export const specials: {
         return {
             type: 'record',
             form,
+            spreads: [],
             entries: contents.map((item, i) => ({
                 name: i.toString(),
                 value: nodeToExpr(item, ctx),
