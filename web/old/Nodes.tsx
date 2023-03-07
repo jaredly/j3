@@ -46,7 +46,7 @@ export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
                 if (style?.type === 'id' && style.text != null) {
                     return style.text;
                 }
-                return ``;
+                return `[missing]`;
             }
         case 'comment':
             return node.text;

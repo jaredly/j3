@@ -2,6 +2,7 @@ import * as React from 'react';
 import {
     Map,
     MCString,
+    MNode,
     MNodeExtra,
     toMCST,
     WithLoc,
@@ -19,26 +20,49 @@ import {
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
 import { Loc, stringText } from '../../src/types/cst';
-import { focus } from './IdentifierLike';
+import { focus, Top } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
 
 export const StringText = ({
     idx,
-    store,
+    // node,
     path,
     events,
-    ctx,
-    setHover,
+    top,
 }: {
     idx: number;
-    store: Store;
+    // node: MNode;
+    top: Top;
     path: Path[];
     events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
 }) => {
-    const node = useStore(store, idx);
+    const node = useStore(top.store, idx);
+    return (
+        <StringText2
+            idx={idx}
+            path={path}
+            events={events}
+            top={top}
+            node={node}
+        />
+    );
+};
+
+export const StringText2 = ({
+    idx,
+    node,
+    path,
+    events,
+    top,
+}: {
+    idx: number;
+    node: MNode;
+    top: Top;
+    path: Path[];
+    events: Events;
+}) => {
+    const { store, ctx, setHover } = top;
     const text = (node as stringText).text;
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);

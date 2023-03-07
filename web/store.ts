@@ -139,6 +139,7 @@ export type PathChild =
           type: 'child';
           at: number;
       }
+    | { type: 'tannot' }
     | { type: 'inside' | 'start' | 'end' }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
     | { type: 'record-target' | 'spread-contents' }

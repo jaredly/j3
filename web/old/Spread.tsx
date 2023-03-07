@@ -24,9 +24,19 @@ export const Spread = ({
     top: Top;
 }) => {
     const { store, ctx, setHover } = top;
+    const dec = ctx.report.errors[idx]?.length ? 'rgba(255,0,0,0.2)' : 'none';
 
     return (
-        <span style={{ display: 'flex' }}>
+        <span
+            style={{ display: 'flex', background: dec }}
+            onMouseEnter={(evt) =>
+                setHover({
+                    idx,
+                    box: evt.currentTarget.getBoundingClientRect(),
+                })
+            }
+            onMouseLeave={() => setHover({ idx, box: null })}
+        >
             {top.store.selection?.idx === idx &&
             top.store.selection.loc === 'start' ? (
                 <Blinker

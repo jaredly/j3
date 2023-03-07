@@ -26,19 +26,30 @@ import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx } from '../../src/grammar';
 import { rainbow } from '../rainbow';
 
-export const RecordText = ({
+export const RecordText = (props: {
+    idx: number;
+    path: Path[];
+    events: Events;
+    top: Top;
+}) => {
+    const node = useStore(props.top.store, props.idx);
+    return <RecordText2 {...props} node={node as accessText & MNodeExtra} />;
+};
+
+export const RecordText2 = ({
     idx,
     path,
     events,
+    node,
     top,
 }: {
     idx: number;
     path: Path[];
     events: Events;
     top: Top;
+    node: accessText & MNodeExtra;
 }) => {
     const { store, ctx, setHover } = top;
-    const node = useStore(store, idx);
     const text = (node as accessText).text;
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);

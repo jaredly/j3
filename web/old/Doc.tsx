@@ -11,6 +11,7 @@ import { fromMCST, MNode } from '../../src/types/mcst';
 import { Events, Node } from './Nodes';
 import { EvalCtx, Path, Store } from '../store';
 import { KeyMonitor } from './KeyMonitor';
+import { Overheat } from '../overheat/Overheat';
 
 const topPath: Path[] = [];
 const emptyEvents: Events = {
@@ -54,12 +55,18 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
                 Copy
             </div>
             <div style={{ marginBottom: 500 }}>
-                <Node
+                <Overheat
                     idx={store.root}
                     path={topPath}
                     events={emptyEvents}
                     top={top}
                 />
+                {/* <Node
+                    idx={store.root}
+                    path={topPath}
+                    events={emptyEvents}
+                    top={top}
+                /> */}
                 <KeyMonitor />
             </div>
             {hover && (

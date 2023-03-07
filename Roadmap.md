@@ -1,5 +1,14 @@
 
-- [ ] lol you can't decimal anymore now because of attributes
+# Overheat
+maybe think of a better name idk
+
+- [x] rendering stuff! Very cool
+- [ ] setSelection is still ad-hoc
+- [ ] backspace on a spread doesn't work anymore
+  - can I have `onBackspace` in `events` work reasonably?
+- [x] oh backspace on attriutes not working?
+
+- [x] lol you can't decimal anymore now because of attributes
 
 # Broad strokes
 
