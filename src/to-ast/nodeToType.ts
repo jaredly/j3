@@ -38,10 +38,20 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             };
         case 'record': {
             const values = filterComments(form.values);
-            const entries = [];
-            for (let i = 0; i < values.length; i += 2) {
+            const entries: { name: string; value: Type }[] = [];
+            const spreads: Type[] = [];
+
+            for (let i = 0; i < values.length; ) {
                 const name = values[i];
+                if (name.type === 'spread') {
+                    spreads.push(nodeToType(name.contents, ctx));
+                    i++;
+                    continue;
+                }
+
                 const value = values[i + 1];
+                i += 2;
+
                 if (name.type !== 'identifier' && name.type !== 'number') {
                     err(ctx.errors, name, {
                         type: 'misc',
@@ -59,6 +69,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 type: 'record',
                 form,
                 entries,
+                spreads,
                 open: false,
             };
         }

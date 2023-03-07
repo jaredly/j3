@@ -93,8 +93,10 @@ export function updateIdxForStore(value: Store) {
 const filePrefix = 'j3:file:';
 
 export const useFiles = () => {
+    type FileT = string;
+
     const [files, setFiles] = React.useState(
-        [] as { key: string; name: string }[],
+        [] as { key: string; name: FileT }[],
     );
 
     React.useEffect(() => {
@@ -110,7 +112,7 @@ export const useFiles = () => {
                 }
                 return value;
             })
-            .then((files) => setFiles(files));
+            .then((files) => setFiles(files as any));
     }, []);
 
     React.useEffect(() => {

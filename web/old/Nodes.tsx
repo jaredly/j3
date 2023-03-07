@@ -9,6 +9,7 @@ import { StringView } from './String';
 import { RecordAccess } from './RecordAccess';
 import { Attachment } from './Attachment';
 import { RichText } from './Markdown';
+import { Spread } from './Spread';
 
 // ListLike
 // array, list, record
@@ -140,6 +141,18 @@ export const Node = React.memo(
         if (item.type === 'recordAccess') {
             return (
                 <RecordAccess
+                    node={item}
+                    top={top}
+                    idx={idx}
+                    path={path}
+                    events={events}
+                />
+            );
+        }
+
+        if (item.type === 'spread') {
+            return (
+                <Spread
                     node={item}
                     top={top}
                     idx={idx}

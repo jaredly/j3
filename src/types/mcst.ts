@@ -44,10 +44,7 @@ export type MNodeContents =
 
     // list-like
     | { type: 'comment'; text: string }
-    | {
-          type: 'spread';
-          contents: number;
-      }
+    | MCSpread
     | MCRecordAccess
     | { type: 'accessText'; text: string }
 
@@ -64,6 +61,10 @@ export type MCRecordAccess = {
     type: 'recordAccess';
     target: number;
     items: number[];
+};
+export type MCSpread = {
+    type: 'spread';
+    contents: number;
 };
 export type WithLoc<T> = T & { loc: Loc };
 

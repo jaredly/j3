@@ -10,8 +10,14 @@ import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
-export const recordMap = (record: TRecord) => {
+export const recordMap = (record: TRecord, ctx: Ctx): RecordMap => {
     const map: RecordMap = {};
+    record.spreads.forEach((spread) => {
+        const t = applyAndResolve(spread, ctx, []);
+        if (t.type === 'record') {
+            Object.assign(map, recordMap(t, ctx));
+        }
+    });
     record.entries.forEach((entry) => {
         map[entry.name] = entry;
     });
@@ -395,7 +401,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                                   })
                                 : undefined;
                         }
-                        spreadMap = recordMap(res.bound);
+                        spreadMap = recordMap(res.bound, ctx);
                     }
                     if (res.type !== 'record') {
                         return report
@@ -405,9 +411,9 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                               })
                             : undefined;
                     }
-                    spreadMap = recordMap(res);
+                    spreadMap = recordMap(res, ctx);
                 } else {
-                    spreadMap = recordMap(spread);
+                    spreadMap = recordMap(spread, ctx);
                 }
             }
             const seen: { [key: string]: true } = {};
@@ -447,6 +453,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 type: 'record',
                 form: expr.form,
                 open: false,
+                spreads: [],
                 entries,
             };
         }
@@ -483,7 +490,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                               })
                             : undefined;
                     }
-                    const map = recordMap(resolved);
+                    const map = recordMap(resolved, ctx);
                     if (!map[attr]) {
                         return report
                             ? errf(report, expr.form, {

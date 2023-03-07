@@ -21,8 +21,8 @@ export const id = (text: string, loc: Loc): Node => ({
     loc,
 });
 
-export const asTuple = (record: TRecord): Type[] | null => {
-    const map = recordMap(record);
+export const asTuple = (record: TRecord, ctx: Ctx): Type[] | null => {
+    const map = recordMap(record, ctx);
     const res: Type[] = [];
     for (let i = 0; i < record.entries.length; i++) {
         if (!map[i.toString()]) {

@@ -202,6 +202,6 @@ export type TRecord = {
     type: 'record';
     entries: { name: string; value: Type; default?: Expr }[];
     open: boolean;
-    // spreads: Type[],
+    spreads: Type[];
     form: Node;
 };

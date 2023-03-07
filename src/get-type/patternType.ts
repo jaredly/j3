@@ -21,6 +21,7 @@ export const patternType = (pattern: Pattern): Type => {
                 type: 'record',
                 form: pattern.form,
                 open: true,
+                spreads: [],
                 entries: pattern.entries.map((entry) => ({
                     name: entry.name,
                     value: patternType(entry.value),

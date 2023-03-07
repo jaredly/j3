@@ -8,6 +8,11 @@
 - [x] decimals are broken
 - [x] negative numbers don't work also
 - [ ] spreads are needed
+  - [x] basic render n stuff
+  - [ ] parse a spread record type
+  - [ ] parse a spread record expr
+  - [ ] parse a spread array expr
+
   and then? idk what comes next tbh
   - [ ] so recursion, and especially type recursion, will be pretty important in a minute.
   - [ ] also, I wonder if it's ~time to abstract out my cst editing library? Or something?

@@ -27,7 +27,7 @@ export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
         res = res.bound;
     }
     if (res.type === 'record') {
-        return recordMap(res);
+        return recordMap(res, ctx);
     }
     return null;
 };

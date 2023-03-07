@@ -141,7 +141,7 @@ export type PathChild =
       }
     | { type: 'inside' | 'start' | 'end' }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
-    | { type: 'record-target' }
+    | { type: 'record-target' | 'spread-contents' }
     | {
           type: 'decorator';
           key: string;
@@ -240,6 +240,11 @@ export const setSelection = (
                     idx: node.items[node.items.length - 1],
                     loc: 'end',
                 };
+            }
+        }
+        if (node.type === 'spread') {
+            if (selection.loc !== 'start') {
+                selection = { idx: node.contents, loc: selection.loc };
             }
         }
     }

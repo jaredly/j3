@@ -115,8 +115,8 @@ export const _unifyTypes = (
             : une(path, one, two);
     }
     if (one.type === 'record' && two.type === 'record') {
-        const onem = recordMap(one);
-        const twom = recordMap(two);
+        const onem = recordMap(one, ctx);
+        const twom = recordMap(two, ctx);
         const unified = unifyMaps(onem, twom, ctx, path);
         if (unified.type === 'error') {
             return unified;
@@ -125,6 +125,7 @@ export const _unifyTypes = (
             type: 'record',
             entries: Object.values(unified.map),
             open: false,
+            spreads: [],
             form: one.form,
         };
     }

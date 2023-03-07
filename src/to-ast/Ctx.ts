@@ -171,6 +171,7 @@ export const fileBase: Type = {
     type: 'record',
     form: blank,
     open: false,
+    spreads: [],
     entries: [
         {
             name: 'name',
@@ -295,6 +296,7 @@ export const nilt = {
     type: 'record',
     entries: [],
     open: false,
+    spreads: [],
     form: {
         type: 'list',
         values: [],

@@ -48,7 +48,7 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                 ],
             };
         case 'record':
-            const tuple = asTuple(type);
+            const tuple = asTuple(type, ctx);
             if (tuple) {
                 return {
                     loc: type.form.loc,
@@ -64,10 +64,19 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             }
             return loc(type.form.loc, {
                 type: 'record',
-                values: type.entries.flatMap(({ name, value }) => [
-                    id(name, noloc),
-                    nodeForType(value, ctx),
-                ]),
+                values: [
+                    ...type.spreads.map(
+                        (spread): Node => ({
+                            type: 'spread',
+                            contents: nodeForType(spread, ctx),
+                            loc: spread.form.loc,
+                        }),
+                    ),
+                    ...type.entries.flatMap(({ name, value }) => [
+                        id(name, noloc),
+                        nodeForType(value, ctx),
+                    ]),
+                ],
             });
         case 'tfn': {
             const map: { [key: number]: string } = {};

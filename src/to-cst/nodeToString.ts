@@ -20,6 +20,8 @@ export const nodeToString = (node: Node): string => {
             return `${nodeToString(node.target)}${node.items
                 .map((item) => '.' + item.text)
                 .join()}`;
+        case 'spread':
+            return `...${nodeToString(node.contents)}`;
         case 'unparsed':
             return node.raw;
     }
