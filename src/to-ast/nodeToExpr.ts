@@ -11,6 +11,7 @@ export const filterComments = (nodes: Node[]) =>
     nodes.filter(
         (node) =>
             node.type !== 'comment' &&
+            node.type !== 'blank' &&
             !(
                 node.type === 'identifier' &&
                 node.text === '' &&
@@ -193,7 +194,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 form,
                 templates: form.templates.map((item) => ({
                     suffix: { text: item.suffix.text, form: item.suffix },
-                    expr: nodeToExpr(item.expr, ctx),
+                    expr:
+                        item.expr.type === 'blank'
+                            ? {
+                                  type: 'unresolved',
+                                  form: item.expr,
+                              }
+                            : nodeToExpr(item.expr, ctx),
                 })),
             };
         case 'number':
@@ -331,7 +338,12 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'spread':
-            throw new Error('not yet impl');
+            // throw new Error('not yet impl');
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: 'dangling spread',
+            });
+            return { type: 'blank', form };
         case 'rich-text':
             return { type: 'rich-text', form, lexicalJSON: form.lexicalJSON };
         case 'attachment':

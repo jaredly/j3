@@ -53,6 +53,9 @@ export const Overheat = ({
     idx: number;
 }) => {
     const mnode = useStore(top.store, idx);
+    if (!mnode) {
+        return <span>CODE RED NO NODE</span>;
+    }
     const dec = top.ctx.report.errors[idx]?.length
         ? 'rgba(255,0,0,0.2)'
         : 'none';

@@ -47,7 +47,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const tmpMap: Map = { ...store.map };
 
     root.values.forEach((idx) => {
-        if (tmpMap[idx].type === 'comment') {
+        if (tmpMap[idx].type === 'comment' || tmpMap[idx].type === 'blank') {
             results[idx] = {
                 status: 'success',
                 value: undefined,

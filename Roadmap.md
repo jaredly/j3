@@ -1,4 +1,11 @@
 
+# Going down the list of syntactic things
+
+- [ ] using a variable should update its type annotation, that's a thing
+- [ ] task throwing
+- [ ] generics are a big deal
+- [ ] but RECURSION is a big deal too. and maybe the firster deal
+
 # Overheat
 maybe think of a better name idk
 
@@ -8,6 +15,10 @@ maybe think of a better name idk
   - can I have `onBackspace` in `events` work reasonably?
 - [x] oh backspace on attriutes not working?
 - [x] lol you can't decimal anymore now because of attributes
+
+- [x] backspace in string
+- [ ] '}' in expr in string
+- [ ] closing '"' in string
 
 - [ ] whyyy is my error handling lagging?
 

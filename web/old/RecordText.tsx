@@ -244,8 +244,8 @@ export const replacePath = (
         }
         case 'expr': {
             const templates = (pnode as MCString).templates.slice();
-            templates[parent.child.at] = {
-                ...templates[parent.child.at],
+            templates[parent.child.at - 1] = {
+                ...templates[parent.child.at - 1],
                 expr: newIdx,
             };
             map[parent.idx] = {

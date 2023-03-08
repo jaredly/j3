@@ -23,6 +23,7 @@ import { Loc, stringText } from '../../src/types/cst';
 import { focus, Top } from './IdentifierLike';
 import { getPos, onKeyDown } from '../mods/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
+import { replacePath } from './RecordText';
 
 export const StringText = ({
     idx,
@@ -177,10 +178,31 @@ export const StringText2 = ({
                     getPos(evt.currentTarget) === 0
                 ) {
                     const last = path[path.length - 1];
-                    if (last.child.type !== 'text' || last.child.at === 0) {
+                    if (last.child.type !== 'text') {
                         return;
                     }
                     evt.preventDefault();
+                    if (last.child.at === 0) {
+                        if (evt.currentTarget.textContent! !== '') {
+                            return events.onLeft();
+                        }
+                        const parent = store.map[last.idx] as MCString;
+                        if (parent.templates.length !== 0) {
+                            return events.onLeft();
+                        }
+                        const n = nidx();
+                        const map = replacePath(
+                            path[path.length - 2],
+                            n,
+                            store,
+                        );
+                        map[n] = {
+                            type: 'blank',
+                            loc: { idx: n, start: 0, end: 0 },
+                        };
+                        updateStore(store, { map, selection: { idx: n } });
+                        return;
+                    }
                     const { map, selection } = joinExprs(
                         last.idx,
                         last.child.at - 1,

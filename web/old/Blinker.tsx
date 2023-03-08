@@ -69,8 +69,13 @@ export const Blinker = ({
                     !evt.altKey &&
                     !evt.ctrlKey
                 ) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
                     const nw = parseKey(evt.key);
-                    if (!nw) return;
+                    if (!nw) {
+                        console.warn(`don't know what to do wtih`, evt.key);
+                        return;
+                    }
                     const mp: Map = {};
                     const nidx = toMCST(nw, mp);
 
@@ -85,8 +90,6 @@ export const Blinker = ({
                             map: mp,
                             selection: { idx: nidx, loc: 'end' },
                         });
-                        evt.preventDefault();
-                        evt.stopPropagation();
                         return;
                     }
 
@@ -112,6 +115,8 @@ export const Blinker = ({
                         evt.preventDefault();
                         evt.stopPropagation();
                     }
+                } else {
+                    console.warn(`dont know what to do with`, evt.key);
                 }
             }}
         />
