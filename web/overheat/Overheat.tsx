@@ -78,6 +78,7 @@ export const Overheat = ({
                     ? {
                           display: 'block',
                           cursor: 'text',
+                          background: dec,
                       }
                     : { background: dec }
             }
@@ -90,6 +91,7 @@ export const Overheat = ({
             }}
         >
             {/* <span style={{ fontSize: '50%' }}>{idx}</span> */}
+            {/* {JSON.stringify(top.ctx.report.errors[idx])} */}
             {children}
         </span>
     );

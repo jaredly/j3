@@ -9,6 +9,8 @@ maybe think of a better name idk
 - [x] oh backspace on attriutes not working?
 - [x] lol you can't decimal anymore now because of attributes
 
+- [ ] whyyy is my error handling lagging?
+
 # Broad strokes
 
 - [x] attributes are working

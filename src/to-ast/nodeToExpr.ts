@@ -90,7 +90,15 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             }
             return {
                 type: 'recordAccess',
-                items: form.items.map((item) => item.text),
+                items: form.items.map((item) => {
+                    if (item.text === '') {
+                        err(ctx.errors, item, {
+                            type: 'misc',
+                            message: 'empty attribute',
+                        });
+                    }
+                    return item.text;
+                }),
                 form,
                 target,
             };
@@ -260,6 +268,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         style: { type: 'record-attr' },
                     };
                     if (name.type !== 'identifier' && name.type !== 'number') {
+                        err(ctx.errors, name, {
+                            type: 'misc',
+                            message: `invalid record item ${name.type}`,
+                        });
                         i += 1;
                         continue;
                     }

@@ -69,6 +69,7 @@ export const Doc = ({ store, ctx }: { store: Store; ctx: EvalCtx }) => {
                 /> */}
                 <KeyMonitor />
             </div>
+            {/* {JSON.stringify(top.ctx.report)} */}
             {hover && (
                 <ShowHover
                     hover={hover}

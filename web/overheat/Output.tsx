@@ -19,7 +19,7 @@ export const OutputWatcher = ({ top, idx }: RenderProps<any>) => {
             <div style={{ height: 8 }} />
             <OneLineResult ctx={top.ctx.ctx} result={top.ctx.results[idx]} />
             <div style={{ height: 8 }} />
-            {JSON.stringify(fromMCST(idx, top.store.map))}
+            {/* {JSON.stringify(fromMCST(idx, top.store.map))} */}
         </div>
     );
 };
