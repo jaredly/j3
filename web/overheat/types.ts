@@ -1,5 +1,7 @@
 // The types
 
+import { Top } from '../old/IdentifierLike';
+import { Events } from '../old/Nodes';
 import { Path } from '../store';
 import { RenderProps } from './Overheat';
 
@@ -29,4 +31,5 @@ export type ONode =
           id: number;
           path: Path['child'];
           innerLeft?: boolean;
+          events?: (top: Top) => Partial<Events>;
       };

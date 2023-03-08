@@ -8,11 +8,8 @@ import { OutputWatcher } from './Output';
 import { RenderProps } from './Overheat';
 import { ONode } from './types';
 
-export const getNodesWithAnnot = (
-    node: MNode,
-    isRoot?: boolean,
-): ONode[] | null => {
-    const nodes = getNodes(node, isRoot);
+export const getNodes = (node: MNode, isRoot?: boolean): ONode[] => {
+    const nodes = getNodes_(node, isRoot);
     if (nodes && node.tannot != null) {
         nodes.push(
             { type: 'punct', text: ':', color: 'inherit', innerLeft: true },
@@ -27,7 +24,7 @@ export const getNodesWithAnnot = (
     return nodes;
 };
 
-export const getNodes = (node: MNode, isRoot?: boolean): ONode[] | null => {
+export const getNodes_ = (node: MNode, isRoot?: boolean): ONode[] => {
     switch (node.type) {
         case 'spread':
             return [

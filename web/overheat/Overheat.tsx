@@ -11,7 +11,7 @@ import { sideClick } from '../old/ListLike';
 import { Events, rainbow } from '../old/Nodes';
 import { Path, Selection, setSelection, useStore } from '../store';
 import { ONode } from './types';
-import { getNodes, getNodesWithAnnot } from './getNodesWithAnnot';
+import { getNodes_, getNodes } from './getNodesWithAnnot';
 
 const select = (
     node: ONode,
@@ -53,13 +53,17 @@ export const Overheat = ({
     idx: number;
 }) => {
     const mnode = useStore(top.store, idx);
-    const nodes = getNodesWithAnnot(mnode, idx === top.store.root);
-    if (!nodes) {
-        return <span>No overheat for {mnode.type}</span>;
-    }
     const dec = top.ctx.report.errors[idx]?.length
         ? 'rgba(255,0,0,0.2)'
         : 'none';
+
+    const isSelected = top.store.selection?.idx === idx;
+
+    const children = renderNodes(mnode, idx, top, events, path, isSelected);
+    // React.useMemo(() => {
+    //     return renderNodes(mnode, idx, top, events, path, isSelected);
+    // }, [mnode, events, isSelected]);
+
     return (
         <span
             onMouseEnter={(evt) =>
@@ -86,102 +90,103 @@ export const Overheat = ({
             }}
         >
             {/* <span style={{ fontSize: '50%' }}>{idx}</span> */}
-            {nodes.map((node, i) => {
-                const childEvents: Events = makeChildEvents(
-                    i,
-                    nodes,
-                    idx,
-                    top,
-                    events,
-                );
-                switch (node.type) {
-                    case 'punct':
-                        return (
-                            <span
-                                key={'punct:' + i}
-                                style={{
-                                    whiteSpace: 'pre-wrap',
-                                    color:
-                                        node.color === 'rainbow'
-                                            ? rainbow[
-                                                  path.length % rainbow.length
-                                              ]
-                                            : node.color,
-                                    opacity: 0.5,
-                                    fontVariationSettings: node.boldSelect
-                                        ? top.store.selection?.idx === idx
-                                            ? '"wght" 900'
-                                            : ''
-                                        : undefined,
-                                }}
-                                onMouseDown={sideClick((left) => {
-                                    if (left) {
-                                        childEvents.onLeft();
-                                    } else {
-                                        childEvents.onRight();
-                                    }
-                                })}
-                            >
-                                {node.text}
-                            </span>
-                        );
-                    case 'blinker':
-                        return top.store.selection?.idx === idx &&
-                            top.store.selection.loc === node.loc ? (
-                            <Blinker
-                                key={idx + ':' + node.loc}
-                                idx={idx}
-                                store={top.store}
-                                ectx={top.ctx}
-                                path={path.concat([
-                                    { idx, child: { type: node.loc } },
-                                ])}
-                                events={childEvents}
-                            />
-                        ) : null;
-                    case 'ref':
-                        return (
-                            <Overheat
-                                idx={node.id}
-                                key={node.id}
-                                top={top}
-                                path={path.concat({ idx, child: node.path })}
-                                events={childEvents}
-                            />
-                        );
-                    case 'extra': {
-                        const Component = node.component;
-                        return (
-                            <Component
-                                key={'extra:' + i}
-                                idx={idx}
-                                node={mnode}
-                                top={top}
-                                path={path}
-                                events={childEvents}
-                                {...(node.props ?? {})}
-                            />
-                        );
-                    }
-                    case 'render': {
-                        const Component = node.component;
-                        return (
-                            <Component
-                                key={idx}
-                                idx={idx}
-                                node={mnode}
-                                top={top}
-                                path={path}
-                                events={childEvents}
-                                {...(node.props ?? {})}
-                            />
-                        );
-                    }
-                }
-            })}
+            {children}
         </span>
     );
 };
+
+function renderNodes(
+    mnode: MNode,
+    idx: number,
+    top: Top,
+    events: Events,
+    path: Path[],
+    isSelected: boolean,
+) {
+    const nodes = getNodes(mnode, idx === top.store.root);
+    return nodes.map((node, i) => {
+        const childEvents: Events = makeChildEvents(i, nodes, idx, top, events);
+        switch (node.type) {
+            case 'punct':
+                return (
+                    <span
+                        key={'punct:' + i}
+                        style={{
+                            whiteSpace: 'pre-wrap',
+                            color:
+                                node.color === 'rainbow'
+                                    ? rainbow[path.length % rainbow.length]
+                                    : node.color,
+                            opacity: 0.5,
+                            fontVariationSettings: node.boldSelect
+                                ? isSelected
+                                    ? '"wght" 900'
+                                    : ''
+                                : undefined,
+                        }}
+                        onMouseDown={sideClick((left) => {
+                            if (left) {
+                                childEvents.onLeft();
+                            } else {
+                                childEvents.onRight();
+                            }
+                        })}
+                    >
+                        {node.text}
+                    </span>
+                );
+            case 'blinker':
+                return isSelected && top.store.selection!.loc === node.loc ? (
+                    <Blinker
+                        key={idx + ':' + node.loc}
+                        idx={idx}
+                        store={top.store}
+                        ectx={top.ctx}
+                        path={path.concat([{ idx, child: { type: node.loc } }])}
+                        events={childEvents}
+                    />
+                ) : null;
+            case 'ref':
+                return (
+                    <Overheat
+                        idx={node.id}
+                        key={node.id}
+                        top={top}
+                        path={path.concat({ idx, child: node.path })}
+                        events={childEvents}
+                    />
+                );
+            case 'extra': {
+                const Component = node.component;
+                return (
+                    <Component
+                        key={'extra:' + i}
+                        idx={idx}
+                        node={mnode}
+                        top={top}
+                        path={path}
+                        events={childEvents}
+                        {...(node.props ?? {})}
+                    />
+                );
+            }
+            case 'render': {
+                const Component = node.component;
+                return (
+                    <Component
+                        key={idx}
+                        idx={idx}
+                        node={mnode}
+                        top={top}
+                        path={path}
+                        events={childEvents}
+                        {...(node.props ?? {})}
+                    />
+                );
+            }
+        }
+    });
+}
 
 function makeChildEvents(
     i: number,
@@ -191,11 +196,14 @@ function makeChildEvents(
     events: Events,
 ): Events {
     return {
+        // store
+        // leftSelection
+        // rightSelection
+        // so we don't need the store actually?
         onLeft() {
             for (let ti = i - 1; ti >= 0; ti--) {
                 const sel = select(nodes[ti], idx, 'end');
                 if (sel) {
-                    console.log('doing a select', ti, i, sel, idx);
                     setSelection(top.store, {
                         ...sel,
                         from: nodes[i].innerLeft ? undefined : 'right',
