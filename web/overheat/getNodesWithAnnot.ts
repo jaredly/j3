@@ -2,8 +2,9 @@ import { MNode } from '../../src/types/mcst';
 import { Attachment } from '../old/Attachment';
 import { IdentifierLike2 } from '../old/IdentifierLike';
 import { RichText } from '../old/Markdown';
-import { RecordText2 } from '../old/RecordText';
+import { RecordText2, replacePath } from '../old/RecordText';
 import { StringText2 } from '../old/StringText';
+import { updateStore } from '../store';
 import { OutputWatcher } from './Output';
 import { RenderProps } from './Overheat';
 import { ONode } from './types';
@@ -34,6 +35,28 @@ export const getNodes_ = (node: MNode, isRoot?: boolean): ONode[] => {
                     type: 'ref',
                     id: node.contents,
                     path: { type: 'spread-contents' },
+                    events(top, path) {
+                        return {
+                            onBackspace(isEmpty) {
+                                if (isEmpty) {
+                                    console.log('backspacing');
+                                    const map = replacePath(
+                                        path[path.length - 1],
+                                        node.contents,
+                                        top.store,
+                                    );
+                                    updateStore(top.store, {
+                                        map,
+                                        selection: {
+                                            idx: node.contents,
+                                            loc: 'start',
+                                        },
+                                    });
+                                    return true;
+                                }
+                            },
+                        };
+                    },
                 },
             ];
         case 'recordAccess':

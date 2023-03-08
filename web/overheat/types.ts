@@ -31,5 +31,5 @@ export type ONode =
           id: number;
           path: Path['child'];
           innerLeft?: boolean;
-          events?: (top: Top) => Partial<Events>;
+          events?: (top: Top, path: Path[]) => Partial<Events>;
       };

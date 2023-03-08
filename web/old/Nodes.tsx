@@ -1,10 +1,9 @@
 import * as React from 'react';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNodeContents } from '../../src/types/mcst';
-import { SetHover } from './Doc';
 import { IdentifierLike, Top } from './IdentifierLike';
 import { ListLike, sideClick } from './ListLike';
-import { EvalCtx, Path, setSelection, Store, useStore } from '../store';
+import { Path, setSelection, useStore } from '../store';
 import { StringView } from './String';
 import { RecordAccess } from './RecordAccess';
 import { Attachment } from './Attachment';

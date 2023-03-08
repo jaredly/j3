@@ -146,7 +146,10 @@ function renderNodes(
                         events={childEvents}
                     />
                 ) : null;
-            case 'ref':
+            case 'ref': {
+                if (node.events) {
+                    Object.assign(childEvents, node.events(top, path));
+                }
                 return (
                     <Overheat
                         idx={node.id}
@@ -156,6 +159,7 @@ function renderNodes(
                         events={childEvents}
                     />
                 );
+            }
             case 'extra': {
                 const Component = node.component;
                 return (
@@ -200,6 +204,7 @@ function makeChildEvents(
         // leftSelection
         // rightSelection
         // so we don't need the store actually?
+        ...events,
         onLeft() {
             for (let ti = i - 1; ti >= 0; ti--) {
                 const sel = select(nodes[ti], idx, 'end');
