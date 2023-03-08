@@ -4,12 +4,9 @@ maybe think of a better name idk
 
 - [x] rendering stuff! Very cool
 - [ ] setSelection (left/right, is start/end allowed) is still ad-hoc
-- [ ] backspace on a spread doesn't work anymore
+- [x] backspace on a spread doesn't work anymore
   - can I have `onBackspace` in `events` work reasonably?
 - [x] oh backspace on attriutes not working?
-
-- [ ] 
-
 - [x] lol you can't decimal anymore now because of attributes
 
 # Broad strokes
@@ -26,8 +23,8 @@ maybe think of a better name idk
   - [x] .. turns into spread
   - [x] delete in a spread should back out
   - [x] so I kinda think expr should also allow multiple spreads.
-  - [ ] '{' in spread body isn't working
-  - [ ] single item with spread isn't showing upt
+  - [x] '{' in spread body isn't working
+  - [x] single item with spread isn't showing upt
 
 - [x] BUG if you do `{}` then `.` we infinite loop! Not sure where.
 

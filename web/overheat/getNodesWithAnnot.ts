@@ -1,4 +1,4 @@
-import { MNode } from '../../src/types/mcst';
+import { fromMCST, MNode } from '../../src/types/mcst';
 import { Attachment } from '../old/Attachment';
 import { IdentifierLike2 } from '../old/IdentifierLike';
 import { RichText } from '../old/Markdown';

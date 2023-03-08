@@ -136,7 +136,9 @@ function renderNodes(
                     </span>
                 );
             case 'blinker':
-                return isSelected && top.store.selection!.loc === node.loc ? (
+                return isSelected &&
+                    (top.store.selection!.loc === node.loc ||
+                        (!top.store.selection!.loc && node.loc === 'end')) ? (
                     <Blinker
                         key={idx + ':' + node.loc}
                         idx={idx}

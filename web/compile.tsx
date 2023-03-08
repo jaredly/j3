@@ -21,7 +21,6 @@ export const builtins = {
 };
 
 export const compile = (store: Store, ectx: EvalCtx) => {
-    console.log('compile');
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root] as ListLikeContents;
 
@@ -116,7 +115,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             Object.assign(allStyles, prev.display);
             return;
         }
-        console.log('recomputing and such');
+        // console.log('recomputing and such');
 
         const prevHashes = getHashes(nodes[idx]);
 

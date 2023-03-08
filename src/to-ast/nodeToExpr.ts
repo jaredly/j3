@@ -56,6 +56,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     for (let item of form.items) {
                         const options = getRecordMap(ttype, ctx);
                         if (!options) {
+                            err(ctx.errors, item, {
+                                type: 'misc',
+                                message: 'not a record',
+                            });
                             break;
                         }
                         if (options[item.text]) {
@@ -76,6 +80,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                                         } satisfies AutoCompleteResult),
                                 );
                             ctx.display[item.loc.idx];
+                            err(ctx.errors, item, {
+                                type: 'misc',
+                                message: `no "${item.text}" attribute on record`,
+                            });
                         }
                     }
                 }
@@ -190,7 +198,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'record': {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
-            console.log('record values', values);
+            // console.log('record values', values);
             let spreads: Expr[] = [];
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
@@ -270,9 +278,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }
-            }
-            if (spreads.length) {
-                console.log('yes it is');
             }
             return { type: 'record', entries, spreads, form };
         }

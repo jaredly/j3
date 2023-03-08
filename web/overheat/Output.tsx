@@ -1,4 +1,5 @@
 import React from 'react';
+import { fromMCST } from '../../src/types/mcst';
 import { OneLineResult } from '../old/ListLike';
 import { setSelection, useStore } from '../store';
 import { RenderProps } from './Overheat';
@@ -18,6 +19,7 @@ export const OutputWatcher = ({ top, idx }: RenderProps<any>) => {
             <div style={{ height: 8 }} />
             <OneLineResult ctx={top.ctx.ctx} result={top.ctx.results[idx]} />
             <div style={{ height: 8 }} />
+            {JSON.stringify(fromMCST(idx, top.store.map))}
         </div>
     );
 };
