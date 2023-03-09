@@ -28,6 +28,7 @@ import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { Top } from '../old/IdentifierLike';
 import { wrapWithParens } from './wrapWithParens';
 import { modChildren } from './modChildren';
+import { SelectAndPath } from './getKeyUpdate';
 
 type KeyHandler = {
     keys: (
@@ -166,7 +167,7 @@ export const onKeyDown = (
         const selection = closeListLike(evt.key, path, store.map);
         if (selection) {
             maybeCommitAutoComplete(idx, ectx, store);
-            return setSelection(store, selection);
+            return setSelection(store, selection.selection);
         }
     }
 
@@ -411,7 +412,7 @@ export const closeListLike = (
     key: string,
     path: Path[],
     map: Map,
-): Selection | void => {
+): SelectAndPath | void => {
     const looking = ({ ')': 'list', ']': 'array', '}': 'record' } as const)[
         key
     ];
@@ -423,8 +424,11 @@ export const closeListLike = (
         const node = map[parent.idx];
         if (node.type === looking) {
             return {
-                idx: parent.idx,
-                loc: 'end',
+                selection: {
+                    idx: parent.idx,
+                    loc: 'end',
+                },
+                path: path.slice(0, i - 1),
             };
         }
     }

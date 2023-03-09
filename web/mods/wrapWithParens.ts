@@ -9,6 +9,7 @@ import {
     toMCST,
 } from '../../src/types/mcst';
 import { Path, StoreUpdate } from '../store';
+import { TheUpdate } from './getKeyUpdate';
 import { modChildren } from './modChildren';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
@@ -19,15 +20,20 @@ export function wrapWithParens(
     map: Map,
     kind: 'array' | 'list' | 'record',
     loc: 'start' | 'end' = 'end',
-): StoreUpdate | void {
+): TheUpdate | void {
     const parent = path[path.length - 1];
     const nw = newListLike(kind, idx);
     const mp: Map = { [nw.loc.idx]: nw };
     const pnode = map[parent.idx];
 
+    const childPath = path.concat({
+        idx: nw.loc.idx,
+        child: { type: 'child', at: 0 },
+    });
+
     if (pnode.type === 'spread') {
         mp[parent.idx] = { ...pnode, contents: nw.loc.idx };
-        return { map: mp, selection: { idx, loc } };
+        return { map: mp, selection: { idx, loc }, path: childPath };
     }
 
     if (pnode.type === 'string' && parent.child.type === 'expr') {
@@ -37,7 +43,7 @@ export function wrapWithParens(
             suffix: templates[parent.child.at - 1].suffix,
         };
         mp[parent.idx] = { ...pnode, templates };
-        return { map: mp, selection: { idx, loc } };
+        return { map: mp, selection: { idx, loc }, path: childPath };
     }
 
     if (
@@ -53,7 +59,7 @@ export function wrapWithParens(
                 items.splice(at, 1, nw.loc.idx);
             }),
         };
-        return { map: mp, selection: { idx, loc } };
+        return { map: mp, selection: { idx, loc }, path: childPath };
     }
 
     return;
@@ -75,7 +81,7 @@ export const newNodeAfter = (
     idx: number,
     map: Map,
     node: MNode,
-): Map | void => {
+): { map: Map; path: Path[] } | void => {
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
 
@@ -97,6 +103,15 @@ export const newNodeAfter = (
                 return items;
             }),
         };
-        return mp;
+        return {
+            map: mp,
+            path: path.slice(0, i - 1).concat({
+                idx: parent.idx,
+                child: {
+                    type: 'child',
+                    at: child.type === 'child' ? child.at + 1 : 0,
+                },
+            }),
+        };
     }
 };
