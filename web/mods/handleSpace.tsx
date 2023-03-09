@@ -3,7 +3,8 @@ import { Map, MNodeExtra, toMCST } from '../../src/types/mcst';
 import { Path, Selection, Store, StoreUpdate, updateStore } from '../store';
 import { nidx, parse } from '../../src/grammar';
 import { Events } from '../old/Nodes';
-import { getPos, modChildren } from './onKeyDown';
+import { getPos } from './onKeyDown';
+import { modChildren } from './modChildren';
 import { Identifier, Node, NodeExtra } from '../../src/types/cst';
 
 export const addSpace = (

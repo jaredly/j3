@@ -2,7 +2,6 @@ import * as React from 'react';
 import {
     ListLikeContents,
     Map,
-    MCString,
     MNodeContents,
     MNodeExtra,
     toMCST,
@@ -21,10 +20,28 @@ import { parse } from '../../src/grammar';
 import { CString, Identifier, Loc, NodeContents } from '../../src/types/cst';
 import { Events } from '../old/Nodes';
 import { handleBackspace } from './handleBackspace';
-import { handleSpace } from './handleSpace';
+import { handleSpace, maybeUpdate } from './handleSpace';
 import { walkBackTree } from '../../tests/incrementallyBuildTree';
 import { compile } from '../compile';
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
+import { Top } from '../old/IdentifierLike';
+import { wrapWithParens } from './wrapWithParens';
+import { modChildren } from './modChildren';
+
+type KeyHandler = {
+    keys: (
+        | string
+        | {
+              key: string;
+              meta?: boolean;
+              shift?: boolean;
+              alt?: boolean;
+              ctrl?: boolean;
+          }
+    )[];
+    check: (path: Path[], idx: number, top: Top) => boolean;
+    handle: (path: Path[], idx: number, top: Top) => boolean;
+};
 
 export const onKeyDown = (
     evt: React.KeyboardEvent<HTMLSpanElement>,
@@ -41,14 +58,18 @@ export const onKeyDown = (
             getPos(evt.currentTarget) === 0 &&
             evt.currentTarget.textContent!.length !== 0
         ) {
-            console.log('trying to wrap');
-            wrapWithParens(
-                evt,
-                path,
-                idx,
+            evt.preventDefault();
+            maybeUpdate(
                 store,
-                { '(': '()', '[': '[]', '{': '{}' }[evt.key]!,
-                'start',
+                wrapWithParens(
+                    path,
+                    idx,
+                    store.map,
+                    ({ '(': 'list', '[': 'array', '{': 'record' } as const)[
+                        evt.key
+                    ]!,
+                    'start',
+                ),
             );
             return;
         }
@@ -159,7 +180,9 @@ export const onKeyDown = (
     }
 
     if (evt.key === '·' || (evt.key === '(' && evt.altKey)) {
-        return wrapWithParens(evt, path, idx, store, '()');
+        evt.preventDefault();
+        maybeUpdate(store, wrapWithParens(path, idx, store.map, 'list'));
+        return;
     }
 
     if (evt.key === '(' || evt.key === '[' || evt.key === '{') {
@@ -272,21 +295,6 @@ export const nodeChildren = (node: NodeContents) => {
             return node.values;
     }
     return [];
-};
-
-export const modChildren = (
-    node: MNodeContents,
-    fn: (children: number[]) => void,
-) => {
-    switch (node.type) {
-        case 'array':
-        case 'list':
-        case 'record':
-            const values = node.values.slice();
-            fn(values);
-            return { ...node, values };
-    }
-    return node;
 };
 
 export const rmChild = (
@@ -406,42 +414,4 @@ function newListLike(
         evt.preventDefault();
         return;
     }
-}
-
-function wrapWithParens(
-    evt: React.KeyboardEvent<HTMLSpanElement>,
-    path: Path[],
-    idx: number,
-    store: Store,
-    kind: string,
-    loc: 'start' | 'end' = 'end',
-) {
-    evt.preventDefault();
-    const parent = path[path.length - 1];
-    if (parent.child.type === 'child' || parent.child.type === 'expr') {
-        const child = parent.child;
-        const nw = parse(kind)[0];
-        const mp: Map = {};
-        const nidx = toMCST(nw, mp);
-        (mp[nw.loc.idx] as ListLikeContents).values.push(idx);
-        if (parent.child.type === 'child') {
-            const pnode = store.map[parent.idx];
-            mp[parent.idx] = {
-                ...pnode,
-                ...modChildren(pnode, (items) => {
-                    items.splice(child.at, 1, nidx);
-                }),
-            };
-        } else {
-            const pnode = store.map[parent.idx] as MCString & MNodeExtra;
-            const templates = pnode.templates.slice();
-            templates[child.at - 1] = {
-                expr: nidx,
-                suffix: templates[child.at - 1].suffix,
-            };
-            mp[parent.idx] = { ...pnode, templates };
-        }
-        updateStore(store, { map: mp, selection: { idx, loc } });
-    }
-    return;
 }

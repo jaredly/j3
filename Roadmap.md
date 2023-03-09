@@ -6,6 +6,24 @@
 - [ ] generics are a big deal
 - [ ] but RECURSION is a big deal too. and maybe the firster deal
 
+- [ ] I kindof want tests
+  - [ ] 
+
+## SO TESTS
+
+What are the layers that we have?
+- parse from text
+- "parse" from key strokes
+  - yo now that we have overheat, maybe I can do that thing I've always wanted to do
+    - it would involve, having two functions, one is `onInput`
+      and the other is `onKeyPress`
+- type matching, in a war of all against all
+  - identify different types by number, and indicate what other types it should match
+  - unification, similarly, can draw on X and Y and produce Z
+- actual evaluation and such
+
+So that I can get an overview of how "complete" we are. How implemented is this language.
+
 # Overheat
 maybe think of a better name idk
 

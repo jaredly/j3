@@ -2,7 +2,8 @@ import * as React from 'react';
 import { Map, toMCST } from '../../src/types/mcst';
 import { EvalCtx, Path, Store, updateStore } from '../store';
 import { Events } from './Nodes';
-import { modChildren, onKeyDown } from '../mods/onKeyDown';
+import { onKeyDown } from '../mods/onKeyDown';
+import { modChildren } from '../mods/modChildren';
 import { nidx, parse } from '../../src/grammar';
 import { Node } from '../../src/types/cst';
 
