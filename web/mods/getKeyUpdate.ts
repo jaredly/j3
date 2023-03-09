@@ -5,6 +5,7 @@ import {
     Selection,
     Store,
     StoreUpdate,
+    UpdateMap,
 } from '../store';
 import { Events } from '../old/Nodes';
 import {
@@ -14,6 +15,8 @@ import {
     wrapWithParens,
 } from './wrapWithParens';
 import { Map, MNode } from '../../src/types/mcst';
+import { nidx } from '../../src/grammar';
+import { closeListLike } from './onKeyDown';
 
 export type PathPlus = {
     idx: number;
@@ -21,6 +24,18 @@ export type PathPlus = {
     leftSelect?: Selection;
     rightSelect?: Selection;
 };
+
+export type KeyUpdate =
+    | {
+          type: 'update';
+          update: StoreUpdate | void;
+          auto?: boolean;
+      }
+    | {
+          type: 'select';
+          selection: Selection;
+      }
+    | void;
 
 /*
 So, keys:
@@ -45,16 +60,26 @@ export const getKeyUpdate = (
     idx: number,
     path: PathPlus[],
     map: Map,
-):
-    | { type: 'update'; update: StoreUpdate | void; auto?: boolean }
-    | { type: 'select'; selection: Selection }
-    | void => {
+): KeyUpdate => {
     const last = path[path.length - 1];
     const node = map[idx];
 
     // Start a list-like!
     if ('([{'.includes(key)) {
         return openListLike({ key, idx, last, node, path, map });
+    }
+
+    if (key === ' ') {
+        return newBlankAfter(path, idx, map);
+    }
+
+    if (')]}'.includes(key)) {
+        const selection = closeListLike(key, path, map);
+        return selection ? { type: 'select', selection } : undefined;
+    }
+
+    if (key === ':') {
+        return goToTannot(node, idx);
     }
 
     // "special" locations
@@ -77,6 +102,54 @@ export const getKeyUpdate = (
     //     }
     // }
 };
+
+function goToTannot(node: MNode, idx: number): KeyUpdate {
+    if (node.tannot != null) {
+        return {
+            type: 'select',
+            selection: { idx: node.tannot, loc: 'start' },
+        };
+    }
+    const nn: MNode = {
+        type: 'blank',
+        loc: { idx: nidx(), start: 0, end: 0 },
+    };
+    const update: UpdateMap = {
+        [idx]: {
+            ...node,
+            tannot: nn.loc.idx,
+        },
+        [nn.loc.idx]: nn,
+    };
+    return {
+        type: 'update',
+        update: {
+            map: update,
+            selection: {
+                idx: nn.loc.idx,
+                loc: 'start',
+            },
+        },
+    };
+}
+
+function newBlankAfter(path: PathPlus[], idx: number, map: Map): KeyUpdate {
+    const nn: MNode = {
+        type: 'blank',
+        loc: { idx: nidx(), start: 0, end: 0 },
+    };
+    const update = newNodeAfter(path, idx, map, nn);
+    return update
+        ? {
+              type: 'update',
+              update: {
+                  map: update,
+                  selection: { idx: nn.loc.idx, loc: 'start' },
+              },
+              auto: true,
+          }
+        : undefined;
+}
 
 function openListLike({
     key,
