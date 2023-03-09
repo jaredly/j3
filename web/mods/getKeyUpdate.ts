@@ -16,17 +16,12 @@ import {
 import { Map, MNode } from '../../src/types/mcst';
 import { nidx } from '../../src/grammar';
 import { closeListLike } from './onKeyDown';
-
-export type PathPlus = {
-    idx: number;
-    child: PathChild;
-    leftSelect?: SelectAndPath;
-    rightSelect?: SelectAndPath;
-};
+import { replacePath } from '../old/RecordText';
+import { modChildren } from './modChildren';
 
 export type SelectAndPath = {
     selection: Selection;
-    path: PathPlus[];
+    path: Path[];
 };
 
 export type TheUpdate = {
@@ -69,7 +64,7 @@ export const getKeyUpdate = (
     pos: number,
     text: string,
     idx: number,
-    path: PathPlus[],
+    path: Path[],
     map: Map,
 ): KeyUpdate => {
     const last = path[path.length - 1];
@@ -95,6 +90,79 @@ export const getKeyUpdate = (
 
     // "special" locations
     // accessText
+
+    // Ok, so now we're updating things
+
+    if (node.type === 'identifier') {
+        let text = node.text;
+        if (pos === 0) {
+            text = key + text;
+        } else if (pos === text.length) {
+            text = text + key;
+        } else {
+            text = text.slice(0, pos) + key + text.slice(pos);
+        }
+        return {
+            type: 'update',
+            update: {
+                map: { [idx]: { ...node, text } },
+                path,
+                selection: { idx, loc: pos + 1 },
+            },
+        };
+    }
+
+    if (last.child.type === 'inside') {
+        const nid = nidx();
+        const pnode = map[last.idx];
+        const update: UpdateMap = {
+            [last.idx]: {
+                ...pnode,
+                ...modChildren(pnode, (items) => items.unshift(nid)),
+            },
+            [nid]: {
+                type: 'identifier',
+                text: key,
+                loc: { idx: nid, start: 0, end: 0 },
+            },
+        };
+        return {
+            type: 'update',
+            update: {
+                map: update,
+                path: path.slice(0, -1).concat({
+                    idx: last.idx,
+                    child: { type: 'child', at: 0 },
+                }),
+                selection: { idx: nid, loc: 1 },
+            },
+        };
+    }
+
+    if (node.type === 'blank') {
+        return {
+            type: 'update',
+            update: {
+                map: {
+                    [idx]: {
+                        type: 'identifier',
+                        text: key,
+                        loc: node.loc,
+                    },
+                },
+                path,
+                selection: { idx, loc: 1 },
+            },
+        };
+    }
+
+    throw new Error(
+        `not handled ${JSON.stringify({
+            path,
+            node,
+            key,
+        })}`,
+    );
 
     // if (last && (last.child.type === 'child' || last.child.type === 'expr')) {
     //     if ('([{'.includes(key) && pos === 0 && text.length !== 0) {
@@ -146,7 +214,7 @@ function goToTannot(path: Path[], node: MNode, idx: number): KeyUpdate {
     };
 }
 
-function newBlankAfter(path: PathPlus[], idx: number, map: Map): KeyUpdate {
+function newBlankAfter(path: Path[], idx: number, map: Map): KeyUpdate {
     const nn: MNode = {
         type: 'blank',
         loc: { idx: nidx(), start: 0, end: 0 },
@@ -175,9 +243,9 @@ function openListLike({
 }: {
     key: string;
     idx: number;
-    last: PathPlus;
+    last: Path;
     node: MNode;
-    path: PathPlus[];
+    path: Path[];
     map: Map;
 }): KeyUpdate {
     const type = ({ '(': 'list', '[': 'array', '{': 'record' } as const)[key]!;
@@ -195,7 +263,7 @@ function openListLike({
                     },
                 },
                 selection: { idx, loc: 'inside' },
-                path,
+                path: path.concat({ idx, child: { type: 'inside' } }),
             },
         };
     }
