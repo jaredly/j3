@@ -70,6 +70,36 @@ export const getKeyUpdate = (
     const last = path[path.length - 1];
     const node = map[idx];
 
+    if (node.type === 'stringText') {
+        let text = node.text;
+        if (key === '"' && pos === text.length) {
+            // TODO: move selection to end
+            return {
+                type: 'select',
+                selection: { idx: last.idx, loc: 'end' },
+                path: path
+                    .slice(0, -1)
+                    .concat({ idx: last.idx, child: { type: 'end' } }),
+            };
+        }
+
+        if (pos === 0) {
+            text = key + text;
+        } else if (pos === text.length) {
+            text = text + key;
+        } else {
+            text = text.slice(0, pos) + key + text.slice(pos);
+        }
+        return {
+            type: 'update',
+            update: {
+                map: { [idx]: { ...node, text } },
+                path,
+                selection: { idx, loc: pos + 1 },
+            },
+        };
+    }
+
     // Start a list-like!
     if ('([{'.includes(key)) {
         return openListLike({ key, idx, last, node, path, map });
@@ -86,6 +116,33 @@ export const getKeyUpdate = (
 
     if (key === ':') {
         return goToTannot(path, node, idx);
+    }
+
+    if (key === '"') {
+        // are we at the start of a blank or id or something?
+        if (node.type === 'blank') {
+            const nid = nidx();
+            return {
+                type: 'update',
+                update: {
+                    map: {
+                        [idx]: {
+                            type: 'string',
+                            first: nid,
+                            templates: [],
+                            loc: { idx, start: 0, end: 0 },
+                        },
+                        [nid]: {
+                            type: 'stringText',
+                            loc: { idx: nid, start: 0, end: 0 },
+                            text: '',
+                        },
+                    },
+                    selection: { idx: nid, loc: 0 },
+                    path: path.concat({ idx, child: { type: 'text', at: 0 } }),
+                },
+            };
+        }
     }
 
     // "special" locations

@@ -15,7 +15,7 @@ const data = `
 (, 1 -1 2.0 1u -1.2)
 (list id id id id id id)
 
-"hello"
+"hel(l{o'"
 string
 
 "Hello \${one} and"
@@ -78,6 +78,8 @@ const sexp_ = (node: Node): string => {
             return `(access ${node.target.type === 'blank' ? '' : 'id '}${
                 node.items.length
             })`;
+        case 'string':
+            return 'string';
         default:
             return 'AA' + node.type;
     }

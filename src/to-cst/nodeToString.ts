@@ -22,6 +22,13 @@ export const nodeToString = (node: Node): string => {
                 .join()}`;
         case 'spread':
             return `...${nodeToString(node.contents)}`;
+        case 'string':
+            return `"${node.first.text}${node.templates
+                .map(
+                    (item) =>
+                        `\${${nodeToString(item.expr)}}${item.suffix.text}`,
+                )
+                .join('')}"`;
         case 'unparsed':
             return node.raw;
     }
