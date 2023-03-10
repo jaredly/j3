@@ -1,17 +1,18 @@
 // Can go left & right
 
 import { setIdx } from '../src/grammar';
-import { parseByCharacter } from '../src/parse/parse';
+import { idText, parseByCharacter } from '../src/parse/parse';
 import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { Selection } from '../web/store';
+import { getKeyUpdate } from '../web/mods/getKeyUpdate';
+import { Path, Selection } from '../web/store';
 
-const sink = `(fn [one:two three:(four five)]:six {10 20 yes "ok \${(some [2 3 ..more] ..things)} and \${a}" })`;
+const sink = ``;
 
 describe('going left', () => {
     it('should work', () => {
-        const { map: data, selection } = parseByCharacter(sink);
+        const { map: data } = parseByCharacter(sink);
         Object.keys(data).forEach((key) => {
             expect(data[+key].loc.idx).toEqual(+key);
         });
@@ -19,8 +20,38 @@ describe('going left', () => {
         const sourceMap: SourceMap = { map: {}, cur: 0 };
         let back = nodeToString(fromMCST(idx, data), sourceMap);
         expect(back).toEqual(sink);
-        // for (let i=0; i<sink.length; i++) {
+        let selection: Selection = { idx, loc: 'end' };
+        let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
+        for (let i = 0; i < sink.length; i++) {
+            const curText = idText(data[selection.idx]) ?? '';
 
-        // }
+            // const current = map[selection.idx];
+            const pos =
+                selection.loc === 'start' ||
+                selection.loc === 'inside' ||
+                selection.loc === 'change' ||
+                !selection.loc
+                    ? 0
+                    : selection.loc === 'end'
+                    ? curText.length
+                    : selection.loc;
+
+            const update = getKeyUpdate(
+                'ArrowLeft',
+                pos,
+                curText,
+                selection.idx,
+                path,
+                data,
+            )!;
+            console.log(i);
+            expect(update).toBeTruthy();
+            if (update.type !== 'select') {
+                expect(update).toMatchObject({ type: 'select' });
+            } else {
+                selection = update.selection;
+                path = update.path;
+            }
+        }
     });
 });

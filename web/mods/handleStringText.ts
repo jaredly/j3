@@ -84,12 +84,10 @@ function splitString(
         loc: { idx: nidx(), start: 0, end: 0 },
     };
     const templates = string.templates.slice();
-    if (last.child.at === 0) {
-        templates.splice(last.child.at, 0, {
-            expr: blank.loc.idx,
-            suffix: stringText.loc.idx,
-        });
-    }
+    templates.splice(last.child.at, 0, {
+        expr: blank.loc.idx,
+        suffix: stringText.loc.idx,
+    });
     return {
         type: 'update',
         update: {

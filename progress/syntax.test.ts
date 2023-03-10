@@ -1,11 +1,12 @@
 // Basic level
 
 import { setIdx } from '../src/grammar';
-import { parseByCharacter } from '../src/parse/parse';
+import { idText, parseByCharacter, selPos } from '../src/parse/parse';
 import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { Selection } from '../web/store';
+import { getKeyUpdate } from '../web/mods/getKeyUpdate';
+import { Path, Selection } from '../web/store';
 
 const data = `
 ()
@@ -23,10 +24,10 @@ string
 "Hello \${one} and"
 (string id)
 
-"nest \${(and "things")} ed"
+!!!"nest \${(and "things")} ed"
 (string (list id string))
 
-!!!"a\${b}c\${d}e"
+"a\${b}c\${d}e"
 (string id id)
 
 ("ok" ko)
@@ -105,6 +106,9 @@ hello.3.2.what
 
 (fn [one:two three:(four five)]:six seven)
 (list id (tannot (array (tannot id id) (tannot id (list id id))) id) id)
+
+(fn [one:two three:(four five)]:six {10 20 yes "ok \${(some [2 3 "inner" ..more] ..things)} and \${a}"})
+(list id (tannot (array (tannot id id) (tannot id (list id id))) id) (record id id id (string (list id (array id id string (spread id)) (spread id)) id)))
 `;
 
 const sexp = (node: Node): string => {
@@ -171,13 +175,9 @@ describe('a test', () => {
                 });
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
-                let back = nodeToString(fromMCST(idx, data), sourceMap);
+                const backOrig = nodeToString(fromMCST(idx, data), sourceMap);
+                let back = backOrig;
                 if (expected.includes('|')) {
-                    if (!sourceMap.map[selection.idx]) {
-                        console.log(JSON.stringify(data, null, 2));
-                        console.log(back);
-                        console.log(JSON.stringify(sourceMap.map, null, 2));
-                    }
                     const pos = remapPos(selection, sourceMap);
                     back = back.slice(0, pos) + '|' + back.slice(pos);
                 }
@@ -186,6 +186,64 @@ describe('a test', () => {
                 }
                 expect(sexp(fromMCST(idx, data))).toEqual(serialized);
                 expect(back).toEqual(expected);
+
+                const state: { sel: Selection; path: Path[] } = {
+                    sel: { idx, loc: 'end' },
+                    path: [
+                        { idx: -1, child: { type: 'child', at: 0 } },
+                        {
+                            idx,
+                            child: { type: 'end' },
+                        },
+                    ],
+                };
+                let at = backOrig.length;
+                while (at >= 0) {
+                    const curText = idText(data[state.sel.idx]) ?? '';
+                    const pos = selPos(state.sel, curText);
+                    if (only) {
+                        console.log(i, curText, pos, JSON.stringify(state));
+                    }
+
+                    const startPos = remapPos(state.sel, sourceMap);
+                    const update = getKeyUpdate(
+                        'ArrowLeft',
+                        pos,
+                        curText,
+                        state.sel.idx,
+                        state.path,
+                        data,
+                    );
+                    expect(update).toBeTruthy();
+                    if (update) {
+                        if (update.type !== 'select') {
+                            expect(update).toMatchObject({ type: 'select' });
+                        } else {
+                            state.sel = update.selection;
+                            state.path = update.path;
+                        }
+                    }
+                    const newPos = remapPos(state.sel, sourceMap);
+                    if (newPos >= startPos || newPos < startPos - 2) {
+                        console.log(
+                            'prev: ' +
+                                backOrig.slice(0, startPos) +
+                                '|' +
+                                backOrig.slice(startPos),
+                        );
+                        console.log(
+                            'now: ' +
+                                backOrig.slice(0, newPos) +
+                                '|' +
+                                backOrig.slice(newPos),
+                        );
+                        console.log(state.sel);
+                        expect(newPos).toEqual('something else');
+                    }
+                    if (newPos === 0) {
+                        break;
+                    }
+                }
             });
         });
 });

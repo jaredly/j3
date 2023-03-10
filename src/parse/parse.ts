@@ -55,17 +55,7 @@ export const parseByCharacter = (
         }
 
         const curText = idText(map[selection.idx]) ?? '';
-
-        // const current = map[selection.idx];
-        const pos =
-            selection.loc === 'start' ||
-            selection.loc === 'inside' ||
-            selection.loc === 'change' ||
-            !selection.loc
-                ? 0
-                : selection.loc === 'end'
-                ? curText.length
-                : selection.loc;
+        const pos = selPos(selection, curText);
 
         const update = getKeyUpdate(
             key,
@@ -111,3 +101,14 @@ export const parseByCharacter = (
     }
     return { map, selection };
 };
+
+export function selPos(selection: Selection, curText: string) {
+    return selection.loc === 'start' ||
+        selection.loc === 'inside' ||
+        selection.loc === 'change' ||
+        !selection.loc
+        ? 0
+        : selection.loc === 'end'
+        ? curText.length
+        : selection.loc;
+}

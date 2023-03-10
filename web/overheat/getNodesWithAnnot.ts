@@ -137,7 +137,7 @@ export const getNodes_ = (node: MNode, isRoot?: boolean): ONode[] => {
                     {
                         type: 'ref',
                         id: item.suffix,
-                        path: { type: 'expr', at: i + 1 },
+                        path: { type: 'text', at: i + 1 },
                     },
                 ]),
                 { type: 'punct', color: 'yellow', text: '"', boldSelect: true },

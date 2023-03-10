@@ -10,7 +10,11 @@ export type PathSel = {
     sel: Selection;
 };
 
-export const pathSelForNode = (node: ONode, idx: number): null | PathSel => {
+export const pathSelForNode = (
+    node: ONode,
+    idx: number,
+    loc: 'start' | 'end',
+): null | PathSel => {
     switch (node.type) {
         case 'punct':
             return null;
@@ -20,7 +24,7 @@ export const pathSelForNode = (node: ONode, idx: number): null | PathSel => {
         case 'extra':
             return null;
         case 'ref':
-            return { path: node.path, sel: { idx: node.id, loc: 'start' } };
+            return { path: node.path, sel: { idx: node.id, loc } };
     }
 };
 
@@ -31,7 +35,7 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
 
     let prev: PathSel | null = null;
     for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx);
+        const ps = pathSelForNode(pnode, last.idx, 'end');
         if (!ps) continue;
         if (equal(ps.path, last.child)) {
             return prev
