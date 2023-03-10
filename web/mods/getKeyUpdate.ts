@@ -146,7 +146,9 @@ export const getKeyUpdate = (
         }
         if (node.type === 'identifier' && !text.match(/^-?[0-9]+$/)) {
             const nat = newRecordAccess(idx, text.slice(pos));
-            if (pos < text.length) {
+            if (pos === 0) {
+                nat.map[idx] = { type: 'blank', loc: map[idx].loc };
+            } else if (pos < text.length) {
                 nat.map[idx] = { ...node, text: text.slice(0, pos) };
             }
             return replacePathWith(path, map, nat);

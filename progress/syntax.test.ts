@@ -101,6 +101,14 @@ hello.3.2.what
 .one.two
 (access 2)
 
+some^l^l.
+so.me
+(access id 1)
+
+hi^l^l.
+.hi
+(access 1)
+
 (.one.two)
 (list (access 2))
 
