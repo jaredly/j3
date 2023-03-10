@@ -7,7 +7,7 @@ import {
     UpdateMap,
 } from '../store';
 import { Events } from '../old/Nodes';
-import { newListLike, wrappable, wrapWithParens } from './wrapWithParens';
+import { wrappable, wrapWithParens } from './wrapWithParens';
 import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { nidx } from '../../src/grammar';
 import { closeListLike } from './onKeyDown';
@@ -94,9 +94,9 @@ export const getKeyUpdate = (
     if (key === '"') {
         // are we at the start of a blank or id or something?
         if (node.type === 'blank') {
-            return replaceWithString(idx, path);
+            return replaceWith(path, newString(idx));
         }
-        return newStringAfter(path, idx, map);
+        return newNodeAfter(path, map, newString());
     }
 
     if (key === '.') {
@@ -114,7 +114,7 @@ export const getKeyUpdate = (
     }
 
     if (node.type === 'blank') {
-        return { type: 'update', update: { ...newId(key, idx), path } };
+        return replaceWith(path, newId(key, idx));
     }
 
     throw new Error(
@@ -129,13 +129,11 @@ export const getKeyUpdate = (
 const newBlank = (idx = nidx()): NewThing => {
     return {
         map: {
-            [idx]: {
-                type: 'blank',
-                loc: { idx, start: 0, end: 0 },
-            },
+            [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
         },
         idx,
         selection: { idx, loc: 'start' },
+        path: [],
     };
 };
 
@@ -150,6 +148,29 @@ const newId = (key: string, idx = nidx()): NewThing => {
         },
         idx,
         selection: { idx, loc: 1 },
+        path: [],
+    };
+};
+
+const newString = (idx = nidx()): NewThing => {
+    const nid = nidx();
+    return {
+        map: {
+            [idx]: {
+                type: 'string',
+                first: nid,
+                templates: [],
+                loc: { idx, start: 0, end: 0 },
+            },
+            [nid]: {
+                type: 'stringText',
+                loc: { idx: nid, start: 0, end: 0 },
+                text: '',
+            },
+        },
+        idx: idx,
+        selection: { idx: nid, loc: 0 },
+        path: [{ idx, child: { type: 'text', at: 0 } }],
     };
 };
 
@@ -175,34 +196,10 @@ function addToListLike(
                     idx: pidx,
                     child: { type: 'child', at: 0 },
                 })
-                .concat(newThing.path ?? []),
+                .concat(newThing.path),
         },
     };
 }
-
-// function addIdToListLike(
-//     map: Map,
-//     pidx: number,
-//     key: string,
-//     path: Path[],
-// ): KeyUpdate {
-//     const res = newId(key);
-//     const pnode = map[pidx];
-//     res.map[pidx] = {
-//         ...pnode,
-//         ...modChildren(pnode, (items) => items.unshift(res.selection.idx)),
-//     };
-//     return {
-//         type: 'update',
-//         update: {
-//             ...res,
-//             path: path.slice(0, -1).concat({
-//                 idx: pidx,
-//                 child: { type: 'child', at: 0 },
-//             }),
-//         },
-//     };
-// }
 
 function updateText(
     node: Extract<MNode, { text: string }>,
@@ -229,64 +226,10 @@ function updateText(
     };
 }
 
-function newStringAfter(path: Path[], idx: number, map: Map): KeyUpdate {
-    const res = newString();
-    // const fid = nidx();
-    // const first: MNode = {
-    //     type: 'stringText',
-    //     text: '',
-    //     loc: { idx: fid, start: 0, end: 0 },
-    // };
-    // const nn: MNode = {
-    //     type: 'string',
-    //     first: fid,
-    //     templates: [],
-    //     loc: { idx: nidx(), start: 0, end: 0 },
-    // };
-    return newNodeAfter(path, map, res);
-    // return update
-    //     ? {
-    //           type: 'update',
-    //           update: {
-    //               map: { ...update.map, [nn.loc.idx]: nn, [fid]: first },
-    //               selection: { idx: nn.loc.idx, loc: 'start' },
-    //               path: update.path,
-    //           },
-    //           auto: true,
-    //       }
-    //     : undefined;
-}
-
-const newString = (idx = nidx()): NewThing => {
-    const nid = nidx();
-    return {
-        map: {
-            [idx]: {
-                type: 'string',
-                first: nid,
-                templates: [],
-                loc: { idx, start: 0, end: 0 },
-            },
-            [nid]: {
-                type: 'stringText',
-                loc: { idx: nid, start: 0, end: 0 },
-                text: '',
-            },
-        },
-        idx: idx,
-        selection: { idx: nid, loc: 0 },
-        path: [{ idx, child: { type: 'text', at: 0 } }],
-    };
-};
-
-function replaceWithString(idx: number, path: Path[]): KeyUpdate {
-    const res = newString(idx);
+function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
     return {
         type: 'update',
-        update: {
-            ...res,
-            path: path.concat(res.path ?? []),
-        },
+        update: { ...newThing, path: path.concat(newThing.path) },
     };
 }
 
@@ -357,7 +300,7 @@ function splitString(
     if (last.child.type !== 'text') {
         throw new Error(`stringText path not a text`);
     }
-    const nw: MNode = {
+    const blank: MNode = {
         type: 'blank',
         loc: {
             idx: nidx(),
@@ -365,7 +308,7 @@ function splitString(
             end: 0,
         },
     };
-    const sf: MNode = {
+    const stringText: MNode = {
         type: 'stringText',
         text: suffix,
         loc: { idx: nidx(), start: 0, end: 0 },
@@ -373,8 +316,8 @@ function splitString(
     const templates = string.templates.slice();
     if (last.child.at === 0) {
         templates.splice(last.child.at, 0, {
-            expr: nw.loc.idx,
-            suffix: sf.loc.idx,
+            expr: blank.loc.idx,
+            suffix: stringText.loc.idx,
         });
     }
     return {
@@ -385,14 +328,14 @@ function splitString(
                     ...node,
                     text: prefix,
                 },
-                [sf.loc.idx]: sf,
-                [nw.loc.idx]: nw,
+                [stringText.loc.idx]: stringText,
+                [blank.loc.idx]: blank,
                 [last.idx]: {
                     ...string,
                     templates,
                 },
             },
-            selection: { idx: nw.loc.idx, loc: 'start' },
+            selection: { idx: blank.loc.idx, loc: 'start' },
             path: path.slice(0, -1).concat({
                 idx: last.idx,
                 child: { type: 'expr', at: last.child.at + 1 },
@@ -409,26 +352,40 @@ function goToTannot(path: Path[], node: MNode, idx: number): KeyUpdate {
             path: path.concat({ idx, child: { type: 'tannot' } }),
         };
     }
-    const nn: MNode = {
-        type: 'blank',
-        loc: { idx: nidx(), start: 0, end: 0 },
-    };
-    const update: UpdateMap = {
-        [idx]: {
-            ...node,
-            tannot: nn.loc.idx,
-        },
-        [nn.loc.idx]: nn,
-    };
+    const blank = newBlank();
+    blank.map[idx] = { ...node, tannot: blank.idx };
     return {
         type: 'update',
         update: {
-            map: update,
-            selection: {
-                idx: nn.loc.idx,
-                loc: 'start',
+            ...blank,
+            path: path
+                .concat({ idx, child: { type: 'tannot' } })
+                .concat(blank.path),
+        },
+    };
+}
+
+export function newListLike(
+    kind: 'array' | 'list' | 'record',
+    idx = nidx(),
+    child?: NewThing,
+): NewThing {
+    return {
+        map: {
+            ...child?.map,
+            [idx]: {
+                type: kind,
+                values: child != null ? [child.idx] : [],
+                loc: { start: 0, end: 0, idx: nidx() },
             },
-            path: path.concat({ idx, child: { type: 'tannot' } }),
+        },
+        idx,
+        path: child
+            ? [{ idx, child: { type: 'child', at: 0 } }, ...child.path]
+            : [{ idx, child: { type: 'inside' } }],
+        selection: child?.selection ?? {
+            idx,
+            loc: 'inside',
         },
     };
 }
@@ -452,61 +409,79 @@ function openListLike({
 
     // Just replace it!
     if (node.type === 'blank') {
-        return {
-            type: 'update',
-            update: {
-                map: {
-                    [idx]: {
-                        type,
-                        values: [],
-                        loc: { idx, start: 0, end: 0 },
-                    },
-                },
-                selection: { idx, loc: 'inside' },
-                path: path.concat({ idx, child: { type: 'inside' } }),
-            },
-        };
+        return replaceWith(path, newListLike(type, idx));
     }
 
     // Gotta wrap it!
     if (last.child.type === 'start') {
         if (wrappable.includes(path[path.length - 2].child.type)) {
-            return {
-                type: 'update',
-                update: wrapWithParens(
-                    path.slice(0, -1),
+            return replacePathWith(
+                path.slice(0, -1),
+                map,
+                newListLike(type, void 0, {
                     idx,
-                    map,
-                    type,
-                    'start',
-                ),
-            };
+                    map: {},
+                    path: [last],
+                    selection: { idx, loc: 'start' },
+                }),
+            );
+
+            // return {
+            //     type: 'update',
+            //     update: wrapWithParens(
+            //         path.slice(0, -1),
+            //         idx,
+            //         map,
+            //         type,
+            //         'start',
+            //     ),
+            // };
         }
     }
 
     if (wrappable.includes(last.child.type)) {
-        return {
-            type: 'update',
-            update: wrapWithParens(path, idx, map, type, 'start'),
-        };
+        return replacePathWith(
+            path,
+            map,
+            newListLike(type, void 0, {
+                idx,
+                map: {},
+                path: [],
+                selection: { idx, loc: 'start' },
+            }),
+        );
+        // return {
+        //     type: 'update',
+        //     update: wrapWithParens(path, idx, map, type, 'start'),
+        // };
     }
 
-    const ll = newListLike(type);
-    return newNodeAfter(path, map, {
-        map: { [ll.loc.idx]: ll },
-        idx: ll.loc.idx,
-        selection: {
-            idx: ll.loc.idx,
-            loc: 'inside',
+    return newNodeAfter(path, map, newListLike(type));
+}
+
+// const wrapWithLL = () => {};
+
+export function replacePathWith(
+    path: Path[],
+    map: Map,
+    newThing: NewThing,
+): KeyUpdate {
+    const update = replacePath(path[path.length - 1], newThing.idx, map);
+    return {
+        type: 'update',
+        update: {
+            ...newThing,
+            map: { ...newThing.map, ...update },
+            path: path.concat(newThing.path),
         },
-    });
+    };
 }
 
 export type NewThing = {
     map: UpdateMap;
     idx: number;
     selection: Selection;
-    path?: Path[];
+    path: Path[];
 };
 
 export const newNodeAfter = (
@@ -547,7 +522,7 @@ export const newNodeAfter = (
                             at: child.type === 'child' ? child.at + 1 : 0,
                         },
                     })
-                    .concat(newThing.path ?? []),
+                    .concat(newThing.path),
             },
         };
     }

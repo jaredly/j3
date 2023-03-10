@@ -36,6 +36,14 @@ string
 (one two (three four) five ())
 (list id id (list id id) id (list))
 
+(one t^l())
+(one (t))
+(list id (list id))
+
+(one {^l())
+(one ({}))
+(list id (list (record)))
+
 one.two
 (access id 1)
 

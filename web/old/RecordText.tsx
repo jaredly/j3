@@ -228,15 +228,15 @@ export const RecordText2 = ({
 export const replacePath = (
     parent: Path,
     newIdx: number,
-    store: Store,
+    map: Map,
 ): UpdateMap => {
-    const map: UpdateMap = {};
-    const pnode = store.map[parent.idx];
+    const update: UpdateMap = {};
+    const pnode = map[parent.idx];
     switch (parent.child.type) {
         case 'child': {
             const values = (pnode as ListLikeContents).values.slice();
             values[parent.child.at] = newIdx;
-            map[parent.idx] = {
+            update[parent.idx] = {
                 ...(pnode as ListLikeContents & MNodeExtra),
                 values,
             };
@@ -248,14 +248,14 @@ export const replacePath = (
                 ...templates[parent.child.at - 1],
                 expr: newIdx,
             };
-            map[parent.idx] = {
+            update[parent.idx] = {
                 ...(pnode as MCString & MNodeExtra),
                 templates,
             };
             break;
         }
         case 'spread-contents': {
-            map[parent.idx] = {
+            update[parent.idx] = {
                 ...(pnode as MCSpread & MNodeExtra),
                 contents: newIdx,
             };
@@ -266,7 +266,7 @@ export const replacePath = (
                 `Can't replace parent. . is this a valid place for an expr?`,
             );
     }
-    return map;
+    return update;
 };
 
 export const joinExprs = (
