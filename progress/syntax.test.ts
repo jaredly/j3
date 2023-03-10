@@ -131,6 +131,9 @@ const sexp_ = (node: Node): string => {
                 node.items.length
             })`;
         case 'spread':
+            if (node.contents.type === 'blank') {
+                return `(spread)`;
+            }
             return `(spread ${sexp(node.contents)})`;
         case 'string':
             if (node.templates.length) {
