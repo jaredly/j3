@@ -74,7 +74,7 @@ export const parseByCharacter = (
             path,
             map,
         );
-        // console.log(char, path);
+        // console.log(key, path);
         // console.log(JSON.stringify(update));
 
         // OOOOOOH um so

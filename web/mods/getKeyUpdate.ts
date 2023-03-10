@@ -8,15 +8,22 @@ import {
 } from '../store';
 import { Events } from '../old/Nodes';
 import { wrappable, wrapWithParens } from './wrapWithParens';
-import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
-import { nidx } from '../../src/grammar';
+import { Map, MNode } from '../../src/types/mcst';
 import { closeListLike } from './closeListLike';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
-import { Identifier, stringText } from '../../src/types/cst';
-import { getNodes } from '../overheat/getNodesWithAnnot';
-import equal from 'fast-deep-equal';
+import { Identifier } from '../../src/types/cst';
 import { ONode } from '../overheat/types';
+import {
+    newBlank,
+    newString,
+    newId,
+    newListLike,
+    newAccessText,
+    newRecordAccess,
+} from './newNodes';
+import { goLeft } from './navigate';
+import { handleStringText } from './handleStringText';
 
 export type SelectAndPath = {
     selection: Selection;
@@ -125,7 +132,42 @@ export const getKeyUpdate = (
     }
 
     if (key === '.') {
-        //
+        if (node.type === 'blank') {
+            const nat = newRecordAccess(idx, '');
+            return replacePathWith(path, map, nat);
+        }
+        if (node.type === 'identifier' && !text.match(/^-?[0-9]+$/)) {
+            const nat = newRecordAccess(idx, text.slice(pos));
+            if (pos < text.length) {
+                nat.map[idx] = { ...node, text: text.slice(0, pos) };
+            }
+            return replacePathWith(path, map, nat);
+        }
+        if (node.type === 'accessText' && last.child.type === 'attribute') {
+            const parent = map[last.idx];
+            if (parent.type !== 'recordAccess') {
+                throw new Error(
+                    `accessText parent not a recordAccess ${parent.type}`,
+                );
+            }
+            const nat = newAccessText(text.slice(pos));
+            if (pos < text.length) {
+                nat.map[idx] = { ...node, text: text.slice(0, pos) };
+            }
+            const items = parent.items.slice();
+            items.splice(last.child.at + 1, 0, nat.idx);
+            nat.map[last.idx] = { ...parent, items };
+            return {
+                type: 'update',
+                update: {
+                    ...nat,
+                    path: path.slice(0, -1).concat({
+                        idx: last.idx,
+                        child: { type: 'attribute', at: last.child.at + 1 },
+                    }),
+                },
+            };
+        }
     }
 
     if (key.length !== 1) {
@@ -153,54 +195,6 @@ export const getKeyUpdate = (
             key,
         })}`,
     );
-};
-
-const newBlank = (idx = nidx()): NewThing => {
-    return {
-        map: {
-            [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
-        },
-        idx,
-        selection: { idx, loc: 'start' },
-        path: [],
-    };
-};
-
-const newId = (key: string, idx = nidx()): NewThing => {
-    return {
-        map: {
-            [idx]: {
-                type: 'identifier',
-                text: key,
-                loc: { idx, start: 0, end: 0 },
-            },
-        },
-        idx,
-        selection: { idx, loc: key.length },
-        path: [],
-    };
-};
-
-const newString = (idx = nidx()): NewThing => {
-    const nid = nidx();
-    return {
-        map: {
-            [idx]: {
-                type: 'string',
-                first: nid,
-                templates: [],
-                loc: { idx, start: 0, end: 0 },
-            },
-            [nid]: {
-                type: 'stringText',
-                loc: { idx: nid, start: 0, end: 0 },
-                text: '',
-            },
-        },
-        idx: idx,
-        selection: { idx: nid, loc: 0 },
-        path: [{ idx, child: { type: 'text', at: 0 } }],
-    };
 };
 
 function addToListLike(
@@ -255,124 +249,6 @@ function updateText(
     };
 }
 
-function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
-    return {
-        type: 'update',
-        update: { ...newThing, path: path.concat(newThing.path) },
-    };
-}
-
-function handleStringText({
-    key,
-    idx,
-    node,
-    pos,
-    path,
-    map,
-}: {
-    key: string;
-    idx: number;
-    node: stringText & MNodeExtra;
-    pos: number;
-    path: Path[];
-    map: Map;
-}): KeyUpdate {
-    const last = path[path.length - 1];
-
-    let text = node.text;
-    if (key === '"' && pos === text.length) {
-        return {
-            type: 'select',
-            selection: { idx: last.idx, loc: 'end' },
-            path: path
-                .slice(0, -1)
-                .concat({ idx: last.idx, child: { type: 'end' } }),
-        };
-    }
-
-    if (key === '{' && pos > 0 && text[pos - 1] === '$') {
-        return splitString(text, pos, map, last, idx, node, path);
-    }
-
-    if (pos === 0) {
-        text = key + text;
-    } else if (pos === text.length) {
-        text = text + key;
-    } else {
-        text = text.slice(0, pos) + key + text.slice(pos);
-    }
-    return {
-        type: 'update',
-        update: {
-            map: { [idx]: { ...node, text } },
-            path,
-            selection: { idx, loc: pos + 1 },
-        },
-    };
-}
-
-function splitString(
-    text: string,
-    pos: number,
-    map: Map,
-    last: Path,
-    idx: number,
-    node: stringText & MNodeExtra,
-    path: Path[],
-): KeyUpdate {
-    const prefix = text.slice(0, pos - 1);
-    const suffix = text.slice(pos);
-    const string = map[last.idx];
-    if (string.type !== 'string') {
-        throw new Error(`stringText parent not a string`);
-    }
-    if (last.child.type !== 'text') {
-        throw new Error(`stringText path not a text`);
-    }
-    const blank: MNode = {
-        type: 'blank',
-        loc: {
-            idx: nidx(),
-            start: 0,
-            end: 0,
-        },
-    };
-    const stringText: MNode = {
-        type: 'stringText',
-        text: suffix,
-        loc: { idx: nidx(), start: 0, end: 0 },
-    };
-    const templates = string.templates.slice();
-    if (last.child.at === 0) {
-        templates.splice(last.child.at, 0, {
-            expr: blank.loc.idx,
-            suffix: stringText.loc.idx,
-        });
-    }
-    return {
-        type: 'update',
-        update: {
-            map: {
-                [idx]: {
-                    ...node,
-                    text: prefix,
-                },
-                [stringText.loc.idx]: stringText,
-                [blank.loc.idx]: blank,
-                [last.idx]: {
-                    ...string,
-                    templates,
-                },
-            },
-            selection: { idx: blank.loc.idx, loc: 'start' },
-            path: path.slice(0, -1).concat({
-                idx: last.idx,
-                child: { type: 'expr', at: last.child.at + 1 },
-            }),
-        },
-    };
-}
-
 function goToTannot(path: Path[], node: MNode, idx: number): KeyUpdate {
     if (node.tannot != null) {
         return {
@@ -390,31 +266,6 @@ function goToTannot(path: Path[], node: MNode, idx: number): KeyUpdate {
             path: path
                 .concat({ idx, child: { type: 'tannot' } })
                 .concat(blank.path),
-        },
-    };
-}
-
-export function newListLike(
-    kind: 'array' | 'list' | 'record',
-    idx = nidx(),
-    child?: NewThing,
-): NewThing {
-    return {
-        map: {
-            ...child?.map,
-            [idx]: {
-                type: kind,
-                values: child != null ? [child.idx] : [],
-                loc: { start: 0, end: 0, idx },
-            },
-        },
-        idx,
-        path: child
-            ? [{ idx, child: { type: 'child', at: 0 } }, ...child.path]
-            : [{ idx, child: { type: 'inside' } }],
-        selection: child?.selection ?? {
-            idx,
-            loc: 'inside',
         },
     };
 }
@@ -475,7 +326,12 @@ function openListLike({
     return newNodeAfter(path, map, newListLike(type));
 }
 
-// const wrapWithLL = () => {};
+function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
+    return {
+        type: 'update',
+        update: { ...newThing, path: path.concat(newThing.path) },
+    };
+}
 
 export function replacePathWith(
     path: Path[],
@@ -542,49 +398,4 @@ export const newNodeAfter = (
             },
         };
     }
-};
-
-export type PathSel = {
-    path: PathChild;
-    sel: Selection;
-};
-
-export const pathSelForNode = (node: ONode, idx: number): null | PathSel => {
-    switch (node.type) {
-        case 'punct':
-            return null;
-        case 'blinker':
-            return { path: { type: node.loc }, sel: { idx, loc: node.loc } };
-        case 'render':
-        case 'extra':
-            return null;
-        case 'ref':
-            return { path: node.path, sel: { idx: node.id, loc: 'start' } };
-    }
-};
-
-export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
-    if (!path.length) return;
-    const last = path[path.length - 1];
-    const pnodes = getNodes(map[last.idx]);
-
-    let prev: PathSel | null = null;
-    for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx);
-        if (!ps) continue;
-        if (equal(ps.path, last.child)) {
-            return prev
-                ? {
-                      type: 'select',
-                      selection: prev.sel,
-                      path: path
-                          .slice(0, -1)
-                          .concat([{ idx: last.idx, child: prev.path }]),
-                  }
-                : goLeft(path.slice(0, -1), last.idx, map);
-        }
-        prev = ps;
-    }
-
-    throw new Error(`current not vound in pnodes`);
 };

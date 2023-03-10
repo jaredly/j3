@@ -43,13 +43,13 @@ export const nodeToString_ = (
         case 'number':
             return node.raw;
         case 'blank':
-            return '_';
+            return '';
         case 'tag':
             return `'${node.text}`;
         case 'recordAccess':
             return `${nodeToString(node.target, sm)}${node.items
                 .map((item) => '.' + item.text)
-                .join()}`;
+                .join('')}`;
         case 'spread':
             return `...${nodeToString(node.contents, sm, 3)}`;
         case 'stringText':
