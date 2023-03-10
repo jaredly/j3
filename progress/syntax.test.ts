@@ -24,6 +24,9 @@ string
 "nest \${(and "things")} ed"
 (string (list id string))
 
+("ok" ko)
+(list string id)
+
 [a b 1.0]
 (array id id id)
 
