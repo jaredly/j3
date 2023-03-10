@@ -79,6 +79,11 @@ const sexp_ = (node: Node): string => {
                 node.items.length
             })`;
         case 'string':
+            if (node.templates.length) {
+                return `(string ${node.templates
+                    .map((t) => sexp(t.expr))
+                    .join(' ')})`;
+            }
             return 'string';
         default:
             return 'AA' + node.type;

@@ -431,5 +431,26 @@ export const closeListLike = (
                 path: path.slice(0, i - 1),
             };
         }
+        if (
+            key === '}' &&
+            parent.child.type === 'expr' &&
+            node.type === 'string'
+        ) {
+            // START HERE
+            const suffix = node.templates[parent.child.at - 1].suffix;
+            return {
+                selection: {
+                    idx: suffix,
+                    loc: 0,
+                },
+                path: path.slice(0, i - 1).concat({
+                    idx: parent.idx,
+                    child: {
+                        type: 'text',
+                        at: parent.child.at,
+                    },
+                }),
+            };
+        }
     }
 };

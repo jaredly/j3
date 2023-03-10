@@ -73,13 +73,66 @@ export const getKeyUpdate = (
     if (node.type === 'stringText') {
         let text = node.text;
         if (key === '"' && pos === text.length) {
-            // TODO: move selection to end
             return {
                 type: 'select',
                 selection: { idx: last.idx, loc: 'end' },
                 path: path
                     .slice(0, -1)
                     .concat({ idx: last.idx, child: { type: 'end' } }),
+            };
+        }
+
+        if (key === '{' && pos > 0 && text[pos - 1] === '$') {
+            const prefix = text.slice(0, pos - 1);
+            const suffix = text.slice(pos);
+            const string = map[last.idx];
+            if (string.type !== 'string') {
+                throw new Error(`stringText parent not a string`);
+            }
+            if (last.child.type !== 'text') {
+                throw new Error(`stringText path not a text`);
+            }
+            const nw: MNode = {
+                type: 'blank',
+                loc: {
+                    idx: nidx(),
+                    start: 0,
+                    end: 0,
+                },
+            };
+            const sf: MNode = {
+                type: 'stringText',
+                text: suffix,
+                loc: { idx: nidx(), start: 0, end: 0 },
+            };
+            const templates = string.templates.slice();
+            if (last.child.at === 0) {
+                templates.splice(last.child.at, 0, {
+                    expr: nw.loc.idx,
+                    suffix: sf.loc.idx,
+                });
+            }
+            return {
+                type: 'update',
+                update: {
+                    map: {
+                        [idx]: {
+                            ...node,
+                            text: prefix,
+                        },
+                        [sf.loc.idx]: sf,
+                        [nw.loc.idx]: nw,
+                        [last.idx]: {
+                            ...string,
+                            templates,
+                        },
+                    },
+                    selection: { idx: nw.loc.idx, loc: 'start' },
+                    path: path.slice(0, -1).concat({
+                        idx: last.idx,
+                        child: { type: 'expr', at: last.child.at + 1 },
+                    }),
+                },
             };
         }
 
