@@ -24,7 +24,7 @@ string
 "Hello \${one} and"
 (string id)
 
-!!!"nest \${(and "things")} ed"
+"nest \${(and "things")} ed"
 (string (list id string))
 
 "a\${b}c\${d}e"
@@ -206,6 +206,13 @@ describe('a test', () => {
                     }
 
                     const startPos = remapPos(state.sel, sourceMap);
+                    if (only) {
+                        console.log(
+                            backOrig.slice(0, startPos) +
+                                '|' +
+                                backOrig.slice(startPos),
+                        );
+                    }
                     const update = getKeyUpdate(
                         'ArrowLeft',
                         pos,
