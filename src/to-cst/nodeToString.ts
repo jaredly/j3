@@ -1,32 +1,65 @@
 import { Node } from '../types/cst';
 
-export const nodeToString = (node: Node): string => {
+export type SourceMap = {
+    map: { [idx: number]: { start: number; end: number } };
+    cur: number;
+};
+
+export const nodeToString = (
+    node: Node,
+    sm: SourceMap = { map: {}, cur: 0 },
+    addBefore = 0,
+): string => {
+    sm.cur += addBefore;
+    const start = sm.cur;
+    const body = nodeToString_(node, sm);
+    sm.cur = start + body.length;
+    sm.map[node.loc.idx] = { start, end: sm.cur };
+    return body;
+};
+
+export const nodeToString_ = (
+    node: Node,
+    sm: SourceMap = { map: {}, cur: 0 },
+): string => {
     switch (node.type) {
         case 'array':
-            return `[${node.values.map((v) => nodeToString(v)).join(' ')}]`;
+            return `[${node.values
+                .map((v) => nodeToString(v, sm, 1))
+                .join(' ')}]`;
         case 'list':
-            return `(${node.values.map((v) => nodeToString(v)).join(' ')})`;
+            return `(${node.values
+                .map((v) => nodeToString(v, sm, 1))
+                .join(' ')})`;
         case 'record':
-            return `{${node.values.map((v) => nodeToString(v)).join(' ')}}`;
+            return `{${node.values
+                .map((v) => nodeToString(v, sm, 1))
+                .join(' ')}}`;
         case 'identifier':
             return `${node.text}${node.hash ? '#' + node.hash : ''}`;
         case 'number':
             return node.raw;
         case 'blank':
-            return '';
+            return '_';
         case 'tag':
             return `'${node.text}`;
         case 'recordAccess':
-            return `${nodeToString(node.target)}${node.items
+            return `${nodeToString(node.target, sm)}${node.items
                 .map((item) => '.' + item.text)
                 .join()}`;
         case 'spread':
-            return `...${nodeToString(node.contents)}`;
+            return `...${nodeToString(node.contents, sm, 3)}`;
+        case 'stringText':
+            return node.text;
         case 'string':
-            return `"${node.first.text}${node.templates
+            return `"${nodeToString(node.first, sm, 1)}${node.templates
                 .map(
                     (item) =>
-                        `\${${nodeToString(item.expr)}}${item.suffix.text}`,
+                        `\${${nodeToString(item.expr, sm, 2)}}${nodeToString(
+                            item.suffix,
+                            sm,
+                            1,
+                        )}`,
                 )
                 .join('')}"`;
         case 'unparsed':

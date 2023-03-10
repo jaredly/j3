@@ -21,7 +21,9 @@ export const idText = (node: MNode) => {
     }
 };
 
-export const parseByCharacter = (text: string) => {
+export const parseByCharacter = (
+    text: string,
+): { map: Map; selection: Selection } => {
     const top = nidx();
     const map: Map = {
         [-1]: {
@@ -97,5 +99,5 @@ export const parseByCharacter = (text: string) => {
             // console.log('ahhh', char);
         }
     }
-    return map;
+    return { map, selection };
 };

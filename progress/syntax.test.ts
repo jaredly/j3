@@ -1,7 +1,7 @@
 // Basic level
 
 import { parseByCharacter } from '../src/parse/parse';
-import { nodeToString } from '../src/to-cst/nodeToString';
+import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 
@@ -120,9 +120,13 @@ describe('a test', () => {
                 chunks.length === 2 ? chunks : chunks.slice(1);
 
             it(i + ' ' + jerd, () => {
-                const data = parseByCharacter(jerd);
+                const { map: data, selection } = parseByCharacter(jerd);
                 const idx = (data[-1] as ListLikeContents).values[0];
-                const back = nodeToString(fromMCST(idx, data));
+                const sourceMap: SourceMap = {};
+                let back = nodeToString(fromMCST(idx, data), sourceMap);
+                if (expected.includes('|')) {
+                    const pos = remapPos(selection, sourceMap);
+                }
                 if (back !== expected) {
                     console.warn(JSON.stringify(data));
                 }
