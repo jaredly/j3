@@ -127,12 +127,35 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
     throw new Error(`current not vound in pnodes`);
 };
 
-export const goRight = (path: Path[], idx: number, map: Map): KeyUpdate => {
+export const goRight = (
+    path: Path[],
+    idx: number,
+    map: Map,
+    fromTannot = false,
+): KeyUpdate => {
     if (!path.length) return;
     const last = path[path.length - 1];
     const pnodes = getNodes(map[last.idx]).reverse();
 
-    // console.log('going left', last.child, pnodes);
+    if (!fromTannot && map[idx].tannot && idx !== last.idx) {
+        const sel = selectStart(
+            map[idx].tannot!,
+            path.concat({
+                idx: idx,
+                child: { type: 'tannot' },
+            }),
+            map,
+        );
+        if (sel) {
+            return {
+                type: 'select',
+                selection: sel.sel,
+                path: sel.path,
+            };
+        }
+    }
+
+    // console.log('going right', last.child, pnodes);
     let prev: PathSel | null = null;
     for (let pnode of pnodes) {
         const ps = pathSelForNode(pnode, last.idx, 'start', map);
@@ -148,7 +171,12 @@ export const goRight = (path: Path[], idx: number, map: Map): KeyUpdate => {
                       selection: prev.sel,
                       path: path.slice(0, -1).concat(prev.path),
                   }
-                : goRight(path.slice(0, -1), last.idx, map);
+                : goRight(
+                      path.slice(0, -1),
+                      last.idx,
+                      map,
+                      last.child.type === 'tannot',
+                  );
         }
         prev = ps;
     }

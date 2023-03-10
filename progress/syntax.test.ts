@@ -110,7 +110,7 @@ hello.3.2.what
 {..one a b ..}
 (record (spread id) id id (spread))
 
-!!!(fn [one:two three:(four five)]:six seven)
+(fn [one:two three:(four five)]:six seven)
 (list id (tannot (array (tannot id id) (tannot id (list id id))) id) id)
 
 (fn [one:two three:(four five)]:six {10 20 yes "ok \${(some [2 3 "inner" ..more] ..things)} and \${a}"})
