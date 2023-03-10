@@ -405,7 +405,7 @@ export function newListLike(
             [idx]: {
                 type: kind,
                 values: child != null ? [child.idx] : [],
-                loc: { start: 0, end: 0, idx: nidx() },
+                loc: { start: 0, end: 0, idx },
             },
         },
         idx,

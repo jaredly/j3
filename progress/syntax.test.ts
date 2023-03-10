@@ -1,9 +1,11 @@
 // Basic level
 
+import { setIdx } from '../src/grammar';
 import { parseByCharacter } from '../src/parse/parse';
 import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { Selection } from '../web/store';
 
 const data = `
 ()
@@ -51,6 +53,14 @@ string
 (one {^l())
 (one ({}))
 (list id (list (record)))
+
+one^l
+on|e
+id
+
+(one {^l
+(one |{})
+(list id (record))
 
 one.two
 (access id 1)
@@ -120,12 +130,22 @@ describe('a test', () => {
                 chunks.length === 2 ? chunks : chunks.slice(1);
 
             it(i + ' ' + jerd, () => {
+                setIdx(0);
                 const { map: data, selection } = parseByCharacter(jerd);
+                Object.keys(data).forEach((key) => {
+                    expect(data[+key].loc.idx).toEqual(+key);
+                });
                 const idx = (data[-1] as ListLikeContents).values[0];
-                const sourceMap: SourceMap = {};
+                const sourceMap: SourceMap = { map: {}, cur: 0 };
                 let back = nodeToString(fromMCST(idx, data), sourceMap);
                 if (expected.includes('|')) {
+                    if (!sourceMap.map[selection.idx]) {
+                        console.log(JSON.stringify(data, null, 2));
+                        console.log(back);
+                        console.log(JSON.stringify(sourceMap.map, null, 2));
+                    }
                     const pos = remapPos(selection, sourceMap);
+                    back = back.slice(0, pos) + '|' + back.slice(pos);
                 }
                 if (back !== expected) {
                     console.warn(JSON.stringify(data));
@@ -135,6 +155,25 @@ describe('a test', () => {
             });
         });
 });
+
+export const remapPos = (selection: Selection, sm: SourceMap) => {
+    if (!sm.map[selection.idx]) {
+        throw new Error(`no idx ${selection.idx} ${JSON.stringify(sm)}`);
+    }
+    const { start, end } = sm.map[selection.idx];
+    switch (selection.loc) {
+        case 'start':
+            return start;
+        case 'end':
+            return end;
+        case 'inside':
+            return start + 1;
+        case 'change':
+            return start;
+        default:
+            return start + (selection.loc ?? 0);
+    }
+};
 
 // Ok, so the thing that I'll be comparing against is
 // like s-exp of the types of things.

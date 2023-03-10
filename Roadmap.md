@@ -1,4 +1,12 @@
 
+# Syntax Tests
+
+- So, I'm doing headless full-dealio. So that the frontend
+  will be pretty brainless
+- I also want my ~syntax tests to be able to indicate the
+  location of the whatsit
+  - [x] ok so we have some source(dest)mapping
+
 # Going down the list of syntactic things
 
 - [ ] using a variable should update its type annotation, that's a thing
