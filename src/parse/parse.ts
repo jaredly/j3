@@ -13,6 +13,7 @@ export const idText = (node: MNode) => {
         case 'unparsed':
             return node.raw;
         case 'accessText':
+        case 'stringText':
             return node.text;
         case 'blank':
             return '';
@@ -68,7 +69,7 @@ export const parseByCharacter = (
         const update = getKeyUpdate(
             key,
             pos,
-            curText ?? '',
+            curText,
             selection.idx,
             path,
             map,

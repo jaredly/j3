@@ -72,6 +72,28 @@ export const getKeyUpdate = (
     const last = path[path.length - 1];
     const node = map[idx];
 
+    if (key === 'ArrowLeft') {
+        if (pos > 0) {
+            return {
+                type: 'select',
+                selection: { idx, loc: pos - 1 },
+                path,
+            };
+        }
+        return goLeft(path, idx, map);
+    }
+
+    if (key === 'ArrowRight') {
+        if (pos < text.length) {
+            return {
+                type: 'select',
+                selection: { idx, loc: pos + 1 },
+                path,
+            };
+        }
+        return goRight(path, idx, map);
+    }
+
     if (node.type === 'stringText') {
         return handleStringText({ key, idx, node, pos, path, map });
     }
@@ -104,28 +126,6 @@ export const getKeyUpdate = (
 
     if (key === '.') {
         //
-    }
-
-    if (key === 'ArrowLeft') {
-        if (pos > 0) {
-            return {
-                type: 'select',
-                selection: { idx, loc: pos - 1 },
-                path,
-            };
-        }
-        return goLeft(path, idx, map);
-    }
-
-    if (key === 'ArrowRight') {
-        if (pos < text.length) {
-            return {
-                type: 'select',
-                selection: { idx, loc: pos + 1 },
-                path,
-            };
-        }
-        // return goRight(path, idx, map)
     }
 
     if (key.length !== 1) {

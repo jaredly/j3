@@ -62,6 +62,26 @@ id
 (one |{})
 (list id (record))
 
+oe^ln^r
+one|
+id
+
+ne^l^lo
+o|ne
+id
+
+"wh^la^r"
+"wah"
+string
+
+"wh^la"^r"
+"wa"h"
+string
+
+"Hello w^l\${cruel} ^rorld"
+"Hello \${cruel} world"
+(string id)
+
 one.two
 (access id 1)
 
