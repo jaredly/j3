@@ -6,6 +6,7 @@ import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { getKeyUpdate } from '../web/mods/getKeyUpdate';
+import { PathSel, selectEnd } from '../web/mods/navigate';
 import { Path, Selection } from '../web/store';
 
 const data = `
@@ -187,18 +188,30 @@ describe('a test', () => {
                 expect(sexp(fromMCST(idx, data))).toEqual(serialized);
                 expect(back).toEqual(expected);
 
-                const state: { sel: Selection; path: Path[] } = {
-                    sel: { idx, loc: 'end' },
-                    path: [
-                        { idx: -1, child: { type: 'child', at: 0 } },
-                        {
-                            idx,
-                            child: { type: 'end' },
-                        },
-                    ],
-                };
-                let at = backOrig.length;
-                while (at >= 0) {
+                const state = selectEnd(
+                    idx,
+                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                    data,
+                );
+
+                if (!state) {
+                    throw new Error(
+                        `cant select end ${idx} ${JSON.stringify(data)}`,
+                    );
+                }
+
+                // const state: PathSel = {
+                //     sel: { idx, loc: 'end' },
+                //     path: [
+                //         { idx: -1, child: { type: 'child', at: 0 } },
+                //         {
+                //             idx,
+                //             child: { type: 'end' },
+                //         },
+                //     ],
+                // };
+
+                while (true) {
                     const curText = idText(data[state.sel.idx]) ?? '';
                     const pos = selPos(state.sel, curText);
                     if (only) {

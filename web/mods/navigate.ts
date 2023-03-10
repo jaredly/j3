@@ -10,6 +10,21 @@ export type PathSel = {
     sel: Selection;
 };
 
+export const selectEnd = (
+    idx: number,
+    base: Path[],
+    map: Map,
+): null | PathSel => {
+    const pnodes = getNodes(map[idx]);
+    for (let i = pnodes.length - 1; i >= 0; i--) {
+        const sel = pathSelForNode(pnodes[i], idx, 'end', map);
+        if (sel) {
+            return { sel: sel.sel, path: base.concat(sel.path) };
+        }
+    }
+    return { sel: { idx, loc: 'end' }, path: base };
+};
+
 export const pathSelForNode = (
     node: ONode,
     idx: number,
