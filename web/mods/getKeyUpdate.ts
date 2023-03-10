@@ -13,11 +13,12 @@ import {
     wrappable,
     wrapWithParens,
 } from './wrapWithParens';
-import { Map, MNode } from '../../src/types/mcst';
+import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { nidx } from '../../src/grammar';
 import { closeListLike } from './onKeyDown';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
+import { stringText } from '../../src/types/cst';
 
 export type SelectAndPath = {
     selection: Selection;
@@ -74,86 +75,7 @@ export const getKeyUpdate = (
     const node = map[idx];
 
     if (node.type === 'stringText') {
-        let text = node.text;
-        if (key === '"' && pos === text.length) {
-            return {
-                type: 'select',
-                selection: { idx: last.idx, loc: 'end' },
-                path: path
-                    .slice(0, -1)
-                    .concat({ idx: last.idx, child: { type: 'end' } }),
-            };
-        }
-
-        if (key === '{' && pos > 0 && text[pos - 1] === '$') {
-            const prefix = text.slice(0, pos - 1);
-            const suffix = text.slice(pos);
-            const string = map[last.idx];
-            if (string.type !== 'string') {
-                throw new Error(`stringText parent not a string`);
-            }
-            if (last.child.type !== 'text') {
-                throw new Error(`stringText path not a text`);
-            }
-            const nw: MNode = {
-                type: 'blank',
-                loc: {
-                    idx: nidx(),
-                    start: 0,
-                    end: 0,
-                },
-            };
-            const sf: MNode = {
-                type: 'stringText',
-                text: suffix,
-                loc: { idx: nidx(), start: 0, end: 0 },
-            };
-            const templates = string.templates.slice();
-            if (last.child.at === 0) {
-                templates.splice(last.child.at, 0, {
-                    expr: nw.loc.idx,
-                    suffix: sf.loc.idx,
-                });
-            }
-            return {
-                type: 'update',
-                update: {
-                    map: {
-                        [idx]: {
-                            ...node,
-                            text: prefix,
-                        },
-                        [sf.loc.idx]: sf,
-                        [nw.loc.idx]: nw,
-                        [last.idx]: {
-                            ...string,
-                            templates,
-                        },
-                    },
-                    selection: { idx: nw.loc.idx, loc: 'start' },
-                    path: path.slice(0, -1).concat({
-                        idx: last.idx,
-                        child: { type: 'expr', at: last.child.at + 1 },
-                    }),
-                },
-            };
-        }
-
-        if (pos === 0) {
-            text = key + text;
-        } else if (pos === text.length) {
-            text = text + key;
-        } else {
-            text = text.slice(0, pos) + key + text.slice(pos);
-        }
-        return {
-            type: 'update',
-            update: {
-                map: { [idx]: { ...node, text } },
-                path,
-                selection: { idx, loc: pos + 1 },
-            },
-        };
+        return handleStringText({ key, idx, node, pos, path, map });
     }
 
     // Start a list-like!
@@ -177,28 +99,9 @@ export const getKeyUpdate = (
     if (key === '"') {
         // are we at the start of a blank or id or something?
         if (node.type === 'blank') {
-            const nid = nidx();
-            return {
-                type: 'update',
-                update: {
-                    map: {
-                        [idx]: {
-                            type: 'string',
-                            first: nid,
-                            templates: [],
-                            loc: { idx, start: 0, end: 0 },
-                        },
-                        [nid]: {
-                            type: 'stringText',
-                            loc: { idx: nid, start: 0, end: 0 },
-                            text: '',
-                        },
-                    },
-                    selection: { idx: nid, loc: 0 },
-                    path: path.concat({ idx, child: { type: 'text', at: 0 } }),
-                },
-            };
+            return replaceWithString(idx, path);
         }
+        return newStringAfter(path, idx, map);
     }
 
     // "special" locations
@@ -295,6 +198,169 @@ export const getKeyUpdate = (
     // }
 };
 
+function newStringAfter(path: Path[], idx: number, map: Map): KeyUpdate {
+    const fid = nidx();
+    const first: MNode = {
+        type: 'stringText',
+        text: '',
+        loc: { idx: fid, start: 0, end: 0 },
+    };
+
+    const nn: MNode = {
+        type: 'string',
+        first: fid,
+        templates: [],
+        loc: { idx: nidx(), start: 0, end: 0 },
+    };
+    const update = newNodeAfter(path, idx, map, nn);
+    return update
+        ? {
+              type: 'update',
+              update: {
+                  map: { ...update.map, [nn.loc.idx]: nn, [fid]: first },
+                  selection: { idx: nn.loc.idx, loc: 'start' },
+                  path: update.path,
+              },
+              auto: true,
+          }
+        : undefined;
+}
+
+function replaceWithString(idx: number, path: Path[]): KeyUpdate {
+    const nid = nidx();
+    return {
+        type: 'update',
+        update: {
+            map: {
+                [idx]: {
+                    type: 'string',
+                    first: nid,
+                    templates: [],
+                    loc: { idx, start: 0, end: 0 },
+                },
+                [nid]: {
+                    type: 'stringText',
+                    loc: { idx: nid, start: 0, end: 0 },
+                    text: '',
+                },
+            },
+            selection: { idx: nid, loc: 0 },
+            path: path.concat({ idx, child: { type: 'text', at: 0 } }),
+        },
+    };
+}
+
+function handleStringText({
+    key,
+    idx,
+    node,
+    pos,
+    path,
+    map,
+}: {
+    key: string;
+    idx: number;
+    node: stringText & MNodeExtra;
+    pos: number;
+    path: Path[];
+    map: Map;
+}): KeyUpdate {
+    const last = path[path.length - 1];
+
+    let text = node.text;
+    if (key === '"' && pos === text.length) {
+        return {
+            type: 'select',
+            selection: { idx: last.idx, loc: 'end' },
+            path: path
+                .slice(0, -1)
+                .concat({ idx: last.idx, child: { type: 'end' } }),
+        };
+    }
+
+    if (key === '{' && pos > 0 && text[pos - 1] === '$') {
+        return splitString(text, pos, map, last, idx, node, path);
+    }
+
+    if (pos === 0) {
+        text = key + text;
+    } else if (pos === text.length) {
+        text = text + key;
+    } else {
+        text = text.slice(0, pos) + key + text.slice(pos);
+    }
+    return {
+        type: 'update',
+        update: {
+            map: { [idx]: { ...node, text } },
+            path,
+            selection: { idx, loc: pos + 1 },
+        },
+    };
+}
+
+function splitString(
+    text: string,
+    pos: number,
+    map: Map,
+    last: Path,
+    idx: number,
+    node: stringText & MNodeExtra,
+    path: Path[],
+): KeyUpdate {
+    const prefix = text.slice(0, pos - 1);
+    const suffix = text.slice(pos);
+    const string = map[last.idx];
+    if (string.type !== 'string') {
+        throw new Error(`stringText parent not a string`);
+    }
+    if (last.child.type !== 'text') {
+        throw new Error(`stringText path not a text`);
+    }
+    const nw: MNode = {
+        type: 'blank',
+        loc: {
+            idx: nidx(),
+            start: 0,
+            end: 0,
+        },
+    };
+    const sf: MNode = {
+        type: 'stringText',
+        text: suffix,
+        loc: { idx: nidx(), start: 0, end: 0 },
+    };
+    const templates = string.templates.slice();
+    if (last.child.at === 0) {
+        templates.splice(last.child.at, 0, {
+            expr: nw.loc.idx,
+            suffix: sf.loc.idx,
+        });
+    }
+    return {
+        type: 'update',
+        update: {
+            map: {
+                [idx]: {
+                    ...node,
+                    text: prefix,
+                },
+                [sf.loc.idx]: sf,
+                [nw.loc.idx]: nw,
+                [last.idx]: {
+                    ...string,
+                    templates,
+                },
+            },
+            selection: { idx: nw.loc.idx, loc: 'start' },
+            path: path.slice(0, -1).concat({
+                idx: last.idx,
+                child: { type: 'expr', at: last.child.at + 1 },
+            }),
+        },
+    };
+}
+
 function goToTannot(path: Path[], node: MNode, idx: number): KeyUpdate {
     if (node.tannot != null) {
         return {
@@ -337,7 +403,7 @@ function newBlankAfter(path: Path[], idx: number, map: Map): KeyUpdate {
         ? {
               type: 'update',
               update: {
-                  map: update.map,
+                  map: { ...update.map, [nn.loc.idx]: nn },
                   selection: { idx: nn.loc.idx, loc: 'start' },
                   path: update.path,
               },
@@ -410,7 +476,7 @@ function openListLike({
         ? {
               type: 'update',
               update: {
-                  map: update.map,
+                  map: { ...update.map, [ll.loc.idx]: ll },
                   selection: { idx: ll.loc.idx, loc: 'inside' },
                   path: update.path,
               },

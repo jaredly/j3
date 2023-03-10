@@ -33,12 +33,6 @@ string
 (one two (three four) five ())
 (list id id (list id id) id (list))
 
-(...hello)
-(list (spread id))
-
-{...one a b ...}
-(record (spread id) id id (spread))
-
 one.two
 (access id 1)
 
@@ -47,6 +41,12 @@ hello.3.2.what
 
 .one.two
 (access 2)
+
+(...hello)
+(list (spread id))
+
+{...one a b ...}
+(record (spread id) id id (spread))
 
 (fn [one:two three:(four five)]:six seven)
 (list id (tannot (array (tannot id id) (tannot id (list id id))) id) id)
