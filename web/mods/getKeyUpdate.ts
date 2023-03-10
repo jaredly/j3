@@ -18,7 +18,7 @@ import { nidx } from '../../src/grammar';
 import { closeListLike } from './onKeyDown';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
-import { stringText } from '../../src/types/cst';
+import { Identifier, stringText } from '../../src/types/cst';
 
 export type SelectAndPath = {
     selection: Selection;
@@ -104,72 +104,22 @@ export const getKeyUpdate = (
         return newStringAfter(path, idx, map);
     }
 
-    // "special" locations
-    // accessText
+    if (key === '.') {
+        //
+    }
 
     // Ok, so now we're updating things
 
-    if (node.type === 'identifier') {
-        let text = node.text;
-        if (pos === 0) {
-            text = key + text;
-        } else if (pos === text.length) {
-            text = text + key;
-        } else {
-            text = text.slice(0, pos) + key + text.slice(pos);
-        }
-        return {
-            type: 'update',
-            update: {
-                map: { [idx]: { ...node, text } },
-                path,
-                selection: { idx, loc: pos + 1 },
-            },
-        };
+    if (node.type === 'identifier' || node.type === 'accessText') {
+        return updateText(node, pos, key, idx, path);
     }
 
     if (last.child.type === 'inside') {
-        const nid = nidx();
-        const pnode = map[last.idx];
-        const update: UpdateMap = {
-            [last.idx]: {
-                ...pnode,
-                ...modChildren(pnode, (items) => items.unshift(nid)),
-            },
-            [nid]: {
-                type: 'identifier',
-                text: key,
-                loc: { idx: nid, start: 0, end: 0 },
-            },
-        };
-        return {
-            type: 'update',
-            update: {
-                map: update,
-                path: path.slice(0, -1).concat({
-                    idx: last.idx,
-                    child: { type: 'child', at: 0 },
-                }),
-                selection: { idx: nid, loc: 1 },
-            },
-        };
+        return addIdToListLike(map, last.idx, key, path);
     }
 
     if (node.type === 'blank') {
-        return {
-            type: 'update',
-            update: {
-                map: {
-                    [idx]: {
-                        type: 'identifier',
-                        text: key,
-                        loc: node.loc,
-                    },
-                },
-                path,
-                selection: { idx, loc: 1 },
-            },
-        };
+        return { type: 'update', update: { ...newId(key, idx), path } };
     }
 
     throw new Error(
@@ -179,24 +129,81 @@ export const getKeyUpdate = (
             key,
         })}`,
     );
-
-    // if (last && (last.child.type === 'child' || last.child.type === 'expr')) {
-    //     if ('([{'.includes(key) && pos === 0 && text.length !== 0) {
-    //         return {
-    //             type: 'update',
-    //             update: wrapWithParens(
-    //                 path,
-    //                 idx,
-    //                 map,
-    //                 ({ '(': 'list', '[': 'array', '{': 'record' } as const)[
-    //                     key
-    //                 ]!,
-    //                 'start',
-    //             ),
-    //         };
-    //     }
-    // }
 };
+
+const newId = (
+    key: string,
+    idx = nidx(),
+): { map: UpdateMap; selection: Selection } => {
+    return {
+        map: {
+            [idx]: {
+                type: 'identifier',
+                text: key,
+                loc: { idx, start: 0, end: 0 },
+            },
+        },
+        selection: { idx, loc: 1 },
+    };
+};
+
+function addIdToListLike(
+    map: Map,
+    pidx: number,
+    key: string,
+    path: Path[],
+): KeyUpdate {
+    // const {map, sle}
+    const nid = nidx();
+    const pnode = map[pidx];
+    const update: UpdateMap = {
+        [pidx]: {
+            ...pnode,
+            ...modChildren(pnode, (items) => items.unshift(nid)),
+        },
+        [nid]: {
+            type: 'identifier',
+            text: key,
+            loc: { idx: nid, start: 0, end: 0 },
+        },
+    };
+    return {
+        type: 'update',
+        update: {
+            map: update,
+            path: path.slice(0, -1).concat({
+                idx: pidx,
+                child: { type: 'child', at: 0 },
+            }),
+            selection: { idx: nid, loc: 1 },
+        },
+    };
+}
+
+function updateText(
+    node: Extract<MNode, { text: string }>,
+    pos: number,
+    key: string,
+    idx: number,
+    path: Path[],
+): KeyUpdate {
+    let text = node.text;
+    if (pos === 0) {
+        text = key + text;
+    } else if (pos === text.length) {
+        text = text + key;
+    } else {
+        text = text.slice(0, pos) + key + text.slice(pos);
+    }
+    return {
+        type: 'update',
+        update: {
+            map: { [idx]: { ...node, text } },
+            path,
+            selection: { idx, loc: pos + 1 },
+        },
+    };
+}
 
 function newStringAfter(path: Path[], idx: number, map: Map): KeyUpdate {
     const fid = nidx();
@@ -226,25 +233,33 @@ function newStringAfter(path: Path[], idx: number, map: Map): KeyUpdate {
         : undefined;
 }
 
-function replaceWithString(idx: number, path: Path[]): KeyUpdate {
+const newString = (idx = nidx()): { map: UpdateMap; selection: Selection } => {
     const nid = nidx();
+    return {
+        map: {
+            [idx]: {
+                type: 'string',
+                first: nid,
+                templates: [],
+                loc: { idx, start: 0, end: 0 },
+            },
+            [nid]: {
+                type: 'stringText',
+                loc: { idx: nid, start: 0, end: 0 },
+                text: '',
+            },
+        },
+        selection: { idx: nid, loc: 0 },
+    };
+};
+
+function replaceWithString(idx: number, path: Path[]): KeyUpdate {
+    const { map, selection } = newString(idx);
     return {
         type: 'update',
         update: {
-            map: {
-                [idx]: {
-                    type: 'string',
-                    first: nid,
-                    templates: [],
-                    loc: { idx, start: 0, end: 0 },
-                },
-                [nid]: {
-                    type: 'stringText',
-                    loc: { idx: nid, start: 0, end: 0 },
-                    text: '',
-                },
-            },
-            selection: { idx: nid, loc: 0 },
+            map,
+            selection,
             path: path.concat({ idx, child: { type: 'text', at: 0 } }),
         },
     };
