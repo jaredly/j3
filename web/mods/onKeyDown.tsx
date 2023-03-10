@@ -428,7 +428,7 @@ export const closeListLike = (
                     idx: parent.idx,
                     loc: 'end',
                 },
-                path: path.slice(0, i - 1),
+                path: path.slice(0, i),
             };
         }
         if (
@@ -443,7 +443,7 @@ export const closeListLike = (
                     idx: suffix,
                     loc: 0,
                 },
-                path: path.slice(0, i - 1).concat({
+                path: path.slice(0, i).concat({
                     idx: parent.idx,
                     child: {
                         type: 'text',

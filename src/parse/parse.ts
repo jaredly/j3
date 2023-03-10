@@ -60,7 +60,7 @@ export const parseByCharacter = (text: string) => {
             path,
             map,
         );
-        // console.warn(char, path);
+        // console.log(char, path);
         // console.log(JSON.stringify(update));
 
         // OOOOOOH um so

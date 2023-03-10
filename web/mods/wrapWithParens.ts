@@ -105,7 +105,7 @@ export const newNodeAfter = (
         };
         return {
             map: mp,
-            path: path.slice(0, i - 1).concat({
+            path: path.slice(0, i).concat({
                 idx: parent.idx,
                 child: {
                     type: 'child',

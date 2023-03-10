@@ -67,6 +67,9 @@ export const getKeyUpdate = (
     path: Path[],
     map: Map,
 ): KeyUpdate => {
+    if (!path.length) {
+        throw new Error(`no path ${key} ${idx} ${JSON.stringify(map)}`);
+    }
     const last = path[path.length - 1];
     const node = map[idx];
 

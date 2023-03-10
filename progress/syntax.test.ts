@@ -94,9 +94,9 @@ describe('a test', () => {
     data.trim()
         .split('\n\n')
         .forEach((chunk, i) => {
-            // if (i !== 1) return;
+            // if (i !== 5) return;
             const [jerd, expected] = chunk.split('\n');
-            it(jerd, () => {
+            it(i + ' ' + jerd, () => {
                 const data = parseByCharacter(jerd);
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const back = nodeToString(fromMCST(idx, data));
