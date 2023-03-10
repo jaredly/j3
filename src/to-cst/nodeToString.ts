@@ -1,3 +1,4 @@
+import { Selection } from '../../web/store';
 import { Node } from '../types/cst';
 
 export type SourceMap = {
@@ -23,6 +24,25 @@ export const nodeToString = (
 
 const maybeWrap = (text: string) =>
     !text.length || text.trim().length < text.length ? `\`${text}\`` : text;
+
+export const remapPos = (selection: Selection, sm: SourceMap) => {
+    if (!sm.map[selection.idx]) {
+        throw new Error(`no idx ${selection.idx} ${JSON.stringify(sm)}`);
+    }
+    const { start, end } = sm.map[selection.idx];
+    switch (selection.loc) {
+        case 'start':
+            return start;
+        case 'end':
+            return end;
+        case 'inside':
+            return start + 1;
+        case 'change':
+            return start;
+        default:
+            return start + (selection.loc ?? 0);
+    }
+};
 
 export const showSourceMap = (text: string, sm: SourceMap) => {
     return Object.entries(sm.map)

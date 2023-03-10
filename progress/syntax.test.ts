@@ -4,6 +4,7 @@ import { setIdx } from '../src/grammar';
 import { idText, parseByCharacter, selPos } from '../src/parse/parse';
 import {
     nodeToString,
+    remapPos,
     showSourceMap,
     SourceMap,
 } from '../src/to-cst/nodeToString';
@@ -273,25 +274,6 @@ describe('a test', () => {
             });
         });
 });
-
-export const remapPos = (selection: Selection, sm: SourceMap) => {
-    if (!sm.map[selection.idx]) {
-        throw new Error(`no idx ${selection.idx} ${JSON.stringify(sm)}`);
-    }
-    const { start, end } = sm.map[selection.idx];
-    switch (selection.loc) {
-        case 'start':
-            return start;
-        case 'end':
-            return end;
-        case 'inside':
-            return start + 1;
-        case 'change':
-            return start;
-        default:
-            return start + (selection.loc ?? 0);
-    }
-};
 
 // Ok, so the thing that I'll be comparing against is
 // like s-exp of the types of things.

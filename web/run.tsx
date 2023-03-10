@@ -4,6 +4,7 @@ import { createRoot, Root } from 'react-dom/client';
 import { App } from './App';
 import ubahn from 'react-ubahn/runtime';
 import { RichText } from './old/Markdown';
+import { ByHand } from './ByHand';
 
 ubahn.disable();
 
@@ -23,6 +24,6 @@ window.root =
 
 root.render(
     <React.StrictMode>
-        <App />
+        <ByHand />
     </React.StrictMode>,
 );
