@@ -104,7 +104,7 @@ hello.3.2.what
 const sexp = (node: Node): string => {
     const res = sexp_(node);
     if (node.tannot) {
-        return res + ':' + sexp(node.tannot);
+        return `(tannot ${res} ${sexp(node.tannot)})`;
     }
     return res;
 };

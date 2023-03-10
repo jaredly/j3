@@ -10,7 +10,7 @@ import { Events } from '../old/Nodes';
 import { wrappable, wrapWithParens } from './wrapWithParens';
 import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { nidx } from '../../src/grammar';
-import { closeListLike } from './onKeyDown';
+import { closeListLike } from './closeListLike';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
 import { Identifier, stringText } from '../../src/types/cst';
@@ -91,7 +91,7 @@ export const getKeyUpdate = (
                 path,
             };
         }
-        return goRight(path, idx, map);
+        // return goRight(path, idx, map);
     }
 
     if (node.type === 'stringText') {

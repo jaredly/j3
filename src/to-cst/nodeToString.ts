@@ -12,9 +12,12 @@ export const nodeToString = (
 ): string => {
     sm.cur += addBefore;
     const start = sm.cur;
-    const body = nodeToString_(node, sm);
+    let body = nodeToString_(node, sm);
     sm.cur = start + body.length;
     sm.map[node.loc.idx] = { start, end: sm.cur };
+    if (node.tannot) {
+        body += ':' + nodeToString(node.tannot, sm);
+    }
     return body;
 };
 
