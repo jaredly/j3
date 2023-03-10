@@ -23,7 +23,7 @@ import {
     newSpread,
     mergeNew,
 } from './newNodes';
-import { goLeft, goRight } from './navigate';
+import { goLeft, goRight, selectStart } from './navigate';
 import { handleStringText } from './handleStringText';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
@@ -123,7 +123,7 @@ export const getKeyUpdate = (
     }
 
     if (key === ':') {
-        return goToTannot(path, node, idx);
+        return goToTannot(path, node, idx, map);
     }
 
     if (key === '"') {
@@ -277,13 +277,25 @@ function updateText(
     };
 }
 
-function goToTannot(path: Path[], node: MNode, idx: number): KeyUpdate {
+function goToTannot(
+    path: Path[],
+    node: MNode,
+    idx: number,
+    map: Map,
+): KeyUpdate {
     if (node.tannot != null) {
-        return {
-            type: 'select',
-            selection: { idx: node.tannot, loc: 'start' },
-            path: path.concat({ idx, child: { type: 'tannot' } }),
-        };
+        const sel = selectStart(
+            node.tannot,
+            path.concat({ idx, child: { type: 'tannot' } }),
+            map,
+        );
+        if (sel) {
+            return {
+                type: 'select',
+                selection: sel.sel,
+                path: sel.path,
+            };
+        }
     }
     const blank = newBlank();
     blank.map[idx] = { ...node, tannot: blank.idx };
