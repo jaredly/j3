@@ -1,6 +1,14 @@
 import { nidx } from '../../src/grammar';
 import { NewThing } from './getKeyUpdate';
 
+/** Second wins */
+export const mergeNew = (first: NewThing, second: NewThing): NewThing => {
+    return {
+        ...second,
+        map: { ...first.map, ...second.map },
+    };
+};
+
 export const newBlank = (idx = nidx()): NewThing => {
     return {
         map: {
@@ -9,6 +17,21 @@ export const newBlank = (idx = nidx()): NewThing => {
         idx,
         selection: { idx, loc: 'start' },
         path: [],
+    };
+};
+
+export const newSpread = (iid: number, idx = nidx()): NewThing => {
+    return {
+        map: {
+            [idx]: {
+                type: 'spread',
+                contents: iid,
+                loc: { idx, start: 0, end: 0 },
+            },
+        },
+        idx,
+        selection: { idx: iid, loc: 0 },
+        path: [{ idx, child: { type: 'spread-contents' } }],
     };
 };
 

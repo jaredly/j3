@@ -51,7 +51,7 @@ export const nodeToString_ = (
                 .map((item) => '.' + item.text)
                 .join('')}`;
         case 'spread':
-            return `...${nodeToString(node.contents, sm, 3)}`;
+            return `..${nodeToString(node.contents, sm, 3)}`;
         case 'stringText':
             return node.text;
         case 'string':

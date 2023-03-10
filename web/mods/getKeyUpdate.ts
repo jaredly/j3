@@ -21,6 +21,8 @@ import {
     newListLike,
     newAccessText,
     newRecordAccess,
+    newSpread,
+    mergeNew,
 } from './newNodes';
 import { goLeft } from './navigate';
 import { handleStringText } from './handleStringText';
@@ -136,6 +138,11 @@ export const getKeyUpdate = (
             const nat = newRecordAccess(idx, '');
             return replacePathWith(path, map, nat);
         }
+        if (last.child.type === 'inside') {
+            const blank = newBlank();
+            const nat = mergeNew(blank, newRecordAccess(blank.idx, ''));
+            return addToListLike(map, last.idx, path, nat);
+        }
         if (node.type === 'identifier' && !text.match(/^-?[0-9]+$/)) {
             const nat = newRecordAccess(idx, text.slice(pos));
             if (pos < text.length) {
@@ -150,6 +157,24 @@ export const getKeyUpdate = (
                     `accessText parent not a recordAccess ${parent.type}`,
                 );
             }
+
+            if (map[parent.target].type === 'blank' && text === '') {
+                // turn into a spread!
+                const nat = newSpread(parent.target);
+                // Delete the recordAccess
+                nat.map[last.idx] = null;
+                // Delete the accessText
+                nat.map[idx] = null;
+                return replacePathWith(path.slice(0, -1), map, nat);
+                // return {
+                //     type: 'update',
+                //     update: {
+                //         ...nat,
+                //         path: path.slice(0, -2).concat(nat.path),
+                //     },
+                // };
+            }
+
             const nat = newAccessText(text.slice(pos));
             if (pos < text.length) {
                 nat.map[idx] = { ...node, text: text.slice(0, pos) };

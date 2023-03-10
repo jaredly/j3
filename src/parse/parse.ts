@@ -24,6 +24,7 @@ export const idText = (node: MNode) => {
 
 export const parseByCharacter = (
     text: string,
+    debug = false,
 ): { map: Map; selection: Selection } => {
     const top = nidx();
     const map: Map = {
@@ -74,8 +75,10 @@ export const parseByCharacter = (
             path,
             map,
         );
-        // console.log(key, path);
-        // console.log(JSON.stringify(update));
+        if (debug) {
+            console.log(key, path);
+            console.log(JSON.stringify(update));
+        }
 
         // OOOOOOH um so
         // how do I go about updating the `path`?
@@ -88,7 +91,13 @@ export const parseByCharacter = (
             selection = update.selection;
             path = update.path;
         } else if (update?.type === 'update' && update?.update) {
-            Object.assign(map, update.update.map);
+            Object.keys(update.update.map).forEach((key) => {
+                if (update.update!.map[+key] == null) {
+                    delete map[+key];
+                } else {
+                    map[+key] = update.update!.map[+key]!;
+                }
+            });
             selection = update.update.selection;
             path = update.update.path;
 

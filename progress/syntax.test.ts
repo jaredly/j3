@@ -91,10 +91,13 @@ hello.3.2.what
 .one.two
 (access 2)
 
-(...hello)
+(.one.two)
+(list (access 2))
+
+(..hello)
 (list (spread id))
 
-{...one a b ...}
+{..one a b ..}
 (record (spread id) id id (spread))
 
 (fn [one:two three:(four five)]:six seven)
@@ -127,6 +130,8 @@ const sexp_ = (node: Node): string => {
             return `(access ${node.target.type === 'blank' ? '' : 'id '}${
                 node.items.length
             })`;
+        case 'spread':
+            return `(spread ${sexp(node.contents)})`;
         case 'string':
             if (node.templates.length) {
                 return `(string ${node.templates
@@ -143,15 +148,18 @@ describe('a test', () => {
     data.trim()
         .split('\n\n')
         .forEach((chunk, i) => {
-            // if (i !== 22) return;
+            const only = chunk.startsWith('!!!');
+            if (only) {
+                chunk = chunk.slice(3);
+            }
             const chunks = chunk.split('\n');
             const jerd = chunks[0];
             const [expected, serialized] =
                 chunks.length === 2 ? chunks : chunks.slice(1);
 
-            it(i + ' ' + jerd, () => {
+            (only ? it.only : it)(i + ' ' + jerd, () => {
                 setIdx(0);
-                const { map: data, selection } = parseByCharacter(jerd);
+                const { map: data, selection } = parseByCharacter(jerd, only);
                 Object.keys(data).forEach((key) => {
                     expect(data[+key].loc.idx).toEqual(+key);
                 });
@@ -170,8 +178,8 @@ describe('a test', () => {
                 if (back !== expected) {
                     console.warn(JSON.stringify(data));
                 }
-                expect(back).toEqual(expected);
                 expect(sexp(fromMCST(idx, data))).toEqual(serialized);
+                expect(back).toEqual(expected);
             });
         });
 });
