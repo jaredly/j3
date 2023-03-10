@@ -36,9 +36,17 @@ string
 (one two (three four) five ())
 (list id id (list id id) id (list))
 
+(one t^l^r())
+(one t ())
+(list id id (list))
+
 (one t^l())
 (one (t))
 (list id (list id))
+
+(one())
+(one ())
+(list id (list))
 
 (one {^l())
 (one ({}))
@@ -105,17 +113,21 @@ describe('a test', () => {
     data.trim()
         .split('\n\n')
         .forEach((chunk, i) => {
-            // if (i !== 5) return;
-            const [jerd, expected] = chunk.split('\n');
+            // if (i !== 10) return;
+            const chunks = chunk.split('\n');
+            const jerd = chunks[0];
+            const [expected, serialized] =
+                chunks.length === 2 ? chunks : chunks.slice(1);
+
             it(i + ' ' + jerd, () => {
                 const data = parseByCharacter(jerd);
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const back = nodeToString(fromMCST(idx, data));
-                if (back !== jerd) {
+                if (back !== expected) {
                     console.warn(JSON.stringify(data));
                 }
-                expect(back).toEqual(jerd);
-                expect(sexp(fromMCST(idx, data))).toEqual(expected);
+                expect(back).toEqual(expected);
+                expect(sexp(fromMCST(idx, data))).toEqual(serialized);
             });
         });
 });

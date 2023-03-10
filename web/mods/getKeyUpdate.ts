@@ -14,6 +14,9 @@ import { closeListLike } from './onKeyDown';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
 import { Identifier, stringText } from '../../src/types/cst';
+import { getNodes } from '../overheat/getNodesWithAnnot';
+import equal from 'fast-deep-equal';
+import { ONode } from '../overheat/types';
 
 export type SelectAndPath = {
     selection: Selection;
@@ -75,7 +78,7 @@ export const getKeyUpdate = (
 
     // Start a list-like!
     if ('([{'.includes(key)) {
-        return openListLike({ key, idx, last, node, path, map });
+        return openListLike({ key, idx, last, node, path, map, pos });
     }
 
     if (key === ' ') {
@@ -101,6 +104,32 @@ export const getKeyUpdate = (
 
     if (key === '.') {
         //
+    }
+
+    if (key === 'ArrowLeft') {
+        if (pos > 0) {
+            return {
+                type: 'select',
+                selection: { idx, loc: pos - 1 },
+                path,
+            };
+        }
+        return goLeft(path, idx, map);
+    }
+
+    if (key === 'ArrowRight') {
+        if (pos < text.length) {
+            return {
+                type: 'select',
+                selection: { idx, loc: pos + 1 },
+                path,
+            };
+        }
+        // return goRight(path, idx, map)
+    }
+
+    if (key.length !== 1) {
+        throw new Error(`special? ${key}`);
     }
 
     // Ok, so now we're updating things
@@ -147,7 +176,7 @@ const newId = (key: string, idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx, loc: 1 },
+        selection: { idx, loc: key.length },
         path: [],
     };
 };
@@ -221,7 +250,7 @@ function updateText(
         update: {
             map: { [idx]: { ...node, text } },
             path,
-            selection: { idx, loc: pos + 1 },
+            selection: { idx, loc: pos + key.length },
         },
     };
 }
@@ -397,6 +426,7 @@ function openListLike({
     node,
     path,
     map,
+    pos,
 }: {
     key: string;
     idx: number;
@@ -404,6 +434,7 @@ function openListLike({
     node: MNode;
     path: Path[];
     map: Map;
+    pos: number;
 }): KeyUpdate {
     const type = ({ '(': 'list', '[': 'array', '{': 'record' } as const)[key]!;
 
@@ -425,21 +456,10 @@ function openListLike({
                     selection: { idx, loc: 'start' },
                 }),
             );
-
-            // return {
-            //     type: 'update',
-            //     update: wrapWithParens(
-            //         path.slice(0, -1),
-            //         idx,
-            //         map,
-            //         type,
-            //         'start',
-            //     ),
-            // };
         }
     }
 
-    if (wrappable.includes(last.child.type)) {
+    if (wrappable.includes(last.child.type) && pos === 0) {
         return replacePathWith(
             path,
             map,
@@ -450,10 +470,6 @@ function openListLike({
                 selection: { idx, loc: 'start' },
             }),
         );
-        // return {
-        //     type: 'update',
-        //     update: wrapWithParens(path, idx, map, type, 'start'),
-        // };
     }
 
     return newNodeAfter(path, map, newListLike(type));
@@ -526,4 +542,49 @@ export const newNodeAfter = (
             },
         };
     }
+};
+
+export type PathSel = {
+    path: PathChild;
+    sel: Selection;
+};
+
+export const pathSelForNode = (node: ONode, idx: number): null | PathSel => {
+    switch (node.type) {
+        case 'punct':
+            return null;
+        case 'blinker':
+            return { path: { type: node.loc }, sel: { idx, loc: node.loc } };
+        case 'render':
+        case 'extra':
+            return null;
+        case 'ref':
+            return { path: node.path, sel: { idx: node.id, loc: 'start' } };
+    }
+};
+
+export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
+    if (!path.length) return;
+    const last = path[path.length - 1];
+    const pnodes = getNodes(map[last.idx]);
+
+    let prev: PathSel | null = null;
+    for (let pnode of pnodes) {
+        const ps = pathSelForNode(pnode, last.idx);
+        if (!ps) continue;
+        if (equal(ps.path, last.child)) {
+            return prev
+                ? {
+                      type: 'select',
+                      selection: prev.sel,
+                      path: path
+                          .slice(0, -1)
+                          .concat([{ idx: last.idx, child: prev.path }]),
+                  }
+                : goLeft(path.slice(0, -1), last.idx, map);
+        }
+        prev = ps;
+    }
+
+    throw new Error(`current not vound in pnodes`);
 };

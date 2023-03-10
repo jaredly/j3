@@ -37,7 +37,18 @@ export const parseByCharacter = (text: string) => {
     let selection: Selection = { idx: top, loc: 0 };
     let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
     for (let i = 0; i < text.length; i++) {
-        const char = text[i];
+        let key = text[i];
+        if (key === '^') {
+            key = {
+                l: 'ArrowLeft',
+                r: 'ArrowRight',
+                b: 'Backspace',
+            }[text[i + 1]]!;
+            if (!key) {
+                throw new Error(`Unexpected ^${text[i + 1]}`);
+            }
+            i++;
+        }
 
         const curText = idText(map[selection.idx]) ?? '';
 
@@ -53,7 +64,7 @@ export const parseByCharacter = (text: string) => {
                 : selection.loc;
 
         const update = getKeyUpdate(
-            char,
+            key,
             pos,
             curText ?? '',
             selection.idx,
