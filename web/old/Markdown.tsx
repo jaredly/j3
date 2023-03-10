@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { RichText, RichText as MDT } from '../../src/types/cst';
 import { MNodeExtra } from '../../src/types/mcst';
-import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
+import { getPos, isAtEnd, isAtStart } from '../mods/old/onKeyDown';
 import {
     Path,
     redo,
@@ -69,8 +69,8 @@ import { AutoLinkNode, LinkNode } from '@lexical/link';
 // import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 // import { $generateHtmlFromNodes } from '@lexical/html';
-import { addSpace, handleSpace, maybeUpdate } from '../mods/handleSpace';
-import { handleBackspace } from '../mods/handleBackspace';
+import { addSpace, handleSpace, maybeUpdate } from '../mods/old/handleSpace';
+import { handleBackspace } from '../mods/old/handleBackspace';
 
 const theme = {
     ltr: 'ltr',

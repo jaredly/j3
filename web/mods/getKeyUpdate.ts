@@ -7,7 +7,6 @@ import {
     UpdateMap,
 } from '../store';
 import { Events } from '../old/Nodes';
-import { wrappable, wrapWithParens } from './wrapWithParens';
 import { Map, MNode } from '../../src/types/mcst';
 import { closeListLike } from './closeListLike';
 import { replacePath } from '../old/RecordText';
@@ -26,6 +25,8 @@ import {
 } from './newNodes';
 import { goLeft } from './navigate';
 import { handleStringText } from './handleStringText';
+
+export const wrappable = ['spread-contents', 'expr', 'child'];
 
 export type SelectAndPath = {
     selection: Selection;

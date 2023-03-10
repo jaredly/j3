@@ -26,6 +26,9 @@ string
 "nest \${(and "things")} ed"
 (string (list id string))
 
+!!!"a\${b}c\${d}e"
+(string id id)
+
 ("ok" ko)
 (list string id)
 

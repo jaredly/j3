@@ -21,7 +21,7 @@ import { Events } from './Nodes';
 import { SetHover } from './Doc';
 import { Loc, stringText } from '../../src/types/cst';
 import { focus, Top } from './IdentifierLike';
-import { getPos, onKeyDown } from '../mods/onKeyDown';
+import { getPos, onKeyDown } from '../mods/old/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
 import { replacePath } from './RecordText';
 

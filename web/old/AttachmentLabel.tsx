@@ -1,5 +1,5 @@
 import React from 'react';
-import { getPos, isAtEnd, isAtStart } from '../mods/onKeyDown';
+import { getPos, isAtEnd, isAtStart } from '../mods/old/onKeyDown';
 import { setSelection } from '../store';
 import { focus, Top } from './IdentifierLike';
 import { Events } from './Nodes';

@@ -1,4 +1,5 @@
-import { Map } from '../../src/types/mcst';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { fromMCST, Map } from '../../src/types/mcst';
 import { Path } from '../store';
 import { SelectAndPath } from './getKeyUpdate';
 
@@ -30,6 +31,13 @@ export const closeListLike = (
             parent.child.type === 'expr' &&
             node.type === 'string'
         ) {
+            if (parent.child.at === 0) {
+                throw new Error(`what is happening`);
+            }
+            if (parent.child.at - 1 >= node.templates.length) {
+                console.log(nodeToString(fromMCST(-1, map)));
+                throw new Error(`${parent.child.at} - ${JSON.stringify(node)}`);
+            }
             const suffix = node.templates[parent.child.at - 1].suffix;
             return {
                 selection: {

@@ -1,5 +1,5 @@
-import { nidx } from '../../src/grammar';
-import { Node } from '../../src/types/cst';
+import { nidx } from '../../../src/grammar';
+import { Node } from '../../../src/types/cst';
 import {
     ListLikeContents,
     Map,
@@ -7,13 +7,11 @@ import {
     MNode,
     MNodeExtra,
     toMCST,
-} from '../../src/types/mcst';
-import { replacePath } from '../old/RecordText';
-import { Path, StoreUpdate } from '../store';
-import { KeyUpdate, NewThing, TheUpdate } from './getKeyUpdate';
-import { modChildren } from './modChildren';
-
-export const wrappable = ['spread-contents', 'expr', 'child'];
+} from '../../../src/types/mcst';
+import { replacePath } from '../../old/RecordText';
+import { Path, StoreUpdate } from '../../store';
+import { KeyUpdate, NewThing, TheUpdate } from '../getKeyUpdate';
+import { modChildren } from '../modChildren';
 
 export function wrapWithParens(
     path: Path[],

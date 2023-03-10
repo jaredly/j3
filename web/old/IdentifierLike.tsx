@@ -11,7 +11,7 @@ import {
     maybeCommitAutoComplete,
     onKeyDown,
     setPos,
-} from '../mods/onKeyDown';
+} from '../mods/old/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';

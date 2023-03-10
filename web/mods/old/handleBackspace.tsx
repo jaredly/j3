@@ -4,11 +4,11 @@ import {
     Map,
     MCString,
     MNodeExtra,
-} from '../../src/types/mcst';
-import { Path, Store, StoreUpdate, UpdateMap, updateStore } from '../store';
-import { Events } from '../old/Nodes';
+} from '../../../src/types/mcst';
+import { Path, Store, StoreUpdate, UpdateMap, updateStore } from '../../store';
+import { Events } from '../../old/Nodes';
 import { mnodeChildren, rmChild, isAtStart, getPos } from './onKeyDown';
-import { stringText } from '../../src/types/cst';
+import { stringText } from '../../../src/types/cst';
 
 const removeEmptyPrev = (gp: Path, at: number, store: Store) => {
     const children = mnodeChildren(store.map[gp.idx]);

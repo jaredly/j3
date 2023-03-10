@@ -5,7 +5,7 @@ import {
     MNodeContents,
     MNodeExtra,
     toMCST,
-} from '../../src/types/mcst';
+} from '../../../src/types/mcst';
 import {
     EvalCtx,
     Path,
@@ -16,19 +16,19 @@ import {
     undo,
     UpdateMap,
     updateStore,
-} from '../store';
-import { parse } from '../../src/grammar';
-import { CString, Identifier, Loc, NodeContents } from '../../src/types/cst';
-import { Events } from '../old/Nodes';
+} from '../../store';
+import { parse } from '../../../src/grammar';
+import { CString, Identifier, Loc, NodeContents } from '../../../src/types/cst';
+import { Events } from '../../old/Nodes';
 import { handleBackspace } from './handleBackspace';
 import { handleSpace, maybeUpdate } from './handleSpace';
-import { walkBackTree } from '../../tests/incrementallyBuildTree';
-import { compile } from '../compile';
-import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
-import { Top } from '../old/IdentifierLike';
+import { walkBackTree } from '../../../tests/incrementallyBuildTree';
+import { compile } from '../../compile';
+import { AutoCompleteReplace } from '../../../src/to-ast/Ctx';
+import { Top } from '../../old/IdentifierLike';
 import { wrapWithParens } from './wrapWithParens';
-import { modChildren } from './modChildren';
-import { closeListLike } from './closeListLike';
+import { modChildren } from '../modChildren';
+import { closeListLike } from '../closeListLike';
 
 type KeyHandler = {
     keys: (

@@ -22,7 +22,7 @@ import {
 import { Events } from './Nodes';
 import { accessText, Identifier, Node } from '../../src/types/cst';
 import { focus, handleMenu, Top, useMenuStuff } from './IdentifierLike';
-import { getPos, onKeyDown } from '../mods/onKeyDown';
+import { getPos, onKeyDown } from '../mods/old/onKeyDown';
 import { nidx } from '../../src/grammar';
 import { rainbow } from '../rainbow';
 
