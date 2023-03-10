@@ -109,6 +109,10 @@ hi^l^l.
 .hi
 (access 1)
 
+one.two^l.
+one.tw.o
+(access id 2)
+
 (.one.two)
 (list (access 2))
 
