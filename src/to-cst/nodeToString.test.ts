@@ -1,5 +1,5 @@
 import { Loc, Node } from '../types/cst';
-import { nodeToString, SourceMap } from './nodeToString';
+import { nodeToString, showSourceMap, SourceMap } from './nodeToString';
 
 function loc(): Loc {
     return { idx: loc.idx++, start: 0, end: 0 };
@@ -38,12 +38,6 @@ const string = (first: string, ...templates: [Node, string][]): Node => ({
     })),
     loc: loc(),
 });
-
-const showSourceMap = (text: string, sm: SourceMap) => {
-    return Object.entries(sm.map)
-        .map(([idx, { start, end }]) => `${idx}: ${text.slice(start, end)}`)
-        .join('\n');
-};
 
 describe('nodeToString', () => {
     it('should work', () => {
@@ -97,8 +91,8 @@ describe('nodeToString', () => {
         9: folks
         10: 1
         11: Hello 
-        12:  and
-        13: 
+        12: \` and\`
+        13: \`\`
         14: "Hello \${folks} and\${1}"
         15: ${ser}
         `

@@ -2,7 +2,11 @@
 
 import { setIdx } from '../src/grammar';
 import { idText, parseByCharacter, selPos } from '../src/parse/parse';
-import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
+import {
+    nodeToString,
+    showSourceMap,
+    SourceMap,
+} from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { getKeyUpdate } from '../web/mods/getKeyUpdate';
@@ -245,6 +249,8 @@ describe('a test', () => {
                     }
                     const newPos = remapPos(state.sel, sourceMap);
                     if (newPos >= startPos || newPos < startPos - 2) {
+                        console.log(JSON.stringify(state.sel));
+                        console.log(showSourceMap(back, sourceMap));
                         console.log(
                             'prev: ' +
                                 backOrig.slice(0, startPos) +

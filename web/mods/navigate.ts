@@ -19,9 +19,11 @@ export const selectEnd = (
     for (let i = pnodes.length - 1; i >= 0; i--) {
         const sel = pathSelForNode(pnodes[i], idx, 'end', map);
         if (sel) {
+            // console.log(`sel end at ${i}`, sel);
             return { sel: sel.sel, path: base.concat(sel.path) };
         }
     }
+    // console.warn('no end?');
     return { sel: { idx, loc: 'end' }, path: base };
 };
 
@@ -40,11 +42,22 @@ export const pathSelForNode = (
                 sel: { idx, loc: node.loc },
             };
         case 'render':
+            return {
+                path: [],
+                sel: { idx, loc },
+            };
         case 'extra':
             return null;
         case 'ref': {
             const path: Path[] = [{ idx, child: node.path }];
             const cnode = map[node.id];
+            if (cnode.tannot && loc === 'end') {
+                return selectEnd(
+                    cnode.tannot,
+                    path.concat({ idx: node.id, child: { type: 'tannot' } }),
+                    map,
+                );
+            }
             switch (cnode.type) {
                 case 'array':
                 case 'list':
@@ -54,6 +67,11 @@ export const pathSelForNode = (
                         path: [...path, { idx: node.id, child: { type: loc } }],
                         sel: { idx: node.id, loc },
                     };
+                case 'spread':
+                case 'recordAccess':
+                    if (loc === 'end') {
+                        return selectEnd(node.id, path, map);
+                    }
             }
             return { path, sel: { idx: node.id, loc } };
         }
@@ -65,13 +83,16 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
     const last = path[path.length - 1];
     const pnodes = getNodes(map[last.idx]);
 
-    console.log('going left', last.child, pnodes);
+    // console.log('going left', last.child, pnodes);
     let prev: PathSel | null = null;
     for (let pnode of pnodes) {
         const ps = pathSelForNode(pnode, last.idx, 'end', map);
         if (!ps) continue;
-        if (equal(ps.path[0].child, last.child)) {
-            console.log(ps.path, last.child, prev);
+        // 🤔 🧐 I'm a little skeptical about this.
+        // Does this mean that if we're selected in a `render`,
+        // we'll never ... get to know? idx.
+        if (ps.path.length && equal(ps.path[0].child, last.child)) {
+            // console.log(ps.path, last.child, prev);
             return prev
                 ? {
                       type: 'select',

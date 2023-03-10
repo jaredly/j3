@@ -16,9 +16,21 @@ export const nodeToString = (
     sm.cur = start + body.length;
     sm.map[node.loc.idx] = { start, end: sm.cur };
     if (node.tannot) {
-        body += ':' + nodeToString(node.tannot, sm);
+        body += ':' + nodeToString(node.tannot, sm, 1);
     }
     return body;
+};
+
+const maybeWrap = (text: string) =>
+    !text.length || text.trim().length < text.length ? `\`${text}\`` : text;
+
+export const showSourceMap = (text: string, sm: SourceMap) => {
+    return Object.entries(sm.map)
+        .map(
+            ([idx, { start, end }]) =>
+                `${idx}: ${maybeWrap(text.slice(start, end))}`,
+        )
+        .join('\n');
 };
 
 export const nodeToString_ = (
@@ -48,10 +60,11 @@ export const nodeToString_ = (
             return `'${node.text}`;
         case 'recordAccess':
             return `${nodeToString(node.target, sm)}${node.items
-                .map((item) => '.' + item.text)
+                .map((item) => '.' + nodeToString(item, sm, 1))
                 .join('')}`;
         case 'spread':
-            return `..${nodeToString(node.contents, sm, 3)}`;
+            return `..${nodeToString(node.contents, sm, 2)}`;
+        case 'accessText':
         case 'stringText':
             return node.text;
         case 'string':
