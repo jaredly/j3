@@ -23,7 +23,7 @@ import {
     newSpread,
     mergeNew,
 } from './newNodes';
-import { goLeft } from './navigate';
+import { goLeft, goRight } from './navigate';
 import { handleStringText } from './handleStringText';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
@@ -101,7 +101,7 @@ export const getKeyUpdate = (
                 path,
             };
         }
-        // return goRight(path, idx, map);
+        return goRight(path, idx, map);
     }
 
     if (node.type === 'stringText') {

@@ -10,6 +10,23 @@ export type PathSel = {
     sel: Selection;
 };
 
+export const selectStart = (
+    idx: number,
+    base: Path[],
+    map: Map,
+): null | PathSel => {
+    const pnodes = getNodes(map[idx]);
+    for (let i = 0; i < pnodes.length; i++) {
+        const sel = pathSelForNode(pnodes[i], idx, 'start', map);
+        if (sel) {
+            // console.log(`sel end at ${i}`, sel);
+            return { sel: sel.sel, path: base.concat(sel.path) };
+        }
+    }
+    // console.warn('no start?');
+    return { sel: { idx, loc: 'start' }, path: base };
+};
+
 export const selectEnd = (
     idx: number,
     base: Path[],
@@ -72,6 +89,9 @@ export const pathSelForNode = (
                     if (loc === 'end') {
                         return selectEnd(node.id, path, map);
                     }
+                    if (loc === 'start') {
+                        return selectStart(node.id, path, map);
+                    }
             }
             return { path, sel: { idx: node.id, loc } };
         }
@@ -100,6 +120,35 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
                       path: path.slice(0, -1).concat(prev.path),
                   }
                 : goLeft(path.slice(0, -1), last.idx, map);
+        }
+        prev = ps;
+    }
+
+    throw new Error(`current not vound in pnodes`);
+};
+
+export const goRight = (path: Path[], idx: number, map: Map): KeyUpdate => {
+    if (!path.length) return;
+    const last = path[path.length - 1];
+    const pnodes = getNodes(map[last.idx]).reverse();
+
+    // console.log('going left', last.child, pnodes);
+    let prev: PathSel | null = null;
+    for (let pnode of pnodes) {
+        const ps = pathSelForNode(pnode, last.idx, 'start', map);
+        if (!ps) continue;
+        // 🤔 🧐 I'm a little skeptical about this.
+        // Does this mean that if we're selected in a `render`,
+        // we'll never ... get to know? idx.
+        if (ps.path.length && equal(ps.path[0].child, last.child)) {
+            // console.log(ps.path, last.child, prev);
+            return prev
+                ? {
+                      type: 'select',
+                      selection: prev.sel,
+                      path: path.slice(0, -1).concat(prev.path),
+                  }
+                : goRight(path.slice(0, -1), last.idx, map);
         }
         prev = ps;
     }

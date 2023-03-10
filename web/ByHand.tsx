@@ -25,35 +25,56 @@ export const ByHand = () => {
             )!,
     );
     const pos = remapPos(at.sel, sourceMap);
+    console.log(at);
+
+    React.useEffect(() => {
+        const fn = (evt: KeyboardEvent) => {
+            setAt((at) => {
+                console.log('ok', evt.key);
+
+                try {
+                    const curText = idText(map[at.sel.idx]) ?? '';
+                    const pos = selPos(at.sel, curText);
+
+                    const update = getKeyUpdate(
+                        evt.key,
+                        pos,
+                        curText,
+                        at.sel.idx,
+                        at.path,
+                        map,
+                    );
+                    if (update?.type !== 'select') {
+                        console.log('wat');
+                    } else {
+                        console.log('settings');
+                        return { sel: update.selection, path: update.path };
+                    }
+                } catch (err) {
+                    console.log(err);
+                }
+                return at;
+            });
+        };
+        document.addEventListener('keydown', fn);
+        return () => document.removeEventListener('keydown', fn);
+    }, []);
 
     return (
-        <div>
-            <span>{text.slice(0, pos) + '|' + text.slice(pos)}</span>
-            <textarea
-                onKeyDown={(evt) => {
-                    console.log('ok', evt.key);
-                    if (evt.key === 'ArrowLeft') {
-                        const curText = idText(map[at.sel.idx]) ?? '';
-                        const pos = selPos(at.sel, curText);
-
-                        const update = getKeyUpdate(
-                            'ArrowLeft',
-                            pos,
-                            curText,
-                            at.sel.idx,
-                            at.path,
-                            map,
-                        );
-                        if (update?.type !== 'select') {
-                            console.log('wat');
-                        } else {
-                            console.log(update);
-                            setAt({ sel: update.selection, path: update.path });
-                        }
-                    } else if (evt.key === 'ArrowRight') {
-                    }
-                }}
-            />
+        <div style={{ padding: 16 }}>
+            <div style={{ position: 'relative' }}>
+                <span>{text}</span>
+                <div
+                    style={{
+                        position: 'absolute',
+                        height: '1em',
+                        width: 2,
+                        backgroundColor: 'red',
+                        left: pos * 9.6,
+                        top: 0,
+                    }}
+                />
+            </div>
             <div>{JSON.stringify(at)}</div>
         </div>
     );

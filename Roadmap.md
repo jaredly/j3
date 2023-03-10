@@ -7,6 +7,9 @@
   location of the whatsit
   - [x] ok so we have some source(dest)mapping
 
+- [x] get all the things parsing & reprinting
+- [x] left-arrow all the way
+
 # Going down the list of syntactic things
 
 - [ ] using a variable should update its type annotation, that's a thing
