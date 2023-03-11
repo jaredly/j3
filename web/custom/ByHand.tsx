@@ -111,25 +111,13 @@ export const ByHand = () => {
             evt.preventDefault();
 
             dispatch({ type: 'key', key: evt.key });
-            // dispatch((state) => {
-            //     try {
-            //         const newState = handleKey(state, evt.key);
-            //         if (newState) {
-            //             evt.preventDefault();
-            //             return newState;
-            //         }
-            //     } catch (err) {
-            //         console.log(err);
-            //     }
-            //     return state;
-            // });
         };
         document.addEventListener('keydown', fn);
         return () => document.removeEventListener('keydown', fn);
     }, []);
 
     const [cursorPos, setCursorPos] = useState(
-        null as null | { x: number; y: number; h: number },
+        null as null | { x: number; y: number; h: number; color?: string },
     );
 
     const regs = React.useMemo(() => ({} as RegMap), []);
@@ -157,6 +145,7 @@ export const ByHand = () => {
                 x: box.left - offsetX,
                 y: box.top - offsetY,
                 h: box.height,
+                color: box.color,
             });
         }
     }, [state.at.sel]);
@@ -186,7 +175,7 @@ export const ByHand = () => {
                     style={{
                         position: 'absolute',
                         width: 1,
-                        backgroundColor: 'white',
+                        backgroundColor: cursorPos.color ?? 'white',
                         left: cursorPos.x,
                         height: cursorPos.h,
                         top: cursorPos.y,
@@ -207,18 +196,20 @@ export const ByHand = () => {
 const subRect = (
     one: DOMRect,
     two: DOMRect,
-): { left: number; top: number; height: number } => {
+    color?: string,
+): { left: number; top: number; height: number; color?: string } => {
     return {
         left: one.left - two.left,
         top: one.top - two.top,
         height: one.height,
+        color,
     };
 };
 
 export const calcCursorPos = (
     sel: Selection,
     regs: RegMap,
-): void | { left: number; top: number; height: number } => {
+): void | { left: number; top: number; height: number; color?: string } => {
     const { idx, loc } = sel;
     const nodes = regs[idx];
     if (!nodes) {
@@ -250,9 +241,12 @@ export const calcCursorPos = (
             console.log('dunno loc', loc, nodes.main);
             return;
         }
+        const color = getComputedStyle(nodes.main).color;
+        console.log(color);
         return subRect(
             r.getBoundingClientRect(),
             nodes.main.offsetParent!.getBoundingClientRect(),
+            color,
         );
     } else {
         console.error('no box', loc, nodes);

@@ -33,7 +33,7 @@ export const colors: {
     identifier: '#5bb6b7',
     comment: '#616162',
     tag: '#82f682',
-    number: '#4848a5',
+    number: '#8585ff', //'#4848a5',
     string: 'yellow',
     stringText: 'yellow',
     unparsed: 'red',
