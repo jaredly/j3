@@ -136,9 +136,17 @@ back^l^b
 bak
 id
 
-(^b
+(^ba
+a
+id
 
-blank
+[a][^r what
+[a] [] what
+(array id) (array) id
+
+([])^l^l^ba^b
+()
+(list)
 `;
 
 describe('a test', () => {

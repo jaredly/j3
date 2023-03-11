@@ -230,10 +230,9 @@ export const getKeyUpdate = (
     }
 
     throw new Error(
-        `not handled ${JSON.stringify({
+        `key '${key}' not handled ${JSON.stringify({
             path,
             node,
-            key,
         })}`,
     );
 };
