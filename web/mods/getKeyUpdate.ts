@@ -91,6 +91,10 @@ export const getKeyUpdate = (
         return;
     }
 
+    if (key === 'Backspace') {
+        return handleBackspace({ idx, node, pos, path, map });
+    }
+
     if (key === 'ArrowLeft') {
         if (pos > 0) {
             return {
@@ -448,3 +452,46 @@ export const newNodeAfter = (
         };
     }
 };
+
+export function handleBackspace({
+    idx,
+    node,
+    pos,
+    path,
+    map,
+}: {
+    idx: number;
+    node: MNode;
+    pos: number;
+    path: Path[];
+    map: Map;
+}): KeyUpdate {
+    const last = path[path.length - 1];
+    if (last.child.type === 'inside') {
+        // this is an empty listlike.
+        // replace with a blank
+        return replacePathWith(path.slice(0, -1), map, newBlank(idx));
+    }
+    if (pos > 0 && 'text' in node) {
+        return {
+            type: 'update',
+            update: {
+                map: {
+                    [idx]:
+                        pos === 1 &&
+                        node.text.length === 1 &&
+                        node.type === 'identifier'
+                            ? { type: 'blank', loc: node.loc }
+                            : {
+                                  ...node,
+                                  text:
+                                      node.text.slice(0, pos - 1) +
+                                      node.text.slice(pos),
+                              },
+                },
+                selection: { idx, loc: pos - 1 },
+                path,
+            },
+        };
+    }
+}
