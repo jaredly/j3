@@ -69,7 +69,7 @@ export const textStyle = (
         case 'identifier':
             return { color: color };
         case 'stringText':
-            return { color: color, whiteSpace: 'pre-wrap' };
+            return { color: color, whiteSpace: 'pre' };
     }
 };
 
@@ -106,7 +106,7 @@ export const Render = ({
                                 key={i}
                                 style={{
                                     // color: 'gray',
-                                    whiteSpace: 'pre-wrap',
+                                    whiteSpace: 'pre',
                                     color:
                                         onode.color === 'rainbow'
                                             ? rainbow[

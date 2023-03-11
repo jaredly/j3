@@ -14,7 +14,14 @@ import { PathSel, selectEnd } from '../mods/navigate';
 import { Selection } from '../store';
 import { Render } from './Render';
 
-const initialText = '(let [x 10] (+ x 20))';
+// '(let [x 10] (+ x 20))
+
+const initialText = `
+(def live (vec4 1. 0.6 1. 1.))
+(def dead (vec4 0. 0. 0. 1.))
+(defn isLive [{x}:Vec4] (> x 0.5))
+(defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+`.trim();
 // '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 
 export type State = {

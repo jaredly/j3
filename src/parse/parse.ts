@@ -53,6 +53,9 @@ export const parseByCharacter = (
             }
             i++;
         }
+        if (key === '\n') {
+            key = 'Enter';
+        }
 
         const curText = idText(map[selection.idx]) ?? '';
         const pos = selPos(selection, curText);

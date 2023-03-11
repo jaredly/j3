@@ -1,7 +1,7 @@
 import { Ctx } from '../src/to-ast/Ctx';
 import { Layout, Map, MNodeContents } from '../src/types/mcst';
 
-const maxWidth = 10;
+const maxWidth = 50;
 
 export const calculateLayout = (
     node: MNodeContents,
