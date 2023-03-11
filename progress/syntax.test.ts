@@ -8,11 +8,11 @@ import {
     showSourceMap,
     SourceMap,
 } from '../src/to-cst/nodeToString';
-import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
 import { getKeyUpdate } from '../web/mods/getKeyUpdate';
 import { PathSel, selectEnd, selectStart } from '../web/mods/navigate';
 import { Path, Selection } from '../web/store';
+import { sexp } from './sexp';
 
 const data = `
 ()
@@ -127,50 +127,19 @@ one.tw.o
 
 (fn [one:two three:(four five)]:six {10 20 yes "ok \${(some [2 3 "inner" ..more] ..things)} and \${a}"})
 (list id (tannot (array (tannot id id) (tannot id (list id id))) id) (record id id id (string (list id (array id id string (spread id)) (spread id)) id)))
+
+backspace^b
+backspac
+id
+
+back^l^b
+bak
+id
+
+(^b
+
+blank
 `;
-
-const sexp = (node: Node): string => {
-    const res = sexp_(node);
-    if (node.tannot) {
-        return `(tannot ${res} ${sexp(node.tannot)})`;
-    }
-    return res;
-};
-
-const sexp_ = (node: Node): string => {
-    switch (node.type) {
-        case 'identifier':
-            return 'id';
-        case 'number':
-            return 'NOPE';
-        case 'list':
-        case 'array':
-        case 'record':
-            return `(${node.type + (node.values.length ? ' ' : '')}${node.values
-                .map(sexp)
-                .join(' ')})`;
-        case 'accessText':
-            return 'AA';
-        case 'recordAccess':
-            return `(access ${node.target.type === 'blank' ? '' : 'id '}${
-                node.items.length
-            })`;
-        case 'spread':
-            if (node.contents.type === 'blank') {
-                return `(spread)`;
-            }
-            return `(spread ${sexp(node.contents)})`;
-        case 'string':
-            if (node.templates.length) {
-                return `(string ${node.templates
-                    .map((t) => sexp(t.expr))
-                    .join(' ')})`;
-            }
-            return 'string';
-        default:
-            return 'AA' + node.type;
-    }
-};
 
 describe('a test', () => {
     data.trim()

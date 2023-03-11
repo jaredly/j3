@@ -22,6 +22,8 @@
     - yeah thinking not just normal web selection. might as well
       take full control.
 - [ ] btw I should definitely support multi-select. bc that would be very cool, right?
+- [ ] BUG: space in an inside should create two blanks
+- [ ] backspace after two blanks should delete both
 
 # ByHand
 
