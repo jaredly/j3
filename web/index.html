@@ -83,6 +83,27 @@
                 /* font-weight: 100 900; */
                 /* font-style: normal; */
             }
+
+            @keyframes blink {
+                from {
+                    opacity: 1;
+                }
+                1% {
+                    opacity: 0;
+                }
+
+                50% {
+                    opacity: 0;
+                }
+                51% {
+                    opacity: 1;
+                }
+
+                to {
+                    opacity: 1;
+                }
+            }
+
             html,
             body {
                 padding: 0;

@@ -82,6 +82,15 @@ export const getKeyUpdate = (
     const last = path[path.length - 1];
     const node = map[idx];
 
+    if (
+        key === 'Meta' ||
+        key === 'Shift' ||
+        key === 'Alt' ||
+        key === 'Control'
+    ) {
+        return;
+    }
+
     if (key === 'ArrowLeft') {
         if (pos > 0) {
             return {
@@ -113,7 +122,7 @@ export const getKeyUpdate = (
         return openListLike({ key, idx, last, node, path, map, pos });
     }
 
-    if (key === ' ') {
+    if (key === ' ' || key === 'Enter') {
         return newNodeAfter(path, map, newBlank());
     }
 

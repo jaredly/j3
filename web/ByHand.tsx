@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { idText, parseByCharacter, selPos } from '../src/parse/parse';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
@@ -29,11 +29,22 @@ export const ByHand = () => {
     const pos = remapPos(state.at.sel, sourceMap);
     console.log(state);
 
-    React.useEffect(() => {
-        const fn = (evt: KeyboardEvent) => {
-            setState((state) => {
-                console.log('ok', evt.key);
+    const [blink, setBlink] = useState(false);
 
+    React.useEffect(() => {
+        let tid: null | NodeJS.Timeout = null;
+        const fn = (evt: KeyboardEvent) => {
+            if (evt.ctrlKey || evt.metaKey || evt.altKey) {
+                return;
+            }
+
+            if (tid != null) {
+                clearTimeout(tid);
+            }
+            setBlink(false);
+            tid = setTimeout(() => setBlink(true), 500);
+
+            setState((state) => {
                 try {
                     const curText = idText(state.map[state.at.sel.idx]) ?? '';
                     const pos = selPos(state.at.sel, curText);
@@ -83,21 +94,47 @@ export const ByHand = () => {
         return () => document.removeEventListener('keydown', fn);
     }, []);
 
+    const [cursorPos, setCursorPos] = useState(
+        null as null | { x: number; y: number; h: number },
+    );
+
+    const ref = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        if (!ref.current) {
+            return;
+        }
+        const r = new Range();
+        r.setStart(ref.current.firstChild!, pos);
+        r.setEnd(ref.current.firstChild!, pos);
+        const box = r.getBoundingClientRect();
+        setCursorPos({
+            x: box.left,
+            y: box.top,
+            h: box.height,
+        });
+    }, [pos]);
+
     return (
         <div style={{ padding: 16 }}>
-            <div style={{ position: 'relative' }}>
-                <span style={{ whiteSpace: 'pre' }}>{back}</span>
+            <span ref={ref} style={{ whiteSpace: 'pre' }}>
+                {back}
+            </span>
+            {cursorPos ? (
                 <div
                     style={{
                         position: 'absolute',
-                        height: '1em',
-                        width: 2,
-                        backgroundColor: 'red',
-                        left: pos * 9.6,
-                        top: 0,
+                        width: 1,
+                        backgroundColor: 'white',
+                        left: cursorPos.x,
+                        height: cursorPos.h,
+                        top: cursorPos.y,
+                        animationDuration: '1s',
+                        animationName: blink ? 'blink' : 'unset',
+                        animationIterationCount: 'infinite',
                     }}
                 />
-            </div>
+            ) : null}
             <div>{JSON.stringify(state.at)}</div>
         </div>
     );

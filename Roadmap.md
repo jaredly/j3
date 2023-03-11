@@ -9,6 +9,13 @@
 
 - [x] get all the things parsing & reprinting
 - [x] left-arrow all the way
+- [x] right-arrow is working
+- [ ] backspace is not yet a thing.
+- [ ] up & down are not yet a thing
+- [ ] my "id is empty, but it's fine us the hash" isn't yet something I support.
+- [ ] let's nail selection
+  - I guess I can just use ~normal web selection, but muck it up a bit?
+    like do boundary-alignment?
 
 # Going down the list of syntactic things
 
