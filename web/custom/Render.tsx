@@ -50,6 +50,8 @@ export const textStyle = (
                     fontFamily: 'serif',
                     color: '#84a4a5',
                 };
+            case 'number':
+                return { color: colors['number'] };
             case 'tag':
                 return {
                     fontVariationSettings: '"wght" 500',

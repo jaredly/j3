@@ -108,6 +108,30 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             if (!form.text && !form.hash) {
                 return { type: 'blank', form };
             }
+            if (form.text.match(/^[0-9]+$/)) {
+                ensure(ctx.display, form.loc.idx, {}).style = {
+                    type: 'number',
+                    kind: 'int',
+                };
+                return {
+                    type: 'number',
+                    kind: 'int',
+                    value: parseInt(form.text),
+                    form,
+                };
+            }
+            if (form.text.match(/^[0-9]+\.[0-9]*$/)) {
+                ensure(ctx.display, form.loc.idx, {}).style = {
+                    type: 'number',
+                    kind: 'float',
+                };
+                return {
+                    type: 'number',
+                    kind: 'float',
+                    value: parseFloat(form.text),
+                    form,
+                };
+            }
             // if (form.text.includes('.')) {
             //     const [expr, ...rest] = form.text.split('.');
             //     let inner: Expr = resolveExpr(

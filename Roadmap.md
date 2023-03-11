@@ -25,7 +25,7 @@
 
 - [x] lots of things
 - [x] basic hacky layout
-- [ ] lets respect tightFirst and pairs and such
+- [x] lets respect tightFirst and pairs and such
 - [ ] get the cursor to calculate right, taking scroll into account
 - [ ] BACKSPACE
 - [ ] autocomplete pls? will have to do ~text whatsits

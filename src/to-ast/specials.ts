@@ -3,7 +3,7 @@ import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { any, Ctx, Local, Mod, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType } from './nodeToType';
-import { nodeToExpr } from './nodeToExpr';
+import { filterComments, nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
@@ -51,27 +51,30 @@ export const specials: {
         }
         if (contents[0].type === 'array') {
             let locals: Local['terms'] = [];
-            let args: { pattern: Pattern; type: Type }[] =
-                contents[0].values.map((arg) => {
-                    let type;
-                    if (arg.tannot == null) {
-                        addMod(ctx, arg.loc.idx, {
-                            type: 'tannot',
-                            node: {
-                                ...any.form,
-                                loc: {
-                                    ...arg.loc,
-                                    idx: nidx(),
-                                },
+            let args: { pattern: Pattern; type: Type }[] = filterComments(
+                contents[0].values,
+            ).map((arg) => {
+                let type;
+                if (arg.tannot == null) {
+                    addMod(ctx, arg.loc.idx, {
+                        type: 'tannot',
+                        node: {
+                            ...any.form,
+                            loc: {
+                                ...arg.loc,
+                                idx: nidx(),
                             },
-                        });
-                        type = { ...any, form: arg };
-                    } else {
-                        type = nodeToType(arg.tannot, ctx);
-                    }
-                    const pattern = nodeToPattern(arg, type, ctx, locals);
-                    return { pattern, type };
-                });
+                        },
+                    });
+                    type = { ...any, form: arg };
+                } else if (arg.tannot.type !== 'blank') {
+                    type = nodeToType(arg.tannot, ctx);
+                } else {
+                    type = { ...any, form: arg };
+                }
+                const pattern = nodeToPattern(arg, type, ctx, locals);
+                return { pattern, type };
+            });
 
             // let pairs: { pat: Node; type?: Node }[] = [];
             // contents[0].values.forEach((arg) => {
@@ -312,11 +315,12 @@ export const specials: {
         ctx.display[first.loc.idx] = { style: { type: 'let-pairs' } };
         const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
-        for (let i = 0; i < first.values.length - 1; i += 2) {
-            const value = nodeToExpr(first.values[i + 1], ctx);
+        const values = filterComments(first.values);
+        for (let i = 0; i < values.length - 1; i += 2) {
+            const value = nodeToExpr(values[i + 1], ctx);
             const inferred = getType(value, ctx) ?? nilt;
             bindings.push({
-                pattern: nodeToPattern(first.values[i], inferred, ctx, locals),
+                pattern: nodeToPattern(values[i], inferred, ctx, locals),
                 value,
                 type: inferred,
             });

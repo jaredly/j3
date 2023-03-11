@@ -118,7 +118,12 @@ function withCommas(values: number[], layout?: Layout): ONode[] {
             : [
                   {
                       type: 'punct',
-                      text: layout?.type === 'multiline' ? '\n  ' : ' ',
+                      text:
+                          layout?.type === 'multiline' &&
+                          i >= layout.tightFirst &&
+                          (!layout.pairs || i % 2 == 0)
+                              ? '\n  '
+                              : ' ',
                       color: 'red',
                   },
                   {

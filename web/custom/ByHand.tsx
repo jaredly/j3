@@ -14,8 +14,8 @@ import { PathSel, selectEnd } from '../mods/navigate';
 import { Selection } from '../store';
 import { Render } from './Render';
 
-const initialText =
-    '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
+const initialText = '(let [x 10] (+ x 20))';
+// '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 
 export type State = {
     map: Map;
@@ -212,7 +212,6 @@ export const handleKey = (state: State, key: string): State | void => {
         state.map,
     );
     if (update?.type === 'update' && update?.update) {
-        console.log('wat');
         const map = { ...state.map };
         Object.keys(update.update.map).forEach((key) => {
             if (update.update!.map[+key] == null) {
