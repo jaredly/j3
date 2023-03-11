@@ -151,6 +151,12 @@ id
 ([])^l^l^ba^b
 ()
 (list)
+
+( )
+(list blank blank)
+
+( ^b)
+(list)
 `;
 
 describe('a test', () => {
