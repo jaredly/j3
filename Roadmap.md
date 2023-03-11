@@ -28,10 +28,12 @@
 - [x] lots of things
 - [x] basic hacky layout
 - [x] lets respect tightFirst and pairs and such
-- [ ] get the cursor to calculate right, taking scroll into account
+- [x] get the cursor to calculate right, taking scroll into account
 - [ ] BACKSPACE
 - [x] click punct
-- [ ] click text
+- [-] click text
+  - [x] the hacky version, that relies on monospace characters
+  - [ ] fix click text to not be hacky
 - [ ] autocomplete pls? will have to do ~text whatsits
 - [ ] ok, so for error display, let's do
   - for a listlike, we could just highlight the brackets? That would be nice.

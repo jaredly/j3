@@ -150,7 +150,13 @@ export const ByHand = () => {
     useEffect(() => {
         const box = calcCursorPos(state.at.sel, regs);
         if (box) {
-            setCursorPos({ x: box.left, y: box.top, h: box.height });
+            const offsetY = document.body.scrollTop;
+            const offsetX = document.body.scrollLeft;
+            setCursorPos({
+                x: box.left - offsetX,
+                y: box.top - offsetY,
+                h: box.height,
+            });
         }
     }, [state.at.sel]);
 
@@ -188,15 +194,29 @@ export const ByHand = () => {
                     }}
                 />
             ) : null}
-            {/* <div>{JSON.stringify(state.at)}</div>
+            <div>{JSON.stringify(state.at)}</div>
             <div style={{ whiteSpace: 'pre-wrap' }}>
                 {JSON.stringify(ctx.display, null, 2)}
-            </div> */}
+            </div>
         </div>
     );
 };
 
-export const calcCursorPos = (sel: Selection, regs: RegMap): void | DOMRect => {
+const subRect = (
+    one: DOMRect,
+    two: DOMRect,
+): { left: number; top: number; height: number } => {
+    return {
+        left: one.left - two.left,
+        top: one.top - two.top,
+        height: one.height,
+    };
+};
+
+export const calcCursorPos = (
+    sel: Selection,
+    regs: RegMap,
+): void | { left: number; top: number; height: number } => {
     const { idx, loc } = sel;
     const nodes = regs[idx];
     if (!nodes) {
@@ -205,7 +225,10 @@ export const calcCursorPos = (sel: Selection, regs: RegMap): void | DOMRect => {
     }
     const blinker = nodes[loc as 'start'];
     if (blinker) {
-        return blinker.getBoundingClientRect();
+        return subRect(
+            blinker.getBoundingClientRect(),
+            blinker.offsetParent!.getBoundingClientRect(),
+        );
     } else if (nodes.main) {
         const r = new Range();
         r.selectNode(nodes.main);
@@ -225,7 +248,10 @@ export const calcCursorPos = (sel: Selection, regs: RegMap): void | DOMRect => {
             console.log('dunno loc', loc, nodes.main);
             return;
         }
-        return r.getBoundingClientRect();
+        return subRect(
+            r.getBoundingClientRect(),
+            nodes.main.offsetParent!.getBoundingClientRect(),
+        );
     } else {
         console.error('no box', loc, nodes);
         return;
