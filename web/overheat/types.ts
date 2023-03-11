@@ -6,6 +6,24 @@ import { Path } from '../store';
 import { RenderProps } from './Overheat';
 
 export type ONode =
+    | { type: 'blinker'; loc: 'start' | 'end' | 'inside' }
+    | {
+          type: 'punct';
+          text: string;
+          color: 'rainbow' | string;
+          boldSelect?: boolean;
+      }
+    | {
+          type: 'render';
+          text: string;
+      }
+    | {
+          type: 'ref';
+          id: number;
+          path: Path['child'];
+      };
+
+export type ONodeOld =
     | { type: 'blinker'; loc: 'start' | 'end' | 'inside'; innerLeft?: boolean }
     | {
           type: 'punct';

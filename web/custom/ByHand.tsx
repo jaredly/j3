@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { idText, parseByCharacter, selPos } from '../src/parse/parse';
-import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
-import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { getKeyUpdate } from './mods/getKeyUpdate';
-import { selectEnd } from './mods/navigate';
+import { idText, parseByCharacter, selPos } from '../../src/parse/parse';
+import {
+    nodeToString,
+    remapPos,
+    SourceMap,
+} from '../../src/to-cst/nodeToString';
+import { fromMCST, ListLikeContents } from '../../src/types/mcst';
+import { getKeyUpdate } from '../mods/getKeyUpdate';
+import { selectEnd } from '../mods/navigate';
 
 const initialText =
     '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
@@ -27,7 +31,6 @@ export const ByHand = () => {
     }, [state.root, state.map]);
 
     const pos = remapPos(state.at.sel, sourceMap);
-    console.log(state);
 
     const [blink, setBlink] = useState(false);
 

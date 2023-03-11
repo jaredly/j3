@@ -10,11 +10,11 @@ import { Top } from '../old/IdentifierLike';
 import { sideClick } from '../old/ListLike';
 import { Events, rainbow } from '../old/Nodes';
 import { Path, Selection, setSelection, useStore } from '../store';
-import { ONode } from './types';
+import { ONodeOld } from './types';
 import { getNodes_, getNodes } from './getNodesWithAnnot';
 
 const select = (
-    node: ONode,
+    node: ONodeOld,
     idx: number,
     loc: Selection['loc'],
 ): Selection | null => {
@@ -201,7 +201,7 @@ function renderNodes(
 
 function makeChildEvents(
     i: number,
-    nodes: ONode[],
+    nodes: ONodeOld[],
     idx: number,
     top: Top,
     events: Events,

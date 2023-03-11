@@ -3,7 +3,7 @@ import { Map } from '../../src/types/mcst';
 import { getNodes } from '../overheat/getNodesWithAnnot';
 import equal from 'fast-deep-equal';
 import { KeyUpdate } from './getKeyUpdate';
-import { ONode } from '../overheat/types';
+import { ONodeOld } from '../overheat/types';
 
 export type PathSel = {
     path: Path[];
@@ -45,7 +45,7 @@ export const selectEnd = (
 };
 
 export const pathSelForNode = (
-    node: ONode,
+    node: ONodeOld,
     idx: number,
     loc: 'start' | 'end',
     map: Map,

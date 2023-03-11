@@ -16,6 +16,7 @@
 - [ ] let's nail selection
   - I guess I can just use ~normal web selection, but muck it up a bit?
     like do boundary-alignment?
+- [ ] btw I should definitely support multi-select. bc that would be very cool, right?
 
 # Going down the list of syntactic things
 

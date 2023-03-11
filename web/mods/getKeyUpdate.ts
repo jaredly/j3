@@ -12,7 +12,7 @@ import { closeListLike } from './closeListLike';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
 import { Identifier } from '../../src/types/cst';
-import { ONode } from '../overheat/types';
+import { ONodeOld } from '../overheat/types';
 import {
     newBlank,
     newString,
