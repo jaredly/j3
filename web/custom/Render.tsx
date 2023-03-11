@@ -139,6 +139,24 @@ export const Render = ({
                                 key={i}
                                 ref={(node) => reg(node, idx)}
                                 style={textStyle(node, display[idx])}
+                                onMouseDown={(evt) => {
+                                    evt.preventDefault();
+
+                                    let box =
+                                        evt.currentTarget.getBoundingClientRect();
+                                    let percent =
+                                        (evt.clientX - box.left) / box.width;
+                                    let estimate = Math.round(
+                                        percent * onode.text.length,
+                                    );
+                                    dispatch({
+                                        type: 'select',
+                                        pathSel: {
+                                            path,
+                                            sel: { idx, loc: estimate },
+                                        },
+                                    });
+                                }}
                             >
                                 {onode.text}
                             </span>
