@@ -1,4 +1,5 @@
 import React from 'react';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { rainbow } from '../old/Nodes';
 import { getNodes } from '../overheat/getNodes';
@@ -12,12 +13,61 @@ type Reg = (
     loc?: 'start' | 'end' | 'inside',
 ) => void;
 
-export const textStyle = (node: MNode) => {
+export function getRainbowHashColor(hash: string) {
+    const idx = hash.startsWith(':')
+        ? +hash.slice(1) * (rainbow.length / 5 - 1)
+        : parseInt(hash, 16);
+    const color = rainbow[idx % rainbow.length];
+    return color;
+}
+
+const nodeColor = (type: MNode['type']) => {
+    return colors[type];
+};
+
+export const colors: {
+    [key: string]: string;
+} = {
+    identifier: '#5bb6b7',
+    comment: '#616162',
+    tag: '#82f682',
+    number: '#4848a5',
+    string: 'yellow',
+    stringText: 'yellow',
+    unparsed: 'red',
+};
+
+export const textStyle = (
+    node: MNode,
+    display?: Ctx['display'][0],
+): React.CSSProperties | undefined => {
+    const color = nodeColor(node.type);
+    if (display?.style) {
+        switch (display.style.type) {
+            case 'record-attr':
+                return {
+                    fontStyle: 'italic',
+                    fontFamily: 'serif',
+                    color: '#84a4a5',
+                };
+            case 'tag':
+                return {
+                    fontVariationSettings: '"wght" 500',
+                    color,
+                };
+            case 'id':
+            case 'id-decl': {
+                const color = getRainbowHashColor(display.style.hash);
+                return { fontStyle: 'normal', color };
+            }
+        }
+        return { fontStyle: 'normal' };
+    }
     switch (node.type) {
         case 'identifier':
-            return { color: 'blue' };
+            return { color: color };
         case 'stringText':
-            return { color: 'yellow', whiteSpace: 'pre-wrap' };
+            return { color: color, whiteSpace: 'pre-wrap' };
     }
 };
 
@@ -26,14 +76,16 @@ export const Render = ({
     state,
     reg,
     path,
+    display,
 }: {
     idx: number;
     state: State;
     reg: Reg;
     path: Path[];
+    display: Ctx['display'];
 }) => {
     const node = state.map[idx];
-    const onodes = getNodes(node);
+    const onodes = getNodes(node, display[idx]?.layout);
 
     return (
         <span>
@@ -69,7 +121,7 @@ export const Render = ({
                             <span
                                 key={i}
                                 ref={(node) => reg(node, idx)}
-                                style={textStyle(node)}
+                                style={textStyle(node, display[idx])}
                             >
                                 {onode.text}
                             </span>
@@ -79,6 +131,7 @@ export const Render = ({
                             <Render
                                 key={onode.id}
                                 state={state}
+                                display={display}
                                 reg={reg}
                                 idx={onode.id}
                                 path={path.concat([{ idx, child: onode.path }])}

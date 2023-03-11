@@ -1,9 +1,10 @@
 import { idText } from '../../src/parse/parse';
-import { MNode } from '../../src/types/mcst';
+import { Ctx } from '../../src/to-ast/Ctx';
+import { Layout, MNode } from '../../src/types/mcst';
 import { ONode } from './types';
 
-export const getNodes = (node: MNode): ONode[] => {
-    const nodes = getNodes_(node);
+export const getNodes = (node: MNode, layout?: Layout): ONode[] => {
+    const nodes = getNodes_(node, layout);
     if (nodes && node.tannot != null) {
         nodes.push(
             { type: 'punct', text: ':', color: 'inherit' },
@@ -17,7 +18,7 @@ export const getNodes = (node: MNode): ONode[] => {
     return nodes;
 };
 
-export const getNodes_ = (node: MNode): ONode[] => {
+export const getNodes_ = (node: MNode, layout?: Layout): ONode[] => {
     switch (node.type) {
         case 'spread':
             return [
@@ -45,7 +46,7 @@ export const getNodes_ = (node: MNode): ONode[] => {
             return [
                 { type: 'blinker', loc: 'start' },
                 { type: 'punct', text: '{', color: 'rainbow' },
-                ...withCommas(node.values),
+                ...withCommas(node.values, layout),
                 { type: 'punct', text: '}', color: 'rainbow' },
                 { type: 'blinker', loc: 'end' },
             ];
@@ -53,7 +54,7 @@ export const getNodes_ = (node: MNode): ONode[] => {
             return [
                 { type: 'blinker', loc: 'start' },
                 { type: 'punct', text: '(', color: 'rainbow' },
-                ...withCommas(node.values),
+                ...withCommas(node.values, layout),
                 { type: 'punct', text: ')', color: 'rainbow' },
                 { type: 'blinker', loc: 'end' },
             ];
@@ -61,7 +62,7 @@ export const getNodes_ = (node: MNode): ONode[] => {
             return [
                 { type: 'blinker', loc: 'start' },
                 { type: 'punct', text: '[', color: 'rainbow' },
-                ...withCommas(node.values),
+                ...withCommas(node.values, layout),
                 { type: 'punct', text: ']', color: 'rainbow' },
                 { type: 'blinker', loc: 'end' },
             ];
@@ -104,15 +105,22 @@ export const getNodes_ = (node: MNode): ONode[] => {
     }
     // return null;
 };
-function withCommas(values: number[], space = ' '): ONode[] {
+function withCommas(values: number[], layout?: Layout): ONode[] {
     if (!values.length) {
         return [{ type: 'blinker', loc: 'inside' }];
     }
+    // if (layout?.type === 'multiline') {
+    //     layout.tightFirst
+    // }
     return values.flatMap((id, i): ONode[] =>
         i === 0
             ? [{ type: 'ref', id, path: { type: 'child', at: i } }]
             : [
-                  { type: 'punct', text: space, color: 'red' },
+                  {
+                      type: 'punct',
+                      text: layout?.type === 'multiline' ? '\n  ' : ' ',
+                      color: 'red',
+                  },
                   {
                       type: 'ref',
                       id,

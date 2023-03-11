@@ -214,6 +214,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
             // console.log('record values', values);
+            let open = false;
             let spreads: Expr[] = [];
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
@@ -249,6 +250,14 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 for (let i = 0; i < values.length; ) {
                     const name = values[i];
                     if (name.type === 'spread') {
+                        if (name.contents.type === 'blank') {
+                            err(ctx.errors, name, {
+                                type: 'misc',
+                                message: 'no empty spread in expressions',
+                            });
+                            i++;
+                            continue;
+                        }
                         const spread = nodeToExpr(name.contents, ctx);
                         const t = getType(spread, ctx);
                         if (t) {

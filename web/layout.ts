@@ -1,7 +1,7 @@
 import { Ctx } from '../src/to-ast/Ctx';
 import { Layout, Map, MNodeContents } from '../src/types/mcst';
 
-const maxWidth = 50;
+const maxWidth = 10;
 
 export const calculateLayout = (
     node: MNodeContents,
@@ -26,6 +26,8 @@ export const calculateLayout = (
             }
             return { type: 'flat', width: cw, pos };
         }
+        case 'blank':
+            return { type: 'flat', width: 0, pos };
         case 'array': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {

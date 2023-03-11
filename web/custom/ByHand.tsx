@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { idText, parseByCharacter, selPos } from '../../src/parse/parse';
+import { newCtx } from '../../src/to-ast/Ctx';
+import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import {
     nodeToString,
     remapPos,
     SourceMap,
 } from '../../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
+import { layout } from '../layout';
 import { getKeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Selection } from '../store';
@@ -51,6 +54,17 @@ export const ByHand = () => {
 
     const [blink, setBlink] = useState(false);
 
+    const tops = (state.map[state.root] as ListLikeContents).values;
+
+    const ctx = React.useMemo(() => {
+        const ctx = newCtx();
+        nodeToExpr(fromMCST(state.root, state.map), ctx);
+        tops.forEach((top) => {
+            layout(top, 0, state.map, ctx.display, true);
+        });
+        return ctx;
+    }, [state.map]);
+
     React.useEffect(() => {
         let tid: null | NodeJS.Timeout = null;
         const fn = (evt: KeyboardEvent) => {
@@ -66,7 +80,11 @@ export const ByHand = () => {
 
             setState((state) => {
                 try {
-                    return handleKey(state, evt.key);
+                    const newState = handleKey(state, evt.key);
+                    if (newState) {
+                        evt.preventDefault();
+                        return newState;
+                    }
                 } catch (err) {
                     console.log(err);
                 }
@@ -104,8 +122,6 @@ export const ByHand = () => {
         }
     }, [state.at.sel]);
 
-    const tops = (state.map[state.root] as ListLikeContents).values;
-
     return (
         <div style={{ padding: 16 }}>
             {tops.map((top, i) => (
@@ -114,6 +130,7 @@ export const ByHand = () => {
                         idx={top}
                         state={state}
                         reg={reg}
+                        display={ctx.display}
                         path={[
                             {
                                 idx: state.root,
@@ -138,7 +155,10 @@ export const ByHand = () => {
                     }}
                 />
             ) : null}
-            <div>{JSON.stringify(state.at)}</div>
+            {/* <div>{JSON.stringify(state.at)}</div>
+            <div style={{ whiteSpace: 'pre-wrap' }}>
+                {JSON.stringify(ctx.display, null, 2)}
+            </div> */}
         </div>
     );
 };
@@ -179,7 +199,7 @@ export const calcCursorPos = (sel: Selection, regs: RegMap): void | DOMRect => {
     }
 };
 
-export const handleKey = (state: State, key: string): State => {
+export const handleKey = (state: State, key: string): State | void => {
     const curText = idText(state.map[state.at.sel.idx]) ?? '';
     const pos = selPos(state.at.sel, curText);
 
@@ -217,5 +237,4 @@ export const handleKey = (state: State, key: string): State => {
             at: { sel: update.selection, path: update.path },
         };
     }
-    return state;
 };
