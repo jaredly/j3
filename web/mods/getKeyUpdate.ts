@@ -524,7 +524,6 @@ export function handleBackspace({
     if (pos > 0 && 'text' in node) {
         if (pos === 1 && node.text.length === 1) {
             const cleared = maybeClearParentList(path, map);
-            console.log('maybeclear', cleared, path, map);
             if (cleared) {
                 return cleared;
             }

@@ -140,9 +140,13 @@ id
 a
 id
 
-[a][^r what
-[a] [] what
-(array id) (array) id
+([a][)
+([a] [])
+(list (array id) (array))
+
+([a][^r what
+([a] [] what)
+(list (array id) (array) id)
 
 ([])^l^l^ba^b
 ()

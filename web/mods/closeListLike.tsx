@@ -23,7 +23,9 @@ export const closeListLike = (
                     idx: parent.idx,
                     loc: 'end',
                 },
-                path: path.slice(0, i),
+                path: path
+                    .slice(0, i)
+                    .concat({ idx: parent.idx, child: { type: 'end' } }),
             };
         }
         if (
