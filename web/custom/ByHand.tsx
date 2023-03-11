@@ -1,16 +1,24 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { idText, parseByCharacter, selPos } from '../../src/parse/parse';
 import {
     nodeToString,
     remapPos,
     SourceMap,
 } from '../../src/to-cst/nodeToString';
-import { fromMCST, ListLikeContents } from '../../src/types/mcst';
+import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { getKeyUpdate } from '../mods/getKeyUpdate';
-import { selectEnd } from '../mods/navigate';
+import { PathSel, selectEnd } from '../mods/navigate';
+import { Selection } from '../store';
+import { Render } from './Render';
 
 const initialText =
     '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
+
+export type State = {
+    map: Map;
+    root: number;
+    at: PathSel;
+};
 
 export const ByHand = () => {
     const [state, setState] = React.useState(() => {
@@ -21,7 +29,7 @@ export const ByHand = () => {
             [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
-        return { map, root: idx, at };
+        return { map, root: -1, at } as State;
     });
 
     const { back, sourceMap } = React.useMemo(() => {
@@ -81,7 +89,6 @@ export const ByHand = () => {
                         // selection = update.update.selection;
                         // path = update.update.path;
                     } else if (update?.type === 'select') {
-                        console.log('settings');
                         return {
                             ...state,
                             at: { sel: update.selection, path: update.path },
@@ -101,28 +108,116 @@ export const ByHand = () => {
         null as null | { x: number; y: number; h: number },
     );
 
-    const ref = useRef<HTMLSpanElement>(null);
+    const regs = React.useMemo(
+        () =>
+            ({} as {
+                [key: number]: {
+                    main?: HTMLSpanElement | null;
+                    start?: HTMLSpanElement | null;
+                    end?: HTMLSpanElement | null;
+                    inside?: HTMLSpanElement | null;
+                };
+            }),
+        [],
+    );
+
+    const reg = useCallback(
+        (
+            node: HTMLSpanElement | null,
+            idx: number,
+            loc?: 'start' | 'end' | 'inside',
+        ) => {
+            if (!regs[idx]) {
+                regs[idx] = {};
+            }
+            regs[idx][loc ?? 'main'] = node;
+        },
+        [],
+    );
 
     useEffect(() => {
-        if (!ref.current) {
+        const { idx, loc } = state.at.sel;
+        const nodes = regs[idx];
+        if (!nodes) {
+            console.error('no nodes, sorry');
             return;
         }
-        const r = new Range();
-        r.setStart(ref.current.firstChild!, pos);
-        r.setEnd(ref.current.firstChild!, pos);
-        const box = r.getBoundingClientRect();
+        let box;
+        const blinker = nodes[loc as 'start'];
+        if (blinker) {
+            box = blinker.getBoundingClientRect();
+        } else if (nodes.main) {
+            const r = new Range();
+            r.selectNode(nodes.main);
+            const text = nodes.main.textContent!;
+            if (!nodes.main.firstChild) {
+                // nothing to do here
+            } else if (loc === 'start' || loc === 0) {
+                r.setStart(nodes.main.firstChild!, 0);
+                r.collapse(true);
+            } else if (loc === 'end' || loc === text.length) {
+                r.setStart(nodes.main.firstChild!, text.length);
+                r.collapse(true);
+            } else if (typeof loc === 'number') {
+                r.setStart(nodes.main.firstChild!, loc);
+                r.collapse(true);
+            } else {
+                console.log('dunno loc', loc, nodes.main);
+                return;
+            }
+            box = r.getBoundingClientRect();
+        } else {
+            console.error('no box', loc, nodes);
+            return;
+        }
+        // const r = new Range();
+        // r.setStart(ref.current.firstChild!, pos);
+        // r.setEnd(ref.current.firstChild!, pos);
+        // const box = r.getBoundingClientRect();
         setCursorPos({
             x: box.left,
             y: box.top,
             h: box.height,
         });
-    }, [pos]);
+    }, [state.at.sel]);
+
+    // const ref = useRef<HTMLSpanElement>(null);
+    // useEffect(() => {
+    //     if (!ref.current) {
+    //         return;
+    //     }
+    //     const r = new Range();
+    //     r.setStart(ref.current.firstChild!, pos);
+    //     r.setEnd(ref.current.firstChild!, pos);
+    //     const box = r.getBoundingClientRect();
+    //     setCursorPos({
+    //         x: box.left,
+    //         y: box.top,
+    //         h: box.height,
+    //     });
+    // }, [pos]);
+    const tops = (state.map[state.root] as ListLikeContents).values;
 
     return (
         <div style={{ padding: 16 }}>
-            <span ref={ref} style={{ whiteSpace: 'pre' }}>
+            {tops.map((top, i) => (
+                <div key={top}>
+                    <Render
+                        idx={top}
+                        state={state}
+                        reg={reg}
+                        path={[
+                            {
+                                idx: state.root,
+                                child: { type: 'child', at: i },
+                            },
+                        ]}
+                    />
+                </div>
+            ))}
+            {/* <span ref={ref} style={{ whiteSpace: 'pre' }}>
                 {back}
-            </span>
+            </span> */}
             {cursorPos ? (
                 <div
                     style={{

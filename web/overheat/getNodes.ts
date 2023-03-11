@@ -10,8 +10,8 @@ import { OutputWatcher } from './Output';
 import { RenderProps } from './Overheat';
 import { ONode } from './types';
 
-export const getNodes = (node: MNode, isRoot?: boolean): ONode[] => {
-    const nodes = getNodes_(node, isRoot);
+export const getNodes = (node: MNode): ONode[] => {
+    const nodes = getNodes_(node);
     if (nodes && node.tannot != null) {
         nodes.push(
             { type: 'punct', text: ':', color: 'inherit' },
@@ -25,12 +25,12 @@ export const getNodes = (node: MNode, isRoot?: boolean): ONode[] => {
     return nodes;
 };
 
-export const getNodes_ = (node: MNode, isRoot?: boolean): ONode[] => {
+export const getNodes_ = (node: MNode): ONode[] => {
     switch (node.type) {
         case 'spread':
             return [
                 { type: 'blinker', loc: 'start' },
-                { type: 'punct', text: '...', color: 'unset' },
+                { type: 'punct', text: '..', color: 'unset' },
                 {
                     type: 'ref',
                     id: node.contents,
