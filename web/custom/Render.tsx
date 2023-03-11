@@ -1,4 +1,6 @@
 import React from 'react';
+import { MNode } from '../../src/types/mcst';
+import { rainbow } from '../old/Nodes';
 import { getNodes } from '../overheat/getNodes';
 import { ONodeOld } from '../overheat/types';
 import { Path, Selection } from '../store';
@@ -9,6 +11,15 @@ type Reg = (
     idx: number,
     loc?: 'start' | 'end' | 'inside',
 ) => void;
+
+export const textStyle = (node: MNode) => {
+    switch (node.type) {
+        case 'identifier':
+            return { color: 'blue' };
+        case 'stringText':
+            return { color: 'yellow', whiteSpace: 'pre-wrap' };
+    }
+};
 
 export const Render = ({
     idx,
@@ -40,7 +51,14 @@ export const Render = ({
                             <span
                                 key={i}
                                 style={{
-                                    color: 'gray',
+                                    // color: 'gray',
+                                    whiteSpace: 'pre-wrap',
+                                    color:
+                                        onode.color === 'rainbow'
+                                            ? rainbow[
+                                                  path.length % rainbow.length
+                                              ]
+                                            : onode.color,
                                 }}
                             >
                                 {onode.text}
@@ -48,7 +66,11 @@ export const Render = ({
                         );
                     case 'render':
                         return (
-                            <span key={i} ref={(node) => reg(node, idx)}>
+                            <span
+                                key={i}
+                                ref={(node) => reg(node, idx)}
+                                style={textStyle(node)}
+                            >
                                 {onode.text}
                             </span>
                         );

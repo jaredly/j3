@@ -1,13 +1,5 @@
 import { idText } from '../../src/parse/parse';
-import { fromMCST, MNode } from '../../src/types/mcst';
-import { Attachment } from '../old/Attachment';
-import { IdentifierLike2 } from '../old/IdentifierLike';
-import { RichText } from '../old/Markdown';
-import { RecordText2, replacePath } from '../old/RecordText';
-import { StringText2 } from '../old/StringText';
-import { updateStore } from '../store';
-import { OutputWatcher } from './Output';
-import { RenderProps } from './Overheat';
+import { MNode } from '../../src/types/mcst';
 import { ONode } from './types';
 
 export const getNodes = (node: MNode): ONode[] => {

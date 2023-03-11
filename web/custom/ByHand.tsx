@@ -20,6 +20,15 @@ export type State = {
     at: PathSel;
 };
 
+type RegMap = {
+    [key: number]: {
+        main?: HTMLSpanElement | null;
+        start?: HTMLSpanElement | null;
+        end?: HTMLSpanElement | null;
+        inside?: HTMLSpanElement | null;
+    };
+};
+
 export const ByHand = () => {
     const [state, setState] = React.useState(() => {
         const map = parseByCharacter(initialText).map;
@@ -57,43 +66,7 @@ export const ByHand = () => {
 
             setState((state) => {
                 try {
-                    const curText = idText(state.map[state.at.sel.idx]) ?? '';
-                    const pos = selPos(state.at.sel, curText);
-
-                    const update = getKeyUpdate(
-                        evt.key,
-                        pos,
-                        curText,
-                        state.at.sel.idx,
-                        state.at.path,
-                        state.map,
-                    );
-                    if (update?.type === 'update' && update?.update) {
-                        console.log('wat');
-                        const map = { ...state.map };
-                        Object.keys(update.update.map).forEach((key) => {
-                            if (update.update!.map[+key] == null) {
-                                delete map[+key];
-                            } else {
-                                map[+key] = update.update!.map[+key]!;
-                            }
-                        });
-                        return {
-                            ...state,
-                            map,
-                            at: {
-                                sel: update.update.selection,
-                                path: update.update.path,
-                            },
-                        };
-                        // selection = update.update.selection;
-                        // path = update.update.path;
-                    } else if (update?.type === 'select') {
-                        return {
-                            ...state,
-                            at: { sel: update.selection, path: update.path },
-                        };
-                    }
+                    return handleKey(state, evt.key);
                 } catch (err) {
                     console.log(err);
                 }
@@ -108,18 +81,7 @@ export const ByHand = () => {
         null as null | { x: number; y: number; h: number },
     );
 
-    const regs = React.useMemo(
-        () =>
-            ({} as {
-                [key: number]: {
-                    main?: HTMLSpanElement | null;
-                    start?: HTMLSpanElement | null;
-                    end?: HTMLSpanElement | null;
-                    inside?: HTMLSpanElement | null;
-                };
-            }),
-        [],
-    );
+    const regs = React.useMemo(() => ({} as RegMap), []);
 
     const reg = useCallback(
         (
@@ -136,66 +98,12 @@ export const ByHand = () => {
     );
 
     useEffect(() => {
-        const { idx, loc } = state.at.sel;
-        const nodes = regs[idx];
-        if (!nodes) {
-            console.error('no nodes, sorry');
-            return;
+        const box = calcCursorPos(state.at.sel, regs);
+        if (box) {
+            setCursorPos({ x: box.left, y: box.top, h: box.height });
         }
-        let box;
-        const blinker = nodes[loc as 'start'];
-        if (blinker) {
-            box = blinker.getBoundingClientRect();
-        } else if (nodes.main) {
-            const r = new Range();
-            r.selectNode(nodes.main);
-            const text = nodes.main.textContent!;
-            if (!nodes.main.firstChild) {
-                // nothing to do here
-            } else if (loc === 'start' || loc === 0) {
-                r.setStart(nodes.main.firstChild!, 0);
-                r.collapse(true);
-            } else if (loc === 'end' || loc === text.length) {
-                r.setStart(nodes.main.firstChild!, text.length);
-                r.collapse(true);
-            } else if (typeof loc === 'number') {
-                r.setStart(nodes.main.firstChild!, loc);
-                r.collapse(true);
-            } else {
-                console.log('dunno loc', loc, nodes.main);
-                return;
-            }
-            box = r.getBoundingClientRect();
-        } else {
-            console.error('no box', loc, nodes);
-            return;
-        }
-        // const r = new Range();
-        // r.setStart(ref.current.firstChild!, pos);
-        // r.setEnd(ref.current.firstChild!, pos);
-        // const box = r.getBoundingClientRect();
-        setCursorPos({
-            x: box.left,
-            y: box.top,
-            h: box.height,
-        });
     }, [state.at.sel]);
 
-    // const ref = useRef<HTMLSpanElement>(null);
-    // useEffect(() => {
-    //     if (!ref.current) {
-    //         return;
-    //     }
-    //     const r = new Range();
-    //     r.setStart(ref.current.firstChild!, pos);
-    //     r.setEnd(ref.current.firstChild!, pos);
-    //     const box = r.getBoundingClientRect();
-    //     setCursorPos({
-    //         x: box.left,
-    //         y: box.top,
-    //         h: box.height,
-    //     });
-    // }, [pos]);
     const tops = (state.map[state.root] as ListLikeContents).values;
 
     return (
@@ -215,9 +123,6 @@ export const ByHand = () => {
                     />
                 </div>
             ))}
-            {/* <span ref={ref} style={{ whiteSpace: 'pre' }}>
-                {back}
-            </span> */}
             {cursorPos ? (
                 <div
                     style={{
@@ -236,4 +141,81 @@ export const ByHand = () => {
             <div>{JSON.stringify(state.at)}</div>
         </div>
     );
+};
+
+export const calcCursorPos = (sel: Selection, regs: RegMap): void | DOMRect => {
+    const { idx, loc } = sel;
+    const nodes = regs[idx];
+    if (!nodes) {
+        console.error('no nodes, sorry');
+        return;
+    }
+    const blinker = nodes[loc as 'start'];
+    if (blinker) {
+        return blinker.getBoundingClientRect();
+    } else if (nodes.main) {
+        const r = new Range();
+        r.selectNode(nodes.main);
+        const text = nodes.main.textContent!;
+        if (!nodes.main.firstChild) {
+            // nothing to do here
+        } else if (loc === 'start' || loc === 0) {
+            r.setStart(nodes.main.firstChild!, 0);
+            r.collapse(true);
+        } else if (loc === 'end' || loc === text.length) {
+            r.setStart(nodes.main.firstChild!, text.length);
+            r.collapse(true);
+        } else if (typeof loc === 'number') {
+            r.setStart(nodes.main.firstChild!, loc);
+            r.collapse(true);
+        } else {
+            console.log('dunno loc', loc, nodes.main);
+            return;
+        }
+        return r.getBoundingClientRect();
+    } else {
+        console.error('no box', loc, nodes);
+        return;
+    }
+};
+
+export const handleKey = (state: State, key: string): State => {
+    const curText = idText(state.map[state.at.sel.idx]) ?? '';
+    const pos = selPos(state.at.sel, curText);
+
+    const update = getKeyUpdate(
+        key,
+        pos,
+        curText,
+        state.at.sel.idx,
+        state.at.path,
+        state.map,
+    );
+    if (update?.type === 'update' && update?.update) {
+        console.log('wat');
+        const map = { ...state.map };
+        Object.keys(update.update.map).forEach((key) => {
+            if (update.update!.map[+key] == null) {
+                delete map[+key];
+            } else {
+                map[+key] = update.update!.map[+key]!;
+            }
+        });
+        return {
+            ...state,
+            map,
+            at: {
+                sel: update.update.selection,
+                path: update.update.path,
+            },
+        };
+        // selection = update.update.selection;
+        // path = update.update.path;
+    } else if (update?.type === 'select') {
+        return {
+            ...state,
+            at: { sel: update.selection, path: update.path },
+        };
+    }
+    return state;
 };
