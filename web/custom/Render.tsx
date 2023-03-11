@@ -1,11 +1,13 @@
 import React from 'react';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
+import { pathSelForNode } from '../mods/navigate';
+import { sideClick } from '../old/ListLike';
 import { rainbow } from '../old/Nodes';
 import { getNodes } from '../overheat/getNodes';
-import { ONodeOld } from '../overheat/types';
+import { ONode, ONodeOld } from '../overheat/types';
 import { Path, Selection } from '../store';
-import { State } from './ByHand';
+import { Action, State } from './ByHand';
 
 type Reg = (
     node: HTMLSpanElement | null,
@@ -79,12 +81,14 @@ export const Render = ({
     reg,
     path,
     display,
+    dispatch,
 }: {
     idx: number;
     state: State;
     reg: Reg;
     path: Path[];
     display: Ctx['display'];
+    dispatch: React.Dispatch<Action>;
 }) => {
     const node = state.map[idx];
     const onodes = getNodes(node, display[idx]?.layout);
@@ -114,6 +118,17 @@ export const Render = ({
                                               ]
                                             : onode.color,
                                 }}
+                                onMouseDown={sideClick((isLeft) => {
+                                    clickPunct(
+                                        isLeft,
+                                        idx,
+                                        i,
+                                        onodes,
+                                        path,
+                                        state,
+                                        dispatch,
+                                    );
+                                })}
                             >
                                 {onode.text}
                             </span>
@@ -134,6 +149,7 @@ export const Render = ({
                                 key={onode.id}
                                 state={state}
                                 display={display}
+                                dispatch={dispatch}
                                 reg={reg}
                                 idx={onode.id}
                                 path={path.concat([{ idx, child: onode.path }])}
@@ -143,4 +159,48 @@ export const Render = ({
             })}
         </span>
     );
+};
+
+export const clickPunct = (
+    isLeft: boolean,
+    idx: number,
+    i: number,
+    onodes: ONode[],
+    path: Path[],
+    state: State,
+    dispatch: React.Dispatch<Action>,
+) => {
+    if (isLeft) {
+        for (let j = i; j >= 0; j--) {
+            const prev = onodes[j];
+            const ps = pathSelForNode(prev, idx, 'end', state.map);
+            if (ps) {
+                console.log(ps);
+                dispatch({
+                    type: 'select',
+                    pathSel: {
+                        sel: ps.sel,
+                        path: path.concat(ps.path),
+                    },
+                });
+                return;
+            }
+        }
+    } else {
+        for (let j = i + 1; j < onodes.length; j++) {
+            const prev = onodes[j];
+            const ps = pathSelForNode(prev, idx, 'start', state.map);
+            if (ps) {
+                console.log(ps);
+                dispatch({
+                    type: 'select',
+                    pathSel: {
+                        sel: ps.sel,
+                        path: path.concat(ps.path),
+                    },
+                });
+                return;
+            }
+        }
+    }
 };

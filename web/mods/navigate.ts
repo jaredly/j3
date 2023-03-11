@@ -1,9 +1,9 @@
 import { Path, PathChild, Selection } from '../store';
 import { Map } from '../../src/types/mcst';
-import { getNodes } from '../overheat/getNodesWithAnnot';
+import { getNodes } from '../overheat/getNodes';
 import equal from 'fast-deep-equal';
 import { KeyUpdate } from './getKeyUpdate';
-import { ONodeOld } from '../overheat/types';
+import { ONode } from '../overheat/types';
 
 export type PathSel = {
     path: Path[];
@@ -45,7 +45,7 @@ export const selectEnd = (
 };
 
 export const pathSelForNode = (
-    node: ONodeOld,
+    node: ONode,
     idx: number,
     loc: 'start' | 'end',
     map: Map,
@@ -63,8 +63,6 @@ export const pathSelForNode = (
                 path: [],
                 sel: { idx, loc },
             };
-        case 'extra':
-            return null;
         case 'ref': {
             const path: Path[] = [{ idx, child: node.path }];
             const cnode = map[node.id];

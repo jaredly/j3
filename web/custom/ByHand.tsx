@@ -39,8 +39,31 @@ type RegMap = {
     };
 };
 
+export type Action =
+    | {
+          type: 'select';
+          pathSel: PathSel;
+      }
+    | {
+          type: 'key';
+          key: string;
+      };
+
+const reduce = (state: State, action: Action): State => {
+    switch (action.type) {
+        case 'key':
+            const newState = handleKey(state, action.key);
+            if (newState) {
+                return newState;
+            }
+            return state;
+        case 'select':
+            return { ...state, at: action.pathSel };
+    }
+};
+
 export const ByHand = () => {
-    const [state, setState] = React.useState(() => {
+    const [state, dispatch] = React.useReducer(reduce, null, () => {
         const map = parseByCharacter(initialText).map;
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(
@@ -84,19 +107,21 @@ export const ByHand = () => {
             }
             setBlink(false);
             tid = setTimeout(() => setBlink(true), 500);
+            evt.preventDefault();
 
-            setState((state) => {
-                try {
-                    const newState = handleKey(state, evt.key);
-                    if (newState) {
-                        evt.preventDefault();
-                        return newState;
-                    }
-                } catch (err) {
-                    console.log(err);
-                }
-                return state;
-            });
+            dispatch({ type: 'key', key: evt.key });
+            // dispatch((state) => {
+            //     try {
+            //         const newState = handleKey(state, evt.key);
+            //         if (newState) {
+            //             evt.preventDefault();
+            //             return newState;
+            //         }
+            //     } catch (err) {
+            //         console.log(err);
+            //     }
+            //     return state;
+            // });
         };
         document.addEventListener('keydown', fn);
         return () => document.removeEventListener('keydown', fn);
@@ -138,6 +163,7 @@ export const ByHand = () => {
                         state={state}
                         reg={reg}
                         display={ctx.display}
+                        dispatch={dispatch}
                         path={[
                             {
                                 idx: state.root,

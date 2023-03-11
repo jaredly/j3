@@ -13,12 +13,14 @@
 - [ ] backspace is not yet a thing.
 - [ ] up & down are not yet a thing
 - [ ] my "id is empty, but it's fine us the hash" isn't yet something I support.
-- [ ] so, wanting this to be a real thing.
+- [x] so, wanting this to be a real thing.
   but now I don't ~need all the fancy renderwhatsits and such.
   I can just do like dumb things, right?
 - [ ] let's nail selection
   - I guess I can just use ~normal web selection, but muck it up a bit?
     like do boundary-alignment?
+    - yeah thinking not just normal web selection. might as well
+      take full control.
 - [ ] btw I should definitely support multi-select. bc that would be very cool, right?
 
 # ByHand
@@ -28,6 +30,8 @@
 - [x] lets respect tightFirst and pairs and such
 - [ ] get the cursor to calculate right, taking scroll into account
 - [ ] BACKSPACE
+- [x] click punct
+- [ ] click text
 - [ ] autocomplete pls? will have to do ~text whatsits
 - [ ] ok, so for error display, let's do
   - for a listlike, we could just highlight the brackets? That would be nice.
