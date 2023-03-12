@@ -26,6 +26,7 @@ import {
 import { goLeft, goRight, selectStart } from './navigate';
 import { handleStringText } from './handleStringText';
 import { handleBackspace } from './handleBackspace';
+import { splitGraphemes } from '../../src/parse/parse';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
 
@@ -272,20 +273,22 @@ function updateText(
     idx: number,
     path: Path[],
 ): KeyUpdate {
-    let text = node.text;
+    const input = splitGraphemes(key);
+    let text = splitGraphemes(node.text);
     if (pos === 0) {
-        text = key + text;
+        text.unshift(...input);
     } else if (pos === text.length) {
-        text = text + key;
+        text.push(...input);
     } else {
-        text = text.slice(0, pos) + key + text.slice(pos);
+        text.splice(pos, 0, ...input);
     }
+    console.log('UPDATING', text);
     return {
         type: 'update',
         update: {
-            map: { [idx]: { ...node, text } },
+            map: { [idx]: { ...node, text: text.join('') } },
             path,
-            selection: { idx, loc: pos + key.length },
+            selection: { idx, loc: pos + 1 },
         },
     };
 }

@@ -164,7 +164,7 @@ export const Render = ({
                     case 'ref':
                         return (
                             <Render
-                                key={onode.id}
+                                key={onode.id + ':' + i}
                                 state={state}
                                 display={display}
                                 dispatch={dispatch}

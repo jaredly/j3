@@ -32,6 +32,12 @@
   - is there some way to indicate that a listlike is splattable?
     - well, for string-expr's we should just not show the litte dealios
       and not allow selecting the outsideeeee
+- [ ] so, in exciting news, I kinda want emojis
+  but it'll be a little weird getting "text length" and such to work.
+  Does it mean that I'll want to store "fat string info"?
+  I mean it's probably fine to just do the calculation on the fly?
+  - so like, instead of ever indexing the string, or taking it's length,
+    I convert it to a list of graphemes. Right? Seems reasonable.
 
 # ByHand
 

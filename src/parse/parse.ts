@@ -22,8 +22,14 @@ export const idText = (node: MNode) => {
     }
 };
 
+const seg = new Intl.Segmenter('en');
+
+export const splitGraphemes = (text: string) => {
+    return [...seg.segment(text)].map((seg) => seg.segment);
+};
+
 export const parseByCharacter = (
-    text: string,
+    rawText: string,
     debug = false,
 ): { map: Map; selection: Selection } => {
     const top = nidx();
@@ -40,6 +46,10 @@ export const parseByCharacter = (
     };
     let selection: Selection = { idx: top, loc: 0 };
     let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
+
+    const text = splitGraphemes(rawText);
+    console.log(text);
+
     for (let i = 0; i < text.length; i++) {
         let key = text[i];
         if (key === '^') {

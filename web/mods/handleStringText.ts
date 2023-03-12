@@ -3,6 +3,7 @@ import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { nidx } from '../../src/grammar';
 import { stringText } from '../../src/types/cst';
 import { KeyUpdate } from './getKeyUpdate';
+import { splitGraphemes } from '../../src/parse/parse';
 
 export function handleStringText({
     key,
@@ -21,7 +22,7 @@ export function handleStringText({
 }): KeyUpdate {
     const last = path[path.length - 1];
 
-    let text = node.text;
+    let text = splitGraphemes(node.text);
     if (key === '"' && pos === text.length) {
         return {
             type: 'select',
@@ -36,24 +37,29 @@ export function handleStringText({
         return splitString(text, pos, map, last, idx, node, path);
     }
 
+    const input = splitGraphemes(key);
+
     if (pos === 0) {
-        text = key + text;
+        text.unshift(...input);
+        // text = key + text;
     } else if (pos === text.length) {
-        text = text + key;
+        text.push(...input);
+        // text = text + key;
     } else {
-        text = text.slice(0, pos) + key + text.slice(pos);
+        text.splice(pos, 0, ...input);
+        // text = text.slice(0, pos) + key + text.slice(pos);
     }
     return {
         type: 'update',
         update: {
-            map: { [idx]: { ...node, text } },
+            map: { [idx]: { ...node, text: text.join('') } },
             path,
             selection: { idx, loc: pos + 1 },
         },
     };
 }
 function splitString(
-    text: string,
+    text: string[],
     pos: number,
     map: Map,
     last: Path,
@@ -80,7 +86,7 @@ function splitString(
     };
     const stringText: MNode = {
         type: 'stringText',
-        text: suffix,
+        text: suffix.join(''),
         loc: { idx: nidx(), start: 0, end: 0 },
     };
     const templates = string.templates.slice();
@@ -94,7 +100,7 @@ function splitString(
             map: {
                 [idx]: {
                     ...node,
-                    text: prefix,
+                    text: prefix.join(''),
                 },
                 [stringText.loc.idx]: stringText,
                 [blank.loc.idx]: blank,
