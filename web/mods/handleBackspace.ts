@@ -22,6 +22,20 @@ export function handleBackspace({
     map: Map;
 }): KeyUpdate {
     const last = path[path.length - 1];
+    if (node.type === 'stringText' && pos === 0 && node.text === '') {
+        const parent = map[last.idx];
+        if (parent.type !== 'string') {
+            throw new Error(`stringText parent not a string ${parent.type}`);
+        }
+        if (parent.templates.length === 0) {
+            // delete it!
+            const cleared = maybeClearParentList(path.slice(0, -1), map);
+            return (
+                cleared ??
+                replacePathWith(path.slice(0, -1), map, newBlank(last.idx))
+            );
+        }
+    }
 
     if (node.type === 'blank') {
         if (last.child.type === 'child') {
@@ -43,12 +57,10 @@ export function handleBackspace({
                             [last.idx]: { ...parent, values: [] },
                         },
                         selection: { idx: last.idx, loc: 'inside' },
-                        path: path
-                            .slice(0, -1)
-                            .concat({
-                                idx: last.idx,
-                                child: { type: 'inside' },
-                            }),
+                        path: path.slice(0, -1).concat({
+                            idx: last.idx,
+                            child: { type: 'inside' },
+                        }),
                     },
                 };
             }

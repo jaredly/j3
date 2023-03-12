@@ -10,7 +10,7 @@
 - [x] get all the things parsing & reprinting
 - [x] left-arrow all the way
 - [x] right-arrow is working
-- [ ] backspace is not yet a thing.
+- [x] backspace is not yet a thing.
 - [ ] up & down are not yet a thing
 - [ ] my "id is empty, but it's fine us the hash" isn't yet something I support.
 - [x] so, wanting this to be a real thing.
@@ -22,8 +22,16 @@
     - yeah thinking not just normal web selection. might as well
       take full control.
 - [ ] btw I should definitely support multi-select. bc that would be very cool, right?
-- [ ] BUG: space in an inside should create two blanks
-- [ ] backspace after two blanks should delete both
+- [x] BUG: space in an inside should create two blanks
+- [x] backspace after two blanks should delete both~ ( ) -> ()
+- [ ] QUESTION: Should I think about "unwrapping" a string?
+  seems a little more weird. But like, kinda why not?
+  yeah, why not.
+  Ok, so I'll only unwrap if it's a valid term. Why not.
+- [ ] anyway, let's do splatting of listlikes next? it's for fun
+  - is there some way to indicate that a listlike is splattable?
+    - well, for string-expr's we should just not show the litte dealios
+      and not allow selecting the outsideeeee
 
 # ByHand
 

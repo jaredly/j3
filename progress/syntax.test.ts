@@ -158,6 +158,10 @@ id
 ( ^b)
 ()
 (list)
+
+("^b
+()
+(list)
 `;
 
 describe('a test', () => {
