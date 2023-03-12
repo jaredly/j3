@@ -11,6 +11,7 @@ export const filterComments = (nodes: Node[]) =>
     nodes.filter(
         (node) =>
             node.type !== 'comment' &&
+            node.type !== 'blank' &&
             !(
                 node.type === 'identifier' &&
                 node.text === '' &&
@@ -56,6 +57,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     for (let item of form.items) {
                         const options = getRecordMap(ttype, ctx);
                         if (!options) {
+                            err(ctx.errors, item, {
+                                type: 'misc',
+                                message: 'not a record',
+                            });
                             break;
                         }
                         if (options[item.text]) {
@@ -76,13 +81,25 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                                         } satisfies AutoCompleteResult),
                                 );
                             ctx.display[item.loc.idx];
+                            err(ctx.errors, item, {
+                                type: 'misc',
+                                message: `no "${item.text}" attribute on record`,
+                            });
                         }
                     }
                 }
             }
             return {
                 type: 'recordAccess',
-                items: form.items.map((item) => item.text),
+                items: form.items.map((item) => {
+                    if (item.text === '') {
+                        err(ctx.errors, item, {
+                            type: 'misc',
+                            message: 'empty attribute',
+                        });
+                    }
+                    return item.text;
+                }),
                 form,
                 target,
             };
@@ -90,6 +107,30 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'identifier': {
             if (!form.text && !form.hash) {
                 return { type: 'blank', form };
+            }
+            if (form.text.match(/^[0-9]+$/)) {
+                ensure(ctx.display, form.loc.idx, {}).style = {
+                    type: 'number',
+                    kind: 'int',
+                };
+                return {
+                    type: 'number',
+                    kind: 'int',
+                    value: parseInt(form.text),
+                    form,
+                };
+            }
+            if (form.text.match(/^[0-9]+\.[0-9]*$/)) {
+                ensure(ctx.display, form.loc.idx, {}).style = {
+                    type: 'number',
+                    kind: 'float',
+                };
+                return {
+                    type: 'number',
+                    kind: 'float',
+                    value: parseFloat(form.text),
+                    form,
+                };
             }
             // if (form.text.includes('.')) {
             //     const [expr, ...rest] = form.text.split('.');
@@ -177,7 +218,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 form,
                 templates: form.templates.map((item) => ({
                     suffix: { text: item.suffix.text, form: item.suffix },
-                    expr: nodeToExpr(item.expr, ctx),
+                    expr:
+                        item.expr.type === 'blank'
+                            ? {
+                                  type: 'unresolved',
+                                  form: item.expr,
+                              }
+                            : nodeToExpr(item.expr, ctx),
                 })),
             };
         case 'number':
@@ -190,7 +237,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'record': {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
-            console.log('record values', values);
+            // console.log('record values', values);
+            let open = false;
             let spreads: Expr[] = [];
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
@@ -226,6 +274,14 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 for (let i = 0; i < values.length; ) {
                     const name = values[i];
                     if (name.type === 'spread') {
+                        if (name.contents.type === 'blank') {
+                            err(ctx.errors, name, {
+                                type: 'misc',
+                                message: 'no empty spread in expressions',
+                            });
+                            i++;
+                            continue;
+                        }
                         const spread = nodeToExpr(name.contents, ctx);
                         const t = getType(spread, ctx);
                         if (t) {
@@ -252,6 +308,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         style: { type: 'record-attr' },
                     };
                     if (name.type !== 'identifier' && name.type !== 'number') {
+                        err(ctx.errors, name, {
+                            type: 'misc',
+                            message: `invalid record item ${name.type}`,
+                        });
                         i += 1;
                         continue;
                     }
@@ -270,9 +330,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         value: value ? nodeToExpr(value, ctx) : nil,
                     });
                 }
-            }
-            if (spreads.length) {
-                console.log('yes it is');
             }
             return { type: 'record', entries, spreads, form };
         }
@@ -314,7 +371,12 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'spread':
-            throw new Error('not yet impl');
+            // throw new Error('not yet impl');
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: 'dangling spread',
+            });
+            return { type: 'blank', form };
         case 'rich-text':
             return { type: 'rich-text', form, lexicalJSON: form.lexicalJSON };
         case 'attachment':

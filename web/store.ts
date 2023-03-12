@@ -139,6 +139,7 @@ export type PathChild =
           type: 'child';
           at: number;
       }
+    | { type: 'tannot' }
     | { type: 'inside' | 'start' | 'end' }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
     | { type: 'record-target' | 'spread-contents' }
@@ -218,6 +219,7 @@ export const setSelection = (
     extras?: (number | null | undefined)[],
     change = false,
 ) => {
+    // console.log('setting selection', selection);
     // tannot is glommed onto the end
     if (
         selection?.from === 'right' &&

@@ -26,6 +26,8 @@ export const calculateLayout = (
             }
             return { type: 'flat', width: cw, pos };
         }
+        case 'blank':
+            return { type: 'flat', width: 0, pos };
         case 'array': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {

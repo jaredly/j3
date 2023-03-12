@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Attachment as ATT } from '../../src/types/cst';
 import { MNodeExtra } from '../../src/types/mcst';
-import { handleBackspace, maybeRemoveEmptyPrev } from '../mods/handleBackspace';
-import { addSpace, maybeUpdate } from '../mods/handleSpace';
+import {
+    handleBackspace,
+    maybeRemoveEmptyPrev,
+} from '../mods/old/handleBackspace';
+import { addSpace, maybeUpdate } from '../mods/old/handleSpace';
 import { Path, setSelection, UpdateMap, updateStore } from '../store';
 import { AttachmentLabel } from './AttachmentLabel';
 import { Blinker } from './Blinker';

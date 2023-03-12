@@ -2,7 +2,8 @@ import * as React from 'react';
 import { Map, toMCST } from '../../src/types/mcst';
 import { EvalCtx, Path, Store, updateStore } from '../store';
 import { Events } from './Nodes';
-import { modChildren, onKeyDown } from '../mods/onKeyDown';
+import { onKeyDown } from '../mods/old/onKeyDown';
+import { modChildren } from '../mods/modChildren';
 import { nidx, parse } from '../../src/grammar';
 import { Node } from '../../src/types/cst';
 
@@ -69,8 +70,13 @@ export const Blinker = ({
                     !evt.altKey &&
                     !evt.ctrlKey
                 ) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
                     const nw = parseKey(evt.key);
-                    if (!nw) return;
+                    if (!nw) {
+                        console.warn(`don't know what to do wtih`, evt.key);
+                        return;
+                    }
                     const mp: Map = {};
                     const nidx = toMCST(nw, mp);
 
@@ -85,8 +91,6 @@ export const Blinker = ({
                             map: mp,
                             selection: { idx: nidx, loc: 'end' },
                         });
-                        evt.preventDefault();
-                        evt.stopPropagation();
                         return;
                     }
 
@@ -112,6 +116,8 @@ export const Blinker = ({
                         evt.preventDefault();
                         evt.stopPropagation();
                     }
+                } else {
+                    console.warn(`dont know what to do with`, evt.key);
                 }
             }}
         />

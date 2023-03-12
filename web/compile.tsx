@@ -21,7 +21,6 @@ export const builtins = {
 };
 
 export const compile = (store: Store, ectx: EvalCtx) => {
-    console.log('compile');
     let { ctx, last, terms, nodes, results } = ectx;
     const root = store.map[store.root] as ListLikeContents;
 
@@ -48,7 +47,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const tmpMap: Map = { ...store.map };
 
     root.values.forEach((idx) => {
-        if (tmpMap[idx].type === 'comment') {
+        if (tmpMap[idx].type === 'comment' || tmpMap[idx].type === 'blank') {
             results[idx] = {
                 status: 'success',
                 value: undefined,
@@ -108,15 +107,17 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         layout(idx, 0, tmpMap, ctx.display, true);
 
         if (last[idx] === hash) {
+            console.log('no hash change');
             const prev = results[idx];
             if (prev.status === 'errors') {
                 Object.assign(ectx.report.errors, prev.errors);
             }
+            Object.assign(ectx.report.errors, report.errors);
             prev.display = ctx.display;
             Object.assign(allStyles, prev.display);
             return;
         }
-        console.log('recomputing and such');
+        // console.log('recomputing and such');
 
         const prevHashes = getHashes(nodes[idx]);
 
@@ -132,7 +133,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         Object.assign(allStyles, ctx.display);
 
         if (hasErrors) {
-            // console.log(idx, 'had errors I guess');
+            console.log('has errors', report.errors);
             results[idx] = {
                 status: 'errors',
                 expr: res,

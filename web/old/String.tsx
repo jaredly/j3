@@ -67,7 +67,7 @@ export const StringView = ({
             </span>
             <StringText
                 idx={node.first}
-                store={store}
+                top={top}
                 path={path.concat([{ idx, child: { type: 'text', at: 0 } }])}
                 events={{
                     onLeft() {
@@ -90,8 +90,6 @@ export const StringView = ({
                         }
                     },
                 }}
-                ctx={ctx}
-                setHover={setHover}
             />
             {node.templates.flatMap((t, i) => [
                 <span
@@ -175,7 +173,8 @@ export const StringView = ({
                 <StringText
                     key={t.suffix}
                     idx={t.suffix}
-                    store={store}
+                    // store={store}
+                    top={top}
                     path={path.concat([
                         { idx, child: { type: 'text', at: i + 1 } },
                     ])}
@@ -200,8 +199,8 @@ export const StringView = ({
                             }
                         },
                     }}
-                    ctx={ctx}
-                    setHover={setHover}
+                    // ctx={ctx}
+                    // setHover={setHover}
                 />,
             ])}
             <span

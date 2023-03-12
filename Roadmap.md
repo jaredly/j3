@@ -1,5 +1,106 @@
 
-- [ ] lol you can't decimal anymore now because of attributes
+# Syntax Tests
+
+- So, I'm doing headless full-dealio. So that the frontend
+  will be pretty brainless
+- I also want my ~syntax tests to be able to indicate the
+  location of the whatsit
+  - [x] ok so we have some source(dest)mapping
+
+- [x] get all the things parsing & reprinting
+- [x] left-arrow all the way
+- [x] right-arrow is working
+- [x] backspace is not yet a thing.
+- [ ] up & down are not yet a thing
+- [ ] my "id is empty, but it's fine us the hash" isn't yet something I support.
+- [x] so, wanting this to be a real thing.
+  but now I don't ~need all the fancy renderwhatsits and such.
+  I can just do like dumb things, right?
+- [ ] let's nail selection
+  - I guess I can just use ~normal web selection, but muck it up a bit?
+    like do boundary-alignment?
+    - yeah thinking not just normal web selection. might as well
+      take full control.
+- [ ] btw I should definitely support multi-select. bc that would be very cool, right?
+- [x] BUG: space in an inside should create two blanks
+- [x] backspace after two blanks should delete both~ ( ) -> ()
+- [ ] QUESTION: Should I think about "unwrapping" a string?
+  seems a little more weird. But like, kinda why not?
+  yeah, why not.
+  Ok, so I'll only unwrap if it's a valid term. Why not.
+- [ ] anyway, let's do splatting of listlikes next? it's for fun
+  - is there some way to indicate that a listlike is splattable?
+    - well, for string-expr's we should just not show the litte dealios
+      and not allow selecting the outsideeeee
+- [x] so, in exciting news, I kinda want emojis
+  but it'll be a little weird getting "text length" and such to work.
+  Does it mean that I'll want to store "fat string info"?
+  I mean it's probably fine to just do the calculation on the fly?
+  - so like, instead of ever indexing the string, or taking it's length,
+    I convert it to a list of graphemes. Right? Seems reasonable.
+
+# ByHand
+
+> What am I not accounting for?
+>> oh, it's \Markdown and \Attachment.
+>> let's make sure those two make sense, and are nice to use.
+>> Also, my little indent jamboree is, not great.
+
+- [x] lots of things
+- [x] basic hacky layout
+- [x] lets respect tightFirst and pairs and such
+- [x] get the cursor to calculate right, taking scroll into account
+- [x] BACKSPACE
+- [x] click punct
+- [x] click text
+  - [x] the hacky version, that relies on monospace characters
+  - [x] fix click text to not be hacky
+- [ ] autocomplete pls? will have to do ~text whatsits
+- [ ] ok, so for error display, let's do
+  - for a listlike, we could just highlight the brackets? That would be nice.
+  - for atoms, we can do underline, that's fine.
+- [ ] and then, selection! It will be unstoppable.
+
+# Going down the list of syntactic things
+
+- [ ] using a variable should update its type annotation, that's a thing
+- [ ] task throwing
+- [ ] generics are a big deal
+- [ ] but RECURSION is a big deal too. and maybe the firster deal
+
+- [ ] I kindof want tests
+  - [ ] 
+
+## SO TESTS
+
+What are the layers that we have?
+- parse from text
+- "parse" from key strokes
+  - yo now that we have overheat, maybe I can do that thing I've always wanted to do
+    - it would involve, having two functions, one is `onInput`
+      and the other is `onKeyPress`
+- type matching, in a war of all against all
+  - identify different types by number, and indicate what other types it should match
+  - unification, similarly, can draw on X and Y and produce Z
+- actual evaluation and such
+
+So that I can get an overview of how "complete" we are. How implemented is this language.
+
+# Overheat
+maybe think of a better name idk
+
+- [x] rendering stuff! Very cool
+- [ ] setSelection (left/right, is start/end allowed) is still ad-hoc
+- [x] backspace on a spread doesn't work anymore
+  - can I have `onBackspace` in `events` work reasonably?
+- [x] oh backspace on attriutes not working?
+- [x] lol you can't decimal anymore now because of attributes
+
+- [x] backspace in string
+- [ ] '}' in expr in string
+- [ ] closing '"' in string
+
+- [ ] whyyy is my error handling lagging?
 
 # Broad strokes
 
@@ -15,8 +116,8 @@
   - [x] .. turns into spread
   - [x] delete in a spread should back out
   - [x] so I kinda think expr should also allow multiple spreads.
-  - [ ] '{' in spread body isn't working
-  - [ ] single item with spread isn't showing upt
+  - [x] '{' in spread body isn't working
+  - [x] single item with spread isn't showing upt
 
 - [x] BUG if you do `{}` then `.` we infinite loop! Not sure where.
 

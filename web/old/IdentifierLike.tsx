@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Map, MNode, MNodeContents, toMCST } from '../../src/types/mcst';
 import { EvalCtx, Path, setSelection, Store, updateStore } from '../store';
-import { Events } from './Nodes';
+import { Events, idText } from './Nodes';
 import { parse } from '../../src/grammar';
 import { Identifier, Node } from '../../src/types/cst';
 import {
@@ -11,7 +11,7 @@ import {
     maybeCommitAutoComplete,
     onKeyDown,
     setPos,
-} from '../mods/onKeyDown';
+} from '../mods/old/onKeyDown';
 import { SetHover } from './Doc';
 import { Root } from 'react-dom/client';
 import { getMenuState, MenuState, Menu, getMenuItems } from './Menu';
@@ -27,6 +27,31 @@ export type Top = {
     ctx: EvalCtx;
     setHover: SetHover;
     menuPortal: React.RefObject<null | Root>;
+};
+
+export const IdentifierLike2 = ({
+    node,
+    top,
+    events,
+    path,
+    idx,
+}: {
+    node: MNode;
+    top: Top;
+    events: Events;
+    path: Path[];
+    idx: number;
+}) => {
+    return (
+        <IdentifierLike
+            type={node.type}
+            text={idText(node, idx, top.ctx.ctx)!}
+            events={events}
+            idx={idx}
+            path={path}
+            top={top}
+        />
+    );
 };
 
 export const IdentifierLike = ({

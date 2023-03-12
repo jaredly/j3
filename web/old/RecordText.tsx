@@ -22,23 +22,34 @@ import {
 import { Events } from './Nodes';
 import { accessText, Identifier, Node } from '../../src/types/cst';
 import { focus, handleMenu, Top, useMenuStuff } from './IdentifierLike';
-import { getPos, onKeyDown } from '../mods/onKeyDown';
+import { getPos, onKeyDown } from '../mods/old/onKeyDown';
 import { nidx } from '../../src/grammar';
 import { rainbow } from '../rainbow';
 
-export const RecordText = ({
+export const RecordText = (props: {
+    idx: number;
+    path: Path[];
+    events: Events;
+    top: Top;
+}) => {
+    const node = useStore(props.top.store, props.idx);
+    return <RecordText2 {...props} node={node as accessText & MNodeExtra} />;
+};
+
+export const RecordText2 = ({
     idx,
     path,
     events,
+    node,
     top,
 }: {
     idx: number;
     path: Path[];
     events: Events;
     top: Top;
+    node: accessText & MNodeExtra;
 }) => {
     const { store, ctx, setHover } = top;
-    const node = useStore(store, idx);
     const text = (node as accessText).text;
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
@@ -217,15 +228,15 @@ export const RecordText = ({
 export const replacePath = (
     parent: Path,
     newIdx: number,
-    store: Store,
+    map: Map,
 ): UpdateMap => {
-    const map: UpdateMap = {};
-    const pnode = store.map[parent.idx];
+    const update: UpdateMap = {};
+    const pnode = map[parent.idx];
     switch (parent.child.type) {
         case 'child': {
             const values = (pnode as ListLikeContents).values.slice();
             values[parent.child.at] = newIdx;
-            map[parent.idx] = {
+            update[parent.idx] = {
                 ...(pnode as ListLikeContents & MNodeExtra),
                 values,
             };
@@ -233,18 +244,18 @@ export const replacePath = (
         }
         case 'expr': {
             const templates = (pnode as MCString).templates.slice();
-            templates[parent.child.at] = {
-                ...templates[parent.child.at],
+            templates[parent.child.at - 1] = {
+                ...templates[parent.child.at - 1],
                 expr: newIdx,
             };
-            map[parent.idx] = {
+            update[parent.idx] = {
                 ...(pnode as MCString & MNodeExtra),
                 templates,
             };
             break;
         }
         case 'spread-contents': {
-            map[parent.idx] = {
+            update[parent.idx] = {
                 ...(pnode as MCSpread & MNodeExtra),
                 contents: newIdx,
             };
@@ -255,7 +266,7 @@ export const replacePath = (
                 `Can't replace parent. . is this a valid place for an expr?`,
             );
     }
-    return map;
+    return update;
 };
 
 export const joinExprs = (

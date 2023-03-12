@@ -2,6 +2,7 @@ import * as React from 'react';
 import {
     Map,
     MCString,
+    MNode,
     MNodeExtra,
     toMCST,
     WithLoc,
@@ -19,26 +20,50 @@ import {
 import { Events } from './Nodes';
 import { SetHover } from './Doc';
 import { Loc, stringText } from '../../src/types/cst';
-import { focus } from './IdentifierLike';
-import { getPos, onKeyDown } from '../mods/onKeyDown';
+import { focus, Top } from './IdentifierLike';
+import { getPos, onKeyDown } from '../mods/old/onKeyDown';
 import { nidx, parse } from '../../src/grammar';
+import { replacePath } from './RecordText';
 
 export const StringText = ({
     idx,
-    store,
+    // node,
     path,
     events,
-    ctx,
-    setHover,
+    top,
 }: {
     idx: number;
-    store: Store;
+    // node: MNode;
+    top: Top;
     path: Path[];
     events: Events;
-    ctx: EvalCtx;
-    setHover: SetHover;
 }) => {
-    const node = useStore(store, idx);
+    const node = useStore(top.store, idx);
+    return (
+        <StringText2
+            idx={idx}
+            path={path}
+            events={events}
+            top={top}
+            node={node}
+        />
+    );
+};
+
+export const StringText2 = ({
+    idx,
+    node,
+    path,
+    events,
+    top,
+}: {
+    idx: number;
+    node: MNode;
+    top: Top;
+    path: Path[];
+    events: Events;
+}) => {
+    const { store, ctx, setHover } = top;
     const text = (node as stringText).text;
     const editing = store.selection?.idx === idx;
     let [edit, setEdit] = React.useState(null as null | string);
@@ -153,10 +178,31 @@ export const StringText = ({
                     getPos(evt.currentTarget) === 0
                 ) {
                     const last = path[path.length - 1];
-                    if (last.child.type !== 'text' || last.child.at === 0) {
+                    if (last.child.type !== 'text') {
                         return;
                     }
                     evt.preventDefault();
+                    if (last.child.at === 0) {
+                        if (evt.currentTarget.textContent! !== '') {
+                            return events.onLeft();
+                        }
+                        const parent = store.map[last.idx] as MCString;
+                        if (parent.templates.length !== 0) {
+                            return events.onLeft();
+                        }
+                        const n = nidx();
+                        const map = replacePath(
+                            path[path.length - 2],
+                            n,
+                            store,
+                        );
+                        map[n] = {
+                            type: 'blank',
+                            loc: { idx: n, start: 0, end: 0 },
+                        };
+                        updateStore(store, { map, selection: { idx: n } });
+                        return;
+                    }
                     const { map, selection } = joinExprs(
                         last.idx,
                         last.child.at - 1,

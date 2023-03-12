@@ -1,5 +1,5 @@
 import { Loc, Node } from '../types/cst';
-import { Expr, TRecord, TVar, Type } from '../types/ast';
+import { Expr, NumberKind, TRecord, TVar, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
@@ -68,6 +68,7 @@ export type NodeStyle =
     | { type: 'tag' }
     | { type: 'record-attr' }
     | { type: 'let-pairs' }
+    | { type: 'number'; kind: NumberKind }
     | { type: 'id-decl'; hash: string }
     | {
           type: 'id';
