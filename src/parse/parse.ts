@@ -48,7 +48,6 @@ export const parseByCharacter = (
     let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
 
     const text = splitGraphemes(rawText);
-    console.log(text);
 
     for (let i = 0; i < text.length; i++) {
         let key = text[i];

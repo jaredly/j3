@@ -74,7 +74,7 @@ const reduce = (state: State, action: Action): State => {
 export const ByHand = () => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): State => {
-        const map = parseByCharacter(initialText, true).map;
+        const map = parseByCharacter(initialText, debug).map;
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(
             idx,
@@ -161,9 +161,9 @@ export const ByHand = () => {
                 style={{
                     width: 0,
                     height: 0,
-                    border: 'none',
                     opacity: 0,
                     position: 'absolute',
+                    border: 'none',
                     pointerEvents: 'none',
                 }}
                 onKeyDown={(evt) => {
@@ -178,11 +178,21 @@ export const ByHand = () => {
                     }
                 }}
                 onInput={(evt) => {
-                    // console.log('Input', evt, evt.currentTarget.value);
+                    // console.log(evt.inputType, evt);
+                    console.log('Input', evt, evt.currentTarget.value);
                     if (evt.currentTarget.value) {
                         dispatch({ type: 'key', key: evt.currentTarget.value });
                         evt.currentTarget.value = '';
                     }
+                }}
+                onCompositionStart={(evt) => {
+                    console.log(evt);
+                }}
+                onCompositionEnd={(evt) => {
+                    console.log('end', evt);
+                }}
+                onCompositionUpdate={(evt) => {
+                    console.log('update', evt);
                 }}
             />
             <button

@@ -1,4 +1,13 @@
 
+# What's left for the editor to be a real deal?
+
+- [ ] I should square off with the Attachment rendering.
+- [ ] and rich-text rendering. So that'll require a whole
+  different thing. Maybe call it 'custom'?
+  And, well, when the custom is selected, do I have to
+  relinquish focus? Maybe.
+
+
 # Syntax Tests
 
 - So, I'm doing headless full-dealio. So that the frontend
@@ -38,6 +47,13 @@
   I mean it's probably fine to just do the calculation on the fly?
   - so like, instead of ever indexing the string, or taking it's length,
     I convert it to a list of graphemes. Right? Seems reasonable.
+- [ ] Ok, but also I should really suppport composition events.
+  so ... yeah that's fun.
+  - how to tell that a keydown is going to be a compositionevent?
+    🤔
+  - hm it'll be a little interesting to try to represent those though.
+    like ... do I need to potentially have them anywhere?
+    or I guess I could represent them as a 'replace this temp grapheme'. that's probably fine. Don't need to be too fancy.
 
 # ByHand
 
