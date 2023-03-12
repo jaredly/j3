@@ -1,4 +1,5 @@
 import { nidx } from '../../src/grammar';
+import { splitGraphemes } from '../../src/parse/parse';
 import { NewThing } from './getKeyUpdate';
 
 /** Second wins */
@@ -86,7 +87,7 @@ export const newId = (key: string, idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx, loc: key.length },
+        selection: { idx, loc: splitGraphemes(key).length },
         path: [],
     };
 };

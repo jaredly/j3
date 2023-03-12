@@ -7,6 +7,7 @@ import {
     maybeClearParentList,
     replacePathWith,
 } from './getKeyUpdate';
+import { splitGraphemes } from '../../src/parse/parse';
 
 export function handleBackspace({
     idx,
@@ -104,7 +105,8 @@ export function handleBackspace({
         );
     }
     if (pos > 0 && 'text' in node) {
-        if (pos === 1 && node.text.length === 1) {
+        const text = splitGraphemes(node.text);
+        if (pos === 1 && text.length === 1) {
             const cleared = maybeClearParentList(path, map);
             if (cleared) {
                 return cleared;
@@ -116,14 +118,14 @@ export function handleBackspace({
                 map: {
                     [idx]:
                         pos === 1 &&
-                        node.text.length === 1 &&
+                        text.length === 1 &&
                         node.type === 'identifier'
                             ? { type: 'blank', loc: node.loc }
                             : {
                                   ...node,
                                   text:
-                                      node.text.slice(0, pos - 1) +
-                                      node.text.slice(pos),
+                                      text.slice(0, pos - 1).join('') +
+                                      text.slice(pos).join(''),
                               },
                 },
                 selection: { idx, loc: pos - 1 },

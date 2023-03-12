@@ -1,4 +1,5 @@
 import React from 'react';
+import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { pathSelForNode } from '../mods/navigate';
@@ -142,18 +143,24 @@ export const Render = ({
                                 onMouseDown={(evt) => {
                                     evt.preventDefault();
 
-                                    let box =
-                                        evt.currentTarget.getBoundingClientRect();
-                                    let percent =
-                                        (evt.clientX - box.left) / box.width;
-                                    let estimate = Math.round(
-                                        percent * onode.text.length,
-                                    );
+                                    // let box =
+                                    //     evt.currentTarget.getBoundingClientRect();
+                                    // let percent =
+                                    //     (evt.clientX - box.left) / box.width;
+                                    // let estimate = Math.round(
+                                    //     percent * onode.text.length,
+                                    // );
                                     dispatch({
                                         type: 'select',
                                         pathSel: {
                                             path,
-                                            sel: { idx, loc: estimate },
+                                            sel: {
+                                                idx,
+                                                loc: calcOffset(
+                                                    evt.currentTarget,
+                                                    evt.clientX,
+                                                ),
+                                            },
                                         },
                                     });
                                 }}
@@ -177,6 +184,32 @@ export const Render = ({
             })}
         </span>
     );
+};
+
+// TODO I could do a binary search thing to make this faster if I want
+export const calcOffset = (node: HTMLSpanElement, x: number) => {
+    if (!node.firstChild) {
+        return 0;
+    }
+    let range = new Range();
+    const graphemes = splitGraphemes(node.textContent!);
+    let offset = 0;
+    let prevPos = null;
+    for (let i = 0; i < graphemes.length; i++) {
+        range.setStart(node.firstChild, offset);
+        range.setEnd(node.firstChild, offset);
+        let dx = range.getBoundingClientRect().left - x;
+        if (Math.abs(dx) < 3) {
+            console.log('spot on');
+            return i;
+        }
+        if (prevPos && prevPos < 0 && dx > 0) {
+            return Math.abs(prevPos) < Math.abs(dx) ? i - 1 : i;
+        }
+        prevPos = dx;
+        offset += graphemes[i].length;
+    }
+    return graphemes.length;
 };
 
 export const clickPunct = (

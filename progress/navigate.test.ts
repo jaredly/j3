@@ -1,7 +1,7 @@
 // Can go left & right
 
 import { setIdx } from '../src/grammar';
-import { idText, parseByCharacter } from '../src/parse/parse';
+import { idText, parseByCharacter, splitGraphemes } from '../src/parse/parse';
 import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
@@ -25,7 +25,6 @@ describe('going left', () => {
         for (let i = 0; i < sink.length; i++) {
             const curText = idText(data[selection.idx]) ?? '';
 
-            // const current = map[selection.idx];
             const pos =
                 selection.loc === 'start' ||
                 selection.loc === 'inside' ||
@@ -33,7 +32,7 @@ describe('going left', () => {
                 !selection.loc
                     ? 0
                     : selection.loc === 'end'
-                    ? curText.length
+                    ? splitGraphemes(curText).length
                     : selection.loc;
 
             const update = getKeyUpdate(

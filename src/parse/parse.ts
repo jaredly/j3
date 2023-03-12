@@ -122,6 +122,6 @@ export function selPos(selection: Selection, curText: string) {
         !selection.loc
         ? 0
         : selection.loc === 'end'
-        ? curText.length
+        ? splitGraphemes(curText).length
         : selection.loc;
 }

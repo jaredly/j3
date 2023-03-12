@@ -41,13 +41,10 @@ export function handleStringText({
 
     if (pos === 0) {
         text.unshift(...input);
-        // text = key + text;
     } else if (pos === text.length) {
         text.push(...input);
-        // text = text + key;
     } else {
         text.splice(pos, 0, ...input);
-        // text = text.slice(0, pos) + key + text.slice(pos);
     }
     return {
         type: 'update',

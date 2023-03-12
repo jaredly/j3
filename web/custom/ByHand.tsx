@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { idText, parseByCharacter, selPos } from '../../src/parse/parse';
+import {
+    idText,
+    parseByCharacter,
+    selPos,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import {
@@ -17,7 +22,7 @@ import { Selection } from '../store';
 import { Render } from './Render';
 
 // const initialText = '(let [x 10] (+ x 20))';
-const initialText = `"Some 🤔"`;
+const initialText = `"Some 🤔 things"`;
 
 // const initialText = `
 // (def live (vec4 1. 0.6 1. 1.))
@@ -153,7 +158,14 @@ export const ByHand = () => {
             <input
                 ref={(node) => node?.focus()}
                 onBlur={(evt) => evt.currentTarget.focus()}
-                style={{ width: 0, height: 0, border: 'none', opacity: 0 }}
+                style={{
+                    width: 0,
+                    height: 0,
+                    border: 'none',
+                    opacity: 0,
+                    position: 'absolute',
+                    pointerEvents: 'none',
+                }}
                 onKeyDown={(evt) => {
                     if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                         return;
@@ -184,7 +196,7 @@ export const ByHand = () => {
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
             {tops.map((top, i) => (
-                <div key={top}>
+                <div key={top} style={{ marginBottom: 8 }}>
                     <Render
                         idx={top}
                         state={state}
@@ -206,6 +218,7 @@ export const ByHand = () => {
                     style={{
                         position: 'absolute',
                         width: 1,
+                        pointerEvents: 'none',
                         backgroundColor: cursorPos.color ?? 'white',
                         left: cursorPos.x,
                         height: cursorPos.h,
@@ -276,17 +289,21 @@ export const calcCursorPos = (
     } else if (nodes.main) {
         const r = new Range();
         r.selectNode(nodes.main);
-        const text = nodes.main.textContent!;
+        const textRaw = nodes.main.textContent!;
+        const text = splitGraphemes(textRaw);
         if (!nodes.main.firstChild) {
             // nothing to do here
         } else if (loc === 'start' || loc === 0) {
             r.setStart(nodes.main.firstChild!, 0);
             r.collapse(true);
         } else if (loc === 'end' || loc === text.length) {
-            r.setStart(nodes.main.firstChild!, text.length);
+            r.setStart(nodes.main.firstChild!, textRaw.length);
             r.collapse(true);
         } else if (typeof loc === 'number') {
-            r.setStart(nodes.main.firstChild!, loc);
+            r.setStart(
+                nodes.main.firstChild!,
+                text.slice(0, loc).join('').length,
+            );
             r.collapse(true);
         } else {
             console.log('dunno loc', loc, nodes.main);

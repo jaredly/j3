@@ -73,7 +73,7 @@ and `onLeft` and `onRight`, but no keypress stuff.
 export const getKeyUpdate = (
     key: string,
     pos: number,
-    text: string,
+    textRaw: string,
     idx: number,
     path: Path[],
     map: Map,
@@ -83,6 +83,8 @@ export const getKeyUpdate = (
     }
     const last = path[path.length - 1];
     const node = map[idx];
+
+    const text = splitGraphemes(textRaw);
 
     if (
         key === 'Meta' ||
@@ -159,12 +161,12 @@ export const getKeyUpdate = (
             const nat = mergeNew(blank, newRecordAccess(blank.idx, ''));
             return addToListLike(map, last.idx, path, nat);
         }
-        if (node.type === 'identifier' && !text.match(/^-?[0-9]+$/)) {
-            const nat = newRecordAccess(idx, text.slice(pos));
+        if (node.type === 'identifier' && !textRaw.match(/^-?[0-9]+$/)) {
+            const nat = newRecordAccess(idx, text.slice(pos).join(''));
             if (pos === 0) {
                 nat.map[idx] = { type: 'blank', loc: map[idx].loc };
             } else if (pos < text.length) {
-                nat.map[idx] = { ...node, text: text.slice(0, pos) };
+                nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
             }
             return replacePathWith(path, map, nat);
         }
@@ -176,7 +178,7 @@ export const getKeyUpdate = (
                 );
             }
 
-            if (map[parent.target].type === 'blank' && text === '') {
+            if (map[parent.target].type === 'blank' && textRaw === '') {
                 // turn into a spread!
                 const nat = newSpread(parent.target);
                 // Delete the recordAccess
@@ -193,9 +195,9 @@ export const getKeyUpdate = (
                 // };
             }
 
-            const nat = newAccessText(text.slice(pos));
+            const nat = newAccessText(text.slice(pos).join(''));
             if (pos < text.length) {
-                nat.map[idx] = { ...node, text: text.slice(0, pos) };
+                nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
             }
             const items = parent.items.slice();
             items.splice(last.child.at + 1, 0, nat.idx);
