@@ -35,6 +35,23 @@ export function handleBackspace({
             const parent = map[last.idx] as ListLikeContents & MNodeExtra;
             const values = parent.values.slice();
             values.splice(last.child.at, 1);
+            if (values.length === 1 && map[values[0]].type === 'blank') {
+                return {
+                    type: 'update',
+                    update: {
+                        map: {
+                            [last.idx]: { ...parent, values: [] },
+                        },
+                        selection: { idx: last.idx, loc: 'inside' },
+                        path: path
+                            .slice(0, -1)
+                            .concat({
+                                idx: last.idx,
+                                child: { type: 'inside' },
+                            }),
+                    },
+                };
+            }
             const sel = selectEnd(
                 values[last.child.at - 1],
                 path.slice(0, -1).concat([

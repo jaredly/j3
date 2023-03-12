@@ -479,7 +479,6 @@ export const maybeClearParentList = (path: Path[], map: Map): KeyUpdate => {
     if (gp && gp.child.type === 'child' && gp.child.at === 0) {
         const gpnode = map[gp.idx];
         if ('values' in gpnode && gpnode.values.length === 1) {
-            const values = gpnode.values.slice();
             return {
                 type: 'update',
                 update: {

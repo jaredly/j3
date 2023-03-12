@@ -156,6 +156,7 @@ id
 (list blank blank)
 
 ( ^b)
+()
 (list)
 `;
 
