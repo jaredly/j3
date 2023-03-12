@@ -13,7 +13,7 @@ export const useLocalStorage = <T,>(key: string, initial: () => T) => {
         localStorage[key] ? JSON.parse(localStorage[key]) : initial(),
     );
     React.useEffect(() => {
-        if (state) {
+        if (state != null) {
             localStorage[key] = JSON.stringify(state);
         }
     }, [state]);

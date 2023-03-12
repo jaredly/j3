@@ -35,11 +35,16 @@
 
 # ByHand
 
+> What am I not accounting for?
+>> oh, it's \Markdown and \Attachment.
+>> let's make sure those two make sense, and are nice to use.
+>> Also, my little indent jamboree is, not great.
+
 - [x] lots of things
 - [x] basic hacky layout
 - [x] lets respect tightFirst and pairs and such
 - [x] get the cursor to calculate right, taking scroll into account
-- [ ] BACKSPACE
+- [x] BACKSPACE
 - [x] click punct
 - [-] click text
   - [x] the hacky version, that relies on monospace characters

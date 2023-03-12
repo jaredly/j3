@@ -212,9 +212,9 @@ export const getKeyUpdate = (
         }
     }
 
-    if (key.length !== 1) {
-        throw new Error(`special? ${key}`);
-    }
+    // if (key.length !== 1) {
+    //     throw new Error(`special? ${key}`);
+    // }
 
     // Ok, so now we're updating things
 

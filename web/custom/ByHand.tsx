@@ -9,6 +9,7 @@ import {
     SourceMap,
 } from '../../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
+import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
 import { getKeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
@@ -64,7 +65,8 @@ const reduce = (state: State, action: Action): State => {
 };
 
 export const ByHand = () => {
-    const [state, dispatch] = React.useReducer(reduce, null, () => {
+    const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
+    const [state, dispatch] = React.useReducer(reduce, null, (): State => {
         const map = parseByCharacter(initialText).map;
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(
@@ -72,16 +74,8 @@ export const ByHand = () => {
             [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
-        return { map, root: -1, at } as State;
+        return { map, root: -1, at };
     });
-
-    const { back, sourceMap } = React.useMemo(() => {
-        const sourceMap: SourceMap = { map: {}, cur: 0 };
-        const back = nodeToString(fromMCST(state.root, state.map), sourceMap);
-        return { back, sourceMap };
-    }, [state.root, state.map]);
-
-    const pos = remapPos(state.at.sel, sourceMap);
 
     const [blink, setBlink] = useState(false);
 
@@ -96,18 +90,19 @@ export const ByHand = () => {
         return ctx;
     }, [state.map]);
 
+    let tid = React.useRef(null as null | NodeJS.Timeout);
+
     React.useEffect(() => {
-        let tid: null | NodeJS.Timeout = null;
         const fn = (evt: KeyboardEvent) => {
             if (evt.ctrlKey || evt.metaKey || evt.altKey) {
                 return;
             }
 
-            if (tid != null) {
-                clearTimeout(tid);
+            if (tid.current != null) {
+                clearTimeout(tid.current);
             }
             setBlink(false);
-            tid = setTimeout(() => setBlink(true), 500);
+            tid.current = setTimeout(() => setBlink(true), 500);
             evt.preventDefault();
 
             dispatch({ type: 'key', key: evt.key });
@@ -152,6 +147,40 @@ export const ByHand = () => {
 
     return (
         <div style={{ padding: 16 }}>
+            {/* always capturing! dunno if this is totally wise lol */}
+            <input
+                ref={(node) => node?.focus()}
+                onBlur={(evt) => evt.currentTarget.focus()}
+                style={{ width: 0, height: 0, border: 'none', opacity: 0 }}
+                onKeyDown={(evt) => {
+                    if (evt.metaKey || evt.ctrlKey || evt.altKey) {
+                        return;
+                    }
+
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    if (evt.key !== 'Unidentified') {
+                        dispatch({ type: 'key', key: evt.key });
+                    }
+                }}
+                onInput={(evt) => {
+                    // console.log('Input', evt, evt.currentTarget.value);
+                    if (evt.currentTarget.value) {
+                        dispatch({ type: 'key', key: evt.currentTarget.value });
+                        evt.currentTarget.value = '';
+                    }
+                }}
+            />
+            <button
+                onClick={() => setDebug(!debug)}
+                style={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                }}
+            >
+                {debug ? 'Debug on' : 'Debug off'}
+            </button>
             {tops.map((top, i) => (
                 <div key={top}>
                     <Render
@@ -167,7 +196,7 @@ export const ByHand = () => {
                             },
                         ]}
                     />
-                    <div>{sexp(fromMCST(top, state.map))}</div>
+                    {debug ? <div>{sexp(fromMCST(top, state.map))}</div> : null}
                 </div>
             ))}
             {cursorPos ? (
@@ -185,26 +214,30 @@ export const ByHand = () => {
                     }}
                 />
             ) : null}
-            <div>Sel: {JSON.stringify(state.at.sel)}</div>
-            <div>Path: </div>
-            <div>
-                <table>
-                    <tr>
-                        <td>idx</td>
-                        <td>child</td>
-                    </tr>
+            {debug ? (
+                <div>
+                    <div>Sel: {JSON.stringify(state.at.sel)}</div>
+                    <div>Path: </div>
+                    <div>
+                        <table>
+                            <tr>
+                                <td>idx</td>
+                                <td>child</td>
+                            </tr>
 
-                    {state.at.path.map((item) => (
-                        <tr>
-                            <td>{item.idx}</td>
-                            <td>{JSON.stringify(item.child)}</td>
-                        </tr>
-                    ))}
-                </table>
-            </div>
-            <div style={{ whiteSpace: 'pre-wrap' }}>
-                {JSON.stringify(ctx.display, null, 2)}
-            </div>
+                            {state.at.path.map((item) => (
+                                <tr>
+                                    <td>{item.idx}</td>
+                                    <td>{JSON.stringify(item.child)}</td>
+                                </tr>
+                            ))}
+                        </table>
+                    </div>
+                    <div style={{ whiteSpace: 'pre-wrap' }}>
+                        {JSON.stringify(ctx.display, null, 2)}
+                    </div>
+                </div>
+            ) : null}
         </div>
     );
 };
@@ -258,7 +291,6 @@ export const calcCursorPos = (
             return;
         }
         const color = getComputedStyle(nodes.main).color;
-        console.log(color);
         return subRect(
             r.getBoundingClientRect(),
             nodes.main.offsetParent!.getBoundingClientRect(),
