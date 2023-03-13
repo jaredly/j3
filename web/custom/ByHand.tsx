@@ -169,12 +169,10 @@ export const ByHand = () => {
         );
     }, []);
 
-    const hiddenInput = useRef<HTMLInputElement>();
+    const hiddenInput = useRef(null as null | HTMLInputElement);
 
     return (
         <div style={{ padding: 16 }}>
-            <input value="Examople" />
-            <input value="Moreple" />
             {/* always capturing! dunno if this is totally wise lol */}
             <input
                 ref={hiddenInput}

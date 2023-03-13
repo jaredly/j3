@@ -2,6 +2,8 @@
 # What's left for the editor to be a real deal?
 
 - [ ] I should square off with the Attachment rendering.
+  - I think ... the attachment ... should ... hm. I feel like it wants
+    to be some kind of composite thing.
 - [ ] and rich-text rendering. So that'll require a whole
   different thing. Maybe call it 'custom'?
   And, well, when the custom is selected, do I have to
@@ -9,6 +11,8 @@
   - [ ] So, yeah I think I do want to give it full focus control.
     which is maybe tricky? idk.
 - [ ] TODO blink needs to be a thing!
+- [ ] handle tab
+- [x] allow other things to have focus, it's ok
 
 
 # Syntax Tests
