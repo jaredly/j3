@@ -14,9 +14,11 @@ import { layout } from '../layout';
 import { applyUpdate, getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Path, Selection } from '../store';
-import { calcOffset, Render } from './Render';
+import { Render } from './Render';
+import { verticalMove } from './verticalMove';
 
 // const initialText = '(let [x 10] (+ x 20))';
+// const initialText = '(1 2) (3 4)';
 // const initialText = `"Some 🤔 things"`;
 
 const initialText = `
@@ -53,56 +55,6 @@ export type Action =
           type: 'key';
           key: string;
       };
-
-export const verticalMove = (state: State, up: boolean): State => {
-    let best = null as null | { top: number; left: number; sel: PathSel };
-    const current = calcCursorPos(state.at.sel, state.regs);
-    if (!current) {
-        return state;
-    }
-    Object.entries(state.regs).forEach(([key, nodes]) => {
-        Object.entries(nodes).forEach(([which, value]) => {
-            if (!value) {
-                return;
-            }
-            const box = value.node.getBoundingClientRect();
-            if (box.top <= current.top + current.height / 2) {
-                return;
-            }
-            const dx =
-                current.left >= box.left && current.left <= box.right
-                    ? 0
-                    : Math.min(
-                          Math.abs(current.left - box.left),
-                          Math.abs(current.left - box.right),
-                      );
-
-            if (!best || (box.top <= best.top && dx <= best.left)) {
-                const ps: PathSel = {
-                    path:
-                        which === 'main'
-                            ? value.path
-                            : value.path.concat({
-                                  idx: +key,
-                                  child: { type: which as 'end' },
-                              }),
-                    sel: {
-                        idx: +key,
-                        loc:
-                            which === 'main'
-                                ? calcOffset(value.node, current.left)
-                                : (which as 'end'),
-                    },
-                };
-                best = { top: box.top, left: 0, sel: ps };
-            }
-        });
-    });
-    if (best) {
-        return { ...state, at: best.sel };
-    }
-    return state;
-};
 
 const reduce = (state: State, action: Action): State => {
     switch (action.type) {
