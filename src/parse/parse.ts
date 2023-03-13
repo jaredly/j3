@@ -1,5 +1,6 @@
 // hmm
-import { getKeyUpdate } from '../../web/mods/getKeyUpdate';
+import { applyUpdate } from '../../web/custom/ByHand';
+import { getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
 import { Path, Selection } from '../../web/store';
 import { nidx } from '../grammar';
 import { Map, MNode } from '../types/mcst';
@@ -32,20 +33,7 @@ export const parseByCharacter = (
     rawText: string,
     debug = false,
 ): { map: Map; selection: Selection } => {
-    const top = nidx();
-    const map: Map = {
-        [-1]: {
-            type: 'list',
-            values: [top],
-            loc: { idx: -1, start: 0, end: 0 },
-        },
-        [top]: {
-            type: 'blank',
-            loc: { idx: 0, start: 0, end: 0 },
-        },
-    };
-    let selection: Selection = { idx: top, loc: 0 };
-    let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
+    let state: State = initialState();
 
     const text = splitGraphemes(rawText);
 
@@ -66,53 +54,42 @@ export const parseByCharacter = (
             key = 'Enter';
         }
 
-        const curText = idText(map[selection.idx]) ?? '';
-        const pos = selPos(selection, curText);
-
-        const update = getKeyUpdate(
-            key,
-            pos,
-            curText,
-            selection.idx,
-            path,
-            map,
-        );
+        const update = getKeyUpdate(key, state);
         if (debug) {
-            console.log(key, path);
+            console.log(key, state.at.path);
             console.log(JSON.stringify(update));
         }
 
-        // OOOOOOH um so
-        // how do I go about updating the `path`?
-        // I've been relying on ... circumstantial whatsits.
-        // Should I have my `getKeyUpdate` be responsible for
-        // calculating the path?
-        // hmmm I guess it shouldn't be too laboreous
-
-        if (update?.type === 'select') {
-            selection = update.selection;
-            path = update.path;
-        } else if (update?.type === 'update' && update?.update) {
-            Object.keys(update.update.map).forEach((key) => {
-                if (update.update!.map[+key] == null) {
-                    delete map[+key];
-                } else {
-                    map[+key] = update.update!.map[+key]!;
-                }
-            });
-            selection = update.update.selection;
-            path = update.update.path;
-
-            // We're not doing any ast stuff here yet
-            // if (update.auto) {
-            //     // maybeCommitAutoComplete(idx, ectx, store);
-            // }
-        } else {
-            // console.log('ahhh', char);
-        }
+        state = applyUpdate(state, update) ?? state;
     }
-    return { map, selection };
+    return { map: state.map, selection: state.at.sel };
 };
+
+function initialState() {
+    const top = nidx();
+
+    const map: Map = {
+        [-1]: {
+            type: 'list',
+            values: [top],
+            loc: { idx: -1, start: 0, end: 0 },
+        },
+        [top]: {
+            type: 'blank',
+            loc: { idx: 0, start: 0, end: 0 },
+        },
+    };
+
+    let state: State = {
+        map,
+        at: {
+            sel: { idx: top, loc: 0 },
+            path: [{ idx: -1, child: { type: 'child', at: 0 } }],
+        },
+        root: -1,
+    };
+    return state;
+}
 
 export function selPos(selection: Selection, curText: string) {
     return selection.loc === 'start' ||

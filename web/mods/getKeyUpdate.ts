@@ -23,10 +23,10 @@ import {
     newSpread,
     mergeNew,
 } from './newNodes';
-import { goLeft, goRight, selectStart } from './navigate';
+import { goLeft, goRight, PathSel, selectStart } from './navigate';
 import { handleStringText } from './handleStringText';
 import { handleBackspace } from './handleBackspace';
-import { splitGraphemes } from '../../src/parse/parse';
+import { idText, selPos, splitGraphemes } from '../../src/parse/parse';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
 
@@ -70,20 +70,37 @@ and `onLeft` and `onRight`, but no keypress stuff.
 
 */
 
+export type State = {
+    map: Map;
+    root: number;
+    at: PathSel;
+};
+
+const isAtStart = (text: string, loc: Selection['loc']) => {
+    return (
+        !(loc === 'end' && text.length > 0) &&
+        !(typeof loc === 'number' && loc > 0)
+    );
+};
+
 export const getKeyUpdate = (
     key: string,
-    pos: number,
-    textRaw: string,
-    idx: number,
-    path: Path[],
-    map: Map,
+    // pos: number,
+    // textRaw: string,
+    // idx: number,
+    // path: Path[],
+    // map: Map,
+    state: State,
 ): KeyUpdate => {
-    if (!path.length) {
-        throw new Error(`no path ${key} ${idx} ${JSON.stringify(map)}`);
+    if (!state.at.path.length) {
+        throw new Error(
+            `no path ${key} ${state.at.sel.idx} ${JSON.stringify(state.map)}`,
+        );
     }
-    const last = path[path.length - 1];
-    const node = map[idx];
+    const last = state.at.path[state.at.path.length - 1];
+    const node = state.map[state.at.sel.idx];
 
+    const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
 
     if (
@@ -96,19 +113,27 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace({ idx, node, pos, path, map });
+        return handleBackspace(state);
     }
 
     if (key === 'ArrowLeft') {
-        if (pos > 0) {
+        if ('text' in node && !isAtStart(node.text, state.at.sel.loc)) {
+            const pos = selPos(state.at.sel, node.text);
             return {
                 type: 'select',
-                selection: { idx, loc: pos - 1 },
-                path,
+                selection: { idx: state.at.sel.idx, loc: pos - 1 },
+                path: state.at.path,
             };
         }
-        return goLeft(path, idx, map);
+        return goLeft(state.at.path, state.at.sel.idx, state.map);
     }
+
+    const pos = selPos(state.at.sel, textRaw);
+    const {
+        path,
+        sel: { idx },
+    } = state.at;
+    const map = state.map;
 
     if (key === 'ArrowRight') {
         if (pos < text.length) {

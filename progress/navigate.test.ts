@@ -1,11 +1,17 @@
 // Can go left & right
 
 import { setIdx } from '../src/grammar';
-import { idText, parseByCharacter, splitGraphemes } from '../src/parse/parse';
+import {
+    idText,
+    parseByCharacter,
+    selPos,
+    splitGraphemes,
+} from '../src/parse/parse';
 import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { getKeyUpdate } from '../web/mods/getKeyUpdate';
+import { applyUpdate } from '../web/custom/ByHand';
+import { getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { Path, Selection } from '../web/store';
 
 const sink = ``;
@@ -20,36 +26,29 @@ describe('going left', () => {
         const sourceMap: SourceMap = { map: {}, cur: 0 };
         let back = nodeToString(fromMCST(idx, data), sourceMap);
         expect(back).toEqual(sink);
-        let selection: Selection = { idx, loc: 'end' };
-        let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
+        // let selection: Selection = { idx, loc: 'end' };
+        // let path: Path[] = [{ idx: -1, child: { type: 'child', at: 0 } }];
+
+        let state: State = {
+            map: data,
+            root: -1,
+            at: {
+                sel: { idx, loc: 'end' },
+                path: [{ idx: -1, child: { type: 'child', at: 0 } }],
+            },
+        };
+
         for (let i = 0; i < sink.length; i++) {
-            const curText = idText(data[selection.idx]) ?? '';
+            const curText = idText(data[state.at.sel.idx]) ?? '';
 
-            const pos =
-                selection.loc === 'start' ||
-                selection.loc === 'inside' ||
-                selection.loc === 'change' ||
-                !selection.loc
-                    ? 0
-                    : selection.loc === 'end'
-                    ? splitGraphemes(curText).length
-                    : selection.loc;
+            const pos = selPos(state.at.sel, curText);
 
-            const update = getKeyUpdate(
-                'ArrowLeft',
-                pos,
-                curText,
-                selection.idx,
-                path,
-                data,
-            )!;
-            console.log(i);
+            const update = getKeyUpdate('ArrowLeft', state)!;
             expect(update).toBeTruthy();
             if (update.type !== 'select') {
                 expect(update).toMatchObject({ type: 'select' });
             } else {
-                selection = update.selection;
-                path = update.path;
+                state = applyUpdate(state, update) ?? state;
             }
         }
     });

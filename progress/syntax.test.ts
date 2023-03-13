@@ -9,7 +9,8 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
-import { getKeyUpdate } from '../web/mods/getKeyUpdate';
+import { applyUpdate } from '../web/custom/ByHand';
+import { getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { PathSel, selectEnd, selectStart } from '../web/mods/navigate';
 import { Path, Selection } from '../web/store';
 import { sexp } from './sexp';
@@ -221,8 +222,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    data,
-                    state,
+                    state: { map: data, at: state, root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -248,8 +248,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    data,
-                    state: startState,
+                    state: { map: data, at: startState, root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -266,8 +265,6 @@ describe('a test', () => {
 });
 
 function doABunchOfKeys({
-    data,
-    state,
     only,
     i,
     sourceMap,
@@ -276,9 +273,9 @@ function doABunchOfKeys({
     stop,
     key,
     check,
+    state,
 }: {
-    data: Map;
-    state: PathSel;
+    state: State;
     only: boolean;
     i: number;
     sourceMap: SourceMap;
@@ -289,38 +286,30 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(data[state.sel.idx]) ?? '';
-        const pos = selPos(state.sel, curText);
+        const curText = idText(state.map[state.at.sel.idx]) ?? '';
+        const pos = selPos(state.at.sel, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
 
-        const startPos = remapPos(state.sel, sourceMap);
+        const startPos = remapPos(state.at.sel, sourceMap);
         if (only) {
             console.log(
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(
-            key,
-            pos,
-            curText,
-            state.sel.idx,
-            state.path,
-            data,
-        );
+        const update = getKeyUpdate(key, state);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {
                 expect(update).toMatchObject({ type: 'select' });
             } else {
-                state.sel = update.selection;
-                state.path = update.path;
+                state = applyUpdate(state, update)!;
             }
         }
-        const newPos = remapPos(state.sel, sourceMap);
+        const newPos = remapPos(state.at.sel, sourceMap);
         if (check(startPos, newPos)) {
-            console.log(JSON.stringify(state.sel));
+            console.log(JSON.stringify(state.at.sel));
             console.log(showSourceMap(back, sourceMap));
             console.log(
                 'prev: ' +
@@ -334,7 +323,7 @@ function doABunchOfKeys({
                     '|' +
                     backOrig.slice(newPos),
             );
-            console.log(state.sel);
+            console.log(state.at.sel);
             expect(newPos).toEqual('something else');
         }
         if (newPos === stop) {

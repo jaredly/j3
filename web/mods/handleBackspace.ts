@@ -6,24 +6,22 @@ import {
     KeyUpdate,
     maybeClearParentList,
     replacePathWith,
+    State,
 } from './getKeyUpdate';
-import { splitGraphemes } from '../../src/parse/parse';
+import { selPos, splitGraphemes } from '../../src/parse/parse';
 
 export function handleBackspace({
-    idx,
-    node,
-    pos,
-    path,
     map,
-}: {
-    idx: number;
-    node: MNode;
-    pos: number;
-    path: Path[];
-    map: Map;
-}): KeyUpdate {
+    at: {
+        sel: { idx, loc },
+        path,
+    },
+}: State): KeyUpdate {
+    const node = map[idx];
     const last = path[path.length - 1];
-    if (node.type === 'stringText' && pos === 0 && node.text === '') {
+    const atStart = loc === 0 || loc === 'start';
+
+    if (node.type === 'stringText' && atStart && node.text === '') {
         const parent = map[last.idx];
         if (parent.type !== 'string') {
             throw new Error(`stringText parent not a string ${parent.type}`);
@@ -104,9 +102,12 @@ export function handleBackspace({
             cleared ?? replacePathWith(path.slice(0, -1), map, newBlank(idx))
         );
     }
-    if (pos > 0 && 'text' in node) {
+    if (!atStart && 'text' in node) {
         const text = splitGraphemes(node.text);
-        if (pos === 1 && text.length === 1) {
+        const atEnd = loc === 'end' || loc === text.length;
+        const pos =
+            loc === 'end' ? text.length : typeof loc === 'number' ? loc : 0;
+        if (text.length === 1 && atEnd) {
             const cleared = maybeClearParentList(path, map);
             if (cleared) {
                 return cleared;
@@ -117,9 +118,7 @@ export function handleBackspace({
             update: {
                 map: {
                     [idx]:
-                        pos === 1 &&
-                        text.length === 1 &&
-                        node.type === 'identifier'
+                        atEnd && text.length === 1 && node.type === 'identifier'
                             ? { type: 'blank', loc: node.loc }
                             : {
                                   ...node,

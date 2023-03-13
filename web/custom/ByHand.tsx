@@ -377,16 +377,6 @@ export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
 };
 
 export const handleKey = (state: State, key: string): State | void => {
-    const curText = idText(state.map[state.at.sel.idx]) ?? '';
-    const pos = selPos(state.at.sel, curText);
-
-    const update = getKeyUpdate(
-        key,
-        pos,
-        curText,
-        state.at.sel.idx,
-        state.at.path,
-        state.map,
-    );
+    const update = getKeyUpdate(key, state);
     return applyUpdate(state, update);
 };
