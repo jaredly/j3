@@ -8,11 +8,6 @@ import {
 } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import {
-    nodeToString,
-    remapPos,
-    SourceMap,
-} from '../../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
@@ -265,17 +260,19 @@ export const ByHand = () => {
                     <div>Path: </div>
                     <div>
                         <table>
-                            <tr>
-                                <td>idx</td>
-                                <td>child</td>
-                            </tr>
-
-                            {state.at.path.map((item) => (
+                            <tbody>
                                 <tr>
-                                    <td>{item.idx}</td>
-                                    <td>{JSON.stringify(item.child)}</td>
+                                    <td>idx</td>
+                                    <td>child</td>
                                 </tr>
-                            ))}
+
+                                {state.at.path.map((item, i) => (
+                                    <tr key={i}>
+                                        <td>{item.idx}</td>
+                                        <td>{JSON.stringify(item.child)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
                         </table>
                     </div>
                     <div style={{ whiteSpace: 'pre-wrap' }}>
