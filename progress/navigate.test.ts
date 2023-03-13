@@ -10,8 +10,7 @@ import {
 import { nodeToString, SourceMap } from '../src/to-cst/nodeToString';
 import { Node } from '../src/types/cst';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { applyUpdate } from '../web/custom/ByHand';
-import { getKeyUpdate, State } from '../web/mods/getKeyUpdate';
+import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { Path, Selection } from '../web/store';
 
 const sink = ``;

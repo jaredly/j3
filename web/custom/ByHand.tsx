@@ -11,7 +11,7 @@ import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import { getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
+import { applyUpdate, getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Selection } from '../store';
 import { Render } from './Render';
@@ -29,6 +29,7 @@ const initialText = `
 // '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 
 export type State = {
+    regs: RegMap;
     map: Map;
     root: number;
     at: PathSel;
@@ -76,7 +77,7 @@ export const ByHand = () => {
             [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
-        return { map, root: -1, at };
+        return { map, root: -1, at, regs: {} };
     });
 
     const [blink, setBlink] = useState(false);
@@ -92,32 +93,9 @@ export const ByHand = () => {
         return ctx;
     }, [state.map]);
 
-    // let tid = React.useRef(null as null | NodeJS.Timeout);
-
-    // React.useEffect(() => {
-    //     const fn = (evt: KeyboardEvent) => {
-    //         if (evt.ctrlKey || evt.metaKey || evt.altKey) {
-    //             return;
-    //         }
-
-    //         if (tid.current != null) {
-    //             clearTimeout(tid.current);
-    //         }
-    //         setBlink(false);
-    //         tid.current = setTimeout(() => setBlink(true), 500);
-    //         evt.preventDefault();
-
-    //         dispatch({ type: 'key', key: evt.key });
-    //     };
-    //     document.addEventListener('keydown', fn);
-    //     return () => document.removeEventListener('keydown', fn);
-    // }, []);
-
     const [cursorPos, setCursorPos] = useState(
         null as null | { x: number; y: number; h: number; color?: string },
     );
-
-    const regs = React.useMemo(() => ({} as RegMap), []);
 
     const reg = useCallback(
         (
@@ -125,16 +103,16 @@ export const ByHand = () => {
             idx: number,
             loc?: 'start' | 'end' | 'inside',
         ) => {
-            if (!regs[idx]) {
-                regs[idx] = {};
+            if (!state.regs[idx]) {
+                state.regs[idx] = {};
             }
-            regs[idx][loc ?? 'main'] = node;
+            state.regs[idx][loc ?? 'main'] = node;
         },
         [],
     );
 
     useEffect(() => {
-        const box = calcCursorPos(state.at.sel, regs);
+        const box = calcCursorPos(state.at.sel, state.regs);
         if (box) {
             const offsetY = document.body.scrollTop;
             const offsetX = document.body.scrollLeft;
@@ -348,35 +326,7 @@ export const calcCursorPos = (
     }
 };
 
-export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
-    if (update?.type === 'update' && update?.update) {
-        const map = { ...state.map };
-        Object.keys(update.update.map).forEach((key) => {
-            if (update.update!.map[+key] == null) {
-                delete map[+key];
-            } else {
-                map[+key] = update.update!.map[+key]!;
-            }
-        });
-        return {
-            ...state,
-            map,
-            at: {
-                sel: update.update.selection,
-                path: update.update.path,
-            },
-        };
-        // selection = update.update.selection;
-        // path = update.update.path;
-    } else if (update?.type === 'select') {
-        return {
-            ...state,
-            at: { sel: update.selection, path: update.path },
-        };
-    }
-};
-
-export const handleKey = (state: State, key: string): State | void => {
+export const handleKey = (state: State, key: string): State => {
     const update = getKeyUpdate(key, state);
-    return applyUpdate(state, update);
+    return { ...(applyUpdate(state, update) ?? state), regs: state.regs };
 };

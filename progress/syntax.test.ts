@@ -9,8 +9,7 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
-import { applyUpdate } from '../web/custom/ByHand';
-import { getKeyUpdate, State } from '../web/mods/getKeyUpdate';
+import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { PathSel, selectEnd, selectStart } from '../web/mods/navigate';
 import { Path, Selection } from '../web/store';
 import { sexp } from './sexp';

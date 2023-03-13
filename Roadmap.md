@@ -6,6 +6,16 @@ commands, than as a "here's the after/before map".
 The question is, is it worth the overhead?
 I guess, I could set it up, to allow for command pattern later? idk
 
+# UP AND DOWN
+So, doing the ups and downs
+means that I need positional info.
+which means dom nodes
+which I don't think want them in the main State
+so I'll have them in like an augmented UIState?
+
+But other things, like "autocomplete menu" stuff,
+I think I do want to have live in the normal state?
+
 # What's left for the editor to be a real deal?
 
 - [ ] I should square off with the Attachment rendering.

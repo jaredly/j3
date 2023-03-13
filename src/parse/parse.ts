@@ -1,6 +1,5 @@
 // hmm
-import { applyUpdate } from '../../web/custom/ByHand';
-import { getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
+import { applyUpdate, getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
 import { Path, Selection } from '../../web/store';
 import { nidx } from '../grammar';
 import { Map, MNode } from '../types/mcst';

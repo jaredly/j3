@@ -76,6 +76,34 @@ export type State = {
     at: PathSel;
 };
 
+export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
+    if (update?.type === 'update' && update?.update) {
+        const map = { ...state.map };
+        Object.keys(update.update.map).forEach((key) => {
+            if (update.update!.map[+key] == null) {
+                delete map[+key];
+            } else {
+                map[+key] = update.update!.map[+key]!;
+            }
+        });
+        return {
+            ...state,
+            map,
+            at: {
+                sel: update.update.selection,
+                path: update.update.path,
+            },
+        };
+        // selection = update.update.selection;
+        // path = update.update.path;
+    } else if (update?.type === 'select') {
+        return {
+            ...state,
+            at: { sel: update.selection, path: update.path },
+        };
+    }
+};
+
 const isAtStart = (text: string, loc: Selection['loc']) => {
     return (
         !(loc === 'end' && text.length > 0) &&
