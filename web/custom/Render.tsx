@@ -192,7 +192,6 @@ export const calcOffset = (node: HTMLSpanElement, x: number) => {
         range.setEnd(node.firstChild, offset);
         let dx = range.getBoundingClientRect().left - x;
         if (Math.abs(dx) < 3) {
-            console.log('spot on');
             return i;
         }
         if (prevPos && prevPos < 0 && dx > 0) {
