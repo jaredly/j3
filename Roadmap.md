@@ -6,6 +6,9 @@
   different thing. Maybe call it 'custom'?
   And, well, when the custom is selected, do I have to
   relinquish focus? Maybe.
+  - [ ] So, yeah I think I do want to give it full focus control.
+    which is maybe tricky? idk.
+- [ ] TODO blink needs to be a thing!
 
 
 # Syntax Tests

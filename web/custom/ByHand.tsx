@@ -97,26 +97,26 @@ export const ByHand = () => {
         return ctx;
     }, [state.map]);
 
-    let tid = React.useRef(null as null | NodeJS.Timeout);
+    // let tid = React.useRef(null as null | NodeJS.Timeout);
 
-    React.useEffect(() => {
-        const fn = (evt: KeyboardEvent) => {
-            if (evt.ctrlKey || evt.metaKey || evt.altKey) {
-                return;
-            }
+    // React.useEffect(() => {
+    //     const fn = (evt: KeyboardEvent) => {
+    //         if (evt.ctrlKey || evt.metaKey || evt.altKey) {
+    //             return;
+    //         }
 
-            if (tid.current != null) {
-                clearTimeout(tid.current);
-            }
-            setBlink(false);
-            tid.current = setTimeout(() => setBlink(true), 500);
-            evt.preventDefault();
+    //         if (tid.current != null) {
+    //             clearTimeout(tid.current);
+    //         }
+    //         setBlink(false);
+    //         tid.current = setTimeout(() => setBlink(true), 500);
+    //         evt.preventDefault();
 
-            dispatch({ type: 'key', key: evt.key });
-        };
-        document.addEventListener('keydown', fn);
-        return () => document.removeEventListener('keydown', fn);
-    }, []);
+    //         dispatch({ type: 'key', key: evt.key });
+    //     };
+    //     document.addEventListener('keydown', fn);
+    //     return () => document.removeEventListener('keydown', fn);
+    // }, []);
 
     const [cursorPos, setCursorPos] = useState(
         null as null | { x: number; y: number; h: number; color?: string },
@@ -150,14 +150,36 @@ export const ByHand = () => {
                 color: box.color,
             });
         }
+        if (document.activeElement !== hiddenInput.current) {
+            hiddenInput.current?.focus();
+        }
     }, [state.at.sel]);
+
+    useEffect(() => {
+        window.addEventListener(
+            'blur',
+            (evt) => {
+                setTimeout(() => {
+                    if (document.activeElement === document.body) {
+                        hiddenInput.current?.focus();
+                    }
+                }, 50);
+            },
+            true,
+        );
+    }, []);
+
+    const hiddenInput = useRef<HTMLInputElement>();
 
     return (
         <div style={{ padding: 16 }}>
+            <input value="Examople" />
+            <input value="Moreple" />
             {/* always capturing! dunno if this is totally wise lol */}
             <input
-                ref={(node) => node?.focus()}
-                onBlur={(evt) => evt.currentTarget.focus()}
+                ref={hiddenInput}
+                autoFocus
+                // onBlur={(evt) => evt.currentTarget.focus()}
                 style={{
                     width: 0,
                     height: 0,
