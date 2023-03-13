@@ -18,7 +18,7 @@ import { Render } from './Render';
 import { verticalMove } from './verticalMove';
 
 // const initialText = '(let [x 10] (+ x 20))';
-// const initialText = '(1 2) (3 4)';
+// const initialText = '(1 2) (3 [] 4) (5 6)';
 // const initialText = `"Some 🤔 things"`;
 
 const initialText = `
@@ -26,7 +26,21 @@ const initialText = `
 (def dead (vec4 0. 0. 0. 1.))
 (defn isLive [{x}:Vec4] (> x 0.5))
 (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+(defn shape-to-svg [shape:shape]
+  (switch shape
+    ('Circle {$ pos radius})
+      "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
+    ('Rect {$ pos size})
+      "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
+  )
+)
 `.trim();
+
+// (defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
+// (defn show-shapes [shapes:(array shape)]
+//   (wrap-svg (join
+//     (map shapes shape-to-svg)
+//     "\n")))
 
 // '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 

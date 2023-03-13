@@ -9,6 +9,7 @@ export const verticalMove = (state: State, up: boolean): State => {
         return state;
     }
     const hh = current.height / 2;
+    // console.log(current);
     Object.entries(state.regs).forEach(([key, nodes]) => {
         Object.entries(nodes).forEach(([which, value]) => {
             if (!value) {
@@ -32,30 +33,43 @@ export const verticalMove = (state: State, up: boolean): State => {
                           Math.abs(current.left - box.right),
                       );
 
-            if (
-                !best ||
-                (up
-                    ? box.top >= best.top - hh && dx <= best.dx
-                    : box.top <= best.top + hh && dx <= best.dx)
-            ) {
-                const ps: PathSel = {
-                    path:
-                        which === 'main'
-                            ? value.path
-                            : value.path.concat({
-                                  idx: +key,
-                                  child: { type: which as 'end' },
-                              }),
-                    sel: {
-                        idx: +key,
-                        loc:
-                            which === 'main'
-                                ? calcOffset(value.node, current.left)
-                                : (which as 'end'),
-                    },
-                };
-                best = { top: box.top, dx: dx, sel: ps };
+            // console.log({ dx, best });
+
+            if (best) {
+                const dy = (box.top - best.top) * (up ? 1 : -1);
+                if (dy < -hh) {
+                    return;
+                }
+                if (dy < hh) {
+                    if (dx >= best.dx) {
+                        return;
+                    }
+                }
             }
+
+            // if (
+            //     !best ||
+            //     (up
+            //         ? box.top >= best.top && dx <= best.dx
+            //         : box.top <= best.top && dx <= best.dx)
+            // ) {
+            const ps: PathSel = {
+                path:
+                    which === 'main'
+                        ? value.path
+                        : value.path.concat({
+                              idx: +key,
+                              child: { type: which as 'end' },
+                          }),
+                sel: {
+                    idx: +key,
+                    loc:
+                        which === 'main'
+                            ? calcOffset(value.node, current.left)
+                            : (which as 'end'),
+                },
+            };
+            best = { top: box.top, dx: dx, sel: ps };
         });
     });
     if (best) {
