@@ -13,8 +13,8 @@ import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
 import { applyUpdate, getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
-import { Selection } from '../store';
-import { Render } from './Render';
+import { Path, Selection } from '../store';
+import { calcOffset, Render } from './Render';
 
 // const initialText = '(let [x 10] (+ x 20))';
 // const initialText = `"Some 🤔 things"`;
@@ -37,10 +37,10 @@ export type State = {
 
 type RegMap = {
     [key: number]: {
-        main?: HTMLSpanElement | null;
-        start?: HTMLSpanElement | null;
-        end?: HTMLSpanElement | null;
-        inside?: HTMLSpanElement | null;
+        main?: { node: HTMLSpanElement; path: Path[] } | null;
+        start?: { node: HTMLSpanElement; path: Path[] } | null;
+        end?: { node: HTMLSpanElement; path: Path[] } | null;
+        inside?: { node: HTMLSpanElement; path: Path[] } | null;
     };
 };
 
@@ -54,9 +54,62 @@ export type Action =
           key: string;
       };
 
+export const verticalMove = (state: State, up: boolean): State => {
+    let best = null as null | { top: number; left: number; sel: PathSel };
+    const current = calcCursorPos(state.at.sel, state.regs);
+    if (!current) {
+        return state;
+    }
+    Object.entries(state.regs).forEach(([key, nodes]) => {
+        Object.entries(nodes).forEach(([which, value]) => {
+            if (!value) {
+                return;
+            }
+            const box = value.node.getBoundingClientRect();
+            if (box.top <= current.top + current.height / 2) {
+                return;
+            }
+            const dx =
+                current.left >= box.left && current.left <= box.right
+                    ? 0
+                    : Math.min(
+                          Math.abs(current.left - box.left),
+                          Math.abs(current.left - box.right),
+                      );
+
+            if (!best || (box.top <= best.top && dx <= best.left)) {
+                const ps: PathSel = {
+                    path:
+                        which === 'main'
+                            ? value.path
+                            : value.path.concat({
+                                  idx: +key,
+                                  child: { type: which as 'end' },
+                              }),
+                    sel: {
+                        idx: +key,
+                        loc:
+                            which === 'main'
+                                ? calcOffset(value.node, current.left)
+                                : (which as 'end'),
+                    },
+                };
+                best = { top: box.top, left: 0, sel: ps };
+            }
+        });
+    });
+    if (best) {
+        return { ...state, at: best.sel };
+    }
+    return state;
+};
+
 const reduce = (state: State, action: Action): State => {
     switch (action.type) {
         case 'key':
+            if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
+                return verticalMove(state, action.key === 'ArrowUp');
+            }
             const newState = handleKey(state, action.key);
             if (newState) {
                 return newState;
@@ -101,12 +154,13 @@ export const ByHand = () => {
         (
             node: HTMLSpanElement | null,
             idx: number,
+            path: Path[],
             loc?: 'start' | 'end' | 'inside',
         ) => {
             if (!state.regs[idx]) {
                 state.regs[idx] = {};
             }
-            state.regs[idx][loc ?? 'main'] = node;
+            state.regs[idx][loc ?? 'main'] = node ? { node, path } : null;
         },
         [],
     );
@@ -171,8 +225,7 @@ export const ByHand = () => {
                     }
                 }}
                 onInput={(evt) => {
-                    // console.log(evt.inputType, evt);
-                    console.log('Input', evt, evt.currentTarget.value);
+                    // console.log('Input', evt, evt.currentTarget.value);
                     if (evt.currentTarget.value) {
                         dispatch({ type: 'key', key: evt.currentTarget.value });
                         evt.currentTarget.value = '';
@@ -288,36 +341,36 @@ export const calcCursorPos = (
     const blinker = nodes[loc as 'start'];
     if (blinker) {
         return subRect(
-            blinker.getBoundingClientRect(),
-            blinker.offsetParent!.getBoundingClientRect(),
+            blinker.node.getBoundingClientRect(),
+            blinker.node.offsetParent!.getBoundingClientRect(),
         );
     } else if (nodes.main) {
         const r = new Range();
-        r.selectNode(nodes.main);
-        const textRaw = nodes.main.textContent!;
+        r.selectNode(nodes.main.node);
+        const textRaw = nodes.main.node.textContent!;
         const text = splitGraphemes(textRaw);
-        if (!nodes.main.firstChild) {
+        if (!nodes.main.node.firstChild) {
             // nothing to do here
         } else if (loc === 'start' || loc === 0) {
-            r.setStart(nodes.main.firstChild!, 0);
+            r.setStart(nodes.main.node.firstChild!, 0);
             r.collapse(true);
         } else if (loc === 'end' || loc === text.length) {
-            r.setStart(nodes.main.firstChild!, textRaw.length);
+            r.setStart(nodes.main.node.firstChild!, textRaw.length);
             r.collapse(true);
         } else if (typeof loc === 'number') {
             r.setStart(
-                nodes.main.firstChild!,
+                nodes.main.node.firstChild!,
                 text.slice(0, loc).join('').length,
             );
             r.collapse(true);
         } else {
-            console.log('dunno loc', loc, nodes.main);
+            // console.log('dunno loc', loc, nodes.main);
             return;
         }
-        const color = getComputedStyle(nodes.main).color;
+        const color = getComputedStyle(nodes.main.node).color;
         return subRect(
             r.getBoundingClientRect(),
-            nodes.main.offsetParent!.getBoundingClientRect(),
+            nodes.main.node.offsetParent!.getBoundingClientRect(),
             color,
         );
     } else {

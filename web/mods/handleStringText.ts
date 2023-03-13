@@ -37,6 +37,10 @@ export function handleStringText({
         return splitString(text, pos, map, last, idx, node, path);
     }
 
+    if (key === 'Enter') {
+        key = '\n';
+    }
+
     const input = splitGraphemes(key);
 
     if (pos === 0) {

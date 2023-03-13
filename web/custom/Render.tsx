@@ -13,6 +13,7 @@ import { Action, State } from './ByHand';
 type Reg = (
     node: HTMLSpanElement | null,
     idx: number,
+    path: Path[],
     loc?: 'start' | 'end' | 'inside',
 ) => void;
 
@@ -102,7 +103,7 @@ export const Render = ({
                         return (
                             <span
                                 key={i}
-                                ref={(node) => reg(node, idx, onode.loc)}
+                                ref={(node) => reg(node, idx, path, onode.loc)}
                             />
                         );
                     case 'punct':
@@ -110,7 +111,6 @@ export const Render = ({
                             <span
                                 key={i}
                                 style={{
-                                    // color: 'gray',
                                     whiteSpace: 'pre',
                                     color:
                                         onode.color === 'rainbow'
@@ -138,18 +138,10 @@ export const Render = ({
                         return (
                             <span
                                 key={i}
-                                ref={(node) => reg(node, idx)}
+                                ref={(node) => reg(node, idx, path)}
                                 style={textStyle(node, display[idx])}
                                 onMouseDown={(evt) => {
                                     evt.preventDefault();
-
-                                    // let box =
-                                    //     evt.currentTarget.getBoundingClientRect();
-                                    // let percent =
-                                    //     (evt.clientX - box.left) / box.width;
-                                    // let estimate = Math.round(
-                                    //     percent * onode.text.length,
-                                    // );
                                     dispatch({
                                         type: 'select',
                                         pathSel: {
