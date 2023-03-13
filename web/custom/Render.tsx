@@ -187,6 +187,13 @@ export const calcOffset = (node: HTMLSpanElement, x: number) => {
     const graphemes = splitGraphemes(node.textContent!);
     let offset = 0;
     let prevPos = null;
+    const box = node.getBoundingClientRect();
+    if (x <= box.left) {
+        return 0;
+    }
+    if (x >= box.right) {
+        return graphemes.length;
+    }
     for (let i = 0; i < graphemes.length; i++) {
         range.setStart(node.firstChild, offset);
         range.setEnd(node.firstChild, offset);

@@ -33,8 +33,6 @@ export const verticalMove = (state: State, up: boolean): State => {
                           Math.abs(current.left - box.right),
                       );
 
-            // console.log({ dx, best });
-
             if (best) {
                 const dy = (box.top - best.top) * (up ? 1 : -1);
                 if (dy < -hh) {
@@ -46,6 +44,8 @@ export const verticalMove = (state: State, up: boolean): State => {
                     }
                 }
             }
+
+            // console.log({ dx, best });
 
             // if (
             //     !best ||

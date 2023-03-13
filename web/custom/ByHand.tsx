@@ -26,6 +26,12 @@ const initialText = `
 (def dead (vec4 0. 0. 0. 1.))
 (defn isLive [{x}:Vec4] (> x 0.5))
 (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+(def person {name "Person" age 32 cats 1.5
+description "This is a person with a normal-length description"
+subtitle "Return of the person"
+parties (let [parties (isLive (vec4 1.0)) another true]
+(if parties "Some parties" "probably way too many parties"))
+})
 `.trim();
 
 // (defn shape-to-svg [shape:shape]
