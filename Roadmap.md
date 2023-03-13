@@ -1,4 +1,11 @@
 
+# History thoughts
+
+There are definitely some actions that would be more compact as
+commands, than as a "here's the after/before map".
+The question is, is it worth the overhead?
+I guess, I could set it up, to allow for command pattern later? idk
+
 # What's left for the editor to be a real deal?
 
 - [ ] I should square off with the Attachment rendering.
@@ -13,6 +20,16 @@
 - [ ] TODO blink needs to be a thing!
 - [ ] handle tab
 - [x] allow other things to have focus, it's ok
+
+... can I join `sel` and `path`? Seems like one ought to be able to.
+it's weird that they're duplicating some infos.
+maybe have a child that's like `{type: 'offset', at: .}`
+
+anyway, then I want to jump in with multi-cursor. Seems like a neat
+trick, and a good idea to bake in now before I've implemented too much.
+
+and then ... selection! So each cursor can have an optional 'end' position.
+ALSO let's do normal mode.
 
 
 # Syntax Tests

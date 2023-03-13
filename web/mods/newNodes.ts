@@ -62,12 +62,12 @@ export const newRecordAccess = (
     };
 };
 
-export const newAccessText = (text: string, idx = nidx()): NewThing => {
+export const newAccessText = (text: string[], idx = nidx()): NewThing => {
     return {
         map: {
             [idx]: {
                 type: 'accessText',
-                text: text,
+                text: text.join(''),
                 loc: { idx, start: 0, end: 0 },
             },
         },
@@ -77,17 +77,17 @@ export const newAccessText = (text: string, idx = nidx()): NewThing => {
     };
 };
 
-export const newId = (key: string, idx = nidx()): NewThing => {
+export const newId = (key: string[], idx = nidx()): NewThing => {
     return {
         map: {
             [idx]: {
                 type: 'identifier',
-                text: key,
+                text: key.join(''),
                 loc: { idx, start: 0, end: 0 },
             },
         },
         idx,
-        selection: { idx, loc: splitGraphemes(key).length },
+        selection: { idx, loc: key.length },
         path: [],
     };
 };

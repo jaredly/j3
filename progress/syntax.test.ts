@@ -162,6 +162,17 @@ id
 ("^b
 ()
 (list)
+
+(e🤔m^l^la^ro^roji)
+(ea🤔omoji)
+(list id)
+
+(🤔a)
+(list id)
+
+((a)j)
+((a) j)
+(list (list id) id)
 `;
 
 describe('a test', () => {

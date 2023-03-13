@@ -11,20 +11,20 @@ import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import { getKeyUpdate } from '../mods/getKeyUpdate';
+import { getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Selection } from '../store';
 import { Render } from './Render';
 
 // const initialText = '(let [x 10] (+ x 20))';
-const initialText = `"Some 🤔 things"`;
+// const initialText = `"Some 🤔 things"`;
 
-// const initialText = `
-// (def live (vec4 1. 0.6 1. 1.))
-// (def dead (vec4 0. 0. 0. 1.))
-// (defn isLive [{x}:Vec4] (> x 0.5))
-// (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
-// `.trim();
+const initialText = `
+(def live (vec4 1. 0.6 1. 1.))
+(def dead (vec4 0. 0. 0. 1.))
+(defn isLive [{x}:Vec4] (> x 0.5))
+(defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+`.trim();
 
 // '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 
@@ -348,18 +348,7 @@ export const calcCursorPos = (
     }
 };
 
-export const handleKey = (state: State, key: string): State | void => {
-    const curText = idText(state.map[state.at.sel.idx]) ?? '';
-    const pos = selPos(state.at.sel, curText);
-
-    const update = getKeyUpdate(
-        key,
-        pos,
-        curText,
-        state.at.sel.idx,
-        state.at.path,
-        state.map,
-    );
+export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
     if (update?.type === 'update' && update?.update) {
         const map = { ...state.map };
         Object.keys(update.update.map).forEach((key) => {
@@ -385,4 +374,19 @@ export const handleKey = (state: State, key: string): State | void => {
             at: { sel: update.selection, path: update.path },
         };
     }
+};
+
+export const handleKey = (state: State, key: string): State | void => {
+    const curText = idText(state.map[state.at.sel.idx]) ?? '';
+    const pos = selPos(state.at.sel, curText);
+
+    const update = getKeyUpdate(
+        key,
+        pos,
+        curText,
+        state.at.sel.idx,
+        state.at.path,
+        state.map,
+    );
+    return applyUpdate(state, update);
 };

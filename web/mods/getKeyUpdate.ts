@@ -195,7 +195,7 @@ export const getKeyUpdate = (
                 // };
             }
 
-            const nat = newAccessText(text.slice(pos).join(''));
+            const nat = newAccessText(text.slice(pos));
             if (pos < text.length) {
                 nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
             }
@@ -215,30 +215,22 @@ export const getKeyUpdate = (
         }
     }
 
-    // if (key.length !== 1) {
-    //     throw new Error(`special? ${key}`);
-    // }
-
     // Ok, so now we're updating things
+    const input = splitGraphemes(key);
 
     if (node.type === 'identifier' || node.type === 'accessText') {
-        return updateText(node, pos, key, idx, path);
+        return updateText(node, pos, input, idx, path);
     }
 
     if (last.child.type === 'inside') {
-        return addToListLike(map, last.idx, path, newId(key));
+        return addToListLike(map, last.idx, path, newId(input));
     }
 
     if (node.type === 'blank') {
-        return replaceWith(path, newId(key, idx));
+        return replaceWith(path, newId(input, idx));
     }
 
-    throw new Error(
-        `key '${key}' not handled ${JSON.stringify({
-            path,
-            node,
-        })}`,
-    );
+    return newNodeAfter(path, map, newId(input));
 };
 
 function addToListLike(
@@ -271,11 +263,10 @@ function addToListLike(
 function updateText(
     node: Extract<MNode, { text: string }>,
     pos: number,
-    key: string,
+    input: string[],
     idx: number,
     path: Path[],
 ): KeyUpdate {
-    const input = splitGraphemes(key);
     let text = splitGraphemes(node.text);
     if (pos === 0) {
         text.unshift(...input);
@@ -284,13 +275,12 @@ function updateText(
     } else {
         text.splice(pos, 0, ...input);
     }
-    console.log('UPDATING', text);
     return {
         type: 'update',
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
             path,
-            selection: { idx, loc: pos + 1 },
+            selection: { idx, loc: pos + input.length },
         },
     };
 }
