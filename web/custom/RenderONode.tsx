@@ -58,16 +58,18 @@ export const RenderONode = ({
                         evt.preventDefault();
                         dispatch({
                             type: 'select',
-                            pathSel: {
-                                path,
-                                sel: {
-                                    idx,
-                                    loc: calcOffset(
-                                        evt.currentTarget,
-                                        evt.clientX,
-                                    ),
+                            at: [
+                                {
+                                    path,
+                                    sel: {
+                                        idx,
+                                        loc: calcOffset(
+                                            evt.currentTarget,
+                                            evt.clientX,
+                                        ),
+                                    },
                                 },
-                            },
+                            ],
                         });
                     }}
                 >
@@ -139,10 +141,12 @@ export const clickPunct = (
                 console.log(ps);
                 dispatch({
                     type: 'select',
-                    pathSel: {
-                        sel: ps.sel,
-                        path: path.concat(ps.path),
-                    },
+                    at: [
+                        {
+                            sel: ps.sel,
+                            path: path.concat(ps.path),
+                        },
+                    ],
                 });
                 return;
             }
@@ -155,10 +159,12 @@ export const clickPunct = (
                 console.log(ps);
                 dispatch({
                     type: 'select',
-                    pathSel: {
-                        sel: ps.sel,
-                        path: path.concat(ps.path),
-                    },
+                    at: [
+                        {
+                            sel: ps.sel,
+                            path: path.concat(ps.path),
+                        },
+                    ],
                 });
                 return;
             }

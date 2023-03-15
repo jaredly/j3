@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { sexp } from '../../progress/sexp';
 import {
     idText,
@@ -58,7 +64,7 @@ export type State = {
     regs: RegMap;
     map: Map;
     root: number;
-    at: PathSel;
+    at: PathSel[];
 };
 
 type RegMap = {
@@ -73,7 +79,7 @@ type RegMap = {
 export type Action =
     | {
           type: 'select';
-          pathSel: PathSel;
+          at: PathSel[];
       }
     | {
           type: 'key';
@@ -88,7 +94,7 @@ const reduce = (state: State, action: Action): State => {
             }
             const newState = handleKey(state, action.key);
             if (newState) {
-                if (isRootPath(newState.at.path)) {
+                if (newState.at.some((at) => isRootPath(at.path))) {
                     console.log('not selecting root node');
                     return state;
                 }
@@ -97,10 +103,10 @@ const reduce = (state: State, action: Action): State => {
             return state;
         case 'select':
             // Ignore attempts to select the root node
-            if (isRootPath(action.pathSel.path)) {
+            if (action.at.some((at) => isRootPath(at.path))) {
                 return state;
             }
-            return { ...state, at: action.pathSel };
+            return { ...state, at: action.at };
     }
 };
 
@@ -114,8 +120,11 @@ export const ByHand = () => {
             [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
-        return { map, root: -1, at, regs: {} };
+        return { map, root: -1, at: [at], regs: {} };
     });
+
+    // @ts-ignore
+    window.state = state;
 
     const [blink, setBlink] = useState(false);
 
@@ -130,9 +139,9 @@ export const ByHand = () => {
         return ctx;
     }, [state.map]);
 
-    const [cursorPos, setCursorPos] = useState(
-        null as null | { x: number; y: number; h: number; color?: string },
-    );
+    // const [cursorPos, setCursorPos] = useState(
+    //     null as null | { x: number; y: number; h: number; color?: string },
+    // );
 
     const reg = useCallback(
         (
@@ -150,21 +159,27 @@ export const ByHand = () => {
     );
 
     useEffect(() => {
-        const box = calcCursorPos(state.at.sel, state.regs);
-        if (box) {
-            const offsetY = document.body.scrollTop;
-            const offsetX = document.body.scrollLeft;
-            setCursorPos({
-                x: box.left - offsetX,
-                y: box.top - offsetY,
-                h: box.height,
-                color: box.color,
-            });
-        }
         if (document.activeElement !== hiddenInput.current) {
             hiddenInput.current?.focus();
         }
-    }, [state.at.sel]);
+    }, [state.at]);
+
+    const cursorPos = useMemo(() => {
+        return state.at.map((at) => {
+            const box = calcCursorPos(at.sel, state.regs);
+            if (box) {
+                const offsetY = document.body.scrollTop;
+                const offsetX = document.body.scrollLeft;
+                return {
+                    x: box.left - offsetX,
+                    y: box.top - offsetY,
+                    h: box.height,
+                    color: box.color,
+                };
+            }
+            return null;
+        });
+    }, [state.at]);
 
     useEffect(() => {
         window.addEventListener(
@@ -245,7 +260,7 @@ export const ByHand = () => {
                     if (sel) {
                         dispatch({
                             type: 'select',
-                            pathSel: sel,
+                            at: [sel],
                         });
                     }
                 }}
@@ -272,25 +287,30 @@ export const ByHand = () => {
                     </div>
                 ))}
             </div>
-            {cursorPos ? (
-                <div
-                    style={{
-                        position: 'absolute',
-                        width: 1,
-                        pointerEvents: 'none',
-                        backgroundColor: cursorPos.color ?? 'white',
-                        left: cursorPos.x,
-                        height: cursorPos.h,
-                        top: cursorPos.y,
-                        animationDuration: '1s',
-                        animationName: blink ? 'blink' : 'unset',
-                        animationIterationCount: 'infinite',
-                    }}
-                />
-            ) : null}
+            {cursorPos.map((cursorPos, i) =>
+                cursorPos ? (
+                    <div
+                        key={i}
+                        style={{
+                            position: 'absolute',
+                            width: 1,
+                            pointerEvents: 'none',
+                            backgroundColor: cursorPos.color ?? 'white',
+                            left: cursorPos.x,
+                            height: cursorPos.h,
+                            top: cursorPos.y,
+                            animationDuration: '1s',
+                            animationName: blink ? 'blink' : 'unset',
+                            animationIterationCount: 'infinite',
+                        }}
+                    />
+                ) : null,
+            )}
             {debug ? (
                 <div>
-                    <div>Sel: {JSON.stringify(state.at.sel)}</div>
+                    <div>
+                        Sel: {JSON.stringify(state.at.map((at) => at.sel))}
+                    </div>
                     <div>Path: </div>
                     <div>
                         <table>
@@ -300,12 +320,16 @@ export const ByHand = () => {
                                     <td>child</td>
                                 </tr>
 
-                                {state.at.path.map((item, i) => (
-                                    <tr key={i}>
-                                        <td>{item.idx}</td>
-                                        <td>{JSON.stringify(item.child)}</td>
-                                    </tr>
-                                ))}
+                                {state.at.map((at, a) =>
+                                    at.path.map((item, i) => (
+                                        <tr key={i + ':' + a}>
+                                            <td>{item.idx}</td>
+                                            <td>
+                                                {JSON.stringify(item.child)}
+                                            </td>
+                                        </tr>
+                                    )),
+                                )}
                             </tbody>
                         </table>
                     </div>

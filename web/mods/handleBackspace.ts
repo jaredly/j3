@@ -13,10 +13,12 @@ import { stringText } from '../../src/types/cst';
 
 export function handleBackspace({
     map,
-    at: {
-        sel: { idx, loc },
-        path,
-    },
+    at: [
+        {
+            sel: { idx, loc },
+            path,
+        },
+    ],
 }: State): KeyUpdate {
     const node = map[idx];
     const last = path[path.length - 1];

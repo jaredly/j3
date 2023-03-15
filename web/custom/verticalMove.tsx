@@ -3,7 +3,7 @@ import { calcOffset } from './RenderONode';
 import { State, calcCursorPos } from './ByHand';
 
 export const verticalMove = (state: State, up: boolean): State => {
-    const current = calcCursorPos(state.at.sel, state.regs);
+    const current = calcCursorPos(state.at[0].sel, state.regs);
     if (!current) {
         return state;
     }
@@ -19,7 +19,7 @@ export const verticalMove = (state: State, up: boolean): State => {
         !up ? current.top + current.height + 5 : undefined,
         !up ? undefined : current.top - 5,
     );
-    return best ? { ...state, at: best } : state;
+    return best ? { ...state, at: [best] } : state;
 };
 
 export const closestSelection = (

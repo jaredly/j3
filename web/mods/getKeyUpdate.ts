@@ -73,7 +73,7 @@ and `onLeft` and `onRight`, but no keypress stuff.
 export type State = {
     map: Map;
     root: number;
-    at: PathSel;
+    at: PathSel[];
 };
 
 export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
@@ -89,17 +89,19 @@ export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
         return {
             ...state,
             map,
-            at: {
-                sel: update.update.selection,
-                path: update.update.path,
-            },
+            at: [
+                {
+                    sel: update.update.selection,
+                    path: update.update.path,
+                },
+            ],
         };
         // selection = update.update.selection;
         // path = update.update.path;
     } else if (update?.type === 'select') {
         return {
             ...state,
-            at: { sel: update.selection, path: update.path },
+            at: [{ sel: update.selection, path: update.path }],
         };
     }
 };
@@ -120,13 +122,15 @@ export const getKeyUpdate = (
     // map: Map,
     state: State,
 ): KeyUpdate => {
-    if (!state.at.path.length) {
+    const at = state.at[0];
+
+    if (!at.path.length) {
         throw new Error(
-            `no path ${key} ${state.at.sel.idx} ${JSON.stringify(state.map)}`,
+            `no path ${key} ${at.sel.idx} ${JSON.stringify(state.map)}`,
         );
     }
-    const last = state.at.path[state.at.path.length - 1];
-    const node = state.map[state.at.sel.idx];
+    const last = at.path[at.path.length - 1];
+    const node = state.map[at.sel.idx];
 
     const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
@@ -145,22 +149,22 @@ export const getKeyUpdate = (
     }
 
     if (key === 'ArrowLeft') {
-        if ('text' in node && !isAtStart(node.text, state.at.sel.loc)) {
-            const pos = selPos(state.at.sel, node.text);
+        if ('text' in node && !isAtStart(node.text, at.sel.loc)) {
+            const pos = selPos(at.sel, node.text);
             return {
                 type: 'select',
-                selection: { idx: state.at.sel.idx, loc: pos - 1 },
-                path: state.at.path,
+                selection: { idx: at.sel.idx, loc: pos - 1 },
+                path: at.path,
             };
         }
-        return goLeft(state.at.path, state.at.sel.idx, state.map);
+        return goLeft(at.path, at.sel.idx, state.map);
     }
 
-    const pos = selPos(state.at.sel, textRaw);
+    const pos = selPos(at.sel, textRaw);
     const {
         path,
         sel: { idx },
-    } = state.at;
+    } = at;
     const map = state.map;
 
     if (key === 'ArrowRight') {

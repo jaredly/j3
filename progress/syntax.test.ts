@@ -245,7 +245,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    state: { map: data, at: state, root: -1 },
+                    state: { map: data, at: [state], root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -271,7 +271,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    state: { map: data, at: startState, root: -1 },
+                    state: { map: data, at: [startState], root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -309,13 +309,13 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(state.map[state.at.sel.idx]) ?? '';
-        const pos = selPos(state.at.sel, curText);
+        const curText = idText(state.map[state.at[0].sel.idx]) ?? '';
+        const pos = selPos(state.at[0].sel, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
 
-        const startPos = remapPos(state.at.sel, sourceMap);
+        const startPos = remapPos(state.at[0].sel, sourceMap);
         if (only) {
             console.log(
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
@@ -330,9 +330,9 @@ function doABunchOfKeys({
                 state = applyUpdate(state, update)!;
             }
         }
-        const newPos = remapPos(state.at.sel, sourceMap);
+        const newPos = remapPos(state.at[0].sel, sourceMap);
         if (check(startPos, newPos)) {
-            console.log(JSON.stringify(state.at.sel));
+            console.log(JSON.stringify(state.at[0].sel));
             console.log(showSourceMap(back, sourceMap));
             console.log(
                 'prev: ' +
@@ -346,7 +346,7 @@ function doABunchOfKeys({
                     '|' +
                     backOrig.slice(newPos),
             );
-            console.log(state.at.sel);
+            console.log(state.at[0].sel);
             expect(newPos).toEqual('something else');
         }
         if (newPos === stop) {

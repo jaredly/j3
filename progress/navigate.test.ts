@@ -31,16 +31,18 @@ describe('going left', () => {
         let state: State = {
             map: data,
             root: -1,
-            at: {
-                sel: { idx, loc: 'end' },
-                path: [{ idx: -1, child: { type: 'child', at: 0 } }],
-            },
+            at: [
+                {
+                    sel: { idx, loc: 'end' },
+                    path: [{ idx: -1, child: { type: 'child', at: 0 } }],
+                },
+            ],
         };
 
         for (let i = 0; i < sink.length; i++) {
-            const curText = idText(data[state.at.sel.idx]) ?? '';
+            const curText = idText(data[state.at[0].sel.idx]) ?? '';
 
-            const pos = selPos(state.at.sel, curText);
+            const pos = selPos(state.at[0].sel, curText);
 
             const update = getKeyUpdate('ArrowLeft', state)!;
             expect(update).toBeTruthy();

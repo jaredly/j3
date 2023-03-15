@@ -55,13 +55,13 @@ export const parseByCharacter = (
 
         const update = getKeyUpdate(key, state);
         if (debug) {
-            console.log(key, state.at.path);
+            console.log(key, state.at[0].path);
             console.log(JSON.stringify(update));
         }
 
         state = applyUpdate(state, update) ?? state;
     }
-    return { map: state.map, selection: state.at.sel };
+    return { map: state.map, selection: state.at[0].sel };
 };
 
 function initialState() {
@@ -81,10 +81,12 @@ function initialState() {
 
     let state: State = {
         map,
-        at: {
-            sel: { idx: top, loc: 0 },
-            path: [{ idx: -1, child: { type: 'child', at: 0 } }],
-        },
+        at: [
+            {
+                sel: { idx: top, loc: 0 },
+                path: [{ idx: -1, child: { type: 'child', at: 0 } }],
+            },
+        ],
         root: -1,
     };
     return state;

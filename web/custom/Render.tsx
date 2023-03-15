@@ -178,16 +178,18 @@ export const RenderNNode = (
                         evt.preventDefault();
                         dispatch({
                             type: 'select',
-                            pathSel: {
-                                path,
-                                sel: {
-                                    idx,
-                                    loc: calcOffset(
-                                        evt.currentTarget,
-                                        evt.clientX,
-                                    ),
+                            at: [
+                                {
+                                    path,
+                                    sel: {
+                                        idx,
+                                        loc: calcOffset(
+                                            evt.currentTarget,
+                                            evt.clientX,
+                                        ),
+                                    },
                                 },
-                            },
+                            ],
                         });
                     }}
                 >
