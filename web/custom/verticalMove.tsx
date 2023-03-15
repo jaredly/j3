@@ -9,7 +9,13 @@ export const verticalMove = (state: State, up: boolean): State => {
     }
     const best = closestSelection(
         state.regs,
-        { x: current.left, y: current.top },
+        {
+            x: current.left,
+            y:
+                current.top +
+                current.height / 2 -
+                current.height * (up ? 1 : -1),
+        },
         !up ? current.top + current.height + 5 : undefined,
         !up ? undefined : current.top - 5,
     );
