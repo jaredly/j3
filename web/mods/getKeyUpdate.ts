@@ -76,19 +76,23 @@ export type State = {
     at: PathSel[];
 };
 
+export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
+    map = { ...map };
+    Object.keys(updateMap).forEach((key) => {
+        if (updateMap[+key] == null) {
+            delete map[+key];
+        } else {
+            map[+key] = updateMap[+key]!;
+        }
+    });
+    return map;
+};
+
 export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
     if (update?.type === 'update' && update?.update) {
-        const map = { ...state.map };
-        Object.keys(update.update.map).forEach((key) => {
-            if (update.update!.map[+key] == null) {
-                delete map[+key];
-            } else {
-                map[+key] = update.update!.map[+key]!;
-            }
-        });
         return {
             ...state,
-            map,
+            map: applyUpdateMap(state.map, update.update.map),
             at: [
                 {
                     sel: update.update.selection,
@@ -96,8 +100,6 @@ export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
                 },
             ],
         };
-        // selection = update.update.selection;
-        // path = update.update.path;
     } else if (update?.type === 'select') {
         return {
             ...state,
@@ -121,9 +123,8 @@ export const getKeyUpdate = (
     // path: Path[],
     // map: Map,
     state: State,
+    at: PathSel,
 ): KeyUpdate => {
-    const at = state.at[0];
-
     if (!at.path.length) {
         throw new Error(
             `no path ${key} ${at.sel.idx} ${JSON.stringify(state.map)}`,
@@ -145,7 +146,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(state);
+        return handleBackspace(state.map, at);
     }
 
     if (key === 'ArrowLeft') {

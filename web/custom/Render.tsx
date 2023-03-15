@@ -178,6 +178,7 @@ export const RenderNNode = (
                         evt.preventDefault();
                         dispatch({
                             type: 'select',
+                            add: evt.shiftKey,
                             at: [
                                 {
                                     path,

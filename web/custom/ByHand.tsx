@@ -17,7 +17,12 @@ import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import { applyUpdate, getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
+import {
+    applyUpdate,
+    applyUpdateMap,
+    getKeyUpdate,
+    KeyUpdate,
+} from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Path, Selection } from '../store';
 import { Render } from './Render';
@@ -79,6 +84,7 @@ type RegMap = {
 export type Action =
     | {
           type: 'select';
+          add?: boolean;
           at: PathSel[];
       }
     | {
@@ -106,7 +112,10 @@ const reduce = (state: State, action: Action): State => {
             if (action.at.some((at) => isRootPath(at.path))) {
                 return state;
             }
-            return { ...state, at: action.at };
+            return {
+                ...state,
+                at: action.add ? state.at.concat(action.at) : action.at,
+            };
     }
 };
 
@@ -139,9 +148,9 @@ export const ByHand = () => {
         return ctx;
     }, [state.map]);
 
-    // const [cursorPos, setCursorPos] = useState(
-    //     null as null | { x: number; y: number; h: number; color?: string },
-    // );
+    const [cursorPos, setCursorPos] = useState(
+        [] as ({ x: number; y: number; h: number; color?: string } | null)[],
+    );
 
     const reg = useCallback(
         (
@@ -159,26 +168,26 @@ export const ByHand = () => {
     );
 
     useEffect(() => {
+        setCursorPos(
+            state.at.map((at) => {
+                const box = calcCursorPos(at.sel, state.regs);
+                if (box) {
+                    const offsetY = document.body.scrollTop;
+                    const offsetX = document.body.scrollLeft;
+                    return {
+                        x: box.left - offsetX,
+                        y: box.top - offsetY,
+                        h: box.height,
+                        color: box.color,
+                    };
+                }
+                return null;
+            }),
+        );
+
         if (document.activeElement !== hiddenInput.current) {
             hiddenInput.current?.focus();
         }
-    }, [state.at]);
-
-    const cursorPos = useMemo(() => {
-        return state.at.map((at) => {
-            const box = calcCursorPos(at.sel, state.regs);
-            if (box) {
-                const offsetY = document.body.scrollTop;
-                const offsetX = document.body.scrollLeft;
-                return {
-                    x: box.left - offsetX,
-                    y: box.top - offsetY,
-                    h: box.height,
-                    color: box.color,
-                };
-            }
-            return null;
-        });
     }, [state.at]);
 
     useEffect(() => {
@@ -260,6 +269,7 @@ export const ByHand = () => {
                     if (sel) {
                         dispatch({
                             type: 'select',
+                            add: evt.shiftKey,
                             at: [sel],
                         });
                     }
@@ -411,17 +421,30 @@ const isRootPath = (path: Path[]) => {
 };
 
 export const handleKey = (state: State, key: string): State => {
-    const update = getKeyUpdate(key, state);
-    // Ignore attempts to select the root node
-    if (update?.type === 'select' && isRootPath(update.path)) {
-        return state;
+    state = { ...state };
+    state.at = state.at.slice();
+    for (let i = 0; i < state.at.length; i++) {
+        const update = getKeyUpdate(key, state, state.at[i]);
+        if (!update) continue;
+        if (update?.type === 'select' && isRootPath(update.path)) {
+            continue;
+        }
+        if (
+            update?.type === 'update' &&
+            update.update &&
+            isRootPath(update.update.path)
+        ) {
+            continue;
+        }
+        if (update.type === 'select') {
+            state.at[i] = { path: update.path, sel: update.selection };
+        } else if (update.update) {
+            state.map = applyUpdateMap(state.map, update.update.map);
+            state.at[i] = {
+                path: update.update.path,
+                sel: update.update.selection,
+            };
+        }
     }
-    if (
-        update?.type === 'update' &&
-        update.update &&
-        isRootPath(update.update.path)
-    ) {
-        return state;
-    }
-    return { ...(applyUpdate(state, update) ?? state), regs: state.regs };
+    return state;
 };

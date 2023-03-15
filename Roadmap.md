@@ -1,4 +1,11 @@
 
+# MultiSelect
+
+- [x] change state to account
+- [x] shift-click for multi
+- [ ] dedup the adding
+- [ ] handleKey should do all at once
+
 # [x] some more backspaces
 - inside a ${}
 - after a ${}

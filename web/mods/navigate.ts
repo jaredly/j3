@@ -4,6 +4,7 @@ import { getNodes } from '../overheat/getNodes';
 import equal from 'fast-deep-equal';
 import { KeyUpdate } from './getKeyUpdate';
 import { ONode } from '../overheat/types';
+import { splitGraphemes } from '../../src/parse/parse';
 
 export type PathSel = {
     path: Path[];
@@ -152,6 +153,17 @@ export const pathSelForNode = (
                     return {
                         path: [...path, { idx: node.id, child: { type: loc } }],
                         sel: { idx: node.id, loc },
+                    };
+                case 'identifier':
+                    return {
+                        path,
+                        sel: {
+                            idx: node.id,
+                            loc:
+                                loc === 'start'
+                                    ? 0
+                                    : splitGraphemes(cnode.text).length,
+                        },
                     };
                 case 'spread':
                 case 'recordAccess':

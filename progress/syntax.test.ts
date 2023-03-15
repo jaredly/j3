@@ -197,6 +197,10 @@ string
 (id^l^l )
 ( id)
 (list blank id)
+
+(a ^lbc)
+(abc )
+(list id blank)
 `;
 
 describe('a test', () => {
@@ -321,7 +325,7 @@ function doABunchOfKeys({
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(key, state);
+        const update = getKeyUpdate(key, state, state.at[0]);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {

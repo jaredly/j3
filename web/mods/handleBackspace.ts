@@ -1,7 +1,7 @@
 import { Path, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
-import { selectEnd } from './navigate';
+import { PathSel, selectEnd } from './navigate';
 import {
     KeyUpdate,
     maybeClearParentList,
@@ -11,15 +11,10 @@ import {
 import { selPos, splitGraphemes } from '../../src/parse/parse';
 import { stringText } from '../../src/types/cst';
 
-export function handleBackspace({
-    map,
-    at: [
-        {
-            sel: { idx, loc },
-            path,
-        },
-    ],
-}: State): KeyUpdate {
+export function handleBackspace(
+    map: Map,
+    { path, sel: { idx, loc } }: PathSel,
+): KeyUpdate {
     const node = map[idx];
     const last = path[path.length - 1];
     const atStart = loc === 0 || loc === 'start';
