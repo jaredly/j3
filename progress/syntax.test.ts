@@ -180,7 +180,7 @@ id
 
 "\${^b
 ""
-(string)
+string
 
 "\${}^b"
 ""

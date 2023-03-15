@@ -49,7 +49,8 @@ export function handleBackspace({
                     ...pnode,
                     text: pnode.text + node.text,
                 },
-                idx: null,
+                [idx]: null,
+                [cur.expr]: null,
                 [last.idx]: {
                     ...parent,
                     templates,
@@ -81,7 +82,45 @@ export function handleBackspace({
 
     if (node.type === 'blank') {
         if (last.child.type === 'expr') {
+            const parent = map[last.idx];
+            if (parent.type !== 'string') {
+                throw new Error(`expr parent not a string ${parent.type}`);
+            }
             // Join the exprs
+            const prev =
+                last.child.at > 1
+                    ? parent.templates[last.child.at - 2].suffix
+                    : parent.first;
+            const cur = parent.templates[last.child.at - 1];
+            const pnode = map[prev] as stringText & MNodeExtra;
+            const snode = map[cur.suffix] as stringText & MNodeExtra;
+            const templates = parent.templates.slice();
+            templates.splice(last.child.at - 1, 1);
+            const um: UpdateMap = {
+                [prev]: {
+                    ...pnode,
+                    text: pnode.text + snode.text,
+                },
+                [idx]: null,
+                [cur.suffix]: null,
+                [last.idx]: {
+                    ...parent,
+                    templates,
+                },
+            };
+            return {
+                type: 'update',
+                update: {
+                    map: um,
+                    selection: { idx: prev, loc: pnode.text.length },
+                    path: path.slice(0, -1).concat([
+                        {
+                            idx: last.idx,
+                            child: { type: 'text', at: last.child.at - 1 },
+                        },
+                    ]),
+                },
+            };
         }
         if (last.child.type === 'child') {
             if (last.child.at === 0) {
