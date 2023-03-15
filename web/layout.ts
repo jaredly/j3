@@ -49,7 +49,60 @@ export const calculateLayout = (
             }
             return { type: 'flat', width: cw, pos };
         }
+        case 'attachment':
+            return { type: 'flat', width: node.name.length, pos };
+        case 'recordAccess': {
+            const cw = childWidth(
+                [node.target, ...node.items],
+                recursive,
+                pos,
+                display,
+                map,
+            );
+            if (cw === false || cw > maxWidth) {
+                return { type: 'multiline', pos, tightFirst: 1 };
+            }
+            return { type: 'flat', width: cw, pos };
+        }
+        case 'accessText':
+        case 'stringText':
+            return { type: 'flat', width: node.text.length + 1, pos };
+        case 'rich-text':
+            return { type: 'multiline', pos, tightFirst: 0 };
+        case 'spread': {
+            const cw = childWidth(
+                [node.contents],
+                recursive,
+                pos,
+                display,
+                map,
+            );
+            if (cw === false || cw > maxWidth) {
+                return { type: 'multiline', pos, tightFirst: 1 };
+            }
+            return { type: 'flat', width: cw + 2, pos };
+        }
+        case 'string': {
+            const cw = childWidth(
+                [
+                    node.first,
+                    ...node.templates.flatMap(({ expr, suffix }) => [
+                        expr,
+                        suffix,
+                    ]),
+                ],
+                recursive,
+                pos,
+                display,
+                map,
+            );
+            if (cw === false || cw > maxWidth) {
+                return { type: 'multiline', pos, tightFirst: 0 };
+            }
+            return { type: 'flat', width: cw, pos };
+        }
         default:
+            let _: never = node;
             return { type: 'flat', width: 10, pos };
     }
 };

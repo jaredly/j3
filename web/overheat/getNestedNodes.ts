@@ -1,6 +1,6 @@
 import { idText } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
-import { Layout, MNode, MNodeExtra } from '../../src/types/mcst';
+import { Layout, MCString, MNode, MNodeExtra } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
 
 export const stringColor = '#ff9b00';
@@ -142,75 +142,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                         text: '"',
                         color: stringColor,
                     },
-                    node.templates.length
-                        ? {
-                              type: 'vert',
-                              children: [
-                                  {
-                                      type: 'horiz',
-                                      children: [
-                                          {
-                                              type: 'ref',
-                                              id: node.first,
-                                              path: { type: 'text', at: 0 },
-                                          },
-                                          {
-                                              type: 'punct',
-                                              text: '${',
-                                              color: 'orange',
-                                          },
-                                      ],
-                                  },
-                                  ...node.templates.flatMap(
-                                      (item, i): NNode[] => [
-                                          {
-                                              type: 'indent',
-                                              child: {
-                                                  type: 'ref',
-                                                  id: item.expr,
-                                                  path: {
-                                                      type: 'expr',
-                                                      at: i + 1,
-                                                  },
-                                              },
-                                          },
-                                          {
-                                              type: 'horiz',
-                                              children: [
-                                                  {
-                                                      type: 'punct',
-                                                      text: '}',
-                                                      color: 'orange',
-                                                  },
-                                                  {
-                                                      type: 'ref',
-                                                      id: item.suffix,
-                                                      path: {
-                                                          type: 'text',
-                                                          at: i + 1,
-                                                      },
-                                                  },
-                                                  ...(i <
-                                                  node.templates.length - 1
-                                                      ? [
-                                                            {
-                                                                type: 'punct',
-                                                                text: '${',
-                                                                color: stringColor,
-                                                            } satisfies NNode,
-                                                        ]
-                                                      : []),
-                                              ],
-                                          },
-                                      ],
-                                  ),
-                              ],
-                          }
-                        : {
-                              type: 'ref',
-                              id: node.first,
-                              path: { type: 'text', at: 0 },
-                          },
+                    stringContents(node, layout),
                     {
                         type: 'brace',
                         at: 'end',
@@ -237,6 +169,116 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
     }
     // return null;
 };
+
+function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
+    if (!node.templates.length) {
+        return {
+            type: 'ref',
+            id: node.first,
+            path: { type: 'text', at: 0 },
+        };
+    }
+    if (layout?.type !== 'multiline') {
+        return {
+            type: 'horiz',
+            children: [
+                {
+                    type: 'ref',
+                    id: node.first,
+                    path: { type: 'text', at: 0 },
+                },
+                ...node.templates.flatMap(({ expr, suffix }, i): NNode[] => [
+                    {
+                        type: 'punct',
+                        text: '${',
+                        color: stringColor,
+                    },
+                    {
+                        type: 'ref',
+                        id: expr,
+                        path: {
+                            type: 'expr',
+                            at: i + 1,
+                        },
+                    },
+                    {
+                        type: 'punct',
+                        text: '}',
+                        color: stringColor,
+                    },
+                    {
+                        type: 'ref',
+                        id: suffix,
+                        path: {
+                            type: 'expr',
+                            at: i + 1,
+                        },
+                    },
+                ]),
+            ],
+        };
+    }
+    return {
+        type: 'vert',
+        children: [
+            {
+                type: 'horiz',
+                children: [
+                    {
+                        type: 'ref',
+                        id: node.first,
+                        path: { type: 'text', at: 0 },
+                    },
+                    {
+                        type: 'punct',
+                        text: '${',
+                        color: stringColor,
+                    },
+                ],
+            },
+            ...node.templates.flatMap((item, i): NNode[] => [
+                {
+                    type: 'indent',
+                    child: {
+                        type: 'ref',
+                        id: item.expr,
+                        path: {
+                            type: 'expr',
+                            at: i + 1,
+                        },
+                    },
+                },
+                {
+                    type: 'horiz',
+                    children: [
+                        {
+                            type: 'punct',
+                            text: '}',
+                            color: stringColor,
+                        },
+                        {
+                            type: 'ref',
+                            id: item.suffix,
+                            path: {
+                                type: 'text',
+                                at: i + 1,
+                            },
+                        },
+                        ...(i < node.templates.length - 1
+                            ? [
+                                  {
+                                      type: 'punct',
+                                      text: '${',
+                                      color: stringColor,
+                                  } satisfies NNode,
+                              ]
+                            : []),
+                    ],
+                },
+            ]),
+        ],
+    };
+}
 
 function renderList(
     node: {
