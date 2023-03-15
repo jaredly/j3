@@ -1,4 +1,17 @@
 
+# [ ] some more backspaces
+- inside a ${}
+- after a ${}
+- after a listlike
+- at the start of a listlike (unwrap if possible)
+
+# Formattings
+
+- [ ] adding something to the middle of a record is whacked
+  - space should add 2 blanks
+  - space when there's a blank after you should just move to the blank
+    - I think that can be universal? Sounds good to me
+
 # History thoughts
 
 There are definitely some actions that would be more compact as
@@ -17,7 +30,7 @@ But other things, like "autocomplete menu" stuff,
 I think I do want to have live in the normal state?
 
 # [x] Much better children rendering!
-- [ ] oh the last thing, tightFirst pls
+- [x] oh the last thing, tightFirst pls
 
 # Some fixing of things
 

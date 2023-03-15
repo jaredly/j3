@@ -1,4 +1,4 @@
-import { Path } from '../store';
+import { Path, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
@@ -9,6 +9,7 @@ import {
     State,
 } from './getKeyUpdate';
 import { selPos, splitGraphemes } from '../../src/parse/parse';
+import { stringText } from '../../src/types/cst';
 
 export function handleBackspace({
     map,
@@ -21,12 +22,12 @@ export function handleBackspace({
     const last = path[path.length - 1];
     const atStart = loc === 0 || loc === 'start';
 
-    if (node.type === 'stringText' && atStart && node.text === '') {
+    if (node.type === 'stringText' && atStart) {
         const parent = map[last.idx];
         if (parent.type !== 'string') {
             throw new Error(`stringText parent not a string ${parent.type}`);
         }
-        if (parent.templates.length === 0) {
+        if (node.text === '' && parent.templates.length === 0) {
             // delete it!
             const cleared = maybeClearParentList(path.slice(0, -1), map);
             return (
@@ -34,9 +35,54 @@ export function handleBackspace({
                 replacePathWith(path.slice(0, -1), map, newBlank(last.idx))
             );
         }
+        if (last.child.type === 'text' && last.child.at > 0) {
+            const prev =
+                last.child.at > 1
+                    ? parent.templates[last.child.at - 2].suffix
+                    : parent.first;
+            const cur = parent.templates[last.child.at - 1];
+            const pnode = map[prev] as stringText & MNodeExtra;
+            const templates = parent.templates.slice();
+            templates.splice(last.child.at - 1, 1);
+            const um: UpdateMap = {
+                [prev]: {
+                    ...pnode,
+                    text: pnode.text + node.text,
+                },
+                idx: null,
+                [last.idx]: {
+                    ...parent,
+                    templates,
+                },
+            };
+            return {
+                type: 'update',
+                update: {
+                    map: um,
+                    selection: { idx: prev, loc: pnode.text.length },
+                    path: path.slice(0, -1).concat([
+                        {
+                            idx: last.idx,
+                            child: { type: 'text', at: last.child.at - 1 },
+                        },
+                    ]),
+                },
+            };
+        }
+    }
+
+    if (last.child.type === 'end') {
+        const cleared = maybeClearParentList(path.slice(0, -1), map);
+        return (
+            cleared ??
+            replacePathWith(path.slice(0, -1), map, newBlank(last.idx))
+        );
     }
 
     if (node.type === 'blank') {
+        if (last.child.type === 'expr') {
+            // Join the exprs
+        }
         if (last.child.type === 'child') {
             if (last.child.at === 0) {
                 // just go left, ok?

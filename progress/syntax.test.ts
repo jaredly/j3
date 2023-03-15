@@ -177,6 +177,18 @@ id
 ((a^l^lb
 (b (a))
 (list id (list id))
+
+"\${^b
+""
+(string)
+
+"\${}^b"
+""
+string
+
+[()^b
+[]
+(array)
 `;
 
 describe('a test', () => {
