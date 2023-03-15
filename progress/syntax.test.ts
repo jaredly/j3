@@ -173,6 +173,10 @@ id
 ((a)j)
 ((a) j)
 (list (list id) id)
+
+((a^l^lb
+(b (a))
+(list id (list id))
 `;
 
 describe('a test', () => {

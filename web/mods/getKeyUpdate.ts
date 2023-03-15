@@ -283,6 +283,10 @@ export const getKeyUpdate = (
         return replaceWith(path, newId(input, idx));
     }
 
+    if (last.child.type === 'start') {
+        return newNodeBefore(path, map, newId(input));
+    }
+
     return newNodeAfter(path, map, newId(input));
 };
 
@@ -514,6 +518,49 @@ export const newNodeAfter = (
                                     : firstBlank
                                     ? 1
                                     : 0,
+                        },
+                    })
+                    .concat(newThing.path),
+            },
+        };
+    }
+};
+
+export const newNodeBefore = (
+    path: Path[],
+    map: Map,
+    newThing: NewThing,
+): KeyUpdate | void => {
+    for (let i = path.length - 1; i >= 0; i--) {
+        const parent = path[i];
+
+        if (parent.child.type !== 'child') {
+            continue;
+        }
+        const child = parent.child;
+
+        const pnode = map[parent.idx];
+
+        const at = child.type === 'child' ? child.at : 0;
+
+        newThing.map[parent.idx] = {
+            ...pnode,
+            ...modChildren(pnode, (items) => {
+                items.splice(at, 0, newThing.idx);
+                return items;
+            }),
+        };
+        return {
+            type: 'update',
+            update: {
+                ...newThing,
+                path: path
+                    .slice(0, i)
+                    .concat({
+                        idx: parent.idx,
+                        child: {
+                            type: 'child',
+                            at: at,
                         },
                     })
                     .concat(newThing.path),
