@@ -15,7 +15,7 @@ import { applyUpdate, getKeyUpdate, KeyUpdate } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Path, Selection } from '../store';
 import { Render } from './Render';
-import { verticalMove } from './verticalMove';
+import { closestSelection, verticalMove } from './verticalMove';
 
 // const initialText = '(let [x 10] (+ x 20))';
 // const initialText = '(1 2) (3 [] 4) (5 6)';
@@ -223,24 +223,42 @@ export const ByHand = () => {
             >
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
-            {tops.map((top, i) => (
-                <div key={top} style={{ marginBottom: 8 }}>
-                    <Render
-                        idx={top}
-                        state={state}
-                        reg={reg}
-                        display={ctx.display}
-                        dispatch={dispatch}
-                        path={[
-                            {
-                                idx: state.root,
-                                child: { type: 'child', at: i },
-                            },
-                        ]}
-                    />
-                    {debug ? <div>{sexp(fromMCST(top, state.map))}</div> : null}
-                </div>
-            ))}
+            <div
+                style={{ cursor: 'text' }}
+                onMouseDown={(evt) => {
+                    const sel = closestSelection(state.regs, {
+                        x: evt.clientX,
+                        y: evt.clientY,
+                    });
+                    if (sel) {
+                        dispatch({
+                            type: 'select',
+                            pathSel: sel,
+                        });
+                    }
+                }}
+            >
+                {tops.map((top, i) => (
+                    <div key={top} style={{ marginBottom: 8 }}>
+                        <Render
+                            idx={top}
+                            state={state}
+                            reg={reg}
+                            display={ctx.display}
+                            dispatch={dispatch}
+                            path={[
+                                {
+                                    idx: state.root,
+                                    child: { type: 'child', at: i },
+                                },
+                            ]}
+                        />
+                        {debug ? (
+                            <div>{sexp(fromMCST(top, state.map))}</div>
+                        ) : null}
+                    </div>
+                ))}
+            </div>
             {cursorPos ? (
                 <div
                     style={{

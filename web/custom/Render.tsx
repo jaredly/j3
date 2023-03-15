@@ -113,6 +113,7 @@ export const RenderNNode = (
                 <span
                     style={{
                         display: 'flex',
+                        alignItems: 'flex-start',
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
                     }}
                 >
@@ -166,6 +167,7 @@ export const RenderNNode = (
                     ref={(node) => reg(node, idx, path)}
                     style={textStyle(node, display[idx])}
                     onMouseDown={(evt) => {
+                        evt.stopPropagation();
                         evt.preventDefault();
                         dispatch({
                             type: 'select',
