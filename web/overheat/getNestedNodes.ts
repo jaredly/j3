@@ -248,6 +248,9 @@ function withCommas(values: number[], layout?: Layout): NNode[] {
 }
 
 const recordPairs = (nodes: number[], layout?: Layout): NNode => {
+    if (!nodes.length) {
+        return { type: 'blinker', loc: 'inside' };
+    }
     const pairs: ([NNode] | [NNode, NNode])[] = [];
     for (let i = 0; i < nodes.length; ) {
         // if this is a single-line thing, +=1, otherwise +=2
@@ -260,10 +263,12 @@ const recordPairs = (nodes: number[], layout?: Layout): NNode => {
                     path: { type: 'child', at: i + 1 },
                 },
             ]);
+            i += 2;
         } else {
             pairs.push([
                 { type: 'ref', id: nodes[i], path: { type: 'child', at: i } },
             ]);
+            i += 1;
         }
     }
     return { type: 'pairs', children: pairs };

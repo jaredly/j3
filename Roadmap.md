@@ -76,6 +76,10 @@ aligned with the end of defn, I just want it indented by a couple of spaces.
 ; Flat
 { x y
   z 2 }
+
+"hello ${
+  something
+} rest"
 ```
 
 
