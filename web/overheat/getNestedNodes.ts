@@ -3,6 +3,8 @@ import { Ctx } from '../../src/to-ast/Ctx';
 import { Layout, MNode } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
 
+export const stringColor = '#ff9b00';
+
 export type NNode =
     | { type: 'horiz'; children: NNode[] }
     | { type: 'vert'; children: NNode[] }
@@ -10,7 +12,7 @@ export type NNode =
     | { type: 'indent'; child: NNode }
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
-    | { type: 'brace'; text: string; at: 'start' | 'end' }
+    | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | { type: 'ref'; id: number; path: PathChild }
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
@@ -86,7 +88,9 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                 children: [
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '{', at: 'start' },
-                    recordPairs(node.values, layout),
+                    ...(layout?.type === 'multiline'
+                        ? [recordPairs(node.values, layout)]
+                        : withCommas(node.values)),
                     { type: 'brace', text: '}', at: 'end' },
                     { type: 'blinker', loc: 'end' },
                 ],
@@ -113,7 +117,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                                   })),
                               } satisfies NNode,
                           ]
-                        : withCommas(node.values, layout)),
+                        : withCommas(node.values)),
                     { type: 'brace', text: ')', at: 'end' },
                     { type: 'blinker', loc: 'end' },
                 ],
@@ -124,7 +128,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                 children: [
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '[', at: 'start' },
-                    ...withCommas(node.values, layout),
+                    ...withCommas(node.values),
                     { type: 'brace', text: ']', at: 'end' },
                     { type: 'blinker', loc: 'end' },
                 ],
@@ -134,7 +138,12 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                 type: 'horiz',
                 children: [
                     { type: 'blinker', loc: 'start' },
-                    { type: 'punct', color: 'yellow', text: '"' },
+                    {
+                        type: 'brace',
+                        at: 'start',
+                        text: '"',
+                        color: stringColor,
+                    },
                     node.templates.length
                         ? {
                               type: 'vert',
@@ -150,7 +159,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                                           {
                                               type: 'punct',
                                               text: '${',
-                                              color: 'yellow',
+                                              color: 'orange',
                                           },
                                       ],
                                   },
@@ -173,7 +182,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                                                   {
                                                       type: 'punct',
                                                       text: '}',
-                                                      color: 'yellow',
+                                                      color: 'orange',
                                                   },
                                                   {
                                                       type: 'ref',
@@ -189,7 +198,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                                                             {
                                                                 type: 'punct',
                                                                 text: '${',
-                                                                color: 'yellow',
+                                                                color: stringColor,
                                                             } satisfies NNode,
                                                         ]
                                                       : []),
@@ -205,8 +214,9 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                               path: { type: 'text', at: 0 },
                           },
                     {
-                        type: 'punct',
-                        color: 'yellow',
+                        type: 'brace',
+                        at: 'end',
+                        color: stringColor,
                         text: '"',
                     },
                     { type: 'blinker', loc: 'end' },
@@ -230,7 +240,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
     // return null;
 };
 
-function withCommas(values: number[], layout?: Layout): NNode[] {
+function withCommas(values: number[]): NNode[] {
     if (!values.length) {
         return [{ type: 'blinker', loc: 'inside' }];
     }

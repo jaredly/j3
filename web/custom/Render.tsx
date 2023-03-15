@@ -2,7 +2,7 @@ import React from 'react';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { rainbow } from '../old/Nodes';
-import { getNestedNodes, NNode } from '../overheat/getNestedNodes';
+import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
 import { getNodes } from '../overheat/getNodes';
 import { ONodeOld } from '../overheat/types';
 import { Path, Selection } from '../store';
@@ -30,7 +30,7 @@ export const colors: {
     tag: '#82f682',
     number: '#8585ff', //'#4848a5',
     string: 'yellow',
-    stringText: 'yellow',
+    stringText: stringColor,
     unparsed: 'red',
 };
 
@@ -126,7 +126,19 @@ export const RenderNNode = (
                 </span>
             );
         case 'blinker':
-            return <span ref={(node) => reg(node, idx, path, nnode.loc)} />;
+            return (
+                <span
+                    ref={(node) => reg(node, idx, path, nnode.loc)}
+                    style={{
+                        alignSelf:
+                            nnode.loc === 'start'
+                                ? 'flex-start'
+                                : nnode.loc === 'end'
+                                ? 'flex-end'
+                                : 'stretch',
+                    }}
+                />
+            );
         case 'punct':
             return (
                 <span style={{ whiteSpace: 'pre', color: nnode.color }}>
@@ -138,7 +150,9 @@ export const RenderNNode = (
                 <span
                     style={{
                         whiteSpace: 'pre',
-                        color: rainbow[path.length % rainbow.length],
+                        color:
+                            nnode.color ??
+                            rainbow[path.length % rainbow.length],
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
                     }}
@@ -182,8 +196,39 @@ export const RenderNNode = (
                     path={path.concat([{ idx, child: nnode.path }])}
                 />
             );
-        // case 'indent':
-        //     return
+        case 'pairs':
+            return (
+                <span style={{ display: 'grid', gap: '0 8px' }}>
+                    {nnode.children.flatMap((pair, i) =>
+                        pair.length === 1
+                            ? [
+                                  <span key={i} style={{ gridColumn: '1/2' }}>
+                                      <RenderNNode {...props} nnode={pair[0]} />
+                                  </span>,
+                              ]
+                            : [
+                                  <span
+                                      key={i + '-0'}
+                                      style={{ gridColumn: '1' }}
+                                  >
+                                      <RenderNNode {...props} nnode={pair[0]} />
+                                  </span>,
+                                  <span
+                                      key={i + '-1'}
+                                      style={{ gridColumn: '2' }}
+                                  >
+                                      <RenderNNode {...props} nnode={pair[1]} />
+                                  </span>,
+                              ],
+                    )}
+                </span>
+            );
+        case 'indent':
+            return (
+                <span style={{ display: 'inline-block', paddingLeft: 10 }}>
+                    <RenderNNode {...props} nnode={nnode.child} />
+                </span>
+            );
     }
     let _: never = nnode;
     return <span>NOPE</span>;
