@@ -1,5 +1,5 @@
 import { PathSel } from '../mods/navigate';
-import { calcOffset } from './Render';
+import { calcOffset } from './RenderONode';
 import { State, calcCursorPos } from './ByHand';
 
 export const verticalMove = (state: State, up: boolean): State => {

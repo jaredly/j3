@@ -16,14 +16,12 @@ export const selectStart = (
     map: Map,
 ): null | PathSel => {
     const pnodes = getNodes(map[idx]);
-    for (let i = 0; i < pnodes.length; i++) {
-        const sel = pathSelForNode(pnodes[i], idx, 'start', map);
+    for (let pnode of pnodes) {
+        const sel = pathSelForNode(pnode, idx, 'start', map);
         if (sel) {
-            // console.log(`sel end at ${i}`, sel);
             return { sel: sel.sel, path: base.concat(sel.path) };
         }
     }
-    // console.warn('no start?');
     return { sel: { idx, loc: 'start' }, path: base };
 };
 
@@ -32,16 +30,89 @@ export const selectEnd = (
     base: Path[],
     map: Map,
 ): null | PathSel => {
-    const pnodes = getNodes(map[idx]);
-    for (let i = pnodes.length - 1; i >= 0; i--) {
-        const sel = pathSelForNode(pnodes[i], idx, 'end', map);
+    const pnodes = getNodes(map[idx]).reverse();
+    for (let pnode of pnodes) {
+        const sel = pathSelForNode(pnode, idx, 'end', map);
         if (sel) {
-            // console.log(`sel end at ${i}`, sel);
             return { sel: sel.sel, path: base.concat(sel.path) };
         }
     }
-    // console.warn('no end?');
     return { sel: { idx, loc: 'end' }, path: base };
+};
+
+export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
+    if (!path.length) return;
+    const last = path[path.length - 1];
+    const pnodes = getNodes(map[last.idx]);
+
+    let prev: PathSel | null = null;
+    for (let pnode of pnodes) {
+        const ps = pathSelForNode(pnode, last.idx, 'end', map);
+        if (!ps) continue;
+        if (ps.path.length && equal(ps.path[0].child, last.child)) {
+            return prev
+                ? {
+                      type: 'select',
+                      selection: prev.sel,
+                      path: path.slice(0, -1).concat(prev.path),
+                  }
+                : goLeft(path.slice(0, -1), last.idx, map);
+        }
+        prev = ps;
+    }
+
+    throw new Error(`current not vound in pnodes`);
+};
+
+export const goRight = (
+    path: Path[],
+    idx: number,
+    map: Map,
+    fromTannot = false,
+): KeyUpdate => {
+    if (!path.length) return;
+    const last = path[path.length - 1];
+    if (!fromTannot && map[idx].tannot && idx !== last.idx) {
+        const sel = selectStart(
+            map[idx].tannot!,
+            path.concat({
+                idx: idx,
+                child: { type: 'tannot' },
+            }),
+            map,
+        );
+        if (sel) {
+            return {
+                type: 'select',
+                selection: sel.sel,
+                path: sel.path,
+            };
+        }
+    }
+
+    const pnodes = getNodes(map[last.idx]).reverse();
+    let prev: PathSel | null = null;
+    for (let pnode of pnodes) {
+        const ps = pathSelForNode(pnode, last.idx, 'start', map);
+        if (!ps) continue;
+        if (ps.path.length && equal(ps.path[0].child, last.child)) {
+            return prev
+                ? {
+                      type: 'select',
+                      selection: prev.sel,
+                      path: path.slice(0, -1).concat(prev.path),
+                  }
+                : goRight(
+                      path.slice(0, -1),
+                      last.idx,
+                      map,
+                      last.child.type === 'tannot',
+                  );
+        }
+        prev = ps;
+    }
+
+    throw new Error(`current not vound in pnodes`);
 };
 
 export const pathSelForNode = (
@@ -94,90 +165,4 @@ export const pathSelForNode = (
             return { path, sel: { idx: node.id, loc } };
         }
     }
-};
-
-export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
-    if (!path.length) return;
-    const last = path[path.length - 1];
-    const pnodes = getNodes(map[last.idx]);
-
-    // console.log('going left', last.child, pnodes);
-    let prev: PathSel | null = null;
-    for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx, 'end', map);
-        if (!ps) continue;
-        // 🤔 🧐 I'm a little skeptical about this.
-        // Does this mean that if we're selected in a `render`,
-        // we'll never ... get to know? idx.
-        if (ps.path.length && equal(ps.path[0].child, last.child)) {
-            // console.log(ps.path, last.child, prev);
-            return prev
-                ? {
-                      type: 'select',
-                      selection: prev.sel,
-                      path: path.slice(0, -1).concat(prev.path),
-                  }
-                : goLeft(path.slice(0, -1), last.idx, map);
-        }
-        prev = ps;
-    }
-
-    throw new Error(`current not vound in pnodes`);
-};
-
-export const goRight = (
-    path: Path[],
-    idx: number,
-    map: Map,
-    fromTannot = false,
-): KeyUpdate => {
-    if (!path.length) return;
-    const last = path[path.length - 1];
-    const pnodes = getNodes(map[last.idx]).reverse();
-
-    if (!fromTannot && map[idx].tannot && idx !== last.idx) {
-        const sel = selectStart(
-            map[idx].tannot!,
-            path.concat({
-                idx: idx,
-                child: { type: 'tannot' },
-            }),
-            map,
-        );
-        if (sel) {
-            return {
-                type: 'select',
-                selection: sel.sel,
-                path: sel.path,
-            };
-        }
-    }
-
-    // console.log('going right', last.child, pnodes);
-    let prev: PathSel | null = null;
-    for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx, 'start', map);
-        if (!ps) continue;
-        // 🤔 🧐 I'm a little skeptical about this.
-        // Does this mean that if we're selected in a `render`,
-        // we'll never ... get to know? idx.
-        if (ps.path.length && equal(ps.path[0].child, last.child)) {
-            // console.log(ps.path, last.child, prev);
-            return prev
-                ? {
-                      type: 'select',
-                      selection: prev.sel,
-                      path: path.slice(0, -1).concat(prev.path),
-                  }
-                : goRight(
-                      path.slice(0, -1),
-                      last.idx,
-                      map,
-                      last.child.type === 'tannot',
-                  );
-        }
-        prev = ps;
-    }
-
-    throw new Error(`current not vound in pnodes`);
 };
