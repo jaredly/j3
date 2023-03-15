@@ -1,8 +1,8 @@
 import { Ctx } from '../src/to-ast/Ctx';
 import { Layout, Map, MNodeContents } from '../src/types/mcst';
 
-// const maxWidth = 50;
-const maxWidth = 20;
+const maxWidth = 50;
+// const maxWidth = 20;
 
 export const calculateLayout = (
     node: MNodeContents,
@@ -39,7 +39,11 @@ export const calculateLayout = (
         case 'list': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             const firstName = idName(map[node.values[0]]);
-            if (cw === false || cw + pos > maxWidth || firstName === 'let') {
+            if (
+                cw === false ||
+                cw + pos > maxWidth ||
+                (firstName === 'let' && node.values.length > 2)
+            ) {
                 return {
                     type: 'multiline',
                     tightFirst: howTight(map[node.values[0]]),
@@ -134,9 +138,15 @@ export const layout = (
     map: Map,
     display: Ctx['display'],
     recursive = false,
-) => {
+): Layout => {
     const item = display[idx] ?? (display[idx] = {});
-    item.layout = calculateLayout(map[idx], pos, display, map, recursive);
+    return (item.layout = calculateLayout(
+        map[idx],
+        pos,
+        display,
+        map,
+        recursive,
+    ));
 };
 
 function childWidth(
@@ -145,18 +155,30 @@ function childWidth(
     pos: number,
     display: Ctx['display'],
     map: Map,
+    spacer = 1,
 ) {
-    return children.reduce((acc, idx) => {
-        if (acc === false) {
+    let total = pos;
+    let first = true;
+    for (let idx of children) {
+        if (first) {
+            first = false;
+        } else {
+            total += spacer;
+        }
+        let { layout: l } = display[idx] ?? {};
+        if (!l || l.pos !== total) {
+            // gotta relayout
+            l = layout(idx, total, map, display, recursive);
+        }
+        // Break out, relayout everything for multi-bit
+        if (l.type === 'multiline') {
+            for (let idx of children) {
+                layout(idx, pos, map, display, recursive);
+            }
             return false;
+        } else {
+            total += l.width;
         }
-        if (recursive) {
-            layout(idx, pos, map, display, recursive);
-        }
-        const { layout: l } = display[idx] ?? {};
-        if (l?.type === 'flat') {
-            return acc + l.width;
-        }
-        return false;
-    }, 0 as number | false);
+    }
+    return total;
 }

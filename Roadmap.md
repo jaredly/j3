@@ -1,9 +1,16 @@
 
-# [ ] some more backspaces
+# [x] some more backspaces
 - inside a ${}
 - after a ${}
 - after a listlike
-- at the start of a listlike (unwrap if possible)
+
+# [ ] extra fancy backspaces
+- [ ] at the start of a listlike? (unwrap if possible)
+
+# So, layout algo needs a lot of love
+definite revamp.
+once something "becomes multiline", we need
+to re-compute all the children in light of that fact.
 
 # Formattings
 

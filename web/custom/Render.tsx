@@ -98,7 +98,14 @@ export const Render = (props: RenderProps) => {
         return <span>DEEP</span>;
     }
 
-    return <RenderNNode {...props} nnode={nnode} />;
+    return props.debug ? (
+        <span style={{ display: 'flex' }}>
+            <span style={{ opacity: 0.5, fontSize: '50%' }}>{idx}</span>
+            <RenderNNode {...props} nnode={nnode} />
+        </span>
+    ) : (
+        <RenderNNode {...props} nnode={nnode} />
+    );
 };
 
 export const RenderNNode = (
@@ -195,6 +202,7 @@ export const RenderNNode = (
                     dispatch={dispatch}
                     reg={reg}
                     idx={nnode.id}
+                    debug={props.debug}
                     path={path.concat([{ idx, child: nnode.path }])}
                 />
             );

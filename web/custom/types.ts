@@ -15,6 +15,7 @@ export type Reg = (
 ) => void;
 
 export type RenderProps = {
+    debug?: boolean;
     idx: number;
     state: State;
     reg: Reg;
