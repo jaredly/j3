@@ -18,20 +18,20 @@ import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
 
 // const initialText = '(let [x 10] (+ x 20))';
-// const initialText = '(1 2) (3 [] 4) (5 6)';
+const initialText = '(1 2) (3 [] 4) (5 6)';
 // const initialText = `"Some 🤔 things"`;
 
-const initialText = `
-(def live (vec4 1. 0.6 1. 1.))
-(def dead (vec4 0. 0. 0. 1.))
-(defn isLive [{x}:Vec4] (> x 0.5))
-(defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
-(def person {name "Person" age 32 cats 1.5
-description "This is a person with a \${"kinda"} normal-length description"
-subtitle "Return of the person"
-parties (let [parties (isLive (vec4 1.0)) another true]
-(if parties "Some parties" "probably way too many parties"))})
-`.trim();
+// const initialText = `
+// (def live (vec4 1. 0.6 1. 1.))
+// (def dead (vec4 0. 0. 0. 1.))
+// (defn isLive [{x}:Vec4] (> x 0.5))
+// (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+// (def person {name "Person" age 32 cats 1.5
+// description "This is a person with a \${"kinda"} normal-length description"
+// subtitle "Return of the person"
+// parties (let [parties (isLive (vec4 1.0)) another true]
+// (if parties "Some parties" "probably way too many parties"))})
+// `.trim();
 
 // (defn shape-to-svg [shape:shape]
 //   (switch shape
@@ -83,10 +83,18 @@ const reduce = (state: State, action: Action): State => {
             }
             const newState = handleKey(state, action.key);
             if (newState) {
+                if (isRootPath(newState.at.path)) {
+                    console.log('not selecting root node');
+                    return state;
+                }
                 return newState;
             }
             return state;
         case 'select':
+            // Ignore attempts to select the root node
+            if (isRootPath(action.pathSel.path)) {
+                return state;
+            }
             return { ...state, at: action.pathSel };
     }
 };
@@ -368,7 +376,22 @@ export const calcCursorPos = (
     }
 };
 
+const isRootPath = (path: Path[]) => {
+    return path.length === 1 && path[0].child.type !== 'child';
+};
+
 export const handleKey = (state: State, key: string): State => {
     const update = getKeyUpdate(key, state);
+    // Ignore attempts to select the root node
+    if (update?.type === 'select' && isRootPath(update.path)) {
+        return state;
+    }
+    if (
+        update?.type === 'update' &&
+        update.update &&
+        isRootPath(update.update.path)
+    ) {
+        return state;
+    }
     return { ...(applyUpdate(state, update) ?? state), regs: state.regs };
 };

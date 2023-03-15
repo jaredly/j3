@@ -4,6 +4,7 @@ import { Layout, MCString, MNode, MNodeExtra } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
 
 export const stringColor = '#ff9b00';
+export const stringPunct = 'yellow';
 
 export type NNode =
     | { type: 'horiz'; children: NNode[] }
@@ -140,13 +141,13 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                         type: 'brace',
                         at: 'start',
                         text: '"',
-                        color: stringColor,
+                        color: stringPunct,
                     },
                     stringContents(node, layout),
                     {
                         type: 'brace',
                         at: 'end',
-                        color: stringColor,
+                        color: stringPunct,
                         text: '"',
                     },
                     { type: 'blinker', loc: 'end' },
@@ -191,7 +192,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                     {
                         type: 'punct',
                         text: '${',
-                        color: stringColor,
+                        color: stringPunct,
                     },
                     {
                         type: 'ref',
@@ -204,7 +205,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                     {
                         type: 'punct',
                         text: '}',
-                        color: stringColor,
+                        color: stringPunct,
                     },
                     {
                         type: 'ref',
@@ -232,7 +233,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                     {
                         type: 'punct',
                         text: '${',
-                        color: stringColor,
+                        color: stringPunct,
                     },
                 ],
             },
@@ -254,7 +255,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                         {
                             type: 'punct',
                             text: '}',
-                            color: stringColor,
+                            color: stringPunct,
                         },
                         {
                             type: 'ref',
@@ -269,7 +270,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                                   {
                                       type: 'punct',
                                       text: '${',
-                                      color: stringColor,
+                                      color: stringPunct,
                                   } satisfies NNode,
                               ]
                             : []),

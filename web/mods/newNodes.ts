@@ -58,7 +58,7 @@ export const newRecordAccess = (
         },
         idx,
         selection: { idx: aidx, loc: 0 },
-        path: [{ idx, child: { type: 'attribute', at: 0 } }],
+        path: [{ idx, child: { type: 'attribute', at: 1 } }],
     };
 };
 

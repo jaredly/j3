@@ -133,7 +133,11 @@ export function handleBackspace({
             const parent = map[last.idx] as ListLikeContents & MNodeExtra;
             const values = parent.values.slice();
             values.splice(last.child.at, 1);
-            if (values.length === 1 && map[values[0]].type === 'blank') {
+            if (
+                values.length === 1 &&
+                map[values[0]].type === 'blank' &&
+                path.length > 1
+            ) {
                 return {
                     type: 'update',
                     update: {

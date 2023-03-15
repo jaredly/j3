@@ -570,6 +570,9 @@ export const newNodeBefore = (
 };
 
 export const maybeClearParentList = (path: Path[], map: Map): KeyUpdate => {
+    if (path.length === 1) {
+        return;
+    }
     const gp = path[path.length - 1];
     if (gp && gp.child.type === 'child' && gp.child.at === 0) {
         const gpnode = map[gp.idx];
