@@ -1,8 +1,8 @@
 import { PathSel } from '../mods/navigate';
 import { calcOffset } from './RenderONode';
-import { State, calcCursorPos } from './ByHand';
+import { UIState, calcCursorPos } from './ByHand';
 
-export const verticalMove = (state: State, up: boolean): State => {
+export const verticalMove = (state: UIState, up: boolean): UIState => {
     const current = calcCursorPos(state.at[0].sel, state.regs);
     if (!current) {
         return state;
@@ -23,7 +23,7 @@ export const verticalMove = (state: State, up: boolean): State => {
 };
 
 export const closestSelection = (
-    regs: State['regs'],
+    regs: UIState['regs'],
     pos: { x: number; y: number },
     minY?: number,
     maxY?: number,

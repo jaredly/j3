@@ -6,8 +6,8 @@ import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
 import { getNodes } from '../overheat/getNodes';
 import { ONodeOld } from '../overheat/types';
 import { Path, Selection } from '../store';
-import { Action, State } from './ByHand';
-import { calcOffset, RenderONode } from './RenderONode';
+import { Action, UIState } from './ByHand';
+import { calcOffset } from './RenderONode';
 import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
@@ -91,8 +91,8 @@ export const textStyle = (
 // };
 
 export const Render = (props: RenderProps) => {
-    const { idx, state, display, path } = props;
-    const nnode = getNestedNodes(state.map[idx], display[idx]?.layout);
+    const { idx, map, display, path } = props;
+    const nnode = getNestedNodes(map[idx], display[idx]?.layout);
 
     if (path.length > 1000) {
         return <span>DEEP</span>;
@@ -111,8 +111,8 @@ export const Render = (props: RenderProps) => {
 export const RenderNNode = (
     props: RenderProps & { nnode: NNode },
 ): JSX.Element => {
-    const { nnode, reg, idx, path, display, state, dispatch } = props;
-    const node = state.map[idx];
+    const { nnode, reg, idx, path, display, map, dispatch } = props;
+    const node = map[idx];
     switch (nnode.type) {
         case 'vert':
         case 'horiz':
@@ -178,7 +178,7 @@ export const RenderNNode = (
                         evt.preventDefault();
                         dispatch({
                             type: 'select',
-                            add: evt.shiftKey,
+                            add: evt.altKey,
                             at: [
                                 {
                                     path,
@@ -200,7 +200,7 @@ export const RenderNNode = (
         case 'ref':
             return (
                 <Render
-                    state={state}
+                    map={map}
                     display={display}
                     dispatch={dispatch}
                     reg={reg}

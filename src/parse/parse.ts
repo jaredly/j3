@@ -34,7 +34,7 @@ export const parseByCharacter = (
 ): { map: Map; selection: Selection } => {
     let state: State = initialState();
 
-    const text = splitGraphemes(rawText);
+    const text = splitGraphemes(rawText.replace(/\s+/g, ' '));
 
     for (let i = 0; i < text.length; i++) {
         let key = text[i];

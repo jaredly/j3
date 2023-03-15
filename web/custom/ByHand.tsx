@@ -22,6 +22,7 @@ import {
     applyUpdateMap,
     getKeyUpdate,
     KeyUpdate,
+    State,
 } from '../mods/getKeyUpdate';
 import { PathSel, selectEnd } from '../mods/navigate';
 import { Path, Selection } from '../store';
@@ -42,6 +43,20 @@ description "This is a person with a \${"kinda"} normal-length description"
 subtitle "Return of the person"
 parties (let [parties (isLive (vec4 1.0)) another true]
 (if parties "Some parties" "probably way too many parties"))})
+(defn shape-to-svg [shape:shape]
+  (switch shape
+    ('Circle {$ pos radius})
+      "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
+    ('Rect {$ pos size})
+      "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
+  )
+)
+(defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
+(defn show-shapes [shapes:(array shape)]
+  (wrap-svg (join
+    (map shapes shape-to-svg)
+    "\n")))
+
 `.trim();
 
 // const initialText = `
@@ -49,28 +64,11 @@ parties (let [parties (isLive (vec4 1.0)) another true]
 // parties (let)})
 // `.trim();
 
-// (defn shape-to-svg [shape:shape]
-//   (switch shape
-//     ('Circle {$ pos radius})
-//       "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
-//     ('Rect {$ pos size})
-//       "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
-//   )
-// )
-// (defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
-// (defn show-shapes [shapes:(array shape)]
-//   (wrap-svg (join
-//     (map shapes shape-to-svg)
-//     "\n")))
-
 // '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 
-export type State = {
+export type UIState = {
     regs: RegMap;
-    map: Map;
-    root: number;
-    at: PathSel[];
-};
+} & State;
 
 type RegMap = {
     [key: number]: {
@@ -92,7 +90,7 @@ export type Action =
           key: string;
       };
 
-const reduce = (state: State, action: Action): State => {
+const reduce = (state: UIState, action: Action): UIState => {
     switch (action.type) {
         case 'key':
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
@@ -121,7 +119,7 @@ const reduce = (state: State, action: Action): State => {
 
 export const ByHand = () => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
-    const [state, dispatch] = React.useReducer(reduce, null, (): State => {
+    const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
         const map = parseByCharacter(initialText, debug).map;
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(
@@ -269,33 +267,37 @@ export const ByHand = () => {
                     if (sel) {
                         dispatch({
                             type: 'select',
-                            add: evt.shiftKey,
+                            add: evt.altKey,
                             at: [sel],
                         });
                     }
                 }}
             >
-                {tops.map((top, i) => (
-                    <div key={top} style={{ marginBottom: 8 }}>
-                        <Render
-                            debug={debug}
-                            idx={top}
-                            state={state}
-                            reg={reg}
-                            display={ctx.display}
-                            dispatch={dispatch}
-                            path={[
-                                {
-                                    idx: state.root,
-                                    child: { type: 'child', at: i },
-                                },
-                            ]}
-                        />
-                        {debug ? (
-                            <div>{sexp(fromMCST(top, state.map))}</div>
-                        ) : null}
-                    </div>
-                ))}
+                {React.useMemo(
+                    () =>
+                        tops.map((top, i) => (
+                            <div key={top} style={{ marginBottom: 8 }}>
+                                <Render
+                                    debug={debug}
+                                    idx={top}
+                                    map={state.map}
+                                    reg={reg}
+                                    display={ctx.display}
+                                    dispatch={dispatch}
+                                    path={[
+                                        {
+                                            idx: state.root,
+                                            child: { type: 'child', at: i },
+                                        },
+                                    ]}
+                                />
+                                {debug ? (
+                                    <div>{sexp(fromMCST(top, state.map))}</div>
+                                ) : null}
+                            </div>
+                        )),
+                    [debug, tops, state.map, reg, ctx.display],
+                )}
             </div>
             {cursorPos.map((cursorPos, i) =>
                 cursorPos ? (
@@ -420,7 +422,7 @@ const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].child.type !== 'child';
 };
 
-export const handleKey = (state: State, key: string): State => {
+export const handleKey = (state: UIState, key: string): UIState => {
     state = { ...state };
     state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {

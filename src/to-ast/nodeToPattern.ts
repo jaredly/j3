@@ -280,7 +280,8 @@ export const nodeToPattern = (
             }
         }
     }
-    throw new Error(`nodeToPattern can't handle ${form.type}`);
+    return { type: 'unresolved', form };
+    // throw new Error(`nodeToPattern can't handle ${form.type}`);
 };
 
 export const err = (errors: Report['errors'], form: Node, error: Error) => {

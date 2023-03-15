@@ -1,11 +1,7 @@
 import { Ctx } from '../../src/to-ast/Ctx';
-import { MNode } from '../../src/types/mcst';
-import { rainbow } from '../old/Nodes';
-import { getNodes } from '../overheat/getNodes';
-import { ONodeOld } from '../overheat/types';
-import { Path, Selection } from '../store';
-import { Action, State } from './ByHand';
-import { RenderONode } from './RenderONode';
+import { Map } from '../../src/types/mcst';
+import { Path } from '../store';
+import { Action, UIState } from './ByHand';
 
 export type Reg = (
     node: HTMLSpanElement | null,
@@ -17,7 +13,8 @@ export type Reg = (
 export type RenderProps = {
     debug?: boolean;
     idx: number;
-    state: State;
+    map: Map;
+    // state: UIState;
     reg: Reg;
     path: Path[];
     display: Ctx['display'];
