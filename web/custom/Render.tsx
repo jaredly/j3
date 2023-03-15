@@ -7,13 +7,7 @@ import { ONodeOld } from '../overheat/types';
 import { Path, Selection } from '../store';
 import { Action, State } from './ByHand';
 import { RenderONode } from './RenderONode';
-
-type Reg = (
-    node: HTMLSpanElement | null,
-    idx: number,
-    path: Path[],
-    loc?: 'start' | 'end' | 'inside',
-) => void;
+import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
     const idx = hash.startsWith(':')

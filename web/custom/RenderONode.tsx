@@ -6,7 +6,8 @@ import { rainbow } from '../old/Nodes';
 import { ONode } from '../overheat/types';
 import { Path } from '../store';
 import { Action, State } from './ByHand';
-import { type RenderProps, textStyle, Render } from './Render';
+import { textStyle, Render } from './Render';
+import { RenderProps } from './types';
 
 export const RenderONode = ({
     i,
