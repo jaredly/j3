@@ -16,6 +16,9 @@ so I'll have them in like an augmented UIState?
 But other things, like "autocomplete menu" stuff,
 I think I do want to have live in the normal state?
 
+# [x] Much better children rendering!
+- [ ] oh the last thing, tightFirst pls
+
 # Some fixing of things
 
 I should get rid of the CST types that I don't do anymore

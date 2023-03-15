@@ -30,8 +30,7 @@ const initialText = `
 description "This is a person with a \${"kinda"} normal-length description"
 subtitle "Return of the person"
 parties (let [parties (isLive (vec4 1.0)) another true]
-(if parties "Some parties" "probably way too many parties"))
-})
+(if parties "Some parties" "probably way too many parties"))})
 `.trim();
 
 // (defn shape-to-svg [shape:shape]

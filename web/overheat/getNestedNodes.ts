@@ -1,6 +1,6 @@
 import { idText } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
-import { Layout, MNode } from '../../src/types/mcst';
+import { Layout, MNode, MNodeExtra } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
 
 export const stringColor = '#ff9b00';
@@ -89,7 +89,14 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '{', at: 'start' },
                     ...(layout?.type === 'multiline'
-                        ? [recordPairs(node.values, layout)]
+                        ? [
+                              {
+                                  type: 'punct',
+                                  text: ' ',
+                                  color: 'white',
+                              } satisfies NNode,
+                              recordPairs(node.values, layout),
+                          ]
                         : withCommas(node.values)),
                     { type: 'brace', text: '}', at: 'end' },
                     { type: 'blinker', loc: 'end' },
@@ -107,16 +114,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '(', at: 'start' },
                     ...(layout?.type === 'multiline'
-                        ? [
-                              {
-                                  type: 'vert',
-                                  children: node.values.map((id, i) => ({
-                                      type: 'ref',
-                                      id,
-                                      path: { type: 'child', at: i },
-                                  })),
-                              } satisfies NNode,
-                          ]
+                        ? [renderList(node, layout?.tightFirst) satisfies NNode]
                         : withCommas(node.values)),
                     { type: 'brace', text: ')', at: 'end' },
                     { type: 'blinker', loc: 'end' },
@@ -239,6 +237,50 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
     }
     // return null;
 };
+
+function renderList(
+    node: {
+        type: 'list';
+        values: number[];
+    } & MNodeExtra,
+    tightFirst?: number,
+): NNode {
+    if (tightFirst != null && tightFirst > 0) {
+        return {
+            type: 'vert',
+            children: [
+                {
+                    type: 'horiz',
+                    children: withCommas(node.values.slice(0, tightFirst)),
+                },
+                {
+                    type: 'indent',
+                    child: {
+                        type: 'vert',
+                        children: node.values
+                            .slice(tightFirst)
+                            .map((id, i) => ({
+                                type: 'ref',
+                                id,
+                                path: { type: 'child', at: i + tightFirst },
+                            })),
+                    },
+                },
+            ],
+        };
+    }
+    return {
+        type: 'indent',
+        child: {
+            type: 'vert',
+            children: node.values.map((id, i) => ({
+                type: 'ref',
+                id,
+                path: { type: 'child', at: i },
+            })),
+        },
+    };
+}
 
 function withCommas(values: number[]): NNode[] {
     if (!values.length) {
