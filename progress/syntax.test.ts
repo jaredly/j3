@@ -189,6 +189,10 @@ string
 [()^b
 []
 (array)
+
+(id ^l )
+(id )
+(list id blank)
 `;
 
 describe('a test', () => {

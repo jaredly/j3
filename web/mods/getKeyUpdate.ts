@@ -7,7 +7,7 @@ import {
     UpdateMap,
 } from '../store';
 import { Events } from '../old/Nodes';
-import { Map, MNode } from '../../src/types/mcst';
+import { ListLikeContents, Map, MNode } from '../../src/types/mcst';
 import { closeListLike } from './closeListLike';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
@@ -184,6 +184,27 @@ export const getKeyUpdate = (
     }
 
     if (key === ' ' || key === 'Enter') {
+        if (last.child.type === 'child') {
+            const parent = map[last.idx] as ListLikeContents;
+            if (
+                parent.values.length > last.child.at + 1 &&
+                map[parent.values[last.child.at + 1]].type === 'blank'
+            ) {
+                return {
+                    type: 'select',
+                    path: path.slice(0, -1).concat([
+                        {
+                            idx: last.idx,
+                            child: { type: 'child', at: last.child.at + 1 },
+                        },
+                    ]),
+                    selection: {
+                        idx: parent.values[last.child.at + 1],
+                        loc: 'start',
+                    },
+                };
+            }
+        }
         return newNodeAfter(path, map, newBlank());
     }
 
