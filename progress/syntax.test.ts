@@ -193,6 +193,10 @@ string
 (id ^l )
 (id )
 (list id blank)
+
+(id^l^l )
+( id)
+(list blank id)
 `;
 
 describe('a test', () => {

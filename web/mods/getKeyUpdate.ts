@@ -205,6 +205,9 @@ export const getKeyUpdate = (
                 };
             }
         }
+        if (pos === 0 && text.length) {
+            return newNodeBefore(path, map, newBlank());
+        }
         return newNodeAfter(path, map, newBlank());
     }
 
