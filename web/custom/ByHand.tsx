@@ -29,11 +29,12 @@ import { Path, Selection } from '../store';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
 
-// const initialText = '(let [x 10] (+ x 20))';
-// const initialText = '(1 2) (3 [] 4) (5 6)';
-// const initialText = `"Some 🤔 things"`;
+const examples = {
+    let: '(let [x 10] (+ x 20))',
+    lists: '(1 2) (3 [] 4) (5 6)',
+    string: `"Some 🤔 things"`,
 
-const initialText = `
+    sink: `
 (def live (vec4 1. 0.6 1. 1.))
 (def dead (vec4 0. 0. 0. 1.))
 (defn isLive [{x}:Vec4] (> x 0.5))
@@ -48,15 +49,14 @@ parties (let [parties (isLive (vec4 1.0)) another true]
     ('Circle {$ pos radius})
       "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
     ('Rect {$ pos size})
-      "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
-  )
-)
+      "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"))
 (defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
 (defn show-shapes [shapes:(array shape)]
   (wrap-svg (join
     (map shapes shape-to-svg)
     "\n")))
-`.trim();
+`.trim(),
+};
 
 // const initialText = `
 // (def person {name "Pers\${aaaaaaaaaaaa}on"
@@ -117,6 +117,30 @@ const reduce = (state: UIState, action: Action): UIState => {
 };
 
 export const ByHand = () => {
+    const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
+    return (
+        <div>
+            {Object.keys(examples).map((k) => (
+                <button
+                    disabled={which === k}
+                    style={{
+                        margin: 8,
+                    }}
+                    key={k}
+                    onClick={() => setWhich(k)}
+                >
+                    {k}
+                </button>
+            ))}
+            <Doc
+                key={which}
+                initialText={examples[which as 'sink'] ?? 'what'}
+            />
+        </div>
+    );
+};
+
+export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
         const map = parseByCharacter(initialText, debug).map;
