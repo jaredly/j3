@@ -1,13 +1,7 @@
-import { Path, Selection, UpdateMap } from '../store';
+import { Path, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
-import {
-    combinePathSel,
-    maybeToPathSel,
-    PathSel,
-    selectEnd,
-    toPathSel,
-} from './navigate';
+import { selectEnd } from './navigate';
 import {
     KeyUpdate,
     maybeClearParentList,

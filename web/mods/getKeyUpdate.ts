@@ -35,7 +35,7 @@ import {
 } from './navigate';
 import { handleStringText } from './handleStringText';
 import { handleBackspace } from './handleBackspace';
-import { idText, selPos, splitGraphemes } from '../../src/parse/parse';
+import { idText, pathPos, selPos, splitGraphemes } from '../../src/parse/parse';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
 
@@ -126,17 +126,15 @@ export const getKeyUpdate = (
     // path: Path[],
     // map: Map,
     state: State,
-    at: PathSel,
+    fullPath: Path[],
 ): KeyUpdate => {
-    if (!at.path.length) {
-        throw new Error(
-            `no path ${key} ${at.sel.idx} ${JSON.stringify(state.map)}`,
-        );
+    if (!fullPath.length) {
+        throw new Error(`no path ${key} ${JSON.stringify(state.map)}`);
     }
     const {
         path,
-        sel: { idx },
-    } = at;
+        sel: { idx, loc },
+    } = toPathSel(fullPath, state.map);
     const last = path[path.length - 1];
     const node = state.map[idx];
 
@@ -153,24 +151,26 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(state.map, combinePathSel(at));
+        return handleBackspace(state.map, fullPath);
     }
 
     if (key === 'ArrowLeft') {
-        if ('text' in node && !isAtStart(node.text, at.sel.loc)) {
-            const pos = selPos(at.sel, node.text);
+        if ('text' in node && !isAtStart(node.text, loc)) {
+            const pos = pathPos(fullPath, node.text);
             return {
                 type: 'select',
-                selection: at.path.concat([
+                selection: fullPath.slice(0, -1).concat([
                     {
-                        idx: at.sel.idx,
+                        idx,
                         child: { type: 'subtext', at: pos - 1 },
                     },
                 ]),
             };
         }
-        return goLeft(at.path, at.sel.idx, state.map);
+        return goLeft(path, idx, state.map);
     }
+
+    const at = toPathSel(fullPath, state.map);
 
     const pos = selPos(at.sel, textRaw);
     const map = state.map;

@@ -8,6 +8,7 @@ import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
 import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
 import {
+    combinePathSel,
     maybeToPathSel,
     PathSel,
     pathSelEqual,
@@ -517,7 +518,11 @@ export const handleKey = (state: UIState, key: string): UIState => {
     state = { ...state };
     state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(key, state, state.at[i].start);
+        const update = getKeyUpdate(
+            key,
+            state,
+            combinePathSel(state.at[i].start),
+        );
         if (!update) continue;
         if (update?.type === 'select' && isRootPath(update.selection)) {
             continue;

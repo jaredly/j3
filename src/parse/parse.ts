@@ -1,5 +1,6 @@
 // hmm
 import { applyUpdate, getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
+import { combinePathSel } from '../../web/mods/navigate';
 import { Path, Selection } from '../../web/store';
 import { nidx } from '../grammar';
 import { Map, MNode } from '../types/mcst';
@@ -53,7 +54,11 @@ export const parseByCharacter = (
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(key, state, state.at[0].start);
+        const update = getKeyUpdate(
+            key,
+            state,
+            combinePathSel(state.at[0].start),
+        );
         if (debug) {
             console.log(key, state.at[0].start.path);
             console.log(JSON.stringify(update));
@@ -103,4 +108,13 @@ export function selPos(selection: Selection, curText: string) {
         : selection.loc === 'end'
         ? splitGraphemes(curText).length
         : selection.loc;
+}
+
+export function pathPos(path: Path[], curText: string) {
+    const last = path[path.length - 1];
+    return last.child.type === 'subtext'
+        ? last.child.at
+        : last.child.type === 'end'
+        ? splitGraphemes(curText).length
+        : 0;
 }

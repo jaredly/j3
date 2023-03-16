@@ -10,7 +10,13 @@ import {
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
-import { maybeToPathSel, selectEnd, selectStart } from '../web/mods/navigate';
+import {
+    combinePathSel,
+    maybeToPathSel,
+    selectEnd,
+    selectStart,
+    toPathSel,
+} from '../web/mods/navigate';
 import { sexp } from './sexp';
 
 const data = `
@@ -361,7 +367,11 @@ function doABunchOfKeys({
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(key, state, state.at[0].start);
+        const update = getKeyUpdate(
+            key,
+            state,
+            combinePathSel(state.at[0].start),
+        );
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {

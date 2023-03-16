@@ -1,8 +1,6 @@
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, Map } from '../../src/types/mcst';
 import { Path } from '../store';
-import { SelectAndPath } from './getKeyUpdate';
-import { combinePathSel, PathSel } from './navigate';
 
 export const closeListLike = (
     key: string,
@@ -19,15 +17,9 @@ export const closeListLike = (
         }
         const node = map[parent.idx];
         if (node.type === looking) {
-            return combinePathSel({
-                sel: {
-                    idx: parent.idx,
-                    loc: 'end',
-                },
-                path: path
-                    .slice(0, i)
-                    .concat({ idx: parent.idx, child: { type: 'end' } }),
-            });
+            return path
+                .slice(0, i)
+                .concat({ idx: parent.idx, child: { type: 'end' } });
         }
         if (
             key === '}' &&
@@ -42,19 +34,19 @@ export const closeListLike = (
                 throw new Error(`${parent.child.at} - ${JSON.stringify(node)}`);
             }
             const suffix = node.templates[parent.child.at - 1].suffix;
-            return combinePathSel({
-                sel: {
-                    idx: suffix,
-                    loc: 0,
-                },
-                path: path.slice(0, i).concat({
+            return path.slice(0, i).concat(
+                {
                     idx: parent.idx,
                     child: {
                         type: 'text',
                         at: parent.child.at,
                     },
-                }),
-            });
+                },
+                {
+                    idx: suffix,
+                    child: { type: 'subtext', at: 0 },
+                },
+            );
         }
     }
 };
