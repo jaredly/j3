@@ -31,32 +31,32 @@ import { closestSelection, verticalMove } from './verticalMove';
 
 // const initialText = '(let [x 10] (+ x 20))';
 // const initialText = '(1 2) (3 [] 4) (5 6)';
-const initialText = `"Some 🤔 things"`;
+// const initialText = `"Some 🤔 things"`;
 
-// const initialText = `
-// (def live (vec4 1. 0.6 1. 1.))
-// (def dead (vec4 0. 0. 0. 1.))
-// (defn isLive [{x}:Vec4] (> x 0.5))
-// (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
-// (def person {name "Person" age 32 cats 1.5
-// description "This is a person with a \${"kinda"} normal-length description"
-// subtitle "Return of the person"
-// parties (let [parties (isLive (vec4 1.0)) another true]
-// (if parties "Some parties" "probably way too many parties"))})
-// (defn shape-to-svg [shape:shape]
-//   (switch shape
-//     ('Circle {$ pos radius})
-//       "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
-//     ('Rect {$ pos size})
-//       "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
-//   )
-// )
-// (defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
-// (defn show-shapes [shapes:(array shape)]
-//   (wrap-svg (join
-//     (map shapes shape-to-svg)
-//     "\n")))
-// `.trim();
+const initialText = `
+(def live (vec4 1. 0.6 1. 1.))
+(def dead (vec4 0. 0. 0. 1.))
+(defn isLive [{x}:Vec4] (> x 0.5))
+(defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+(def person {name "Person" age 32 cats 1.5
+description "This is a person with a \${"kinda"} normal-length description"
+subtitle "Return of the person"
+parties (let [parties (isLive (vec4 1.0)) another true]
+(if parties "Some parties" "probably way too many parties"))})
+(defn shape-to-svg [shape:shape]
+  (switch shape
+    ('Circle {$ pos radius})
+      "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
+    ('Rect {$ pos size})
+      "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
+  )
+)
+(defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
+(defn show-shapes [shapes:(array shape)]
+  (wrap-svg (join
+    (map shapes shape-to-svg)
+    "\n")))
+`.trim();
 
 // const initialText = `
 // (def person {name "Pers\${aaaaaaaaaaaa}on"
