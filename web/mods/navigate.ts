@@ -79,33 +79,30 @@ export const selectStart = (
     idx: number,
     base: Path[],
     map: Map,
-): null | PathSel => {
+): null | Path[] => {
     const pnodes = getNodes(map[idx]);
     for (let pnode of pnodes) {
-        const sel = maybeToPathSel(
-            pathSelForNode(pnode, idx, 'start', map),
-            map,
-        );
+        const sel = pathSelForNode(pnode, idx, 'start', map);
         if (sel) {
-            return { sel: sel.sel, path: base.concat(sel.path) };
+            return base.concat(sel);
         }
     }
-    return { sel: { idx, loc: 'start' }, path: base };
+    return combinePathSel({ sel: { idx, loc: 'start' }, path: base });
 };
 
 export const selectEnd = (
     idx: number,
     base: Path[],
     map: Map,
-): null | PathSel => {
+): null | Path[] => {
     const pnodes = getNodes(map[idx]).reverse();
     for (let pnode of pnodes) {
-        const sel = maybeToPathSel(pathSelForNode(pnode, idx, 'end', map), map);
+        const sel = pathSelForNode(pnode, idx, 'end', map);
         if (sel) {
-            return { sel: sel.sel, path: base.concat(sel.path) };
+            return base.concat(sel);
         }
     }
-    return { sel: { idx, loc: 'end' }, path: base };
+    return combinePathSel({ sel: { idx, loc: 'end' }, path: base });
 };
 
 export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
@@ -157,7 +154,7 @@ export const goRight = (
         if (sel) {
             return {
                 type: 'select',
-                selection: sel,
+                selection: toPathSel(sel, map),
             };
         }
     }
@@ -209,15 +206,13 @@ export const pathSelForNode = (
             const path: Path[] = [{ idx, child: node.path }];
             const cnode = map[node.id];
             if (cnode.tannot && loc === 'end') {
-                return maybeCombinePathSel(
-                    selectEnd(
-                        cnode.tannot,
-                        path.concat({
-                            idx: node.id,
-                            child: { type: 'tannot' },
-                        }),
-                        map,
-                    ),
+                return selectEnd(
+                    cnode.tannot,
+                    path.concat({
+                        idx: node.id,
+                        child: { type: 'tannot' },
+                    }),
+                    map,
                 );
             }
             switch (cnode.type) {
@@ -240,14 +235,10 @@ export const pathSelForNode = (
                 case 'spread':
                 case 'recordAccess':
                     if (loc === 'end') {
-                        return maybeCombinePathSel(
-                            selectEnd(node.id, path, map),
-                        );
+                        return selectEnd(node.id, path, map);
                     }
                     if (loc === 'start') {
-                        return maybeCombinePathSel(
-                            selectStart(node.id, path, map),
-                        );
+                        return selectStart(node.id, path, map);
                     }
             }
             return maybeCombinePathSel({ path, sel: { idx: node.id, loc } });

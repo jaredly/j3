@@ -1,7 +1,7 @@
 import { Path, Selection, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
-import { PathSel, selectEnd } from './navigate';
+import { maybeToPathSel, PathSel, selectEnd } from './navigate';
 import {
     KeyUpdate,
     maybeClearParentList,
@@ -251,14 +251,17 @@ export function handleBackspace(
                     },
                 };
             }
-            const sel = selectEnd(
-                values[last.child.at - 1],
-                path.slice(0, -1).concat([
-                    {
-                        idx: last.idx,
-                        child: { type: 'child', at: last.child.at - 1 },
-                    },
-                ]),
+            const sel = maybeToPathSel(
+                selectEnd(
+                    values[last.child.at - 1],
+                    path.slice(0, -1).concat([
+                        {
+                            idx: last.idx,
+                            child: { type: 'child', at: last.child.at - 1 },
+                        },
+                    ]),
+                    map,
+                ),
                 map,
             );
             if (!sel) {

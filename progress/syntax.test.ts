@@ -12,6 +12,7 @@ import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import {
     combinePathSel,
+    maybeToPathSel,
     PathSel,
     selectEnd,
     selectStart,
@@ -273,9 +274,12 @@ describe('a test', () => {
                 expect(sexp(fromMCST(idx, data))).toEqual(serialized);
                 expect(back).toEqual(expected);
 
-                const state = selectEnd(
-                    idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                const state = maybeToPathSel(
+                    selectEnd(
+                        idx,
+                        [{ idx: -1, child: { type: 'child', at: 0 } }],
+                        data,
+                    ),
                     data,
                 );
 
@@ -299,9 +303,12 @@ describe('a test', () => {
                     },
                 });
 
-                const startState = selectStart(
-                    idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                const startState = maybeToPathSel(
+                    selectStart(
+                        idx,
+                        [{ idx: -1, child: { type: 'child', at: 0 } }],
+                        data,
+                    ),
                     data,
                 );
 

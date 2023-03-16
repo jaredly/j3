@@ -23,7 +23,13 @@ import {
     newSpread,
     mergeNew,
 } from './newNodes';
-import { goLeft, goRight, PathSel, selectStart } from './navigate';
+import {
+    goLeft,
+    goRight,
+    maybeToPathSel,
+    PathSel,
+    selectStart,
+} from './navigate';
 import { handleStringText } from './handleStringText';
 import { handleBackspace } from './handleBackspace';
 import { idText, selPos, splitGraphemes } from '../../src/parse/parse';
@@ -390,9 +396,12 @@ function goToTannot(
     map: Map,
 ): KeyUpdate {
     if (node.tannot != null) {
-        const sel = selectStart(
-            node.tannot,
-            path.concat({ idx, child: { type: 'tannot' } }),
+        const sel = maybeToPathSel(
+            selectStart(
+                node.tannot,
+                path.concat({ idx, child: { type: 'tannot' } }),
+                map,
+            ),
             map,
         );
         if (sel) {

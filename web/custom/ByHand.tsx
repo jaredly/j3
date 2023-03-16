@@ -27,6 +27,7 @@ import {
 } from '../mods/getKeyUpdate';
 import {
     combinePathSel,
+    maybeToPathSel,
     PathSel,
     pathSelEqual,
     selectEnd,
@@ -152,9 +153,8 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
         const map = parseByCharacter(initialText, debug).map;
         const idx = (map[-1] as ListLikeContents).values[0];
-        const at = selectEnd(
-            idx,
-            [{ idx: -1, child: { type: 'child', at: 0 } }],
+        const at = maybeToPathSel(
+            selectEnd(idx, [{ idx: -1, child: { type: 'child', at: 0 } }], map),
             map,
         )!;
         return { map, root: -1, at: [{ start: at }], regs: {} };
