@@ -170,9 +170,7 @@ export const getKeyUpdate = (
         return goLeft(path, idx, state.map);
     }
 
-    const at = toPathSel(fullPath, state.map);
-
-    const pos = selPos(at.sel, textRaw);
+    const pos = pathPos(fullPath, textRaw);
     const map = state.map;
 
     if (key === 'ArrowRight') {
@@ -221,7 +219,7 @@ export const getKeyUpdate = (
         if (pos === 0 && (text.length || last.child.type === 'start')) {
             return newNodeBefore(path, map, {
                 ...newBlank(),
-                selection: combinePathSel(at).slice(-1),
+                selection: fullPath.slice(-1),
             });
         }
         return newNodeAfter(path, map, newBlank());
