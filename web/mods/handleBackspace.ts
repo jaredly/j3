@@ -1,7 +1,13 @@
 import { Path, Selection, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
-import { combinePathSel, maybeToPathSel, PathSel, selectEnd } from './navigate';
+import {
+    combinePathSel,
+    maybeToPathSel,
+    PathSel,
+    selectEnd,
+    toPathSel,
+} from './navigate';
 import {
     KeyUpdate,
     maybeClearParentList,
@@ -10,11 +16,14 @@ import {
 import { splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 
-export function handleBackspace(
-    map: Map,
-    { path, sel: { idx, loc } }: PathSel,
-): KeyUpdate {
-    const node = map[idx];
+export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
+    const flast = fullPath[fullPath.length - 1];
+    const node = map[flast.idx];
+
+    const {
+        path,
+        sel: { idx, loc },
+    } = toPathSel(fullPath, map);
     const last = path[path.length - 1];
     const atStart = loc === 0 || loc === 'start';
 

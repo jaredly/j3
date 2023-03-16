@@ -153,7 +153,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(state.map, at);
+        return handleBackspace(state.map, combinePathSel(at));
     }
 
     if (key === 'ArrowLeft') {
