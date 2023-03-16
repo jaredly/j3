@@ -211,7 +211,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                         type: 'ref',
                         id: suffix,
                         path: {
-                            type: 'expr',
+                            type: 'text',
                             at: i + 1,
                         },
                     },
