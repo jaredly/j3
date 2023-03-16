@@ -202,15 +202,9 @@ export const pathSelForNode = (
         case 'punct':
             return null;
         case 'blinker':
-            return combinePathSel({
-                path: [{ idx, child: { type: node.loc } }],
-                sel: { idx, loc: node.loc },
-            });
+            return [{ idx, child: { type: node.loc } }];
         case 'render':
-            return combinePathSel({
-                path: [],
-                sel: { idx, loc },
-            });
+            return [{ idx, child: { type: loc } }];
         case 'ref': {
             const path: Path[] = [{ idx, child: node.path }];
             const cnode = map[node.id];
@@ -231,10 +225,7 @@ export const pathSelForNode = (
                 case 'list':
                 case 'record':
                 case 'string':
-                    return combinePathSel({
-                        path: [...path, { idx: node.id, child: { type: loc } }],
-                        sel: { idx: node.id, loc },
-                    });
+                    return [...path, { idx: node.id, child: { type: loc } }];
                 case 'identifier':
                     return combinePathSel({
                         path,
