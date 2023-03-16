@@ -24,11 +24,14 @@ import {
     mergeNew,
 } from './newNodes';
 import {
+    combinePathSel,
     goLeft,
     goRight,
+    maybeCombinePathSel,
     maybeToPathSel,
     PathSel,
     selectStart,
+    toPathSel,
 } from './navigate';
 import { handleStringText } from './handleStringText';
 import { handleBackspace } from './handleBackspace';
@@ -43,7 +46,7 @@ export type SelectAndPath = {
 
 export type TheUpdate = {
     map: UpdateMap;
-    selection: PathSel;
+    selection: Path[];
 };
 
 export type KeyUpdate =
@@ -54,7 +57,7 @@ export type KeyUpdate =
       }
     | {
           type: 'select';
-          selection: PathSel;
+          selection: Path[];
       }
     | void;
 
@@ -94,19 +97,16 @@ export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
 
 export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
     if (update?.type === 'update' && update?.update) {
+        const map = applyUpdateMap(state.map, update.update.map);
         return {
             ...state,
-            map: applyUpdateMap(state.map, update.update.map),
-            at: [
-                {
-                    start: update.update.selection,
-                },
-            ],
+            map: map,
+            at: [{ start: toPathSel(update.update.selection, map) }],
         };
     } else if (update?.type === 'select') {
         return {
             ...state,
-            at: [{ start: update.selection }],
+            at: [{ start: toPathSel(update.selection, state.map) }],
         };
     }
 };
@@ -157,10 +157,10 @@ export const getKeyUpdate = (
             const pos = selPos(at.sel, node.text);
             return {
                 type: 'select',
-                selection: {
+                selection: combinePathSel({
                     sel: { idx: at.sel.idx, loc: pos - 1 },
                     path: at.path,
-                },
+                }),
             };
         }
         return goLeft(at.path, at.sel.idx, state.map);
@@ -177,7 +177,7 @@ export const getKeyUpdate = (
         if (pos < text.length) {
             return {
                 type: 'select',
-                selection: { sel: { idx, loc: pos + 1 }, path },
+                selection: combinePathSel({ sel: { idx, loc: pos + 1 }, path }),
             };
         }
         return goRight(path, idx, map);
@@ -201,7 +201,7 @@ export const getKeyUpdate = (
             ) {
                 return {
                     type: 'select',
-                    selection: {
+                    selection: combinePathSel({
                         sel: {
                             idx: parent.values[last.child.at + 1],
                             loc: 'start',
@@ -212,7 +212,7 @@ export const getKeyUpdate = (
                                 child: { type: 'child', at: last.child.at + 1 },
                             },
                         ]),
-                    },
+                    }),
                 };
             }
         }
@@ -232,7 +232,7 @@ export const getKeyUpdate = (
     }
 
     if (')]}'.includes(key)) {
-        const selection = closeListLike(key, path, map);
+        const selection = maybeCombinePathSel(closeListLike(key, path, map));
         return selection ? { type: 'select', selection } : undefined;
     }
 
@@ -296,13 +296,13 @@ export const getKeyUpdate = (
                 type: 'update',
                 update: {
                     ...nat,
-                    selection: {
+                    selection: combinePathSel({
                         ...nat.selection,
                         path: path.slice(0, -1).concat({
                             idx: last.idx,
                             child: { type: 'attribute', at: last.child.at + 1 },
                         }),
-                    },
+                    }),
                 },
             };
         }
@@ -351,7 +351,7 @@ function addToListLike(
         type: 'update',
         update: {
             ...newThing,
-            selection: {
+            selection: combinePathSel({
                 ...newThing.selection,
                 path: path
                     .slice(0, -1)
@@ -360,7 +360,7 @@ function addToListLike(
                         child: { type: 'child', at: 0 },
                     })
                     .concat(newThing.selection.path),
-            },
+            }),
         },
     };
 }
@@ -384,7 +384,10 @@ function updateText(
         type: 'update',
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
-            selection: { sel: { idx, loc: pos + input.length }, path },
+            selection: combinePathSel({
+                sel: { idx, loc: pos + input.length },
+                path,
+            }),
         },
     };
 }
@@ -396,12 +399,9 @@ function goToTannot(
     map: Map,
 ): KeyUpdate {
     if (node.tannot != null) {
-        const sel = maybeToPathSel(
-            selectStart(
-                node.tannot,
-                path.concat({ idx, child: { type: 'tannot' } }),
-                map,
-            ),
+        const sel = selectStart(
+            node.tannot,
+            path.concat({ idx, child: { type: 'tannot' } }),
             map,
         );
         if (sel) {
@@ -414,12 +414,12 @@ function goToTannot(
         type: 'update',
         update: {
             ...blank,
-            selection: {
+            selection: combinePathSel({
                 ...blank.selection,
                 path: path
                     .concat({ idx, child: { type: 'tannot' } })
                     .concat(blank.selection.path),
-            },
+            }),
         },
     };
 }
@@ -483,10 +483,10 @@ function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
         type: 'update',
         update: {
             ...newThing,
-            selection: {
+            selection: combinePathSel({
                 ...newThing.selection,
                 path: path.concat(newThing.selection.path),
-            },
+            }),
         },
     };
 }
@@ -505,10 +505,10 @@ export function replacePathWith(
         update: {
             ...newThing,
             map: { ...newThing.map, ...update },
-            selection: {
+            selection: combinePathSel({
                 ...newThing.selection,
                 path: path.concat(newThing.selection.path),
-            },
+            }),
         },
     };
 }
@@ -561,7 +561,7 @@ export const newNodeAfter = (
             type: 'update',
             update: {
                 ...newThing,
-                selection: {
+                selection: combinePathSel({
                     ...newThing.selection,
                     path: path
                         .slice(0, i)
@@ -578,7 +578,7 @@ export const newNodeAfter = (
                             },
                         })
                         .concat(newThing.selection.path),
-                },
+                }),
             },
         };
     }
@@ -612,7 +612,7 @@ export const newNodeBefore = (
             type: 'update',
             update: {
                 ...newThing,
-                selection: {
+                selection: combinePathSel({
                     ...newThing.selection,
                     path: path
                         .slice(0, i)
@@ -624,7 +624,7 @@ export const newNodeBefore = (
                             },
                         })
                         .concat(newThing.selection.path),
-                },
+                }),
             },
         };
     }
@@ -642,12 +642,12 @@ export const maybeClearParentList = (path: Path[], map: Map): KeyUpdate => {
                 type: 'update',
                 update: {
                     map: { [gp.idx]: { ...gpnode, values: [] } },
-                    selection: {
+                    selection: combinePathSel({
                         sel: { idx: gp.idx, loc: 'inside' },
                         path: path
                             .slice(0, -1)
                             .concat({ idx: gp.idx, child: { type: 'inside' } }),
-                    },
+                    }),
                 },
             };
         }

@@ -1,7 +1,7 @@
 import { Path, Selection, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
-import { maybeToPathSel, PathSel, selectEnd } from './navigate';
+import { combinePathSel, maybeToPathSel, PathSel, selectEnd } from './navigate';
 import {
     KeyUpdate,
     maybeClearParentList,
@@ -96,7 +96,7 @@ export function handleBackspace(
             type: 'update',
             update: {
                 map: um,
-                selection: {
+                selection: combinePathSel({
                     sel: { idx: prev, loc },
                     path: path.slice(0, -1).concat([
                         {
@@ -110,7 +110,7 @@ export function handleBackspace(
                                     : { type: 'record-target' },
                         },
                     ]),
-                },
+                }),
             },
         };
     }
@@ -153,7 +153,7 @@ export function handleBackspace(
                 type: 'update',
                 update: {
                     map: um,
-                    selection: {
+                    selection: combinePathSel({
                         sel: { idx: prev, loc: pnode.text.length },
                         path: path.slice(0, -1).concat([
                             {
@@ -161,7 +161,7 @@ export function handleBackspace(
                                 child: { type: 'text', at: last.child.at - 1 },
                             },
                         ]),
-                    },
+                    }),
                 },
             };
         }
@@ -207,7 +207,7 @@ export function handleBackspace(
                 type: 'update',
                 update: {
                     map: um,
-                    selection: {
+                    selection: combinePathSel({
                         sel: { idx: prev, loc: pnode.text.length },
                         path: path.slice(0, -1).concat([
                             {
@@ -215,7 +215,7 @@ export function handleBackspace(
                                 child: { type: 'text', at: last.child.at - 1 },
                             },
                         ]),
-                    },
+                    }),
                 },
             };
         }
@@ -241,27 +241,24 @@ export function handleBackspace(
                         map: {
                             [last.idx]: { ...parent, values: [] },
                         },
-                        selection: {
+                        selection: combinePathSel({
                             sel: { idx: last.idx, loc: 'inside' },
                             path: path.slice(0, -1).concat({
                                 idx: last.idx,
                                 child: { type: 'inside' },
                             }),
-                        },
+                        }),
                     },
                 };
             }
-            const sel = maybeToPathSel(
-                selectEnd(
-                    values[last.child.at - 1],
-                    path.slice(0, -1).concat([
-                        {
-                            idx: last.idx,
-                            child: { type: 'child', at: last.child.at - 1 },
-                        },
-                    ]),
-                    map,
-                ),
+            const sel = selectEnd(
+                values[last.child.at - 1],
+                path.slice(0, -1).concat([
+                    {
+                        idx: last.idx,
+                        child: { type: 'child', at: last.child.at - 1 },
+                    },
+                ]),
                 map,
             );
             if (!sel) {
@@ -312,7 +309,7 @@ export function handleBackspace(
                                       text.slice(pos).join(''),
                               },
                 },
-                selection: { sel: { idx, loc: pos - 1 }, path },
+                selection: combinePathSel({ sel: { idx, loc: pos - 1 }, path }),
             },
         };
     }
@@ -345,7 +342,7 @@ export const maybeRemovePrevBlank = (
                 type: 'update',
                 update: {
                     map: { [gp.idx]: { ...gpnode, values } },
-                    selection: {
+                    selection: combinePathSel({
                         sel,
                         path: path
                             .slice(0, -1)
@@ -354,7 +351,7 @@ export const maybeRemovePrevBlank = (
                                 child: { type: 'child', at: gp.child.at - 1 },
                             })
                             .concat(extraPath ?? []),
-                    },
+                    }),
                 },
             };
         }

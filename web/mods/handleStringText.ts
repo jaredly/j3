@@ -4,6 +4,7 @@ import { nidx } from '../../src/grammar';
 import { stringText } from '../../src/types/cst';
 import { KeyUpdate } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
+import { combinePathSel } from './navigate';
 
 export function handleStringText({
     key,
@@ -26,12 +27,12 @@ export function handleStringText({
     if (key === '"' && pos === text.length) {
         return {
             type: 'select',
-            selection: {
+            selection: combinePathSel({
                 sel: { idx: last.idx, loc: 'end' },
                 path: path
                     .slice(0, -1)
                     .concat({ idx: last.idx, child: { type: 'end' } }),
-            },
+            }),
         };
     }
 
@@ -56,7 +57,7 @@ export function handleStringText({
         type: 'update',
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
-            selection: { sel: { idx, loc: pos + 1 }, path },
+            selection: combinePathSel({ sel: { idx, loc: pos + 1 }, path }),
         },
     };
 }
@@ -111,13 +112,13 @@ function splitString(
                     templates,
                 },
             },
-            selection: {
+            selection: combinePathSel({
                 sel: { idx: blank.loc.idx, loc: 'start' },
                 path: path.slice(0, -1).concat({
                     idx: last.idx,
                     child: { type: 'expr', at: last.child.at + 1 },
                 }),
-            },
+            }),
         },
     };
 }

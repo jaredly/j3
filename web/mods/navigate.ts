@@ -44,7 +44,9 @@ export const maybeToPathSel = (
     return path ? toPathSel(path, map) : null;
 };
 
-export const maybeCombinePathSel = (ps: PathSel | null): Path[] | null => {
+export const maybeCombinePathSel = (
+    ps: PathSel | null | void,
+): Path[] | null => {
     return ps ? combinePathSel(ps) : null;
 };
 
@@ -120,7 +122,7 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
             return prev
                 ? {
                       type: 'select',
-                      selection: toPathSel(path.slice(0, -1).concat(prev), map),
+                      selection: path.slice(0, -1).concat(prev),
                   }
                 : goLeft(path.slice(0, -1), last.idx, map);
         }
@@ -150,7 +152,7 @@ export const goRight = (
         if (sel) {
             return {
                 type: 'select',
-                selection: toPathSel(sel, map),
+                selection: sel,
             };
         }
     }
@@ -164,7 +166,7 @@ export const goRight = (
             return prev
                 ? {
                       type: 'select',
-                      selection: toPathSel(path.slice(0, -1).concat(prev), map),
+                      selection: path.slice(0, -1).concat(prev),
                   }
                 : goRight(
                       path.slice(0, -1),
