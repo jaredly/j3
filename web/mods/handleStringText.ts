@@ -27,12 +27,9 @@ export function handleStringText({
     if (key === '"' && pos === text.length) {
         return {
             type: 'select',
-            selection: combinePathSel({
-                sel: { idx: last.idx, loc: 'end' },
-                path: path
-                    .slice(0, -1)
-                    .concat({ idx: last.idx, child: { type: 'end' } }),
-            }),
+            selection: path
+                .slice(0, -1)
+                .concat({ idx: last.idx, child: { type: 'end' } }),
         };
     }
 
@@ -57,7 +54,9 @@ export function handleStringText({
         type: 'update',
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
-            selection: combinePathSel({ sel: { idx, loc: pos + 1 }, path }),
+            selection: path.concat([
+                { idx, child: { type: 'subtext', at: pos + 1 } },
+            ]),
         },
     };
 }
@@ -112,13 +111,16 @@ function splitString(
                     templates,
                 },
             },
-            selection: combinePathSel({
-                sel: { idx: blank.loc.idx, loc: 'start' },
-                path: path.slice(0, -1).concat({
+            selection: path.slice(0, -1).concat(
+                {
                     idx: last.idx,
                     child: { type: 'expr', at: last.child.at + 1 },
-                }),
-            }),
+                },
+                {
+                    idx: blank.loc.idx,
+                    child: { type: 'start' },
+                },
+            ),
         },
     };
 }

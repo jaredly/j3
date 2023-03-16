@@ -91,7 +91,7 @@ export const selectStart = (
             return base.concat(sel);
         }
     }
-    return combinePathSel({ sel: { idx, loc: 'start' }, path: base });
+    return base.concat([{ idx, child: { type: 'start' } }]);
 };
 
 export const selectEnd = (
@@ -106,7 +106,7 @@ export const selectEnd = (
             return base.concat(sel);
         }
     }
-    return combinePathSel({ sel: { idx, loc: 'end' }, path: base });
+    return base.concat([{ idx, child: { type: 'end' } }]);
 };
 
 export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
@@ -120,10 +120,7 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
         if (!ps) continue;
         if (ps.length && equal(ps[0].child, last.child)) {
             return prev
-                ? {
-                      type: 'select',
-                      selection: path.slice(0, -1).concat(prev),
-                  }
+                ? { type: 'select', selection: path.slice(0, -1).concat(prev) }
                 : goLeft(path.slice(0, -1), last.idx, map);
         }
         prev = ps;
@@ -214,16 +211,18 @@ export const pathSelForNode = (
                 case 'string':
                     return [...path, { idx: node.id, child: { type: loc } }];
                 case 'identifier':
-                    return combinePathSel({
-                        path,
-                        sel: {
+                    return path.concat([
+                        {
                             idx: node.id,
-                            loc:
-                                loc === 'start'
-                                    ? 0
-                                    : splitGraphemes(cnode.text).length,
+                            child: {
+                                type: 'subtext',
+                                at:
+                                    loc === 'start'
+                                        ? 0
+                                        : splitGraphemes(cnode.text).length,
+                            },
                         },
-                    });
+                    ]);
                 case 'spread':
                 case 'recordAccess':
                     if (loc === 'end') {

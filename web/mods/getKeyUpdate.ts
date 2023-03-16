@@ -157,10 +157,12 @@ export const getKeyUpdate = (
             const pos = selPos(at.sel, node.text);
             return {
                 type: 'select',
-                selection: combinePathSel({
-                    sel: { idx: at.sel.idx, loc: pos - 1 },
-                    path: at.path,
-                }),
+                selection: at.path.concat([
+                    {
+                        idx: at.sel.idx,
+                        child: { type: 'subtext', at: pos - 1 },
+                    },
+                ]),
             };
         }
         return goLeft(at.path, at.sel.idx, state.map);
@@ -177,7 +179,9 @@ export const getKeyUpdate = (
         if (pos < text.length) {
             return {
                 type: 'select',
-                selection: combinePathSel({ sel: { idx, loc: pos + 1 }, path }),
+                selection: path.concat([
+                    { idx, child: { type: 'subtext', at: pos + 1 } },
+                ]),
             };
         }
         return goRight(path, idx, map);
@@ -201,18 +205,16 @@ export const getKeyUpdate = (
             ) {
                 return {
                     type: 'select',
-                    selection: combinePathSel({
-                        sel: {
-                            idx: parent.values[last.child.at + 1],
-                            loc: 'start',
+                    selection: path.slice(0, -1).concat([
+                        {
+                            idx: last.idx,
+                            child: { type: 'child', at: last.child.at + 1 },
                         },
-                        path: path.slice(0, -1).concat([
-                            {
-                                idx: last.idx,
-                                child: { type: 'child', at: last.child.at + 1 },
-                            },
-                        ]),
-                    }),
+                        {
+                            idx: parent.values[last.child.at + 1],
+                            child: { type: 'start' },
+                        },
+                    ]),
                 };
             }
         }
@@ -384,10 +386,12 @@ function updateText(
         type: 'update',
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
-            selection: combinePathSel({
-                sel: { idx, loc: pos + input.length },
-                path,
-            }),
+            selection: path.concat([
+                {
+                    idx,
+                    child: { type: 'subtext', at: pos + input.length },
+                },
+            ]),
         },
     };
 }
@@ -642,12 +646,9 @@ export const maybeClearParentList = (path: Path[], map: Map): KeyUpdate => {
                 type: 'update',
                 update: {
                     map: { [gp.idx]: { ...gpnode, values: [] } },
-                    selection: combinePathSel({
-                        sel: { idx: gp.idx, loc: 'inside' },
-                        path: path
-                            .slice(0, -1)
-                            .concat({ idx: gp.idx, child: { type: 'inside' } }),
-                    }),
+                    selection: path
+                        .slice(0, -1)
+                        .concat({ idx: gp.idx, child: { type: 'inside' } }),
                 },
             };
         }
