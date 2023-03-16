@@ -1,4 +1,4 @@
-import { Path, UpdateMap } from '../store';
+import { Path, Selection, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { PathSel, selectEnd } from './navigate';
@@ -6,9 +6,8 @@ import {
     KeyUpdate,
     maybeClearParentList,
     replacePathWith,
-    State,
 } from './getKeyUpdate';
-import { selPos, splitGraphemes } from '../../src/parse/parse';
+import { splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 
 export function handleBackspace(
@@ -308,4 +307,56 @@ export function handleBackspace(
             },
         };
     }
+
+    if (atStart) {
+        const um = maybeRemovePrevBlank(path, map, { idx, loc });
+        if (um) {
+            return um;
+        }
+    }
 }
+
+export const maybeRemovePrevBlank = (
+    path: Path[],
+    map: Map,
+    sel: Selection,
+    extraPath?: Path[],
+): KeyUpdate => {
+    if (path.length === 1) {
+        return;
+    }
+    const gp = path[path.length - 1];
+    if (gp && gp.child.type === 'child' && gp.child.at > 0) {
+        const gpnode = map[gp.idx] as ListLikeContents & MNodeExtra;
+        const prev = map[gpnode.values[gp.child.at - 1]];
+        if (prev.type === 'blank') {
+            const values = gpnode.values.slice();
+            values.splice(gp.child.at - 1, 1);
+            return {
+                type: 'update',
+                update: {
+                    map: { [gp.idx]: { ...gpnode, values } },
+                    selection: sel,
+                    path: path
+                        .slice(0, -1)
+                        .concat({
+                            idx: gp.idx,
+                            child: { type: 'child', at: gp.child.at - 1 },
+                        })
+                        .concat(extraPath ?? []),
+                },
+            };
+        }
+    }
+    if (gp.child.type === 'start') {
+        return maybeRemovePrevBlank(
+            path.slice(0, -1),
+            map,
+            {
+                idx: gp.idx,
+                loc: 'start',
+            },
+            [{ idx: gp.idx, child: { type: 'start' } }],
+        );
+    }
+};

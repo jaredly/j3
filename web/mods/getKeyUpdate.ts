@@ -7,7 +7,7 @@ import {
     UpdateMap,
 } from '../store';
 import { Events } from '../old/Nodes';
-import { ListLikeContents, Map, MNode } from '../../src/types/mcst';
+import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { closeListLike } from './closeListLike';
 import { replacePath } from '../old/RecordText';
 import { modChildren } from './modChildren';
@@ -212,8 +212,13 @@ export const getKeyUpdate = (
                 };
             }
         }
-        if (pos === 0 && text.length) {
-            return newNodeBefore(path, map, newBlank());
+        if (pos === 0 && (text.length || last.child.type === 'start')) {
+            return newNodeBefore(path, map, {
+                ...newBlank(),
+                selection: at.sel,
+                path:
+                    last.child.type === 'start' ? [path[path.length - 1]] : [],
+            });
         }
         return newNodeAfter(path, map, newBlank());
     }
@@ -270,13 +275,6 @@ export const getKeyUpdate = (
                 // Delete the accessText
                 nat.map[idx] = null;
                 return replacePathWith(path.slice(0, -1), map, nat);
-                // return {
-                //     type: 'update',
-                //     update: {
-                //         ...nat,
-                //         path: path.slice(0, -2).concat(nat.path),
-                //     },
-                // };
             }
 
             const nat = newAccessText(text.slice(pos));
@@ -596,7 +594,7 @@ export const newNodeBefore = (
                         idx: parent.idx,
                         child: {
                             type: 'child',
-                            at: at,
+                            at: at + 1,
                         },
                     })
                     .concat(newThing.path),

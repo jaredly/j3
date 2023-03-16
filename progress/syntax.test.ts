@@ -216,6 +216,22 @@ id
 ( o^l^b)
 (o)
 (list id)
+
+( (^l^b
+(())
+(list (list))
+
+((^l 
+( ())
+(list blank (list))
+
+(h^l a)
+( ah)
+(list blank id)
+
+( (^la^l^lb
+(b a ())
+(list id id (list))
 `;
 
 describe('a test', () => {
