@@ -35,6 +35,17 @@ export const toPathSel = (path: Path[], map: Map): PathSel => {
     };
 };
 
+export const maybeToPathSel = (
+    path: Path[] | null,
+    map: Map,
+): PathSel | null => {
+    return path ? toPathSel(path, map) : null;
+};
+
+export const maybeCombinePathSel = (ps: PathSel | null): Path[] | null => {
+    return ps ? combinePathSel(ps) : null;
+};
+
 export const combinePathSel = ({
     path,
     sel,
@@ -42,8 +53,8 @@ export const combinePathSel = ({
     path: Path[];
     sel: Selection;
 }): Path[] => {
-    const last = path[path.length - 1];
-    if (last.idx === sel.idx) {
+    const last = path.length ? path[path.length - 1] : null;
+    if (last?.idx === sel.idx) {
         return path;
     }
     return path.concat([
@@ -71,7 +82,10 @@ export const selectStart = (
 ): null | PathSel => {
     const pnodes = getNodes(map[idx]);
     for (let pnode of pnodes) {
-        const sel = pathSelForNode(pnode, idx, 'start', map);
+        const sel = maybeToPathSel(
+            pathSelForNode(pnode, idx, 'start', map),
+            map,
+        );
         if (sel) {
             return { sel: sel.sel, path: base.concat(sel.path) };
         }
@@ -86,7 +100,7 @@ export const selectEnd = (
 ): null | PathSel => {
     const pnodes = getNodes(map[idx]).reverse();
     for (let pnode of pnodes) {
-        const sel = pathSelForNode(pnode, idx, 'end', map);
+        const sel = maybeToPathSel(pathSelForNode(pnode, idx, 'end', map), map);
         if (sel) {
             return { sel: sel.sel, path: base.concat(sel.path) };
         }
@@ -101,7 +115,10 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
 
     let prev: PathSel | null = null;
     for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx, 'end', map);
+        const ps = maybeToPathSel(
+            pathSelForNode(pnode, last.idx, 'end', map),
+            map,
+        );
         if (!ps) continue;
         if (ps.path.length && equal(ps.path[0].child, last.child)) {
             return prev
@@ -148,7 +165,10 @@ export const goRight = (
     const pnodes = getNodes(map[last.idx]).reverse();
     let prev: PathSel | null = null;
     for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx, 'start', map);
+        const ps = maybeToPathSel(
+            pathSelForNode(pnode, last.idx, 'start', map),
+            map,
+        );
         if (!ps) continue;
         if (ps.path.length && equal(ps.path[0].child, last.child)) {
             return prev
@@ -177,28 +197,33 @@ export const pathSelForNode = (
     idx: number,
     loc: 'start' | 'end',
     map: Map,
-): null | PathSel => {
+): null | Path[] => {
     switch (node.type) {
         case 'punct':
             return null;
         case 'blinker':
-            return {
+            return combinePathSel({
                 path: [{ idx, child: { type: node.loc } }],
                 sel: { idx, loc: node.loc },
-            };
+            });
         case 'render':
-            return {
+            return combinePathSel({
                 path: [],
                 sel: { idx, loc },
-            };
+            });
         case 'ref': {
             const path: Path[] = [{ idx, child: node.path }];
             const cnode = map[node.id];
             if (cnode.tannot && loc === 'end') {
-                return selectEnd(
-                    cnode.tannot,
-                    path.concat({ idx: node.id, child: { type: 'tannot' } }),
-                    map,
+                return maybeCombinePathSel(
+                    selectEnd(
+                        cnode.tannot,
+                        path.concat({
+                            idx: node.id,
+                            child: { type: 'tannot' },
+                        }),
+                        map,
+                    ),
                 );
             }
             switch (cnode.type) {
@@ -206,12 +231,12 @@ export const pathSelForNode = (
                 case 'list':
                 case 'record':
                 case 'string':
-                    return {
+                    return combinePathSel({
                         path: [...path, { idx: node.id, child: { type: loc } }],
                         sel: { idx: node.id, loc },
-                    };
+                    });
                 case 'identifier':
-                    return {
+                    return combinePathSel({
                         path,
                         sel: {
                             idx: node.id,
@@ -220,17 +245,21 @@ export const pathSelForNode = (
                                     ? 0
                                     : splitGraphemes(cnode.text).length,
                         },
-                    };
+                    });
                 case 'spread':
                 case 'recordAccess':
                     if (loc === 'end') {
-                        return selectEnd(node.id, path, map);
+                        return maybeCombinePathSel(
+                            selectEnd(node.id, path, map),
+                        );
                     }
                     if (loc === 'start') {
-                        return selectStart(node.id, path, map);
+                        return maybeCombinePathSel(
+                            selectStart(node.id, path, map),
+                        );
                     }
             }
-            return { path, sel: { idx: node.id, loc } };
+            return maybeCombinePathSel({ path, sel: { idx: node.id, loc } });
         }
     }
 };
