@@ -165,11 +165,12 @@ export const onKeyDown = (
 
     if (evt.key === ')' || evt.key === ']' || evt.key === '}') {
         evt.preventDefault();
-        const selection = closeListLike(evt.key, path, store.map);
-        if (selection) {
-            maybeCommitAutoComplete(idx, ectx, store);
-            return setSelection(store, selection.sel);
-        }
+        // STOPSHIP
+        // const selection = closeListLike(evt.key, path, store.map);
+        // if (selection) {
+        //     maybeCommitAutoComplete(idx, ectx, store);
+        //     return setSelection(store, selection.sel);
+        // }
     }
 
     if (evt.key === '·' || (evt.key === '(' && evt.altKey)) {

@@ -228,7 +228,7 @@ export const getKeyUpdate = (
     }
 
     if (')]}'.includes(key)) {
-        const selection = maybeCombinePathSel(closeListLike(key, path, map));
+        const selection = closeListLike(key, path, map);
         return selection ? { type: 'select', selection } : undefined;
     }
 

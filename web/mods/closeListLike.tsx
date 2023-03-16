@@ -2,13 +2,13 @@ import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, Map } from '../../src/types/mcst';
 import { Path } from '../store';
 import { SelectAndPath } from './getKeyUpdate';
-import { PathSel } from './navigate';
+import { combinePathSel, PathSel } from './navigate';
 
 export const closeListLike = (
     key: string,
     path: Path[],
     map: Map,
-): PathSel | void => {
+): Path[] | void => {
     const looking = ({ ')': 'list', ']': 'array', '}': 'record' } as const)[
         key
     ];
@@ -19,7 +19,7 @@ export const closeListLike = (
         }
         const node = map[parent.idx];
         if (node.type === looking) {
-            return {
+            return combinePathSel({
                 sel: {
                     idx: parent.idx,
                     loc: 'end',
@@ -27,7 +27,7 @@ export const closeListLike = (
                 path: path
                     .slice(0, i)
                     .concat({ idx: parent.idx, child: { type: 'end' } }),
-            };
+            });
         }
         if (
             key === '}' &&
@@ -42,7 +42,7 @@ export const closeListLike = (
                 throw new Error(`${parent.child.at} - ${JSON.stringify(node)}`);
             }
             const suffix = node.templates[parent.child.at - 1].suffix;
-            return {
+            return combinePathSel({
                 sel: {
                     idx: suffix,
                     loc: 0,
@@ -54,7 +54,7 @@ export const closeListLike = (
                         at: parent.child.at,
                     },
                 }),
-            };
+            });
         }
     }
 };
