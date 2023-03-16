@@ -30,7 +30,7 @@ export function wrapWithParens(
 
     const update = replacePath(parent, nw.loc.idx, map);
     update[nw.loc.idx] = nw;
-    return { map: update, selection: { idx, loc }, path: childPath };
+    return { map: update, selection: { sel: { idx, loc }, path: childPath } };
 }
 
 export function newListLike(

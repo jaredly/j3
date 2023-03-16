@@ -107,8 +107,10 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
             return prev
                 ? {
                       type: 'select',
-                      selection: prev.sel,
-                      path: path.slice(0, -1).concat(prev.path),
+                      selection: {
+                          sel: prev.sel,
+                          path: path.slice(0, -1).concat(prev.path),
+                      },
                   }
                 : goLeft(path.slice(0, -1), last.idx, map);
         }
@@ -138,8 +140,7 @@ export const goRight = (
         if (sel) {
             return {
                 type: 'select',
-                selection: sel.sel,
-                path: sel.path,
+                selection: sel,
             };
         }
     }
@@ -153,8 +154,10 @@ export const goRight = (
             return prev
                 ? {
                       type: 'select',
-                      selection: prev.sel,
-                      path: path.slice(0, -1).concat(prev.path),
+                      selection: {
+                          sel: prev.sel,
+                          path: path.slice(0, -1).concat(prev.path),
+                      },
                   }
                 : goRight(
                       path.slice(0, -1),

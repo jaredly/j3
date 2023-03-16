@@ -2,12 +2,13 @@ import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, Map } from '../../src/types/mcst';
 import { Path } from '../store';
 import { SelectAndPath } from './getKeyUpdate';
+import { PathSel } from './navigate';
 
 export const closeListLike = (
     key: string,
     path: Path[],
     map: Map,
-): SelectAndPath | void => {
+): PathSel | void => {
     const looking = ({ ')': 'list', ']': 'array', '}': 'record' } as const)[
         key
     ];
@@ -19,7 +20,7 @@ export const closeListLike = (
         const node = map[parent.idx];
         if (node.type === looking) {
             return {
-                selection: {
+                sel: {
                     idx: parent.idx,
                     loc: 'end',
                 },
@@ -42,7 +43,7 @@ export const closeListLike = (
             }
             const suffix = node.templates[parent.child.at - 1].suffix;
             return {
-                selection: {
+                sel: {
                     idx: suffix,
                     loc: 0,
                 },

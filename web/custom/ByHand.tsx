@@ -553,27 +553,24 @@ export const handleKey = (state: UIState, key: string): UIState => {
     for (let i = 0; i < state.at.length; i++) {
         const update = getKeyUpdate(key, state, state.at[i].start);
         if (!update) continue;
-        if (update?.type === 'select' && isRootPath(update.path)) {
+        if (update?.type === 'select' && isRootPath(update.selection.path)) {
             continue;
         }
         if (
             update?.type === 'update' &&
             update.update &&
-            isRootPath(update.update.path)
+            isRootPath(update.update.selection.path)
         ) {
             continue;
         }
         if (update.type === 'select') {
             state.at[i] = {
-                start: { path: update.path, sel: update.selection },
+                start: update.selection,
             };
         } else if (update.update) {
             state.map = applyUpdateMap(state.map, update.update.map);
             state.at[i] = {
-                start: {
-                    path: update.update.path,
-                    sel: update.update.selection,
-                },
+                start: update.update.selection,
             };
         }
     }

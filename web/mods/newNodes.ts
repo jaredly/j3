@@ -16,8 +16,7 @@ export const newBlank = (idx = nidx()): NewThing => {
             [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
         },
         idx,
-        selection: { idx, loc: 'start' },
-        path: [],
+        selection: { sel: { idx, loc: 'start' }, path: [] },
     };
 };
 
@@ -31,8 +30,10 @@ export const newSpread = (iid: number, idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx: iid, loc: 0 },
-        path: [{ idx, child: { type: 'spread-contents' } }],
+        selection: {
+            sel: { idx: iid, loc: 0 },
+            path: [{ idx, child: { type: 'spread-contents' } }],
+        },
     };
 };
 
@@ -57,8 +58,10 @@ export const newRecordAccess = (
             },
         },
         idx,
-        selection: { idx: aidx, loc: 0 },
-        path: [{ idx, child: { type: 'attribute', at: 1 } }],
+        selection: {
+            sel: { idx: aidx, loc: 0 },
+            path: [{ idx, child: { type: 'attribute', at: 1 } }],
+        },
     };
 };
 
@@ -72,8 +75,7 @@ export const newAccessText = (text: string[], idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx, loc: text.length },
-        path: [],
+        selection: { sel: { idx, loc: text.length }, path: [] },
     };
 };
 
@@ -87,8 +89,7 @@ export const newId = (key: string[], idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx, loc: key.length },
-        path: [],
+        selection: { sel: { idx, loc: key.length }, path: [] },
     };
 };
 
@@ -109,8 +110,10 @@ export const newString = (idx = nidx()): NewThing => {
             },
         },
         idx: idx,
-        selection: { idx: nid, loc: 0 },
-        path: [{ idx, child: { type: 'text', at: 0 } }],
+        selection: {
+            sel: { idx: nid, loc: 0 },
+            path: [{ idx, child: { type: 'text', at: 0 } }],
+        },
     };
 };
 
@@ -129,12 +132,17 @@ export function newListLike(
             },
         },
         idx,
-        path: child
-            ? [{ idx, child: { type: 'child', at: 0 } }, ...child.path]
-            : [{ idx, child: { type: 'inside' } }],
-        selection: child?.selection ?? {
-            idx,
-            loc: 'inside',
+        selection: {
+            sel: child?.selection.sel ?? {
+                idx,
+                loc: 'inside',
+            },
+            path: child
+                ? [
+                      { idx, child: { type: 'child', at: 0 } },
+                      ...child.selection.path,
+                  ]
+                : [{ idx, child: { type: 'inside' } }],
         },
     };
 }
