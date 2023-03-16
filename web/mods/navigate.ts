@@ -109,7 +109,7 @@ export const selectEnd = (
     return base.concat([{ idx, child: { type: 'end' } }]);
 };
 
-export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
+export const goLeft = (path: Path[], map: Map): KeyUpdate => {
     if (!path.length) return;
     const last = path[path.length - 1];
     const pnodes = getNodes(map[last.idx]);
@@ -121,12 +121,12 @@ export const goLeft = (path: Path[], idx: number, map: Map): KeyUpdate => {
         if (ps.length && equal(ps[0].child, last.child)) {
             return prev
                 ? { type: 'select', selection: path.slice(0, -1).concat(prev) }
-                : goLeft(path.slice(0, -1), last.idx, map);
+                : goLeft(path.slice(0, -1), map);
         }
         prev = ps;
     }
 
-    throw new Error(`current not vound in pnodes`);
+    return goLeft(path.slice(0, -1), map);
 };
 
 export const goRight = (

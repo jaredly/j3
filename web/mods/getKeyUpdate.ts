@@ -111,6 +111,14 @@ export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
     }
 };
 
+const isPathAtStart = (text: string, path: PathChild) => {
+    return (
+        // !(path.type === 'end' && text.length > 0) &&
+        // !(typeof loc === 'number' && loc > 0)
+        path.type === 'start' || (path.type === 'subtext' && path.at === 0)
+    );
+};
+
 const isAtStart = (text: string, loc: Selection['loc']) => {
     return (
         !(loc === 'end' && text.length > 0) &&
@@ -131,12 +139,8 @@ export const getKeyUpdate = (
     if (!fullPath.length) {
         throw new Error(`no path ${key} ${JSON.stringify(state.map)}`);
     }
-    const {
-        path,
-        sel: { idx, loc },
-    } = toPathSel(fullPath, state.map);
-    const last = path[path.length - 1];
-    const node = state.map[idx];
+    const flast = fullPath[fullPath.length - 1];
+    const node = state.map[flast.idx];
 
     const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
@@ -154,8 +158,11 @@ export const getKeyUpdate = (
         return handleBackspace(state.map, fullPath);
     }
 
+    const idx = flast.idx;
+    const { path } = toPathSel(fullPath, state.map);
+
     if (key === 'ArrowLeft') {
-        if ('text' in node && !isAtStart(node.text, loc)) {
+        if ('text' in node && !isPathAtStart(node.text, flast.child)) {
             const pos = pathPos(fullPath, node.text);
             return {
                 type: 'select',
@@ -167,8 +174,10 @@ export const getKeyUpdate = (
                 ]),
             };
         }
-        return goLeft(path, idx, state.map);
+        return goLeft(fullPath, state.map);
     }
+
+    const last = path[path.length - 1];
 
     const pos = pathPos(fullPath, textRaw);
     const map = state.map;
