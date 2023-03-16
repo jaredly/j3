@@ -331,31 +331,27 @@ export const ByHand = () => {
                     }
                 }}
             >
-                {React.useMemo(
-                    () =>
-                        tops.map((top, i) => (
-                            <div key={top} style={{ marginBottom: 8 }}>
-                                <Render
-                                    debug={debug}
-                                    idx={top}
-                                    map={state.map}
-                                    reg={reg}
-                                    display={ctx.display}
-                                    dispatch={dispatch}
-                                    path={[
-                                        {
-                                            idx: state.root,
-                                            child: { type: 'child', at: i },
-                                        },
-                                    ]}
-                                />
-                                {debug ? (
-                                    <div>{sexp(fromMCST(top, state.map))}</div>
-                                ) : null}
-                            </div>
-                        )),
-                    [debug, tops, state.map, reg, ctx.display],
-                )}
+                {tops.map((top, i) => (
+                    <div key={top} style={{ marginBottom: 8 }}>
+                        <Render
+                            debug={debug}
+                            idx={top}
+                            map={state.map}
+                            reg={reg}
+                            display={ctx.display}
+                            dispatch={dispatch}
+                            path={[
+                                {
+                                    idx: state.root,
+                                    child: { type: 'child', at: i },
+                                },
+                            ]}
+                        />
+                        {debug ? (
+                            <div>{sexp(fromMCST(top, state.map))}</div>
+                        ) : null}
+                    </div>
+                ))}
             </div>
             {cursorPos.map((cursorPos, i) =>
                 cursorPos ? (
