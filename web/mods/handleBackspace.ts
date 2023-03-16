@@ -23,9 +23,10 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         flast.child.type === 'start' ||
         (flast.child.type === 'subtext' && flast.child.at === 0);
 
+    const ppath = fullPath[fullPath.length - 2];
+    const parent = map[ppath.idx];
+
     if (node.type === 'accessText' && atStart) {
-        const ppath = fullPath[fullPath.length - 2];
-        const parent = map[ppath.idx];
         if (parent.type !== 'recordAccess') {
             throw new Error(
                 `accessText not child of recordAccess ${parent.type}`,
@@ -120,54 +121,41 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         };
     }
 
-    const {
-        path,
-        sel: { idx, loc },
-    } = toPathSel(fullPath, map);
-    const last = path[path.length - 1];
-
     if (node.type === 'stringText' && atStart) {
-        const parent = map[last.idx];
         if (parent.type !== 'string') {
             throw new Error(`stringText parent not a string ${parent.type}`);
         }
         if (node.text === '' && parent.templates.length === 0) {
             // delete it!
-            const cleared = maybeClearParentList(path.slice(0, -1), map);
+            const cleared = maybeClearParentList(fullPath.slice(0, -2), map);
             return (
                 cleared ??
-                replacePathWith(path.slice(0, -1), map, newBlank(last.idx))
+                replacePathWith(fullPath.slice(0, -2), map, newBlank(ppath.idx))
             );
         }
-        if (last.child.type === 'text' && last.child.at > 0) {
+        if (ppath.child.type === 'text' && ppath.child.at > 0) {
             const prev =
-                last.child.at > 1
-                    ? parent.templates[last.child.at - 2].suffix
+                ppath.child.at > 1
+                    ? parent.templates[ppath.child.at - 2].suffix
                     : parent.first;
-            const cur = parent.templates[last.child.at - 1];
+            const cur = parent.templates[ppath.child.at - 1];
             const pnode = map[prev] as stringText & MNodeExtra;
             const templates = parent.templates.slice();
-            templates.splice(last.child.at - 1, 1);
+            templates.splice(ppath.child.at - 1, 1);
             const um: UpdateMap = {
-                [prev]: {
-                    ...pnode,
-                    text: pnode.text + node.text,
-                },
-                [idx]: null,
+                [prev]: { ...pnode, text: pnode.text + node.text },
+                [flast.idx]: null,
                 [cur.expr]: null,
-                [last.idx]: {
-                    ...parent,
-                    templates,
-                },
+                [ppath.idx]: { ...parent, templates },
             };
             return {
                 type: 'update',
                 update: {
                     map: um,
-                    selection: path.slice(0, -1).concat([
+                    selection: fullPath.slice(0, -2).concat([
                         {
-                            idx: last.idx,
-                            child: { type: 'text', at: last.child.at - 1 },
+                            idx: ppath.idx,
+                            child: { type: 'text', at: ppath.child.at - 1 },
                         },
                         {
                             idx: prev,
@@ -178,6 +166,12 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             };
         }
     }
+
+    const {
+        path,
+        sel: { idx, loc },
+    } = toPathSel(fullPath, map);
+    const last = path[path.length - 1];
 
     if (last.child.type === 'end') {
         const cleared = maybeClearParentList(path.slice(0, -1), map);
