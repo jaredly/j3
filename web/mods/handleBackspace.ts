@@ -167,7 +167,7 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         }
     }
 
-    if (flast.child.type === 'end') {
+    if (flast.child.type === 'end' && !('text' in node)) {
         const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
         return (
             cleared ??
@@ -272,29 +272,30 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         }
     }
 
-    const {
-        path,
-        sel: { idx, loc },
-    } = toPathSel(fullPath, map);
-    const last = path[path.length - 1];
-
-    if (last.child.type === 'inside') {
+    if (flast.child.type === 'inside') {
         // this is an empty listlike.
         // replace with a blank
         // OR if it's the only item of a list, we should
         // just delete.
-        const cleared = maybeClearParentList(path.slice(0, -1), map);
+        const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
         return (
-            cleared ?? replacePathWith(path.slice(0, -1), map, newBlank(idx))
+            cleared ??
+            replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx))
         );
     }
+
     if (!atStart && 'text' in node) {
         const text = splitGraphemes(node.text);
-        const atEnd = loc === 'end' || loc === text.length;
-        const pos =
-            loc === 'end' ? text.length : typeof loc === 'number' ? loc : 0;
+        const atEnd =
+            flast.child.type === 'end' ||
+            (flast.child.type === 'subtext' && flast.child.at === text.length);
+        const pos = atEnd
+            ? text.length
+            : flast.child.type === 'subtext'
+            ? flast.child.at
+            : 0;
         if (text.length === 1 && atEnd) {
-            const cleared = maybeClearParentList(path, map);
+            const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
             if (cleared) {
                 return cleared;
             }
@@ -303,7 +304,7 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             type: 'update',
             update: {
                 map: {
-                    [idx]:
+                    [flast.idx]:
                         atEnd && text.length === 1 && node.type === 'identifier'
                             ? { type: 'blank', loc: node.loc }
                             : {
@@ -313,18 +314,18 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
                                       text.slice(pos).join(''),
                               },
                 },
-                selection: path.concat([
-                    { idx, child: { type: 'subtext', at: pos - 1 } },
+                selection: fullPath.slice(0, -1).concat([
+                    {
+                        idx: flast.idx,
+                        child: { type: 'subtext', at: pos - 1 },
+                    },
                 ]),
             },
         };
     }
 
     if (atStart) {
-        const um = maybeRemovePrevBlank(
-            combinePathSel({ path, sel: { idx, loc } }),
-            map,
-        );
+        const um = maybeRemovePrevBlank(fullPath, map);
         if (um) {
             return um;
         }
