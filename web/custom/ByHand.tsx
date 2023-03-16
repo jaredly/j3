@@ -1,32 +1,13 @@
-import equal from 'fast-deep-equal';
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import {
-    idText,
-    parseByCharacter,
-    selPos,
-    splitGraphemes,
-} from '../../src/parse/parse';
+import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
+import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
 import {
-    applyUpdate,
-    applyUpdateMap,
-    getKeyUpdate,
-    KeyUpdate,
-    State,
-} from '../mods/getKeyUpdate';
-import {
-    combinePathSel,
     maybeToPathSel,
     PathSel,
     pathSelEqual,
@@ -424,12 +405,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     />
                 ) : null,
             )}
-            {equal(
-                state.at[0].start,
-                toPathSel(combinePathSel(state.at[0].start), state.map),
-            )
-                ? 'Good'
-                : 'BAD'}
             {debug ? (
                 <div>
                     <div>
@@ -437,16 +412,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         {JSON.stringify(
                             state.at.map((at) => [at.start.sel, at.end?.sel]),
                         )}
-                        <div>
-                            {JSON.stringify(state.at[0].start)}
-                            <br />
-                            {JSON.stringify(
-                                toPathSel(
-                                    combinePathSel(state.at[0].start),
-                                    state.map,
-                                ),
-                            )}
-                        </div>
+                        <div>{JSON.stringify(state.at[0].start)}</div>
                     </div>
                     <div>Path: </div>
                     <div>

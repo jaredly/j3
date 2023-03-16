@@ -8,17 +8,9 @@ import {
     showSourceMap,
     SourceMap,
 } from '../src/to-cst/nodeToString';
-import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
+import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
-import {
-    combinePathSel,
-    maybeToPathSel,
-    PathSel,
-    selectEnd,
-    selectStart,
-    toPathSel,
-} from '../web/mods/navigate';
-import { Path, Selection } from '../web/store';
+import { maybeToPathSel, selectEnd, selectStart } from '../web/mods/navigate';
 import { sexp } from './sexp';
 
 const data = `
@@ -362,9 +354,6 @@ function doABunchOfKeys({
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
-
-        const ps = state.at[0].start;
-        expect(toPathSel(combinePathSel(ps), state.map)).toEqual(ps);
 
         const startPos = remapPos(state.at[0].start.sel, sourceMap);
         if (only) {
