@@ -253,7 +253,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    state: { map: data, at: [state], root: -1 },
+                    state: { map: data, at: [{ start: state }], root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -279,7 +279,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    state: { map: data, at: [startState], root: -1 },
+                    state: { map: data, at: [{ start: startState }], root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -317,19 +317,19 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(state.map[state.at[0].sel.idx]) ?? '';
-        const pos = selPos(state.at[0].sel, curText);
+        const curText = idText(state.map[state.at[0].start.sel.idx]) ?? '';
+        const pos = selPos(state.at[0].start.sel, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
 
-        const startPos = remapPos(state.at[0].sel, sourceMap);
+        const startPos = remapPos(state.at[0].start.sel, sourceMap);
         if (only) {
             console.log(
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(key, state, state.at[0]);
+        const update = getKeyUpdate(key, state, state.at[0].start);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {
@@ -338,9 +338,9 @@ function doABunchOfKeys({
                 state = applyUpdate(state, update)!;
             }
         }
-        const newPos = remapPos(state.at[0].sel, sourceMap);
+        const newPos = remapPos(state.at[0].start.sel, sourceMap);
         if (check(startPos, newPos)) {
-            console.log(JSON.stringify(state.at[0].sel));
+            console.log(JSON.stringify(state.at[0].start.sel));
             console.log(showSourceMap(back, sourceMap));
             console.log(
                 'prev: ' +
@@ -354,7 +354,7 @@ function doABunchOfKeys({
                     '|' +
                     backOrig.slice(newPos),
             );
-            console.log(state.at[0].sel);
+            console.log(state.at[0].start.sel);
             expect(newPos).toEqual('something else');
         }
         if (newPos === stop) {

@@ -11,6 +11,10 @@ export type PathSel = {
     sel: Selection;
 };
 
+export const pathSelEqual = (one: PathSel, two: PathSel) => {
+    return equal(one, two);
+};
+
 export const selectStart = (
     idx: number,
     base: Path[],

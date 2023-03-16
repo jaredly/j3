@@ -186,13 +186,15 @@ export const RenderNNode = (
                             add: evt.altKey,
                             at: [
                                 {
-                                    path,
-                                    sel: {
-                                        idx,
-                                        loc: calcOffset(
-                                            evt.currentTarget,
-                                            evt.clientX,
-                                        ),
+                                    start: {
+                                        path,
+                                        sel: {
+                                            idx,
+                                            loc: calcOffset(
+                                                evt.currentTarget,
+                                                evt.clientX,
+                                            ),
+                                        },
                                     },
                                 },
                             ],

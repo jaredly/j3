@@ -3,7 +3,6 @@
 
 - [ ] ok now selections need boundariessss
 
-
 Here's what I'm thinking
 
 I want "normal mode"
@@ -14,6 +13,21 @@ Ok, but that's ~orthogonal to wanting "higher level selection", right?
   mode: 'vim-normal' | 'insert',
   level: 'grapheme' | 'atom'
 }
+
+
+should we do
+selection: {start: PathSel, end: PathSel}
+and just infer by ~magic how to "select" the contents?
+honestly that might be the best option?
+but, then, left / right will take into account whether the nodes
+have different parents?
+
+so, another thing. If start/end are in stringText's within the same
+string, we should keep character-level madness.
+But every other case where start/end have different paths, it's block-level.
+
+So actually that's trivial to determine, so I'm fine with it.
+
 
 # hash-locking, what gives?
 

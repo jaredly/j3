@@ -24,39 +24,39 @@ import {
     KeyUpdate,
     State,
 } from '../mods/getKeyUpdate';
-import { PathSel, selectEnd } from '../mods/navigate';
+import { PathSel, pathSelEqual, selectEnd } from '../mods/navigate';
 import { Path, Selection } from '../store';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
 
 // const initialText = '(let [x 10] (+ x 20))';
 // const initialText = '(1 2) (3 [] 4) (5 6)';
-// const initialText = `"Some 🤔 things"`;
+const initialText = `"Some 🤔 things"`;
 
-const initialText = `
-(def live (vec4 1. 0.6 1. 1.))
-(def dead (vec4 0. 0. 0. 1.))
-(defn isLive [{x}:Vec4] (> x 0.5))
-(defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
-(def person {name "Person" age 32 cats 1.5
-description "This is a person with a \${"kinda"} normal-length description"
-subtitle "Return of the person"
-parties (let [parties (isLive (vec4 1.0)) another true]
-(if parties "Some parties" "probably way too many parties"))})
-(defn shape-to-svg [shape:shape]
-  (switch shape
-    ('Circle {$ pos radius})
-      "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
-    ('Rect {$ pos size})
-      "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
-  )
-)
-(defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
-(defn show-shapes [shapes:(array shape)]
-  (wrap-svg (join
-    (map shapes shape-to-svg)
-    "\n")))
-`.trim();
+// const initialText = `
+// (def live (vec4 1. 0.6 1. 1.))
+// (def dead (vec4 0. 0. 0. 1.))
+// (defn isLive [{x}:Vec4] (> x 0.5))
+// (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
+// (def person {name "Person" age 32 cats 1.5
+// description "This is a person with a \${"kinda"} normal-length description"
+// subtitle "Return of the person"
+// parties (let [parties (isLive (vec4 1.0)) another true]
+// (if parties "Some parties" "probably way too many parties"))})
+// (defn shape-to-svg [shape:shape]
+//   (switch shape
+//     ('Circle {$ pos radius})
+//       "<circle cx='\${pos.x}' cy='\${pos.y}' r='\${radius}' />"
+//     ('Rect {$ pos size})
+//       "<rect x='\${pos.x}' y='\${pos.y}' width='\${size.x}' height='\${size.y}' />"
+//   )
+// )
+// (defn wrap-svg [contents:string] "<svg>\${contents}</svg>")
+// (defn show-shapes [shapes:(array shape)]
+//   (wrap-svg (join
+//     (map shapes shape-to-svg)
+//     "\n")))
+// `.trim();
 
 // const initialText = `
 // (def person {name "Pers\${aaaaaaaaaaaa}on"
@@ -82,7 +82,7 @@ export type Action =
     | {
           type: 'select';
           add?: boolean;
-          at: PathSel[];
+          at: { start: PathSel; end?: PathSel }[];
       }
     | {
           type: 'key';
@@ -97,7 +97,7 @@ const reduce = (state: UIState, action: Action): UIState => {
             }
             const newState = handleKey(state, action.key);
             if (newState) {
-                if (newState.at.some((at) => isRootPath(at.path))) {
+                if (newState.at.some((at) => isRootPath(at.start.path))) {
                     console.log('not selecting root node');
                     return state;
                 }
@@ -106,7 +106,7 @@ const reduce = (state: UIState, action: Action): UIState => {
             return state;
         case 'select':
             // Ignore attempts to select the root node
-            if (action.at.some((at) => isRootPath(at.path))) {
+            if (action.at.some((at) => isRootPath(at.start.path))) {
                 return state;
             }
             return {
@@ -126,7 +126,7 @@ export const ByHand = () => {
             [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
-        return { map, root: -1, at: [at], regs: {} };
+        return { map, root: -1, at: [{ start: at }], regs: {} };
     });
 
     // @ts-ignore
@@ -166,19 +166,33 @@ export const ByHand = () => {
 
     useEffect(() => {
         setCursorPos(
-            state.at.map((at) => {
-                const box = calcCursorPos(at.sel, state.regs);
+            state.at.flatMap((at) => {
+                const res: any = [];
+                const box = calcCursorPos(at.start.sel, state.regs);
                 if (box) {
                     const offsetY = document.body.scrollTop;
                     const offsetX = document.body.scrollLeft;
-                    return {
+                    res.push({
                         x: box.left - offsetX,
                         y: box.top - offsetY,
                         h: box.height,
                         color: box.color,
-                    };
+                    });
                 }
-                return null;
+                if (at.end) {
+                    const box2 = calcCursorPos(at.end.sel, state.regs);
+                    if (box2) {
+                        const offsetY = document.body.scrollTop;
+                        const offsetX = document.body.scrollLeft;
+                        res.push({
+                            x: box2.left - offsetX,
+                            y: box2.top - offsetY,
+                            h: box2.height,
+                            color: box2.color,
+                        });
+                    }
+                }
+                return res;
             }),
         );
 
@@ -202,6 +216,8 @@ export const ByHand = () => {
     }, []);
 
     const hiddenInput = useRef(null as null | HTMLInputElement);
+
+    const [drag, setDrag] = useState(false);
 
     return (
         <div style={{ padding: 16 }}>
@@ -258,6 +274,9 @@ export const ByHand = () => {
             </button>
             <div
                 style={{ cursor: 'text' }}
+                onMouseDownCapture={() => {
+                    setDrag(true);
+                }}
                 onMouseDown={(evt) => {
                     const sel = closestSelection(state.regs, {
                         x: evt.clientX,
@@ -267,8 +286,48 @@ export const ByHand = () => {
                         dispatch({
                             type: 'select',
                             add: evt.altKey,
-                            at: [sel],
+                            at: [{ start: sel }],
                         });
+                    }
+                }}
+                onMouseMove={(evt) => {
+                    if (!drag) {
+                        return;
+                    }
+                    const sel = closestSelection(state.regs, {
+                        x: evt.clientX,
+                        y: evt.clientY,
+                    });
+                    if (sel) {
+                        if (pathSelEqual(sel, state.at[0].start)) {
+                            dispatch({
+                                type: 'select',
+                                add: evt.altKey,
+                                at: [{ start: state.at[0].start }],
+                            });
+                        } else {
+                            dispatch({
+                                type: 'select',
+                                add: evt.altKey,
+                                at: [{ start: state.at[0].start, end: sel }],
+                            });
+                        }
+                    }
+                }}
+                onMouseUpCapture={(evt) => {
+                    if (drag) {
+                        setDrag(false);
+                        const sel = closestSelection(state.regs, {
+                            x: evt.clientX,
+                            y: evt.clientY,
+                        });
+                        if (sel && !pathSelEqual(sel, state.at[0].start)) {
+                            dispatch({
+                                type: 'select',
+                                add: evt.altKey,
+                                at: [{ start: state.at[0].start, end: sel }],
+                            });
+                        }
                     }
                 }}
             >
@@ -320,7 +379,10 @@ export const ByHand = () => {
             {debug ? (
                 <div>
                     <div>
-                        Sel: {JSON.stringify(state.at.map((at) => at.sel))}
+                        Sel:{' '}
+                        {JSON.stringify(
+                            state.at.map((at) => [at.start.sel, at.end?.sel]),
+                        )}
                     </div>
                     <div>Path: </div>
                     <div>
@@ -332,7 +394,7 @@ export const ByHand = () => {
                                 </tr>
 
                                 {state.at.map((at, a) =>
-                                    at.path.map((item, i) => (
+                                    at.start.path.map((item, i) => (
                                         <tr key={i + ':' + a}>
                                             <td>{item.idx}</td>
                                             <td>
@@ -425,7 +487,7 @@ export const handleKey = (state: UIState, key: string): UIState => {
     state = { ...state };
     state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(key, state, state.at[i]);
+        const update = getKeyUpdate(key, state, state.at[i].start);
         if (!update) continue;
         if (update?.type === 'select' && isRootPath(update.path)) {
             continue;
@@ -438,12 +500,16 @@ export const handleKey = (state: UIState, key: string): UIState => {
             continue;
         }
         if (update.type === 'select') {
-            state.at[i] = { path: update.path, sel: update.selection };
+            state.at[i] = {
+                start: { path: update.path, sel: update.selection },
+            };
         } else if (update.update) {
             state.map = applyUpdateMap(state.map, update.update.map);
             state.at[i] = {
-                path: update.update.path,
-                sel: update.update.selection,
+                start: {
+                    path: update.update.path,
+                    sel: update.update.selection,
+                },
             };
         }
     }

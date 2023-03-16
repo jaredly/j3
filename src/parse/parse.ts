@@ -53,15 +53,15 @@ export const parseByCharacter = (
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(key, state, state.at[0]);
+        const update = getKeyUpdate(key, state, state.at[0].start);
         if (debug) {
-            console.log(key, state.at[0].path);
+            console.log(key, state.at[0].start.path);
             console.log(JSON.stringify(update));
         }
 
         state = applyUpdate(state, update) ?? state;
     }
-    return { map: state.map, selection: state.at[0].sel };
+    return { map: state.map, selection: state.at[0].start.sel };
 };
 
 function initialState() {
@@ -83,8 +83,10 @@ function initialState() {
         map,
         at: [
             {
-                sel: { idx: top, loc: 0 },
-                path: [{ idx: -1, child: { type: 'child', at: 0 } }],
+                start: {
+                    sel: { idx: top, loc: 0 },
+                    path: [{ idx: -1, child: { type: 'child', at: 0 } }],
+                },
             },
         ],
         root: -1,
