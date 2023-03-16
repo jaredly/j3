@@ -1,6 +1,13 @@
 
 # Selection!
 
+- [x] add start/end to sel type
+- [x] render end cursor (prelim)
+- [x] populate sel/end on drag
+- [ ] actually do a meaningful render of the selection.
+  - [ ] should I like do a fake overlay as well? Or let the individual thing render?
+    hmmm. Rich text isn't going to like that.
+  - [ ] 
 - [ ] ok now selections need boundariessss
 
 Here's what I'm thinking

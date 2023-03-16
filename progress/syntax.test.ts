@@ -205,6 +205,17 @@ string
 a.b^b^b
 a
 id
+
+(().a)
+(() .a)
+(list (list) (access 1))
+
+(.^b)
+(list)
+
+( o^l^b)
+(o)
+(list id)
 `;
 
 describe('a test', () => {

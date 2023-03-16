@@ -297,6 +297,11 @@ export const getKeyUpdate = (
                 },
             };
         }
+        if (node.type !== 'identifier') {
+            const at = newBlank();
+            const one = newRecordAccess(at.idx, '');
+            return newNodeAfter(path, map, mergeNew(at, one));
+        }
     }
 
     // Ok, so now we're updating things
