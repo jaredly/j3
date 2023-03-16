@@ -11,6 +11,8 @@ export type PathSel = {
     sel: Selection;
 };
 
+export const getSel = (path: Path[], map: Map) => toPathSel(path, map).sel;
+
 export const toPathSel = (path: Path[], map: Map): PathSel => {
     const last = path[path.length - 1];
     if (
@@ -229,7 +231,7 @@ export const pathSelForNode = (
                         return selectStart(node.id, path, map);
                     }
             }
-            return maybeCombinePathSel({ path, sel: { idx: node.id, loc } });
+            return path.concat([{ idx: node.id, child: { type: loc } }]);
         }
     }
 };
