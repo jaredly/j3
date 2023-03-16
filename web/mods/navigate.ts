@@ -11,6 +11,48 @@ export type PathSel = {
     sel: Selection;
 };
 
+export const toPathSel = (path: Path[]): PathSel => {
+    const last = path[path.length - 1];
+    if (last.child.type === 'text') {
+        return {
+            path: path.slice(0, -1),
+            sel: {
+                idx: last.idx,
+                loc: last.child.at,
+            },
+        };
+    }
+    return {
+        path: path,
+        sel: { idx: last.idx, loc: last.child.type as 'start' },
+    };
+};
+
+export const combinePathSel = ({
+    path,
+    sel,
+}: {
+    path: Path[];
+    sel: Selection;
+}): Path[] => {
+    const last = path[path.length - 1];
+    if (last.idx === sel.idx) {
+        return path;
+    }
+    return path.concat([
+        {
+            idx: sel.idx,
+            child:
+                sel.loc === 'start' || sel.loc === 'inside' || sel.loc === 'end'
+                    ? { type: sel.loc }
+                    : {
+                          type: 'text',
+                          at: typeof sel.loc === 'number' ? sel.loc : 0,
+                      },
+        },
+    ]);
+};
+
 export const pathSelEqual = (one: PathSel, two: PathSel) => {
     return equal(one, two);
 };

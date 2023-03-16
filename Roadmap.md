@@ -1,12 +1,17 @@
 
 # Selection!
 
+- [ ] ok folks I've gotta come clean, and just unify Path and Selection.
+  there's no getting away from it. it's a weight around my neck.
+
 - [x] add start/end to sel type
 - [x] render end cursor (prelim)
 - [x] populate sel/end on drag
 - [ ] actually do a meaningful render of the selection.
   - [ ] should I like do a fake overlay as well? Or let the individual thing render?
     hmmm. Rich text isn't going to like that.
+    Unlesssssss I kinda ditch lexical, and do my very own rich text?
+    
   - [ ] 
 - [ ] ok now selections need boundariessss
 
