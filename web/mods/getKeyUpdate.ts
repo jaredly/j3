@@ -159,7 +159,6 @@ export const getKeyUpdate = (
     }
 
     const idx = flast.idx;
-    const { path } = toPathSel(fullPath, state.map);
 
     if (key === 'ArrowLeft') {
         if ('text' in node && !isPathAtStart(node.text, flast.child)) {
@@ -177,8 +176,6 @@ export const getKeyUpdate = (
         return goLeft(fullPath, state.map);
     }
 
-    const last = path[path.length - 1];
-
     const pos = pathPos(fullPath, textRaw);
     const map = state.map;
 
@@ -186,13 +183,16 @@ export const getKeyUpdate = (
         if (pos < text.length) {
             return {
                 type: 'select',
-                selection: path.concat([
-                    { idx, child: { type: 'subtext', at: pos + 1 } },
-                ]),
+                selection: fullPath
+                    .slice(0, -1)
+                    .concat([{ idx, child: { type: 'subtext', at: pos + 1 } }]),
             };
         }
-        return goRight(path, idx, map);
+        return goRight(fullPath, idx, map);
     }
+
+    const { path } = toPathSel(fullPath, state.map);
+    const last = path[path.length - 1];
 
     if (node.type === 'stringText') {
         return handleStringText({ key, idx, node, pos, path, map });

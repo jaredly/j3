@@ -175,7 +175,8 @@ export const goRight = (
         prev = ps;
     }
 
-    throw new Error(`current not vound in pnodes`);
+    // throw new Error(`current not vound in pnodes`);
+    return goRight(path.slice(0, -1), last.idx, map);
 };
 
 export const pathSelForNode = (
