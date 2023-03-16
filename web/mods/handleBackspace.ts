@@ -175,36 +175,30 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         );
     }
 
-    const {
-        path,
-        sel: { idx, loc },
-    } = toPathSel(fullPath, map);
-    const last = path[path.length - 1];
-
     if (node.type === 'blank') {
-        if (last.child.type === 'expr') {
-            const parent = map[last.idx];
+        if (ppath.child.type === 'expr') {
+            const parent = map[ppath.idx];
             if (parent.type !== 'string') {
                 throw new Error(`expr parent not a string ${parent.type}`);
             }
             // Join the exprs
             const prev =
-                last.child.at > 1
-                    ? parent.templates[last.child.at - 2].suffix
+                ppath.child.at > 1
+                    ? parent.templates[ppath.child.at - 2].suffix
                     : parent.first;
-            const cur = parent.templates[last.child.at - 1];
+            const cur = parent.templates[ppath.child.at - 1];
             const pnode = map[prev] as stringText & MNodeExtra;
             const snode = map[cur.suffix] as stringText & MNodeExtra;
             const templates = parent.templates.slice();
-            templates.splice(last.child.at - 1, 1);
+            templates.splice(ppath.child.at - 1, 1);
             const um: UpdateMap = {
                 [prev]: {
                     ...pnode,
                     text: pnode.text + snode.text,
                 },
-                [idx]: null,
+                [flast.idx]: null,
                 [cur.suffix]: null,
-                [last.idx]: {
+                [ppath.idx]: {
                     ...parent,
                     templates,
                 },
@@ -213,10 +207,10 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
                 type: 'update',
                 update: {
                     map: um,
-                    selection: path.slice(0, -1).concat([
+                    selection: fullPath.slice(0, -2).concat([
                         {
-                            idx: last.idx,
-                            child: { type: 'text', at: last.child.at - 1 },
+                            idx: ppath.idx,
+                            child: { type: 'text', at: ppath.child.at - 1 },
                         },
                         {
                             idx: prev,
@@ -226,41 +220,41 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
                 },
             };
         }
-        if (last.child.type === 'child') {
-            if (last.child.at === 0) {
+        if (ppath.child.type === 'child') {
+            if (ppath.child.at === 0) {
                 // just go left, ok?
                 // OR do we do a jailbreak?
                 // like, this splats the contents up a level?
                 // that sounds kinda cool
                 return; // TODO: This will be an unwrap operation
             }
-            const parent = map[last.idx] as ListLikeContents & MNodeExtra;
+            const parent = map[ppath.idx] as ListLikeContents & MNodeExtra;
             const values = parent.values.slice();
-            values.splice(last.child.at, 1);
+            values.splice(ppath.child.at, 1);
             if (
                 values.length === 1 &&
                 map[values[0]].type === 'blank' &&
-                path.length > 1
+                fullPath.length > 2
             ) {
                 return {
                     type: 'update',
                     update: {
                         map: {
-                            [last.idx]: { ...parent, values: [] },
+                            [ppath.idx]: { ...parent, values: [] },
                         },
-                        selection: path.slice(0, -1).concat({
-                            idx: last.idx,
+                        selection: fullPath.slice(0, -2).concat({
+                            idx: ppath.idx,
                             child: { type: 'inside' },
                         }),
                     },
                 };
             }
             const sel = selectEnd(
-                values[last.child.at - 1],
-                path.slice(0, -1).concat([
+                values[ppath.child.at - 1],
+                fullPath.slice(0, -2).concat([
                     {
-                        idx: last.idx,
-                        child: { type: 'child', at: last.child.at - 1 },
+                        idx: ppath.idx,
+                        child: { type: 'child', at: ppath.child.at - 1 },
                     },
                 ]),
                 map,
@@ -271,12 +265,18 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             return {
                 type: 'update',
                 update: {
-                    map: { [last.idx]: { ...parent, values } },
+                    map: { [ppath.idx]: { ...parent, values } },
                     selection: sel,
                 },
             };
         }
     }
+
+    const {
+        path,
+        sel: { idx, loc },
+    } = toPathSel(fullPath, map);
+    const last = path[path.length - 1];
 
     if (last.child.type === 'inside') {
         // this is an empty listlike.
