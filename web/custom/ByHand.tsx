@@ -1,3 +1,4 @@
+import equal from 'fast-deep-equal';
 import React, {
     useCallback,
     useEffect,
@@ -24,7 +25,13 @@ import {
     KeyUpdate,
     State,
 } from '../mods/getKeyUpdate';
-import { PathSel, pathSelEqual, selectEnd } from '../mods/navigate';
+import {
+    combinePathSel,
+    PathSel,
+    pathSelEqual,
+    selectEnd,
+    toPathSel,
+} from '../mods/navigate';
 import { Path, Selection } from '../store';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
@@ -310,7 +317,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         dispatch({
                             type: 'select',
                             add: evt.altKey,
-                            at: [{ start: sel }],
+                            at: [{ start: toPathSel(sel, state.map) }],
                         });
                     }
                 }}
@@ -323,7 +330,12 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         y: evt.clientY,
                     });
                     if (sel) {
-                        if (pathSelEqual(sel, state.at[0].start)) {
+                        if (
+                            pathSelEqual(
+                                toPathSel(sel, state.map),
+                                state.at[0].start,
+                            )
+                        ) {
                             dispatch({
                                 type: 'select',
                                 add: evt.altKey,
@@ -333,7 +345,12 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             dispatch({
                                 type: 'select',
                                 add: evt.altKey,
-                                at: [{ start: state.at[0].start, end: sel }],
+                                at: [
+                                    {
+                                        start: state.at[0].start,
+                                        end: toPathSel(sel, state.map),
+                                    },
+                                ],
                             });
                         }
                     }
@@ -345,11 +362,22 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             x: evt.clientX,
                             y: evt.clientY,
                         });
-                        if (sel && !pathSelEqual(sel, state.at[0].start)) {
+                        if (
+                            sel &&
+                            !pathSelEqual(
+                                toPathSel(sel, state.map),
+                                state.at[0].start,
+                            )
+                        ) {
                             dispatch({
                                 type: 'select',
                                 add: evt.altKey,
-                                at: [{ start: state.at[0].start, end: sel }],
+                                at: [
+                                    {
+                                        start: state.at[0].start,
+                                        end: toPathSel(sel, state.map),
+                                    },
+                                ],
                             });
                         }
                     }
@@ -396,6 +424,12 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     />
                 ) : null,
             )}
+            {equal(
+                state.at[0].start,
+                toPathSel(combinePathSel(state.at[0].start), state.map),
+            )
+                ? 'Good'
+                : 'BAD'}
             {debug ? (
                 <div>
                     <div>
@@ -403,6 +437,16 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         {JSON.stringify(
                             state.at.map((at) => [at.start.sel, at.end?.sel]),
                         )}
+                        <div>
+                            {JSON.stringify(state.at[0].start)}
+                            <br />
+                            {JSON.stringify(
+                                toPathSel(
+                                    combinePathSel(state.at[0].start),
+                                    state.map,
+                                ),
+                            )}
+                        </div>
                     </div>
                     <div>Path: </div>
                     <div>

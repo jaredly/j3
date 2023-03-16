@@ -1,6 +1,7 @@
-import { PathSel } from '../mods/navigate';
+import { PathSel, toPathSel } from '../mods/navigate';
 import { calcOffset } from './RenderONode';
 import { UIState, calcCursorPos } from './ByHand';
+import { Path } from '../store';
 
 export const verticalMove = (state: UIState, up: boolean): UIState => {
     const current = calcCursorPos(state.at[0].start.sel, state.regs);
@@ -19,7 +20,9 @@ export const verticalMove = (state: UIState, up: boolean): UIState => {
         !up ? current.top + current.height + 5 : undefined,
         !up ? undefined : current.top - 5,
     );
-    return best ? { ...state, at: [{ start: best }] } : state;
+    return best
+        ? { ...state, at: [{ start: toPathSel(best, state.map) }] }
+        : state;
 };
 
 export const closestSelection = (
@@ -27,12 +30,12 @@ export const closestSelection = (
     pos: { x: number; y: number },
     minY?: number,
     maxY?: number,
-): PathSel | undefined => {
+): Path[] | undefined => {
     let best = null as null | {
         top: number;
         dx: number;
         dy: number;
-        sel: PathSel;
+        sel: Path[];
     };
     Object.entries(regs).forEach(([key, nodes]) => {
         Object.entries(nodes).forEach(([which, value]) => {
@@ -73,22 +76,19 @@ export const closestSelection = (
                 }
             }
 
-            const sel: PathSel = {
-                path:
-                    which === 'main'
-                        ? value.path
-                        : value.path.concat({
-                              idx: +key,
-                              child: { type: which as 'end' },
-                          }),
-                sel: {
-                    idx: +key,
-                    loc:
-                        which === 'main'
-                            ? calcOffset(value.node, pos.x)
-                            : (which as 'end'),
-                },
-            };
+            const sel: Path[] =
+                which === 'main'
+                    ? value.path.concat({
+                          idx: +key,
+                          child: {
+                              type: 'subtext',
+                              at: calcOffset(value.node, pos.x),
+                          },
+                      })
+                    : value.path.concat({
+                          idx: +key,
+                          child: { type: which as 'end' },
+                      });
             best = { top: box.top, dx, dy, sel };
         });
     });

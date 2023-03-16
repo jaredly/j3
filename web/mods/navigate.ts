@@ -11,14 +11,21 @@ export type PathSel = {
     sel: Selection;
 };
 
-export const toPathSel = (path: Path[]): PathSel => {
+export const toPathSel = (path: Path[], map: Map): PathSel => {
     const last = path[path.length - 1];
-    if (last.child.type === 'text') {
+    if (
+        ['identifier', 'blank', 'accessText', 'stringText'].includes(
+            map[last.idx].type,
+        )
+    ) {
         return {
             path: path.slice(0, -1),
             sel: {
                 idx: last.idx,
-                loc: last.child.at,
+                loc:
+                    last.child.type === 'subtext'
+                        ? last.child.at
+                        : (last.child.type as 'start'),
             },
         };
     }
@@ -46,7 +53,7 @@ export const combinePathSel = ({
                 sel.loc === 'start' || sel.loc === 'inside' || sel.loc === 'end'
                     ? { type: sel.loc }
                     : {
-                          type: 'text',
+                          type: 'subtext',
                           at: typeof sel.loc === 'number' ? sel.loc : 0,
                       },
         },

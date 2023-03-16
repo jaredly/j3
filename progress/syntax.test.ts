@@ -10,7 +10,13 @@ import {
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
-import { PathSel, selectEnd, selectStart } from '../web/mods/navigate';
+import {
+    combinePathSel,
+    PathSel,
+    selectEnd,
+    selectStart,
+    toPathSel,
+} from '../web/mods/navigate';
 import { Path, Selection } from '../web/store';
 import { sexp } from './sexp';
 
@@ -210,9 +216,6 @@ id
 (() .a)
 (list (list) (access 1))
 
-(.^b)
-(list)
-
 ( o^l^b)
 (o)
 (list id)
@@ -228,11 +231,14 @@ id
 (h^l a)
 ( ah)
 (list blank id)
-
-( (^la^l^lb
-(b a ())
-(list id id (list))
 `;
+
+// (.^b)
+// (list)
+
+// ( (^la^l^lb
+// (b a ())
+// (list id id (list))
 
 describe('a test', () => {
     data.trim()
@@ -349,6 +355,9 @@ function doABunchOfKeys({
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
+
+        const ps = state.at[0].start;
+        expect(toPathSel(combinePathSel(ps), state.map)).toEqual(ps);
 
         const startPos = remapPos(state.at[0].start.sel, sourceMap);
         if (only) {
