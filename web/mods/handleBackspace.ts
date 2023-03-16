@@ -19,27 +19,24 @@ import { accessText, Identifier, stringText } from '../../src/types/cst';
 export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
     const flast = fullPath[fullPath.length - 1];
     const node = map[flast.idx];
-
-    const {
-        path,
-        sel: { idx, loc },
-    } = toPathSel(fullPath, map);
-    const last = path[path.length - 1];
-    const atStart = loc === 0 || loc === 'start';
+    const atStart =
+        flast.child.type === 'start' ||
+        (flast.child.type === 'subtext' && flast.child.at === 0);
 
     if (node.type === 'accessText' && atStart) {
-        const parent = map[last.idx];
+        const ppath = fullPath[fullPath.length - 2];
+        const parent = map[ppath.idx];
         if (parent.type !== 'recordAccess') {
             throw new Error(
                 `accessText not child of recordAccess ${parent.type}`,
             );
         }
-        if (last.child.type !== 'attribute') {
+        if (ppath.child.type !== 'attribute') {
             throw new Error(`bad path`);
         }
-        if (last.child.at === 1 && parent.items.length === 1) {
+        if (ppath.child.at === 1 && parent.items.length === 1) {
             const target = map[parent.target];
-            return replacePathWith(path.slice(0, -1), map, {
+            return replacePathWith(fullPath.slice(0, -2), map, {
                 idx: parent.target,
                 map:
                     target.type === 'blank' && !node.text
@@ -70,12 +67,14 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         }
 
         const prev =
-            last.child.at > 1 ? parent.items[last.child.at - 2] : parent.target;
+            ppath.child.at > 1
+                ? parent.items[ppath.child.at - 2]
+                : parent.target;
         const items = parent.items.slice();
-        items.splice(last.child.at - 1, 1);
+        items.splice(ppath.child.at - 1, 1);
         const um: UpdateMap = {
-            [idx]: null,
-            [last.idx]: {
+            [flast.idx]: null,
+            [ppath.idx]: {
                 ...parent,
                 items,
             },
@@ -104,14 +103,14 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             type: 'update',
             update: {
                 map: um,
-                selection: path.slice(0, -1).concat([
+                selection: fullPath.slice(0, -2).concat([
                     {
-                        idx: last.idx,
+                        idx: ppath.idx,
                         child:
-                            last.child.at > 1
+                            ppath.child.at > 1
                                 ? {
                                       type: 'attribute',
-                                      at: last.child.at - 1,
+                                      at: ppath.child.at - 1,
                                   }
                                 : { type: 'record-target' },
                     },
@@ -120,6 +119,12 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             },
         };
     }
+
+    const {
+        path,
+        sel: { idx, loc },
+    } = toPathSel(fullPath, map);
+    const last = path[path.length - 1];
 
     if (node.type === 'stringText' && atStart) {
         const parent = map[last.idx];
