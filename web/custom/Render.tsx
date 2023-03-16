@@ -178,6 +178,7 @@ export const RenderNNode = (
                 <span
                     ref={(node) => reg(node, idx, path)}
                     style={textStyle(node, display[idx])}
+                    className="idlike"
                     onMouseDown={(evt) => {
                         evt.stopPropagation();
                         evt.preventDefault();
