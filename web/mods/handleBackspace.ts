@@ -167,19 +167,19 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         }
     }
 
+    if (flast.child.type === 'end') {
+        const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
+        return (
+            cleared ??
+            replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx))
+        );
+    }
+
     const {
         path,
         sel: { idx, loc },
     } = toPathSel(fullPath, map);
     const last = path[path.length - 1];
-
-    if (last.child.type === 'end') {
-        const cleared = maybeClearParentList(path.slice(0, -1), map);
-        return (
-            cleared ??
-            replacePathWith(path.slice(0, -1), map, newBlank(last.idx))
-        );
-    }
 
     if (node.type === 'blank') {
         if (last.child.type === 'expr') {
