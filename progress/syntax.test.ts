@@ -201,6 +201,10 @@ string
 (a ^lbc)
 (abc )
 (list id blank)
+
+a.b^b^b
+a
+id
 `;
 
 describe('a test', () => {

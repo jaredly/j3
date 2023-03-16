@@ -1,15 +1,37 @@
 
+# Selection!
+
+- [ ] ok now selections need boundariessss
+
+
+Here's what I'm thinking
+
+I want "normal mode"
+
+Ok, but that's ~orthogonal to wanting "higher level selection", right?
+
+{
+  mode: 'vim-normal' | 'insert',
+  level: 'grapheme' | 'atom'
+}
+
+# hash-locking, what gives?
+
+I think I actually want a different node type, called like
+`hash`. So I'll know to handle it specially.
+
 # MultiSelect
 
 - [x] change state to account
 - [x] shift-click for multi
 - [ ] dedup the adding
-- [ ] handleKey should do all at once
+- [x] handleKey should do all at once
 
 # [x] some more backspaces
-- inside a ${}
-- after a ${}
-- after a listlike
+- [x] inside a ${}
+- [x] after a ${}
+- [x] after a listlike
+- [ ] access.text backspace
 
 # [ ] extra fancy backspaces
 - [ ] at the start of a listlike? (unwrap if possible)

@@ -56,7 +56,6 @@ parties (let [parties (isLive (vec4 1.0)) another true]
   (wrap-svg (join
     (map shapes shape-to-svg)
     "\n")))
-
 `.trim();
 
 // const initialText = `

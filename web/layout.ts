@@ -1,7 +1,7 @@
 import { Ctx } from '../src/to-ast/Ctx';
 import { Layout, Map, MNodeContents } from '../src/types/mcst';
 
-const maxWidth = 50;
+const maxWidth = 100;
 // const maxWidth = 100;
 // const maxWidth = 20;
 
@@ -24,25 +24,31 @@ export const calculateLayout = (
         case 'record': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', tightFirst: 0, pos, pairs: true };
+                return {
+                    type: 'multiline',
+                    tightFirst: 0,
+                    pos,
+                    pairs: true,
+                    cw,
+                };
             }
-            return { type: 'flat', width: cw, pos };
+            return { type: 'flat', width: cw - pos, pos };
         }
         case 'blank':
             return { type: 'flat', width: 0, pos };
         case 'array': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', tightFirst: 0, pos };
+                return { type: 'multiline', tightFirst: 0, pos, cw };
             }
-            return { type: 'flat', width: cw, pos };
+            return { type: 'flat', width: cw - pos, pos };
         }
         case 'list': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             const firstName = idName(map[node.values[0]]);
             if (
                 cw === false ||
-                cw + pos > maxWidth ||
+                cw > maxWidth ||
                 (firstName === 'let' && node.values.length > 2)
             ) {
                 return {
@@ -50,9 +56,10 @@ export const calculateLayout = (
                     tightFirst: howTight(map[node.values[0]]),
                     pos,
                     pairs: firstName === 'switch',
+                    cw,
                 };
             }
-            return { type: 'flat', width: cw, pos };
+            return { type: 'flat', width: cw - pos, pos };
         }
         case 'attachment':
             return { type: 'flat', width: node.name.length, pos };
@@ -65,15 +72,15 @@ export const calculateLayout = (
                 map,
             );
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', pos, tightFirst: 1 };
+                return { type: 'multiline', pos, tightFirst: 1, cw };
             }
-            return { type: 'flat', width: cw, pos };
+            return { type: 'flat', width: cw - pos, pos };
         }
         case 'accessText':
         case 'stringText':
             return { type: 'flat', width: node.text.length + 1, pos };
         case 'rich-text':
-            return { type: 'multiline', pos, tightFirst: 0 };
+            return { type: 'multiline', pos, tightFirst: 0, cw: false };
         case 'spread': {
             const cw = childWidth(
                 [node.contents],
@@ -83,9 +90,9 @@ export const calculateLayout = (
                 map,
             );
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', pos, tightFirst: 1 };
+                return { type: 'multiline', pos, tightFirst: 1, cw };
             }
-            return { type: 'flat', width: cw + 2, pos };
+            return { type: 'flat', width: cw + 2 - pos, pos };
         }
         case 'string': {
             const cw = childWidth(
@@ -102,9 +109,9 @@ export const calculateLayout = (
                 map,
             );
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', pos, tightFirst: 0 };
+                return { type: 'multiline', pos, tightFirst: 0, cw };
             }
-            return { type: 'flat', width: cw, pos };
+            return { type: 'flat', width: cw - pos, pos };
         }
         default:
             let _: never = node;
@@ -172,13 +179,18 @@ function childWidth(
             l = layout(idx, total, map, display, recursive);
         }
         // Break out, relayout everything for multi-bit
-        if (l.type === 'multiline') {
+        if (l.type === 'multiline' || total >= maxWidth) {
             for (let idx of children) {
                 layout(idx, pos, map, display, recursive);
             }
             return false;
         } else {
             total += l.width;
+        }
+    }
+    if (total >= maxWidth) {
+        for (let idx of children) {
+            layout(idx, pos, map, display, recursive);
         }
     }
     return total;

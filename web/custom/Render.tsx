@@ -100,7 +100,12 @@ export const Render = (props: RenderProps) => {
 
     return props.debug ? (
         <span style={{ display: 'flex' }}>
-            <span style={{ opacity: 0.5, fontSize: '50%' }}>{idx}</span>
+            <span
+                style={{ opacity: 0.5, fontSize: '50%' }}
+                data-display={JSON.stringify(props.display[idx])}
+            >
+                {idx}
+            </span>
             <RenderNNode {...props} nnode={nnode} />
         </span>
     ) : (

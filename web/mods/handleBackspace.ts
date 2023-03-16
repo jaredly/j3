@@ -19,6 +19,10 @@ export function handleBackspace(
     const last = path[path.length - 1];
     const atStart = loc === 0 || loc === 'start';
 
+    if (node.type === 'accessText' && atStart) {
+        // if (parent.ty)
+    }
+
     if (node.type === 'stringText' && atStart) {
         const parent = map[last.idx];
         if (parent.type !== 'string') {
