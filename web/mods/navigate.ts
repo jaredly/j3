@@ -154,21 +154,15 @@ export const goRight = (
     }
 
     const pnodes = getNodes(map[last.idx]).reverse();
-    let prev: PathSel | null = null;
+    let prev: Path[] | null = null;
     for (let pnode of pnodes) {
-        const ps = maybeToPathSel(
-            pathSelForNode(pnode, last.idx, 'start', map),
-            map,
-        );
+        const ps = pathSelForNode(pnode, last.idx, 'start', map);
         if (!ps) continue;
-        if (ps.path.length && equal(ps.path[0].child, last.child)) {
+        if (ps.length && equal(ps[0].child, last.child)) {
             return prev
                 ? {
                       type: 'select',
-                      selection: {
-                          sel: prev.sel,
-                          path: path.slice(0, -1).concat(prev.path),
-                      },
+                      selection: toPathSel(path.slice(0, -1).concat(prev), map),
                   }
                 : goRight(
                       path.slice(0, -1),
