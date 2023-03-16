@@ -48,16 +48,15 @@ export function handleBackspace(
                                             loc: target.loc,
                                         },
                           },
-                selection: {
-                    sel: {
+                selection: [
+                    {
                         idx: parent.target,
-                        loc:
+                        child:
                             target.type === 'identifier'
-                                ? target.text.length
-                                : 'end',
+                                ? { type: 'subtext', at: target.text.length }
+                                : { type: 'end' },
                     },
-                    path: [],
-                },
+                ],
             });
         }
 

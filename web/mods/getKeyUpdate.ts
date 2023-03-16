@@ -133,8 +133,12 @@ export const getKeyUpdate = (
             `no path ${key} ${at.sel.idx} ${JSON.stringify(state.map)}`,
         );
     }
-    const last = at.path[at.path.length - 1];
-    const node = state.map[at.sel.idx];
+    const {
+        path,
+        sel: { idx },
+    } = at;
+    const last = path[path.length - 1];
+    const node = state.map[idx];
 
     const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
@@ -169,10 +173,6 @@ export const getKeyUpdate = (
     }
 
     const pos = selPos(at.sel, textRaw);
-    const {
-        path,
-        sel: { idx },
-    } = at;
     const map = state.map;
 
     if (key === 'ArrowRight') {
@@ -221,13 +221,7 @@ export const getKeyUpdate = (
         if (pos === 0 && (text.length || last.child.type === 'start')) {
             return newNodeBefore(path, map, {
                 ...newBlank(),
-                selection: {
-                    ...at,
-                    path:
-                        last.child.type === 'start'
-                            ? [path[path.length - 1]]
-                            : [],
-                },
+                selection: combinePathSel(at).slice(-1),
             });
         }
         return newNodeAfter(path, map, newBlank());
@@ -279,7 +273,9 @@ export const getKeyUpdate = (
 
             if (map[parent.target].type === 'blank' && textRaw === '') {
                 // turn into a spread!
-                const nat = newSpread(parent.target);
+                const nat = newSpread(parent.target, [
+                    { idx: parent.target, child: { type: 'start' } },
+                ]);
                 // Delete the recordAccess
                 nat.map[last.idx] = null;
                 // Delete the accessText
@@ -298,13 +294,13 @@ export const getKeyUpdate = (
                 type: 'update',
                 update: {
                     ...nat,
-                    selection: combinePathSel({
-                        ...nat.selection,
-                        path: path.slice(0, -1).concat({
+                    selection: path
+                        .slice(0, -1)
+                        .concat({
                             idx: last.idx,
                             child: { type: 'attribute', at: last.child.at + 1 },
-                        }),
-                    }),
+                        })
+                        .concat(nat.selection),
                 },
             };
         }
@@ -343,7 +339,6 @@ function addToListLike(
     path: Path[],
     newThing: NewThing,
 ): KeyUpdate {
-    // const res = newId(key);
     const pnode = map[pidx];
     newThing.map[pidx] = {
         ...pnode,
@@ -353,16 +348,13 @@ function addToListLike(
         type: 'update',
         update: {
             ...newThing,
-            selection: combinePathSel({
-                ...newThing.selection,
-                path: path
-                    .slice(0, -1)
-                    .concat({
-                        idx: pidx,
-                        child: { type: 'child', at: 0 },
-                    })
-                    .concat(newThing.selection.path),
-            }),
+            selection: path
+                .slice(0, -1)
+                .concat({
+                    idx: pidx,
+                    child: { type: 'child', at: 0 },
+                })
+                .concat(newThing.selection),
         },
     };
 }
@@ -418,12 +410,9 @@ function goToTannot(
         type: 'update',
         update: {
             ...blank,
-            selection: combinePathSel({
-                ...blank.selection,
-                path: path
-                    .concat({ idx, child: { type: 'tannot' } })
-                    .concat(blank.selection.path),
-            }),
+            selection: path
+                .concat({ idx, child: { type: 'tannot' } })
+                .concat(blank.selection),
         },
     };
 }
@@ -461,7 +450,8 @@ function openListLike({
                 newListLike(type, void 0, {
                     idx,
                     map: {},
-                    selection: { sel: { idx, loc: 'start' }, path: [last] },
+                    selection: [last],
+                    // { sel: { idx, loc: 'start' }, path: [last] },
                 }),
             );
         }
@@ -474,7 +464,7 @@ function openListLike({
             newListLike(type, void 0, {
                 idx,
                 map: {},
-                selection: { sel: { idx, loc: 'start' }, path: [] },
+                selection: [{ idx, child: { type: 'start' } }],
             }),
         );
     }
@@ -487,10 +477,7 @@ function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
         type: 'update',
         update: {
             ...newThing,
-            selection: combinePathSel({
-                ...newThing.selection,
-                path: path.concat(newThing.selection.path),
-            }),
+            selection: path.concat(newThing.selection),
         },
     };
 }
@@ -509,10 +496,7 @@ export function replacePathWith(
         update: {
             ...newThing,
             map: { ...newThing.map, ...update },
-            selection: combinePathSel({
-                ...newThing.selection,
-                path: path.concat(newThing.selection.path),
-            }),
+            selection: path.concat(newThing.selection),
         },
     };
 }
@@ -520,7 +504,7 @@ export function replacePathWith(
 export type NewThing = {
     map: UpdateMap;
     idx: number;
-    selection: PathSel;
+    selection: Path[];
 };
 
 export const newNodeAfter = (
@@ -565,24 +549,21 @@ export const newNodeAfter = (
             type: 'update',
             update: {
                 ...newThing,
-                selection: combinePathSel({
-                    ...newThing.selection,
-                    path: path
-                        .slice(0, i)
-                        .concat({
-                            idx: parent.idx,
-                            child: {
-                                type: 'child',
-                                at:
-                                    child.type === 'child'
-                                        ? child.at + 1
-                                        : firstBlank
-                                        ? 1
-                                        : 0,
-                            },
-                        })
-                        .concat(newThing.selection.path),
-                }),
+                selection: path
+                    .slice(0, i)
+                    .concat({
+                        idx: parent.idx,
+                        child: {
+                            type: 'child',
+                            at:
+                                child.type === 'child'
+                                    ? child.at + 1
+                                    : firstBlank
+                                    ? 1
+                                    : 0,
+                        },
+                    })
+                    .concat(newThing.selection),
             },
         };
     }
@@ -616,19 +597,16 @@ export const newNodeBefore = (
             type: 'update',
             update: {
                 ...newThing,
-                selection: combinePathSel({
-                    ...newThing.selection,
-                    path: path
-                        .slice(0, i)
-                        .concat({
-                            idx: parent.idx,
-                            child: {
-                                type: 'child',
-                                at: at + 1,
-                            },
-                        })
-                        .concat(newThing.selection.path),
-                }),
+                selection: path
+                    .slice(0, i)
+                    .concat({
+                        idx: parent.idx,
+                        child: {
+                            type: 'child',
+                            at: at + 1,
+                        },
+                    })
+                    .concat(newThing.selection),
             },
         };
     }
