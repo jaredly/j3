@@ -9,7 +9,7 @@ import {
     State,
 } from './getKeyUpdate';
 import { selPos, splitGraphemes } from '../../src/parse/parse';
-import { stringText } from '../../src/types/cst';
+import { accessText, Identifier, stringText } from '../../src/types/cst';
 
 export function handleBackspace(
     map: Map,
@@ -20,7 +20,93 @@ export function handleBackspace(
     const atStart = loc === 0 || loc === 'start';
 
     if (node.type === 'accessText' && atStart) {
-        // if (parent.ty)
+        const parent = map[last.idx];
+        if (parent.type !== 'recordAccess') {
+            throw new Error(
+                `accessText not child of recordAccess ${parent.type}`,
+            );
+        }
+        if (last.child.type !== 'attribute') {
+            throw new Error(`bad path`);
+        }
+        if (last.child.at === 1 && parent.items.length === 1) {
+            const target = map[parent.target];
+            return replacePathWith(path.slice(0, -1), map, {
+                idx: parent.target,
+                path: [],
+                map:
+                    target.type === 'blank' && !node.text
+                        ? {}
+                        : {
+                              [parent.target]:
+                                  target.type === 'identifier'
+                                      ? {
+                                            ...target,
+                                            text: target.text + node.text,
+                                        }
+                                      : {
+                                            type: 'identifier',
+                                            text: node.text,
+                                            loc: target.loc,
+                                        },
+                          },
+                selection: {
+                    idx: parent.target,
+                    loc:
+                        target.type === 'identifier'
+                            ? target.text.length
+                            : 'end',
+                },
+            });
+        }
+
+        const prev =
+            last.child.at > 1 ? parent.items[last.child.at - 2] : parent.target;
+        const items = parent.items.slice();
+        items.splice(last.child.at - 1, 1);
+        const um: UpdateMap = {
+            [idx]: null,
+            [last.idx]: {
+                ...parent,
+                items,
+            },
+        };
+        const pnode = map[prev] as (
+            | accessText
+            | Identifier
+            | { type: 'blank' }
+        ) &
+            MNodeExtra;
+        let loc = 0;
+        if (pnode.type === 'blank') {
+            um[prev] = {
+                type: 'identifier',
+                text: node.text,
+                loc: pnode.loc,
+            };
+        } else {
+            loc = pnode.text.length;
+            um[prev] = {
+                ...pnode,
+                text: pnode.text + node.text,
+            };
+        }
+        return {
+            type: 'update',
+            update: {
+                map: um,
+                selection: { idx: prev, loc },
+                path: path.slice(0, -1).concat([
+                    {
+                        idx: last.idx,
+                        child:
+                            last.child.at > 1
+                                ? { type: 'attribute', at: last.child.at - 1 }
+                                : { type: 'record-target' },
+                    },
+                ]),
+            },
+        };
     }
 
     if (node.type === 'stringText' && atStart) {
