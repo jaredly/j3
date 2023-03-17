@@ -265,19 +265,17 @@ export const getKeyUpdate = (
         return newNodeAfter(fullPath, map, newString());
     }
 
-    const { path } = toPathSel(fullPath, state.map);
-    const last = path[path.length - 1];
-
     if (key === '.') {
         if (node.type === 'blank') {
             const nat = newRecordAccess(idx, '');
-            return replacePathWith(path, map, nat);
+            return replacePathWith(fullPath.slice(0, -1), map, nat);
         }
-        if (last.child.type === 'inside') {
+        if (flast.child.type === 'inside') {
             const blank = newBlank();
             const nat = mergeNew(blank, newRecordAccess(blank.idx, ''));
-            return addToListLike(map, last.idx, path, nat);
+            return addToListLike(map, flast.idx, fullPath, nat);
         }
+
         if (node.type === 'identifier' && !textRaw.match(/^-?[0-9]+$/)) {
             const nat = newRecordAccess(idx, text.slice(pos).join(''));
             if (pos === 0) {
@@ -285,10 +283,9 @@ export const getKeyUpdate = (
             } else if (pos < text.length) {
                 nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
             }
-            return replacePathWith(path, map, nat);
+            return replacePathWith(fullPath.slice(0, -1), map, nat);
         }
-        if (node.type === 'accessText' && last.child.type === 'attribute') {
-            const parent = map[last.idx];
+        if (node.type === 'accessText' && ppath.child.type === 'attribute') {
             if (parent.type !== 'recordAccess') {
                 throw new Error(
                     `accessText parent not a recordAccess ${parent.type}`,
@@ -301,10 +298,10 @@ export const getKeyUpdate = (
                     { idx: parent.target, child: { type: 'start' } },
                 ]);
                 // Delete the recordAccess
-                nat.map[last.idx] = null;
+                nat.map[ppath.idx] = null;
                 // Delete the accessText
                 nat.map[idx] = null;
-                return replacePathWith(path.slice(0, -1), map, nat);
+                return replacePathWith(fullPath.slice(0, -2), map, nat);
             }
 
             const nat = newAccessText(text.slice(pos));
@@ -312,17 +309,20 @@ export const getKeyUpdate = (
                 nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
             }
             const items = parent.items.slice();
-            items.splice(last.child.at + 1, 0, nat.idx);
-            nat.map[last.idx] = { ...parent, items };
+            items.splice(ppath.child.at + 1, 0, nat.idx);
+            nat.map[ppath.idx] = { ...parent, items };
             return {
                 type: 'update',
                 update: {
                     ...nat,
-                    selection: path
-                        .slice(0, -1)
+                    selection: fullPath
+                        .slice(0, -2)
                         .concat({
-                            idx: last.idx,
-                            child: { type: 'attribute', at: last.child.at + 1 },
+                            idx: ppath.idx,
+                            child: {
+                                type: 'attribute',
+                                at: ppath.child.at + 1,
+                            },
                         })
                         .concat(nat.selection),
                 },
@@ -331,9 +331,12 @@ export const getKeyUpdate = (
         if (node.type !== 'identifier') {
             const at = newBlank();
             const one = newRecordAccess(at.idx, '');
-            return newNodeAfter(path, map, mergeNew(at, one));
+            return newNodeAfter(fullPath, map, mergeNew(at, one));
         }
     }
+
+    const { path } = toPathSel(fullPath, state.map);
+    const last = path[path.length - 1];
 
     // Ok, so now we're updating things
     const input = splitGraphemes(key);
