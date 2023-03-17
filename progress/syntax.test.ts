@@ -230,6 +230,10 @@ id
 (h^l a)
 ( ah)
 (list blank id)
+
+hi:^b
+hi
+id
 `;
 
 // (.^b)

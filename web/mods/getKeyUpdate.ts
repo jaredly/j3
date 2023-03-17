@@ -244,25 +244,29 @@ export const getKeyUpdate = (
         return newNodeAfter(fullPath, map, newBlank());
     }
 
-    const { path } = toPathSel(fullPath, state.map);
-    const last = path[path.length - 1];
-
     if (')]}'.includes(key)) {
-        const selection = closeListLike(key, path, map);
+        const selection = closeListLike(key, fullPath, map);
         return selection ? { type: 'select', selection } : undefined;
     }
 
     if (key === ':') {
-        return goToTannot(path, node, idx, map);
+        // no nesting tannots
+        if (fullPath.some((s) => s.child.type === 'tannot')) {
+            return;
+        }
+        return goToTannot(fullPath.slice(0, -1), node, idx, map);
     }
 
     if (key === '"') {
         // are we at the start of a blank or id or something?
         if (node.type === 'blank') {
-            return replaceWith(path, newString(idx));
+            return replaceWith(fullPath.slice(0, -1), newString(idx));
         }
-        return newNodeAfter(path, map, newString());
+        return newNodeAfter(fullPath, map, newString());
     }
+
+    const { path } = toPathSel(fullPath, state.map);
+    const last = path[path.length - 1];
 
     if (key === '.') {
         if (node.type === 'blank') {

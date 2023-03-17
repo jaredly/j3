@@ -57,7 +57,8 @@ I think I actually want a different node type, called like
 - [x] inside a ${}
 - [x] after a ${}
 - [x] after a listlike
-- [ ] access.text backspace
+- [x] access.text backspace
+- [ ] tonnot: backspace
 
 # [ ] extra fancy backspaces
 - [ ] at the start of a listlike? (unwrap if possible)
