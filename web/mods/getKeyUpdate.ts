@@ -335,29 +335,26 @@ export const getKeyUpdate = (
         }
     }
 
-    const { path } = toPathSel(fullPath, state.map);
-    const last = path[path.length - 1];
-
     // Ok, so now we're updating things
     const input = splitGraphemes(key);
 
     if (node.type === 'identifier' || node.type === 'accessText') {
-        return updateText(node, pos, input, idx, path);
+        return updateText(node, pos, input, idx, fullPath.slice(0, -1));
     }
 
-    if (last.child.type === 'inside') {
-        return addToListLike(map, last.idx, path, newId(input));
+    if (flast.child.type === 'inside') {
+        return addToListLike(map, idx, fullPath, newId(input));
     }
 
     if (node.type === 'blank') {
-        return replaceWith(path, newId(input, idx));
+        return replaceWith(fullPath.slice(0, -1), newId(input, idx));
     }
 
-    if (last.child.type === 'start') {
-        return newNodeBefore(path, map, newId(input));
+    if (flast.child.type === 'start') {
+        return newNodeBefore(fullPath, map, newId(input));
     }
 
-    return newNodeAfter(path, map, newId(input));
+    return newNodeAfter(fullPath, map, newId(input));
 };
 
 function addToListLike(
