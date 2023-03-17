@@ -72,7 +72,7 @@ export type Action =
     | {
           type: 'select';
           add?: boolean;
-          at: { start: PathSel; end?: PathSel }[];
+          at: { start: Path[]; end?: Path[] }[];
       }
     | {
           type: 'key';
@@ -96,12 +96,16 @@ const reduce = (state: UIState, action: Action): UIState => {
             return state;
         case 'select':
             // Ignore attempts to select the root node
-            if (action.at.some((at) => isRootPath(at.start.path))) {
+            if (action.at.some((at) => isRootPath(at.start))) {
                 return state;
             }
+            const at = action.at.map(({ start, end }) => ({
+                start: toPathSel(start, state.map),
+                end: end ? toPathSel(end, state.map) : end,
+            }));
             return {
                 ...state,
-                at: action.add ? state.at.concat(action.at) : action.at,
+                at: action.add ? state.at.concat(at) : at,
             };
     }
 };
@@ -299,7 +303,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         dispatch({
                             type: 'select',
                             add: evt.altKey,
-                            at: [{ start: toPathSel(sel, state.map) }],
+                            at: [{ start: sel }],
                         });
                     }
                 }}
@@ -321,7 +325,13 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             dispatch({
                                 type: 'select',
                                 add: evt.altKey,
-                                at: [{ start: state.at[0].start }],
+                                at: [
+                                    {
+                                        start: combinePathSel(
+                                            state.at[0].start,
+                                        ),
+                                    },
+                                ],
                             });
                         } else {
                             dispatch({
@@ -329,8 +339,10 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                                 add: evt.altKey,
                                 at: [
                                     {
-                                        start: state.at[0].start,
-                                        end: toPathSel(sel, state.map),
+                                        start: combinePathSel(
+                                            state.at[0].start,
+                                        ),
+                                        end: sel,
                                     },
                                 ],
                             });
@@ -356,8 +368,10 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                                 add: evt.altKey,
                                 at: [
                                     {
-                                        start: state.at[0].start,
-                                        end: toPathSel(sel, state.map),
+                                        start: combinePathSel(
+                                            state.at[0].start,
+                                        ),
+                                        end: sel,
                                     },
                                 ],
                             });
