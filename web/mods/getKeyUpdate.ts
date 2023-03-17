@@ -80,7 +80,7 @@ and `onLeft` and `onRight`, but no keypress stuff.
 export type State = {
     map: Map;
     root: number;
-    at: { start: PathSel; end?: PathSel }[];
+    at: { start: Path[]; end?: Path[] }[];
 };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
@@ -101,12 +101,12 @@ export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
         return {
             ...state,
             map: map,
-            at: [{ start: toPathSel(update.update.selection, map) }],
+            at: [{ start: update.update.selection }],
         };
     } else if (update?.type === 'select') {
         return {
             ...state,
-            at: [{ start: toPathSel(update.selection, state.map) }],
+            at: [{ start: update.selection }],
         };
     }
 };

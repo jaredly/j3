@@ -1,4 +1,4 @@
-import { Selection } from '../../web/store';
+import { Path, Selection } from '../../web/store';
 import { Node } from '../types/cst';
 
 export type SourceMap = {
@@ -25,22 +25,23 @@ export const nodeToString = (
 const maybeWrap = (text: string) =>
     !text.length || text.trim().length < text.length ? `\`${text}\`` : text;
 
-export const remapPos = (selection: Selection, sm: SourceMap) => {
-    if (!sm.map[selection.idx]) {
-        throw new Error(`no idx ${selection.idx} ${JSON.stringify(sm)}`);
+export const remapPos = (fullPath: Path[], sm: SourceMap) => {
+    const last = fullPath[fullPath.length - 1];
+    if (!sm.map[last.idx]) {
+        throw new Error(`no idx ${last.idx} ${JSON.stringify(sm)}`);
     }
-    const { start, end } = sm.map[selection.idx];
-    switch (selection.loc) {
+    const { start, end } = sm.map[last.idx];
+    switch (last.child.type) {
         case 'start':
             return start;
         case 'end':
             return end;
         case 'inside':
             return start + 1;
-        case 'change':
-            return start;
+        case 'subtext':
+            return start + last.child.at;
         default:
-            return start + (selection.loc ?? 0);
+            return start;
     }
 };
 

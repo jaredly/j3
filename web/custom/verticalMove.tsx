@@ -4,7 +4,10 @@ import { UIState, calcCursorPos } from './ByHand';
 import { Path } from '../store';
 
 export const verticalMove = (state: UIState, up: boolean): UIState => {
-    const current = calcCursorPos(state.at[0].start.sel, state.regs);
+    const current = calcCursorPos(
+        toPathSel(state.at[0].start, state.map).sel,
+        state.regs,
+    );
     if (!current) {
         return state;
     }
@@ -20,9 +23,7 @@ export const verticalMove = (state: UIState, up: boolean): UIState => {
         !up ? current.top + current.height + 5 : undefined,
         !up ? undefined : current.top - 5,
     );
-    return best
-        ? { ...state, at: [{ start: toPathSel(best, state.map) }] }
-        : state;
+    return best ? { ...state, at: [{ start: best }] } : state;
 };
 
 export const closestSelection = (

@@ -1,7 +1,7 @@
 // Basic level
 
 import { setIdx } from '../src/grammar';
-import { idText, parseByCharacter, selPos } from '../src/parse/parse';
+import { idText, parseByCharacter, pathPos, selPos } from '../src/parse/parse';
 import {
     nodeToString,
     remapPos,
@@ -16,6 +16,7 @@ import {
     selectEnd,
     selectStart,
 } from '../web/mods/navigate';
+import { Path } from '../web/store';
 import { sexp } from './sexp';
 
 const data = `
@@ -275,12 +276,9 @@ describe('a test', () => {
                 expect(sexp(fromMCST(idx, data))).toEqual(serialized);
                 expect(back).toEqual(expected);
 
-                const state = maybeToPathSel(
-                    selectEnd(
-                        idx,
-                        [{ idx: -1, child: { type: 'child', at: 0 } }],
-                        data,
-                    ),
+                const state = selectEnd(
+                    idx,
+                    [{ idx: -1, child: { type: 'child', at: 0 } }],
                     data,
                 );
 
@@ -304,12 +302,9 @@ describe('a test', () => {
                     },
                 });
 
-                const startState = maybeToPathSel(
-                    selectStart(
-                        idx,
-                        [{ idx: -1, child: { type: 'child', at: 0 } }],
-                        data,
-                    ),
+                const startState = selectStart(
+                    idx,
+                    [{ idx: -1, child: { type: 'child', at: 0 } }],
                     data,
                 );
 
@@ -336,6 +331,8 @@ describe('a test', () => {
         });
 });
 
+const pathIdx = (path: Path[]) => path[path.length - 1].idx;
+
 function doABunchOfKeys({
     only,
     i,
@@ -358,23 +355,19 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(state.map[state.at[0].start.sel.idx]) ?? '';
-        const pos = selPos(state.at[0].start.sel, curText);
+        const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
+        const pos = pathPos(state.at[0].start, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
 
-        const startPos = remapPos(state.at[0].start.sel, sourceMap);
+        const startPos = remapPos(state.at[0].start, sourceMap);
         if (only) {
             console.log(
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(
-            key,
-            state,
-            combinePathSel(state.at[0].start),
-        );
+        const update = getKeyUpdate(key, state, state.at[0].start);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {
@@ -383,9 +376,9 @@ function doABunchOfKeys({
                 state = applyUpdate(state, update)!;
             }
         }
-        const newPos = remapPos(state.at[0].start.sel, sourceMap);
+        const newPos = remapPos(state.at[0].start, sourceMap);
         if (check(startPos, newPos)) {
-            console.log(JSON.stringify(state.at[0].start.sel));
+            console.log(JSON.stringify(state.at[0].start));
             console.log(showSourceMap(back, sourceMap));
             console.log(
                 'prev: ' +
@@ -399,7 +392,7 @@ function doABunchOfKeys({
                     '|' +
                     backOrig.slice(newPos),
             );
-            console.log(state.at[0].start.sel);
+            console.log(state.at[0].start);
             expect(newPos).toEqual('something else');
         }
         if (newPos === stop) {

@@ -32,7 +32,7 @@ export const splitGraphemes = (text: string) => {
 export const parseByCharacter = (
     rawText: string,
     debug = false,
-): { map: Map; selection: Selection } => {
+): { map: Map; selection: Path[] } => {
     let state: State = initialState();
 
     const text = splitGraphemes(rawText.replace(/\s+/g, ' '));
@@ -54,19 +54,15 @@ export const parseByCharacter = (
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(
-            key,
-            state,
-            combinePathSel(state.at[0].start),
-        );
+        const update = getKeyUpdate(key, state, state.at[0].start);
         if (debug) {
-            console.log(key, state.at[0].start.path);
+            console.log(key, state.at[0].start);
             console.log(JSON.stringify(update));
         }
 
         state = applyUpdate(state, update) ?? state;
     }
-    return { map: state.map, selection: state.at[0].start.sel };
+    return { map: state.map, selection: state.at[0].start };
 };
 
 function initialState() {
@@ -88,10 +84,10 @@ function initialState() {
         map,
         at: [
             {
-                start: {
-                    sel: { idx: top, loc: 0 },
-                    path: [{ idx: -1, child: { type: 'child', at: 0 } }],
-                },
+                start: [
+                    { idx: -1, child: { type: 'child', at: 0 } },
+                    { idx: top, child: { type: 'start' } },
+                ],
             },
         ],
         root: -1,

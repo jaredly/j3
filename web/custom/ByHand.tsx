@@ -1,3 +1,4 @@
+import equal from 'fast-deep-equal';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
 import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
@@ -87,7 +88,7 @@ const reduce = (state: UIState, action: Action): UIState => {
             }
             const newState = handleKey(state, action.key);
             if (newState) {
-                if (newState.at.some((at) => isRootPath(at.start.path))) {
+                if (newState.at.some((at) => isRootPath(at.start))) {
                     console.log('not selecting root node');
                     return state;
                 }
@@ -99,13 +100,9 @@ const reduce = (state: UIState, action: Action): UIState => {
             if (action.at.some((at) => isRootPath(at.start))) {
                 return state;
             }
-            const at = action.at.map(({ start, end }) => ({
-                start: toPathSel(start, state.map),
-                end: end ? toPathSel(end, state.map) : end,
-            }));
             return {
                 ...state,
-                at: action.add ? state.at.concat(at) : at,
+                at: action.add ? state.at.concat(action.at) : action.at,
             };
     }
 };
@@ -139,8 +136,9 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
         const map = parseByCharacter(initialText, debug).map;
         const idx = (map[-1] as ListLikeContents).values[0];
-        const at = maybeToPathSel(
-            selectEnd(idx, [{ idx: -1, child: { type: 'child', at: 0 } }], map),
+        const at = selectEnd(
+            idx,
+            [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
         return { map, root: -1, at: [{ start: at }], regs: {} };
@@ -185,7 +183,10 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         setCursorPos(
             state.at.flatMap((at) => {
                 const res: any = [];
-                const box = calcCursorPos(at.start.sel, state.regs);
+                const box = calcCursorPos(
+                    toPathSel(at.start, state.map).sel,
+                    state.regs,
+                );
                 if (box) {
                     const offsetY = document.body.scrollTop;
                     const offsetX = document.body.scrollLeft;
@@ -197,7 +198,10 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     });
                 }
                 if (at.end) {
-                    const box2 = calcCursorPos(at.end.sel, state.regs);
+                    const box2 = calcCursorPos(
+                        toPathSel(at.end, state.map).sel,
+                        state.regs,
+                    );
                     if (box2) {
                         const offsetY = document.body.scrollTop;
                         const offsetX = document.body.scrollLeft;
@@ -316,20 +320,13 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         y: evt.clientY,
                     });
                     if (sel) {
-                        if (
-                            pathSelEqual(
-                                toPathSel(sel, state.map),
-                                state.at[0].start,
-                            )
-                        ) {
+                        if (equal(sel, state.at[0].start)) {
                             dispatch({
                                 type: 'select',
                                 add: evt.altKey,
                                 at: [
                                     {
-                                        start: combinePathSel(
-                                            state.at[0].start,
-                                        ),
+                                        start: state.at[0].start,
                                     },
                                 ],
                             });
@@ -339,9 +336,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                                 add: evt.altKey,
                                 at: [
                                     {
-                                        start: combinePathSel(
-                                            state.at[0].start,
-                                        ),
+                                        start: state.at[0].start,
                                         end: sel,
                                     },
                                 ],
@@ -356,21 +351,13 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             x: evt.clientX,
                             y: evt.clientY,
                         });
-                        if (
-                            sel &&
-                            !pathSelEqual(
-                                toPathSel(sel, state.map),
-                                state.at[0].start,
-                            )
-                        ) {
+                        if (sel && !equal(sel, state.at[0].start)) {
                             dispatch({
                                 type: 'select',
                                 add: evt.altKey,
                                 at: [
                                     {
-                                        start: combinePathSel(
-                                            state.at[0].start,
-                                        ),
+                                        start: state.at[0].start,
                                         end: sel,
                                     },
                                 ],
@@ -424,9 +411,9 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 <div>
                     <div>
                         Sel:{' '}
-                        {JSON.stringify(
+                        {/* {JSON.stringify(
                             state.at.map((at) => [at.start.sel, at.end?.sel]),
-                        )}
+                        )} */}
                         <div>{JSON.stringify(state.at[0].start)}</div>
                     </div>
                     <div>Path: </div>
@@ -439,7 +426,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                                 </tr>
 
                                 {state.at.map((at, a) =>
-                                    at.start.path.map((item, i) => (
+                                    at.start.map((item, i) => (
                                         <tr key={i + ':' + a}>
                                             <td>{item.idx}</td>
                                             <td>
@@ -532,11 +519,7 @@ export const handleKey = (state: UIState, key: string): UIState => {
     state = { ...state };
     state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(
-            key,
-            state,
-            combinePathSel(state.at[i].start),
-        );
+        const update = getKeyUpdate(key, state, state.at[i].start);
         if (!update) continue;
         if (update?.type === 'select' && isRootPath(update.selection)) {
             continue;
@@ -550,12 +533,12 @@ export const handleKey = (state: UIState, key: string): UIState => {
         }
         if (update.type === 'select') {
             state.at[i] = {
-                start: toPathSel(update.selection, state.map),
+                start: update.selection,
             };
         } else if (update.update) {
             state.map = applyUpdateMap(state.map, update.update.map);
             state.at[i] = {
-                start: toPathSel(update.update.selection, state.map),
+                start: update.update.selection,
             };
         }
     }
