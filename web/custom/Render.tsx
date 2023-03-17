@@ -1,20 +1,10 @@
 import React from 'react';
-import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { pathSelForNode } from '../mods/navigate';
-import { sideClick } from '../old/ListLike';
 import { rainbow } from '../old/Nodes';
-import { getNodes } from '../overheat/getNodes';
-import { ONode, ONodeOld } from '../overheat/types';
-import { Path, Selection } from '../store';
-import { Action, State } from './ByHand';
-
-type Reg = (
-    node: HTMLSpanElement | null,
-    idx: number,
-    loc?: 'start' | 'end' | 'inside',
-) => void;
+import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
+import { calcOffset } from './RenderONode';
+import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
     const idx = hash.startsWith(':')
@@ -28,6 +18,8 @@ const nodeColor = (type: MNode['type']) => {
     return colors[type];
 };
 
+const columnRecords = true;
+
 export const colors: {
     [key: string]: string;
 } = {
@@ -36,7 +28,7 @@ export const colors: {
     tag: '#82f682',
     number: '#8585ff', //'#4848a5',
     string: 'yellow',
-    stringText: 'yellow',
+    stringText: stringColor,
     unparsed: 'red',
 };
 
@@ -76,182 +68,212 @@ export const textStyle = (
     }
 };
 
-export const Render = ({
-    idx,
-    state,
-    reg,
-    path,
-    display,
-    dispatch,
-}: {
-    idx: number;
-    state: State;
-    reg: Reg;
-    path: Path[];
-    display: Ctx['display'];
-    dispatch: React.Dispatch<Action>;
-}) => {
-    const node = state.map[idx];
-    const onodes = getNodes(node, display[idx]?.layout);
+export const Render = (props: RenderProps) => {
+    const { idx, map, display, path } = props;
+    const nnode = getNestedNodes(map[idx], display[idx]?.layout);
 
-    return (
-        <span>
-            {onodes.map((onode, i) => {
-                switch (onode.type) {
-                    case 'blinker':
-                        return (
-                            <span
-                                key={i}
-                                ref={(node) => reg(node, idx, onode.loc)}
-                            />
-                        );
-                    case 'punct':
-                        return (
-                            <span
-                                key={i}
-                                style={{
-                                    // color: 'gray',
-                                    whiteSpace: 'pre',
-                                    color:
-                                        onode.color === 'rainbow'
-                                            ? rainbow[
-                                                  path.length % rainbow.length
-                                              ]
-                                            : onode.color,
-                                }}
-                                onMouseDown={sideClick((isLeft) => {
-                                    clickPunct(
-                                        isLeft,
-                                        idx,
-                                        i,
-                                        onodes,
-                                        path,
-                                        state,
-                                        dispatch,
-                                    );
-                                })}
-                            >
-                                {onode.text}
-                            </span>
-                        );
-                    case 'render':
-                        return (
-                            <span
-                                key={i}
-                                ref={(node) => reg(node, idx)}
-                                style={textStyle(node, display[idx])}
-                                onMouseDown={(evt) => {
-                                    evt.preventDefault();
+    if (path.length > 1000) {
+        return <span>DEEP</span>;
+    }
 
-                                    // let box =
-                                    //     evt.currentTarget.getBoundingClientRect();
-                                    // let percent =
-                                    //     (evt.clientX - box.left) / box.width;
-                                    // let estimate = Math.round(
-                                    //     percent * onode.text.length,
-                                    // );
-                                    dispatch({
-                                        type: 'select',
-                                        pathSel: {
-                                            path,
-                                            sel: {
-                                                idx,
-                                                loc: calcOffset(
-                                                    evt.currentTarget,
-                                                    evt.clientX,
-                                                ),
-                                            },
-                                        },
-                                    });
-                                }}
-                            >
-                                {onode.text}
-                            </span>
-                        );
-                    case 'ref':
-                        return (
-                            <Render
-                                key={onode.id + ':' + i}
-                                state={state}
-                                display={display}
-                                dispatch={dispatch}
-                                reg={reg}
-                                idx={onode.id}
-                                path={path.concat([{ idx, child: onode.path }])}
-                            />
-                        );
-                }
-            })}
+    return props.debug ? (
+        <span style={{ display: 'flex' }}>
+            <span
+                style={{ opacity: 0.5, fontSize: '50%' }}
+                data-display={JSON.stringify(props.display[idx])}
+            >
+                {idx}
+            </span>
+            <RenderNNode {...props} nnode={nnode} />
         </span>
+    ) : (
+        <RenderNNode {...props} nnode={nnode} />
     );
 };
 
-// TODO I could do a binary search thing to make this faster if I want
-export const calcOffset = (node: HTMLSpanElement, x: number) => {
-    if (!node.firstChild) {
-        return 0;
-    }
-    let range = new Range();
-    const graphemes = splitGraphemes(node.textContent!);
-    let offset = 0;
-    let prevPos = null;
-    for (let i = 0; i < graphemes.length; i++) {
-        range.setStart(node.firstChild, offset);
-        range.setEnd(node.firstChild, offset);
-        let dx = range.getBoundingClientRect().left - x;
-        if (Math.abs(dx) < 3) {
-            console.log('spot on');
-            return i;
-        }
-        if (prevPos && prevPos < 0 && dx > 0) {
-            return Math.abs(prevPos) < Math.abs(dx) ? i - 1 : i;
-        }
-        prevPos = dx;
-        offset += graphemes[i].length;
-    }
-    return graphemes.length;
-};
+export const RenderNNode = (
+    props: RenderProps & { nnode: NNode },
+): JSX.Element => {
+    const { nnode, reg, idx, path, display, map, dispatch } = props;
+    const node = map[idx];
 
-export const clickPunct = (
-    isLeft: boolean,
-    idx: number,
-    i: number,
-    onodes: ONode[],
-    path: Path[],
-    state: State,
-    dispatch: React.Dispatch<Action>,
-) => {
-    if (isLeft) {
-        for (let j = i; j >= 0; j--) {
-            const prev = onodes[j];
-            const ps = pathSelForNode(prev, idx, 'end', state.map);
-            if (ps) {
-                console.log(ps);
-                dispatch({
-                    type: 'select',
-                    pathSel: {
-                        sel: ps.sel,
-                        path: path.concat(ps.path),
-                    },
-                });
-                return;
+    const isSelected = props.selection.some(
+        (s) =>
+            s.start[s.start.length - 1].idx === idx ||
+            (s.end && s.end[s.end.length - 1].idx === idx),
+    );
+
+    switch (nnode.type) {
+        case 'vert':
+        case 'horiz':
+            return (
+                <span
+                    style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        flexDirection: nnode.type === 'vert' ? 'column' : 'row',
+                    }}
+                >
+                    {nnode.children.map((nnode, i) => (
+                        <RenderNNode
+                            {...props}
+                            nnode={nnode}
+                            key={nnode.type === 'ref' ? 'id:' + nnode.id : i}
+                        />
+                    ))}
+                </span>
+            );
+        case 'blinker':
+            return (
+                <span
+                    ref={(node) => reg(node, idx, path, nnode.loc)}
+                    style={{
+                        alignSelf:
+                            nnode.loc === 'start'
+                                ? 'flex-start'
+                                : nnode.loc === 'end'
+                                ? 'flex-end'
+                                : 'stretch',
+                    }}
+                />
+            );
+        case 'punct':
+            return (
+                <span style={{ whiteSpace: 'pre', color: nnode.color }}>
+                    {nnode.text}
+                </span>
+            );
+        case 'brace':
+            return (
+                <span
+                    style={{
+                        whiteSpace: 'pre',
+                        color:
+                            nnode.color ??
+                            rainbow[path.length % rainbow.length],
+                        alignSelf:
+                            nnode.at === 'end' ? 'flex-end' : 'flex-start',
+                        fontVariationSettings: isSelected ? '"wght" 900' : '',
+                    }}
+                >
+                    {nnode.text}
+                </span>
+            );
+        case 'text':
+            return (
+                <span
+                    ref={(node) => reg(node, idx, path)}
+                    style={textStyle(node, display[idx])}
+                    className="idlike"
+                    onMouseDown={(evt) => {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        dispatch({
+                            type: 'select',
+                            add: evt.altKey,
+                            at: [
+                                {
+                                    start: path.concat({
+                                        idx,
+                                        child: {
+                                            type: 'subtext',
+                                            at: calcOffset(
+                                                evt.currentTarget,
+                                                evt.clientX,
+                                            ),
+                                        },
+                                    }),
+                                },
+                            ],
+                        });
+                    }}
+                >
+                    {nnode.text}
+                </span>
+            );
+        case 'ref':
+            return (
+                <Render
+                    map={map}
+                    display={display}
+                    dispatch={dispatch}
+                    reg={reg}
+                    idx={nnode.id}
+                    selection={props.selection}
+                    debug={props.debug}
+                    path={path.concat([{ idx, child: nnode.path }])}
+                />
+            );
+        case 'pairs':
+            if (!columnRecords) {
+                return (
+                    <span
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'nowrap',
+                            flexDirection: 'column',
+                            gap: '0 8px',
+                        }}
+                    >
+                        {nnode.children.map((pair, i) =>
+                            pair.length === 1 ? (
+                                <div key={i} style={{ gridColumn: '1/2' }}>
+                                    <RenderNNode {...props} nnode={pair[0]} />
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex' }}>
+                                    <span key={i + '-0'}>
+                                        <RenderNNode
+                                            {...props}
+                                            nnode={pair[0]}
+                                        />
+                                    </span>
+                                    <span style={{ width: '0.5em' }} />
+                                    <span key={i + '-1'}>
+                                        <RenderNNode
+                                            {...props}
+                                            nnode={pair[1]}
+                                        />
+                                    </span>
+                                </div>
+                            ),
+                        )}
+                    </span>
+                );
             }
-        }
-    } else {
-        for (let j = i + 1; j < onodes.length; j++) {
-            const prev = onodes[j];
-            const ps = pathSelForNode(prev, idx, 'start', state.map);
-            if (ps) {
-                console.log(ps);
-                dispatch({
-                    type: 'select',
-                    pathSel: {
-                        sel: ps.sel,
-                        path: path.concat(ps.path),
-                    },
-                });
-                return;
-            }
-        }
+            return (
+                <span style={{ display: 'grid', gap: '0 8px' }}>
+                    {nnode.children.flatMap((pair, i) =>
+                        pair.length === 1
+                            ? [
+                                  <span key={i} style={{ gridColumn: '1/2' }}>
+                                      <RenderNNode {...props} nnode={pair[0]} />
+                                  </span>,
+                              ]
+                            : [
+                                  <span
+                                      key={i + '-0'}
+                                      style={{ gridColumn: '1' }}
+                                  >
+                                      <RenderNNode {...props} nnode={pair[0]} />
+                                  </span>,
+                                  <span
+                                      key={i + '-1'}
+                                      style={{ gridColumn: '2' }}
+                                  >
+                                      <RenderNNode {...props} nnode={pair[1]} />
+                                  </span>,
+                              ],
+                    )}
+                </span>
+            );
+        case 'indent':
+            return (
+                <span style={{ display: 'inline-block', paddingLeft: 10 }}>
+                    <RenderNNode {...props} nnode={nnode.child} />
+                </span>
+            );
     }
+    let _: never = nnode;
+    return <span>NOPE</span>;
 };

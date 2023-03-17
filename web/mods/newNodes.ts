@@ -1,5 +1,6 @@
 import { nidx } from '../../src/grammar';
 import { splitGraphemes } from '../../src/parse/parse';
+import { Path } from '../store';
 import { NewThing } from './getKeyUpdate';
 
 /** Second wins */
@@ -16,12 +17,15 @@ export const newBlank = (idx = nidx()): NewThing => {
             [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
         },
         idx,
-        selection: { idx, loc: 'start' },
-        path: [],
+        selection: [{ idx, child: { type: 'start' } }],
     };
 };
 
-export const newSpread = (iid: number, idx = nidx()): NewThing => {
+export const newSpread = (
+    iid: number,
+    last: Path[],
+    idx = nidx(),
+): NewThing => {
     return {
         map: {
             [idx]: {
@@ -31,8 +35,7 @@ export const newSpread = (iid: number, idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx: iid, loc: 0 },
-        path: [{ idx, child: { type: 'spread-contents' } }],
+        selection: [{ idx, child: { type: 'spread-contents' } }, ...last],
     };
 };
 
@@ -57,8 +60,13 @@ export const newRecordAccess = (
             },
         },
         idx,
-        selection: { idx: aidx, loc: 0 },
-        path: [{ idx, child: { type: 'attribute', at: 0 } }],
+        selection: [
+            { idx, child: { type: 'attribute', at: 1 } },
+            {
+                idx: aidx,
+                child: { type: 'subtext', at: 0 },
+            },
+        ],
     };
 };
 
@@ -72,8 +80,7 @@ export const newAccessText = (text: string[], idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx, loc: text.length },
-        path: [],
+        selection: [{ idx, child: { type: 'subtext', at: text.length } }],
     };
 };
 
@@ -87,8 +94,7 @@ export const newId = (key: string[], idx = nidx()): NewThing => {
             },
         },
         idx,
-        selection: { idx, loc: key.length },
-        path: [],
+        selection: [{ idx, child: { type: 'subtext', at: key.length } }],
     };
 };
 
@@ -109,8 +115,13 @@ export const newString = (idx = nidx()): NewThing => {
             },
         },
         idx: idx,
-        selection: { idx: nid, loc: 0 },
-        path: [{ idx, child: { type: 'text', at: 0 } }],
+        selection: [
+            { idx, child: { type: 'text', at: 0 } },
+            {
+                idx: nid,
+                child: { type: 'subtext', at: 0 },
+            },
+        ],
     };
 };
 
@@ -129,12 +140,8 @@ export function newListLike(
             },
         },
         idx,
-        path: child
-            ? [{ idx, child: { type: 'child', at: 0 } }, ...child.path]
+        selection: child
+            ? [{ idx, child: { type: 'child', at: 0 } }, ...child.selection]
             : [{ idx, child: { type: 'inside' } }],
-        selection: child?.selection ?? {
-            idx,
-            loc: 'inside',
-        },
     };
 }

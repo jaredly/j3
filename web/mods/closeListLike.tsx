@@ -1,13 +1,12 @@
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, Map } from '../../src/types/mcst';
 import { Path } from '../store';
-import { SelectAndPath } from './getKeyUpdate';
 
 export const closeListLike = (
     key: string,
     path: Path[],
     map: Map,
-): SelectAndPath | void => {
+): Path[] | void => {
     const looking = ({ ')': 'list', ']': 'array', '}': 'record' } as const)[
         key
     ];
@@ -18,15 +17,9 @@ export const closeListLike = (
         }
         const node = map[parent.idx];
         if (node.type === looking) {
-            return {
-                selection: {
-                    idx: parent.idx,
-                    loc: 'end',
-                },
-                path: path
-                    .slice(0, i)
-                    .concat({ idx: parent.idx, child: { type: 'end' } }),
-            };
+            return path
+                .slice(0, i)
+                .concat({ idx: parent.idx, child: { type: 'end' } });
         }
         if (
             key === '}' &&
@@ -41,19 +34,19 @@ export const closeListLike = (
                 throw new Error(`${parent.child.at} - ${JSON.stringify(node)}`);
             }
             const suffix = node.templates[parent.child.at - 1].suffix;
-            return {
-                selection: {
-                    idx: suffix,
-                    loc: 0,
-                },
-                path: path.slice(0, i).concat({
+            return path.slice(0, i).concat(
+                {
                     idx: parent.idx,
                     child: {
                         type: 'text',
                         at: parent.child.at,
                     },
-                }),
-            };
+                },
+                {
+                    idx: suffix,
+                    child: { type: 'subtext', at: 0 },
+                },
+            );
         }
     }
 };

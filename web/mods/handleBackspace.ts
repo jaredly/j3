@@ -1,4 +1,4 @@
-import { Path } from '../store';
+import { Path, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
@@ -8,69 +8,247 @@ import {
     replacePathWith,
 } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
+import { accessText, Identifier, stringText } from '../../src/types/cst';
 
-export function handleBackspace({
-    idx,
-    node,
-    pos,
-    path,
-    map,
-}: {
-    idx: number;
-    node: MNode;
-    pos: number;
-    path: Path[];
-    map: Map;
-}): KeyUpdate {
-    const last = path[path.length - 1];
-    if (node.type === 'stringText' && pos === 0 && node.text === '') {
-        const parent = map[last.idx];
+export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
+    const flast = fullPath[fullPath.length - 1];
+    const node = map[flast.idx];
+    const atStart =
+        flast.child.type === 'start' ||
+        (flast.child.type === 'subtext' && flast.child.at === 0);
+
+    const ppath = fullPath[fullPath.length - 2];
+    const parent = map[ppath.idx];
+
+    if (node.type === 'accessText' && atStart) {
+        if (parent.type !== 'recordAccess') {
+            throw new Error(
+                `accessText not child of recordAccess ${parent.type}`,
+            );
+        }
+        if (ppath.child.type !== 'attribute') {
+            throw new Error(`bad path`);
+        }
+        if (ppath.child.at === 1 && parent.items.length === 1) {
+            const target = map[parent.target];
+            return replacePathWith(fullPath.slice(0, -2), map, {
+                idx: parent.target,
+                map:
+                    target.type === 'blank' && !node.text
+                        ? {}
+                        : {
+                              [parent.target]:
+                                  target.type === 'identifier'
+                                      ? {
+                                            ...target,
+                                            text: target.text + node.text,
+                                        }
+                                      : {
+                                            type: 'identifier',
+                                            text: node.text,
+                                            loc: target.loc,
+                                        },
+                          },
+                selection: [
+                    {
+                        idx: parent.target,
+                        child:
+                            target.type === 'identifier'
+                                ? { type: 'subtext', at: target.text.length }
+                                : { type: 'end' },
+                    },
+                ],
+            });
+        }
+
+        const prev =
+            ppath.child.at > 1
+                ? parent.items[ppath.child.at - 2]
+                : parent.target;
+        const items = parent.items.slice();
+        items.splice(ppath.child.at - 1, 1);
+        const um: UpdateMap = {
+            [flast.idx]: null,
+            [ppath.idx]: {
+                ...parent,
+                items,
+            },
+        };
+        const pnode = map[prev] as (
+            | accessText
+            | Identifier
+            | { type: 'blank' }
+        ) &
+            MNodeExtra;
+        let loc = 0;
+        if (pnode.type === 'blank') {
+            um[prev] = {
+                type: 'identifier',
+                text: node.text,
+                loc: pnode.loc,
+            };
+        } else {
+            loc = pnode.text.length;
+            um[prev] = {
+                ...pnode,
+                text: pnode.text + node.text,
+            };
+        }
+        return {
+            type: 'update',
+            update: {
+                map: um,
+                selection: fullPath.slice(0, -2).concat([
+                    {
+                        idx: ppath.idx,
+                        child:
+                            ppath.child.at > 1
+                                ? {
+                                      type: 'attribute',
+                                      at: ppath.child.at - 1,
+                                  }
+                                : { type: 'record-target' },
+                    },
+                    { idx: prev, child: { type: 'subtext', at: loc } },
+                ]),
+            },
+        };
+    }
+
+    if (node.type === 'stringText' && atStart) {
         if (parent.type !== 'string') {
             throw new Error(`stringText parent not a string ${parent.type}`);
         }
-        if (parent.templates.length === 0) {
+        if (node.text === '' && parent.templates.length === 0) {
             // delete it!
-            const cleared = maybeClearParentList(path.slice(0, -1), map);
+            const cleared = maybeClearParentList(fullPath.slice(0, -2), map);
             return (
                 cleared ??
-                replacePathWith(path.slice(0, -1), map, newBlank(last.idx))
+                replacePathWith(fullPath.slice(0, -2), map, newBlank(ppath.idx))
             );
+        }
+        if (ppath.child.type === 'text' && ppath.child.at > 0) {
+            const prev =
+                ppath.child.at > 1
+                    ? parent.templates[ppath.child.at - 2].suffix
+                    : parent.first;
+            const cur = parent.templates[ppath.child.at - 1];
+            const pnode = map[prev] as stringText & MNodeExtra;
+            const templates = parent.templates.slice();
+            templates.splice(ppath.child.at - 1, 1);
+            const um: UpdateMap = {
+                [prev]: { ...pnode, text: pnode.text + node.text },
+                [flast.idx]: null,
+                [cur.expr]: null,
+                [ppath.idx]: { ...parent, templates },
+            };
+            return {
+                type: 'update',
+                update: {
+                    map: um,
+                    selection: fullPath.slice(0, -2).concat([
+                        {
+                            idx: ppath.idx,
+                            child: { type: 'text', at: ppath.child.at - 1 },
+                        },
+                        {
+                            idx: prev,
+                            child: { type: 'subtext', at: pnode.text.length },
+                        },
+                    ]),
+                },
+            };
         }
     }
 
+    if (flast.child.type === 'end' && !('text' in node)) {
+        const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
+        return (
+            cleared ??
+            replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx))
+        );
+    }
+
     if (node.type === 'blank') {
-        if (last.child.type === 'child') {
-            if (last.child.at === 0) {
+        if (ppath.child.type === 'expr') {
+            const parent = map[ppath.idx];
+            if (parent.type !== 'string') {
+                throw new Error(`expr parent not a string ${parent.type}`);
+            }
+            // Join the exprs
+            const prev =
+                ppath.child.at > 1
+                    ? parent.templates[ppath.child.at - 2].suffix
+                    : parent.first;
+            const cur = parent.templates[ppath.child.at - 1];
+            const pnode = map[prev] as stringText & MNodeExtra;
+            const snode = map[cur.suffix] as stringText & MNodeExtra;
+            const templates = parent.templates.slice();
+            templates.splice(ppath.child.at - 1, 1);
+            const um: UpdateMap = {
+                [prev]: {
+                    ...pnode,
+                    text: pnode.text + snode.text,
+                },
+                [flast.idx]: null,
+                [cur.suffix]: null,
+                [ppath.idx]: {
+                    ...parent,
+                    templates,
+                },
+            };
+            return {
+                type: 'update',
+                update: {
+                    map: um,
+                    selection: fullPath.slice(0, -2).concat([
+                        {
+                            idx: ppath.idx,
+                            child: { type: 'text', at: ppath.child.at - 1 },
+                        },
+                        {
+                            idx: prev,
+                            child: { type: 'subtext', at: pnode.text.length },
+                        },
+                    ]),
+                },
+            };
+        }
+        if (ppath.child.type === 'child') {
+            if (ppath.child.at === 0) {
                 // just go left, ok?
                 // OR do we do a jailbreak?
                 // like, this splats the contents up a level?
                 // that sounds kinda cool
                 return; // TODO: This will be an unwrap operation
             }
-            const parent = map[last.idx] as ListLikeContents & MNodeExtra;
+            const parent = map[ppath.idx] as ListLikeContents & MNodeExtra;
             const values = parent.values.slice();
-            values.splice(last.child.at, 1);
-            if (values.length === 1 && map[values[0]].type === 'blank') {
+            values.splice(ppath.child.at, 1);
+            if (
+                values.length === 1 &&
+                map[values[0]].type === 'blank' &&
+                fullPath.length > 2
+            ) {
                 return {
                     type: 'update',
                     update: {
                         map: {
-                            [last.idx]: { ...parent, values: [] },
+                            [ppath.idx]: { ...parent, values: [] },
                         },
-                        selection: { idx: last.idx, loc: 'inside' },
-                        path: path.slice(0, -1).concat({
-                            idx: last.idx,
+                        selection: fullPath.slice(0, -2).concat({
+                            idx: ppath.idx,
                             child: { type: 'inside' },
                         }),
                     },
                 };
             }
             const sel = selectEnd(
-                values[last.child.at - 1],
-                path.slice(0, -1).concat([
+                values[ppath.child.at - 1],
+                fullPath.slice(0, -2).concat([
                     {
-                        idx: last.idx,
-                        child: { type: 'child', at: last.child.at - 1 },
+                        idx: ppath.idx,
+                        child: { type: 'child', at: ppath.child.at - 1 },
                     },
                 ]),
                 map,
@@ -81,33 +259,37 @@ export function handleBackspace({
             return {
                 type: 'update',
                 update: {
-                    map: {
-                        [last.idx]: {
-                            ...parent,
-                            values,
-                        },
-                    },
-                    selection: sel.sel,
-                    path: sel.path,
+                    map: { [ppath.idx]: { ...parent, values } },
+                    selection: sel,
                 },
             };
         }
     }
 
-    if (last.child.type === 'inside') {
+    if (flast.child.type === 'inside') {
         // this is an empty listlike.
         // replace with a blank
         // OR if it's the only item of a list, we should
         // just delete.
-        const cleared = maybeClearParentList(path.slice(0, -1), map);
+        const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
         return (
-            cleared ?? replacePathWith(path.slice(0, -1), map, newBlank(idx))
+            cleared ??
+            replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx))
         );
     }
-    if (pos > 0 && 'text' in node) {
+
+    if (!atStart && 'text' in node) {
         const text = splitGraphemes(node.text);
-        if (pos === 1 && text.length === 1) {
-            const cleared = maybeClearParentList(path, map);
+        const atEnd =
+            flast.child.type === 'end' ||
+            (flast.child.type === 'subtext' && flast.child.at === text.length);
+        const pos = atEnd
+            ? text.length
+            : flast.child.type === 'subtext'
+            ? flast.child.at
+            : 0;
+        if (text.length === 1 && atEnd) {
+            const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
             if (cleared) {
                 return cleared;
             }
@@ -116,10 +298,8 @@ export function handleBackspace({
             type: 'update',
             update: {
                 map: {
-                    [idx]:
-                        pos === 1 &&
-                        text.length === 1 &&
-                        node.type === 'identifier'
+                    [flast.idx]:
+                        atEnd && text.length === 1 && node.type === 'identifier'
                             ? { type: 'blank', loc: node.loc }
                             : {
                                   ...node,
@@ -128,9 +308,52 @@ export function handleBackspace({
                                       text.slice(pos).join(''),
                               },
                 },
-                selection: { idx, loc: pos - 1 },
-                path,
+                selection: fullPath.slice(0, -1).concat([
+                    {
+                        idx: flast.idx,
+                        child: { type: 'subtext', at: pos - 1 },
+                    },
+                ]),
             },
         };
     }
+
+    if (atStart) {
+        const um = maybeRemovePrevBlank(fullPath, map);
+        if (um) {
+            return um;
+        }
+    }
 }
+
+export const maybeRemovePrevBlank = (path: Path[], map: Map): KeyUpdate => {
+    if (path.length === 1) {
+        return;
+    }
+    const last = path[path.length - 1];
+    const gp = path[path.length - 2];
+    if (gp && gp.child.type === 'child' && gp.child.at > 0) {
+        const gpnode = map[gp.idx] as ListLikeContents & MNodeExtra;
+        const prev = map[gpnode.values[gp.child.at - 1]];
+        if (prev.type === 'blank') {
+            const values = gpnode.values.slice();
+            values.splice(gp.child.at - 1, 1);
+            return {
+                type: 'update',
+                update: {
+                    map: { [gp.idx]: { ...gpnode, values } },
+                    selection: path
+                        .slice(0, -1)
+                        .concat({
+                            idx: gp.idx,
+                            child: { type: 'child', at: gp.child.at - 1 },
+                        })
+                        .concat([last]),
+                },
+            };
+        }
+    }
+    if (gp.child.type === 'start') {
+        return maybeRemovePrevBlank(path.slice(0, -1), map);
+    }
+};

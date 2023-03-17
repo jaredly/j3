@@ -9,9 +9,9 @@ import {
     toMCST,
 } from '../../../src/types/mcst';
 import { replacePath } from '../../old/RecordText';
-import { Path, StoreUpdate } from '../../store';
-import { KeyUpdate, NewThing, TheUpdate } from '../getKeyUpdate';
-import { modChildren } from '../modChildren';
+import { Path } from '../../store';
+import { TheUpdate } from '../getKeyUpdate';
+// import { combinePathSel } from '../navigate';
 
 export function wrapWithParens(
     path: Path[],
@@ -30,7 +30,11 @@ export function wrapWithParens(
 
     const update = replacePath(parent, nw.loc.idx, map);
     update[nw.loc.idx] = nw;
-    return { map: update, selection: { idx, loc }, path: childPath };
+    return {
+        map: update,
+        selection: childPath.concat([{ idx, child: { type: loc } }]),
+        // combinePathSel({ sel: { idx, loc }, path: childPath }),
+    };
 }
 
 export function newListLike(

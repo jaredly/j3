@@ -66,17 +66,6 @@ export const getNodes_ = (node: MNode, layout?: Layout): ONode[] => {
                 { type: 'punct', text: ']', color: 'rainbow' },
                 { type: 'blinker', loc: 'end' },
             ];
-        case 'identifier':
-        case 'tag':
-        case 'comment':
-        case 'number':
-        case 'unparsed':
-        case 'blank':
-        case 'accessText':
-        case 'stringText':
-        case 'attachment':
-        case 'rich-text':
-            return [{ type: 'render', text: idText(node) ?? '' }];
         case 'string':
             return [
                 { type: 'blinker', loc: 'start' },
@@ -99,12 +88,24 @@ export const getNodes_ = (node: MNode, layout?: Layout): ONode[] => {
                 { type: 'punct', color: 'yellow', text: '"', boldSelect: true },
                 { type: 'blinker', loc: 'end' },
             ];
+        case 'identifier':
+        case 'tag':
+        case 'comment':
+        case 'number':
+        case 'unparsed':
+        case 'blank':
+        case 'accessText':
+        case 'stringText':
+        case 'attachment':
+        case 'rich-text':
+            return [{ type: 'render', text: idText(node) ?? '' }];
         default:
             let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);
     }
     // return null;
 };
+
 function withCommas(values: number[], layout?: Layout): ONode[] {
     if (!values.length) {
         return [{ type: 'blinker', loc: 'inside' }];
@@ -122,7 +123,7 @@ function withCommas(values: number[], layout?: Layout): ONode[] {
                           layout?.type === 'multiline' &&
                           i >= layout.tightFirst &&
                           (!layout.pairs || i % 2 == 0)
-                              ? '\n  '
+                              ? '\n'
                               : ' ',
                       color: 'red',
                   },

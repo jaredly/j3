@@ -82,6 +82,7 @@ export type Layout =
           pairs?: boolean;
           tightFirst: number;
           pos: number;
+          cw: number | false;
           // umm I can't remember. do we need something here?
       };
 

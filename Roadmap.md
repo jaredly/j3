@@ -1,10 +1,265 @@
 
+# Selection!
+
+- [x] ok folks I've gotta come clean, and just unify Path and Selection.
+  there's no getting away from it. it's a weight around my neck.
+  - YESSSSSSSS ITS DONE
+
+- [x] add start/end to sel type
+- [x] render end cursor (prelim)
+- [x] populate sel/end on drag
+- [ ] actually do a meaningful render of the selection.
+  - [ ] should I like do a fake overlay as well? Or let the individual thing render?
+    hmmm. Rich text isn't going to like that.
+    Unlesssssss I kinda ditch lexical, and do my very own rich text?
+    
+  - [ ] 
+- [ ] ok now selections need boundariessss
+
+Here's what I'm thinking
+
+I want "normal mode"
+
+Ok, but that's ~orthogonal to wanting "higher level selection", right?
+
+{
+  mode: 'vim-normal' | 'insert',
+  level: 'grapheme' | 'atom'
+}
+
+
+should we do
+selection: {start: PathSel, end: PathSel}
+and just infer by ~magic how to "select" the contents?
+honestly that might be the best option?
+but, then, left / right will take into account whether the nodes
+have different parents?
+
+so, another thing. If start/end are in stringText's within the same
+string, we should keep character-level madness.
+But every other case where start/end have different paths, it's block-level.
+
+So actually that's trivial to determine, so I'm fine with it.
+
+
+# hash-locking, what gives?
+
+I think I actually want a different node type, called like
+`hash`. So I'll know to handle it specially.
+
+# MultiSelect
+
+- [x] change state to account
+- [x] shift-click for multi
+- [ ] dedup the adding
+- [x] handleKey should do all at once
+
+# [x] some more backspaces
+- [x] inside a ${}
+- [x] after a ${}
+- [x] after a listlike
+- [x] access.text backspace
+- [ ] tonnot: backspace
+
+# [ ] extra fancy backspaces
+- [ ] at the start of a listlike? (unwrap if possible)
+
+# So, layout algo needs a lot of love
+definite revamp.
+once something "becomes multiline", we need
+to re-compute all the children in light of that fact.
+
+# Formattings
+
+- [ ] adding something to the middle of a record is whacked
+  - space should add 2 blanks
+  - space when there's a blank after you should just move to the blank
+    - I think that can be universal? Sounds good to me
+
 # History thoughts
 
 There are definitely some actions that would be more compact as
 commands, than as a "here's the after/before map".
 The question is, is it worth the overhead?
 I guess, I could set it up, to allow for command pattern later? idk
+
+# [x] UP AND DOWN
+So, doing the ups and downs
+means that I need positional info.
+which means dom nodes
+which I don't think want them in the main State
+so I'll have them in like an augmented UIState?
+
+But other things, like "autocomplete menu" stuff,
+I think I do want to have live in the normal state?
+
+# [x] Much better children rendering!
+- [x] oh the last thing, tightFirst pls
+
+# Some fixing of things
+
+I should get rid of the CST types that I don't do anymore
+
+# Some childrens
+
+Simple
+
+
+```clj
+(defn drawToScreen [env:GLSLEnv fragCoord:Vec2 buffer0:sampler2D]
+  (let [diff  (- fragCoord env.mouse)
+        coord (if (< (length diff) 250.)
+                (- env.mouse (/ diff 4.))
+                fragCoord                )]
+    ([(/ coord env.resolution)] buffer0)   )                     )
+
+(deftype person
+  { name string
+    age uint
+    animals { dogs uint cats uint } })
+
+(deftype person
+  {    name string
+        age uint
+    animals { dogs uint cats uint } })
+```
+
+now, if I'm gonna allow custom indexers
+which seems like it'd be cool
+I would need the `[]` array node to have
+a hash on it.
+which is a little exciting.
+that might also open us up to custom collection constructors.
+
+Ok, but back to the point at hand.
+It seems like, for things like `(defn`, I don't actually want children
+aligned with the end of defn, I just want it indented by a couple of spaces.
+`(if` might be different though? idk. no don't make an exception
+
+(might want a horizontal line between the two cases of the if though? That could be really nice)
+(or like a little triangle at the start of where a horiz line would go)
+
+
+```clj
+; FirstLine + Children (might possibly be pairs)
+(match arr
+  [] []
+  ; some single-lined thing
+  [one ...rest] [(f one)])
+
+(defn x [y z]
+  (y z))
+{
+  firstLine: ONode[],
+  children: {type: 'flat', children: ONode[]} | {type: 'pairs', children: ([ONode] | [ONode, ONode])[]}
+}
+; Flat
+{ x y
+  z 2 }
+
+"hello ${
+  something
+} rest"
+```
+
+
+
+
+<aside>
+Ok, I also kinda want a first-class table datatype?
+hmmm I guess I don't super need that, like I can do
+(array {name string age int})
+and just render it as a table
+right?
+and (array (, int int int)) can also be so rendered
+</aside>
+
+Anyway, I'm establishing that other than `pairs`, we will
+not be supporting more-than-2 columns
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Thoughts about childrens.
+
+ONodes blank list is good I think
+but then we want to return display info as well:
+- '# at the start to be treated as a "prefix"
+- '# at the end to be treated as a "suffix"
+- indices in the middle that should be on their own line
+
+- ok but lets ignore pairs for the moment, make sure we have a good experience
+
+hmmm, so for string templates, I kinda do want breaking like
+
+"Hello ${
+  some expr
+} world"
+
+right?
+
+hmmmmmm so I think I do want some meta-nodes
+
+(defn $start-grid$[what]$break$sit$break$stuff$end-grid$)
+
+"Hello ${$}
+
+
+
+
+So, I do think I wanted nested something
+but how do I indicate, that I want to layout some node
+as a ... whatsit.
+
+So like, a record
+{..a ..b x 10 yes 20}
+// should `layout:multiline` indicate which id's are to be in their own 'cell'?
+like, I just want
+|{ ..a
+   ..b
+     x 10
+   yes 20 }|
+
+ahhh ok, so maybe `layout` (multiline or flat) should be distinct in calculation from
+`multiLineConfig` or whatever, which like maybe just lays out clearly what should be what.
+you know?
+like, gives you control over what's happening.
+```ts
+type MultilineConfig = {
+  type: 'simple', // every child on its own line
+} | {
+  type: 'pairs',
+  fullSpanIndices: [] // indicates which children should span both columns
+}
+```
+seems pretty straightforward? yeah, I think that can go in the `style` attr?
+
+ooh also, I think there should be a mode that's a simple wrap. Like for array literals that are just
+too long, there's not a huge reason that thay all need their own line, if they're all under a certain
+amount of complexity.
+
 
 # What's left for the editor to be a real deal?
 

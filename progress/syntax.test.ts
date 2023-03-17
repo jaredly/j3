@@ -1,17 +1,17 @@
 // Basic level
 
 import { setIdx } from '../src/grammar';
-import { idText, parseByCharacter, selPos } from '../src/parse/parse';
+import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
 import {
     nodeToString,
     remapPos,
     showSourceMap,
     SourceMap,
 } from '../src/to-cst/nodeToString';
-import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
-import { getKeyUpdate } from '../web/mods/getKeyUpdate';
-import { PathSel, selectEnd, selectStart } from '../web/mods/navigate';
-import { Path, Selection } from '../web/store';
+import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
+import { selectEnd, selectStart } from '../web/mods/navigate';
+import { Path } from '../web/store';
 import { sexp } from './sexp';
 
 const data = `
@@ -173,7 +173,70 @@ id
 ((a)j)
 ((a) j)
 (list (list id) id)
+
+((a^l^lb
+(b (a))
+(list id (list id))
+
+"\${^b
+""
+string
+
+"\${}^b"
+""
+string
+
+[()^b
+[]
+(array)
+
+(id ^l )
+(id )
+(list id blank)
+
+(id^l^l )
+( id)
+(list blank id)
+
+(a ^lbc)
+(abc )
+(list id blank)
+
+a.b^b^b
+a
+id
+
+(().a)
+(() .a)
+(list (list) (access 1))
+
+( o^l^b)
+(o)
+(list id)
+
+( (^l^b
+(())
+(list (list))
+
+((^l 
+( ())
+(list blank (list))
+
+(h^l a)
+( ah)
+(list blank id)
 `;
+
+// hi:^b
+// hi
+// id
+
+// (.^b)
+// (list)
+
+// ( (^la^l^lb
+// (b a ())
+// (list id id (list))
 
 describe('a test', () => {
     data.trim()
@@ -221,8 +284,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    data,
-                    state,
+                    state: { map: data, at: [{ start: state }], root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -248,8 +310,7 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    data,
-                    state: startState,
+                    state: { map: data, at: [{ start: startState }], root: -1 },
                     only,
                     i,
                     sourceMap,
@@ -265,9 +326,9 @@ describe('a test', () => {
         });
 });
 
+const pathIdx = (path: Path[]) => path[path.length - 1].idx;
+
 function doABunchOfKeys({
-    data,
-    state,
     only,
     i,
     sourceMap,
@@ -276,9 +337,9 @@ function doABunchOfKeys({
     stop,
     key,
     check,
+    state,
 }: {
-    data: Map;
-    state: PathSel;
+    state: State;
     only: boolean;
     i: number;
     sourceMap: SourceMap;
@@ -289,38 +350,30 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(data[state.sel.idx]) ?? '';
-        const pos = selPos(state.sel, curText);
+        const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
+        const pos = pathPos(state.at[0].start, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
         }
 
-        const startPos = remapPos(state.sel, sourceMap);
+        const startPos = remapPos(state.at[0].start, sourceMap);
         if (only) {
             console.log(
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(
-            key,
-            pos,
-            curText,
-            state.sel.idx,
-            state.path,
-            data,
-        );
+        const update = getKeyUpdate(key, state, state.at[0].start);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {
                 expect(update).toMatchObject({ type: 'select' });
             } else {
-                state.sel = update.selection;
-                state.path = update.path;
+                state = applyUpdate(state, update)!;
             }
         }
-        const newPos = remapPos(state.sel, sourceMap);
+        const newPos = remapPos(state.at[0].start, sourceMap);
         if (check(startPos, newPos)) {
-            console.log(JSON.stringify(state.sel));
+            console.log(JSON.stringify(state.at[0].start));
             console.log(showSourceMap(back, sourceMap));
             console.log(
                 'prev: ' +
@@ -334,7 +387,7 @@ function doABunchOfKeys({
                     '|' +
                     backOrig.slice(newPos),
             );
-            console.log(state.sel);
+            console.log(state.at[0].start);
             expect(newPos).toEqual('something else');
         }
         if (newPos === stop) {

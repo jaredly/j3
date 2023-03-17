@@ -14,3 +14,9 @@ For that reason, we'll want *either*:
 And if you're copying some code from your editor to share, maybe you want to be able to
 like "create a link to share just term" and it will give you a URL that will load up
 that term in the environment?? maybe???
+
+
+SO
+if you paste in just text
+we can do `parseByCharacter`. UNLESS you're pasting into a stringText,
+in which case we just drop in the info without prejudice.

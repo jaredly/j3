@@ -61,18 +61,19 @@ export const onKeyDown = (
             evt.currentTarget.textContent!.length !== 0
         ) {
             evt.preventDefault();
-            maybeUpdate(
-                store,
-                wrapWithParens(
-                    path,
-                    idx,
-                    store.map,
-                    ({ '(': 'list', '[': 'array', '{': 'record' } as const)[
-                        evt.key
-                    ]!,
-                    'start',
-                ),
-            );
+            // maybeUpdate(
+            //     store,
+            //     wrapWithParens(
+            //         path,
+            //         idx,
+            //         store.map,
+            //         ({ '(': 'list', '[': 'array', '{': 'record' } as const)[
+            //             evt.key
+            //         ]!,
+            //         'start',
+            //     ),
+            // );
+            // STOPSHIP
             return;
         }
     }
@@ -164,16 +165,18 @@ export const onKeyDown = (
 
     if (evt.key === ')' || evt.key === ']' || evt.key === '}') {
         evt.preventDefault();
-        const selection = closeListLike(evt.key, path, store.map);
-        if (selection) {
-            maybeCommitAutoComplete(idx, ectx, store);
-            return setSelection(store, selection.selection);
-        }
+        // STOPSHIP
+        // const selection = closeListLike(evt.key, path, store.map);
+        // if (selection) {
+        //     maybeCommitAutoComplete(idx, ectx, store);
+        //     return setSelection(store, selection.sel);
+        // }
     }
 
     if (evt.key === '·' || (evt.key === '(' && evt.altKey)) {
         evt.preventDefault();
-        maybeUpdate(store, wrapWithParens(path, idx, store.map, 'list'));
+        // STOPSHIP
+        // maybeUpdate(store, wrapWithParens(path, idx, store.map, 'list'));
         return;
     }
 

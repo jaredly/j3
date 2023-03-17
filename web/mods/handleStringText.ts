@@ -26,8 +26,7 @@ export function handleStringText({
     if (key === '"' && pos === text.length) {
         return {
             type: 'select',
-            selection: { idx: last.idx, loc: 'end' },
-            path: path
+            selection: path
                 .slice(0, -1)
                 .concat({ idx: last.idx, child: { type: 'end' } }),
         };
@@ -35,6 +34,10 @@ export function handleStringText({
 
     if (key === '{' && pos > 0 && text[pos - 1] === '$') {
         return splitString(text, pos, map, last, idx, node, path);
+    }
+
+    if (key === 'Enter') {
+        key = '\n';
     }
 
     const input = splitGraphemes(key);
@@ -50,8 +53,9 @@ export function handleStringText({
         type: 'update',
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
-            path,
-            selection: { idx, loc: pos + 1 },
+            selection: path.concat([
+                { idx, child: { type: 'subtext', at: pos + 1 } },
+            ]),
         },
     };
 }
@@ -106,11 +110,16 @@ function splitString(
                     templates,
                 },
             },
-            selection: { idx: blank.loc.idx, loc: 'start' },
-            path: path.slice(0, -1).concat({
-                idx: last.idx,
-                child: { type: 'expr', at: last.child.at + 1 },
-            }),
+            selection: path.slice(0, -1).concat(
+                {
+                    idx: last.idx,
+                    child: { type: 'expr', at: last.child.at + 1 },
+                },
+                {
+                    idx: blank.loc.idx,
+                    child: { type: 'start' },
+                },
+            ),
         },
     };
 }
