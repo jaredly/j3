@@ -1,7 +1,11 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
+import {
+    parseByCharacter,
+    pathPos,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
@@ -183,10 +187,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         setCursorPos(
             state.at.flatMap((at) => {
                 const res: any = [];
-                const box = calcCursorPos(
-                    toPathSel(at.start, state.map).sel,
-                    state.regs,
-                );
+                const box = calcCursorPos(at.start, state.regs);
                 if (box) {
                     const offsetY = document.body.scrollTop;
                     const offsetX = document.body.scrollLeft;
@@ -198,10 +199,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     });
                 }
                 if (at.end) {
-                    const box2 = calcCursorPos(
-                        toPathSel(at.end, state.map).sel,
-                        state.regs,
-                    );
+                    const box2 = calcCursorPos(at.end, state.regs);
                     if (box2) {
                         const offsetY = document.body.scrollTop;
                         const offsetX = document.body.scrollLeft;
@@ -461,53 +459,70 @@ const subRect = (
 };
 
 export const calcCursorPos = (
-    sel: Selection,
+    fullPath: Path[],
     regs: RegMap,
 ): void | { left: number; top: number; height: number; color?: string } => {
-    const { idx, loc } = sel;
+    const last = fullPath[fullPath.length - 1];
+    // const loc = pathPos(fullPath)
+    const idx = last.idx;
+    // const { idx, loc } = sel;
     const nodes = regs[idx];
     if (!nodes) {
         console.error('no nodes, sorry');
         return;
     }
-    const blinker = nodes[loc as 'start'];
-    if (blinker) {
-        return subRect(
-            blinker.node.getBoundingClientRect(),
-            blinker.node.offsetParent!.getBoundingClientRect(),
-        );
-    } else if (nodes.main) {
-        const r = new Range();
-        r.selectNode(nodes.main.node);
-        const textRaw = nodes.main.node.textContent!;
-        const text = splitGraphemes(textRaw);
-        if (!nodes.main.node.firstChild) {
-            // nothing to do here
-        } else if (loc === 'start' || loc === 0) {
-            r.setStart(nodes.main.node.firstChild!, 0);
-            r.collapse(true);
-        } else if (loc === 'end' || loc === text.length) {
-            r.setStart(nodes.main.node.firstChild!, textRaw.length);
-            r.collapse(true);
-        } else if (typeof loc === 'number') {
-            r.setStart(
-                nodes.main.node.firstChild!,
-                text.slice(0, loc).join('').length,
-            );
-            r.collapse(true);
-        } else {
-            // console.log('dunno loc', loc, nodes.main);
-            return;
-        }
-        const color = getComputedStyle(nodes.main.node).color;
-        return subRect(
-            r.getBoundingClientRect(),
-            nodes.main.node.offsetParent!.getBoundingClientRect(),
-            color,
-        );
-    } else {
-        console.error('no box', loc, nodes);
-        return;
+    switch (last.child.type) {
+        case 'start':
+        case 'end':
+        case 'inside':
+            const blinker = nodes[last.child.type];
+            if (blinker) {
+                return subRect(
+                    blinker.node.getBoundingClientRect(),
+                    blinker.node.offsetParent!.getBoundingClientRect(),
+                );
+            }
+        case 'subtext':
+            if (nodes.main) {
+                const r = new Range();
+                r.selectNode(nodes.main.node);
+                const textRaw = nodes.main.node.textContent!;
+                const text = splitGraphemes(textRaw);
+                if (!nodes.main.node.firstChild) {
+                    // nothing to do here
+                } else if (
+                    last.child.type === 'start' ||
+                    (last.child.type === 'subtext' && last.child.at === 0)
+                ) {
+                    r.setStart(nodes.main.node.firstChild!, 0);
+                    r.collapse(true);
+                } else if (
+                    last.child.type === 'end' ||
+                    (last.child.type === 'subtext' &&
+                        last.child.at === text.length)
+                ) {
+                    r.setStart(nodes.main.node.firstChild!, textRaw.length);
+                    r.collapse(true);
+                } else if (last.child.type === 'subtext') {
+                    r.setStart(
+                        nodes.main.node.firstChild!,
+                        text.slice(0, last.child.at).join('').length,
+                    );
+                    r.collapse(true);
+                } else {
+                    // console.log('dunno loc', loc, nodes.main);
+                    return;
+                }
+                const color = getComputedStyle(nodes.main.node).color;
+                return subRect(
+                    r.getBoundingClientRect(),
+                    nodes.main.node.offsetParent!.getBoundingClientRect(),
+                    color,
+                );
+            } else {
+                console.error('no box', last, nodes);
+                return;
+            }
     }
 };
 

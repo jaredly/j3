@@ -4,10 +4,7 @@ import { UIState, calcCursorPos } from './ByHand';
 import { Path } from '../store';
 
 export const verticalMove = (state: UIState, up: boolean): UIState => {
-    const current = calcCursorPos(
-        toPathSel(state.at[0].start, state.map).sel,
-        state.regs,
-    );
+    const current = calcCursorPos(state.at[0].start, state.regs);
     if (!current) {
         return state;
     }
