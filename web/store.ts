@@ -135,20 +135,17 @@ export type EvalCtx = {
 // decorator (key) [tag or arg]
 
 export type PathChild =
-    | {
-          type: 'child';
-          at: number;
-      }
+    | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
+    | { type: 'expr' | 'text' | 'attribute'; at: number }
     | { type: 'tannot' }
     | { type: 'inside' | 'start' | 'end' }
-    | { type: 'expr' | 'text' | 'attribute'; at: number }
-    | { type: 'record-target' | 'spread-contents' }
-    | {
-          type: 'decorator';
-          key: string;
-          at: number; // 0 for the key
-      };
+    | { type: 'record-target' | 'spread-contents' };
+// | {
+//       type: 'decorator';
+//       key: string;
+//       at: number; // 0 for the key
+//   };
 
 export type Path = { idx: number; child: PathChild };
 // export type Child = { item: Path; idx?: number };
