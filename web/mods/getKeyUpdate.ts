@@ -207,39 +207,45 @@ export const getKeyUpdate = (
         return openListLike({ key, idx, node, fullPath, map });
     }
 
-    const { path } = toPathSel(fullPath, state.map);
-    const last = path[path.length - 1];
+    const ppath = fullPath[fullPath.length - 2];
+    const parent = map[ppath.idx];
 
     if (key === ' ' || key === 'Enter') {
-        if (last.child.type === 'child') {
-            const parent = map[last.idx] as ListLikeContents;
+        if (ppath.child.type === 'child' && 'values' in parent) {
+            // const parent = map[last.idx] as ListLikeContents;
             if (
-                parent.values.length > last.child.at + 1 &&
-                map[parent.values[last.child.at + 1]].type === 'blank'
+                parent.values.length > ppath.child.at + 1 &&
+                map[parent.values[ppath.child.at + 1]].type === 'blank'
             ) {
                 return {
                     type: 'select',
-                    selection: path.slice(0, -1).concat([
+                    selection: fullPath.slice(0, -2).concat([
                         {
-                            idx: last.idx,
-                            child: { type: 'child', at: last.child.at + 1 },
+                            idx: ppath.idx,
+                            child: { type: 'child', at: ppath.child.at + 1 },
                         },
                         {
-                            idx: parent.values[last.child.at + 1],
+                            idx: parent.values[ppath.child.at + 1],
                             child: { type: 'start' },
                         },
                     ]),
                 };
             }
         }
-        if (pos === 0 && (text.length || last.child.type === 'start')) {
-            return newNodeBefore(path, map, {
+        if (
+            flast.child.type === 'start' ||
+            (flast.child.type === 'subtext' && flast.child.at === 0)
+        ) {
+            return newNodeBefore(fullPath.slice(0, -1), map, {
                 ...newBlank(),
                 selection: fullPath.slice(-1),
             });
         }
-        return newNodeAfter(path, map, newBlank());
+        return newNodeAfter(fullPath, map, newBlank());
     }
+
+    const { path } = toPathSel(fullPath, state.map);
+    const last = path[path.length - 1];
 
     if (')]}'.includes(key)) {
         const selection = closeListLike(key, path, map);
