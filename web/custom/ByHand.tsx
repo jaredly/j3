@@ -1,5 +1,11 @@
 import equal from 'fast-deep-equal';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from 'react';
 import { sexp } from '../../progress/sexp';
 import {
     parseByCharacter,
@@ -151,8 +157,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     // @ts-ignore
     window.state = state;
 
-    const [blink, setBlink] = useState(false);
-
     const tops = (state.map[state.root] as ListLikeContents).values;
 
     const ctx = React.useMemo(() => {
@@ -163,10 +167,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         });
         return ctx;
     }, [state.map]);
-
-    const [cursorPos, setCursorPos] = useState(
-        [] as ({ x: number; y: number; h: number; color?: string } | null)[],
-    );
 
     const reg = useCallback(
         (
@@ -184,37 +184,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     );
 
     useEffect(() => {
-        setCursorPos(
-            state.at.flatMap((at) => {
-                const res: any = [];
-                const box = calcCursorPos(at.start, state.regs);
-                if (box) {
-                    const offsetY = document.body.scrollTop;
-                    const offsetX = document.body.scrollLeft;
-                    res.push({
-                        x: box.left - offsetX,
-                        y: box.top - offsetY,
-                        h: box.height,
-                        color: box.color,
-                    });
-                }
-                if (at.end) {
-                    const box2 = calcCursorPos(at.end, state.regs);
-                    if (box2) {
-                        const offsetY = document.body.scrollTop;
-                        const offsetX = document.body.scrollLeft;
-                        res.push({
-                            x: box2.left - offsetX,
-                            y: box2.top - offsetY,
-                            h: box2.height,
-                            color: box2.color,
-                        });
-                    }
-                }
-                return res;
-            }),
-        );
-
         if (document.activeElement !== hiddenInput.current) {
             hiddenInput.current?.focus();
         }
@@ -386,25 +355,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     </div>
                 ))}
             </div>
-            {cursorPos.map((cursorPos, i) =>
-                cursorPos ? (
-                    <div
-                        key={i}
-                        style={{
-                            position: 'absolute',
-                            width: 1,
-                            pointerEvents: 'none',
-                            backgroundColor: cursorPos.color ?? 'white',
-                            left: cursorPos.x,
-                            height: cursorPos.h,
-                            top: cursorPos.y,
-                            animationDuration: '1s',
-                            animationName: blink ? 'blink' : 'unset',
-                            animationIterationCount: 'infinite',
-                        }}
-                    />
-                ) : null,
-            )}
+            <Cursors state={state} />
             {debug ? (
                 <div>
                     <div>
@@ -441,6 +392,82 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     </div>
                 </div>
             ) : null}
+        </div>
+    );
+};
+
+export const Cursors = ({ state }: { state: UIState }) => {
+    const [blink, setBlink] = useState(false);
+
+    const [cursorPos, setCursorPos] = useState(
+        [] as ({ x: number; y: number; h: number; color?: string } | null)[],
+    );
+
+    const tid = useRef(null as null | NodeJS.Timeout);
+
+    useLayoutEffect(() => {
+        if (tid.current != null) {
+            clearTimeout(tid.current);
+        } else {
+            setBlink(false);
+        }
+        tid.current = setTimeout(() => {
+            setBlink(true);
+            tid.current = null;
+        }, 500);
+        setCursorPos(
+            state.at.flatMap((at) => {
+                const res: any = [];
+                const box = calcCursorPos(at.start, state.regs);
+                if (box) {
+                    const offsetY = document.body.scrollTop;
+                    const offsetX = document.body.scrollLeft;
+                    res.push({
+                        x: box.left - offsetX,
+                        y: box.top - offsetY,
+                        h: box.height,
+                        color: box.color,
+                    });
+                }
+                if (at.end) {
+                    const box2 = calcCursorPos(at.end, state.regs);
+                    if (box2) {
+                        const offsetY = document.body.scrollTop;
+                        const offsetX = document.body.scrollLeft;
+                        res.push({
+                            x: box2.left - offsetX,
+                            y: box2.top - offsetY,
+                            h: box2.height,
+                            color: box2.color,
+                        });
+                    }
+                }
+                return res;
+            }),
+        );
+    }, [state.at]);
+
+    return (
+        <div>
+            {cursorPos.map((cursorPos, i) =>
+                cursorPos ? (
+                    <div
+                        key={i}
+                        style={{
+                            position: 'absolute',
+                            width: 1,
+                            pointerEvents: 'none',
+                            backgroundColor: cursorPos.color ?? 'white',
+                            left: cursorPos.x,
+                            height: cursorPos.h,
+                            top: cursorPos.y,
+                            animationDuration: '1s',
+                            animationName: blink ? 'blink' : 'unset',
+                            animationIterationCount: 'infinite',
+                        }}
+                    />
+                ) : null,
+            )}
         </div>
     );
 };
