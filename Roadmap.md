@@ -1,8 +1,9 @@
 
 # Selection!
 
-- [ ] ok folks I've gotta come clean, and just unify Path and Selection.
+- [x] ok folks I've gotta come clean, and just unify Path and Selection.
   there's no getting away from it. it's a weight around my neck.
+  - YESSSSSSSS ITS DONE
 
 - [x] add start/end to sel type
 - [x] render end cursor (prelim)

@@ -331,6 +331,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             reg={reg}
                             display={ctx.display}
                             dispatch={dispatch}
+                            selection={state.at}
                             path={[
                                 {
                                     idx: state.root,

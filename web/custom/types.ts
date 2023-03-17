@@ -14,7 +14,7 @@ export type RenderProps = {
     debug?: boolean;
     idx: number;
     map: Map;
-    // state: UIState;
+    selection: UIState['at'];
     reg: Reg;
     path: Path[];
     display: Ctx['display'];

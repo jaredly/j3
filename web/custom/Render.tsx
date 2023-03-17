@@ -18,6 +18,8 @@ const nodeColor = (type: MNode['type']) => {
     return colors[type];
 };
 
+const columnRecords = true;
+
 export const colors: {
     [key: string]: string;
 } = {
@@ -66,26 +68,6 @@ export const textStyle = (
     }
 };
 
-// export const Render = (props: RenderProps) => {
-//     const { idx, state, display } = props;
-//     const node = state.map[idx];
-//     const onodes = getNodes(node, display[idx]?.layout);
-
-//     return (
-//         <span>
-//             {onodes.map((onode, i) => (
-//                 <RenderONode
-//                     i={i}
-//                     onodes={onodes}
-//                     onode={onode}
-//                     key={onode.type === 'ref' ? onode.id : i}
-//                     props={props}
-//                 />
-//             ))}
-//         </span>
-//     );
-// };
-
 export const Render = (props: RenderProps) => {
     const { idx, map, display, path } = props;
     const nnode = getNestedNodes(map[idx], display[idx]?.layout);
@@ -114,6 +96,13 @@ export const RenderNNode = (
 ): JSX.Element => {
     const { nnode, reg, idx, path, display, map, dispatch } = props;
     const node = map[idx];
+
+    const isSelected = props.selection.some(
+        (s) =>
+            s.start[s.start.length - 1].idx === idx ||
+            (s.end && s.end[s.end.length - 1].idx === idx),
+    );
+
     switch (nnode.type) {
         case 'vert':
         case 'horiz':
@@ -164,6 +153,7 @@ export const RenderNNode = (
                             rainbow[path.length % rainbow.length],
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
+                        fontVariationSettings: isSelected ? '"wght" 900' : '',
                     }}
                 >
                     {nnode.text}
@@ -209,11 +199,48 @@ export const RenderNNode = (
                     dispatch={dispatch}
                     reg={reg}
                     idx={nnode.id}
+                    selection={props.selection}
                     debug={props.debug}
                     path={path.concat([{ idx, child: nnode.path }])}
                 />
             );
         case 'pairs':
+            if (!columnRecords) {
+                return (
+                    <span
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'nowrap',
+                            flexDirection: 'column',
+                            gap: '0 8px',
+                        }}
+                    >
+                        {nnode.children.map((pair, i) =>
+                            pair.length === 1 ? (
+                                <div key={i} style={{ gridColumn: '1/2' }}>
+                                    <RenderNNode {...props} nnode={pair[0]} />
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex' }}>
+                                    <span key={i + '-0'}>
+                                        <RenderNNode
+                                            {...props}
+                                            nnode={pair[0]}
+                                        />
+                                    </span>
+                                    <span style={{ width: '0.5em' }} />
+                                    <span key={i + '-1'}>
+                                        <RenderNNode
+                                            {...props}
+                                            nnode={pair[1]}
+                                        />
+                                    </span>
+                                </div>
+                            ),
+                        )}
+                    </span>
+                );
+            }
             return (
                 <span style={{ display: 'grid', gap: '0 8px' }}>
                     {nnode.children.flatMap((pair, i) =>
