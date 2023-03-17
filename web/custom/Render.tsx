@@ -1,7 +1,6 @@
 import React from 'react';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { combinePathSel } from '../mods/navigate';
 import { rainbow } from '../old/Nodes';
 import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
 import { getNodes } from '../overheat/getNodes';
@@ -188,11 +187,11 @@ export const RenderNNode = (
                             add: evt.altKey,
                             at: [
                                 {
-                                    start: combinePathSel({
-                                        path,
-                                        sel: {
-                                            idx,
-                                            loc: calcOffset(
+                                    start: path.concat({
+                                        idx,
+                                        child: {
+                                            type: 'subtext',
+                                            at: calcOffset(
                                                 evt.currentTarget,
                                                 evt.clientX,
                                             ),

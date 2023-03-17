@@ -11,7 +11,7 @@ import {
 import { replacePath } from '../../old/RecordText';
 import { Path } from '../../store';
 import { TheUpdate } from '../getKeyUpdate';
-import { combinePathSel } from '../navigate';
+// import { combinePathSel } from '../navigate';
 
 export function wrapWithParens(
     path: Path[],
@@ -32,7 +32,8 @@ export function wrapWithParens(
     update[nw.loc.idx] = nw;
     return {
         map: update,
-        selection: combinePathSel({ sel: { idx, loc }, path: childPath }),
+        selection: childPath.concat([{ idx, child: { type: loc } }]),
+        // combinePathSel({ sel: { idx, loc }, path: childPath }),
     };
 }
 

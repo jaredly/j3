@@ -1,41 +1,22 @@
-import {
-    EvalCtx,
-    Path,
-    PathChild,
-    Selection,
-    Store,
-    UpdateMap,
-} from '../store';
-import { Events } from '../old/Nodes';
-import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
-import { closeListLike } from './closeListLike';
+import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
+import { Map, MNode } from '../../src/types/mcst';
 import { replacePath } from '../old/RecordText';
+import { Path, PathChild, Selection, UpdateMap } from '../store';
+import { closeListLike } from './closeListLike';
+import { handleBackspace } from './handleBackspace';
+import { handleStringText } from './handleStringText';
 import { modChildren } from './modChildren';
-import { Identifier } from '../../src/types/cst';
-import { ONodeOld } from '../overheat/types';
+import { goLeft, goRight, selectStart } from './navigate';
 import {
+    mergeNew,
+    newAccessText,
     newBlank,
-    newString,
     newId,
     newListLike,
-    newAccessText,
     newRecordAccess,
     newSpread,
-    mergeNew,
+    newString,
 } from './newNodes';
-import {
-    combinePathSel,
-    goLeft,
-    goRight,
-    maybeCombinePathSel,
-    maybeToPathSel,
-    PathSel,
-    selectStart,
-    toPathSel,
-} from './navigate';
-import { handleStringText } from './handleStringText';
-import { handleBackspace } from './handleBackspace';
-import { idText, pathPos, selPos, splitGraphemes } from '../../src/parse/parse';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
 

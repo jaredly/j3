@@ -1,4 +1,3 @@
-import { PathSel, toPathSel } from '../mods/navigate';
 import { calcOffset } from './RenderONode';
 import { UIState, calcCursorPos } from './ByHand';
 import { Path } from '../store';

@@ -10,12 +10,7 @@ import {
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
-import {
-    combinePathSel,
-    maybeToPathSel,
-    selectEnd,
-    selectStart,
-} from '../web/mods/navigate';
+import { selectEnd, selectStart } from '../web/mods/navigate';
 import { Path } from '../web/store';
 import { sexp } from './sexp';
 

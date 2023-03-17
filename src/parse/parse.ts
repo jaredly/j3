@@ -1,6 +1,5 @@
 // hmm
 import { applyUpdate, getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
-import { combinePathSel } from '../../web/mods/navigate';
 import { Path, Selection } from '../../web/store';
 import { nidx } from '../grammar';
 import { Map, MNode } from '../types/mcst';

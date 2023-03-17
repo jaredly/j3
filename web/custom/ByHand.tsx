@@ -7,26 +7,15 @@ import React, {
     useState,
 } from 'react';
 import { sexp } from '../../progress/sexp';
-import {
-    parseByCharacter,
-    pathPos,
-    splitGraphemes,
-} from '../../src/parse/parse';
+import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
+import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
 import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
-import {
-    combinePathSel,
-    maybeToPathSel,
-    PathSel,
-    pathSelEqual,
-    selectEnd,
-    toPathSel,
-} from '../mods/navigate';
-import { Path, Selection } from '../store';
+import { selectEnd } from '../mods/navigate';
+import { Path } from '../store';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
 

@@ -4,7 +4,6 @@ import { nidx } from '../../src/grammar';
 import { stringText } from '../../src/types/cst';
 import { KeyUpdate } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
-import { combinePathSel } from './navigate';
 
 export function handleStringText({
     key,
