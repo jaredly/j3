@@ -1,4 +1,4 @@
-import { Path, Selection } from '../../web/store';
+import { Path } from '../../web/store';
 import { Node } from '../types/cst';
 
 export type SourceMap = {

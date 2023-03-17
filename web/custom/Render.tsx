@@ -3,10 +3,6 @@ import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { rainbow } from '../old/Nodes';
 import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
-import { getNodes } from '../overheat/getNodes';
-import { ONodeOld } from '../overheat/types';
-import { Path, Selection } from '../store';
-import { Action, UIState } from './ByHand';
 import { calcOffset } from './RenderONode';
 import { RenderProps } from './types';
 

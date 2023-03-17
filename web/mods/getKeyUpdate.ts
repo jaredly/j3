@@ -1,7 +1,7 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
 import { Map, MNode } from '../../src/types/mcst';
 import { replacePath } from '../old/RecordText';
-import { Path, PathChild, Selection, UpdateMap } from '../store';
+import { Path, PathChild, UpdateMap } from '../store';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
 import { handleStringText } from './handleStringText';
@@ -19,11 +19,6 @@ import {
 } from './newNodes';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
-
-export type SelectAndPath = {
-    selection: Selection;
-    path: Path[];
-};
 
 export type TheUpdate = {
     map: UpdateMap;
@@ -97,13 +92,6 @@ const isPathAtStart = (text: string, path: PathChild) => {
         // !(path.type === 'end' && text.length > 0) &&
         // !(typeof loc === 'number' && loc > 0)
         path.type === 'start' || (path.type === 'subtext' && path.at === 0)
-    );
-};
-
-const isAtStart = (text: string, loc: Selection['loc']) => {
-    return (
-        !(loc === 'end' && text.length > 0) &&
-        !(typeof loc === 'number' && loc > 0)
     );
 };
 

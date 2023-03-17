@@ -1,6 +1,6 @@
 // hmm
 import { applyUpdate, getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
-import { Path, Selection } from '../../web/store';
+import { Path } from '../../web/store';
 import { nidx } from '../grammar';
 import { Map, MNode } from '../types/mcst';
 
@@ -92,17 +92,6 @@ function initialState() {
         root: -1,
     };
     return state;
-}
-
-export function selPos(selection: Selection, curText: string) {
-    return selection.loc === 'start' ||
-        selection.loc === 'inside' ||
-        selection.loc === 'change' ||
-        !selection.loc
-        ? 0
-        : selection.loc === 'end'
-        ? splitGraphemes(curText).length
-        : selection.loc;
 }
 
 export function pathPos(path: Path[], curText: string) {

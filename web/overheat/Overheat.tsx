@@ -4,14 +4,14 @@
 // but then overhead was taken on npm.
 
 import React from 'react';
-import { ListLikeContents, MNode } from '../../src/types/mcst';
+import { MNode } from '../../src/types/mcst';
 import { Blinker } from '../old/Blinker';
 import { Top } from '../old/IdentifierLike';
 import { sideClick } from '../old/ListLike';
 import { Events, rainbow } from '../old/Nodes';
 import { Path, Selection, setSelection, useStore } from '../store';
+import { getNodes } from './getNodesWithAnnot';
 import { ONodeOld } from './types';
-import { getNodes_, getNodes } from './getNodesWithAnnot';
 
 const select = (
     node: ONodeOld,

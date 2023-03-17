@@ -1,7 +1,7 @@
 // Basic level
 
 import { setIdx } from '../src/grammar';
-import { idText, parseByCharacter, pathPos, selPos } from '../src/parse/parse';
+import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
 import {
     nodeToString,
     remapPos,
