@@ -191,17 +191,24 @@ export const getKeyUpdate = (
         return goRight(fullPath, idx, map);
     }
 
-    const { path } = toPathSel(fullPath, state.map);
-    const last = path[path.length - 1];
-
     if (node.type === 'stringText') {
-        return handleStringText({ key, idx, node, pos, path, map });
+        return handleStringText({
+            key,
+            idx,
+            node,
+            pos,
+            path: fullPath.slice(0, -1),
+            map,
+        });
     }
 
     // Start a list-like!
     if ('([{'.includes(key)) {
-        return openListLike({ key, idx, last, node, path, map, pos });
+        return openListLike({ key, idx, node, fullPath, map });
     }
+
+    const { path } = toPathSel(fullPath, state.map);
+    const last = path[path.length - 1];
 
     if (key === ' ' || key === 'Enter') {
         if (last.child.type === 'child') {
@@ -427,56 +434,44 @@ function goToTannot(
 function openListLike({
     key,
     idx,
-    last,
     node,
-    path,
+    fullPath,
     map,
-    pos,
 }: {
     key: string;
     idx: number;
-    last: Path;
     node: MNode;
-    path: Path[];
+    fullPath: Path[];
     map: Map;
-    pos: number;
 }): KeyUpdate {
     const type = ({ '(': 'list', '[': 'array', '{': 'record' } as const)[key]!;
 
     // Just replace it!
     if (node.type === 'blank') {
-        return replaceWith(path, newListLike(type, idx));
+        return replaceWith(fullPath.slice(0, -1), newListLike(type, idx));
     }
 
+    const flast = fullPath[fullPath.length - 1];
+
     // Gotta wrap it!
-    if (last.child.type === 'start') {
-        if (wrappable.includes(path[path.length - 2].child.type)) {
+    if (
+        flast.child.type === 'start' ||
+        (flast.child.type === 'subtext' && flast.child.at === 0)
+    ) {
+        if (wrappable.includes(fullPath[fullPath.length - 2].child.type)) {
             return replacePathWith(
-                path.slice(0, -1),
+                fullPath.slice(0, -1),
                 map,
                 newListLike(type, void 0, {
                     idx,
                     map: {},
-                    selection: [last],
-                    // { sel: { idx, loc: 'start' }, path: [last] },
+                    selection: [flast],
                 }),
             );
         }
     }
 
-    if (wrappable.includes(last.child.type) && pos === 0) {
-        return replacePathWith(
-            path,
-            map,
-            newListLike(type, void 0, {
-                idx,
-                map: {},
-                selection: [{ idx, child: { type: 'start' } }],
-            }),
-        );
-    }
-
-    return newNodeAfter(path, map, newListLike(type));
+    return newNodeAfter(fullPath, map, newListLike(type));
 }
 
 function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
