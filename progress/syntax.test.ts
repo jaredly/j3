@@ -15,7 +15,6 @@ import {
     maybeToPathSel,
     selectEnd,
     selectStart,
-    toPathSel,
 } from '../web/mods/navigate';
 import { sexp } from './sexp';
 
