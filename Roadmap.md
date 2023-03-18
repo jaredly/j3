@@ -8,15 +8,27 @@
 - [x] add start/end to sel type
 - [x] render end cursor (prelim)
 - [x] populate sel/end on drag
-- [ ] actually do a meaningful render of the selection.
-  - [ ] should I like do a fake overlay as well? Or let the individual thing render?
-    hmmm. Rich text isn't going to like that.
-    Unlesssssss I kinda ditch lexical, and do my very own rich text?
+- [x] actually do a meaningful render of the selection.
+- [ ] support subselecting in an atom
+- [ ] getKeyUpdate should replace selected text
+- [ ] COPYYY and PASTEEE
+  - so I'll need to generate new idx's for the pasted things
+  - unlessss I'm doing a cut? In which case, we could retain them.
+    but it might not be worth it to mess with that.
+- [ ] tannots are selecting weird...
+  honestly now that I have full control over things, maybe tannot shouldn't
+  be this weird pseudo node. it could just be a normal node, right?
+  I think that would be better.
+  - so, changing tannots, will mean that my nodeToExpr will need to be different.
+    but I'm fine with that.
+- [ ] shift-arrow-keys
     
   - [ ] 
 - [x] ok now selections need boundariessss
 
-- [ ] um, I need some tests for selections. How do I do it.
+- [x] um, I need some tests for selections. How do I do it.
+
+- [ ] and thennn let's bring `hash` node type into the mix, and autocomplete.
 
 
 

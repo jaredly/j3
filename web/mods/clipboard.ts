@@ -7,11 +7,17 @@ import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
 import { Path } from '../store';
 
+export type CoverageLevel = 'inner' | 'partial' | 'full';
+// 0 = not
+// 1 = inner
+// 2 = partial
+// 3 = full?
+
 export const selectionStatus = (
     path: Path[],
     start: Path[],
     end: Path[],
-): 'partial' | 'full' | null => {
+): CoverageLevel | null => {
     let s = cmpFullPath(start, path);
     if (s > 0) {
         return null;
@@ -37,6 +43,9 @@ export const selectionStatus = (
 
     if (s < 0 && e < 0) {
         return 'full';
+    }
+    if (s === 0 && e === 0) {
+        return 'inner';
     }
     return 'partial';
 };

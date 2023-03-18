@@ -1,23 +1,27 @@
-import { selectionStatus } from '../mods/clipboard';
+import { CoverageLevel, selectionStatus } from '../mods/clipboard';
 import { State } from '../mods/getKeyUpdate';
 import { Path, PathChild } from '../store';
 
 export const isCoveredBySelection = (
     at: State['at'],
     path: Path[],
-    requireFull = true,
+    // requireFull = true,
 ) => {
+    // let best: CoverageLevel | null = null
     for (let sel of at) {
         if (!sel.end) {
             continue;
         }
         const coverage = selectionStatus(path, sel.start, sel.end);
-        if (coverage === 'full') {
-            return true;
+        if (coverage) {
+            return coverage;
         }
-        if (!requireFull && coverage === 'partial') {
-            return true;
-        }
+        // if (coverage === 'full') {
+        //     return true;
+        // }
+        // if (!requireFull && coverage === 'partial') {
+        //     return true;
+        // }
     }
     return false;
 };

@@ -105,23 +105,32 @@ export const RenderNNode = (
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
 
-    const selectStyle = isCoveredBySelection(
+    const coverageLevel = isCoveredBySelection(
         props.selection,
         path,
-        !('text' in node),
-    )
-        ? {
-              color: '#ccc',
-              borderRadius: 6,
-              backgroundColor: '#225',
-              //   backgroundColor: '#1a1a1a',
-              //   outline: '1px solid white',
-              //   boxShadow: '1px 1px 1px white',
-              //   backgroundColor: 'rgb(18 20 42)',
-              //   textDecoration: 'underline',
-              //   textShadow: '0 3px 0px white',
-          }
-        : {};
+        // !('text' in node),
+    );
+
+    const selectStyle =
+        coverageLevel === 'full' ||
+        ('text' in node && coverageLevel === 'partial')
+            ? {
+                  color: '#ccc',
+                  borderRadius: 6,
+                  backgroundColor:
+                      //   coverageLevel === 'full'
+                      //       ? '#555'
+                      //       : coverageLevel === 'inner'
+                      //       ? '#115'
+                      '#225',
+                  //   backgroundColor: '#1a1a1a',
+                  //   outline: '1px solid white',
+                  //   boxShadow: '1px 1px 1px white',
+                  //   backgroundColor: 'rgb(18 20 42)',
+                  //   textDecoration: 'underline',
+                  //   textShadow: '0 3px 0px white',
+              }
+            : {};
 
     switch (nnode.type) {
         case 'vert':
