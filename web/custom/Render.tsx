@@ -216,7 +216,9 @@ export const RenderNNode = (
                 body = (
                     <>
                         {text.slice(0, start).join('')}
-                        <span style={{ backgroundColor: 'red' }}>
+                        <span
+                            style={{ backgroundColor: '#225', borderRadius: 6 }}
+                        >
                             {text.slice(start, end).join('')}
                         </span>
                         {text.slice(end).join('')}
