@@ -1,16 +1,10 @@
 import { setIdx } from '../src/grammar';
-import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
-import {
-    nodeToString,
-    remapPos,
-    showSourceMap,
-    SourceMap,
-} from '../src/to-cst/nodeToString';
+import { parseByCharacter } from '../src/parse/parse';
+import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
-import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
-import { goRight, selectEnd, selectStart } from '../web/mods/navigate';
-import { Path } from '../web/store';
-import { sexp } from './sexp';
+import { collectNodes } from '../web/mods/clipboard';
+import { getKeyUpdate } from '../web/mods/getKeyUpdate';
+import { selectStart } from '../web/mods/navigate';
 
 const data = `
 (abc def ghi)
@@ -41,13 +35,17 @@ export const posToPath = (
         map,
     )!;
     while (at < pos) {
-        const update = goRight(path, path[path.length - 1].idx, map);
+        const update = getKeyUpdate('ArrowRight', map, path);
         if (update?.type === 'select') {
             path = update.selection;
             at = remapPos(path, sm);
         } else {
+            console.log('bad news bears!');
             return null;
         }
+    }
+    if (at !== pos) {
+        throw new Error(`what, why is this even happening`);
     }
     return path;
 };
@@ -83,26 +81,16 @@ describe('a test', () => {
                     throw new Error('could not second postopath');
                 }
 
-                if (expected.includes('|')) {
-                    const pos = remapPos(selection, sourceMap);
-                    back = back.slice(0, pos) + '|' + back.slice(pos);
+                const collected = collectNodes(data, firstPath, secondPath);
+                const printed = collected
+                    .map((node) => nodeToString(node))
+                    .join(' ');
+                if (printed !== output) {
+                    console.log(firstPath);
+                    console.log(secondPath);
+                    console.log(collected);
                 }
-                if (back !== expected) {
-                    console.warn(JSON.stringify(data));
-                }
-                expect(sexp(fromMCST(idx, data))).toEqual(serialized);
-
-                const state = selectEnd(
-                    idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
-                    data,
-                );
-
-                if (!state) {
-                    throw new Error(
-                        `cant select end ${idx} ${JSON.stringify(data)}`,
-                    );
-                }
+                expect(printed).toEqual(output);
             });
         });
 });

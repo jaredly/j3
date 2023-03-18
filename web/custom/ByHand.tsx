@@ -16,6 +16,7 @@ import { layout } from '../layout';
 import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../store';
+import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
 
@@ -196,6 +197,13 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     const [drag, setDrag] = useState(false);
 
+    const selections = state.at
+        .filter((s) => s.end)
+        .map(({ start, end }) => {
+            const cmp = cmpFullPath(start, end!);
+            return cmp > 0 ? { start: end!, end: start } : { start, end };
+        });
+
     return (
         <div style={{ padding: 16 }}>
             {/* always capturing! dunno if this is totally wise lol */}
@@ -331,7 +339,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             reg={reg}
                             display={ctx.display}
                             dispatch={dispatch}
-                            selection={state.at}
+                            selection={selections}
                             path={[
                                 {
                                     idx: state.root,
@@ -551,7 +559,7 @@ export const handleKey = (state: UIState, key: string): UIState => {
     state = { ...state };
     state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(key, state, state.at[i].start);
+        const update = getKeyUpdate(key, state.map, state.at[i].start);
         if (!update) continue;
         if (update?.type === 'select' && isRootPath(update.selection)) {
             continue;

@@ -53,7 +53,7 @@ export const parseByCharacter = (
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(key, state, state.at[0].start);
+        const update = getKeyUpdate(key, state.map, state.at[0].start);
         if (debug) {
             console.log(key, state.at[0].start);
             console.log(JSON.stringify(update));

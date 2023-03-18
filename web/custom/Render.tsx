@@ -113,7 +113,7 @@ export const RenderNNode = (
         ? {
               color: '#ccc',
               borderRadius: 6,
-              backgroundColor: '#222',
+              backgroundColor: '#225',
               //   backgroundColor: '#1a1a1a',
               //   outline: '1px solid white',
               //   boxShadow: '1px 1px 1px white',

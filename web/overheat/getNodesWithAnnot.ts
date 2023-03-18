@@ -12,7 +12,7 @@ import { ONodeOld } from './types';
 /**
  * @deprecated this is the old weird one
  */
-export const getNodes = (node: MNode, isRoot?: boolean): ONodeOld[] => {
+export const getNodesBad = (node: MNode, isRoot?: boolean): ONodeOld[] => {
     const nodes = getNodes_(node, isRoot);
     if (nodes && node.tannot != null) {
         nodes.push(

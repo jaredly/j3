@@ -97,19 +97,19 @@ const isPathAtStart = (text: string, path: PathChild) => {
 
 export const getKeyUpdate = (
     key: string,
-    // pos: number,
-    // textRaw: string,
-    // idx: number,
-    // path: Path[],
-    // map: Map,
-    state: State,
+    map: Map,
     fullPath: Path[],
 ): KeyUpdate => {
     if (!fullPath.length) {
-        throw new Error(`no path ${key} ${JSON.stringify(state.map)}`);
+        throw new Error(`no path ${key} ${JSON.stringify(map)}`);
     }
     const flast = fullPath[fullPath.length - 1];
-    const node = state.map[flast.idx];
+    const node = map[flast.idx];
+    if (!node) {
+        throw new Error(
+            `No node ${flast.idx} : ${JSON.stringify(Object.keys(map))}`,
+        );
+    }
 
     const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
@@ -124,7 +124,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(state.map, fullPath);
+        return handleBackspace(map, fullPath);
     }
 
     const idx = flast.idx;
@@ -142,11 +142,10 @@ export const getKeyUpdate = (
                 ]),
             };
         }
-        return goLeft(fullPath, state.map);
+        return goLeft(fullPath, map);
     }
 
     const pos = pathPos(fullPath, textRaw);
-    const map = state.map;
 
     if (key === 'ArrowRight') {
         if (pos < text.length) {
