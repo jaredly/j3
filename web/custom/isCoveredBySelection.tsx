@@ -23,7 +23,7 @@ export const isCoveredBySelection = (
         //     return true;
         // }
     }
-    return false;
+    return null;
 };
 
 export const cmpPath = (one: PathChild, two: PathChild): number => {

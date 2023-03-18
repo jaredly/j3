@@ -5,9 +5,13 @@ import { fromMCST, Map } from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
-import { Path } from '../store';
+import { Path, PathChild } from '../store';
 
-export type CoverageLevel = 'inner' | 'partial' | 'full';
+export type CoverageLevel =
+    | { type: 'inner'; start: PathChild; end: PathChild }
+    | { type: 'partial' } //; start?: PathChild; end?: PathChild }
+    | { type: 'full' };
+// 'inner' | 'partial' | 'full';
 // 0 = not
 // 1 = inner
 // 2 = partial
@@ -42,12 +46,16 @@ export const selectionStatus = (
     }
 
     if (s < 0 && e < 0) {
-        return 'full';
+        return { type: 'full' };
     }
     if (s === 0 && e === 0) {
-        return 'inner';
+        return {
+            type: 'inner',
+            start: start[start.length - 1].child,
+            end: end[end.length - 1].child,
+        };
     }
-    return 'partial';
+    return { type: 'partial' };
 };
 
 export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
@@ -81,7 +89,7 @@ export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
         pre(node, path) {
             const isatom = 'text' in node;
             const status = selectionStatus(path, start, end);
-            if ((isatom && status != null) || status === 'full') {
+            if ((isatom && status != null) || status?.type === 'full') {
                 collected.push(node);
                 return false;
             }

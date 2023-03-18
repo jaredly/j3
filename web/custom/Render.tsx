@@ -1,4 +1,5 @@
 import React from 'react';
+import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { rainbow } from '../old/Nodes';
@@ -112,8 +113,8 @@ export const RenderNNode = (
     );
 
     const selectStyle =
-        coverageLevel === 'full' ||
-        ('text' in node && coverageLevel === 'partial')
+        coverageLevel?.type === 'full' ||
+        ('text' in node && coverageLevel?.type === 'partial')
             ? {
                   color: '#ccc',
                   borderRadius: 6,
@@ -196,7 +197,34 @@ export const RenderNNode = (
                     {nnode.text}
                 </span>
             );
-        case 'text':
+        case 'text': {
+            let body;
+            if (coverageLevel?.type === 'inner') {
+                const text = splitGraphemes(nnode.text);
+                const start =
+                    coverageLevel.start.type === 'subtext'
+                        ? coverageLevel.start.at
+                        : coverageLevel.start.type === 'end'
+                        ? text.length
+                        : 0;
+                const end =
+                    coverageLevel.end.type === 'subtext'
+                        ? coverageLevel.end.at
+                        : coverageLevel.end.type === 'start'
+                        ? 0
+                        : text.length;
+                body = (
+                    <>
+                        {text.slice(0, start).join('')}
+                        <span style={{ backgroundColor: 'red' }}>
+                            {text.slice(start, end).join('')}
+                        </span>
+                        {text.slice(end).join('')}
+                    </>
+                );
+            } else {
+                body = nnode.text;
+            }
             return (
                 <span
                     ref={(node) => reg(node, idx, path)}
@@ -228,9 +256,10 @@ export const RenderNNode = (
                         });
                     }}
                 >
-                    {nnode.text}
+                    {body}
                 </span>
             );
+        }
         case 'ref':
             return (
                 <Render

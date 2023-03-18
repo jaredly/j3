@@ -9,6 +9,10 @@
 - [x] render end cursor (prelim)
 - [x] populate sel/end on drag
 - [x] actually do a meaningful render of the selection.
+- [ ] strings with newlines render super weird
+  - honestly, should I just do something special
+    with newlines? Handle them myself, I mean?
+    seems like that might make sense.
 - [ ] support subselecting in an atom
 - [ ] getKeyUpdate should replace selected text
 - [ ] COPYYY and PASTEEE
