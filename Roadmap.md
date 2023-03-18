@@ -14,7 +14,11 @@
     Unlesssssss I kinda ditch lexical, and do my very own rich text?
     
   - [ ] 
-- [ ] ok now selections need boundariessss
+- [x] ok now selections need boundariessss
+
+- [ ] um, I need some tests for selections. How do I do it.
+
+
 
 Here's what I'm thinking
 
