@@ -407,6 +407,9 @@ export const Cursors = ({ state }: { state: UIState }) => {
         }, 500);
         setCursorPos(
             state.at.flatMap((at) => {
+                if (at.end) {
+                    return;
+                }
                 const res: any = [];
                 const box = calcCursorPos(at.start, state.regs);
                 if (box) {
@@ -419,19 +422,19 @@ export const Cursors = ({ state }: { state: UIState }) => {
                         color: box.color,
                     });
                 }
-                if (at.end) {
-                    const box2 = calcCursorPos(at.end, state.regs);
-                    if (box2) {
-                        const offsetY = document.body.scrollTop;
-                        const offsetX = document.body.scrollLeft;
-                        res.push({
-                            x: box2.left - offsetX,
-                            y: box2.top - offsetY,
-                            h: box2.height,
-                            color: box2.color,
-                        });
-                    }
-                }
+                // if (at.end) {
+                //     const box2 = calcCursorPos(at.end, state.regs);
+                //     if (box2) {
+                //         const offsetY = document.body.scrollTop;
+                //         const offsetX = document.body.scrollLeft;
+                //         res.push({
+                //             x: box2.left - offsetX,
+                //             y: box2.top - offsetY,
+                //             h: box2.height,
+                //             color: box2.color,
+                //         });
+                //     }
+                // }
                 return res;
             }),
         );

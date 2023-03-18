@@ -235,6 +235,24 @@ export const RenderNNode = (
                         ...textStyle(node, display[idx]),
                         ...selectStyle,
                     }}
+                    onDoubleClick={() => {
+                        // console.log('dbl');
+                        dispatch({
+                            type: 'select',
+                            at: [
+                                {
+                                    start: path.concat({
+                                        idx,
+                                        child: { type: 'start' },
+                                    }),
+                                    end: path.concat({
+                                        idx,
+                                        child: { type: 'end' },
+                                    }),
+                                },
+                            ],
+                        });
+                    }}
                     className="idlike"
                     onMouseDown={(evt) => {
                         evt.stopPropagation();
