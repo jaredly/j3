@@ -23,8 +23,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
         case 'number':
             return {
                 loc: type.form.loc,
-                type: 'number',
-                raw:
+                type: 'identifier',
+                text:
                     type.value.toString() +
                     (type.kind === 'float' &&
                     !type.value.toString().includes('.')
@@ -33,7 +33,11 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             };
         case 'tag':
             if (type.args.length === 0) {
-                return { type: 'tag', text: type.name, loc: type.form.loc };
+                return {
+                    type: 'identifier',
+                    text: "'" + type.name,
+                    loc: type.form.loc,
+                };
             }
             return {
                 loc: type.form.loc,
@@ -41,8 +45,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                 values: [
                     {
                         loc: noloc,
-                        type: 'tag',
-                        text: type.name,
+                        type: 'identifier',
+                        text: "'" + type.name,
                     },
                     ...type.args.map((arg) => nodeForType(arg, ctx)),
                 ],

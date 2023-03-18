@@ -15,14 +15,14 @@ export const nodeToPattern = (
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
-        case 'tag': {
-            return {
-                type: 'tag',
-                name: form.text,
-                args: [],
-                form,
-            };
-        }
+        // case 'tag': {
+        //     return {
+        //         type: 'tag',
+        //         name: form.text,
+        //         args: [],
+        //         form,
+        //     };
+        // }
         case 'identifier': {
             let sym;
             if (!form.hash) {
@@ -51,13 +51,13 @@ export const nodeToPattern = (
                 sym,
             };
         }
-        case 'number':
-            return {
-                type: 'number',
-                value: Number(form.raw),
-                kind: form.raw.includes('.') ? 'float' : 'int',
-                form,
-            };
+        // case 'number':
+        //     return {
+        //         type: 'number',
+        //         value: Number(form.raw),
+        //         kind: form.raw.includes('.') ? 'float' : 'int',
+        //         form,
+        //     };
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; form: Node; value: Pattern }[] = [];
@@ -155,15 +155,14 @@ export const nodeToPattern = (
                 for (let i = 0; i < values.length; i += 2) {
                     const name = values[i];
                     const value = values[i + 1];
-                    if (name.type !== 'identifier' && name.type !== 'number') {
+                    if (name.type !== 'identifier') {
                         err(ctx.errors, values[i], {
                             type: 'misc',
                             message: 'expected identifier or integer literal',
                         });
                         continue;
                     }
-                    const namev =
-                        name.type === 'identifier' ? name.text : name.raw;
+                    const namev = name.text;
                     ctx.display[name.loc.idx] = {
                         style: { type: 'record-attr' },
                     };
@@ -244,7 +243,8 @@ export const nodeToPattern = (
                     })),
                 };
             }
-            if (first.type === 'tag') {
+            if (first.type === 'identifier' && first.text.startsWith("'")) {
+                const text = first.text.slice(1);
                 ctx.display[first.loc.idx] = { style: { type: 'tag' } };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
@@ -253,25 +253,25 @@ export const nodeToPattern = (
                 }
                 let args: Type[];
                 if (res.type === 'tag') {
-                    if (res.name !== first.text) {
-                        console.log('mismatch', res, first.text);
+                    if (res.name !== text) {
+                        console.log('mismatch', res, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
                     const map = expandEnumItems(res.items, ctx, []);
-                    if (map.type === 'error' || !map.map[first.text]) {
-                        console.log('nomap', map, first.text);
+                    if (map.type === 'error' || !map.map[text]) {
+                        console.log('nomap', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
-                    args = map.map[first.text].args;
+                    args = map.map[text].args;
                 } else {
                     console.log('badres', res);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
                 return {
                     type: 'tag',
-                    name: first.text,
+                    name: text,
                     form,
                     args: rest.map((p, i) =>
                         nodeToPattern(p, args[i], ctx, bindings),

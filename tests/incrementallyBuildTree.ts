@@ -107,31 +107,18 @@ export function incrementallyBuildTree(
         let nidx;
         let lastChild = last.child;
         let path;
-        if (last.child === -1) {
-            // tannot time
-            nidx = omap[last.idx].tannot!;
-            if (nidx == null) {
-                throw new Error(`no bueno`);
-            }
-            const next = omap[nidx];
-            pos.pop();
-            path = last.path.concat([{ idx: last.idx, child: lastChild }]);
-            addNext(next, nidx, path);
-            store.map[last.idx].tannot = nidx;
+        const parent = store.map[last.idx] as ListLikeContents;
+        const oparent = omap[last.idx] as ListLikeContents;
+        nidx = oparent.values[last.child];
+        const next = omap[nidx];
+        if (oparent.values.length - 1 > last.child) {
+            last.child++;
         } else {
-            const parent = store.map[last.idx] as ListLikeContents;
-            const oparent = omap[last.idx] as ListLikeContents;
-            nidx = oparent.values[last.child];
-            const next = omap[nidx];
-            if (oparent.values.length - 1 > last.child) {
-                last.child++;
-            } else {
-                pos.pop();
-            }
-            path = last.path.concat([{ idx: last.idx, child: lastChild }]);
-            addNext(next, nidx, path);
-            parent.values.push(nidx);
+            pos.pop();
         }
+        path = last.path.concat([{ idx: last.idx, child: lastChild }]);
+        addNext(next, nidx, path);
+        parent.values.push(nidx);
 
         compile(store, ectx);
 
@@ -215,13 +202,7 @@ export function incrementallyBuildTree(
             store.map[nidx] = nchild;
             pos.push({ idx: next.loc.idx, child: 0, path });
         } else {
-            if (next.tannot != null) {
-                const nchild = { ...next, tannot: undefined };
-                pos.push({ idx: next.loc.idx, child: -1, path });
-                store.map[nidx] = nchild;
-            } else {
-                store.map[nidx] = next;
-            }
+            store.map[nidx] = next;
         }
     }
 }

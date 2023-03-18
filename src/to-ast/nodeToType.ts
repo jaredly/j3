@@ -12,13 +12,14 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
         case 'identifier': {
             return resolveType(form.text, form.hash, ctx, form);
         }
-        case 'number':
-            return {
-                type: 'number',
-                form,
-                kind: form.raw.includes('.') ? 'float' : 'int',
-                value: +form.raw,
-            };
+        // STOPSHIP
+        // case 'number':
+        //     return {
+        //         type: 'number',
+        //         form,
+        //         kind: form.raw.includes('.') ? 'float' : 'int',
+        //         value: +form.raw,
+        //     };
         case 'array':
             return {
                 type: 'union',
@@ -28,14 +29,15 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     nodeToType(value, ctx),
                 ),
             };
-        case 'tag':
-            ctx.display[form.loc.idx] = { style: { type: 'tag' } };
-            return {
-                type: 'tag',
-                form,
-                name: form.text,
-                args: [],
-            };
+        // STOPSHIP
+        // case 'tag':
+        //     ctx.display[form.loc.idx] = { style: { type: 'tag' } };
+        //     return {
+        //         type: 'tag',
+        //         form,
+        //         name: form.text,
+        //         args: [],
+        //     };
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; value: Type }[] = [];
@@ -52,7 +54,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 const value = values[i + 1];
                 i += 2;
 
-                if (name.type !== 'identifier' && name.type !== 'number') {
+                if (name.type !== 'identifier') {
                     err(ctx.errors, name, {
                         type: 'misc',
                         message: `record entry name must be an identifier`,
@@ -61,7 +63,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 }
                 ctx.display[name.loc.idx] = { style: { type: 'record-attr' } };
                 entries.push({
-                    name: name.type === 'number' ? name.raw : name.text,
+                    name: name.text,
                     value: value ? nodeToType(value, ctx) : nilt,
                 });
             }
@@ -80,12 +82,12 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             const values = filterComments(form.values);
             const first = values[0];
             const args = values.slice(1);
-            if (first.type === 'tag') {
+            if (first.type === 'identifier' && first.text.startsWith("'")) {
                 ctx.display[first.loc.idx] = { style: { type: 'tag' } };
                 return {
                     type: 'tag',
                     form,
-                    name: first.text,
+                    name: first.text.slice(1),
                     args: args.map((arg) => nodeToType(arg, ctx)),
                 };
             }

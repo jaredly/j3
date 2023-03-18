@@ -9,7 +9,6 @@ export const idText = (node: MNode) => {
         case 'identifier':
         case 'comment':
             return node.text;
-        case 'number':
         case 'unparsed':
             return node.raw;
         case 'accessText':
@@ -17,8 +16,6 @@ export const idText = (node: MNode) => {
             return node.text;
         case 'blank':
             return '';
-        case 'tag':
-            return "'" + node.text;
     }
 };
 

@@ -86,13 +86,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         Object.keys(ctx.mods).forEach((idx) => {
             ctx.mods[+idx].forEach((mod) => {
-                if (mod.type === 'tannot') {
-                    const node = updateMap[+idx] ?? store.map[+idx];
-                    updateMap[+idx] = {
-                        ...node,
-                        tannot: toMCST(mod.node, updateMap),
-                    };
-                } else if (mod.type === 'hash') {
+                if (mod.type === 'hash') {
                     const node = updateMap[+idx] ?? store.map[+idx];
                     if (node.type === 'identifier') {
                         updateMap[+idx] = {

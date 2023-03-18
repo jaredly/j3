@@ -32,7 +32,8 @@ export const cmpPath = (one: PathChild, two: PathChild): number => {
             case 'start':
             case 'end':
             case 'inside':
-            case 'tannot':
+            case 'annot-target':
+            case 'annot-annot':
             case 'record-target':
             case 'spread-contents':
                 return 0;
@@ -45,12 +46,6 @@ export const cmpPath = (one: PathChild, two: PathChild): number => {
             default:
                 let _: never = one;
         }
-    }
-    if (one.type === 'tannot') {
-        return 1;
-    }
-    if (two.type === 'tannot') {
-        return -1;
     }
     if (one.type === 'end') {
         return 1;
@@ -70,6 +65,14 @@ export const cmpPath = (one: PathChild, two: PathChild): number => {
     if (one.type === 'text' && two.type === 'expr') {
         return two.at <= one.at ? 1 : -1;
     }
+
+    if (one.type === 'annot-target' && two.type === 'annot-annot') {
+        return -1;
+    }
+    if (two.type === 'annot-target' && one.type === 'annot-annot') {
+        return 1;
+    }
+
     if (one.type === 'record-target' && two.type === 'attribute') {
         return -1;
     }

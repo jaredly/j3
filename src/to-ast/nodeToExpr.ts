@@ -208,9 +208,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 ensure(ctx.display, form.loc.idx, {}).autoComplete = options;
             }
             return { type: 'unresolved', form };
-        case 'tag':
-            ctx.display[form.loc.idx] = { style: { type: 'tag' } };
-            return { type: 'tag', name: form.text, form };
+        // case 'tag':
+        //     ctx.display[form.loc.idx] = { style: { type: 'tag' } };
+        //     return { type: 'tag', name: form.text, form };
         case 'string':
             return {
                 type: 'string',
@@ -227,13 +227,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             : nodeToExpr(item.expr, ctx),
                 })),
             };
-        case 'number':
-            return {
-                type: 'number',
-                form,
-                value: +form.raw,
-                kind: form.raw.includes('.') ? 'float' : 'int',
-            };
+        // case 'number':
+        //     return {
+        //         type: 'number',
+        //         form,
+        //         value: +form.raw,
+        //         kind: form.raw.includes('.') ? 'float' : 'int',
+        //     };
         case 'record': {
             const entries: Record['entries'] = [];
             const values = filterComments(form.values);
@@ -307,7 +307,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     ctx.display[name.loc.idx] = {
                         style: { type: 'record-attr' },
                     };
-                    if (name.type !== 'identifier' && name.type !== 'number') {
+                    if (name.type !== 'identifier') {
                         err(ctx.errors, name, {
                             type: 'misc',
                             message: `invalid record item ${name.type}`,
@@ -315,8 +315,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                         i += 1;
                         continue;
                     }
-                    const namev =
-                        name.type === 'identifier' ? name.text : name.raw;
+                    const namev = name.text;
                     const value = values[i + 1];
                     i += 2;
                     if (!value) {
@@ -389,6 +388,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 file: form.file,
                 name: form.name,
             };
+        case 'annot':
+            throw new Error(`annot not yet toExpr`);
     }
     let _: never = form;
     throw new Error(
