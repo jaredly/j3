@@ -7,6 +7,40 @@ import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
 import { Path } from '../store';
 
+export const selectionStatus = (
+    path: Path[],
+    start: Path[],
+    end: Path[],
+): 'partial' | 'full' | null => {
+    let s = cmpFullPath(start, path);
+    if (s > 0) {
+        return null;
+    }
+    if (
+        start.length === path.length + 1 &&
+        start[start.length - 1].child.type === 'start'
+    ) {
+        s = -1;
+    }
+
+    let e = cmpFullPath(path, end);
+    if (e > 0) {
+        return null;
+    }
+
+    if (
+        end.length === path.length + 1 &&
+        end[end.length - 1].child.type === 'end'
+    ) {
+        e = -1;
+    }
+
+    if (s < 0 && e < 0) {
+        return 'full';
+    }
+    return 'partial';
+};
+
 export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
     if (start.length === end.length) {
         const slast = start[start.length - 1];
@@ -37,29 +71,15 @@ export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
     transformNode(fromMCST(-1, map), {
         pre(node, path) {
             const isatom = 'text' in node;
-            const cmp = cmpFullPath(start, path);
-            if (cmp === 1) {
-                return false;
-            }
-            const emp = cmpFullPath(path, end);
-            if (emp === 1) {
-                return false;
-            }
-            if (isatom ? cmp <= 0 && emp <= 0 : cmp === -1 && emp === -1) {
+            const status = selectionStatus(path, start, end);
+            if ((isatom && status != null) || status === 'full') {
                 collected.push(node);
+                return false;
+            }
+            if (!status) {
                 return false;
             }
         },
     });
     return collected;
-    // let i = 0;
-    // for (; i < start.length - 1 && i < end.length - 1 && equal(start[i + 1], end[i + 1]); i++) { }
-    // const common = start.slice(0, i + 1)
-    // const last = start[i]
-    // const nodes = getNodes(map[last.idx])
-    // let s = 0;
-    // let e = nodes.length;
-    // for (; s < e ; s++) {
-
-    // }
 };

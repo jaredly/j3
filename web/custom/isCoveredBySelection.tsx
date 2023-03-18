@@ -1,3 +1,4 @@
+import { selectionStatus } from '../mods/clipboard';
 import { State } from '../mods/getKeyUpdate';
 import { Path, PathChild } from '../store';
 
@@ -10,16 +11,12 @@ export const isCoveredBySelection = (
         if (!sel.end) {
             continue;
         }
-        const start = cmpFullPath(sel.start, path);
-        const end = cmpFullPath(path, sel.end);
-        if (requireFull || (start === 0 && end === 0)) {
-            if (start < 0 && end < 0) {
-                return true;
-            }
-        } else {
-            if (start <= 0 && end <= 0) {
-                return true;
-            }
+        const coverage = selectionStatus(path, sel.start, sel.end);
+        if (coverage === 'full') {
+            return true;
+        }
+        if (!requireFull && coverage === 'partial') {
+            return true;
         }
     }
     return false;
@@ -94,7 +91,5 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
             return cmp;
         }
     }
-    // return one.length > two.length + 1 ? 1 : 0;
-    // return one.length > two.length ? 1 : -1;
     return 0;
 };
