@@ -60,7 +60,7 @@ export const textStyle = (
                 return { fontStyle: 'normal', color };
             }
         }
-        return { fontStyle: 'normal' };
+        return { fontStyle: 'normal', color: 'orange' };
     }
     switch (node.type) {
         case 'identifier':
@@ -68,6 +68,7 @@ export const textStyle = (
         case 'stringText':
             return { color: color, whiteSpace: 'pre' };
     }
+    return { color: 'violet' };
 };
 
 export const Render = (props: RenderProps) => {
@@ -164,19 +165,29 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
         }
     }
     // return one.length > two.length + 1 ? 1 : 0;
-    return one.length > two.length ? 1 : -1;
+    // return one.length > two.length ? 1 : -1;
+    return 0;
 };
 
-const isCoveredBySelection = (at: State['at'], path: Path[]) => {
+const isCoveredBySelection = (
+    at: State['at'],
+    path: Path[],
+    requireFull = true,
+) => {
     for (let sel of at) {
         if (!sel.end) {
             continue;
         }
-        if (
-            cmpFullPath(sel.start, path) <= 0 &&
-            cmpFullPath(path, sel.end) <= 0
-        ) {
-            return true;
+        const start = cmpFullPath(sel.start, path);
+        const end = cmpFullPath(path, sel.end);
+        if (requireFull) {
+            if (start < 0 && end < 0) {
+                return true;
+            }
+        } else {
+            if (start <= 0 && end <= 0) {
+                return true;
+            }
         }
     }
     return false;
@@ -194,9 +205,18 @@ export const RenderNNode = (
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
 
-    const backgroundColor = isCoveredBySelection(props.selection, path)
-        ? '#333'
-        : 'unset';
+    const selectStyle = isCoveredBySelection(
+        props.selection,
+        path,
+        !('text' in node),
+    )
+        ? {
+              color: '#777',
+              backgroundColor: '#1a1a1a',
+              //   textDecoration: 'underline',
+              //   textShadow: '0 3px 0px white',
+          }
+        : {};
 
     switch (nnode.type) {
         case 'vert':
@@ -207,7 +227,7 @@ export const RenderNNode = (
                         display: 'flex',
                         alignItems: 'flex-start',
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
-                        backgroundColor,
+                        ...selectStyle,
                     }}
                 >
                     {nnode.children.map((nnode, i) => (
@@ -235,7 +255,13 @@ export const RenderNNode = (
             );
         case 'punct':
             return (
-                <span style={{ whiteSpace: 'pre', color: nnode.color }}>
+                <span
+                    style={{
+                        whiteSpace: 'pre',
+                        color: nnode.color,
+                        ...selectStyle,
+                    }}
+                >
                     {nnode.text}
                 </span>
             );
@@ -250,7 +276,7 @@ export const RenderNNode = (
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
                         fontVariationSettings: isSelected ? '"wght" 900' : '',
-                        backgroundColor,
+                        ...selectStyle,
                     }}
                 >
                     {nnode.text}
@@ -262,7 +288,7 @@ export const RenderNNode = (
                     ref={(node) => reg(node, idx, path)}
                     style={{
                         ...textStyle(node, display[idx]),
-                        backgroundColor,
+                        ...selectStyle,
                     }}
                     className="idlike"
                     onMouseDown={(evt) => {
