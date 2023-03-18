@@ -8,8 +8,8 @@ right?
 
 # LogJams
 
-- [ ] tannot must go
-- [ ] trim the cst/mcst node types (no number)
+- [x] tannot must go
+- [x] trim the cst/mcst node types (no number)
 
 # Selection!
 

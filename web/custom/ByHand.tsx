@@ -284,49 +284,36 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                         y: evt.clientY,
                     });
                     if (sel) {
-                        if (equal(sel, state.at[0].start)) {
-                            dispatch({
-                                type: 'select',
-                                add: evt.altKey,
-                                at: [
-                                    {
-                                        start: state.at[0].start,
-                                    },
-                                ],
-                            });
+                        const at = state.at.slice();
+                        const idx = at.length - 1;
+                        if (equal(at, at[idx].start)) {
+                            at[idx] = { start: sel };
+                            dispatch({ type: 'select', at });
                         } else {
-                            dispatch({
-                                type: 'select',
-                                add: evt.altKey,
-                                at: [
-                                    {
-                                        start: state.at[0].start,
-                                        end: sel,
-                                    },
-                                ],
-                            });
+                            at[idx] = { ...at[idx], end: sel };
+                            dispatch({ type: 'select', at });
                         }
                     }
                 }}
                 onMouseUpCapture={(evt) => {
                     if (drag) {
                         setDrag(false);
-                        const sel = closestSelection(state.regs, {
-                            x: evt.clientX,
-                            y: evt.clientY,
-                        });
-                        if (sel && !equal(sel, state.at[0].start)) {
-                            dispatch({
-                                type: 'select',
-                                add: evt.altKey,
-                                at: [
-                                    {
-                                        start: state.at[0].start,
-                                        end: sel,
-                                    },
-                                ],
-                            });
-                        }
+                        // const sel = closestSelection(state.regs, {
+                        //     x: evt.clientX,
+                        //     y: evt.clientY,
+                        // });
+                        // if (sel && !equal(sel, state.at[0].start)) {
+                        //     dispatch({
+                        //         type: 'select',
+                        //         add: evt.altKey,
+                        //         at: [
+                        //             {
+                        //                 start: state.at[0].start,
+                        //                 end: sel,
+                        //             },
+                        //         ],
+                        //     });
+                        // }
                     }
                 }}
             >
@@ -354,6 +341,11 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 ))}
             </div>
             <Cursors state={state} />
+            <div>
+                <div>
+                    At: <div>{JSON.stringify(state.at)}</div>
+                </div>
+            </div>
             {debug ? (
                 <div>
                     <div>
