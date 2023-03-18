@@ -1,18 +1,9 @@
 import { Node } from '../src/types/cst';
 
 export const sexp = (node: Node): string => {
-    const res = sexp_(node);
-    if (node.tannot) {
-        return `(tannot ${res} ${sexp(node.tannot)})`;
-    }
-    return res;
-};
-const sexp_ = (node: Node): string => {
     switch (node.type) {
         case 'identifier':
             return 'id';
-        case 'number':
-            return 'NOPE';
         case 'list':
         case 'array':
         case 'record':
@@ -29,6 +20,8 @@ const sexp_ = (node: Node): string => {
             return `(access ${node.target.type === 'blank' ? '' : 'id '}${
                 node.items.length
             })`;
+        case 'annot':
+            return `(annot ${sexp(node.target)} ${sexp(node.annot)})`;
         case 'spread':
             if (node.contents.type === 'blank') {
                 return `(spread)`;

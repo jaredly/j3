@@ -55,23 +55,23 @@ export const specials: {
                 contents[0].values,
             ).map((arg) => {
                 let type;
-                if (arg.tannot == null) {
-                    addMod(ctx, arg.loc.idx, {
-                        type: 'tannot',
-                        node: {
-                            ...any.form,
-                            loc: {
-                                ...arg.loc,
-                                idx: nidx(),
-                            },
-                        },
-                    });
-                    type = { ...any, form: arg };
-                } else if (arg.tannot.type !== 'blank') {
-                    type = nodeToType(arg.tannot, ctx);
-                } else {
-                    type = { ...any, form: arg };
-                }
+                // if (arg.tannot == null) {
+                //     addMod(ctx, arg.loc.idx, {
+                //         type: 'tannot',
+                //         node: {
+                //             ...any.form,
+                //             loc: {
+                //                 ...arg.loc,
+                //                 idx: nidx(),
+                //             },
+                //         },
+                //     });
+                //     type = { ...any, form: arg };
+                // } else if (arg.tannot.type !== 'blank') {
+                //     type = nodeToType(arg.tannot, ctx);
+                // } else {
+                type = { ...any, form: arg };
+                // }
                 const pattern = nodeToPattern(arg, type, ctx, locals);
                 return { pattern, type };
             });

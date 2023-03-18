@@ -49,15 +49,12 @@ export const idText = (node: MNodeContents, idx: number, ctx: Ctx) => {
             }
         case 'comment':
             return node.text;
-        case 'number':
         case 'unparsed':
             return node.raw;
         case 'accessText':
             return node.text;
         case 'blank':
             return '';
-        case 'tag':
-            return "'" + node.text;
     }
 };
 
@@ -93,49 +90,49 @@ export const Node = React.memo(
             return null;
         }
 
-        const tannot = item.tannot ? (
-            <>
-                <span
-                    style={{ opacity: 0.5, alignSelf: 'flex-end' }}
-                    onMouseDown={sideClick((left) => {
-                        if (left) {
-                            setSelection(top.store, { idx, loc: 'end' });
-                        } else {
-                            setSelection(top.store, {
-                                idx: item.tannot!,
-                                loc: 'start',
-                                from: 'left',
-                            });
-                        }
-                    })}
-                >
-                    :
-                </span>
-                <Node
-                    top={top}
-                    path={path}
-                    idx={item.tannot}
-                    events={{
-                        ...events,
-                        onLeft() {
-                            setSelection(top.store, { idx, loc: 'end' });
-                        },
-                    }}
-                />
-            </>
-        ) : null;
+        // const tannot = item.tannot ? (
+        //     <>
+        //         <span
+        //             style={{ opacity: 0.5, alignSelf: 'flex-end' }}
+        //             onMouseDown={sideClick((left) => {
+        //                 if (left) {
+        //                     setSelection(top.store, { idx, loc: 'end' });
+        //                 } else {
+        //                     setSelection(top.store, {
+        //                         idx: item.tannot!,
+        //                         loc: 'start',
+        //                         from: 'left',
+        //                     });
+        //                 }
+        //             })}
+        //         >
+        //             :
+        //         </span>
+        //         <Node
+        //             top={top}
+        //             path={path}
+        //             idx={item.tannot}
+        //             events={{
+        //                 ...events,
+        //                 onLeft() {
+        //                     setSelection(top.store, { idx, loc: 'end' });
+        //                 },
+        //             }}
+        //         />
+        //     </>
+        // ) : null;
 
-        events = tannot
-            ? {
-                  ...events,
-                  onRight() {
-                      setSelection(top.store, {
-                          idx: item.tannot!,
-                          loc: 'start',
-                      });
-                  },
-              }
-            : events;
+        // events = tannot
+        //     ? {
+        //           ...events,
+        //           onRight() {
+        //               setSelection(top.store, {
+        //                   idx: item.tannot!,
+        //                   loc: 'start',
+        //               });
+        //           },
+        //       }
+        //     : events;
 
         if (item.type === 'recordAccess') {
             return (
@@ -212,14 +209,14 @@ export const Node = React.memo(
                     events={events}
                 />
             );
-            if (item.tannot) {
-                return (
-                    <>
-                        {res}
-                        {tannot}
-                    </>
-                );
-            }
+            // if (item.tannot) {
+            //     return (
+            //         <>
+            //             {res}
+            //             {tannot}
+            //         </>
+            //     );
+            // }
             return res;
         }
 
@@ -240,21 +237,21 @@ export const Node = React.memo(
                     }}
                 />
             );
-            if (item.tannot) {
-                return (
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            alignItems: 'flex-start',
-                            whiteSpace: 'pre',
-                        }}
-                    >
-                        {res}
-                        {tannot}
-                    </div>
-                );
-            }
+            // if (item.tannot) {
+            //     return (
+            //         <div
+            //             style={{
+            //                 display: 'flex',
+            //                 flexWrap: 'wrap',
+            //                 alignItems: 'flex-start',
+            //                 whiteSpace: 'pre',
+            //             }}
+            //         >
+            //             {res}
+            //             {tannot}
+            //         </div>
+            //     );
+            // }
             return res;
         }
 

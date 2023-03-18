@@ -4,21 +4,6 @@ import { Layout, MNode } from '../../src/types/mcst';
 import { ONode } from './types';
 
 export const getNodes = (node: MNode, layout?: Layout): ONode[] => {
-    const nodes = getNodes_(node, layout);
-    if (nodes && node.tannot != null) {
-        nodes.push(
-            { type: 'punct', text: ':', color: 'inherit' },
-            {
-                type: 'ref',
-                id: node.tannot,
-                path: { type: 'tannot' },
-            },
-        );
-    }
-    return nodes;
-};
-
-export const getNodes_ = (node: MNode, layout?: Layout): ONode[] => {
     switch (node.type) {
         case 'spread':
             return [
@@ -28,6 +13,20 @@ export const getNodes_ = (node: MNode, layout?: Layout): ONode[] => {
                     type: 'ref',
                     id: node.contents,
                     path: { type: 'spread-contents' },
+                },
+            ];
+        case 'annot':
+            return [
+                {
+                    type: 'ref',
+                    id: node.target,
+                    path: { type: 'annot-target' },
+                },
+                { type: 'punct', text: ':', color: 'unset' },
+                {
+                    type: 'ref',
+                    id: node.annot,
+                    path: { type: 'annot-annot' },
                 },
             ];
         case 'recordAccess':
@@ -89,9 +88,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): ONode[] => {
                 { type: 'blinker', loc: 'end' },
             ];
         case 'identifier':
-        case 'tag':
         case 'comment':
-        case 'number':
         case 'unparsed':
         case 'blank':
         case 'accessText':

@@ -16,9 +16,6 @@ export const nodeToString = (
     let body = nodeToString_(node, sm);
     sm.cur = start + body.length;
     sm.map[node.loc.idx] = { start, end: sm.cur };
-    if (node.tannot) {
-        body += ':' + nodeToString(node.tannot, sm, 1);
-    }
     return body;
 };
 
@@ -73,12 +70,14 @@ export const nodeToString_ = (
                 .join(' ')}}`;
         case 'identifier':
             return `${node.text}${node.hash ? '#' + node.hash : ''}`;
-        case 'number':
-            return node.raw;
         case 'blank':
             return '';
-        case 'tag':
-            return `'${node.text}`;
+        case 'annot':
+            return `${nodeToString(node.target, sm)}:${nodeToString(
+                node.annot,
+                sm,
+                1,
+            )}`;
         case 'recordAccess':
             return `${nodeToString(node.target, sm)}${node.items
                 .map((item) => '.' + nodeToString(item, sm, 1))

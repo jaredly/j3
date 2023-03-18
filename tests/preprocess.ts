@@ -8,10 +8,6 @@ export const attachAnnotations = (nodes: Node[]) => {
     nodes.forEach((node) => {
         if (node.type === 'identifier' && node.text.startsWith(':')) {
             const prev = { ...res[res.length - 1] };
-            prev.tannot = {
-                ...node,
-                text: node.text.slice(1),
-            };
             res[res.length - 1] = prev;
         } else if (
             node.type === 'list' &&
@@ -20,13 +16,6 @@ export const attachAnnotations = (nodes: Node[]) => {
             node.values[0].text === ':'
         ) {
             const prev = { ...res[res.length - 1] };
-            prev.tannot =
-                node.values.length > 2
-                    ? {
-                          ...node,
-                          values: node.values.slice(1),
-                      }
-                    : node.values[1];
             res[res.length - 1] = prev;
         } else {
             res.push(node);

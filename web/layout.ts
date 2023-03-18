@@ -17,10 +17,7 @@ export const calculateLayout = (
         case 'comment':
             return { type: 'flat', width: node.text.length, pos };
         case 'unparsed':
-        case 'number':
             return { type: 'flat', width: node.raw.length, pos };
-        case 'tag':
-            return { type: 'flat', width: node.text.length + 1, pos };
         case 'record': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {
@@ -96,6 +93,19 @@ export const calculateLayout = (
                 return { type: 'multiline', pos, tightFirst: 1, cw };
             }
             return { type: 'flat', width: cw + 2 - pos, pos };
+        }
+        case 'annot': {
+            const cw = childWidth(
+                [node.target, node.annot],
+                recursive,
+                pos,
+                display,
+                map,
+            );
+            if (cw === false || cw > maxWidth) {
+                return { type: 'multiline', pos, tightFirst: 1, cw };
+            }
+            return { type: 'flat', width: cw + 1 - pos, pos };
         }
         case 'string': {
             const cw = childWidth(

@@ -80,8 +80,6 @@ export const transformNode = (
         case 'attachment':
         case 'unparsed':
         case 'rich-text':
-        case 'number':
-        case 'tag':
         case 'identifier':
             break;
         case 'recordAccess': {
@@ -118,6 +116,21 @@ export const transformNode = (
                 node = { ...node, target, items };
             }
 
+            break;
+        }
+        case 'annot': {
+            const target = transformNode(
+                node.target,
+                visitor,
+                path.concat({ idx, child: { type: 'annot-target' } }),
+            );
+            node = target !== node.target ? { ...node, target } : node;
+            const annot = transformNode(
+                node.annot,
+                visitor,
+                path.concat({ idx, child: { type: 'annot-annot' } }),
+            );
+            node = annot !== node.annot ? { ...node, annot } : node;
             break;
         }
         case 'spread': {

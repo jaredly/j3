@@ -48,8 +48,6 @@ export type RichText = {
 export type NodeContents =
     // identifier-like
     | Identifier
-    | { type: 'tag'; text: string }
-    | { type: 'number'; raw: string }
 
     // list-like
     | NodeList
@@ -58,6 +56,7 @@ export type NodeContents =
     | { type: 'comment'; text: string }
 
     // special
+    | { type: 'annot'; target: Node; annot: Node }
     | CString
     | stringText
     | recordAccess
@@ -91,8 +90,8 @@ export type CString = {
 };
 
 export type NodeExtra = {
-    tannot?: Node;
-    tapply?: Node;
+    // tannot?: Node;
+    // tapply?: Node;
     // decorators: { [key: string]: Node[] };
     loc: Loc;
 };

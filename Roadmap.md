@@ -6,6 +6,10 @@ I don't know at the start
 whether I need to intervene
 right?
 
+# LogJams
+
+- [ ] tannot must go
+- [ ] trim the cst/mcst node types (no number)
 
 # Selection!
 
@@ -23,7 +27,7 @@ right?
     seems like that might make sense.
     ok, so like from a data standpoint I think we can leave them.
     but for rendering, split them up
-- [ ] support subselecting in an atom
+- [x] support subselecting in an atom
 - [ ] getKeyUpdate should replace selected text
 - [ ] COPYYY and PASTEEE
   - so I'll need to generate new idx's for the pasted things

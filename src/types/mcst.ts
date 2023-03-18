@@ -14,8 +14,6 @@ import {
 export type MNode = MNodeContents & MNodeExtra;
 export type MNodeExtra = {
     loc: Loc;
-    tannot?: number;
-    tapply?: number;
 };
 
 export type Atom =
@@ -25,10 +23,10 @@ export type Atom =
           text: string;
           hash?: string;
       }
-    | { type: 'unparsed'; raw: string }
-    // `LikeThis
-    | { type: 'tag'; text: string }
-    | { type: 'number'; raw: string };
+    | { type: 'unparsed'; raw: string };
+// `LikeThis
+// | { type: 'tag'; text: string }
+// | { type: 'number'; raw: string };
 
 export type ListLikeContents =
     | { type: 'list'; values: number[] }
@@ -45,6 +43,7 @@ export type MNodeContents =
     // list-like
     | { type: 'comment'; text: string }
     | MCSpread
+    | { type: 'annot'; target: number; annot: number }
     | MCRecordAccess
     | { type: 'accessText'; text: string }
 
@@ -112,6 +111,12 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
                     (idx) => fromMCST(idx, map) as accessText & NodeExtra,
                 ),
             };
+        case 'annot':
+            return {
+                ...node,
+                target: fromMCST(node.target, map),
+                annot: fromMCST(node.annot, map),
+            };
         case 'spread':
             return { ...node, contents: fromMCST(node.contents, map) };
         default:
@@ -128,8 +133,6 @@ export const fromMCST = (idx: number, map: Map): Node => {
     return {
         ...node,
         ...fromMNode(node, map),
-        tannot: node.tannot != null ? fromMCST(node.tannot, map) : undefined,
-        tapply: node.tapply != null ? fromMCST(node.tapply, map) : undefined,
     };
 };
 
@@ -159,6 +162,12 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
                 target: toMCST(node.target, map),
                 items: node.items.map((item) => toMCST(item, map)),
             };
+        case 'annot':
+            return {
+                ...node,
+                target: toMCST(node.target, map),
+                annot: toMCST(node.annot, map),
+            };
         case 'spread':
             return { ...node, contents: toMCST(node.contents, map) };
         default:
@@ -173,8 +182,6 @@ export const toMCST = (node: Node, map: UpdateMap): number => {
     map[node.loc.idx] = {
         ...toMNode(node, map),
         loc: node.loc,
-        tannot: node.tannot ? toMCST(node.tannot, map) : undefined,
-        tapply: node.tapply ? toMCST(node.tapply, map) : undefined,
     };
     return node.loc.idx;
 };

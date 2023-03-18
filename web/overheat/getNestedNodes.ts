@@ -17,26 +17,6 @@ export type NNode =
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
 export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
-    const nodes = getNodes_(node, layout);
-    if (nodes && node.tannot != null) {
-        const extra: NNode[] = [
-            { type: 'punct', text: ':', color: 'inherit' },
-            {
-                type: 'ref',
-                id: node.tannot,
-                path: { type: 'tannot' },
-            },
-        ];
-        if (nodes.type === 'horiz') {
-            nodes.children.push(...extra);
-        } else {
-            return { type: 'horiz', children: [nodes, ...extra] };
-        }
-    }
-    return nodes;
-};
-
-export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
     switch (node.type) {
         case 'spread':
             return {
@@ -48,6 +28,23 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                         type: 'ref',
                         id: node.contents,
                         path: { type: 'spread-contents' },
+                    },
+                ],
+            };
+        case 'annot':
+            return {
+                type: 'horiz',
+                children: [
+                    {
+                        type: 'ref',
+                        id: node.target,
+                        path: { type: 'annot-target' },
+                    },
+                    { type: 'punct', text: ':', color: 'unset' },
+                    {
+                        type: 'ref',
+                        id: node.annot,
+                        path: { type: 'annot-annot' },
                     },
                 ],
             };
@@ -153,9 +150,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                 ],
             };
         case 'identifier':
-        case 'tag':
         case 'comment':
-        case 'number':
         case 'unparsed':
         case 'blank':
         case 'accessText':

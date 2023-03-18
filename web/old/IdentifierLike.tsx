@@ -473,8 +473,8 @@ function onInput(
 
     const mp: Map = {};
     toMCST(nw, mp);
-    mp[idx].tannot = old.tannot;
-    mp[idx].tapply = old.tapply;
+    // mp[idx].tannot = old.tannot;
+    // mp[idx].tapply = old.tapply;
 
     // Waaaait I need to know here ... if
     // ... OH YEAH ok so, if the old id has text,

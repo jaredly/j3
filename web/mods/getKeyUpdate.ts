@@ -10,6 +10,7 @@ import { goLeft, goRight, selectStart } from './navigate';
 import {
     mergeNew,
     newAccessText,
+    newAnnot,
     newBlank,
     newId,
     newListLike,
@@ -219,10 +220,10 @@ export const getKeyUpdate = (
 
     if (key === ':') {
         // no nesting tannots
-        if (fullPath.some((s) => s.child.type === 'tannot')) {
+        if (fullPath.some((s) => s.child.type === 'annot-annot')) {
             return;
         }
-        return goToTannot(fullPath.slice(0, -1), node, idx, map);
+        return goToTannot(fullPath, node, idx, map);
     }
 
     if (key === '"') {
@@ -386,27 +387,51 @@ function goToTannot(
     idx: number,
     map: Map,
 ): KeyUpdate {
-    if (node.tannot != null) {
-        const sel = selectStart(
-            node.tannot,
-            path.concat({ idx, child: { type: 'tannot' } }),
-            map,
-        );
-        if (sel) {
-            return { type: 'select', selection: sel };
+    if (
+        path.length > 1 &&
+        path[path.length - 2].child.type === 'annot-target'
+    ) {
+        const node = map[path[path.length - 2].idx];
+        if (node.type === 'annot') {
+            const sel = selectStart(
+                node.annot,
+                path.slice(0, -2).concat({
+                    idx: path[path.length - 2].idx,
+                    child: { type: 'annot-annot' },
+                }),
+                map,
+            );
+            if (sel) {
+                return { type: 'select', selection: sel };
+            }
         }
     }
-    const blank = newBlank();
-    blank.map[idx] = { ...node, tannot: blank.idx };
-    return {
-        type: 'update',
-        update: {
-            ...blank,
-            selection: path
-                .concat({ idx, child: { type: 'tannot' } })
-                .concat(blank.selection),
-        },
-    };
+    // if (node.tannot != null) {
+    //     const sel = selectStart(
+    //         node.tannot,
+    //         path.concat({ idx, child: { type: 'tannot' } }),
+    //         map,
+    //     );
+    //     if (sel) {
+    //         return { type: 'select', selection: sel };
+    //     }
+    // }
+    // const blank = newBlank();
+    // blank.map[idx] = { ...node, tannot: blank.idx };
+    // return {
+    //     type: 'update',
+    //     update: {
+    //         ...blank,
+    //         selection: path
+    //             .concat({ idx, child: { type: 'tannot' } })
+    //             .concat(blank.selection),
+    //     },
+    // };
+    return replacePathWith(
+        path.slice(0, -1),
+        map,
+        newAnnot(idx, undefined, newBlank()),
+    );
 }
 
 function openListLike({

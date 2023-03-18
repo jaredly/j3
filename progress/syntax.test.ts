@@ -123,10 +123,10 @@ one.tw.o
 (record (spread id) id id (spread))
 
 (fn [one:two three:(four five)]:six seven)
-(list id (tannot (array (tannot id id) (tannot id (list id id))) id) id)
+(list id (annot (array (annot id id) (annot id (list id id))) id) id)
 
 (fn [one:two three:(four five)]:six {10 20 yes "ok \${(some [2 3 "inner" ..more] ..things)} and \${a}"})
-(list id (tannot (array (tannot id id) (tannot id (list id id))) id) (record id id id (string (list id (array id id string (spread id)) (spread id)) id)))
+(list id (annot (array (annot id id) (annot id (list id id))) id) (record id id id (string (list id (array id id string (spread id)) (spread id)) id)))
 
 backspace^b
 backspac
@@ -388,7 +388,9 @@ function doABunchOfKeys({
                     backOrig.slice(newPos),
             );
             console.log(state.at[0].start);
-            expect(newPos).toEqual('something else');
+            expect(newPos).toEqual(
+                `it should have been different? ${startPos}`,
+            );
         }
         if (newPos === stop) {
             break;

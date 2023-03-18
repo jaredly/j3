@@ -125,6 +125,29 @@ export const newString = (idx = nidx()): NewThing => {
     };
 };
 
+export function newAnnot(
+    target: number,
+    idx = nidx(),
+    child: NewThing,
+): NewThing {
+    return {
+        map: {
+            ...child.map,
+            [idx]: {
+                type: 'annot',
+                target,
+                annot: child.idx,
+                loc: { start: 0, end: 0, idx },
+            },
+        },
+        idx,
+        selection: [
+            { idx, child: { type: 'annot-annot' } },
+            ...child.selection,
+        ],
+    };
+}
+
 export function newListLike(
     kind: 'array' | 'list' | 'record',
     idx = nidx(),

@@ -60,26 +60,26 @@ export const goRight = (
     path: Path[],
     idx: number,
     map: Map,
-    fromTannot = false,
+    // fromTannot = false,
 ): KeyUpdate => {
     if (!path.length) return;
     const last = path[path.length - 1];
-    if (!fromTannot && map[idx].tannot && idx !== last.idx) {
-        const sel = selectStart(
-            map[idx].tannot!,
-            path.concat({
-                idx: idx,
-                child: { type: 'tannot' },
-            }),
-            map,
-        );
-        if (sel) {
-            return {
-                type: 'select',
-                selection: sel,
-            };
-        }
-    }
+    // if (!fromTannot && map[idx].tannot && idx !== last.idx) {
+    //     const sel = selectStart(
+    //         map[idx].tannot!,
+    //         path.concat({
+    //             idx: idx,
+    //             child: { type: 'tannot' },
+    //         }),
+    //         map,
+    //     );
+    //     if (sel) {
+    //         return {
+    //             type: 'select',
+    //             selection: sel,
+    //         };
+    //     }
+    // }
 
     const pnodes = getNodes(map[last.idx]).reverse();
     let prev: Path[] | null = null;
@@ -96,7 +96,7 @@ export const goRight = (
                       path.slice(0, -1),
                       last.idx,
                       map,
-                      last.child.type === 'tannot',
+                      //   last.child.type === 'tannot',
                   );
         }
         prev = ps;
@@ -122,16 +122,16 @@ export const pathSelForNode = (
         case 'ref': {
             const path: Path[] = [{ idx, child: node.path }];
             const cnode = map[node.id];
-            if (cnode.tannot && loc === 'end') {
-                return selectEnd(
-                    cnode.tannot,
-                    path.concat({
-                        idx: node.id,
-                        child: { type: 'tannot' },
-                    }),
-                    map,
-                );
-            }
+            // if (cnode.tannot && loc === 'end') {
+            //     return selectEnd(
+            //         cnode.tannot,
+            //         path.concat({
+            //             idx: node.id,
+            //             child: { type: 'tannot' },
+            //         }),
+            //         map,
+            //     );
+            // }
             switch (cnode.type) {
                 case 'array':
                 case 'list':
@@ -152,6 +152,7 @@ export const pathSelForNode = (
                         },
                     ]);
                 case 'spread':
+                case 'annot':
                 case 'recordAccess':
                     if (loc === 'end') {
                         return selectEnd(node.id, path, map);
