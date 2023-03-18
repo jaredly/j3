@@ -13,6 +13,8 @@
   - honestly, should I just do something special
     with newlines? Handle them myself, I mean?
     seems like that might make sense.
+    ok, so like from a data standpoint I think we can leave them.
+    but for rendering, split them up
 - [ ] support subselecting in an atom
 - [ ] getKeyUpdate should replace selected text
 - [ ] COPYYY and PASTEEE

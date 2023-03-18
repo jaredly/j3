@@ -33,8 +33,11 @@ export const parseByCharacter = (
     debug = false,
 ): { map: Map; selection: Path[] } => {
     let state: State = initialState();
+    console.log(rawText);
 
-    const text = splitGraphemes(rawText.replace(/\s+/g, ' '));
+    const text = splitGraphemes(
+        rawText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
+    );
 
     for (let i = 0; i < text.length; i++) {
         let key = text[i];
@@ -55,8 +58,8 @@ export const parseByCharacter = (
 
         const update = getKeyUpdate(key, state.map, state.at[0].start);
         if (debug) {
-            console.log(key, state.at[0].start);
-            console.log(JSON.stringify(update));
+            console.log(JSON.stringify(key), state.at[0].start);
+            // console.log(JSON.stringify(update));
         }
 
         state = applyUpdate(state, update) ?? state;
