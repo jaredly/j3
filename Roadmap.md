@@ -1,4 +1,12 @@
 
+# Newlines though
+
+So the thing about newlines
+I don't know at the start
+whether I need to intervene
+right?
+
+
 # Selection!
 
 - [x] ok folks I've gotta come clean, and just unify Path and Selection.
@@ -9,7 +17,7 @@
 - [x] render end cursor (prelim)
 - [x] populate sel/end on drag
 - [x] actually do a meaningful render of the selection.
-- [ ] strings with newlines render super weird
+- [x] strings with newlines render super weird
   - honestly, should I just do something special
     with newlines? Handle them myself, I mean?
     seems like that might make sense.

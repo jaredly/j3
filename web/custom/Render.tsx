@@ -136,10 +136,11 @@ export const RenderNNode = (
     switch (nnode.type) {
         case 'vert':
         case 'horiz':
+        case 'inline':
             return (
                 <span
                     style={{
-                        display: 'flex',
+                        display: nnode.type === 'inline' ? 'inline' : 'flex',
                         alignItems: 'flex-start',
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
                         ...selectStyle,

@@ -7,8 +7,7 @@ export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
 
 export type NNode =
-    | { type: 'horiz'; children: NNode[] }
-    | { type: 'vert'; children: NNode[] }
+    | { type: 'horiz' | 'vert' | 'inline'; children: NNode[] }
     | { type: 'pairs'; children: ([NNode] | [NNode, NNode])[] }
     | { type: 'indent'; child: NNode }
     | { type: 'punct'; text: string; color: string }
@@ -223,7 +222,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
         type: 'vert',
         children: [
             {
-                type: 'horiz',
+                type: 'inline',
                 children: [
                     {
                         type: 'ref',
@@ -250,7 +249,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                     },
                 },
                 {
-                    type: 'horiz',
+                    type: 'inline',
                     children: [
                         {
                             type: 'punct',

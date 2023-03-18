@@ -77,8 +77,11 @@ export const calculateLayout = (
             return { type: 'flat', width: cw - pos, pos };
         }
         case 'accessText':
-        case 'stringText':
             return { type: 'flat', width: node.text.length + 1, pos };
+        case 'stringText':
+            return node.text.includes('\n')
+                ? { type: 'multiline', pos, tightFirst: 0, cw: 0 }
+                : { type: 'flat', width: node.text.length + 1, pos };
         case 'rich-text':
             return { type: 'multiline', pos, tightFirst: 0, cw: false };
         case 'spread': {
