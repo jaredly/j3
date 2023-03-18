@@ -496,58 +496,62 @@ export const calcCursorPos = (
         console.error('no nodes, sorry');
         return;
     }
-    switch (last.child.type) {
-        case 'start':
-        case 'end':
-        case 'inside':
-            const blinker = nodes[last.child.type];
-            if (blinker) {
-                return subRect(
-                    blinker.node.getBoundingClientRect(),
-                    blinker.node.offsetParent!.getBoundingClientRect(),
-                );
-            }
-        case 'subtext':
-            if (nodes.main) {
-                const r = new Range();
-                r.selectNode(nodes.main.node);
-                const textRaw = nodes.main.node.textContent!;
-                const text = splitGraphemes(textRaw);
-                if (!nodes.main.node.firstChild) {
-                    // nothing to do here
-                } else if (
-                    last.child.type === 'start' ||
-                    (last.child.type === 'subtext' && last.child.at === 0)
-                ) {
-                    r.setStart(nodes.main.node.firstChild!, 0);
-                    r.collapse(true);
-                } else if (
-                    last.child.type === 'end' ||
-                    (last.child.type === 'subtext' &&
-                        last.child.at === text.length)
-                ) {
-                    r.setStart(nodes.main.node.firstChild!, textRaw.length);
-                    r.collapse(true);
-                } else if (last.child.type === 'subtext') {
-                    r.setStart(
-                        nodes.main.node.firstChild!,
-                        text.slice(0, last.child.at).join('').length,
+    try {
+        switch (last.child.type) {
+            case 'start':
+            case 'end':
+            case 'inside':
+                const blinker = nodes[last.child.type];
+                if (blinker) {
+                    return subRect(
+                        blinker.node.getBoundingClientRect(),
+                        blinker.node.offsetParent!.getBoundingClientRect(),
                     );
-                    r.collapse(true);
+                }
+            case 'subtext':
+                if (nodes.main) {
+                    const r = new Range();
+                    r.selectNode(nodes.main.node);
+                    const textRaw = nodes.main.node.textContent!;
+                    const text = splitGraphemes(textRaw);
+                    if (!nodes.main.node.firstChild) {
+                        // nothing to do here
+                    } else if (
+                        last.child.type === 'start' ||
+                        (last.child.type === 'subtext' && last.child.at === 0)
+                    ) {
+                        r.setStart(nodes.main.node.firstChild!, 0);
+                        r.collapse(true);
+                    } else if (
+                        last.child.type === 'end' ||
+                        (last.child.type === 'subtext' &&
+                            last.child.at === text.length)
+                    ) {
+                        r.setStart(nodes.main.node.firstChild!, textRaw.length);
+                        r.collapse(true);
+                    } else if (last.child.type === 'subtext') {
+                        r.setStart(
+                            nodes.main.node.firstChild!,
+                            text.slice(0, last.child.at).join('').length,
+                        );
+                        r.collapse(true);
+                    } else {
+                        // console.log('dunno loc', loc, nodes.main);
+                        return;
+                    }
+                    const color = getComputedStyle(nodes.main.node).color;
+                    return subRect(
+                        r.getBoundingClientRect(),
+                        nodes.main.node.offsetParent!.getBoundingClientRect(),
+                        color,
+                    );
                 } else {
-                    // console.log('dunno loc', loc, nodes.main);
+                    console.error('no box', last, nodes);
                     return;
                 }
-                const color = getComputedStyle(nodes.main.node).color;
-                return subRect(
-                    r.getBoundingClientRect(),
-                    nodes.main.node.offsetParent!.getBoundingClientRect(),
-                    color,
-                );
-            } else {
-                console.error('no box', last, nodes);
-                return;
-            }
+        }
+    } catch (err) {
+        return;
     }
 };
 
