@@ -96,7 +96,9 @@ describe('a test', () => {
 
                 const collected = collectNodes(data, firstPath, secondPath);
                 const printed =
-                    collected.type === 'subtext'
+                    collected.type === 'subtext' ||
+                    collected.type === 'substring' ||
+                    collected.type === 'untrusted'
                         ? collected.text
                         : collected.nodes
                               .map((node) => nodeToString(node))

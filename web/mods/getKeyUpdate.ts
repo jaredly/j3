@@ -73,21 +73,60 @@ export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
     return map;
 };
 
-export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
-    if (update?.type === 'update' && update?.update) {
-        const map = applyUpdateMap(state.map, update.update.map);
-        return {
-            ...state,
-            map: map,
-            at: [{ start: update.update.selection }],
+export const isRootPath = (path: Path[]) => {
+    return path.length === 1 && path[0].child.type !== 'child';
+};
+
+export const applyUpdate = (
+    state: State,
+    i: number,
+    update: KeyUpdate,
+): State => {
+    if (!update) return state;
+    if (update?.type === 'select' && isRootPath(update.selection)) {
+        return state;
+    }
+    if (
+        update?.type === 'update' &&
+        update.update &&
+        isRootPath(update.update.selection)
+    ) {
+        return state;
+    }
+    const at = state.at.slice();
+    if (update.type === 'select') {
+        at[i] = {
+            start: update.selection,
         };
-    } else if (update?.type === 'select') {
+        return { ...state, at };
+    } else if (update.update) {
+        at[i] = {
+            start: update.update.selection,
+        };
         return {
             ...state,
-            at: [{ start: update.selection }],
+            at,
+            map: applyUpdateMap(state.map, update.update.map),
         };
     }
+    return state;
 };
+
+// export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
+//     if (update?.type === 'update' && update?.update) {
+//         const map = applyUpdateMap(state.map, update.update.map);
+//         return {
+//             ...state,
+//             map: map,
+//             at: [{ start: update.update.selection }],
+//         };
+//     } else if (update?.type === 'select') {
+//         return {
+//             ...state,
+//             at: [{ start: update.selection }],
+//         };
+//     }
+// };
 
 const isPathAtStart = (text: string, path: PathChild) => {
     return (
@@ -317,10 +356,28 @@ export const getKeyUpdate = (
         }
     }
 
-    // Ok, so now we're updating things
-    const input = splitGraphemes(key);
+    return insertText(key, map, fullPath, nidx);
+};
 
-    if (node.type === 'identifier' || node.type === 'accessText') {
+export const insertText = (
+    inputRaw: string,
+    map: Map,
+    fullPath: Path[],
+    nidx: () => number,
+) => {
+    const flast = fullPath[fullPath.length - 1];
+    const node = map[flast.idx];
+    const idx = flast.idx;
+    // Ok, so now we're updating things
+    const input = splitGraphemes(inputRaw);
+    const textRaw = idText(node) ?? '';
+    const pos = pathPos(fullPath, textRaw);
+
+    if (
+        node.type === 'identifier' ||
+        node.type === 'accessText' ||
+        node.type === 'stringText'
+    ) {
         return updateText(node, pos, input, idx, fullPath.slice(0, -1));
     }
 

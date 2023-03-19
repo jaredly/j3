@@ -17,7 +17,7 @@ Seems like a solid idea.
 
 - [x] LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
 
-- [ ] hmm I think I want to ~maintain wraps?
+- [x] hmm I think I want to ~maintain wraps?
   (let [hello folks and such])
   ^                ^
   should probably copy as `(let [hello folks])`

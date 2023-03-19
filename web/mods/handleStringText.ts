@@ -55,7 +55,7 @@ export function handleStringText({
         update: {
             map: { [idx]: { ...node, text: text.join('') } },
             selection: path.concat([
-                { idx, child: { type: 'subtext', at: pos + 1 } },
+                { idx, child: { type: 'subtext', at: pos + input.length } },
             ]),
         },
     };

@@ -382,7 +382,7 @@ function doABunchOfKeys({
             if (update.type !== 'select') {
                 expect(update).toMatchObject({ type: 'select' });
             } else {
-                state = applyUpdate(state, update)!;
+                state = applyUpdate(state, 0, update)!;
             }
         }
         const newPos = remapPos(state.at[0].start, sourceMap);

@@ -1,11 +1,13 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
+import { nodeToString } from '../../src/to-cst/nodeToString';
 import { Node } from '../../src/types/cst';
 import { fromMCST, Map } from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
 import { Path, PathChild } from '../store';
+import { applyUpdate, getKeyUpdate, insertText, State } from './getKeyUpdate';
 
 export type CoverageLevel =
     | { type: 'inner'; start: PathChild; end: PathChild }
@@ -53,11 +55,62 @@ export const selectionStatus = (
     return { type: 'partial' };
 };
 
+export type ClipboardItem =
+    | { type: 'untrusted'; text: string }
+    | { type: 'subtext'; text: string }
+    | { type: 'substring'; text: string }
+    | { type: 'nodes'; nodes: Node[] };
+
+export const paste = (state: State, items: ClipboardItem[]): State => {
+    if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
+        const item = items[0];
+        if (item.type === 'subtext') {
+            const path = state.at[0].start;
+            const update = insertText(item.text, state.map, path, state.nidx);
+            console.log('update', update);
+            return applyUpdate(state, 0, update);
+        }
+        if (item.type === 'untrusted') {
+            const chars = splitGraphemes(item.text);
+            for (let char of chars) {
+                const path = state.at[0].start;
+                const update = insertText(char, state.map, path, state.nidx);
+                console.log('update', update);
+                state = applyUpdate(state, 0, update);
+            }
+            return state;
+        }
+    }
+    return state;
+};
+
+export const clipboardText = (items: ClipboardItem[]) => {
+    return items
+        .map((item) =>
+            item.type === 'subtext' ||
+            item.type === 'untrusted' ||
+            item.type === 'substring'
+                ? item.text
+                : item.nodes.map((node) => nodeToString(node)).join(' '),
+        )
+        .join('\n');
+};
+
+export const collectClipboard = (map: Map, selections: State['at']) => {
+    const items: ClipboardItem[] = [];
+    selections.forEach(({ start, end }) => {
+        if (end) {
+            items.push(collectNodes(map, start, end));
+        }
+    });
+    return items;
+};
+
 export const collectNodes = (
     map: Map,
     start: Path[],
     end: Path[],
-): { type: 'subtext'; text: string } | { type: 'nodes'; nodes: Node[] } => {
+): ClipboardItem => {
     if (start.length === end.length) {
         const slast = start[start.length - 1];
         const elast = end[end.length - 1];
@@ -133,4 +186,14 @@ export const collectNodes = (
         collect.push(node);
     }
     return { type: 'nodes', nodes: collected };
+};
+
+export const reLoc = (nodes: Node[], nidx: () => number): Node[] => {
+    return nodes.map((node) =>
+        transformNode(node, {
+            pre(node) {
+                return { ...node, loc: { ...node.loc, idx: nidx() } };
+            },
+        }),
+    );
 };

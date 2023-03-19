@@ -1,15 +1,31 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { idxSource, parseByCharacter } from '../../src/parse/parse';
+import {
+    idxSource,
+    parseByCharacter,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import { collectNodes } from '../mods/clipboard';
-import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
+import {
+    type ClipboardItem,
+    clipboardText,
+    collectClipboard,
+    collectNodes,
+    paste,
+} from '../mods/clipboard';
+import {
+    applyUpdate,
+    applyUpdateMap,
+    getKeyUpdate,
+    KeyUpdate,
+    State,
+} from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../store';
 import { Cursors } from './Cursors';
@@ -75,6 +91,10 @@ export type Action =
     | {
           type: 'key';
           key: string;
+      }
+    | {
+          type: 'paste';
+          items: ClipboardItem[];
       };
 
 const reduce = (state: UIState, action: Action): UIState => {
@@ -101,6 +121,9 @@ const reduce = (state: UIState, action: Action): UIState => {
                 ...state,
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
+        case 'paste': {
+            return { ...paste(state, action.items), regs: state.regs };
+        }
     }
 };
 
@@ -127,6 +150,9 @@ export const ByHand = () => {
         </div>
     );
 };
+
+const clipboardPrefix = '<!--""" jerd-clipboard ';
+const clipboardSuffix = ' """-->';
 
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
@@ -212,13 +238,11 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         });
 
     return (
-        <div style={{ padding: 16 }}>
-            {/* always capturing! dunno if this is totally wise lol */}
+        <div>
             <input
                 ref={hiddenInput}
                 autoFocus
                 value="whaa"
-                // onBlur={(evt) => evt.currentTarget.focus()}
                 style={{
                     width: 0,
                     height: 0,
@@ -231,17 +255,12 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 }}
                 onCopy={(evt) => {
                     evt.preventDefault();
-                    const start = state.at[0].start;
-                    const end = state.at[0].end;
-                    if (!end) return;
-                    const collected = collectNodes(state.map, start, end);
-                    const text =
-                        collected.type === 'subtext'
-                            ? collected.text
-                            : collected.nodes
-                                  .map((node) => nodeToString(node))
-                                  .join(' ');
-                    // navigator.clipboard.writeText(text);
+                    const items = collectClipboard(state.map, state.at);
+                    if (!items.length) {
+                        return;
+                    }
+
+                    const text = clipboardText(items);
                     navigator.clipboard.write([
                         new ClipboardItem({
                             ['text/plain']: new Blob([text], {
@@ -249,23 +268,42 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             }),
                             ['text/html']: new Blob(
                                 [
-                                    '<!-- ' +
-                                        encodeURI(JSON.stringify(collected)) +
-                                        '-->' +
+                                    clipboardPrefix +
+                                        JSON.stringify(items) +
+                                        clipboardSuffix +
                                         text,
                                 ],
-                                // ['why'],
-                                {
-                                    type: 'text/html',
-                                },
+                                { type: 'text/html' },
                             ),
                         }),
                     ]);
-                    // navigator.clipboard.write()
                 }}
                 onPaste={(evt) => {
-                    console.log('got', evt.clipboardData.getData('text/html'));
                     evt.preventDefault();
+                    const text = evt.clipboardData.getData('text/html');
+                    if (text) {
+                        const start = text.indexOf(clipboardPrefix);
+                        const end = text.indexOf(clipboardSuffix);
+                        if (start !== -1 && end !== -1) {
+                            const sub = text.slice(
+                                start + clipboardPrefix.length,
+                                end,
+                            );
+                            try {
+                                const items: ClipboardItem[] = JSON.parse(sub);
+                                dispatch({ type: 'paste', items });
+                            } catch (err) {
+                                console.error(err);
+                            }
+                        }
+                    }
+                    const plain = evt.clipboardData.getData('text/plain');
+                    if (plain) {
+                        dispatch({
+                            type: 'paste',
+                            items: [{ type: 'untrusted', text: plain }],
+                        });
+                    }
                 }}
                 onKeyDown={(evt) => {
                     if (evt.metaKey || evt.ctrlKey || evt.altKey) {
@@ -305,7 +343,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
             <div
-                style={{ cursor: 'text' }}
+                style={{ cursor: 'text', padding: 16 }}
                 onMouseDownCapture={() => {
                     setDrag(true);
                 }}
@@ -333,7 +371,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     if (sel) {
                         const at = state.at.slice();
                         const idx = at.length - 1;
-                        if (equal(at, at[idx].start)) {
+                        if (equal(sel, at[idx].start)) {
                             at[idx] = { start: sel };
                             dispatch({ type: 'select', at });
                         } else {
@@ -438,8 +476,8 @@ const isRootPath = (path: Path[]) => {
 };
 
 export const handleKey = (state: UIState, key: string): UIState => {
-    state = { ...state };
-    state.at = state.at.slice();
+    // state = { ...state };
+    // state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
         const update = getKeyUpdate(
             key,
@@ -447,27 +485,7 @@ export const handleKey = (state: UIState, key: string): UIState => {
             state.at[i].start,
             state.nidx,
         );
-        if (!update) continue;
-        if (update?.type === 'select' && isRootPath(update.selection)) {
-            continue;
-        }
-        if (
-            update?.type === 'update' &&
-            update.update &&
-            isRootPath(update.update.selection)
-        ) {
-            continue;
-        }
-        if (update.type === 'select') {
-            state.at[i] = {
-                start: update.selection,
-            };
-        } else if (update.update) {
-            state.map = applyUpdateMap(state.map, update.update.map);
-            state.at[i] = {
-                start: update.update.selection,
-            };
-        }
+        state = { ...applyUpdate(state, i, update), regs: state.regs };
     }
     return state;
 };

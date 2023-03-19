@@ -26,7 +26,6 @@ export const splitGraphemes = (text: string) => {
 
 export const parseByCharacter = (rawText: string, debug = false): State => {
     let state: State = initialState();
-    console.log(rawText);
 
     const text = splitGraphemes(
         rawText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
@@ -60,7 +59,7 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
             // console.log(JSON.stringify(update));
         }
 
-        state = applyUpdate(state, update) ?? state;
+        state = applyUpdate(state, 0, update) ?? state;
     }
     return state;
 };
