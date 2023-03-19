@@ -22,6 +22,10 @@ cd
 (let [hello folks and stuff] yeah)
 ^                ^
 (let [hello folks])
+
+(one and (two [and:three four:five]))
+     ^                       ^
+and (two [and:three four])
 `;
 
 // So, um I want to ... do the sourcemap backwards?

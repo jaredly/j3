@@ -9,13 +9,8 @@ import { Path, PathChild } from '../store';
 
 export type CoverageLevel =
     | { type: 'inner'; start: PathChild; end: PathChild }
-    | { type: 'partial' } //; start?: PathChild; end?: PathChild }
+    | { type: 'partial' }
     | { type: 'full' };
-// 'inner' | 'partial' | 'full';
-// 0 = not
-// 1 = inner
-// 2 = partial
-// 3 = full?
 
 export const selectionStatus = (
     path: Path[],
@@ -89,21 +84,53 @@ export const collectNodes = (
             }
         }
     }
+
     // hrmm I want a transformNode, but that keeps track of your Path[]
     // transformNode()
     const collected: Node[] = [];
+    let waiting: { node: Node; children: Node[] }[] = [];
+
     transformNode(fromMCST(-1, map), {
         pre(node, path) {
             const isatom = 'text' in node;
             const status = selectionStatus(path, start, end);
-            if ((isatom && status != null) || status?.type === 'full') {
-                collected.push(node);
-                return false;
-            }
             if (!status) {
                 return false;
             }
+            let collect = waiting.length
+                ? waiting[waiting.length - 1].children
+                : collected;
+            if (
+                status.type === 'full' ||
+                (status.type === 'partial' && isatom)
+            ) {
+                collect.push(node);
+                return false;
+            }
+            if (status.type === 'partial' && 'values' in node) {
+                waiting.push({ node, children: [] });
+            }
+        },
+        post(node) {
+            if (waiting.length && waiting[waiting.length - 1].node === node) {
+                const children = waiting.pop()!.children;
+                node = { ...(node as any), values: children };
+                if (waiting.length) {
+                    waiting[waiting.length - 1].children.push(node);
+                } else {
+                    collected.push(node);
+                }
+            }
         },
     });
+
+    while (waiting.length) {
+        let { node, children } = waiting.pop()!;
+        node = { ...(node as any), values: children };
+        let collect = waiting.length
+            ? waiting[waiting.length - 1].children
+            : collected;
+        collect.push(node);
+    }
     return { type: 'nodes', nodes: collected };
 };

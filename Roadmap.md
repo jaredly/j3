@@ -23,6 +23,12 @@ LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
   should probably copy as `(let [hello folks])`
   but I'm currently getting `let hellow folks`
 
+- [ ] and then I need a simple paste-story
+  which should go ok
+
+- [ ] and then ... oh right, I need a `hash` node type, to lock things down,
+  and then autocomplete. Then I can go back to playing with the language.
+
 
 # LogJams
 
@@ -51,7 +57,7 @@ LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
   - so I'll need to generate new idx's for the pasted things
   - unlessss I'm doing a cut? In which case, we could retain them.
     but it might not be worth it to mess with that.
-- [ ] tannots are selecting weird...
+- [x] tannots are selecting weird...
   honestly now that I have full control over things, maybe tannot shouldn't
   be this weird pseudo node. it could just be a normal node, right?
   I think that would be better.
