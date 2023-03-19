@@ -6,6 +6,24 @@ I don't know at the start
 whether I need to intervene
 right?
 
+# Copyy nad PArstee
+
+- onCopy, onPaste. firefox looks like bad news
+but maybe its fine?
+
+should I just do writeText? Or should I also do `write`,
+with a json mime type?
+Seems like a solid idea.
+
+LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
+
+- [ ] hmm I think I want to ~maintain wraps?
+  (let [hello folks and such])
+  ^                ^
+  should probably copy as `(let [hello folks])`
+  but I'm currently getting `let hellow folks`
+
+
 # LogJams
 
 - [x] tannot must go

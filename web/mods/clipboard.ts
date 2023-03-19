@@ -58,7 +58,11 @@ export const selectionStatus = (
     return { type: 'partial' };
 };
 
-export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
+export const collectNodes = (
+    map: Map,
+    start: Path[],
+    end: Path[],
+): { type: 'subtext'; text: string } | { type: 'nodes'; nodes: Node[] } => {
     if (start.length === end.length) {
         const slast = start[start.length - 1];
         const elast = end[end.length - 1];
@@ -78,7 +82,10 @@ export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
                         : elast.child.type === 'start'
                         ? 0
                         : text.length;
-                return [{ ...node, text: text.slice(sloc, eloc).join('') }];
+                return {
+                    type: 'subtext',
+                    text: text.slice(sloc, eloc).join(''),
+                };
             }
         }
     }
@@ -98,5 +105,5 @@ export const collectNodes = (map: Map, start: Path[], end: Path[]): Node[] => {
             }
         },
     });
-    return collected;
+    return { type: 'nodes', nodes: collected };
 };

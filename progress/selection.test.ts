@@ -18,6 +18,10 @@ abc def
 (abcdef)
    ^ ^
 cd
+
+(let [hello folks and stuff] yeah)
+^                ^
+(let [hello folks])
 `;
 
 // So, um I want to ... do the sourcemap backwards?
@@ -82,9 +86,12 @@ describe('a test', () => {
                 }
 
                 const collected = collectNodes(data, firstPath, secondPath);
-                const printed = collected
-                    .map((node) => nodeToString(node))
-                    .join(' ');
+                const printed =
+                    collected.type === 'subtext'
+                        ? collected.text
+                        : collected.nodes
+                              .map((node) => nodeToString(node))
+                              .join(' ');
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);

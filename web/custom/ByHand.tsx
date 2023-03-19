@@ -1,21 +1,18 @@
 import equal from 'fast-deep-equal';
-import React, {
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
+import { parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
+import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
+import { collectNodes } from '../mods/clipboard';
 import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../store';
+import { Cursors } from './Cursors';
 import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
@@ -60,7 +57,7 @@ export type UIState = {
     regs: RegMap;
 } & State;
 
-type RegMap = {
+export type RegMap = {
     [key: number]: {
         main?: { node: HTMLSpanElement; path: Path[] } | null;
         start?: { node: HTMLSpanElement; path: Path[] } | null;
@@ -210,16 +207,64 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             <input
                 ref={hiddenInput}
                 autoFocus
+                value="whaa"
                 // onBlur={(evt) => evt.currentTarget.focus()}
-                style={{
-                    width: 0,
-                    height: 0,
-                    opacity: 0,
-                    position: 'absolute',
-                    border: 'none',
-                    pointerEvents: 'none',
+                style={
+                    {
+                        // width: 0,
+                        // height: 0,
+                        // opacity: 0,
+                        // position: 'absolute',
+                        // border: 'none',
+                        // pointerEvents: 'none',
+                    }
+                }
+                onCopy={(evt) => {
+                    evt.preventDefault();
+                    const start = state.at[0].start;
+                    const end = state.at[0].end;
+                    if (!end) return;
+                    const collected = collectNodes(state.map, start, end);
+                    const text =
+                        collected.type === 'subtext'
+                            ? collected.text
+                            : collected.nodes
+                                  .map((node) => nodeToString(node))
+                                  .join(' ');
+                    // navigator.clipboard.writeText(text);
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            ['text/plain']: new Blob([text], {
+                                type: 'text/plain',
+                            }),
+                            ['text/html']: new Blob(
+                                [
+                                    '<!-- ' +
+                                        encodeURI(JSON.stringify(collected)) +
+                                        '-->' +
+                                        text,
+                                ],
+                                // ['why'],
+                                {
+                                    type: 'text/html',
+                                },
+                            ),
+                        }),
+                    ]);
+                    // navigator.clipboard.write()
+                }}
+                onPaste={(evt) => {
+                    console.log('got', evt.clipboardData.getData('text/html'));
+                    evt.preventDefault();
+                    // navigator.clipboard.read().then((res) => {
+                    //     console.log(res);
+                    // });
                 }}
                 onKeyDown={(evt) => {
+                    // if (evt.metaKey && evt.key === 'c') {
+                    //     navigator.clipboard.writeText('lol hi');
+                    //     return;
+                    // }
                     if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                         return;
                     }
@@ -384,170 +429,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             ) : null}
         </div>
     );
-};
-
-export const Cursors = ({ state }: { state: UIState }) => {
-    const [blink, setBlink] = useState(false);
-
-    const [cursorPos, setCursorPos] = useState(
-        [] as ({ x: number; y: number; h: number; color?: string } | null)[],
-    );
-
-    const tid = useRef(null as null | NodeJS.Timeout);
-
-    useLayoutEffect(() => {
-        if (tid.current != null) {
-            clearTimeout(tid.current);
-        } else {
-            setBlink(false);
-        }
-        tid.current = setTimeout(() => {
-            setBlink(true);
-            tid.current = null;
-        }, 500);
-        setCursorPos(
-            state.at.flatMap((at) => {
-                if (at.end) {
-                    return;
-                }
-                const res: any = [];
-                const box = calcCursorPos(at.start, state.regs);
-                if (box) {
-                    const offsetY = document.body.scrollTop;
-                    const offsetX = document.body.scrollLeft;
-                    res.push({
-                        x: box.left - offsetX,
-                        y: box.top - offsetY,
-                        h: box.height,
-                        color: box.color,
-                    });
-                }
-                // if (at.end) {
-                //     const box2 = calcCursorPos(at.end, state.regs);
-                //     if (box2) {
-                //         const offsetY = document.body.scrollTop;
-                //         const offsetX = document.body.scrollLeft;
-                //         res.push({
-                //             x: box2.left - offsetX,
-                //             y: box2.top - offsetY,
-                //             h: box2.height,
-                //             color: box2.color,
-                //         });
-                //     }
-                // }
-                return res;
-            }),
-        );
-    }, [state.at]);
-
-    return (
-        <div>
-            {cursorPos.map((cursorPos, i) =>
-                cursorPos ? (
-                    <div
-                        key={i}
-                        style={{
-                            position: 'absolute',
-                            width: 1,
-                            pointerEvents: 'none',
-                            backgroundColor: cursorPos.color ?? 'white',
-                            left: cursorPos.x,
-                            height: cursorPos.h,
-                            top: cursorPos.y,
-                            animationDuration: '1s',
-                            animationName: blink ? 'blink' : 'unset',
-                            animationIterationCount: 'infinite',
-                        }}
-                    />
-                ) : null,
-            )}
-        </div>
-    );
-};
-
-const subRect = (
-    one: DOMRect,
-    two: DOMRect,
-    color?: string,
-): { left: number; top: number; height: number; color?: string } => {
-    return {
-        left: one.left - two.left,
-        top: one.top - two.top,
-        height: one.height,
-        color,
-    };
-};
-
-export const calcCursorPos = (
-    fullPath: Path[],
-    regs: RegMap,
-): void | { left: number; top: number; height: number; color?: string } => {
-    const last = fullPath[fullPath.length - 1];
-    // const loc = pathPos(fullPath)
-    const idx = last.idx;
-    // const { idx, loc } = sel;
-    const nodes = regs[idx];
-    if (!nodes) {
-        console.error('no nodes, sorry');
-        return;
-    }
-    try {
-        switch (last.child.type) {
-            case 'start':
-            case 'end':
-            case 'inside':
-                const blinker = nodes[last.child.type];
-                if (blinker) {
-                    return subRect(
-                        blinker.node.getBoundingClientRect(),
-                        blinker.node.offsetParent!.getBoundingClientRect(),
-                    );
-                }
-            case 'subtext':
-                if (nodes.main) {
-                    const r = new Range();
-                    r.selectNode(nodes.main.node);
-                    const textRaw = nodes.main.node.textContent!;
-                    const text = splitGraphemes(textRaw);
-                    if (!nodes.main.node.firstChild) {
-                        // nothing to do here
-                    } else if (
-                        last.child.type === 'start' ||
-                        (last.child.type === 'subtext' && last.child.at === 0)
-                    ) {
-                        r.setStart(nodes.main.node.firstChild!, 0);
-                        r.collapse(true);
-                    } else if (
-                        last.child.type === 'end' ||
-                        (last.child.type === 'subtext' &&
-                            last.child.at === text.length)
-                    ) {
-                        r.setStart(nodes.main.node.firstChild!, textRaw.length);
-                        r.collapse(true);
-                    } else if (last.child.type === 'subtext') {
-                        r.setStart(
-                            nodes.main.node.firstChild!,
-                            text.slice(0, last.child.at).join('').length,
-                        );
-                        r.collapse(true);
-                    } else {
-                        // console.log('dunno loc', loc, nodes.main);
-                        return;
-                    }
-                    const color = getComputedStyle(nodes.main.node).color;
-                    return subRect(
-                        r.getBoundingClientRect(),
-                        nodes.main.node.offsetParent!.getBoundingClientRect(),
-                        color,
-                    );
-                } else {
-                    console.error('no box', last, nodes);
-                    return;
-                }
-        }
-    } catch (err) {
-        return;
-    }
 };
 
 const isRootPath = (path: Path[]) => {

@@ -1,5 +1,6 @@
 import { calcOffset } from './RenderONode';
-import { UIState, calcCursorPos } from './ByHand';
+import { UIState } from './ByHand';
+import { calcCursorPos } from './Cursors';
 import { Path } from '../store';
 
 export const verticalMove = (state: UIState, up: boolean): UIState => {
