@@ -1,6 +1,5 @@
 import { Path } from '../store';
 import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
-import { nidx } from '../../src/grammar';
 import { stringText } from '../../src/types/cst';
 import { KeyUpdate } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
@@ -12,6 +11,7 @@ export function handleStringText({
     pos,
     path,
     map,
+    nidx,
 }: {
     key: string;
     idx: number;
@@ -19,6 +19,7 @@ export function handleStringText({
     pos: number;
     path: Path[];
     map: Map;
+    nidx: () => number;
 }): KeyUpdate {
     const last = path[path.length - 1];
 
@@ -33,7 +34,7 @@ export function handleStringText({
     }
 
     if (key === '{' && pos > 0 && text[pos - 1] === '$') {
-        return splitString(text, pos, map, last, idx, node, path);
+        return splitString(text, pos, map, last, idx, node, path, nidx);
     }
 
     if (key === 'Enter') {
@@ -67,6 +68,7 @@ function splitString(
     idx: number,
     node: stringText & MNodeExtra,
     path: Path[],
+    nidx: () => number,
 ): KeyUpdate {
     const prefix = text.slice(0, pos - 1);
     const suffix = text.slice(pos);

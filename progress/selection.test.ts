@@ -1,4 +1,3 @@
-import { setIdx } from '../src/grammar';
 import { parseByCharacter } from '../src/parse/parse';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
@@ -35,6 +34,7 @@ export const posToPath = (
     pos: number,
     map: Map,
     sm: SourceMap,
+    nidx: () => number,
 ) => {
     let at = 0;
     let path = selectStart(
@@ -43,7 +43,7 @@ export const posToPath = (
         map,
     )!;
     while (at < pos) {
-        const update = getKeyUpdate('ArrowRight', map, path);
+        const update = getKeyUpdate('ArrowRight', map, path, nidx);
         if (update?.type === 'select') {
             path = update.selection;
             at = remapPos(path, sm);
@@ -69,8 +69,7 @@ describe('a test', () => {
             const [input, selections, output] = chunk.split('\n');
 
             (only ? it.only : it)(i + ' ' + input, () => {
-                setIdx(0);
-                const { map: data, selection } = parseByCharacter(input, only);
+                const { map: data, nidx } = parseByCharacter(input, only);
 
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
@@ -80,8 +79,14 @@ describe('a test', () => {
                 const first = selections.indexOf('^');
                 const second = selections.indexOf('^', first + 1);
 
-                const firstPath = posToPath(idx, first, data, sourceMap);
-                const secondPath = posToPath(idx, second, data, sourceMap);
+                const firstPath = posToPath(idx, first, data, sourceMap, nidx);
+                const secondPath = posToPath(
+                    idx,
+                    second,
+                    data,
+                    sourceMap,
+                    nidx,
+                );
                 if (!firstPath) {
                     throw new Error(`could not postopath`);
                 }

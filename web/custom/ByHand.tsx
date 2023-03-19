@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { parseByCharacter } from '../../src/parse/parse';
+import { idxSource, parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { nodeToString } from '../../src/to-cst/nodeToString';
@@ -131,14 +131,20 @@ export const ByHand = () => {
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        const map = parseByCharacter(initialText, debug).map;
+        const { map, nidx } = parseByCharacter(initialText, debug);
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(
             idx,
             [{ idx: -1, child: { type: 'child', at: 0 } }],
             map,
         )!;
-        return { map, root: -1, at: [{ start: at }], regs: {} };
+        return {
+            map,
+            root: -1,
+            at: [{ start: at }],
+            regs: {},
+            nidx,
+        };
     });
 
     // @ts-ignore
@@ -148,10 +154,14 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     const ctx = React.useMemo(() => {
         const ctx = newCtx();
-        nodeToExpr(fromMCST(state.root, state.map), ctx);
-        tops.forEach((top) => {
-            layout(top, 0, state.map, ctx.display, true);
-        });
+        try {
+            nodeToExpr(fromMCST(state.root, state.map), ctx);
+            tops.forEach((top) => {
+                layout(top, 0, state.map, ctx.display, true);
+            });
+        } catch (err) {
+            console.error(err);
+        }
         return ctx;
     }, [state.map]);
 
@@ -256,15 +266,8 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 onPaste={(evt) => {
                     console.log('got', evt.clipboardData.getData('text/html'));
                     evt.preventDefault();
-                    // navigator.clipboard.read().then((res) => {
-                    //     console.log(res);
-                    // });
                 }}
                 onKeyDown={(evt) => {
-                    // if (evt.metaKey && evt.key === 'c') {
-                    //     navigator.clipboard.writeText('lol hi');
-                    //     return;
-                    // }
                     if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                         return;
                     }
@@ -276,7 +279,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     }
                 }}
                 onInput={(evt) => {
-                    // console.log('Input', evt, evt.currentTarget.value);
                     if (evt.currentTarget.value) {
                         dispatch({ type: 'key', key: evt.currentTarget.value });
                         evt.currentTarget.value = '';
@@ -439,7 +441,12 @@ export const handleKey = (state: UIState, key: string): UIState => {
     state = { ...state };
     state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(key, state.map, state.at[i].start);
+        const update = getKeyUpdate(
+            key,
+            state.map,
+            state.at[i].start,
+            state.nidx,
+        );
         if (!update) continue;
         if (update?.type === 'select' && isRootPath(update.selection)) {
             continue;

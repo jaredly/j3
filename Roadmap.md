@@ -15,7 +15,7 @@ should I just do writeText? Or should I also do `write`,
 with a json mime type?
 Seems like a solid idea.
 
-LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
+- [x] LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
 
 - [ ] hmm I think I want to ~maintain wraps?
   (let [hello folks and such])

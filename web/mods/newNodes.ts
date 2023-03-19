@@ -1,4 +1,3 @@
-import { nidx } from '../../src/grammar';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Path } from '../store';
 import { NewThing } from './getKeyUpdate';
@@ -11,7 +10,7 @@ export const mergeNew = (first: NewThing, second: NewThing): NewThing => {
     };
 };
 
-export const newBlank = (idx = nidx()): NewThing => {
+export const newBlank = (idx: number): NewThing => {
     return {
         map: {
             [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
@@ -21,11 +20,7 @@ export const newBlank = (idx = nidx()): NewThing => {
     };
 };
 
-export const newSpread = (
-    iid: number,
-    last: Path[],
-    idx = nidx(),
-): NewThing => {
+export const newSpread = (iid: number, last: Path[], idx: number): NewThing => {
     return {
         map: {
             [idx]: {
@@ -42,8 +37,8 @@ export const newSpread = (
 export const newRecordAccess = (
     iid: number,
     text: string,
-    idx = nidx(),
-    aidx = nidx(),
+    idx: number,
+    aidx: number,
 ): NewThing => {
     return {
         map: {
@@ -70,7 +65,7 @@ export const newRecordAccess = (
     };
 };
 
-export const newAccessText = (text: string[], idx = nidx()): NewThing => {
+export const newAccessText = (text: string[], idx: number): NewThing => {
     return {
         map: {
             [idx]: {
@@ -84,7 +79,7 @@ export const newAccessText = (text: string[], idx = nidx()): NewThing => {
     };
 };
 
-export const newId = (key: string[], idx = nidx()): NewThing => {
+export const newId = (key: string[], idx: number): NewThing => {
     return {
         map: {
             [idx]: {
@@ -98,8 +93,7 @@ export const newId = (key: string[], idx = nidx()): NewThing => {
     };
 };
 
-export const newString = (idx = nidx()): NewThing => {
-    const nid = nidx();
+export const newString = (idx: number, nid: number): NewThing => {
     return {
         map: {
             [idx]: {
@@ -127,7 +121,7 @@ export const newString = (idx = nidx()): NewThing => {
 
 export function newAnnot(
     target: number,
-    idx = nidx(),
+    idx: number,
     child: NewThing,
 ): NewThing {
     return {
@@ -150,7 +144,7 @@ export function newAnnot(
 
 export function newListLike(
     kind: 'array' | 'list' | 'record',
-    idx = nidx(),
+    idx: number,
     child?: NewThing,
 ): NewThing {
     return {

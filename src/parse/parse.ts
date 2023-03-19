@@ -1,7 +1,6 @@
 // hmm
 import { applyUpdate, getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/store';
-import { nidx } from '../grammar';
 import { Map, MNode } from '../types/mcst';
 
 export const idText = (node: MNode) => {
@@ -25,10 +24,7 @@ export const splitGraphemes = (text: string) => {
     return [...seg.segment(text)].map((seg) => seg.segment);
 };
 
-export const parseByCharacter = (
-    rawText: string,
-    debug = false,
-): { map: Map; selection: Path[] } => {
+export const parseByCharacter = (rawText: string, debug = false): State => {
     let state: State = initialState();
     console.log(rawText);
 
@@ -53,7 +49,12 @@ export const parseByCharacter = (
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(key, state.map, state.at[0].start);
+        const update = getKeyUpdate(
+            key,
+            state.map,
+            state.at[0].start,
+            state.nidx,
+        );
         if (debug) {
             console.log(JSON.stringify(key), state.at[0].start);
             // console.log(JSON.stringify(update));
@@ -61,10 +62,16 @@ export const parseByCharacter = (
 
         state = applyUpdate(state, update) ?? state;
     }
-    return { map: state.map, selection: state.at[0].start };
+    return state;
+};
+
+export const idxSource = () => {
+    let idx = 0;
+    return () => idx++;
 };
 
 function initialState() {
+    const nidx = idxSource();
     const top = nidx();
 
     const map: Map = {
@@ -80,6 +87,7 @@ function initialState() {
     };
 
     let state: State = {
+        nidx,
         map,
         at: [
             {
