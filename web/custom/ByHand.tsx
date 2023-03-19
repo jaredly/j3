@@ -209,16 +209,16 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 autoFocus
                 value="whaa"
                 // onBlur={(evt) => evt.currentTarget.focus()}
-                style={
-                    {
-                        // width: 0,
-                        // height: 0,
-                        // opacity: 0,
-                        // position: 'absolute',
-                        // border: 'none',
-                        // pointerEvents: 'none',
-                    }
-                }
+                style={{
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    border: 'none',
+                    pointerEvents: 'none',
+                }}
                 onCopy={(evt) => {
                     evt.preventDefault();
                     const start = state.at[0].start;

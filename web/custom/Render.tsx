@@ -116,7 +116,7 @@ export const RenderNNode = (
         coverageLevel?.type === 'full' ||
         ('text' in node && coverageLevel?.type === 'partial')
             ? {
-                  color: '#ccc',
+                  //   color: '#ccc',
                   borderRadius: 6,
                   backgroundColor:
                       //   coverageLevel === 'full'
@@ -126,7 +126,7 @@ export const RenderNNode = (
                       '#225',
                   //   backgroundColor: '#1a1a1a',
                   //   outline: '1px solid white',
-                  //   boxShadow: '1px 1px 1px white',
+                  textShadow: '2px 2px 1px black',
                   //   backgroundColor: 'rgb(18 20 42)',
                   //   textDecoration: 'underline',
                   //   textShadow: '0 3px 0px white',
