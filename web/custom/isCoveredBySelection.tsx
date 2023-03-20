@@ -90,9 +90,12 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
         const o = one[i];
         const t = two[i];
         if (o.idx !== t.idx) {
-            throw new Error(
+            console.log(one, two);
+            console.log(o.idx, t.idx);
+            console.warn(
                 `Comparing full paths, different idx for same position?`,
             );
+            return 0;
         }
         const cmp = cmpPath(o.child, t.child);
         if (cmp !== 0) {

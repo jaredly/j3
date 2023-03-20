@@ -447,7 +447,27 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             <Cursors state={state} />
             <div>
                 <div>
-                    At: <div>{JSON.stringify(state.at)}</div>
+                    At:{' '}
+                    <div>
+                        {state.at.map(({ start, end }, i) => (
+                            <div key={i} style={{ display: 'flex' }}>
+                                <div>
+                                    {start.map((item, i) => (
+                                        <div key={i}>
+                                            {JSON.stringify(item)}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div>
+                                    {end?.map((item, i) => (
+                                        <div key={i}>
+                                            {JSON.stringify(item)}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
             {debug ? (

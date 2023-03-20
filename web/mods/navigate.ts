@@ -4,7 +4,7 @@ import { Map } from '../../src/types/mcst';
 import { getNodes } from '../overheat/getNodes';
 import { ONode } from '../overheat/types';
 import { Path } from '../store';
-import { StateChange } from './getKeyUpdate';
+import { StateChange, StateSelect } from './getKeyUpdate';
 
 export const selectStart = (
     idx: number,
@@ -36,7 +36,7 @@ export const selectEnd = (
     return base.concat([{ idx, child: { type: 'end' } }]);
 };
 
-export const goLeft = (path: Path[], map: Map): StateChange => {
+export const goLeft = (path: Path[], map: Map): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
     const pnodes = getNodes(map[last.idx]);
@@ -60,26 +60,9 @@ export const goRight = (
     path: Path[],
     idx: number,
     map: Map,
-    // fromTannot = false,
-): StateChange => {
+): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
-    // if (!fromTannot && map[idx].tannot && idx !== last.idx) {
-    //     const sel = selectStart(
-    //         map[idx].tannot!,
-    //         path.concat({
-    //             idx: idx,
-    //             child: { type: 'tannot' },
-    //         }),
-    //         map,
-    //     );
-    //     if (sel) {
-    //         return {
-    //             type: 'select',
-    //             selection: sel,
-    //         };
-    //     }
-    // }
 
     const pnodes = getNodes(map[last.idx]).reverse();
     let prev: Path[] | null = null;
@@ -92,12 +75,7 @@ export const goRight = (
                       type: 'select',
                       selection: path.slice(0, -1).concat(prev),
                   }
-                : goRight(
-                      path.slice(0, -1),
-                      last.idx,
-                      map,
-                      //   last.child.type === 'tannot',
-                  );
+                : goRight(path.slice(0, -1), last.idx, map);
         }
         prev = ps;
     }

@@ -29,14 +29,13 @@ export type StateUpdate = {
     selectionEnd?: Path[];
 };
 
-export type StateChange =
-    | StateUpdate
-    | {
-          type: 'select';
-          selection: Path[];
-          selectionEnd?: Path[];
-      }
-    | void;
+export type StateSelect = {
+    type: 'select';
+    selection: Path[];
+    selectionEnd?: Path[];
+};
+
+export type StateChange = StateUpdate | StateSelect | void;
 
 /*
 So, keys:
@@ -150,7 +149,8 @@ export const getKeyUpdate = (
     if (!selection.start.length) {
         throw new Error(`no path ${key} ${JSON.stringify(map)}`);
     }
-    const flast = selection.start[selection.start.length - 1];
+    const fullPath = selection.end ?? selection.start;
+    const flast = fullPath[fullPath.length - 1];
     const node = map[flast.idx];
     if (!node) {
         throw new Error(
@@ -171,7 +171,6 @@ export const getKeyUpdate = (
         return handleBackspace(map, selection);
     }
 
-    const fullPath = selection.end ?? selection.start;
     const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
@@ -198,7 +197,15 @@ export const getKeyUpdate = (
                 selection: next,
             };
         }
-        return goLeft(fullPath, map);
+        const lll = goLeft(fullPath, map);
+        if (lll && mods?.shift) {
+            return {
+                type: 'select',
+                selection: selection.start,
+                selectionEnd: lll.selection,
+            };
+        }
+        return lll;
     }
 
     const pos = pathPos(fullPath, textRaw);
@@ -220,7 +227,15 @@ export const getKeyUpdate = (
                 selection: next,
             };
         }
-        return goRight(fullPath, idx, map);
+        const rrr = goRight(fullPath, idx, map);
+        if (rrr && mods?.shift) {
+            return {
+                type: 'select',
+                selection: selection.start,
+                selectionEnd: rrr.selection,
+            };
+        }
+        return rrr;
     }
 
     if (node.type === 'stringText') {
