@@ -2,12 +2,24 @@ import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
-import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
+import {
+    fromMCST,
+    ListLikeContents,
+    Map,
+    MNodeExtra,
+    toMCST,
+} from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
-import { Path, PathChild, UpdateMap } from '../store';
-import { applyUpdate, getKeyUpdate, insertText, State } from './getKeyUpdate';
+import { Path, PathChild, StoreUpdate, UpdateMap } from '../store';
+import {
+    applyUpdate,
+    getKeyUpdate,
+    insertText,
+    State,
+    StateUpdate,
+} from './getKeyUpdate';
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 
@@ -112,6 +124,37 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                 const start = state.at[0].start;
                 const lidx = idxes[idxes.length - 1];
                 const selection = selectEnd(lidx, [], map)!;
+
+                const last = start[start.length - 1];
+                const parent = start[start.length - 2];
+                if (
+                    state.map[last.idx].type === 'blank' &&
+                    parent.child.type === 'child'
+                ) {
+                    const pnode = state.map[parent.idx] as ListLikeContents &
+                        MNodeExtra;
+                    const values = pnode.values.slice();
+                    values.splice(parent.child.at, 1, ...idxes);
+                    map[parent.idx] = {
+                        ...pnode,
+                        values,
+                    };
+                    const update: StateUpdate = {
+                        type: 'update',
+                        map,
+                        selection: start
+                            .slice(0, -2)
+                            .concat({
+                                idx: parent.idx,
+                                child: {
+                                    type: 'child',
+                                    at: parent.child.at + idxes.length - 1,
+                                },
+                            })
+                            .concat(selection),
+                    };
+                    return applyUpdate(state, 0, update);
+                }
 
                 const update = newNodeAfter(
                     start,

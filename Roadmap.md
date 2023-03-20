@@ -34,6 +34,7 @@ Seems like a solid idea.
 - [ ] and then ... oh right, I need a `hash` node type, to lock things down,
   and then autocomplete. Then I can go back to playing with the language.
 
+- [ ] paste can replace blanks
 
 # LogJams
 

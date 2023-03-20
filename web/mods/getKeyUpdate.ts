@@ -1,6 +1,5 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
 import { Map, MNode } from '../../src/types/mcst';
-import { replacePath } from '../old/RecordText';
 import { Path, PathChild, UpdateMap } from '../store';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
@@ -19,6 +18,7 @@ import {
     newSpread,
     newString,
 } from './newNodes';
+import { replacePathWith } from './replacePathWith';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
 
@@ -521,22 +521,6 @@ export function replaceWith(path: Path[], newThing: NewThing): StateUpdate {
     return {
         type: 'update',
         ...newThing,
-        selection: path.concat(newThing.selection),
-    };
-}
-
-export function replacePathWith(
-    path: Path[],
-    map: Map,
-    newThing: NewThing,
-): StateUpdate | void {
-    if (!path.length) {
-        return;
-    }
-    const update = replacePath(path[path.length - 1], newThing.idx, map);
-    return {
-        type: 'update',
-        map: { ...newThing.map, ...update },
         selection: path.concat(newThing.selection),
     };
 }

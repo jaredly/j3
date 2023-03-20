@@ -2,11 +2,8 @@ import { Path, UpdateMap } from '../store';
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
-import {
-    StateChange,
-    maybeClearParentList,
-    replacePathWith,
-} from './getKeyUpdate';
+import { StateChange, maybeClearParentList } from './getKeyUpdate';
+import { replacePathWith } from './replacePathWith';
 import { splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 
