@@ -43,11 +43,13 @@ const examples = {
 (def dead (vec4 0. 0. 0. 1.))
 (defn isLive [{x}:Vec4] (> x 0.5))
 (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
-(def person {name "Person" age 32 cats 1.5
+(def person {name "Person" age 32 animals {cats 1.5 dogs 0}
 description "This is a person with a \${"kinda"} normal-length description"
 subtitle "Return of the person"
 parties (let [parties (isLive (vec4 1.0)) another true]
 (if parties "Some parties" "probably way too many parties"))})
+person.description
+person.animals.dogs
 (defn shape-to-svg [shape:shape]
   (switch shape
     ('Circle {$ pos radius})
@@ -302,7 +304,9 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     if (plain) {
                         dispatch({
                             type: 'paste',
-                            items: [{ type: 'untrusted', text: plain }],
+                            items: [
+                                { type: 'text', text: plain, trusted: false },
+                            ],
                         });
                     }
                 }}
@@ -480,12 +484,7 @@ export const handleKey = (state: UIState, key: string): UIState => {
     // state = { ...state };
     // state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(
-            key,
-            state.map,
-            state.at[i].start,
-            state.nidx,
-        );
+        const update = getKeyUpdate(key, state.map, state.at[i], state.nidx);
         state = { ...applyUpdate(state, i, update), regs: state.regs };
     }
     return state;

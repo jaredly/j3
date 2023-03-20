@@ -6,8 +6,36 @@ import { StateChange, maybeClearParentList } from './getKeyUpdate';
 import { replacePathWith } from './replacePathWith';
 import { splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
+import { collectNodes } from './clipboard';
 
-export function handleBackspace(map: Map, fullPath: Path[]): StateChange {
+export function handleBackspace(
+    map: Map,
+    selection: { start: Path[]; end?: Path[] },
+): StateChange {
+    if (selection.end) {
+        const item = collectNodes(map, selection.start, selection.end);
+        if (item.type === 'text' && item.source) {
+            const node = map[item.source.idx];
+            if ('text' in node) {
+                const split = splitGraphemes(node.text);
+                const text = split
+                    .slice(0, item.source.start)
+                    .concat(split.slice(item.source.end));
+                return {
+                    type: 'update',
+                    map: {
+                        [item.source.idx]: { ...node, text: text.join('') },
+                    },
+                    selection: selection.start.slice(0, -1).concat({
+                        idx: item.source.idx,
+                        child: { type: 'subtext', at: item.source.start },
+                    }),
+                };
+            }
+        }
+    }
+
+    const fullPath = selection.start;
     const flast = fullPath[fullPath.length - 1];
 
     // non-terminal selection

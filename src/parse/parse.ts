@@ -48,12 +48,7 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(
-            key,
-            state.map,
-            state.at[0].start,
-            state.nidx,
-        );
+        const update = getKeyUpdate(key, state.map, state.at[0], state.nidx);
         if (debug) {
             console.log(JSON.stringify(key), state.at[0].start);
             // console.log(JSON.stringify(update));

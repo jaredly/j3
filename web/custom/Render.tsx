@@ -109,6 +109,7 @@ export const RenderNNode = (
     const coverageLevel = isCoveredBySelection(
         props.selection,
         path,
+        map,
         // !('text' in node),
     );
 

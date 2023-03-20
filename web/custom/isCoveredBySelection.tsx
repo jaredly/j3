@@ -1,3 +1,4 @@
+import { Map } from '../../src/types/mcst';
 import { CoverageLevel, selectionStatus } from '../mods/clipboard';
 import { State } from '../mods/getKeyUpdate';
 import { Path, PathChild } from '../store';
@@ -5,14 +6,14 @@ import { Path, PathChild } from '../store';
 export const isCoveredBySelection = (
     at: State['at'],
     path: Path[],
-    // requireFull = true,
+    map: Map,
 ) => {
     // let best: CoverageLevel | null = null
     for (let sel of at) {
         if (!sel.end) {
             continue;
         }
-        const coverage = selectionStatus(path, sel.start, sel.end);
+        const coverage = selectionStatus(path, sel.start, sel.end, map);
         if (coverage) {
             return coverage;
         }

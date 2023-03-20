@@ -46,6 +46,7 @@ export const selectionStatus = (
     path: Path[],
     start: Path[],
     end: Path[],
+    map: Map,
 ): CoverageLevel | null => {
     let s = cmpFullPath(start, path);
     if (s > 0) {
@@ -54,6 +55,18 @@ export const selectionStatus = (
     if (
         start.length === path.length + 1 &&
         start[start.length - 1].child.type === 'start'
+    ) {
+        s = -1;
+    }
+    if (
+        start.length === path.length + 2 &&
+        start[start.length - 2].child.type === 'annot-target'
+    ) {
+        s = -1;
+    }
+    if (
+        start.length === path.length + 2 &&
+        start[start.length - 2].child.type === 'record-target'
     ) {
         s = -1;
     }
@@ -69,7 +82,19 @@ export const selectionStatus = (
     ) {
         e = -1;
     }
+    if (end.length === path.length + 2) {
+        const slast = end[end.length - 2];
 
+        if (slast.child.type === 'annot-annot') {
+            e = -1;
+        }
+        const node = map[slast.idx];
+        if (slast.child.type === 'attribute' && node.type === 'recordAccess') {
+            if (node.items.length === slast.child.at) {
+                e = -1;
+            }
+        }
+    }
     if (s < 0 && e < 0) {
         return { type: 'full' };
     }
@@ -84,37 +109,42 @@ export const selectionStatus = (
 };
 
 export type ClipboardItem =
-    | { type: 'untrusted'; text: string }
-    | { type: 'subtext'; text: string }
+    | {
+          type: 'text';
+          text: string;
+          trusted: boolean;
+          source?: { idx: number; start: number; end: number };
+      }
     | { type: 'nodes'; nodes: Node[] };
 
 export const paste = (state: State, items: ClipboardItem[]): State => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
         const item = items[0];
         switch (item.type) {
-            case 'subtext': {
-                const path = state.at[0].start;
-                const update = insertText(
-                    item.text,
-                    state.map,
-                    path,
-                    state.nidx,
-                );
-                return applyUpdate(state, 0, update);
-            }
-            case 'untrusted': {
-                const chars = splitGraphemes(item.text);
-                for (let char of chars) {
+            case 'text': {
+                if (item.trusted) {
                     const path = state.at[0].start;
-                    const update = getKeyUpdate(
-                        char,
+                    const update = insertText(
+                        item.text,
                         state.map,
                         path,
                         state.nidx,
                     );
-                    state = applyUpdate(state, 0, update);
+                    return applyUpdate(state, 0, update);
+                } else {
+                    const chars = splitGraphemes(item.text);
+                    for (let char of chars) {
+                        const path = state.at[0].start;
+                        const update = getKeyUpdate(
+                            char,
+                            state.map,
+                            state.at[0],
+                            state.nidx,
+                        );
+                        state = applyUpdate(state, 0, update);
+                    }
+                    return state;
                 }
-                return state;
             }
             case 'nodes': {
                 const map: Map = {};
@@ -173,7 +203,7 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
 export const clipboardText = (items: ClipboardItem[]) => {
     return items
         .map((item) =>
-            item.type === 'subtext' || item.type === 'untrusted'
+            item.type === 'text'
                 ? item.text
                 : item.nodes.map((node) => nodeToString(node)).join(' '),
         )
@@ -215,8 +245,14 @@ export const collectNodes = (
                         ? 0
                         : text.length;
                 return {
-                    type: node.type === 'stringText' ? 'untrusted' : 'subtext',
+                    type: 'text',
+                    trusted: node.type !== 'stringText',
                     text: text.slice(sloc, eloc).join(''),
+                    source: {
+                        idx: slast.idx,
+                        start: sloc,
+                        end: eloc,
+                    },
                 };
             }
         }
@@ -230,7 +266,7 @@ export const collectNodes = (
     transformNode(fromMCST(-1, map), {
         pre(node, path) {
             const isatom = 'text' in node;
-            const status = selectionStatus(path, start, end);
+            const status = selectionStatus(path, start, end, map);
             if (!status) {
                 return false;
             }

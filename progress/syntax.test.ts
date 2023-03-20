@@ -371,12 +371,7 @@ function doABunchOfKeys({
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(
-            key,
-            state.map,
-            state.at[0].start,
-            state.nidx,
-        );
+        const update = getKeyUpdate(key, state.map, state.at[0], state.nidx);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {

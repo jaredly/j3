@@ -133,22 +133,21 @@ const isPathAtStart = (text: string, path: PathChild) => {
 export const getKeyUpdate = (
     key: string,
     map: Map,
-    fullPath: Path[],
+    selection: { start: Path[]; end?: Path[] },
+    // START HERE:
+    // endPath: Path[],
     nidx: () => number,
 ): StateChange => {
-    if (!fullPath.length) {
+    if (!selection.start.length) {
         throw new Error(`no path ${key} ${JSON.stringify(map)}`);
     }
-    const flast = fullPath[fullPath.length - 1];
+    const flast = selection.start[selection.start.length - 1];
     const node = map[flast.idx];
     if (!node) {
         throw new Error(
             `No node ${flast.idx} : ${JSON.stringify(Object.keys(map))}`,
         );
     }
-
-    const textRaw = idText(node) ?? '';
-    const text = splitGraphemes(textRaw);
 
     if (
         key === 'Meta' ||
@@ -160,9 +159,12 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, fullPath);
+        return handleBackspace(map, selection);
     }
 
+    const fullPath = selection.start;
+    const textRaw = idText(node) ?? '';
+    const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {

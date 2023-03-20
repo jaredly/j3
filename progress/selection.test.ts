@@ -63,7 +63,7 @@ export const posToPath = (
         map,
     )!;
     while (at < pos) {
-        const update = getKeyUpdate('ArrowRight', map, path, nidx);
+        const update = getKeyUpdate('ArrowRight', map, { start: path }, nidx);
         if (update?.type === 'select') {
             path = update.selection;
             at = remapPos(path, sm);
