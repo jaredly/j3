@@ -1,4 +1,13 @@
 
+# Ok folks, so the basic editor, is looking pretty neat
+
+- [x] ah first, get rid of non-nested get-nodes
+- [ ] autocomplete pls
+- [ ] 
+
+
+
+
 # Newlines though
 
 So the thing about newlines
@@ -11,7 +20,7 @@ hm yeah gotta have a bit of that too
 
 - [x] syntax.test. for ^L and ^R to expand selection should work
 - [x] delete a subtext or untrusted
-- [ ] delete a nodes
+- [x] delete a nodes
   - ok actually, what if we do like a "filter the whole tree"?
     tbh that's probably the simplest solution. maybe a little bit overkill, idk.
     - oh we can just do the closest common ancestor, that's nice.
@@ -46,7 +55,7 @@ Seems like a solid idea.
 - [ ] and then ... oh right, I need a `hash` node type, to lock things down,
   and then autocomplete. Then I can go back to playing with the language.
 
-- [ ] paste can replace blanks
+- [x] paste can replace blanks
 
 # LogJams
 
@@ -71,7 +80,7 @@ Seems like a solid idea.
     but for rendering, split them up
 - [x] support subselecting in an atom
 - [ ] getKeyUpdate should replace selected text
-- [ ] COPYYY and PASTEEE
+- [x] COPYYY and PASTEEE
   - so I'll need to generate new idx's for the pasted things
   - unlessss I'm doing a cut? In which case, we could retain them.
     but it might not be worth it to mess with that.
@@ -81,9 +90,7 @@ Seems like a solid idea.
   I think that would be better.
   - so, changing tannots, will mean that my nodeToExpr will need to be different.
     but I'm fine with that.
-- [ ] shift-arrow-keys
-    
-  - [ ] 
+- [x] shift-arrow-keys
 - [x] ok now selections need boundariessss
 
 - [x] um, I need some tests for selections. How do I do it.
@@ -348,7 +355,7 @@ amount of complexity.
   relinquish focus? Maybe.
   - [ ] So, yeah I think I do want to give it full focus control.
     which is maybe tricky? idk.
-- [ ] TODO blink needs to be a thing!
+- [x] TODO blink needs to be a thing!
 - [ ] handle tab
 - [x] allow other things to have focus, it's ok
 

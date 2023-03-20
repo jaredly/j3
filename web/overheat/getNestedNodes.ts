@@ -2,6 +2,7 @@ import { idText } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { Layout, MCString, MNode, MNodeExtra } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
+import { ONode } from './types';
 
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
@@ -15,6 +16,43 @@ export type NNode =
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | { type: 'ref'; id: number; path: PathChild }
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
+
+export const getNodes = (node: MNode) => unnestNodes(getNestedNodes(node));
+
+export const unnestNodes = (node: NNode): ONode[] => {
+    switch (node.type) {
+        case 'horiz':
+        case 'vert':
+        case 'inline':
+            return node.children.flatMap(unnestNodes);
+        case 'pairs':
+            return node.children.flatMap((nodes) => nodes.flatMap(unnestNodes));
+        case 'indent':
+            return unnestNodes(node.child);
+        case 'punct':
+            return [
+                {
+                    type: 'punct',
+                    text: node.text,
+                    color: node.color,
+                },
+            ];
+        case 'text':
+            return [{ type: 'render', text: node.text }];
+        case 'brace':
+            return [
+                {
+                    type: 'punct',
+                    text: node.text,
+                    color: node.color ?? 'rainbow',
+                },
+            ];
+        case 'ref':
+            return [node];
+        case 'blinker':
+            return [node];
+    }
+};
 
 export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
     switch (node.type) {

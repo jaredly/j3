@@ -97,7 +97,7 @@ export const closestSelection = (
                           idx: +key,
                           type: 'subtext',
                           at: calcOffset(value.node, pos.x),
-                      })
+                      } satisfies Path)
                     : value.path.concat({
                           idx: +key,
                           type: which as 'end',
