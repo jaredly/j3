@@ -1,13 +1,30 @@
 import { Path, UpdateMap } from '../store';
-import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
+import {
+    fromMCST,
+    ListLikeContents,
+    Map,
+    MNode,
+    MNodeExtra,
+} from '../../src/types/mcst';
 import { newBlank } from './newNodes';
-import { selectEnd } from './navigate';
-import { StateChange, maybeClearParentList } from './getKeyUpdate';
+import { goLeft, selectEnd } from './navigate';
+import {
+    StateChange,
+    maybeClearParentList,
+    getKeyUpdate,
+} from './getKeyUpdate';
 import { replacePathWith } from './replacePathWith';
 import { splitGraphemes } from '../../src/parse/parse';
-import { accessText, Identifier, stringText } from '../../src/types/cst';
-import { collectNodes } from './clipboard';
+import {
+    accessText,
+    Identifier,
+    Node,
+    NodeExtra,
+    stringText,
+} from '../../src/types/cst';
+import { collectNodes, commonAncestor, validatePath } from './clipboard';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
+import { transformNode } from '../../src/types/transform-cst';
 
 export function handleBackspace(
     map: Map,
@@ -39,10 +56,103 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            // ok, so what's the story.
-            // I should probably sort these by common parent? tbh, yeah.
-            //
-            // So, when removing items, I'll potentially be invalidating some things.
+            const ancestor = commonAncestor(start, end);
+            if (!ancestor) {
+                console.warn('no common ancestor', start, end);
+                return;
+            }
+            const toRemove: { [idx: number]: boolean } = {};
+            item.nodes.forEach((node) => (toRemove[node.loc.idx] = true));
+
+            // hmmm changed?
+            let update: UpdateMap = {};
+
+            transformNode(fromMCST(ancestor, map), {
+                pre(node, path) {
+                    if ('values' in node) {
+                        let values = node.values.filter(
+                            (node) => !toRemove[node.loc.idx],
+                        );
+                        if (values.length < node.values.length) {
+                            update[node.loc.idx] = {
+                                ...node,
+                                values: values.map((v) => v.loc.idx),
+                            };
+                        }
+                        return;
+                    }
+                    if (node.type === 'string') {
+                        let first = node.first;
+                        if (toRemove[first.loc.idx]) {
+                            first = { ...first, text: '' };
+                        }
+                        let templates: {
+                            expr: Node;
+                            suffix: stringText & NodeExtra;
+                        }[] = [];
+                        node.templates.forEach(({ expr, suffix }) => {
+                            if (toRemove[expr.loc.idx]) {
+                                if (!toRemove[suffix.loc.idx]) {
+                                    if (templates.length) {
+                                        templates[
+                                            templates.length - 1
+                                        ].suffix.text += suffix.text;
+                                    } else {
+                                        first = {
+                                            ...first,
+                                            text: first.text + suffix.text,
+                                        };
+                                    }
+                                }
+                            } else if (toRemove[suffix.loc.idx]) {
+                                templates.push({
+                                    expr,
+                                    suffix: { ...suffix, text: '' },
+                                });
+                            } else {
+                                templates.push({ expr, suffix });
+                            }
+                        });
+                        if (first !== node.first) {
+                            update[first.loc.idx] = first;
+                        }
+                        if (templates.length !== node.templates.length) {
+                            update[node.loc.idx] = {
+                                ...node,
+                                first: first.loc.idx,
+                                templates: templates.map(({ expr, suffix }) => {
+                                    update[suffix.loc.idx] = suffix;
+                                    return {
+                                        expr: expr.loc.idx,
+                                        suffix: suffix.loc.idx,
+                                    };
+                                }),
+                            };
+                        }
+                    }
+                },
+            });
+
+            // const left = getKeyUpdate('ArrowLeft', map, { start }, () => -100);
+            let left = goLeft(start, map);
+            if (!left) {
+                console.log('cannot left');
+                return;
+            }
+            const updated = { ...map, ...update } as Map;
+            while (!validatePath(updated, left!.selection)) {
+                left = goLeft(left!.selection, map);
+                if (!left) {
+                    console.log('cannot left');
+                    return;
+                }
+            }
+
+            return {
+                type: 'update',
+                map: update,
+                selection: left.selection,
+            };
         }
     }
 

@@ -74,11 +74,9 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
                 cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
 
             clipboard = [collectNodes(state.map, start, end)];
-            console.log('copying');
             continue;
         }
         if (key === 'Paste') {
-            console.log('pasting', clipboard);
             state = paste(state, clipboard);
             continue;
         }
@@ -92,7 +90,6 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
         );
         if (debug) {
             console.log(JSON.stringify(key), state.at[0].start);
-            // console.log(JSON.stringify(update));
         }
 
         state = applyUpdate(state, 0, update) ?? state;

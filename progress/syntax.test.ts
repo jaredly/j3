@@ -1,5 +1,6 @@
 // Basic level
 
+import { validateExpr } from '../src/get-type/validate';
 import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
 import {
     nodeToString,
@@ -8,6 +9,7 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { validatePath } from '../web/mods/clipboard';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { selectEnd, selectStart } from '../web/mods/navigate';
 import { Path } from '../web/store';
@@ -386,6 +388,7 @@ function doABunchOfKeys({
                 expect(update).toMatchObject({ type: 'select' });
             } else {
                 state = applyUpdate(state, 0, update)!;
+                expect(validatePath(state.map, update.selection)).toBeTruthy();
             }
         }
         const newPos = remapPos(state.at[0].start, sourceMap);

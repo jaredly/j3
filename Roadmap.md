@@ -12,6 +12,9 @@ hm yeah gotta have a bit of that too
 - [x] syntax.test. for ^L and ^R to expand selection should work
 - [x] delete a subtext or untrusted
 - [ ] delete a nodes
+  - ok actually, what if we do like a "filter the whole tree"?
+    tbh that's probably the simplest solution. maybe a little bit overkill, idk.
+    - oh we can just do the closest common ancestor, that's nice.
 - [x] let's do ^C and ^V for copy & paste folks
 
 # Copyy nad PArstee
