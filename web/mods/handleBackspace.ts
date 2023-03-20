@@ -9,6 +9,34 @@ import { accessText, Identifier, stringText } from '../../src/types/cst';
 
 export function handleBackspace(map: Map, fullPath: Path[]): StateChange {
     const flast = fullPath[fullPath.length - 1];
+
+    // non-terminal selection
+    if (flast.child.type === 'child') {
+        const pnode = map[flast.idx] as ListLikeContents & MNodeExtra;
+        const values = pnode.values.slice();
+        values.splice(flast.child.at, 1);
+        return {
+            type: 'update',
+            map: {
+                [flast.idx]: { ...pnode, values },
+            },
+            selection: values.length
+                ? selectEnd(
+                      values[flast.child.at - 1],
+                      fullPath.slice(0, -1).concat([
+                          {
+                              idx: flast.idx,
+                              child: { type: 'child', at: flast.child.at - 1 },
+                          },
+                      ]),
+                      map,
+                  )!
+                : fullPath
+                      .slice(0, -1)
+                      .concat({ idx: flast.idx, child: { type: 'inside' } }),
+        };
+    }
+
     const node = map[flast.idx];
     const atStart =
         flast.child.type === 'start' ||

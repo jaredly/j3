@@ -6,6 +6,14 @@ I don't know at the start
 whether I need to intervene
 right?
 
+# Select & Delete
+hm yeah gotta have a bit of that too
+
+- [ ] syntax.test. for ^L and ^R to expand selection should work
+- [ ] delete a subtext or untrusted
+- [ ] delete a nodes
+- [ ] let's do ^C and ^V for copy & paste folks
+
 # Copyy nad PArstee
 
 - onCopy, onPaste. firefox looks like bad news
@@ -25,11 +33,12 @@ Seems like a solid idea.
   should probably copy as `(let [hello folks])`
   but I'm currently getting `let hellow folks`
 
-- [ ] and then I need a simple paste-story
+- [x] and then I need a simple paste-story
   which should go ok
    - [x] basic subtext
    - [x] untrusted, do each character
    - [x] paste mutliple nodes pls
+- [ ] cut and drag would be nice...
 
 - [ ] and then ... oh right, I need a `hash` node type, to lock things down,
   and then autocomplete. Then I can go back to playing with the language.

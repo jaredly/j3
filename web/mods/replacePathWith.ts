@@ -1,6 +1,7 @@
 import {
     ListLikeContents,
     Map,
+    MCSpread,
     MCString,
     MNodeExtra,
 } from '../../src/types/mcst';
@@ -11,12 +12,11 @@ export function replacePathWith(
     path: Path[],
     map: Map,
     newThing: NewThing,
-    extra: number[] = [],
 ): StateUpdate | void {
     if (!path.length) {
         return;
     }
-    const update = replacePath(path[path.length - 1], newThing.idx, map, extra);
+    const update = replacePath(path[path.length - 1], newThing.idx, map);
     return {
         type: 'update',
         map: { ...newThing.map, ...update },
