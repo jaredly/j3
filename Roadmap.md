@@ -9,7 +9,7 @@ right?
 # Select & Delete
 hm yeah gotta have a bit of that too
 
-- [ ] syntax.test. for ^L and ^R to expand selection should work
+- [x] syntax.test. for ^L and ^R to expand selection should work
 - [ ] delete a subtext or untrusted
 - [ ] delete a nodes
 - [ ] let's do ^C and ^V for copy & paste folks

@@ -14,7 +14,6 @@ export const selectWithin = (
             }
             range.setStart(child, graphemes.slice(0, pos).join('').length);
             range.collapse(true);
-            console.log(`ranging`, child, pos);
             return 0;
             // let prevPos = null;
             // let offset = 0;

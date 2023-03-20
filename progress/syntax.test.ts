@@ -228,6 +228,10 @@ id
 hello^L^L^b
 hel
 id
+
+abcde^L^L^C^l^V
+abdecde
+id
 `;
 
 // hi:^b

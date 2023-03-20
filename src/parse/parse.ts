@@ -1,4 +1,6 @@
 // hmm
+import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
+import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
 import {
     applyUpdate,
     getKeyUpdate,
@@ -36,6 +38,8 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
         rawText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
     );
 
+    let clipboard: ClipboardItem[] = [];
+
     for (let i = 0; i < text.length; i++) {
         let mods: Mods = {};
         let key = text[i];
@@ -46,6 +50,8 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
                 b: 'Backspace',
                 L: 'ArrowLeft',
                 R: 'ArrowRight',
+                C: 'Copy',
+                V: 'Paste',
             }[text[i + 1]]!;
             if (!key) {
                 throw new Error(`Unexpected ^${text[i + 1]}`);
@@ -57,6 +63,24 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
         }
         if (key === '\n') {
             key = 'Enter';
+        }
+        if (key === 'Copy') {
+            let { start, end } = state.at[0];
+            if (!end) {
+                throw new Error(`need end for copy`);
+            }
+
+            [start, end] =
+                cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+
+            clipboard = [collectNodes(state.map, start, end)];
+            console.log('copying');
+            continue;
+        }
+        if (key === 'Paste') {
+            console.log('pasting', clipboard);
+            state = paste(state, clipboard);
+            continue;
         }
 
         const update = getKeyUpdate(
