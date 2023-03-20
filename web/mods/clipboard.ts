@@ -1,8 +1,8 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
-import { Node } from '../../src/types/cst';
-import { fromMCST, Map, toMCST } from '../../src/types/mcst';
+import { Node, NodeExtra, stringText } from '../../src/types/cst';
+import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
@@ -187,14 +187,58 @@ export const collectNodes = (
                 collect.push(node);
                 return false;
             }
+            if (
+                node.type === 'string' &&
+                (status.type === 'partial' || status.type === 'inner')
+            ) {
+                waiting.push({ node, children: [] });
+                console.log('wait string', node);
+            }
             if (status.type === 'partial' && 'values' in node) {
                 waiting.push({ node, children: [] });
+                console.log('wait', node);
+            }
+            if (status.type === 'partial') {
+                console.log('um partial', node);
             }
         },
         post(node) {
             if (waiting.length && waiting[waiting.length - 1].node === node) {
                 const children = waiting.pop()!.children;
-                node = { ...(node as any), values: children };
+                if (node.type === 'string') {
+                    if (children[0].type !== 'stringText') {
+                        children.unshift({
+                            type: 'stringText',
+                            text: '',
+                            loc: { idx: -2, start: 0, end: 0 },
+                        });
+                    }
+                    const templates: {
+                        expr: Node;
+                        suffix: stringText & NodeExtra;
+                    }[] = [];
+                    for (let i = 1; i < children.length; i += 2) {
+                        templates.push({
+                            expr: children[i],
+                            suffix:
+                                children[i + 1]?.type === 'stringText'
+                                    ? (children[i + 1] as stringText &
+                                          NodeExtra)
+                                    : {
+                                          type: 'stringText',
+                                          text: '',
+                                          loc: { idx: -2, start: 0, end: 0 },
+                                      },
+                        });
+                    }
+                    node = {
+                        ...node,
+                        first: children[0] as stringText & NodeExtra,
+                        templates,
+                    };
+                } else {
+                    node = { ...(node as any), values: children };
+                }
                 if (waiting.length) {
                     waiting[waiting.length - 1].children.push(node);
                 } else {
@@ -212,6 +256,7 @@ export const collectNodes = (
             : collected;
         collect.push(node);
     }
+
     return { type: 'nodes', nodes: collected };
 };
 
