@@ -4,7 +4,7 @@ import { Map } from '../../src/types/mcst';
 import { getNodes } from '../overheat/getNodes';
 import { ONode } from '../overheat/types';
 import { Path } from '../store';
-import { KeyUpdate } from './getKeyUpdate';
+import { StateChange } from './getKeyUpdate';
 
 export const selectStart = (
     idx: number,
@@ -36,7 +36,7 @@ export const selectEnd = (
     return base.concat([{ idx, child: { type: 'end' } }]);
 };
 
-export const goLeft = (path: Path[], map: Map): KeyUpdate => {
+export const goLeft = (path: Path[], map: Map): StateChange => {
     if (!path.length) return;
     const last = path[path.length - 1];
     const pnodes = getNodes(map[last.idx]);
@@ -61,7 +61,7 @@ export const goRight = (
     idx: number,
     map: Map,
     // fromTannot = false,
-): KeyUpdate => {
+): StateChange => {
     if (!path.length) return;
     const last = path[path.length - 1];
     // if (!fromTannot && map[idx].tannot && idx !== last.idx) {

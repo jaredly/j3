@@ -2,12 +2,18 @@ import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { Node } from '../../src/types/cst';
-import { fromMCST, Map } from '../../src/types/mcst';
+import { fromMCST, Map, toMCST } from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
-import { Path, PathChild } from '../store';
-import { applyUpdate, getKeyUpdate, insertText, State } from './getKeyUpdate';
+import { Path, PathChild, UpdateMap } from '../store';
+import {
+    applyUpdate,
+    getKeyUpdate,
+    insertText,
+    newNodeAfter,
+    State,
+} from './getKeyUpdate';
 
 export type CoverageLevel =
     | { type: 'inner'; start: PathChild; end: PathChild }
@@ -89,6 +95,12 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                 return state;
             }
             case 'nodes': {
+                const map: UpdateMap = {};
+                const idxes = item.nodes.map((node) =>
+                    toMCST(reLoc(node, state.nidx), map),
+                );
+
+                newNodeAfter;
             }
         }
     }
@@ -197,12 +209,10 @@ export const collectNodes = (
     return { type: 'nodes', nodes: collected };
 };
 
-export const reLoc = (nodes: Node[], nidx: () => number): Node[] => {
-    return nodes.map((node) =>
-        transformNode(node, {
-            pre(node) {
-                return { ...node, loc: { ...node.loc, idx: nidx() } };
-            },
-        }),
-    );
+export const reLoc = (node: Node, nidx: () => number): Node => {
+    return transformNode(node, {
+        pre(node) {
+            return { ...node, loc: { ...node.loc, idx: nidx() } };
+        },
+    });
 };

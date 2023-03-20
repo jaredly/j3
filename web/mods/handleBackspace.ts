@@ -3,14 +3,14 @@ import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
 import {
-    KeyUpdate,
+    StateChange,
     maybeClearParentList,
     replacePathWith,
 } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 
-export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
+export function handleBackspace(map: Map, fullPath: Path[]): StateChange {
     const flast = fullPath[fullPath.length - 1];
     const node = map[flast.idx];
     const atStart =
@@ -314,7 +314,7 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
     }
 }
 
-export const maybeRemovePrevBlank = (path: Path[], map: Map): KeyUpdate => {
+export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {
     if (path.length === 1) {
         return;
     }

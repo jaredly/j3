@@ -23,7 +23,7 @@ import {
     applyUpdate,
     applyUpdateMap,
     getKeyUpdate,
-    KeyUpdate,
+    StateChange,
     State,
 } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';

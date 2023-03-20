@@ -21,17 +21,14 @@ import {
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
 
-export type TheUpdate = {
+export type StateUpdate = {
+    type: 'update';
     map: UpdateMap;
     selection: Path[];
 };
 
-export type KeyUpdate =
-    | {
-          type: 'update';
-          map: UpdateMap;
-          selection: Path[];
-      }
+export type StateChange =
+    | StateUpdate
     | {
           type: 'select';
           selection: Path[];
@@ -80,7 +77,7 @@ export const isRootPath = (path: Path[]) => {
 export const applyUpdate = (
     state: State,
     i: number,
-    update: KeyUpdate,
+    update: StateChange,
 ): State => {
     if (!update) return state;
     if (update.type === 'select' && isRootPath(update.selection)) {
@@ -137,7 +134,7 @@ export const getKeyUpdate = (
     map: Map,
     fullPath: Path[],
     nidx: () => number,
-): KeyUpdate => {
+): StateChange => {
     if (!fullPath.length) {
         throw new Error(`no path ${key} ${JSON.stringify(map)}`);
     }
@@ -395,7 +392,7 @@ function addToListLike(
     pidx: number,
     path: Path[],
     newThing: NewThing,
-): KeyUpdate {
+): StateUpdate {
     const pnode = map[pidx];
     newThing.map[pidx] = {
         ...pnode,
@@ -420,7 +417,7 @@ function updateText(
     input: string[],
     idx: number,
     path: Path[],
-): KeyUpdate {
+): StateUpdate {
     let text = splitGraphemes(node.text);
     if (pos === 0) {
         text.unshift(...input);
@@ -447,7 +444,7 @@ function goToTannot(
     idx: number,
     map: Map,
     nidx: () => number,
-): KeyUpdate {
+): StateChange {
     if (
         path.length > 1 &&
         path[path.length - 2].child.type === 'annot-target'
@@ -467,27 +464,6 @@ function goToTannot(
             }
         }
     }
-    // if (node.tannot != null) {
-    //     const sel = selectStart(
-    //         node.tannot,
-    //         path.concat({ idx, child: { type: 'tannot' } }),
-    //         map,
-    //     );
-    //     if (sel) {
-    //         return { type: 'select', selection: sel };
-    //     }
-    // }
-    // const blank = newBlank();
-    // blank.map[idx] = { ...node, tannot: blank.idx };
-    // return {
-    //     type: 'update',
-    //     update: {
-    //         ...blank,
-    //         selection: path
-    //             .concat({ idx, child: { type: 'tannot' } })
-    //             .concat(blank.selection),
-    //     },
-    // };
     return replacePathWith(
         path.slice(0, -1),
         map,
@@ -495,7 +471,7 @@ function goToTannot(
     );
 }
 
-function openListLike({
+export function openListLike({
     key,
     idx,
     node,
@@ -509,7 +485,7 @@ function openListLike({
     fullPath: Path[];
     map: Map;
     nidx: () => number;
-}): KeyUpdate {
+}): StateUpdate | void {
     const type = ({ '(': 'list', '[': 'array', '{': 'record' } as const)[key]!;
 
     // Just replace it!
@@ -540,7 +516,7 @@ function openListLike({
     return newNodeAfter(fullPath, map, newListLike(type, nidx()), nidx);
 }
 
-function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
+export function replaceWith(path: Path[], newThing: NewThing): StateUpdate {
     return {
         type: 'update',
         ...newThing,
@@ -552,7 +528,7 @@ export function replacePathWith(
     path: Path[],
     map: Map,
     newThing: NewThing,
-): KeyUpdate {
+): StateUpdate | void {
     if (!path.length) {
         return;
     }
@@ -575,7 +551,7 @@ export const newNodeAfter = (
     map: Map,
     newThing: NewThing,
     nidx: () => number,
-): KeyUpdate | void => {
+): StateUpdate | void => {
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
 
@@ -635,7 +611,7 @@ export const newNodeBefore = (
     path: Path[],
     map: Map,
     newThing: NewThing,
-): KeyUpdate | void => {
+): StateUpdate | void => {
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
 
@@ -672,7 +648,10 @@ export const newNodeBefore = (
     }
 };
 
-export const maybeClearParentList = (path: Path[], map: Map): KeyUpdate => {
+export const maybeClearParentList = (
+    path: Path[],
+    map: Map,
+): StateUpdate | void => {
     if (path.length === 1) {
         return;
     }
