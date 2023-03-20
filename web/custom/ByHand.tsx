@@ -105,7 +105,11 @@ const reduce = (state: UIState, action: Action): UIState => {
     switch (action.type) {
         case 'key':
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
-                return verticalMove(state, action.key === 'ArrowUp');
+                return verticalMove(
+                    state,
+                    action.key === 'ArrowUp',
+                    action.mods,
+                );
             }
             const newState = handleKey(state, action.key, action.mods);
             if (newState) {
