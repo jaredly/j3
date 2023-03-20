@@ -1,5 +1,10 @@
 // hmm
-import { applyUpdate, getKeyUpdate, State } from '../../web/mods/getKeyUpdate';
+import {
+    applyUpdate,
+    getKeyUpdate,
+    Mods,
+    State,
+} from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/store';
 import { Map, MNode } from '../types/mcst';
 
@@ -32,15 +37,21 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
     );
 
     for (let i = 0; i < text.length; i++) {
+        let mods: Mods = {};
         let key = text[i];
         if (key === '^') {
             key = {
                 l: 'ArrowLeft',
                 r: 'ArrowRight',
                 b: 'Backspace',
+                L: 'ArrowLeft',
+                R: 'ArrowRight',
             }[text[i + 1]]!;
             if (!key) {
                 throw new Error(`Unexpected ^${text[i + 1]}`);
+            }
+            if (text[i + 1] === 'L' || text[i + 1] === 'R') {
+                mods.shift = true;
             }
             i++;
         }
@@ -48,7 +59,13 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
             key = 'Enter';
         }
 
-        const update = getKeyUpdate(key, state.map, state.at[0], state.nidx);
+        const update = getKeyUpdate(
+            key,
+            state.map,
+            state.at[0],
+            state.nidx,
+            mods,
+        );
         if (debug) {
             console.log(JSON.stringify(key), state.at[0].start);
             // console.log(JSON.stringify(update));

@@ -224,6 +224,10 @@ id
 (h^l a)
 ( ah)
 (list blank id)
+
+hello^L^L^b
+hel
+id
 `;
 
 // hi:^b

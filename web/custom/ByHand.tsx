@@ -25,6 +25,7 @@ import {
     getKeyUpdate,
     StateChange,
     State,
+    Mods,
 } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../store';
@@ -93,6 +94,7 @@ export type Action =
     | {
           type: 'key';
           key: string;
+          mods: Mods;
       }
     | {
           type: 'paste';
@@ -105,7 +107,7 @@ const reduce = (state: UIState, action: Action): UIState => {
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
                 return verticalMove(state, action.key === 'ArrowUp');
             }
-            const newState = handleKey(state, action.key);
+            const newState = handleKey(state, action.key, action.mods);
             if (newState) {
                 if (newState.at.some((at) => isRootPath(at.start))) {
                     console.log('not selecting root node');
@@ -318,12 +320,24 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     evt.stopPropagation();
                     evt.preventDefault();
                     if (evt.key !== 'Unidentified') {
-                        dispatch({ type: 'key', key: evt.key });
+                        dispatch({
+                            type: 'key',
+                            key: evt.key,
+                            mods: {
+                                shift: evt.shiftKey,
+                                alt: evt.altKey,
+                                meta: evt.metaKey,
+                            },
+                        });
                     }
                 }}
                 onInput={(evt) => {
                     if (evt.currentTarget.value) {
-                        dispatch({ type: 'key', key: evt.currentTarget.value });
+                        dispatch({
+                            type: 'key',
+                            key: evt.currentTarget.value,
+                            mods: {},
+                        });
                         evt.currentTarget.value = '';
                     }
                 }}
@@ -480,11 +494,17 @@ const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].child.type !== 'child';
 };
 
-export const handleKey = (state: UIState, key: string): UIState => {
+export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
     // state = { ...state };
     // state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(key, state.map, state.at[i], state.nidx);
+        const update = getKeyUpdate(
+            key,
+            state.map,
+            state.at[i],
+            state.nidx,
+            mods,
+        );
         state = { ...applyUpdate(state, i, update), regs: state.regs };
     }
     return state;

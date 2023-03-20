@@ -33,6 +33,12 @@ export function handleBackspace(
                 };
             }
         }
+        if (item.type === 'nodes') {
+            // ok, so what's the story.
+            // I should probably sort these by common parent? tbh, yeah.
+            //
+            // So, when removing items, I'll potentially be invalidating some things.
+        }
     }
 
     const fullPath = selection.start;

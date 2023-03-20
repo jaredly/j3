@@ -26,6 +26,7 @@ export type StateUpdate = {
     type: 'update';
     map: UpdateMap;
     selection: Path[];
+    selectionEnd?: Path[];
 };
 
 export type StateChange =
@@ -33,6 +34,7 @@ export type StateChange =
     | {
           type: 'select';
           selection: Path[];
+          selectionEnd?: Path[];
       }
     | void;
 
@@ -91,11 +93,13 @@ export const applyUpdate = (
     if (update.type === 'select') {
         at[i] = {
             start: update.selection,
+            end: update.selectionEnd,
         };
         return { ...state, at };
     } else {
         at[i] = {
             start: update.selection,
+            end: update.selectionEnd,
         };
         return {
             ...state,
@@ -130,13 +134,18 @@ const isPathAtStart = (text: string, path: PathChild) => {
     );
 };
 
+export type Mods = {
+    shift?: boolean;
+    meta?: boolean;
+    alt?: boolean;
+};
+
 export const getKeyUpdate = (
     key: string,
     map: Map,
     selection: { start: Path[]; end?: Path[] },
-    // START HERE:
-    // endPath: Path[],
     nidx: () => number,
+    mods?: Mods,
 ): StateChange => {
     if (!selection.start.length) {
         throw new Error(`no path ${key} ${JSON.stringify(map)}`);
@@ -162,22 +171,31 @@ export const getKeyUpdate = (
         return handleBackspace(map, selection);
     }
 
-    const fullPath = selection.start;
+    const fullPath = selection.end ?? selection.start;
     const textRaw = idText(node) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {
+        let flast = fullPath[fullPath.length - 1];
         if ('text' in node && !isPathAtStart(node.text, flast.child)) {
             const pos = pathPos(fullPath, node.text);
+            const next = fullPath.slice(0, -1).concat([
+                {
+                    idx,
+                    child: { type: 'subtext', at: pos - 1 },
+                },
+            ]);
+            if (mods?.shift) {
+                return {
+                    type: 'select',
+                    selection: selection.start,
+                    selectionEnd: next,
+                };
+            }
             return {
                 type: 'select',
-                selection: fullPath.slice(0, -1).concat([
-                    {
-                        idx,
-                        child: { type: 'subtext', at: pos - 1 },
-                    },
-                ]),
+                selection: next,
             };
         }
         return goLeft(fullPath, map);
@@ -187,11 +205,19 @@ export const getKeyUpdate = (
 
     if (key === 'ArrowRight') {
         if (pos < text.length) {
+            const next = fullPath
+                .slice(0, -1)
+                .concat([{ idx, child: { type: 'subtext', at: pos + 1 } }]);
+            if (mods?.shift) {
+                return {
+                    type: 'select',
+                    selection: selection.start,
+                    selectionEnd: next,
+                };
+            }
             return {
                 type: 'select',
-                selection: fullPath
-                    .slice(0, -1)
-                    .concat([{ idx, child: { type: 'subtext', at: pos + 1 } }]),
+                selection: next,
             };
         }
         return goRight(fullPath, idx, map);
