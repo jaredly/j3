@@ -1,4 +1,4 @@
-import { Path } from '../../web/store';
+import { Path } from '../../web/mods/path';
 import { accessText, Identifier, Node, NodeExtra } from './cst';
 import { MNode } from './mcst';
 
@@ -27,7 +27,7 @@ export const transformNode = (
                 const res = transformNode(
                     n,
                     visitor,
-                    path.concat({ idx, child: { type: 'child', at: i } }),
+                    path.concat({ idx, type: 'child', at: i }),
                 );
                 changed = changed || res !== n;
                 return res;
@@ -42,7 +42,7 @@ export const transformNode = (
             const first = transformNode(
                 node.first,
                 visitor,
-                path.concat({ idx, child: { type: 'text', at: 0 } }),
+                path.concat({ idx, type: 'text', at: 0 }),
             );
             if (first.type !== 'stringText') {
                 throw new Error(`first not stringText`);
@@ -52,12 +52,12 @@ export const transformNode = (
                 const expr = transformNode(
                     item.expr,
                     visitor,
-                    path.concat({ idx, child: { type: 'expr', at: i + 1 } }),
+                    path.concat({ idx, type: 'expr', at: i + 1 }),
                 );
                 const suffix = transformNode(
                     item.suffix,
                     visitor,
-                    path.concat({ idx, child: { type: 'text', at: i + 1 } }),
+                    path.concat({ idx, type: 'text', at: i + 1 }),
                 );
                 if (suffix.type !== 'stringText') {
                     throw new Error(`suffix not stringText`);
@@ -86,7 +86,7 @@ export const transformNode = (
             const target = transformNode(
                 node.target,
                 visitor,
-                path.concat({ idx, child: { type: 'record-target' } }),
+                path.concat({ idx, type: 'record-target' }),
             );
             if (target.type !== 'identifier' && target.type !== 'blank') {
                 throw new Error(`record access target must be id or blank`);
@@ -98,7 +98,8 @@ export const transformNode = (
                     visitor,
                     path.concat({
                         idx,
-                        child: { type: 'attribute', at: i + 1 },
+                        type: 'attribute',
+                        at: i + 1,
                     }),
                 );
                 if (res.type !== 'accessText') {
@@ -122,13 +123,13 @@ export const transformNode = (
             const target = transformNode(
                 node.target,
                 visitor,
-                path.concat({ idx, child: { type: 'annot-target' } }),
+                path.concat({ idx, type: 'annot-target' }),
             );
             node = target !== node.target ? { ...node, target } : node;
             const annot = transformNode(
                 node.annot,
                 visitor,
-                path.concat({ idx, child: { type: 'annot-annot' } }),
+                path.concat({ idx, type: 'annot-annot' }),
             );
             node = annot !== node.annot ? { ...node, annot } : node;
             break;
@@ -137,7 +138,7 @@ export const transformNode = (
             const contents = transformNode(
                 node.contents,
                 visitor,
-                path.concat({ idx, child: { type: 'spread-contents' } }),
+                path.concat({ idx, type: 'spread-contents' }),
             );
             node = contents !== node.contents ? { ...node, contents } : node;
             break;

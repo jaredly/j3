@@ -12,7 +12,7 @@ import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { validatePath } from '../web/mods/clipboard';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { selectEnd, selectStart } from '../web/mods/navigate';
-import { Path } from '../web/store';
+import { Path } from '../web/mods/path';
 import { sexp } from './sexp';
 
 const data = `
@@ -282,7 +282,7 @@ describe('a test', () => {
 
                 const state = selectEnd(
                     idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                    [{ idx: -1, type: 'child', at: 0 }],
                     data,
                 );
 
@@ -313,7 +313,7 @@ describe('a test', () => {
 
                 const startState = selectStart(
                     idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                    [{ idx: -1, type: 'child', at: 0 }],
                     data,
                 );
 

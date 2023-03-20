@@ -1,4 +1,4 @@
-import { Path, UpdateMap } from '../store';
+import { UpdateMap } from '../store';
 import {
     fromMCST,
     ListLikeContents,
@@ -26,6 +26,7 @@ import {
 import { collectNodes, commonAncestor, validatePath } from './clipboard';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { transformNode } from '../../src/types/transform-cst';
+import { Path } from './path';
 
 export function handleBackspace(
     map: Map,
@@ -51,7 +52,8 @@ export function handleBackspace(
                     },
                     selection: selection.start.slice(0, -1).concat({
                         idx: item.source.idx,
-                        child: { type: 'subtext', at: item.source.start },
+                        type: 'subtext',
+                        at: item.source.start,
                     }),
                 };
             }
@@ -65,10 +67,10 @@ export function handleBackspace(
     const flast = fullPath[fullPath.length - 1];
 
     // non-terminal selection
-    if (flast.child.type === 'child') {
+    if (flast.type === 'child') {
         const pnode = map[flast.idx] as ListLikeContents & MNodeExtra;
         const values = pnode.values.slice();
-        values.splice(flast.child.at, 1);
+        values.splice(flast.at, 1);
         return {
             type: 'update',
             map: {
@@ -76,25 +78,25 @@ export function handleBackspace(
             },
             selection: values.length
                 ? selectEnd(
-                      values[flast.child.at - 1],
+                      values[flast.at - 1],
                       fullPath.slice(0, -1).concat([
                           {
                               idx: flast.idx,
-                              child: { type: 'child', at: flast.child.at - 1 },
+                              type: 'child',
+                              at: flast.at - 1,
                           },
                       ]),
                       map,
                   )!
                 : fullPath
                       .slice(0, -1)
-                      .concat({ idx: flast.idx, child: { type: 'inside' } }),
+                      .concat({ idx: flast.idx, type: 'inside' }),
         };
     }
 
     const node = map[flast.idx];
     const atStart =
-        flast.child.type === 'start' ||
-        (flast.child.type === 'subtext' && flast.child.at === 0);
+        flast.type === 'start' || (flast.type === 'subtext' && flast.at === 0);
 
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
@@ -105,10 +107,10 @@ export function handleBackspace(
                 `accessText not child of recordAccess ${parent.type}`,
             );
         }
-        if (ppath.child.type !== 'attribute') {
+        if (ppath.type !== 'attribute') {
             throw new Error(`bad path`);
         }
-        if (ppath.child.at === 1 && parent.items.length === 1) {
+        if (ppath.at === 1 && parent.items.length === 1) {
             const target = map[parent.target];
             return replacePathWith(fullPath.slice(0, -2), map, {
                 idx: parent.target,
@@ -131,21 +133,17 @@ export function handleBackspace(
                 selection: [
                     {
                         idx: parent.target,
-                        child:
-                            target.type === 'identifier'
-                                ? { type: 'subtext', at: target.text.length }
-                                : { type: 'end' },
+                        ...(target.type === 'identifier'
+                            ? { type: 'subtext', at: target.text.length }
+                            : { type: 'end' }),
                     },
                 ],
             });
         }
 
-        const prev =
-            ppath.child.at > 1
-                ? parent.items[ppath.child.at - 2]
-                : parent.target;
+        const prev = ppath.at > 1 ? parent.items[ppath.at - 2] : parent.target;
         const items = parent.items.slice();
-        items.splice(ppath.child.at - 1, 1);
+        items.splice(ppath.at - 1, 1);
         const um: UpdateMap = {
             [flast.idx]: null,
             [ppath.idx]: {
@@ -179,15 +177,14 @@ export function handleBackspace(
             selection: fullPath.slice(0, -2).concat([
                 {
                     idx: ppath.idx,
-                    child:
-                        ppath.child.at > 1
-                            ? {
-                                  type: 'attribute',
-                                  at: ppath.child.at - 1,
-                              }
-                            : { type: 'record-target' },
+                    ...(ppath.at > 1
+                        ? {
+                              type: 'attribute',
+                              at: ppath.at - 1,
+                          }
+                        : { type: 'record-target' }),
                 },
-                { idx: prev, child: { type: 'subtext', at: loc } },
+                { idx: prev, type: 'subtext', at: loc },
             ]),
         };
     }
@@ -204,15 +201,15 @@ export function handleBackspace(
                 replacePathWith(fullPath.slice(0, -2), map, newBlank(ppath.idx))
             );
         }
-        if (ppath.child.type === 'text' && ppath.child.at > 0) {
+        if (ppath.type === 'text' && ppath.at > 0) {
             const prev =
-                ppath.child.at > 1
-                    ? parent.templates[ppath.child.at - 2].suffix
+                ppath.at > 1
+                    ? parent.templates[ppath.at - 2].suffix
                     : parent.first;
-            const cur = parent.templates[ppath.child.at - 1];
+            const cur = parent.templates[ppath.at - 1];
             const pnode = map[prev] as stringText & MNodeExtra;
             const templates = parent.templates.slice();
-            templates.splice(ppath.child.at - 1, 1);
+            templates.splice(ppath.at - 1, 1);
             const um: UpdateMap = {
                 [prev]: { ...pnode, text: pnode.text + node.text },
                 [flast.idx]: null,
@@ -225,18 +222,20 @@ export function handleBackspace(
                 selection: fullPath.slice(0, -2).concat([
                     {
                         idx: ppath.idx,
-                        child: { type: 'text', at: ppath.child.at - 1 },
+                        type: 'text',
+                        at: ppath.at - 1,
                     },
                     {
                         idx: prev,
-                        child: { type: 'subtext', at: pnode.text.length },
+                        type: 'subtext',
+                        at: pnode.text.length,
                     },
                 ]),
             };
         }
     }
 
-    if (flast.child.type === 'end' && !('text' in node)) {
+    if (flast.type === 'end' && !('text' in node)) {
         const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
         return (
             cleared ??
@@ -245,21 +244,21 @@ export function handleBackspace(
     }
 
     if (node.type === 'blank') {
-        if (ppath.child.type === 'expr') {
+        if (ppath.type === 'expr') {
             const parent = map[ppath.idx];
             if (parent.type !== 'string') {
                 throw new Error(`expr parent not a string ${parent.type}`);
             }
             // Join the exprs
             const prev =
-                ppath.child.at > 1
-                    ? parent.templates[ppath.child.at - 2].suffix
+                ppath.at > 1
+                    ? parent.templates[ppath.at - 2].suffix
                     : parent.first;
-            const cur = parent.templates[ppath.child.at - 1];
+            const cur = parent.templates[ppath.at - 1];
             const pnode = map[prev] as stringText & MNodeExtra;
             const snode = map[cur.suffix] as stringText & MNodeExtra;
             const templates = parent.templates.slice();
-            templates.splice(ppath.child.at - 1, 1);
+            templates.splice(ppath.at - 1, 1);
             const um: UpdateMap = {
                 [prev]: {
                     ...pnode,
@@ -278,17 +277,19 @@ export function handleBackspace(
                 selection: fullPath.slice(0, -2).concat([
                     {
                         idx: ppath.idx,
-                        child: { type: 'text', at: ppath.child.at - 1 },
+                        type: 'text',
+                        at: ppath.at - 1,
                     },
                     {
                         idx: prev,
-                        child: { type: 'subtext', at: pnode.text.length },
+                        type: 'subtext',
+                        at: pnode.text.length,
                     },
                 ]),
             };
         }
-        if (ppath.child.type === 'child') {
-            if (ppath.child.at === 0) {
+        if (ppath.type === 'child') {
+            if (ppath.at === 0) {
                 // just go left, ok?
                 // OR do we do a jailbreak?
                 // like, this splats the contents up a level?
@@ -297,7 +298,7 @@ export function handleBackspace(
             }
             const parent = map[ppath.idx] as ListLikeContents & MNodeExtra;
             const values = parent.values.slice();
-            values.splice(ppath.child.at, 1);
+            values.splice(ppath.at, 1);
             if (
                 values.length === 1 &&
                 map[values[0]].type === 'blank' &&
@@ -310,16 +311,17 @@ export function handleBackspace(
                     },
                     selection: fullPath.slice(0, -2).concat({
                         idx: ppath.idx,
-                        child: { type: 'inside' },
+                        type: 'inside',
                     }),
                 };
             }
             const sel = selectEnd(
-                values[ppath.child.at - 1],
+                values[ppath.at - 1],
                 fullPath.slice(0, -2).concat([
                     {
                         idx: ppath.idx,
-                        child: { type: 'child', at: ppath.child.at - 1 },
+                        type: 'child',
+                        at: ppath.at - 1,
                     },
                 ]),
                 map,
@@ -335,7 +337,7 @@ export function handleBackspace(
         }
     }
 
-    if (flast.child.type === 'inside') {
+    if (flast.type === 'inside') {
         // this is an empty listlike.
         // replace with a blank
         // OR if it's the only item of a list, we should
@@ -350,12 +352,12 @@ export function handleBackspace(
     if (!atStart && 'text' in node) {
         const text = splitGraphemes(node.text);
         const atEnd =
-            flast.child.type === 'end' ||
-            (flast.child.type === 'subtext' && flast.child.at === text.length);
+            flast.type === 'end' ||
+            (flast.type === 'subtext' && flast.at === text.length);
         const pos = atEnd
             ? text.length
-            : flast.child.type === 'subtext'
-            ? flast.child.at
+            : flast.type === 'subtext'
+            ? flast.at
             : 0;
         if (text.length === 1 && atEnd) {
             const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
@@ -379,7 +381,8 @@ export function handleBackspace(
             selection: fullPath.slice(0, -1).concat([
                 {
                     idx: flast.idx,
-                    child: { type: 'subtext', at: pos - 1 },
+                    type: 'subtext',
+                    at: pos - 1,
                 },
             ]),
         };
@@ -399,12 +402,12 @@ export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {
     }
     const last = path[path.length - 1];
     const gp = path[path.length - 2];
-    if (gp && gp.child.type === 'child' && gp.child.at > 0) {
+    if (gp && gp.type === 'child' && gp.at > 0) {
         const gpnode = map[gp.idx] as ListLikeContents & MNodeExtra;
-        const prev = map[gpnode.values[gp.child.at - 1]];
+        const prev = map[gpnode.values[gp.at - 1]];
         if (prev.type === 'blank') {
             const values = gpnode.values.slice();
-            values.splice(gp.child.at - 1, 1);
+            values.splice(gp.at - 1, 1);
             return {
                 type: 'update',
                 map: { [gp.idx]: { ...gpnode, values } },
@@ -412,13 +415,14 @@ export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {
                     .slice(0, -1)
                     .concat({
                         idx: gp.idx,
-                        child: { type: 'child', at: gp.child.at - 1 },
+                        type: 'child',
+                        at: gp.at - 1,
                     })
                     .concat([last]),
             };
         }
     }
-    if (gp.child.type === 'start') {
+    if (gp.type === 'start') {
         return maybeRemovePrevBlank(path.slice(0, -1), map);
     }
 };
@@ -511,20 +515,21 @@ export const removeNodes = (
 
     let last = start[start.length - 1];
     let parent = start[start.length - 2];
-    if (parent.child.type === 'child' && parent.child.at === 0) {
+    if (parent.type === 'child' && parent.at === 0) {
         const node = updated[parent.idx];
         if ('values' in node) {
             if (!node.values.length) {
                 left = start.slice(0, -2).concat({
                     idx: parent.idx,
-                    child: { type: 'inside' },
+                    type: 'inside',
                 });
             } else {
                 left = selectStart(
                     node.values[0],
                     start.slice(0, -2).concat({
                         idx: parent.idx,
-                        child: { type: 'child', at: 0 },
+                        type: 'child',
+                        at: 0,
                     }),
                     updated,
                 )!;

@@ -57,11 +57,7 @@ export const posToPath = (
     nidx: () => number,
 ) => {
     let at = 0;
-    let path = selectStart(
-        root,
-        [{ idx: -1, child: { type: 'child', at: 0 } }],
-        map,
-    )!;
+    let path = selectStart(root, [{ idx: -1, type: 'child', at: 0 }], map)!;
     while (at < pos) {
         const update = getKeyUpdate('ArrowRight', map, { start: path }, nidx);
         if (update?.type === 'select') {

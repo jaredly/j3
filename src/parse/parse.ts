@@ -7,7 +7,7 @@ import {
     Mods,
     State,
 } from '../../web/mods/getKeyUpdate';
-import { Path } from '../../web/store';
+import { Path } from '../../web/mods/path';
 import { Map, MNode } from '../types/mcst';
 
 export const idText = (node: MNode) => {
@@ -124,8 +124,8 @@ function initialState() {
         at: [
             {
                 start: [
-                    { idx: -1, child: { type: 'child', at: 0 } },
-                    { idx: top, child: { type: 'start' } },
+                    { idx: -1, type: 'child', at: 0 },
+                    { idx: top, type: 'start' },
                 ],
             },
         ],
@@ -136,9 +136,9 @@ function initialState() {
 
 export function pathPos(path: Path[], curText: string) {
     const last = path[path.length - 1];
-    return last.child.type === 'subtext'
-        ? last.child.at
-        : last.child.type === 'end'
+    return last.type === 'subtext'
+        ? last.at
+        : last.type === 'end'
         ? splitGraphemes(curText).length
         : 0;
 }

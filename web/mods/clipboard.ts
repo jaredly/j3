@@ -11,7 +11,6 @@ import {
 } from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
-import { Path, PathChild } from '../store';
 import {
     applyUpdate,
     getKeyUpdate,
@@ -21,9 +20,10 @@ import {
 } from './getKeyUpdate';
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
+import { Path } from './path';
 
 export type CoverageLevel =
-    | { type: 'inner'; start: PathChild; end: PathChild }
+    | { type: 'inner'; start: Path; end: Path }
     | { type: 'partial' }
     | { type: 'full' };
 
@@ -32,11 +32,11 @@ const isAtStart = (map: Map, path: Path[]): boolean => {
         return true;
     }
     const next = path[0];
-    if (next.child.type === 'annot-target') {
+    if (next.type === 'annot-target') {
         return isAtStart(map, path.slice(1));
     }
-    if (next.child.type === 'subtext') {
-        return next.child.at === 0 && path.length === 1;
+    if (next.type === 'subtext') {
+        return next.at === 0 && path.length === 1;
     }
     return false;
 };
@@ -54,7 +54,7 @@ export const commonAncestor = (one: Path[], two: Path[]) => {
 export const validatePath = (map: Map, path: Path[]) => {
     for (let i = 0; i < path.length - 1; i++) {
         const next = path[i + 1].idx;
-        const { idx, child } = path[i];
+        const { idx, ...child } = path[i];
         const node = map[idx];
         switch (child.type) {
             case 'annot-annot':
@@ -145,19 +145,19 @@ export const selectionStatus = (
     }
     if (
         start.length === path.length + 1 &&
-        start[start.length - 1].child.type === 'start'
+        start[start.length - 1].type === 'start'
     ) {
         s = -1;
     }
     if (
         start.length === path.length + 2 &&
-        start[start.length - 2].child.type === 'annot-target'
+        start[start.length - 2].type === 'annot-target'
     ) {
         s = -1;
     }
     if (
         start.length === path.length + 2 &&
-        start[start.length - 2].child.type === 'record-target'
+        start[start.length - 2].type === 'record-target'
     ) {
         s = -1;
     }
@@ -167,21 +167,18 @@ export const selectionStatus = (
         return null;
     }
 
-    if (
-        end.length === path.length + 1 &&
-        end[end.length - 1].child.type === 'end'
-    ) {
+    if (end.length === path.length + 1 && end[end.length - 1].type === 'end') {
         e = -1;
     }
     if (end.length === path.length + 2) {
         const slast = end[end.length - 2];
 
-        if (slast.child.type === 'annot-annot') {
+        if (slast.type === 'annot-annot') {
             e = -1;
         }
         const node = map[slast.idx];
-        if (slast.child.type === 'attribute' && node.type === 'recordAccess') {
-            if (node.items.length === slast.child.at) {
+        if (slast.type === 'attribute' && node.type === 'recordAccess') {
+            if (node.items.length === slast.at) {
                 e = -1;
             }
         }
@@ -192,8 +189,8 @@ export const selectionStatus = (
     if (s === 0 && e === 0) {
         return {
             type: 'inner',
-            start: start[start.length - 1].child,
-            end: end[end.length - 1].child,
+            start: start[start.length - 1],
+            end: end[end.length - 1],
         };
     }
     return { type: 'partial' };
@@ -250,12 +247,12 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                 const parent = start[start.length - 2];
                 if (
                     state.map[last.idx].type === 'blank' &&
-                    parent.child.type === 'child'
+                    parent.type === 'child'
                 ) {
                     const pnode = state.map[parent.idx] as ListLikeContents &
                         MNodeExtra;
                     const values = pnode.values.slice();
-                    values.splice(parent.child.at, 1, ...idxes);
+                    values.splice(parent.at, 1, ...idxes);
                     map[parent.idx] = {
                         ...pnode,
                         values,
@@ -267,10 +264,8 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                             .slice(0, -2)
                             .concat({
                                 idx: parent.idx,
-                                child: {
-                                    type: 'child',
-                                    at: parent.child.at + idxes.length - 1,
-                                },
+                                type: 'child',
+                                at: parent.at + idxes.length - 1,
                             })
                             .concat(selection),
                     };
@@ -324,15 +319,15 @@ export const collectNodes = (
             if ('text' in node) {
                 const text = splitGraphemes(node.text);
                 const sloc =
-                    slast.child.type === 'subtext'
-                        ? slast.child.at
-                        : slast.child.type === 'end'
+                    slast.type === 'subtext'
+                        ? slast.at
+                        : slast.type === 'end'
                         ? text.length
                         : 0;
                 const eloc =
-                    elast.child.type === 'subtext'
-                        ? elast.child.at
-                        : elast.child.type === 'start'
+                    elast.type === 'subtext'
+                        ? elast.at
+                        : elast.type === 'start'
                         ? 0
                         : text.length;
                 return {

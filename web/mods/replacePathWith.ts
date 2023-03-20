@@ -5,8 +5,9 @@ import {
     MCString,
     MNodeExtra,
 } from '../../src/types/mcst';
-import { Path, UpdateMap } from '../store';
+import { UpdateMap } from '../store';
 import { NewThing, StateUpdate } from './getKeyUpdate';
+import { Path } from './path';
 
 export function replacePathWith(
     path: Path[],
@@ -31,10 +32,10 @@ export const replacePath = (
 ): UpdateMap => {
     const update: UpdateMap = {};
     const pnode = map[parent.idx];
-    switch (parent.child.type) {
+    switch (parent.type) {
         case 'child': {
             const values = (pnode as ListLikeContents).values.slice();
-            values[parent.child.at] = newIdx;
+            values[parent.at] = newIdx;
             update[parent.idx] = {
                 ...(pnode as ListLikeContents & MNodeExtra),
                 values,
@@ -43,8 +44,8 @@ export const replacePath = (
         }
         case 'expr': {
             const templates = (pnode as MCString).templates.slice();
-            templates[parent.child.at - 1] = {
-                ...templates[parent.child.at - 1],
+            templates[parent.at - 1] = {
+                ...templates[parent.at - 1],
                 expr: newIdx,
             };
             update[parent.idx] = {
@@ -62,7 +63,7 @@ export const replacePath = (
         }
         default:
             throw new Error(
-                `Can't replace parent. ${parent.child.type}. is this a valid place for an expr?`,
+                `Can't replace parent. ${parent.type}. is this a valid place for an expr?`,
             );
     }
     return update;

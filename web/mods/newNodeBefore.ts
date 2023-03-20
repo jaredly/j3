@@ -1,8 +1,8 @@
 import { Map } from '../../src/types/mcst';
-import { Path } from '../store';
 import { modChildren } from './modChildren';
 import { newBlank } from './newNodes';
 import { NewThing, StateUpdate } from './getKeyUpdate';
+import { Path } from './path';
 
 export const newNodeAfter = (
     path: Path[],
@@ -14,10 +14,10 @@ export const newNodeAfter = (
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
 
-        if (parent.child.type !== 'child' && parent.child.type !== 'inside') {
+        if (parent.type !== 'child' && parent.type !== 'inside') {
             continue;
         }
-        const child = parent.child;
+        const child = parent;
 
         const pnode = map[parent.idx];
 
@@ -52,15 +52,13 @@ export const newNodeAfter = (
                 .slice(0, i)
                 .concat({
                     idx: parent.idx,
-                    child: {
-                        type: 'child',
-                        at:
-                            child.type === 'child'
-                                ? child.at + 1 + extra.length
-                                : firstBlank
-                                ? 1
-                                : extra.length,
-                    },
+                    type: 'child',
+                    at:
+                        child.type === 'child'
+                            ? child.at + 1 + extra.length
+                            : firstBlank
+                            ? 1
+                            : extra.length,
                 })
                 .concat(newThing.selection),
         };
@@ -75,10 +73,10 @@ export const newNodeBefore = (
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
 
-        if (parent.child.type !== 'child') {
+        if (parent.type !== 'child') {
             continue;
         }
-        const child = parent.child;
+        const child = parent;
 
         const pnode = map[parent.idx];
 
@@ -96,13 +94,7 @@ export const newNodeBefore = (
             ...newThing,
             selection: path
                 .slice(0, i)
-                .concat({
-                    idx: parent.idx,
-                    child: {
-                        type: 'child',
-                        at: at + 1,
-                    },
-                })
+                .concat({ idx: parent.idx, type: 'child', at: at + 1 })
                 .concat(newThing.selection),
         };
     }

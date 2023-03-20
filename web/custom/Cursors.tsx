@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
-import { Path } from '../store';
+import { Path } from '../mods/path';
 import { UIState, RegMap } from './ByHand';
 import { selectWithin } from './calcOffset';
 
@@ -109,11 +109,11 @@ export const calcCursorPos = (
         return;
     }
     try {
-        switch (last.child.type) {
+        switch (last.type) {
             case 'start':
             case 'end':
             case 'inside':
-                const blinker = nodes[last.child.type];
+                const blinker = nodes[last.type];
                 if (blinker) {
                     return subRect(
                         blinker.node.getBoundingClientRect(),
@@ -129,8 +129,8 @@ export const calcCursorPos = (
                     if (!nodes.main.node.firstChild) {
                         // nothing to do here
                     } else if (
-                        last.child.type === 'start' ||
-                        (last.child.type === 'subtext' && last.child.at === 0)
+                        last.type === 'start' ||
+                        (last.type === 'subtext' && last.at === 0)
                     ) {
                         let fc = nodes.main.node.firstChild;
                         if (fc.nodeName !== '#text') {
@@ -139,9 +139,8 @@ export const calcCursorPos = (
                         r.setStart(fc!, 0);
                         r.collapse(true);
                     } else if (
-                        last.child.type === 'end' ||
-                        (last.child.type === 'subtext' &&
-                            last.child.at === text.length)
+                        last.type === 'end' ||
+                        (last.type === 'subtext' && last.at === text.length)
                     ) {
                         let lc = nodes.main.node.lastChild!;
                         if (lc.nodeName !== '#text') {
@@ -149,17 +148,13 @@ export const calcCursorPos = (
                         }
                         r.setStart(lc, lc.textContent!.length);
                         r.collapse(true);
-                    } else if (last.child.type === 'subtext') {
-                        const left = selectWithin(
-                            nodes.main.node,
-                            last.child.at,
-                            r,
-                        );
+                    } else if (last.type === 'subtext') {
+                        const left = selectWithin(nodes.main.node, last.at, r);
                         if (left !== 0) {
                             console.error(
                                 'no select within',
                                 nodes.main.node,
-                                last.child.at,
+                                last.at,
                             );
                             r.setStart(nodes.main.node.firstChild!, 0);
                         }

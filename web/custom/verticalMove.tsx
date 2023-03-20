@@ -1,9 +1,9 @@
 import { calcOffset } from './calcOffset';
 import { UIState } from './ByHand';
 import { calcCursorPos } from './Cursors';
-import { Path } from '../store';
 import { Mods } from '../mods/getKeyUpdate';
 import { cmpFullPath } from './isCoveredBySelection';
+import { Path } from '../mods/path';
 
 export const verticalMove = (
     state: UIState,
@@ -95,14 +95,12 @@ export const closestSelection = (
                 which === 'main'
                     ? value.path.concat({
                           idx: +key,
-                          child: {
-                              type: 'subtext',
-                              at: calcOffset(value.node, pos.x),
-                          },
+                          type: 'subtext',
+                          at: calcOffset(value.node, pos.x),
                       })
                     : value.path.concat({
                           idx: +key,
-                          child: { type: which as 'end' },
+                          type: which as 'end',
                       });
             best = { top: box.top, dx, dy, sel };
         });

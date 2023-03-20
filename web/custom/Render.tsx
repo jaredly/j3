@@ -226,14 +226,8 @@ export const RenderNNode = (
                             type: 'select',
                             at: [
                                 {
-                                    start: path.concat({
-                                        idx,
-                                        child: { type: 'start' },
-                                    }),
-                                    end: path.concat({
-                                        idx,
-                                        child: { type: 'end' },
-                                    }),
+                                    start: path.concat({ idx, type: 'start' }),
+                                    end: path.concat({ idx, type: 'end' }),
                                 },
                             ],
                         });
@@ -249,13 +243,11 @@ export const RenderNNode = (
                                 {
                                     start: path.concat({
                                         idx,
-                                        child: {
-                                            type: 'subtext',
-                                            at: calcOffset(
-                                                evt.currentTarget,
-                                                evt.clientX,
-                                            ),
-                                        },
+                                        type: 'subtext',
+                                        at: calcOffset(
+                                            evt.currentTarget,
+                                            evt.clientX,
+                                        ),
                                     }),
                                 },
                             ],
@@ -276,7 +268,7 @@ export const RenderNNode = (
                     idx={nnode.id}
                     selection={props.selection}
                     debug={props.debug}
-                    path={path.concat([{ idx, child: nnode.path }])}
+                    path={path.concat([{ idx, ...nnode.path }])}
                 />
             );
         case 'pairs':

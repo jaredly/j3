@@ -1,6 +1,6 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
 import { Map, MNode } from '../../src/types/mcst';
-import { Path, PathChild, UpdateMap } from '../store';
+import { UpdateMap } from '../store';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
 import { handleStringText } from './handleStringText';
@@ -18,6 +18,7 @@ import {
     newSpread,
     newString,
 } from './newNodes';
+import { Path } from './path';
 import { replacePathWith } from './replacePathWith';
 
 export const wrappable = ['spread-contents', 'expr', 'child'];
@@ -73,7 +74,7 @@ export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
 };
 
 export const isRootPath = (path: Path[]) => {
-    return path.length === 1 && path[0].child.type !== 'child';
+    return path.length === 1 && path[0].type !== 'child';
 };
 
 export const applyUpdate = (
@@ -125,7 +126,7 @@ export const applyUpdate = (
 //     }
 // };
 
-const isPathAtStart = (text: string, path: PathChild) => {
+const isPathAtStart = (text: string, path: Path) => {
     return (
         // !(path.type === 'end' && text.length > 0) &&
         // !(typeof loc === 'number' && loc > 0)
@@ -177,12 +178,13 @@ export const getKeyUpdate = (
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
-        if ('text' in node && !isPathAtStart(node.text, flast.child)) {
+        if ('text' in node && !isPathAtStart(node.text, flast)) {
             const pos = pathPos(fullPath, node.text);
             const next = fullPath.slice(0, -1).concat([
                 {
                     idx,
-                    child: { type: 'subtext', at: pos - 1 },
+                    type: 'subtext',
+                    at: pos - 1,
                 },
             ]);
             if (mods?.shift) {
@@ -214,7 +216,7 @@ export const getKeyUpdate = (
         if (pos < text.length) {
             const next = fullPath
                 .slice(0, -1)
-                .concat([{ idx, child: { type: 'subtext', at: pos + 1 } }]);
+                .concat([{ idx, type: 'subtext', at: pos + 1 }]);
             if (mods?.shift) {
                 return {
                     type: 'select',
@@ -259,30 +261,31 @@ export const getKeyUpdate = (
     const parent = map[ppath.idx];
 
     if (key === ' ' || key === 'Enter') {
-        if (ppath.child.type === 'child' && 'values' in parent) {
+        if (ppath.type === 'child' && 'values' in parent) {
             // const parent = map[last.idx] as ListLikeContents;
             if (
-                parent.values.length > ppath.child.at + 1 &&
-                map[parent.values[ppath.child.at + 1]].type === 'blank'
+                parent.values.length > ppath.at + 1 &&
+                map[parent.values[ppath.at + 1]].type === 'blank'
             ) {
                 return {
                     type: 'select',
                     selection: fullPath.slice(0, -2).concat([
                         {
                             idx: ppath.idx,
-                            child: { type: 'child', at: ppath.child.at + 1 },
+                            type: 'child',
+                            at: ppath.at + 1,
                         },
                         {
-                            idx: parent.values[ppath.child.at + 1],
-                            child: { type: 'start' },
+                            idx: parent.values[ppath.at + 1],
+                            type: 'start',
                         },
                     ]),
                 };
             }
         }
         if (
-            flast.child.type === 'start' ||
-            (flast.child.type === 'subtext' && flast.child.at === 0)
+            flast.type === 'start' ||
+            (flast.type === 'subtext' && flast.at === 0)
         ) {
             return newNodeBefore(fullPath.slice(0, -1), map, {
                 ...newBlank(nidx()),
@@ -299,7 +302,7 @@ export const getKeyUpdate = (
 
     if (key === ':') {
         // no nesting tannots
-        if (fullPath.some((s) => s.child.type === 'annot-annot')) {
+        if (fullPath.some((s) => s.type === 'annot-annot')) {
             return;
         }
         return goToTannot(fullPath, node, idx, map, nidx);
@@ -318,7 +321,7 @@ export const getKeyUpdate = (
             const nat = newRecordAccess(idx, '', nidx(), nidx());
             return replacePathWith(fullPath.slice(0, -1), map, nat);
         }
-        if (flast.child.type === 'inside') {
+        if (flast.type === 'inside') {
             const blank = newBlank(nidx());
             const nat = mergeNew(
                 blank,
@@ -341,7 +344,7 @@ export const getKeyUpdate = (
             }
             return replacePathWith(fullPath.slice(0, -1), map, nat);
         }
-        if (node.type === 'accessText' && ppath.child.type === 'attribute') {
+        if (node.type === 'accessText' && ppath.type === 'attribute') {
             if (parent.type !== 'recordAccess') {
                 throw new Error(
                     `accessText parent not a recordAccess ${parent.type}`,
@@ -352,7 +355,7 @@ export const getKeyUpdate = (
                 // turn into a spread!
                 const nat = newSpread(
                     parent.target,
-                    [{ idx: parent.target, child: { type: 'start' } }],
+                    [{ idx: parent.target, type: 'start' }],
                     nidx(),
                 );
                 // Delete the recordAccess
@@ -367,7 +370,7 @@ export const getKeyUpdate = (
                 nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
             }
             const items = parent.items.slice();
-            items.splice(ppath.child.at + 1, 0, nat.idx);
+            items.splice(ppath.at + 1, 0, nat.idx);
             nat.map[ppath.idx] = { ...parent, items };
             return {
                 type: 'update',
@@ -376,10 +379,9 @@ export const getKeyUpdate = (
                     .slice(0, -2)
                     .concat({
                         idx: ppath.idx,
-                        child: {
-                            type: 'attribute',
-                            at: ppath.child.at + 1,
-                        },
+
+                        type: 'attribute',
+                        at: ppath.at + 1,
                     })
                     .concat(nat.selection),
             };
@@ -416,7 +418,7 @@ export const insertText = (
         return updateText(node, pos, input, idx, fullPath.slice(0, -1));
     }
 
-    if (flast.child.type === 'inside') {
+    if (flast.type === 'inside') {
         return addToListLike(map, idx, fullPath, newId(input, nidx()));
     }
 
@@ -424,7 +426,7 @@ export const insertText = (
         return replaceWith(fullPath.slice(0, -1), newId(input, idx));
     }
 
-    if (flast.child.type === 'start') {
+    if (flast.type === 'start') {
         return newNodeBefore(fullPath, map, newId(input, nidx()));
     }
 
@@ -449,7 +451,8 @@ function addToListLike(
             .slice(0, -1)
             .concat({
                 idx: pidx,
-                child: { type: 'child', at: 0 },
+                type: 'child',
+                at: 0,
             })
             .concat(newThing.selection),
     };
@@ -476,7 +479,8 @@ function updateText(
         selection: path.concat([
             {
                 idx,
-                child: { type: 'subtext', at: pos + input.length },
+                type: 'subtext',
+                at: pos + input.length,
             },
         ]),
     };
@@ -489,17 +493,14 @@ function goToTannot(
     map: Map,
     nidx: () => number,
 ): StateChange {
-    if (
-        path.length > 1 &&
-        path[path.length - 2].child.type === 'annot-target'
-    ) {
+    if (path.length > 1 && path[path.length - 2].type === 'annot-target') {
         const node = map[path[path.length - 2].idx];
         if (node.type === 'annot') {
             const sel = selectStart(
                 node.annot,
                 path.slice(0, -2).concat({
                     idx: path[path.length - 2].idx,
-                    child: { type: 'annot-annot' },
+                    type: 'annot-annot',
                 }),
                 map,
             );
@@ -541,10 +542,10 @@ export function openListLike({
 
     // Gotta wrap it!
     if (
-        flast.child.type === 'start' ||
-        (flast.child.type === 'subtext' && flast.child.at === 0)
+        flast.type === 'start' ||
+        (flast.type === 'subtext' && flast.at === 0)
     ) {
-        if (wrappable.includes(fullPath[fullPath.length - 2].child.type)) {
+        if (wrappable.includes(fullPath[fullPath.length - 2].type)) {
             return replacePathWith(
                 fullPath.slice(0, -1),
                 map,
@@ -582,7 +583,7 @@ export const maybeClearParentList = (
         return;
     }
     const gp = path[path.length - 1];
-    if (gp && gp.child.type === 'child' && gp.child.at === 0) {
+    if (gp && gp.type === 'child' && gp.at === 0) {
         const gpnode = map[gp.idx];
         if ('values' in gpnode && gpnode.values.length === 1) {
             return {
@@ -590,7 +591,7 @@ export const maybeClearParentList = (
                 map: { [gp.idx]: { ...gpnode, values: [] } },
                 selection: path
                     .slice(0, -1)
-                    .concat({ idx: gp.idx, child: { type: 'inside' } }),
+                    .concat({ idx: gp.idx, type: 'inside' }),
             };
         }
     }

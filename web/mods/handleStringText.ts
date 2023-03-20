@@ -1,8 +1,8 @@
-import { Path } from '../store';
 import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { stringText } from '../../src/types/cst';
 import { StateChange, StateUpdate } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
+import { Path } from './path';
 
 export function handleStringText({
     key,
@@ -27,9 +27,7 @@ export function handleStringText({
     if (key === '"' && pos === text.length) {
         return {
             type: 'select',
-            selection: path
-                .slice(0, -1)
-                .concat({ idx: last.idx, child: { type: 'end' } }),
+            selection: path.slice(0, -1).concat({ idx: last.idx, type: 'end' }),
         };
     }
 
@@ -54,7 +52,7 @@ export function handleStringText({
         type: 'update',
         map: { [idx]: { ...node, text: text.join('') } },
         selection: path.concat([
-            { idx, child: { type: 'subtext', at: pos + input.length } },
+            { idx, type: 'subtext', at: pos + input.length },
         ]),
     };
 }
@@ -75,7 +73,7 @@ function splitString(
     if (string.type !== 'string') {
         throw new Error(`stringText parent not a string`);
     }
-    if (last.child.type !== 'text') {
+    if (last.type !== 'text') {
         throw new Error(`stringText path not a text`);
     }
     const blank: MNode = {
@@ -92,7 +90,7 @@ function splitString(
         loc: { idx: nidx(), start: 0, end: 0 },
     };
     const templates = string.templates.slice();
-    templates.splice(last.child.at, 0, {
+    templates.splice(last.at, 0, {
         expr: blank.loc.idx,
         suffix: stringText.loc.idx,
     });
@@ -113,11 +111,12 @@ function splitString(
         selection: path.slice(0, -1).concat(
             {
                 idx: last.idx,
-                child: { type: 'expr', at: last.child.at + 1 },
+                type: 'expr',
+                at: last.at + 1,
             },
             {
                 idx: blank.loc.idx,
-                child: { type: 'start' },
+                type: 'start',
             },
         ),
     };

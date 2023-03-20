@@ -1,6 +1,6 @@
 import { splitGraphemes } from '../../src/parse/parse';
-import { Path } from '../store';
 import { NewThing } from './getKeyUpdate';
+import { Path } from './path';
 
 /** Second wins */
 export const mergeNew = (first: NewThing, second: NewThing): NewThing => {
@@ -16,7 +16,7 @@ export const newBlank = (idx: number): NewThing => {
             [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
         },
         idx,
-        selection: [{ idx, child: { type: 'start' } }],
+        selection: [{ idx, type: 'start' }],
     };
 };
 
@@ -30,7 +30,7 @@ export const newSpread = (iid: number, last: Path[], idx: number): NewThing => {
             },
         },
         idx,
-        selection: [{ idx, child: { type: 'spread-contents' } }, ...last],
+        selection: [{ idx, type: 'spread-contents' }, ...last],
     };
 };
 
@@ -56,10 +56,11 @@ export const newRecordAccess = (
         },
         idx,
         selection: [
-            { idx, child: { type: 'attribute', at: 1 } },
+            { idx, type: 'attribute', at: 1 },
             {
                 idx: aidx,
-                child: { type: 'subtext', at: 0 },
+                type: 'subtext',
+                at: 0,
             },
         ],
     };
@@ -75,7 +76,7 @@ export const newAccessText = (text: string[], idx: number): NewThing => {
             },
         },
         idx,
-        selection: [{ idx, child: { type: 'subtext', at: text.length } }],
+        selection: [{ idx, type: 'subtext', at: text.length }],
     };
 };
 
@@ -89,7 +90,7 @@ export const newId = (key: string[], idx: number): NewThing => {
             },
         },
         idx,
-        selection: [{ idx, child: { type: 'subtext', at: key.length } }],
+        selection: [{ idx, type: 'subtext', at: key.length }],
     };
 };
 
@@ -110,10 +111,11 @@ export const newString = (idx: number, nid: number): NewThing => {
         },
         idx: idx,
         selection: [
-            { idx, child: { type: 'text', at: 0 } },
+            { idx, type: 'text', at: 0 },
             {
                 idx: nid,
-                child: { type: 'subtext', at: 0 },
+                type: 'subtext',
+                at: 0,
             },
         ],
     };
@@ -135,10 +137,7 @@ export function newAnnot(
             },
         },
         idx,
-        selection: [
-            { idx, child: { type: 'annot-annot' } },
-            ...child.selection,
-        ],
+        selection: [{ idx, type: 'annot-annot' }, ...child.selection],
     };
 }
 
@@ -158,7 +157,7 @@ export function newListLike(
         },
         idx,
         selection: child
-            ? [{ idx, child: { type: 'child', at: 0 } }, ...child.selection]
-            : [{ idx, child: { type: 'inside' } }],
+            ? [{ idx, type: 'child', at: 0 }, ...child.selection]
+            : [{ idx, type: 'inside' }],
     };
 }

@@ -1,7 +1,7 @@
 import { Map } from '../../src/types/mcst';
 import { CoverageLevel, selectionStatus } from '../mods/clipboard';
 import { State } from '../mods/getKeyUpdate';
-import { Path, PathChild } from '../store';
+import { Path } from '../mods/path';
 
 export const isCoveredBySelection = (
     at: State['at'],
@@ -27,7 +27,7 @@ export const isCoveredBySelection = (
     return null;
 };
 
-export const cmpPath = (one: PathChild, two: PathChild): number => {
+export const cmpPath = (one: Path, two: Path): number => {
     if (one.type === two.type) {
         switch (one.type) {
             case 'start':
@@ -97,7 +97,7 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
             );
             return 0;
         }
-        const cmp = cmpPath(o.child, t.child);
+        const cmp = cmpPath(o, t);
         if (cmp !== 0) {
             return cmp;
         }

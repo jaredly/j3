@@ -28,7 +28,7 @@ import {
     Mods,
 } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
-import { Path } from '../store';
+import { Path } from '../mods/path';
 import { Cursors } from './Cursors';
 import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
@@ -167,11 +167,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
         const { map, nidx } = parseByCharacter(initialText, debug);
         const idx = (map[-1] as ListLikeContents).values[0];
-        const at = selectEnd(
-            idx,
-            [{ idx: -1, child: { type: 'child', at: 0 } }],
-            map,
-        )!;
+        const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
         return {
             map,
             root: -1,
@@ -438,7 +434,8 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                             path={[
                                 {
                                     idx: state.root,
-                                    child: { type: 'child', at: i },
+                                    type: 'child',
+                                    at: i,
                                 },
                             ]}
                         />
@@ -496,9 +493,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                                     at.start.map((item, i) => (
                                         <tr key={i + ':' + a}>
                                             <td>{item.idx}</td>
-                                            <td>
-                                                {JSON.stringify(item.child)}
-                                            </td>
+                                            <td>{JSON.stringify(item)}</td>
                                         </tr>
                                     )),
                                 )}
@@ -515,7 +510,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 };
 
 const isRootPath = (path: Path[]) => {
-    return path.length === 1 && path[0].child.type !== 'child';
+    return path.length === 1 && path[0].type !== 'child';
 };
 
 export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {

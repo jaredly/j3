@@ -26,7 +26,7 @@ should I just do writeText? Or should I also do `write`,
 with a json mime type?
 Seems like a solid idea.
 
-- [ ] LOGJAM ok the `path.child` thing has gotten super old
+- [x] LOGJAM ok the `path.child` thing has gotten super old
 
 - [x] LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
 
