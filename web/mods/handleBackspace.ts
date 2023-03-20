@@ -7,13 +7,18 @@ import { replacePathWith } from './replacePathWith';
 import { splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 import { collectNodes } from './clipboard';
+import { cmpFullPath } from '../custom/isCoveredBySelection';
 
 export function handleBackspace(
     map: Map,
     selection: { start: Path[]; end?: Path[] },
 ): StateChange {
     if (selection.end) {
-        const item = collectNodes(map, selection.start, selection.end);
+        const [start, end] =
+            cmpFullPath(selection.start, selection.end) < 0
+                ? [selection.start, selection.end]
+                : [selection.end, selection.start];
+        const item = collectNodes(map, start, end);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node) {
