@@ -1,7 +1,7 @@
 import { parseByCharacter } from '../src/parse/parse';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
-import { collectNodes } from '../web/mods/clipboard';
+import { clipboardText, collectNodes } from '../web/mods/clipboard';
 import { getKeyUpdate } from '../web/mods/getKeyUpdate';
 import { selectStart } from '../web/mods/navigate';
 
@@ -95,14 +95,7 @@ describe('a test', () => {
                 }
 
                 const collected = collectNodes(data, firstPath, secondPath);
-                const printed =
-                    collected.type === 'subtext' ||
-                    collected.type === 'substring' ||
-                    collected.type === 'untrusted'
-                        ? collected.text
-                        : collected.nodes
-                              .map((node) => nodeToString(node))
-                              .join(' ');
+                const printed = clipboardText([collected]);
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);

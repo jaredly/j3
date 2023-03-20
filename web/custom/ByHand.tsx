@@ -296,6 +296,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                                 console.error(err);
                             }
                         }
+                        return;
                     }
                     const plain = evt.clipboardData.getData('text/plain');
                     if (plain) {

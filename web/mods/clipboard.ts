@@ -58,27 +58,38 @@ export const selectionStatus = (
 export type ClipboardItem =
     | { type: 'untrusted'; text: string }
     | { type: 'subtext'; text: string }
-    | { type: 'substring'; text: string }
     | { type: 'nodes'; nodes: Node[] };
 
 export const paste = (state: State, items: ClipboardItem[]): State => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
         const item = items[0];
-        if (item.type === 'subtext') {
-            const path = state.at[0].start;
-            const update = insertText(item.text, state.map, path, state.nidx);
-            console.log('update', update);
-            return applyUpdate(state, 0, update);
-        }
-        if (item.type === 'untrusted') {
-            const chars = splitGraphemes(item.text);
-            for (let char of chars) {
+        switch (item.type) {
+            case 'subtext': {
                 const path = state.at[0].start;
-                const update = insertText(char, state.map, path, state.nidx);
-                console.log('update', update);
-                state = applyUpdate(state, 0, update);
+                const update = insertText(
+                    item.text,
+                    state.map,
+                    path,
+                    state.nidx,
+                );
+                return applyUpdate(state, 0, update);
             }
-            return state;
+            case 'untrusted': {
+                const chars = splitGraphemes(item.text);
+                for (let char of chars) {
+                    const path = state.at[0].start;
+                    const update = getKeyUpdate(
+                        char,
+                        state.map,
+                        path,
+                        state.nidx,
+                    );
+                    state = applyUpdate(state, 0, update);
+                }
+                return state;
+            }
+            case 'nodes': {
+            }
         }
     }
     return state;
@@ -87,9 +98,7 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
 export const clipboardText = (items: ClipboardItem[]) => {
     return items
         .map((item) =>
-            item.type === 'subtext' ||
-            item.type === 'untrusted' ||
-            item.type === 'substring'
+            item.type === 'subtext' || item.type === 'untrusted'
                 ? item.text
                 : item.nodes.map((node) => nodeToString(node)).join(' '),
         )
@@ -131,7 +140,7 @@ export const collectNodes = (
                         ? 0
                         : text.length;
                 return {
-                    type: 'subtext',
+                    type: node.type === 'stringText' ? 'untrusted' : 'subtext',
                     text: text.slice(sloc, eloc).join(''),
                 };
             }
