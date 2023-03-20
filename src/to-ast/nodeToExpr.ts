@@ -389,7 +389,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 name: form.name,
             };
         case 'annot':
-            throw new Error(`annot not yet toExpr`);
+            return nodeToExpr(form.target, ctx);
+        // throw new Error(`annot not yet toExpr`);
     }
     let _: never = form;
     throw new Error(

@@ -7,13 +7,9 @@ import { transformNode } from '../../src/types/transform-cst';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { getNodes } from '../overheat/getNodes';
 import { Path, PathChild, UpdateMap } from '../store';
-import {
-    applyUpdate,
-    getKeyUpdate,
-    insertText,
-    newNodeAfter,
-    State,
-} from './getKeyUpdate';
+import { applyUpdate, getKeyUpdate, insertText, State } from './getKeyUpdate';
+import { selectEnd } from './navigate';
+import { newNodeAfter } from './newNodeBefore';
 
 export type CoverageLevel =
     | { type: 'inner'; start: PathChild; end: PathChild }
@@ -95,12 +91,22 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                 return state;
             }
             case 'nodes': {
-                const map: UpdateMap = {};
+                const map: Map = {};
                 const idxes = item.nodes.map((node) =>
                     toMCST(reLoc(node, state.nidx), map),
                 );
+                const start = state.at[0].start;
+                const lidx = idxes[idxes.length - 1];
+                const selection = selectEnd(lidx, [], map)!;
 
-                newNodeAfter;
+                const update = newNodeAfter(
+                    start,
+                    state.map,
+                    { map, idx: lidx, selection },
+                    state.nidx,
+                    idxes.slice(0, -1),
+                );
+                return applyUpdate(state, 0, update);
             }
         }
     }

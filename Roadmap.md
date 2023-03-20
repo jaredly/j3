@@ -25,6 +25,9 @@ Seems like a solid idea.
 
 - [ ] and then I need a simple paste-story
   which should go ok
+   - [x] basic subtext
+   - [x] untrusted, do each character
+   - [x] paste mutliple nodes pls
 
 - [ ] and then ... oh right, I need a `hash` node type, to lock things down,
   and then autocomplete. Then I can go back to playing with the language.

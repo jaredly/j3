@@ -1,7 +1,7 @@
 import { Path } from '../store';
 import { Map, MNode, MNodeExtra } from '../../src/types/mcst';
 import { stringText } from '../../src/types/cst';
-import { StateChange } from './getKeyUpdate';
+import { StateChange, StateUpdate } from './getKeyUpdate';
 import { splitGraphemes } from '../../src/parse/parse';
 
 export function handleStringText({
@@ -58,6 +58,7 @@ export function handleStringText({
         ]),
     };
 }
+
 function splitString(
     text: string[],
     pos: number,
@@ -67,7 +68,7 @@ function splitString(
     node: stringText & MNodeExtra,
     path: Path[],
     nidx: () => number,
-): StateChange {
+): StateUpdate {
     const prefix = text.slice(0, pos - 1);
     const suffix = text.slice(pos);
     const string = map[last.idx];
