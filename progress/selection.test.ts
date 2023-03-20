@@ -25,6 +25,26 @@ cd
 (one and (two [and:three four:five]))
      ^                       ^
 and (two [and:three four])
+
+"one \${two} three"
+ ^        ^
+"one \${two}"
+
+(some:thing)
+  ^     ^
+some:thing
+
+hello.folks.such
+  ^     ^
+hello.folks
+
+hello.folks.such
+        ^     ^
+folks.such
+
+"going on a \${cou.gar} hunt"
+               ^     ^
+cou.gar
 `;
 
 // So, um I want to ... do the sourcemap backwards?
