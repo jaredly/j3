@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Path } from '../store';
 import { UIState, RegMap } from './ByHand';
+import { selectWithin } from './calcOffset';
 
 export const Cursors = ({ state }: { state: UIState }) => {
     const [blink, setBlink] = useState(false);
@@ -131,20 +132,37 @@ export const calcCursorPos = (
                         last.child.type === 'start' ||
                         (last.child.type === 'subtext' && last.child.at === 0)
                     ) {
-                        r.setStart(nodes.main.node.firstChild!, 0);
+                        let fc = nodes.main.node.firstChild;
+                        if (fc.nodeName !== '#text') {
+                            fc = fc.firstChild!;
+                        }
+                        r.setStart(fc!, 0);
                         r.collapse(true);
                     } else if (
                         last.child.type === 'end' ||
                         (last.child.type === 'subtext' &&
                             last.child.at === text.length)
                     ) {
-                        r.setStart(nodes.main.node.firstChild!, textRaw.length);
+                        let lc = nodes.main.node.lastChild!;
+                        if (lc.nodeName !== '#text') {
+                            lc = lc.lastChild!;
+                        }
+                        r.setStart(lc, lc.textContent!.length);
                         r.collapse(true);
                     } else if (last.child.type === 'subtext') {
-                        r.setStart(
-                            nodes.main.node.firstChild!,
-                            text.slice(0, last.child.at).join('').length,
+                        const left = selectWithin(
+                            nodes.main.node,
+                            last.child.at,
+                            r,
                         );
+                        if (left !== 0) {
+                            console.error(
+                                'no select within',
+                                nodes.main.node,
+                                last.child.at,
+                            );
+                            r.setStart(nodes.main.node.firstChild!, 0);
+                        }
                         r.collapse(true);
                     } else {
                         // console.log('dunno loc', loc, nodes.main);

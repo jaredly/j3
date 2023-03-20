@@ -5,7 +5,7 @@ import { MNode } from '../../src/types/mcst';
 import { rainbow } from '../old/Nodes';
 import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
-import { calcOffset } from './RenderONode';
+import { calcOffset } from './calcOffset';
 import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
@@ -106,31 +106,15 @@ export const RenderNNode = (
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
 
-    const coverageLevel = isCoveredBySelection(
-        props.selection,
-        path,
-        map,
-        // !('text' in node),
-    );
+    const coverageLevel = isCoveredBySelection(props.selection, path, map);
 
     const selectStyle =
         coverageLevel?.type === 'full' ||
         ('text' in node && coverageLevel?.type === 'partial')
             ? {
-                  //   color: '#ccc',
                   borderRadius: 6,
-                  backgroundColor:
-                      //   coverageLevel === 'full'
-                      //       ? '#555'
-                      //       : coverageLevel === 'inner'
-                      //       ? '#115'
-                      '#225',
-                  //   backgroundColor: '#1a1a1a',
-                  //   outline: '1px solid white',
+                  backgroundColor: '#225',
                   textShadow: '2px 2px 1px black',
-                  //   backgroundColor: 'rgb(18 20 42)',
-                  //   textDecoration: 'underline',
-                  //   textShadow: '0 3px 0px white',
               }
             : {};
 

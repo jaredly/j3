@@ -1,4 +1,4 @@
-import { calcOffset } from './RenderONode';
+import { calcOffset } from './calcOffset';
 import { UIState } from './ByHand';
 import { calcCursorPos } from './Cursors';
 import { Path } from '../store';
@@ -11,13 +11,8 @@ export const verticalMove = (
     mods: Mods,
 ): UIState => {
     const sel = state.at[0];
-    // const [start, end] = sel.end
-    //     ? cmpFullPath(sel.start, sel.end) < 0
-    //         ? [sel.start, sel.end]
-    //         : [sel.end, sel.start]
-    //     : [sel.start, null];
-    // const path = state.at[0].end ?? state.at[0].start;
     const current = calcCursorPos(sel.end ?? sel.start, state.regs);
+    console.log('vert', current, sel);
     if (!current) {
         return state;
     }

@@ -1,5 +1,51 @@
 import { splitGraphemes } from '../../src/parse/parse';
 
+export const selectWithin = (
+    node: HTMLElement,
+    pos: number,
+    range: Range,
+): number => {
+    for (let child of node.childNodes) {
+        if (child.nodeName === '#text') {
+            const graphemes = splitGraphemes(child.textContent!);
+            if (graphemes.length < pos) {
+                pos -= graphemes.length;
+                continue;
+            }
+            range.setStart(child, graphemes.slice(0, pos).join('').length);
+            range.collapse(true);
+            console.log(`ranging`, child, pos);
+            return 0;
+            // let prevPos = null;
+            // let offset = 0;
+            // for (let i = 0; i < graphemes.length; i++) {
+            //     range.setStart(child, offset);
+            //     range.setEnd(child, offset);
+            //     let dx = range.getBoundingClientRect().left - x;
+            //     if (Math.abs(dx) < 2) {
+            //         return off + i;
+            //     }
+            //     if (prevPos != null && dx > 0) {
+            //         return off + (Math.abs(prevPos) < Math.abs(dx) ? i - 1 : i);
+            //     }
+            //     if (dx > 0) {
+            //         return off + i;
+            //     }
+            //     prevPos = dx;
+            //     offset += graphemes[i].length;
+            // }
+            // off += graphemes.length;
+        } else {
+            const inner = selectWithin(child as HTMLElement, pos, range);
+            if (inner === 0) {
+                return inner;
+            }
+            pos = inner;
+        }
+    }
+    return pos;
+};
+
 export const realOffset = (
     node: HTMLElement,
     x: number,
@@ -43,8 +89,6 @@ export const calcOffset = (node: HTMLSpanElement, x: number) => {
     if (!node.firstChild) {
         return 0;
     }
-    let offset = 0;
-    let prevPos = null;
     const box = node.getBoundingClientRect();
     if (x <= box.left) {
         return 0;
