@@ -10,9 +10,9 @@ right?
 hm yeah gotta have a bit of that too
 
 - [x] syntax.test. for ^L and ^R to expand selection should work
-- [ ] delete a subtext or untrusted
+- [x] delete a subtext or untrusted
 - [ ] delete a nodes
-- [ ] let's do ^C and ^V for copy & paste folks
+- [x] let's do ^C and ^V for copy & paste folks
 
 # Copyy nad PArstee
 
