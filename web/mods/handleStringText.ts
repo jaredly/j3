@@ -52,12 +52,10 @@ export function handleStringText({
     }
     return {
         type: 'update',
-        update: {
-            map: { [idx]: { ...node, text: text.join('') } },
-            selection: path.concat([
-                { idx, child: { type: 'subtext', at: pos + input.length } },
-            ]),
-        },
+        map: { [idx]: { ...node, text: text.join('') } },
+        selection: path.concat([
+            { idx, child: { type: 'subtext', at: pos + input.length } },
+        ]),
     };
 }
 function splitString(
@@ -99,29 +97,27 @@ function splitString(
     });
     return {
         type: 'update',
-        update: {
-            map: {
-                [idx]: {
-                    ...node,
-                    text: prefix.join(''),
-                },
-                [stringText.loc.idx]: stringText,
-                [blank.loc.idx]: blank,
-                [last.idx]: {
-                    ...string,
-                    templates,
-                },
+        map: {
+            [idx]: {
+                ...node,
+                text: prefix.join(''),
             },
-            selection: path.slice(0, -1).concat(
-                {
-                    idx: last.idx,
-                    child: { type: 'expr', at: last.child.at + 1 },
-                },
-                {
-                    idx: blank.loc.idx,
-                    child: { type: 'start' },
-                },
-            ),
+            [stringText.loc.idx]: stringText,
+            [blank.loc.idx]: blank,
+            [last.idx]: {
+                ...string,
+                templates,
+            },
         },
+        selection: path.slice(0, -1).concat(
+            {
+                idx: last.idx,
+                child: { type: 'expr', at: last.child.at + 1 },
+            },
+            {
+                idx: blank.loc.idx,
+                child: { type: 'start' },
+            },
+        ),
     };
 }

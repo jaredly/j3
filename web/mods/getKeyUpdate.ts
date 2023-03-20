@@ -29,8 +29,8 @@ export type TheUpdate = {
 export type KeyUpdate =
     | {
           type: 'update';
-          update: TheUpdate | void;
-          auto?: boolean;
+          map: UpdateMap;
+          selection: Path[];
       }
     | {
           type: 'select';
@@ -83,14 +83,10 @@ export const applyUpdate = (
     update: KeyUpdate,
 ): State => {
     if (!update) return state;
-    if (update?.type === 'select' && isRootPath(update.selection)) {
+    if (update.type === 'select' && isRootPath(update.selection)) {
         return state;
     }
-    if (
-        update?.type === 'update' &&
-        update.update &&
-        isRootPath(update.update.selection)
-    ) {
+    if (update.type === 'update' && isRootPath(update.selection)) {
         return state;
     }
     const at = state.at.slice();
@@ -99,14 +95,14 @@ export const applyUpdate = (
             start: update.selection,
         };
         return { ...state, at };
-    } else if (update.update) {
+    } else {
         at[i] = {
-            start: update.update.selection,
+            start: update.selection,
         };
         return {
             ...state,
             at,
-            map: applyUpdateMap(state.map, update.update.map),
+            map: applyUpdateMap(state.map, update.map),
         };
     }
     return state;
@@ -334,19 +330,17 @@ export const getKeyUpdate = (
             nat.map[ppath.idx] = { ...parent, items };
             return {
                 type: 'update',
-                update: {
-                    ...nat,
-                    selection: fullPath
-                        .slice(0, -2)
-                        .concat({
-                            idx: ppath.idx,
-                            child: {
-                                type: 'attribute',
-                                at: ppath.child.at + 1,
-                            },
-                        })
-                        .concat(nat.selection),
-                },
+                ...nat,
+                selection: fullPath
+                    .slice(0, -2)
+                    .concat({
+                        idx: ppath.idx,
+                        child: {
+                            type: 'attribute',
+                            at: ppath.child.at + 1,
+                        },
+                    })
+                    .concat(nat.selection),
             };
         }
         if (node.type !== 'identifier') {
@@ -409,16 +403,14 @@ function addToListLike(
     };
     return {
         type: 'update',
-        update: {
-            ...newThing,
-            selection: path
-                .slice(0, -1)
-                .concat({
-                    idx: pidx,
-                    child: { type: 'child', at: 0 },
-                })
-                .concat(newThing.selection),
-        },
+        ...newThing,
+        selection: path
+            .slice(0, -1)
+            .concat({
+                idx: pidx,
+                child: { type: 'child', at: 0 },
+            })
+            .concat(newThing.selection),
     };
 }
 
@@ -439,15 +431,13 @@ function updateText(
     }
     return {
         type: 'update',
-        update: {
-            map: { [idx]: { ...node, text: text.join('') } },
-            selection: path.concat([
-                {
-                    idx,
-                    child: { type: 'subtext', at: pos + input.length },
-                },
-            ]),
-        },
+        map: { [idx]: { ...node, text: text.join('') } },
+        selection: path.concat([
+            {
+                idx,
+                child: { type: 'subtext', at: pos + input.length },
+            },
+        ]),
     };
 }
 
@@ -553,10 +543,8 @@ function openListLike({
 function replaceWith(path: Path[], newThing: NewThing): KeyUpdate {
     return {
         type: 'update',
-        update: {
-            ...newThing,
-            selection: path.concat(newThing.selection),
-        },
+        ...newThing,
+        selection: path.concat(newThing.selection),
     };
 }
 
@@ -571,11 +559,8 @@ export function replacePathWith(
     const update = replacePath(path[path.length - 1], newThing.idx, map);
     return {
         type: 'update',
-        update: {
-            ...newThing,
-            map: { ...newThing.map, ...update },
-            selection: path.concat(newThing.selection),
-        },
+        map: { ...newThing.map, ...update },
+        selection: path.concat(newThing.selection),
     };
 }
 
@@ -626,24 +611,22 @@ export const newNodeAfter = (
         };
         return {
             type: 'update',
-            update: {
-                ...newThing,
-                selection: path
-                    .slice(0, i)
-                    .concat({
-                        idx: parent.idx,
-                        child: {
-                            type: 'child',
-                            at:
-                                child.type === 'child'
-                                    ? child.at + 1
-                                    : firstBlank
-                                    ? 1
-                                    : 0,
-                        },
-                    })
-                    .concat(newThing.selection),
-            },
+            ...newThing,
+            selection: path
+                .slice(0, i)
+                .concat({
+                    idx: parent.idx,
+                    child: {
+                        type: 'child',
+                        at:
+                            child.type === 'child'
+                                ? child.at + 1
+                                : firstBlank
+                                ? 1
+                                : 0,
+                    },
+                })
+                .concat(newThing.selection),
         };
     }
 };
@@ -674,19 +657,17 @@ export const newNodeBefore = (
         };
         return {
             type: 'update',
-            update: {
-                ...newThing,
-                selection: path
-                    .slice(0, i)
-                    .concat({
-                        idx: parent.idx,
-                        child: {
-                            type: 'child',
-                            at: at + 1,
-                        },
-                    })
-                    .concat(newThing.selection),
-            },
+            ...newThing,
+            selection: path
+                .slice(0, i)
+                .concat({
+                    idx: parent.idx,
+                    child: {
+                        type: 'child',
+                        at: at + 1,
+                    },
+                })
+                .concat(newThing.selection),
         };
     }
 };
@@ -701,12 +682,10 @@ export const maybeClearParentList = (path: Path[], map: Map): KeyUpdate => {
         if ('values' in gpnode && gpnode.values.length === 1) {
             return {
                 type: 'update',
-                update: {
-                    map: { [gp.idx]: { ...gpnode, values: [] } },
-                    selection: path
-                        .slice(0, -1)
-                        .concat({ idx: gp.idx, child: { type: 'inside' } }),
-                },
+                map: { [gp.idx]: { ...gpnode, values: [] } },
+                selection: path
+                    .slice(0, -1)
+                    .concat({ idx: gp.idx, child: { type: 'inside' } }),
             };
         }
     }

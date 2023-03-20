@@ -96,22 +96,20 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         }
         return {
             type: 'update',
-            update: {
-                map: um,
-                selection: fullPath.slice(0, -2).concat([
-                    {
-                        idx: ppath.idx,
-                        child:
-                            ppath.child.at > 1
-                                ? {
-                                      type: 'attribute',
-                                      at: ppath.child.at - 1,
-                                  }
-                                : { type: 'record-target' },
-                    },
-                    { idx: prev, child: { type: 'subtext', at: loc } },
-                ]),
-            },
+            map: um,
+            selection: fullPath.slice(0, -2).concat([
+                {
+                    idx: ppath.idx,
+                    child:
+                        ppath.child.at > 1
+                            ? {
+                                  type: 'attribute',
+                                  at: ppath.child.at - 1,
+                              }
+                            : { type: 'record-target' },
+                },
+                { idx: prev, child: { type: 'subtext', at: loc } },
+            ]),
         };
     }
 
@@ -144,19 +142,17 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             };
             return {
                 type: 'update',
-                update: {
-                    map: um,
-                    selection: fullPath.slice(0, -2).concat([
-                        {
-                            idx: ppath.idx,
-                            child: { type: 'text', at: ppath.child.at - 1 },
-                        },
-                        {
-                            idx: prev,
-                            child: { type: 'subtext', at: pnode.text.length },
-                        },
-                    ]),
-                },
+                map: um,
+                selection: fullPath.slice(0, -2).concat([
+                    {
+                        idx: ppath.idx,
+                        child: { type: 'text', at: ppath.child.at - 1 },
+                    },
+                    {
+                        idx: prev,
+                        child: { type: 'subtext', at: pnode.text.length },
+                    },
+                ]),
             };
         }
     }
@@ -199,19 +195,17 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             };
             return {
                 type: 'update',
-                update: {
-                    map: um,
-                    selection: fullPath.slice(0, -2).concat([
-                        {
-                            idx: ppath.idx,
-                            child: { type: 'text', at: ppath.child.at - 1 },
-                        },
-                        {
-                            idx: prev,
-                            child: { type: 'subtext', at: pnode.text.length },
-                        },
-                    ]),
-                },
+                map: um,
+                selection: fullPath.slice(0, -2).concat([
+                    {
+                        idx: ppath.idx,
+                        child: { type: 'text', at: ppath.child.at - 1 },
+                    },
+                    {
+                        idx: prev,
+                        child: { type: 'subtext', at: pnode.text.length },
+                    },
+                ]),
             };
         }
         if (ppath.child.type === 'child') {
@@ -232,15 +226,13 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             ) {
                 return {
                     type: 'update',
-                    update: {
-                        map: {
-                            [ppath.idx]: { ...parent, values: [] },
-                        },
-                        selection: fullPath.slice(0, -2).concat({
-                            idx: ppath.idx,
-                            child: { type: 'inside' },
-                        }),
+                    map: {
+                        [ppath.idx]: { ...parent, values: [] },
                     },
+                    selection: fullPath.slice(0, -2).concat({
+                        idx: ppath.idx,
+                        child: { type: 'inside' },
+                    }),
                 };
             }
             const sel = selectEnd(
@@ -258,10 +250,8 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
             }
             return {
                 type: 'update',
-                update: {
-                    map: { [ppath.idx]: { ...parent, values } },
-                    selection: sel,
-                },
+                map: { [ppath.idx]: { ...parent, values } },
+                selection: sel,
             };
         }
     }
@@ -296,25 +286,23 @@ export function handleBackspace(map: Map, fullPath: Path[]): KeyUpdate {
         }
         return {
             type: 'update',
-            update: {
-                map: {
-                    [flast.idx]:
-                        atEnd && text.length === 1 && node.type === 'identifier'
-                            ? { type: 'blank', loc: node.loc }
-                            : {
-                                  ...node,
-                                  text:
-                                      text.slice(0, pos - 1).join('') +
-                                      text.slice(pos).join(''),
-                              },
-                },
-                selection: fullPath.slice(0, -1).concat([
-                    {
-                        idx: flast.idx,
-                        child: { type: 'subtext', at: pos - 1 },
-                    },
-                ]),
+            map: {
+                [flast.idx]:
+                    atEnd && text.length === 1 && node.type === 'identifier'
+                        ? { type: 'blank', loc: node.loc }
+                        : {
+                              ...node,
+                              text:
+                                  text.slice(0, pos - 1).join('') +
+                                  text.slice(pos).join(''),
+                          },
             },
+            selection: fullPath.slice(0, -1).concat([
+                {
+                    idx: flast.idx,
+                    child: { type: 'subtext', at: pos - 1 },
+                },
+            ]),
         };
     }
 
@@ -340,16 +328,14 @@ export const maybeRemovePrevBlank = (path: Path[], map: Map): KeyUpdate => {
             values.splice(gp.child.at - 1, 1);
             return {
                 type: 'update',
-                update: {
-                    map: { [gp.idx]: { ...gpnode, values } },
-                    selection: path
-                        .slice(0, -1)
-                        .concat({
-                            idx: gp.idx,
-                            child: { type: 'child', at: gp.child.at - 1 },
-                        })
-                        .concat([last]),
-                },
+                map: { [gp.idx]: { ...gpnode, values } },
+                selection: path
+                    .slice(0, -1)
+                    .concat({
+                        idx: gp.idx,
+                        child: { type: 'child', at: gp.child.at - 1 },
+                    })
+                    .concat([last]),
             };
         }
     }
