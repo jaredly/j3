@@ -12,7 +12,6 @@ export const verticalMove = (
 ): UIState => {
     const sel = state.at[0];
     const current = calcCursorPos(sel.end ?? sel.start, state.regs);
-    console.log('vert', current, sel);
     if (!current) {
         return state;
     }

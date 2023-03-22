@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
-import { newCtx } from '../../src/to-ast/Ctx';
+import { AutoCompleteReplace, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
@@ -70,6 +70,7 @@ export type Action =
       }
     | { type: 'copy'; items: ClipboardItem[] }
     | { type: 'menu'; selection: number }
+    | { type: 'menu-select'; idx: number; item: AutoCompleteReplace }
     | {
           type: 'key';
           key: string;
@@ -86,6 +87,17 @@ const reduce = (state: UIState, action: Action): UIState => {
     switch (action.type) {
         case 'menu':
             return { ...state, menu: { selection: action.selection } };
+        case 'menu-select':
+            return {
+                ...state,
+                map: {
+                    ...state.map,
+                    [action.idx]: {
+                        loc: state.map[action.idx].loc,
+                        ...action.item.node,
+                    },
+                },
+            };
         case 'copy':
             return { ...state, clipboard: [action.items, ...state.clipboard] };
         case 'key':
@@ -95,6 +107,10 @@ const reduce = (state: UIState, action: Action): UIState => {
                     action.key === 'ArrowUp',
                     action.mods,
                 );
+            }
+            if (action.key === 'Escape') {
+                console.log('dismiss');
+                return { ...state, menu: { dismissed: true, selection: 0 } };
             }
             const newState = handleKey(state, action.key, action.mods);
             if (newState) {
@@ -202,7 +218,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             <HiddenInput
                 state={state}
                 dispatch={dispatch}
-                menuCount={menu?.items.length}
+                menu={!state.menu?.dismissed ? menu : undefined}
             />
             <button
                 onClick={() => setDebug(!debug)}
@@ -222,7 +238,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 ctx={ctx}
             />
             <Cursors state={state} />
-            {menu?.items.length ? (
+            {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} ctx={ctx} menu={menu} />
             ) : null}
             <DebugClipboard state={state} debug={debug} ctx={ctx} />

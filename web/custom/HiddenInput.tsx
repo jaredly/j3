@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { AutoCompleteResult } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
@@ -9,11 +10,11 @@ import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
 export function HiddenInput({
     state,
     dispatch,
-    menuCount,
+    menu,
 }: {
     state: UIState;
     dispatch: React.Dispatch<Action>;
-    menuCount?: number;
+    menu?: { idx: number; items: AutoCompleteResult[] };
 }) {
     useEffect(() => {
         if (document.activeElement !== hiddenInput.current) {
@@ -115,16 +116,35 @@ export function HiddenInput({
                 evt.stopPropagation();
                 evt.preventDefault();
 
-                if (menuCount != null && menuCount > 1) {
-                    if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp') {
+                if (menu != null) {
+                    if (
+                        menu.items.length > 1 &&
+                        (evt.key === 'ArrowDown' || evt.key === 'ArrowUp')
+                    ) {
                         dispatch({
                             type: 'menu',
                             selection:
                                 ((state.menu?.selection ?? 0) +
                                     (evt.key === 'ArrowDown' ? 1 : -1) +
-                                    menuCount) %
-                                menuCount,
+                                    menu.items.length) %
+                                menu.items.length,
                         });
+                        return;
+                    }
+
+                    if (evt.key === 'Enter') {
+                        const selected = menu.items[state.menu?.selection ?? 0];
+                        if (!selected) {
+                            console.warn(
+                                `selected a menu item that wasn't there`,
+                            );
+                        } else if (selected.type === 'replace') {
+                            dispatch({
+                                type: 'menu-select',
+                                idx: menu.idx,
+                                item: selected,
+                            });
+                        }
                         return;
                     }
                 }
