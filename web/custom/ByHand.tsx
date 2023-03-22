@@ -80,8 +80,9 @@ export type Action =
           items: ClipboardItem[];
       };
 
+const lidx = (at: State['at']) => at[0].start[at[0].start.length - 1].idx;
+
 const reduce = (state: UIState, action: Action): UIState => {
-    state = { ...state, menu: undefined };
     switch (action.type) {
         case 'menu':
             return { ...state, menu: { selection: action.selection } };
@@ -90,7 +91,7 @@ const reduce = (state: UIState, action: Action): UIState => {
         case 'key':
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
                 return verticalMove(
-                    state,
+                    { ...state, menu: undefined },
                     action.key === 'ArrowUp',
                     action.mods,
                 );
@@ -100,6 +101,11 @@ const reduce = (state: UIState, action: Action): UIState => {
                 if (newState.at.some((at) => isRootPath(at.start))) {
                     console.log('not selecting root node');
                     return state;
+                }
+                const idx = lidx(newState.at);
+                const prev = lidx(state.at);
+                if (idx !== prev) {
+                    return { ...newState, menu: undefined };
                 }
                 return newState;
             }

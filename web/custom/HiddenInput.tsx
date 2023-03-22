@@ -115,7 +115,7 @@ export function HiddenInput({
                 evt.stopPropagation();
                 evt.preventDefault();
 
-                if (menuCount != null) {
+                if (menuCount != null && menuCount > 1) {
                     if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp') {
                         dispatch({
                             type: 'menu',
