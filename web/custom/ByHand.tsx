@@ -85,17 +85,43 @@ export type Action =
 
 const lidx = (at: State['at']) => at[0].start[at[0].start.length - 1].idx;
 
+const maxSym = (map: Map) => {
+    let max = 0;
+    Object.keys(map).forEach((id) => {
+        const node = map[+id];
+        if (node.type === 'identifier' && node.hash?.startsWith(':')) {
+            max = Math.max(max, +node.hash.slice(1));
+        }
+    });
+    return max;
+};
+
 const getCtx = (map: Map, root: number) => {
     const tops = (map[root] as ListLikeContents).values;
     const ctx = newCtx();
+    ctx.sym.current = maxSym(map) + 1;
     try {
         nodeToExpr(fromMCST(root, map), ctx);
         tops.forEach((top) => {
             layout(top, 0, map, ctx.display, true);
         });
-        return ctx;
+        const mods = Object.keys(ctx.mods);
+        if (mods.length) {
+            map = { ...map };
+            mods.forEach((key) => {
+                ctx.mods[+key].forEach((mod) => {
+                    if (mod.type === 'hash') {
+                        const node = map[+key];
+                        if (node.type === 'identifier') {
+                            map[+key] = { ...node, hash: mod.hash };
+                        }
+                    }
+                });
+            });
+        }
+        return { ctx, map };
     } catch (err) {
-        return null;
+        return { ctx, map };
     }
 };
 
@@ -103,7 +129,7 @@ const reduce = (state: UIState, action: Action): UIState => {
     const newState = reduceInner(state, action);
     if (state.map !== newState.map) {
         const ctx = getCtx(newState.map, newState.root);
-        return ctx ? { ...newState, ctx } : newState;
+        return ctx ? { ...newState, ...ctx } : newState;
     }
     return newState;
 };
@@ -204,13 +230,12 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
         return {
-            map,
             nidx,
             root: -1,
             regs: {},
             clipboard: [],
             at: [{ start: at }],
-            ctx: getCtx(map, -1) ?? newCtx(),
+            ...getCtx(map, -1),
         };
     });
 

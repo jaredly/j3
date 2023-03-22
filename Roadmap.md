@@ -1,4 +1,9 @@
 
+# ByHand, the final steps?
+
+- [ ] I need to persist .. the ... hashes
+  - oh is that just applying the mods?
+
 # the Hash node
 
 it's a node that doesn't own its own text
@@ -26,7 +31,7 @@ I'll need to update all the `text in` dealios, right?
 - [x] then the 'hash' dealiwhap
 
 
-- [ ] oof, ok so removal is very broken
+- [x] oof, ok so removal is very broken
   that is to say
   because we're preserving collections ...
   they're getting weird

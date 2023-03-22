@@ -10,8 +10,9 @@ import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
     const idx = hash.startsWith(':')
-        ? +hash.slice(1) * (rainbow.length / 5 - 1)
+        ? Math.floor(+hash.slice(1) * (rainbow.length / 5 - 1))
         : parseInt(hash, 16);
+    console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
     const color = rainbow[idx % rainbow.length];
     return color;
 }
@@ -83,15 +84,27 @@ export const Render = (props: RenderProps) => {
         return <span>DEEP</span>;
     }
 
+    const node = map[idx];
     return props.debug ? (
         <span style={{ display: 'flex' }}>
             <span
-                style={{ opacity: 0.5, fontSize: '50%' }}
+                style={{ opacity: 0.5, fontSize: '50%', lineHeight: '20px' }}
                 data-display={JSON.stringify(props.display[idx])}
             >
                 {idx}
             </span>
             <RenderNNode {...props} nnode={nnode} />
+            {node.type === 'hash' || node.type === 'identifier' ? (
+                <span
+                    style={{
+                        opacity: 0.5,
+                        fontSize: '50%',
+                        lineHeight: '20px',
+                    }}
+                >
+                    {node.hash}
+                </span>
+            ) : null}
         </span>
     ) : (
         <RenderNNode {...props} nnode={nnode} />

@@ -43,11 +43,7 @@ export const Menu = ({
                     i === selectionIndex && item.type === 'replace';
                 const onClick = (evt: React.MouseEvent) => {
                     if (item.type === 'replace') {
-                        dispatch({
-                            type: 'menu-select',
-                            idx: menu.idx,
-                            item,
-                        });
+                        dispatch({ type: 'menu-select', idx: menu.idx, item });
                     }
                 };
                 const style = {
@@ -58,19 +54,13 @@ export const Menu = ({
                 return (
                     <React.Fragment key={i}>
                         <div
-                            style={{
-                                gridColumn: 1,
-                                ...style,
-                            }}
+                            style={{ gridColumn: 1, ...style }}
                             onClick={onClick}
                         >
                             {item.text}
                         </div>
                         <div
-                            style={{
-                                gridColumn: 2,
-                                ...style,
-                            }}
+                            style={{ gridColumn: 2, ...style }}
                             onClick={onClick}
                         >
                             {item.type === 'replace' && item.ann
