@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
@@ -9,7 +9,8 @@ import { type ClipboardItem, paste } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../mods/path';
-import { Cursors, Menu } from './Cursors';
+import { Cursors } from './Cursors';
+import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
@@ -178,6 +179,14 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         return ctx;
     }, [state.map]);
 
+    const menu = useMemo(() => {
+        if (state.at.length > 1 || state.at[0].end) return;
+        const path = state.at[0].start;
+        const last = path[path.length - 1];
+        const items = ctx.display[last.idx]?.autoComplete;
+        return items ? { idx: last.idx, items } : undefined;
+    }, [state.map, state.at, ctx]);
+
     return (
         <div>
             <HiddenInput state={state} dispatch={dispatch} />
@@ -199,7 +208,9 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 ctx={ctx}
             />
             <Cursors state={state} />
-            <Menu state={state} ctx={ctx} />
+            {menu?.items.length ? (
+                <Menu state={state} ctx={ctx} menu={menu} />
+            ) : null}
             <DebugClipboard state={state} debug={debug} ctx={ctx} />
         </div>
     );
@@ -210,8 +221,6 @@ const isRootPath = (path: Path[]) => {
 };
 
 export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
-    // state = { ...state };
-    // state.at = state.at.slice();
     for (let i = 0; i < state.at.length; i++) {
         const update = getKeyUpdate(
             key,
