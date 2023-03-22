@@ -1,5 +1,6 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
 import {
@@ -210,7 +211,11 @@ export type ClipboardItem =
       }
     | { type: 'nodes'; nodes: Node[] };
 
-export const paste = (state: State, items: ClipboardItem[]): State => {
+export const paste = (
+    state: State,
+    ctx: Ctx,
+    items: ClipboardItem[],
+): State => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
         const item = items[0];
         switch (item.type) {
@@ -221,6 +226,7 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                         item.text,
                         state.map,
                         path,
+                        ctx.display,
                         state.nidx,
                     );
                     return applyUpdate(state, 0, update);
@@ -232,6 +238,7 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                             char,
                             state.map,
                             state.at[0],
+                            ctx.display,
                             state.nidx,
                         );
                         state = applyUpdate(state, 0, update);

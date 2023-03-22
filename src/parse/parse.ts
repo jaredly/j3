@@ -8,9 +8,10 @@ import {
     State,
 } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/mods/path';
+import { Ctx } from '../to-ast/Ctx';
 import { Map, MNode } from '../types/mcst';
 
-export const idText = (node: MNode) => {
+export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
@@ -22,6 +23,10 @@ export const idText = (node: MNode) => {
             return node.text;
         case 'blank':
             return '';
+        case 'hash':
+            return style?.type === 'id'
+                ? style.text ?? '<hash no name>'
+                : '<hash no name>';
     }
 };
 
@@ -31,7 +36,11 @@ export const splitGraphemes = (text: string) => {
     return [...seg.segment(text)].map((seg) => seg.segment);
 };
 
-export const parseByCharacter = (rawText: string, debug = false): State => {
+export const parseByCharacter = (
+    rawText: string,
+    ctx: Ctx,
+    debug = false,
+): State => {
     let state: State = initialState();
 
     const text = splitGraphemes(rawText);
@@ -75,7 +84,7 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
             continue;
         }
         if (key === 'Paste') {
-            state = paste(state, clipboard);
+            state = paste(state, ctx, clipboard);
             continue;
         }
 
@@ -83,6 +92,7 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
             key,
             state.map,
             state.at[0],
+            ctx,
             state.nidx,
             mods,
         );

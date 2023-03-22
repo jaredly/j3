@@ -73,7 +73,11 @@ export const textStyle = (
 
 export const Render = (props: RenderProps) => {
     const { idx, map, display, path } = props;
-    const nnode = getNestedNodes(map[idx], display[idx]?.layout);
+    const nnode = getNestedNodes(
+        map[idx],
+        display[idx]?.style,
+        display[idx]?.layout,
+    );
 
     if (path.length > 1000) {
         return <span>DEEP</span>;

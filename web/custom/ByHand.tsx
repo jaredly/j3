@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
-import { AutoCompleteReplace, newCtx } from '../../src/to-ast/Ctx';
+import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
@@ -51,6 +51,7 @@ person.animals.dogs
 export type UIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
+    ctx: Ctx;
 } & State;
 
 export type RegMap = {
@@ -136,7 +137,7 @@ const reduce = (state: UIState, action: Action): UIState => {
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
         case 'paste': {
-            return { ...state, ...paste(state, action.items) };
+            return { ...state, ...paste(state, state.ctx, action.items) };
         }
     }
 };
@@ -171,8 +172,10 @@ export const clipboardSuffix = ' """-->';
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
+        const ctx = newCtx();
         const { map, nidx } = parseByCharacter(
             initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
+            ctx,
             debug,
         );
         const idx = (map[-1] as ListLikeContents).values[0];
@@ -184,6 +187,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             regs: {},
             clipboard: [],
             at: [{ start: at }],
+            ctx,
         };
     });
 
@@ -256,6 +260,7 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             key,
             state.map,
             state.at[i],
+            state.ctx.display,
             state.nidx,
             mods,
         );

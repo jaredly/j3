@@ -24,7 +24,8 @@ export function populateAutocomplete(
                 ({
                     type: 'replace',
                     text: (prefix || '') + result.name + (suffix || ''),
-                    node: { type: 'identifier', text: '', hash: result.hash },
+                    node: { type: 'hash', hash: result.hash },
+                    // { type: 'identifier', text: '', hash: result.hash },
                     exact: result.name === text,
                     ann: result.typ,
                 } satisfies AutoCompleteResult),

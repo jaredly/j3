@@ -1,4 +1,5 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { Type } from '../../src/types/ast';
 import { Map, MNode } from '../../src/types/mcst';
 import { UpdateMap } from '../store';
@@ -172,6 +173,7 @@ export const getKeyUpdate = (
     key: string,
     map: Map,
     selection: { start: Path[]; end?: Path[] },
+    display: Ctx['display'],
     nidx: () => number,
     mods?: Mods,
 ): StateChange => {
@@ -200,7 +202,7 @@ export const getKeyUpdate = (
         return handleBackspace(map, selection);
     }
 
-    const textRaw = idText(node) ?? '';
+    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
@@ -421,13 +423,14 @@ export const getKeyUpdate = (
         }
     }
 
-    return insertText(key, map, fullPath, nidx);
+    return insertText(key, map, fullPath, display, nidx);
 };
 
 export const insertText = (
     inputRaw: string,
     map: Map,
     fullPath: Path[],
+    display: Ctx['display'],
     nidx: () => number,
 ) => {
     const flast = fullPath[fullPath.length - 1];
@@ -435,7 +438,7 @@ export const insertText = (
     const idx = flast.idx;
     // Ok, so now we're updating things
     const input = splitGraphemes(inputRaw);
-    const textRaw = idText(node) ?? '';
+    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
     const pos = pathPos(fullPath, textRaw);
 
     if (

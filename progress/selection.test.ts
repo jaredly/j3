@@ -1,4 +1,5 @@
 import { parseByCharacter } from '../src/parse/parse';
+import { newCtx } from '../src/to-ast/Ctx';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
 import { clipboardText, collectNodes } from '../web/mods/clipboard';
@@ -58,8 +59,15 @@ export const posToPath = (
 ) => {
     let at = 0;
     let path = selectStart(root, [{ idx: -1, type: 'child', at: 0 }], map)!;
+    const ctx = newCtx();
     while (at < pos) {
-        const update = getKeyUpdate('ArrowRight', map, { start: path }, nidx);
+        const update = getKeyUpdate(
+            'ArrowRight',
+            map,
+            { start: path },
+            ctx.display,
+            nidx,
+        );
         if (update?.type === 'select') {
             path = update.selection;
             at = remapPos(path, sm);
@@ -85,7 +93,8 @@ describe('a test', () => {
             const [input, selections, output] = chunk.split('\n');
 
             (only ? it.only : it)(i + ' ' + input, () => {
-                const { map: data, nidx } = parseByCharacter(input, only);
+                const ctx = newCtx();
+                const { map: data, nidx } = parseByCharacter(input, ctx, only);
 
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };

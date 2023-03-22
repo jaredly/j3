@@ -1,8 +1,19 @@
 
+# the Hash node
+
+it's a node that doesn't own its own text
+selections could get wonky if the text changes out from under them.
+
+I'll need to update all the `text in` dealios, right?
+
+- [x] make a node
+- [x] render it fake
+- [ ] change idText to get the real text from it thanks
+
 # Ok folks, so the basic editor, is looking pretty neat
 
 - [x] ah first, get rid of non-nested get-nodes
-- [ ] autocomplete pls
+- [x] autocomplete pls
   - question. is autocomplete always... calculable
     from the state / loc / ctx
   - answer, I certainly hope so.

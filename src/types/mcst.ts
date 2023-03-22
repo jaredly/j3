@@ -39,6 +39,7 @@ export type MNodeContents =
     | stringText
     | RichText
     | Attachment
+    | { type: 'hash'; hash: string }
 
     // list-like
     | { type: 'comment'; text: string }

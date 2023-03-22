@@ -73,6 +73,7 @@ export const transformNode = (
             }
             break;
         }
+        case 'hash':
         case 'blank':
         case 'comment':
         case 'accessText':

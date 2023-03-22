@@ -48,6 +48,7 @@ export type RichText = {
 export type NodeContents =
     // identifier-like
     | Identifier
+    | { type: 'hash'; hash: string }
 
     // list-like
     | NodeList
