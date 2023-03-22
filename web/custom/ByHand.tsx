@@ -1,11 +1,5 @@
 import equal from 'fast-deep-equal';
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { sexp } from '../../progress/sexp';
 import { parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
@@ -16,7 +10,6 @@ import { layout } from '../layout';
 import {
     type ClipboardItem,
     clipboardText,
-    collectClipboard,
     collectNodes,
     paste,
 } from '../mods/clipboard';
@@ -24,6 +17,7 @@ import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../mods/path';
 import { Cursors, Menu } from './Cursors';
+import { HiddenInput } from './HiddenInput';
 import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
@@ -158,8 +152,8 @@ export const ByHand = () => {
     );
 };
 
-const clipboardPrefix = '<!--""" jerd-clipboard ';
-const clipboardSuffix = ' """-->';
+export const clipboardPrefix = '<!--""" jerd-clipboard ';
+export const clipboardSuffix = ' """-->';
 
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
@@ -213,28 +207,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         [],
     );
 
-    useEffect(() => {
-        if (document.activeElement !== hiddenInput.current) {
-            hiddenInput.current?.focus();
-        }
-    }, [state.at]);
-
-    useEffect(() => {
-        window.addEventListener(
-            'blur',
-            (evt) => {
-                setTimeout(() => {
-                    if (document.activeElement === document.body) {
-                        hiddenInput.current?.focus();
-                    }
-                }, 50);
-            },
-            true,
-        );
-    }, []);
-
-    const hiddenInput = useRef(null as null | HTMLInputElement);
-
     const [drag, setDrag] = useState(false);
 
     const collected = useMemo(
@@ -262,116 +234,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     return (
         <div>
-            <input
-                ref={hiddenInput}
-                autoFocus
-                value="whaa"
-                style={{
-                    width: 0,
-                    height: 0,
-                    opacity: 0,
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    border: 'none',
-                    pointerEvents: 'none',
-                }}
-                onCopy={(evt) => {
-                    evt.preventDefault();
-                    const items = collectClipboard(state.map, state.at);
-                    if (!items.length) {
-                        return;
-                    }
-
-                    dispatch({ type: 'copy', items });
-
-                    const text = clipboardText(items);
-                    navigator.clipboard.write([
-                        new ClipboardItem({
-                            ['text/plain']: new Blob([text], {
-                                type: 'text/plain',
-                            }),
-                            ['text/html']: new Blob(
-                                [
-                                    clipboardPrefix +
-                                        JSON.stringify(items) +
-                                        clipboardSuffix +
-                                        text,
-                                ],
-                                { type: 'text/html' },
-                            ),
-                        }),
-                    ]);
-                }}
-                onPaste={(evt) => {
-                    evt.preventDefault();
-                    const text = evt.clipboardData.getData('text/html');
-                    if (text) {
-                        const start = text.indexOf(clipboardPrefix);
-                        const end = text.indexOf(clipboardSuffix);
-                        if (start !== -1 && end !== -1) {
-                            const sub = text.slice(
-                                start + clipboardPrefix.length,
-                                end,
-                            );
-                            try {
-                                const items: ClipboardItem[] = JSON.parse(sub);
-                                dispatch({ type: 'paste', items });
-                            } catch (err) {
-                                console.error(err);
-                            }
-                        }
-                        return;
-                    }
-                    const plain = evt.clipboardData.getData('text/plain');
-                    if (plain) {
-                        dispatch({
-                            type: 'paste',
-                            items: [
-                                { type: 'text', text: plain, trusted: false },
-                            ],
-                        });
-                    }
-                }}
-                onKeyDown={(evt) => {
-                    if (evt.metaKey || evt.ctrlKey || evt.altKey) {
-                        return;
-                    }
-
-                    evt.stopPropagation();
-                    evt.preventDefault();
-                    if (evt.key !== 'Unidentified') {
-                        dispatch({
-                            type: 'key',
-                            key: evt.key,
-                            mods: {
-                                shift: evt.shiftKey,
-                                alt: evt.altKey,
-                                meta: evt.metaKey,
-                            },
-                        });
-                    }
-                }}
-                onInput={(evt) => {
-                    if (evt.currentTarget.value) {
-                        dispatch({
-                            type: 'key',
-                            key: evt.currentTarget.value,
-                            mods: {},
-                        });
-                        evt.currentTarget.value = '';
-                    }
-                }}
-                onCompositionStart={(evt) => {
-                    console.log(evt);
-                }}
-                onCompositionEnd={(evt) => {
-                    console.log('end', evt);
-                }}
-                onCompositionUpdate={(evt) => {
-                    console.log('update', evt);
-                }}
-            />
+            <HiddenInput state={state} dispatch={dispatch} />
             <button
                 onClick={() => setDebug(!debug)}
                 style={{
