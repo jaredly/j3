@@ -3,6 +3,14 @@
 
 - [x] ah first, get rid of non-nested get-nodes
 - [ ] autocomplete pls
+  - question. is autocomplete always... calculable
+    from the state / loc / ctx
+  - answer, I certainly hope so.
+    this means that I'd want to useMemo on it, instead of
+    plopping it on state. Right?
+    BUT state keeps track of the selection index.
+    and maybe other things? if the menu gets fancy
+    oh and it can indicate whether it's been dismissed, right?
 - [ ] then the 'hash' dealiwhap
 
 

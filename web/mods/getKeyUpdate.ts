@@ -86,7 +86,7 @@ export type State = {
     map: Map;
     root: number;
     at: { start: Path[]; end?: Path[] }[];
-    menu?: Menu;
+    menu?: { selection: number; dismissed?: boolean };
 };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {

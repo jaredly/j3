@@ -20,7 +20,6 @@ export function handleBackspace(
     map: Map,
     selection: { start: Path[]; end?: Path[] },
 ): StateChange {
-    console.warn('A');
     if (selection.end) {
         const [start, end] =
             cmpFullPath(selection.start, selection.end) < 0
