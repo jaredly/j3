@@ -73,7 +73,7 @@ export const Menu = ({
                             }}
                             onClick={onClick}
                         >
-                            {item.type === 'replace'
+                            {item.type === 'replace' && item.ann
                                 ? nodeToString(nodeForType(item.ann, ctx))
                                 : null}
                         </div>

@@ -20,6 +20,7 @@ const examples = {
     let: '(let [x 10] (+ x 20))',
     lists: '(1 2) (3 [] 4) (5 6)',
     string: `"Some 🤔 things\nare here for \${you} to\nsee"`,
+    fn: `(fn [hello:int] (+ hello 2))`,
 
     sink: `
 (def live (vec4 1. 0.6 1. 1.))
