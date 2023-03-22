@@ -1,26 +1,19 @@
-import equal from 'fast-deep-equal';
-import React, { useCallback, useMemo, useState } from 'react';
-import { sexp } from '../../progress/sexp';
+import React from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import {
-    type ClipboardItem,
-    clipboardText,
-    collectNodes,
-    paste,
-} from '../mods/clipboard';
+import { type ClipboardItem, paste } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../mods/path';
 import { Cursors, Menu } from './Cursors';
+import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
-import { cmpFullPath } from './isCoveredBySelection';
-import { Render } from './Render';
-import { closestSelection, verticalMove } from './verticalMove';
+import { Root } from './Root';
+import { verticalMove } from './verticalMove';
 
 const examples = {
     let: '(let [x 10] (+ x 20))',
@@ -53,13 +46,6 @@ person.animals.dogs
     "\n")))
 `.trim(),
 };
-
-// const initialText = `
-// (def person {name "Pers\${aaaaaaaaaaaa}on"
-// parties (let)})
-// `.trim();
-
-// '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
 
 export type UIState = {
     regs: RegMap;
@@ -166,11 +152,11 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
         return {
             map,
-            root: -1,
-            at: [{ start: at }],
-            regs: {},
             nidx,
+            root: -1,
+            regs: {},
             clipboard: [],
+            at: [{ start: at }],
         };
     });
 
@@ -192,46 +178,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         return ctx;
     }, [state.map]);
 
-    const reg = useCallback(
-        (
-            node: HTMLSpanElement | null,
-            idx: number,
-            path: Path[],
-            loc?: 'start' | 'end' | 'inside',
-        ) => {
-            if (!state.regs[idx]) {
-                state.regs[idx] = {};
-            }
-            state.regs[idx][loc ?? 'main'] = node ? { node, path } : null;
-        },
-        [],
-    );
-
-    const [drag, setDrag] = useState(false);
-
-    const collected = useMemo(
-        () =>
-            state.at
-                .map((sel) => {
-                    if (!sel.end) return null;
-                    const [start, end] =
-                        cmpFullPath(sel.start, sel.end) < 0
-                            ? [sel.start, sel.end]
-                            : [sel.end, sel.start];
-
-                    return collectNodes(state.map, start, end);
-                })
-                .filter(Boolean) as ClipboardItem[],
-        [state.map, state.at],
-    );
-
-    const selections = state.at
-        .filter((s) => s.end)
-        .map(({ start, end }) => {
-            const cmp = cmpFullPath(start, end!);
-            return cmp > 0 ? { start: end!, end: start } : { start, end };
-        });
-
     return (
         <div>
             <HiddenInput state={state} dispatch={dispatch} />
@@ -245,149 +191,16 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             >
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
-            <div
-                style={{ cursor: 'text', padding: 16 }}
-                onMouseDownCapture={() => {
-                    setDrag(true);
-                }}
-                onMouseDown={(evt) => {
-                    const sel = closestSelection(state.regs, {
-                        x: evt.clientX,
-                        y: evt.clientY,
-                    });
-                    if (sel) {
-                        dispatch({
-                            type: 'select',
-                            add: evt.altKey,
-                            at: [{ start: sel }],
-                        });
-                    }
-                }}
-                onMouseMove={(evt) => {
-                    if (!drag) {
-                        return;
-                    }
-                    const sel = closestSelection(state.regs, {
-                        x: evt.clientX,
-                        y: evt.clientY,
-                    });
-                    if (sel) {
-                        const at = state.at.slice();
-                        const idx = at.length - 1;
-                        if (equal(sel, at[idx].start)) {
-                            at[idx] = { start: sel };
-                            dispatch({ type: 'select', at });
-                        } else {
-                            at[idx] = { ...at[idx], end: sel };
-                            dispatch({ type: 'select', at });
-                        }
-                    }
-                }}
-                onMouseUpCapture={(evt) => {
-                    if (drag) {
-                        setDrag(false);
-                    }
-                }}
-            >
-                {tops.map((top, i) => (
-                    <div key={top} style={{ marginBottom: 8 }}>
-                        <Render
-                            debug={debug}
-                            idx={top}
-                            map={state.map}
-                            reg={reg}
-                            display={ctx.display}
-                            dispatch={dispatch}
-                            selection={selections}
-                            path={[
-                                {
-                                    idx: state.root,
-                                    type: 'child',
-                                    at: i,
-                                },
-                            ]}
-                        />
-                        {debug ? (
-                            <div>{sexp(fromMCST(top, state.map))}</div>
-                        ) : null}
-                    </div>
-                ))}
-            </div>
+            <Root
+                state={state}
+                dispatch={dispatch}
+                tops={tops}
+                debug={debug}
+                ctx={ctx}
+            />
             <Cursors state={state} />
             <Menu state={state} ctx={ctx} />
-            <div>
-                {[collected, ...state.clipboard].map((copy, i) =>
-                    copy.length ? (
-                        <div
-                            key={i}
-                            style={{
-                                padding: 8,
-                                margin: 8,
-                                backgroundColor: '#335',
-                            }}
-                        >
-                            {copy.map((item, i) => (
-                                <div key={i}>{clipboardText([item])}</div>
-                            ))}
-                        </div>
-                    ) : null,
-                )}
-            </div>
-            <div>
-                <div>
-                    At:{' '}
-                    <div>
-                        {state.at.map(({ start, end }, i) => (
-                            <div key={i} style={{ display: 'flex' }}>
-                                <div>
-                                    {start.map((item, i) => (
-                                        <div key={i}>
-                                            {JSON.stringify(item)}
-                                        </div>
-                                    ))}
-                                </div>
-                                <div>
-                                    {end?.map((item, i) => (
-                                        <div key={i}>
-                                            {JSON.stringify(item)}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-            {debug ? (
-                <div>
-                    <div>
-                        Sel: <div>{JSON.stringify(state.at[0].start)}</div>
-                    </div>
-                    <div>Path: </div>
-                    <div>
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <td>idx</td>
-                                    <td>child</td>
-                                </tr>
-
-                                {state.at.map((at, a) =>
-                                    at.start.map((item, i) => (
-                                        <tr key={i + ':' + a}>
-                                            <td>{item.idx}</td>
-                                            <td>{JSON.stringify(item)}</td>
-                                        </tr>
-                                    )),
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style={{ whiteSpace: 'pre-wrap' }}>
-                        {JSON.stringify(ctx.display, null, 2)}
-                    </div>
-                </div>
-            ) : null}
+            <DebugClipboard state={state} debug={debug} ctx={ctx} />
         </div>
     );
 };
