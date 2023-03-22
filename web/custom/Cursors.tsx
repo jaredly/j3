@@ -1,6 +1,8 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+import { nodeToString } from '../../src/to-cst/nodeToString';
 import { Path } from '../mods/path';
 import { UIState, RegMap } from './ByHand';
 import { selectWithin } from './calcOffset';
@@ -13,7 +15,7 @@ export const Menu = ({ state, ctx }: { state: UIState; ctx: Ctx }) => {
         return { idx: last.idx, items: ctx.display[last.idx]?.autoComplete };
     }, [state.map, state.at, ctx]);
 
-    if (!menu) return null;
+    if (!menu || !menu.items) return null;
 
     const node = state.regs[menu.idx]?.main?.node;
     if (!node) return null;
@@ -26,16 +28,27 @@ export const Menu = ({ state, ctx }: { state: UIState; ctx: Ctx }) => {
                 position: 'absolute',
                 top: box.bottom,
                 left: box.left,
-                width: 300,
+                gap: '0px 8px',
+                padding: 8,
                 maxHeight: 500,
                 overflow: 'auto',
                 zIndex: 1000,
                 backgroundColor: 'black',
                 border: '1px solid #ccc',
+                display: 'grid',
+                gridTemplateColumns: 'max-content max-content',
             }}
         >
-            A menu
-            {JSON.stringify(menu)}
+            {menu.items?.map((item, i) => (
+                <React.Fragment key={i}>
+                    <div style={{ gridColumn: 1, padding: 4 }}>{item.text}</div>
+                    <div style={{ gridColumn: 2, padding: 4 }}>
+                        {item.type === 'replace'
+                            ? nodeToString(nodeForType(item.ann, ctx))
+                            : null}
+                    </div>
+                </React.Fragment>
+            ))}
         </div>
     );
 };
