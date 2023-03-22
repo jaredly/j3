@@ -199,7 +199,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, selection);
+        return handleBackspace(map, selection, display);
     }
 
     const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
@@ -208,26 +208,29 @@ export const getKeyUpdate = (
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
-        if ('text' in node && !isPathAtStart(node.text, flast)) {
-            const pos = pathPos(fullPath, node.text);
-            const next = fullPath.slice(0, -1).concat([
-                {
-                    idx,
-                    type: 'subtext',
-                    at: pos - 1,
-                },
-            ]);
-            if (mods?.shift) {
+        if ('text' in node || node.type === 'hash') {
+            const text = idText(node, display[node.loc.idx]?.style) ?? '';
+            if (!isPathAtStart(text, flast)) {
+                const pos = pathPos(fullPath, text);
+                const next = fullPath.slice(0, -1).concat([
+                    {
+                        idx,
+                        type: 'subtext',
+                        at: pos - 1,
+                    },
+                ]);
+                if (mods?.shift) {
+                    return {
+                        type: 'select',
+                        selection: selection.start,
+                        selectionEnd: next,
+                    };
+                }
                 return {
                     type: 'select',
-                    selection: selection.start,
-                    selectionEnd: next,
+                    selection: next,
                 };
             }
-            return {
-                type: 'select',
-                selection: next,
-            };
         }
         const lll = goLeft(fullPath, map);
         if (lll && mods?.shift) {

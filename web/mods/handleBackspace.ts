@@ -9,34 +9,45 @@ import {
     StateSelect,
 } from './getKeyUpdate';
 import { replacePathWith } from './replacePathWith';
-import { splitGraphemes } from '../../src/parse/parse';
+import { idText, splitGraphemes } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 import { collectNodes } from './clipboard';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
+import { Ctx } from '../../src/to-ast/Ctx';
 
 export function handleBackspace(
     map: Map,
     selection: { start: Path[]; end?: Path[] },
+    display: Ctx['display'],
 ): StateChange {
     if (selection.end) {
         const [start, end] =
             cmpFullPath(selection.start, selection.end) < 0
                 ? [selection.start, selection.end]
                 : [selection.end, selection.start];
-        const item = collectNodes(map, start, end);
+        const item = collectNodes(map, start, end, display);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
-            if ('text' in node) {
-                const split = splitGraphemes(node.text);
+            if ('text' in node || node.type === 'hash') {
+                const fullText =
+                    idText(node, display[node.loc.idx]?.style) ?? '';
+                const split = splitGraphemes(fullText);
                 const text = split
                     .slice(0, item.source.start)
                     .concat(split.slice(item.source.end));
                 return {
                     type: 'update',
                     map: {
-                        [item.source.idx]: { ...node, text: text.join('') },
+                        [item.source.idx]:
+                            node.type === 'hash'
+                                ? {
+                                      type: 'identifier',
+                                      loc: node.loc,
+                                      text: text.join(''),
+                                  }
+                                : { ...node, text: text.join('') },
                     },
                     selection: selection.start.slice(0, -1).concat({
                         idx: item.source.idx,
@@ -47,7 +58,7 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            return removeNodes(start, end, item.nodes, map);
+            return removeNodes(start, end, item.nodes, map, display);
         }
     }
 
@@ -223,7 +234,12 @@ export function handleBackspace(
         }
     }
 
-    if (flast.type === 'end' && !('text' in node) && node.type !== 'blank') {
+    if (
+        flast.type === 'end' &&
+        !('text' in node) &&
+        node.type !== 'hash' &&
+        node.type !== 'blank'
+    ) {
         const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
         return (
             cleared ??
@@ -337,8 +353,9 @@ export function handleBackspace(
         );
     }
 
-    if (!atStart && 'text' in node) {
-        const text = splitGraphemes(node.text);
+    if (!atStart && ('text' in node || node.type === 'hash')) {
+        const fullText = idText(node, display[node.loc.idx]?.style) ?? '';
+        const text = splitGraphemes(fullText);
         const atEnd =
             flast.type === 'end' ||
             (flast.type === 'subtext' && flast.at === text.length);
@@ -359,6 +376,14 @@ export function handleBackspace(
                 [flast.idx]:
                     atEnd && text.length === 1 && node.type === 'identifier'
                         ? { type: 'blank', loc: node.loc }
+                        : node.type === 'hash'
+                        ? {
+                              type: 'identifier',
+                              loc: node.loc,
+                              text:
+                                  text.slice(0, pos - 1).join('') +
+                                  text.slice(pos).join(''),
+                          }
                         : {
                               ...node,
                               text:

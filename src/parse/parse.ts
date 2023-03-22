@@ -24,9 +24,7 @@ export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
         case 'blank':
             return '';
         case 'hash':
-            return style?.type === 'id'
-                ? style.text ?? '<hash no name>'
-                : '<hash no name>';
+            return style?.type === 'id' ? style.text : null;
     }
 };
 
@@ -80,7 +78,7 @@ export const parseByCharacter = (
             [start, end] =
                 cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
 
-            clipboard = [collectNodes(state.map, start, end)];
+            clipboard = [collectNodes(state.map, start, end, ctx.display)];
             continue;
         }
         if (key === 'Paste') {

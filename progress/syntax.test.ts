@@ -406,7 +406,9 @@ function doABunchOfKeys({
                 expect(update).toMatchObject({ type: 'select' });
             } else {
                 state = applyUpdate(state, 0, update)!;
-                expect(validatePath(state.map, update.selection)).toBeTruthy();
+                expect(
+                    validatePath(state.map, update.selection, ctx.display),
+                ).toBeTruthy();
             }
         }
         const newPos = remapPos(state.at[0].start, sourceMap);

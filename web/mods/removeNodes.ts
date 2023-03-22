@@ -6,12 +6,14 @@ import { Node, NodeExtra, stringText } from '../../src/types/cst';
 import { commonAncestor, validatePath } from './clipboard';
 import { transformNode } from '../../src/types/transform-cst';
 import { Path } from './path';
+import { Ctx } from '../../src/to-ast/Ctx';
 
 export const removeNodes = (
     start: Path[],
     end: Path[],
     nodes: Node[],
     map: Map,
+    display: Ctx['display'],
 ): StateChange | void => {
     const ancestor = commonAncestor(start, end);
     if (!ancestor) {
@@ -160,7 +162,7 @@ export const removeNodes = (
     //     console.log('cannot left');
     //     return;
     // }
-    while (!validatePath(updated, left!)) {
+    while (!validatePath(updated, left!, display)) {
         left = goLeft(left!, map)?.selection!;
         if (!left) {
             console.log('cannot left');

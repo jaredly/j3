@@ -114,7 +114,8 @@ export const RenderNNode = (
 
     const selectStyle =
         coverageLevel?.type === 'full' ||
-        ('text' in node && coverageLevel?.type === 'partial')
+        (('text' in node || node.type === 'hash') &&
+            coverageLevel?.type === 'partial')
             ? {
                   borderRadius: 6,
                   backgroundColor: '#225',

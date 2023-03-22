@@ -27,7 +27,7 @@ export function DebugClipboard({
                             ? [sel.start, sel.end]
                             : [sel.end, sel.start];
 
-                    return collectNodes(state.map, start, end);
+                    return collectNodes(state.map, start, end, ctx['display']);
                 })
                 .filter(Boolean) as ClipboardItem[],
         [state.map, state.at],

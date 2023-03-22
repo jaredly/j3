@@ -8,7 +8,8 @@ I'll need to update all the `text in` dealios, right?
 
 - [x] make a node
 - [x] render it fake
-- [ ] change idText to get the real text from it thanks
+- [x] change idText to get the real text from it thanks
+- [ ] change left/right to use the real text
 
 # Ok folks, so the basic editor, is looking pretty neat
 

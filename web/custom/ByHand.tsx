@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
 import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { fromMCST, ListLikeContents } from '../../src/types/mcst';
+import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
 import { type ClipboardItem, paste } from '../mods/clipboard';
@@ -84,7 +84,30 @@ export type Action =
 
 const lidx = (at: State['at']) => at[0].start[at[0].start.length - 1].idx;
 
+const getCtx = (map: Map, root: number) => {
+    const tops = (map[root] as ListLikeContents).values;
+    const ctx = newCtx();
+    try {
+        nodeToExpr(fromMCST(root, map), ctx);
+        tops.forEach((top) => {
+            layout(top, 0, map, ctx.display, true);
+        });
+        return ctx;
+    } catch (err) {
+        return null;
+    }
+};
+
 const reduce = (state: UIState, action: Action): UIState => {
+    const newState = reduceInner(state, action);
+    if (state.map !== newState.map) {
+        const ctx = getCtx(newState.map, newState.root);
+        return ctx ? { ...newState, ctx } : newState;
+    }
+    return newState;
+};
+
+const reduceInner = (state: UIState, action: Action): UIState => {
     switch (action.type) {
         case 'menu':
             return { ...state, menu: { selection: action.selection } };
@@ -172,10 +195,9 @@ export const clipboardSuffix = ' """-->';
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        const ctx = newCtx();
         const { map, nidx } = parseByCharacter(
             initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
-            ctx,
+            newCtx(),
             debug,
         );
         const idx = (map[-1] as ListLikeContents).values[0];
@@ -187,7 +209,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             regs: {},
             clipboard: [],
             at: [{ start: at }],
-            ctx,
+            ctx: getCtx(map, -1) ?? newCtx(),
         };
     });
 
@@ -196,30 +218,18 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     const tops = (state.map[state.root] as ListLikeContents).values;
 
-    const ctx = React.useMemo(() => {
-        const ctx = newCtx();
-        try {
-            nodeToExpr(fromMCST(state.root, state.map), ctx);
-            tops.forEach((top) => {
-                layout(top, 0, state.map, ctx.display, true);
-            });
-        } catch (err) {
-            console.error(err);
-        }
-        return ctx;
-    }, [state.map]);
-
     const menu = useMemo(() => {
         if (state.at.length > 1 || state.at[0].end) return;
         const path = state.at[0].start;
         const last = path[path.length - 1];
-        const items = ctx.display[last.idx]?.autoComplete;
+        const items = state.ctx.display[last.idx]?.autoComplete;
         return items ? { idx: last.idx, items } : undefined;
-    }, [state.map, state.at, ctx]);
+    }, [state.map, state.at, state.ctx]);
 
     return (
         <div>
             <HiddenInput
+                ctx={state.ctx}
                 state={state}
                 dispatch={dispatch}
                 menu={!state.menu?.dismissed ? menu : undefined}
@@ -239,13 +249,13 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 dispatch={dispatch}
                 tops={tops}
                 debug={debug}
-                ctx={ctx}
+                ctx={state.ctx}
             />
             <Cursors state={state} />
             {!state.menu?.dismissed && menu?.items.length ? (
-                <Menu state={state} ctx={ctx} menu={menu} />
+                <Menu state={state} ctx={state.ctx} menu={menu} />
             ) : null}
-            <DebugClipboard state={state} debug={debug} ctx={ctx} />
+            <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
         </div>
     );
 };
