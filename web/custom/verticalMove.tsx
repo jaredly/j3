@@ -1,9 +1,18 @@
-import { calcOffset } from './RenderONode';
-import { UIState, calcCursorPos } from './ByHand';
-import { Path } from '../store';
+import { calcOffset } from './calcOffset';
+import { UIState } from './ByHand';
+import { calcCursorPos } from './Cursors';
+import { Mods } from '../mods/getKeyUpdate';
+import { cmpFullPath } from './isCoveredBySelection';
+import { Path } from '../mods/path';
 
-export const verticalMove = (state: UIState, up: boolean): UIState => {
-    const current = calcCursorPos(state.at[0].start, state.regs);
+export const verticalMove = (
+    state: UIState,
+    up: boolean,
+    mods: Mods,
+): UIState => {
+    const sel = state.at[0];
+    const current = calcCursorPos(sel.end ?? sel.start, state.regs);
+    console.log('vert', current, sel);
     if (!current) {
         return state;
     }
@@ -19,7 +28,16 @@ export const verticalMove = (state: UIState, up: boolean): UIState => {
         !up ? current.top + current.height + 5 : undefined,
         !up ? undefined : current.top - 5,
     );
-    return best ? { ...state, at: [{ start: best }] } : state;
+    return best
+        ? {
+              ...state,
+              at: [
+                  mods.shift
+                      ? { start: sel.start, end: best }
+                      : { start: best },
+              ],
+          }
+        : state;
 };
 
 export const closestSelection = (
@@ -77,14 +95,12 @@ export const closestSelection = (
                 which === 'main'
                     ? value.path.concat({
                           idx: +key,
-                          child: {
-                              type: 'subtext',
-                              at: calcOffset(value.node, pos.x),
-                          },
-                      })
+                          type: 'subtext',
+                          at: calcOffset(value.node, pos.x),
+                      } satisfies Path)
                     : value.path.concat({
                           idx: +key,
-                          child: { type: which as 'end' },
+                          type: which as 'end',
                       });
             best = { top: box.top, dx, dy, sel };
         });

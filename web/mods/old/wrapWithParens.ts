@@ -10,7 +10,6 @@ import {
 } from '../../../src/types/mcst';
 import { replacePath } from '../../old/RecordText';
 import { Path } from '../../store';
-import { TheUpdate } from '../getKeyUpdate';
 // import { combinePathSel } from '../navigate';
 
 export function wrapWithParens(
@@ -19,7 +18,7 @@ export function wrapWithParens(
     map: Map,
     kind: 'array' | 'list' | 'record',
     loc: 'start' | 'end' = 'end',
-): TheUpdate | void {
+) {
     const parent = path[path.length - 1];
     const nw = newListLike(kind, idx);
 

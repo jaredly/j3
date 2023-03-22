@@ -12,12 +12,12 @@ describe('compile', () => {
             '(def x 10) (def y (, x 20))',
         );
         const n10 = xpath(store.map, store.root, ['0', '2'])! as {
-            type: 'number';
-            raw: string;
+            type: 'identifier';
+            text: string;
         } & { loc: Loc };
         expect(noLoc(n10)).toEqual({
-            type: 'number',
-            raw: '10',
+            type: 'identifier',
+            text: '10',
         });
         compile(store, ctx);
         const xi = xpath(store.map, store.root, ['0'])!;
@@ -99,15 +99,15 @@ describe('compile', () => {
         // Act
         /// Update the contents of 'x', which will change the hash
         const x10 = xpath(store.map, xi, ['2']) as {
-            type: 'number';
-            raw: string;
+            type: 'identifier';
+            text: string;
             loc: Loc;
         };
         updateStore(store, {
             map: {
                 [x10!.loc.idx]: {
                     ...x10,
-                    raw: '30',
+                    text: '30',
                 },
             },
         });

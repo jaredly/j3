@@ -1,6 +1,6 @@
 import { Ctx } from '../../src/to-ast/Ctx';
 import { Map } from '../../src/types/mcst';
-import { Path } from '../store';
+import { Path } from '../mods/path';
 import { Action, UIState } from './ByHand';
 
 export type Reg = (

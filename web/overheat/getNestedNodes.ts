@@ -2,13 +2,13 @@ import { idText } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { Layout, MCString, MNode, MNodeExtra } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
+import { ONode } from './types';
 
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
 
 export type NNode =
-    | { type: 'horiz'; children: NNode[] }
-    | { type: 'vert'; children: NNode[] }
+    | { type: 'horiz' | 'vert' | 'inline'; children: NNode[] }
     | { type: 'pairs'; children: ([NNode] | [NNode, NNode])[] }
     | { type: 'indent'; child: NNode }
     | { type: 'punct'; text: string; color: string }
@@ -17,27 +17,44 @@ export type NNode =
     | { type: 'ref'; id: number; path: PathChild }
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
-export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
-    const nodes = getNodes_(node, layout);
-    if (nodes && node.tannot != null) {
-        const extra: NNode[] = [
-            { type: 'punct', text: ':', color: 'inherit' },
-            {
-                type: 'ref',
-                id: node.tannot,
-                path: { type: 'tannot' },
-            },
-        ];
-        if (nodes.type === 'horiz') {
-            nodes.children.push(...extra);
-        } else {
-            return { type: 'horiz', children: [nodes, ...extra] };
-        }
+export const getNodes = (node: MNode) => unnestNodes(getNestedNodes(node));
+
+export const unnestNodes = (node: NNode): ONode[] => {
+    switch (node.type) {
+        case 'horiz':
+        case 'vert':
+        case 'inline':
+            return node.children.flatMap(unnestNodes);
+        case 'pairs':
+            return node.children.flatMap((nodes) => nodes.flatMap(unnestNodes));
+        case 'indent':
+            return unnestNodes(node.child);
+        case 'punct':
+            return [
+                {
+                    type: 'punct',
+                    text: node.text,
+                    color: node.color,
+                },
+            ];
+        case 'text':
+            return [{ type: 'render', text: node.text }];
+        case 'brace':
+            return [
+                {
+                    type: 'punct',
+                    text: node.text,
+                    color: node.color ?? 'rainbow',
+                },
+            ];
+        case 'ref':
+            return [node];
+        case 'blinker':
+            return [node];
     }
-    return nodes;
 };
 
-export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
+export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
     switch (node.type) {
         case 'spread':
             return {
@@ -49,6 +66,23 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                         type: 'ref',
                         id: node.contents,
                         path: { type: 'spread-contents' },
+                    },
+                ],
+            };
+        case 'annot':
+            return {
+                type: 'horiz',
+                children: [
+                    {
+                        type: 'ref',
+                        id: node.target,
+                        path: { type: 'annot-target' },
+                    },
+                    { type: 'punct', text: ':', color: 'unset' },
+                    {
+                        type: 'ref',
+                        id: node.annot,
+                        path: { type: 'annot-annot' },
                     },
                 ],
             };
@@ -154,9 +188,7 @@ export const getNodes_ = (node: MNode, layout?: Layout): NNode => {
                 ],
             };
         case 'identifier':
-        case 'tag':
         case 'comment':
-        case 'number':
         case 'unparsed':
         case 'blank':
         case 'accessText':
@@ -223,7 +255,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
         type: 'vert',
         children: [
             {
-                type: 'horiz',
+                type: 'inline',
                 children: [
                     {
                         type: 'ref',
@@ -250,7 +282,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
                     },
                 },
                 {
-                    type: 'horiz',
+                    type: 'inline',
                     children: [
                         {
                             type: 'punct',

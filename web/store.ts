@@ -135,20 +135,17 @@ export type EvalCtx = {
 // decorator (key) [tag or arg]
 
 export type PathChild =
-    | {
-          type: 'child';
-          at: number;
-      }
+    | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
-    | { type: 'tannot' }
-    | { type: 'inside' | 'start' | 'end' }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
-    | { type: 'record-target' | 'spread-contents' }
-    | {
-          type: 'decorator';
-          key: string;
-          at: number; // 0 for the key
-      };
+    | { type: 'annot-target' | 'annot-annot' }
+    | { type: 'inside' | 'start' | 'end' }
+    | { type: 'record-target' | 'spread-contents' };
+// | {
+//       type: 'decorator';
+//       key: string;
+//       at: number; // 0 for the key
+//   };
 
 export type Path = { idx: number; child: PathChild };
 // export type Child = { item: Path; idx?: number };
@@ -228,9 +225,9 @@ export const setSelection = (
         selection.loc === 'end'
     ) {
         const node = store.map[selection.idx];
-        if (node.tannot) {
-            selection = { idx: node.tannot, loc: 'end' };
-        }
+        // if (node.tannot) {
+        //     selection = { idx: node.tannot, loc: 'end' };
+        // }
     }
 
     if (selection) {

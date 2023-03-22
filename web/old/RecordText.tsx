@@ -263,7 +263,7 @@ export const replacePath = (
         }
         default:
             throw new Error(
-                `Can't replace parent. . is this a valid place for an expr?`,
+                `Can't replace parent. ${parent.child.type}. is this a valid place for an expr?`,
             );
     }
     return update;

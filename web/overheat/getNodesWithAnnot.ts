@@ -12,19 +12,8 @@ import { ONodeOld } from './types';
 /**
  * @deprecated this is the old weird one
  */
-export const getNodes = (node: MNode, isRoot?: boolean): ONodeOld[] => {
+export const getNodesBad = (node: MNode, isRoot?: boolean): ONodeOld[] => {
     const nodes = getNodes_(node, isRoot);
-    if (nodes && node.tannot != null) {
-        nodes.push(
-            { type: 'punct', text: ':', color: 'inherit', innerLeft: true },
-            {
-                type: 'ref',
-                id: node.tannot,
-                path: { type: 'tannot' },
-                innerLeft: true,
-            },
-        );
-    }
     return nodes;
 };
 
@@ -110,9 +99,7 @@ export const getNodes_ = (node: MNode, isRoot?: boolean): ONodeOld[] => {
                 { type: 'blinker', loc: 'end' },
             ];
         case 'identifier':
-        case 'tag':
         case 'comment':
-        case 'number':
         case 'unparsed':
         case 'blank':
             return [{ type: 'render', component: IdentifierLike2 }];
@@ -147,7 +134,7 @@ export const getNodes_ = (node: MNode, isRoot?: boolean): ONodeOld[] => {
                 { type: 'blinker', loc: 'end' },
             ];
         default:
-            let _: never = node;
+            // let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);
     }
     // return null;

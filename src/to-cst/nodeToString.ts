@@ -1,4 +1,4 @@
-import { Path } from '../../web/store';
+import { Path } from '../../web/mods/path';
 import { Node } from '../types/cst';
 
 export type SourceMap = {
@@ -16,9 +16,6 @@ export const nodeToString = (
     let body = nodeToString_(node, sm);
     sm.cur = start + body.length;
     sm.map[node.loc.idx] = { start, end: sm.cur };
-    if (node.tannot) {
-        body += ':' + nodeToString(node.tannot, sm, 1);
-    }
     return body;
 };
 
@@ -31,7 +28,7 @@ export const remapPos = (fullPath: Path[], sm: SourceMap) => {
         throw new Error(`no idx ${last.idx} ${JSON.stringify(sm)}`);
     }
     const { start, end } = sm.map[last.idx];
-    switch (last.child.type) {
+    switch (last.type) {
         case 'start':
             return start;
         case 'end':
@@ -39,7 +36,7 @@ export const remapPos = (fullPath: Path[], sm: SourceMap) => {
         case 'inside':
             return start + 1;
         case 'subtext':
-            return start + last.child.at;
+            return start + last.at;
         default:
             return start;
     }
@@ -73,12 +70,14 @@ export const nodeToString_ = (
                 .join(' ')}}`;
         case 'identifier':
             return `${node.text}${node.hash ? '#' + node.hash : ''}`;
-        case 'number':
-            return node.raw;
         case 'blank':
             return '';
-        case 'tag':
-            return `'${node.text}`;
+        case 'annot':
+            return `${nodeToString(node.target, sm)}:${nodeToString(
+                node.annot,
+                sm,
+                1,
+            )}`;
         case 'recordAccess':
             return `${nodeToString(node.target, sm)}${node.items
                 .map((item) => '.' + nodeToString(item, sm, 1))

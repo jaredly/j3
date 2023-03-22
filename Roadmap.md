@@ -1,4 +1,80 @@
 
+# Ok folks, so the basic editor, is looking pretty neat
+
+- [x] ah first, get rid of non-nested get-nodes
+- [ ] autocomplete pls
+  - question. is autocomplete always... calculable
+    from the state / loc / ctx
+  - answer, I certainly hope so.
+    this means that I'd want to useMemo on it, instead of
+    plopping it on state. Right?
+    BUT state keeps track of the selection index.
+    and maybe other things? if the menu gets fancy
+    oh and it can indicate whether it's been dismissed, right?
+- [ ] then the 'hash' dealiwhap
+
+
+- [ ] oof, ok so removal is very broken
+  that is to say
+  because we're preserving collections ...
+  they're getting weird
+  I need to zero out the locs of the collections that are modified
+
+
+# Newlines though
+
+So the thing about newlines
+I don't know at the start
+whether I need to intervene
+right?
+
+# Select & Delete
+hm yeah gotta have a bit of that too
+
+- [x] syntax.test. for ^L and ^R to expand selection should work
+- [x] delete a subtext or untrusted
+- [x] delete a nodes
+  - ok actually, what if we do like a "filter the whole tree"?
+    tbh that's probably the simplest solution. maybe a little bit overkill, idk.
+    - oh we can just do the closest common ancestor, that's nice.
+- [x] let's do ^C and ^V for copy & paste folks
+
+# Copyy nad PArstee
+
+- onCopy, onPaste. firefox looks like bad news
+but maybe its fine?
+
+should I just do writeText? Or should I also do `write`,
+with a json mime type?
+Seems like a solid idea.
+
+- [x] LOGJAM ok the `path.child` thing has gotten super old
+
+- [x] LOGJAM the fact that I'm using `nidx()` from `parse` is embarrassing. Mustfix.
+
+- [x] hmm I think I want to ~maintain wraps?
+  (let [hello folks and such])
+  ^                ^
+  should probably copy as `(let [hello folks])`
+  but I'm currently getting `let hellow folks`
+
+- [x] and then I need a simple paste-story
+  which should go ok
+   - [x] basic subtext
+   - [x] untrusted, do each character
+   - [x] paste mutliple nodes pls
+- [ ] cut and drag would be nice...
+
+- [ ] and then ... oh right, I need a `hash` node type, to lock things down,
+  and then autocomplete. Then I can go back to playing with the language.
+
+- [x] paste can replace blanks
+
+# LogJams
+
+- [x] tannot must go
+- [x] trim the cst/mcst node types (no number)
+
 # Selection!
 
 - [x] ok folks I've gotta come clean, and just unify Path and Selection.
@@ -8,13 +84,33 @@
 - [x] add start/end to sel type
 - [x] render end cursor (prelim)
 - [x] populate sel/end on drag
-- [ ] actually do a meaningful render of the selection.
-  - [ ] should I like do a fake overlay as well? Or let the individual thing render?
-    hmmm. Rich text isn't going to like that.
-    Unlesssssss I kinda ditch lexical, and do my very own rich text?
-    
-  - [ ] 
-- [ ] ok now selections need boundariessss
+- [x] actually do a meaningful render of the selection.
+- [x] strings with newlines render super weird
+  - honestly, should I just do something special
+    with newlines? Handle them myself, I mean?
+    seems like that might make sense.
+    ok, so like from a data standpoint I think we can leave them.
+    but for rendering, split them up
+- [x] support subselecting in an atom
+- [ ] getKeyUpdate should replace selected text
+- [x] COPYYY and PASTEEE
+  - so I'll need to generate new idx's for the pasted things
+  - unlessss I'm doing a cut? In which case, we could retain them.
+    but it might not be worth it to mess with that.
+- [x] tannots are selecting weird...
+  honestly now that I have full control over things, maybe tannot shouldn't
+  be this weird pseudo node. it could just be a normal node, right?
+  I think that would be better.
+  - so, changing tannots, will mean that my nodeToExpr will need to be different.
+    but I'm fine with that.
+- [x] shift-arrow-keys
+- [x] ok now selections need boundariessss
+
+- [x] um, I need some tests for selections. How do I do it.
+
+- [ ] and thennn let's bring `hash` node type into the mix, and autocomplete.
+
+
 
 Here's what I'm thinking
 
@@ -272,7 +368,7 @@ amount of complexity.
   relinquish focus? Maybe.
   - [ ] So, yeah I think I do want to give it full focus control.
     which is maybe tricky? idk.
-- [ ] TODO blink needs to be a thing!
+- [x] TODO blink needs to be a thing!
 - [ ] handle tab
 - [x] allow other things to have focus, it's ok
 

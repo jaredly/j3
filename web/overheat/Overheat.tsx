@@ -10,7 +10,7 @@ import { Top } from '../old/IdentifierLike';
 import { sideClick } from '../old/ListLike';
 import { Events, rainbow } from '../old/Nodes';
 import { Path, Selection, setSelection, useStore } from '../store';
-import { getNodes } from './getNodesWithAnnot';
+import { getNodesBad } from './getNodesWithAnnot';
 import { ONodeOld } from './types';
 
 const select = (
@@ -108,7 +108,7 @@ function renderNodes(
     path: Path[],
     isSelected: boolean,
 ) {
-    const nodes = getNodes(mnode, idx === top.store.root);
+    const nodes = getNodesBad(mnode, idx === top.store.root);
     return nodes.map((node, i) => {
         const childEvents: Events = makeChildEvents(i, nodes, idx, top, events);
         switch (node.type) {

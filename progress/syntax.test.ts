@@ -1,6 +1,6 @@
 // Basic level
 
-import { setIdx } from '../src/grammar';
+import { validateExpr } from '../src/get-type/validate';
 import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
 import {
     nodeToString,
@@ -9,9 +9,10 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { validatePath } from '../web/mods/clipboard';
 import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
 import { selectEnd, selectStart } from '../web/mods/navigate';
-import { Path } from '../web/store';
+import { Path } from '../web/mods/path';
 import { sexp } from './sexp';
 
 const data = `
@@ -123,10 +124,10 @@ one.tw.o
 (record (spread id) id id (spread))
 
 (fn [one:two three:(four five)]:six seven)
-(list id (tannot (array (tannot id id) (tannot id (list id id))) id) id)
+(list id (annot (array (annot id id) (annot id (list id id))) id) id)
 
 (fn [one:two three:(four five)]:six {10 20 yes "ok \${(some [2 3 "inner" ..more] ..things)} and \${a}"})
-(list id (tannot (array (tannot id id) (tannot id (list id id))) id) (record id id id (string (list id (array id id string (spread id)) (spread id)) id)))
+(list id (annot (array (annot id id) (annot id (list id id))) id) (record id id id (string (list id (array id id string (spread id)) (spread id)) id)))
 
 backspace^b
 backspac
@@ -225,6 +226,18 @@ id
 (h^l a)
 ( ah)
 (list blank id)
+
+hello^L^L^b
+hel
+id
+
+abcde^L^L^C^l^V
+abdecde
+id
+
+(a  ^l^b
+(a )
+(list id blank)
 `;
 
 // hi:^b
@@ -252,8 +265,8 @@ describe('a test', () => {
                 chunks.length === 2 ? chunks : chunks.slice(1);
 
             (only ? it.only : it)(i + ' ' + jerd, () => {
-                setIdx(0);
-                const { map: data, selection } = parseByCharacter(jerd, only);
+                const { map: data, at, nidx } = parseByCharacter(jerd, only);
+                const selection = at[0].start;
                 Object.keys(data).forEach((key) => {
                     expect(data[+key].loc.idx).toEqual(+key);
                 });
@@ -273,7 +286,7 @@ describe('a test', () => {
 
                 const state = selectEnd(
                     idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                    [{ idx: -1, type: 'child', at: 0 }],
                     data,
                 );
 
@@ -284,7 +297,12 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    state: { map: data, at: [{ start: state }], root: -1 },
+                    state: {
+                        map: data,
+                        at: [{ start: state }],
+                        root: -1,
+                        nidx,
+                    },
                     only,
                     i,
                     sourceMap,
@@ -299,7 +317,7 @@ describe('a test', () => {
 
                 const startState = selectStart(
                     idx,
-                    [{ idx: -1, child: { type: 'child', at: 0 } }],
+                    [{ idx: -1, type: 'child', at: 0 }],
                     data,
                 );
 
@@ -310,7 +328,12 @@ describe('a test', () => {
                 }
 
                 doABunchOfKeys({
-                    state: { map: data, at: [{ start: startState }], root: -1 },
+                    state: {
+                        map: data,
+                        at: [{ start: startState }],
+                        root: -1,
+                        nidx,
+                    },
                     only,
                     i,
                     sourceMap,
@@ -362,13 +385,14 @@ function doABunchOfKeys({
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(key, state, state.at[0].start);
+        const update = getKeyUpdate(key, state.map, state.at[0], state.nidx);
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {
                 expect(update).toMatchObject({ type: 'select' });
             } else {
-                state = applyUpdate(state, update)!;
+                state = applyUpdate(state, 0, update)!;
+                expect(validatePath(state.map, update.selection)).toBeTruthy();
             }
         }
         const newPos = remapPos(state.at[0].start, sourceMap);
@@ -388,7 +412,9 @@ function doABunchOfKeys({
                     backOrig.slice(newPos),
             );
             console.log(state.at[0].start);
-            expect(newPos).toEqual('something else');
+            expect(newPos).toEqual(
+                `it should have been different? ${startPos}`,
+            );
         }
         if (newPos === stop) {
             break;

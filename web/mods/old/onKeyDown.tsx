@@ -78,23 +78,23 @@ export const onKeyDown = (
         }
     }
 
-    if (evt.key === ':') {
-        evt.preventDefault();
-        let tannot = store.map[idx].tannot;
-        if (tannot != null) {
-            return setSelection(store, { idx: tannot, loc: 'start' });
-        }
-        for (let i = path.length - 1; i >= 0; i--) {
-            let tannot = store.map[path[i].idx].tannot;
-            if (tannot != null) {
-                return setSelection(store, { idx: tannot, loc: 'start' });
-            }
-        }
-        return;
-        // assume we're going to the thing
-        // if (node.tannot) {
-        // }
-    }
+    // if (evt.key === ':') {
+    //     evt.preventDefault();
+    //     let tannot = store.map[idx].tannot;
+    //     if (tannot != null) {
+    //         return setSelection(store, { idx: tannot, loc: 'start' });
+    //     }
+    //     for (let i = path.length - 1; i >= 0; i--) {
+    //         let tannot = store.map[path[i].idx].tannot;
+    //         if (tannot != null) {
+    //             return setSelection(store, { idx: tannot, loc: 'start' });
+    //         }
+    //     }
+    //     return;
+    //     // assume we're going to the thing
+    //     // if (node.tannot) {
+    //     // }
+    // }
 
     if (evt.key === 'Tab') {
         evt.preventDefault();

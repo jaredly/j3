@@ -8,7 +8,6 @@ import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
-import { nidx } from '../grammar';
 
 export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
     if (!ctx.mods[idx]) {
@@ -55,23 +54,23 @@ export const specials: {
                 contents[0].values,
             ).map((arg) => {
                 let type;
-                if (arg.tannot == null) {
-                    addMod(ctx, arg.loc.idx, {
-                        type: 'tannot',
-                        node: {
-                            ...any.form,
-                            loc: {
-                                ...arg.loc,
-                                idx: nidx(),
-                            },
-                        },
-                    });
-                    type = { ...any, form: arg };
-                } else if (arg.tannot.type !== 'blank') {
-                    type = nodeToType(arg.tannot, ctx);
-                } else {
-                    type = { ...any, form: arg };
-                }
+                // if (arg.tannot == null) {
+                //     addMod(ctx, arg.loc.idx, {
+                //         type: 'tannot',
+                //         node: {
+                //             ...any.form,
+                //             loc: {
+                //                 ...arg.loc,
+                //                 idx: nidx(),
+                //             },
+                //         },
+                //     });
+                //     type = { ...any, form: arg };
+                // } else if (arg.tannot.type !== 'blank') {
+                //     type = nodeToType(arg.tannot, ctx);
+                // } else {
+                type = { ...any, form: arg };
+                // }
                 const pattern = nodeToPattern(arg, type, ctx, locals);
                 return { pattern, type };
             });

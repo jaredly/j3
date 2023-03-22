@@ -1,10 +1,10 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Map } from '../../src/types/mcst';
-import { getNodes } from '../overheat/getNodes';
+import { getNodes } from '../overheat/getNestedNodes';
 import { ONode } from '../overheat/types';
-import { Path } from '../store';
-import { KeyUpdate } from './getKeyUpdate';
+import { StateSelect } from './getKeyUpdate';
+import { Path } from './path';
 
 export const selectStart = (
     idx: number,
@@ -18,7 +18,7 @@ export const selectStart = (
             return base.concat(sel);
         }
     }
-    return base.concat([{ idx, child: { type: 'start' } }]);
+    return base.concat([{ idx, type: 'start' }]);
 };
 
 export const selectEnd = (
@@ -33,10 +33,17 @@ export const selectEnd = (
             return base.concat(sel);
         }
     }
-    return base.concat([{ idx, child: { type: 'end' } }]);
+    return base.concat([{ idx, type: 'end' }]);
 };
 
-export const goLeft = (path: Path[], map: Map): KeyUpdate => {
+export const pathChildEqual = (
+    { idx: _, ...one }: Path,
+    { idx, ...two }: Path,
+) => {
+    return equal(one, two);
+};
+
+export const goLeft = (path: Path[], map: Map): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
     const pnodes = getNodes(map[last.idx]);
@@ -45,7 +52,7 @@ export const goLeft = (path: Path[], map: Map): KeyUpdate => {
     for (let pnode of pnodes) {
         const ps = pathSelForNode(pnode, last.idx, 'end', map);
         if (!ps) continue;
-        if (ps.length && equal(ps[0].child, last.child)) {
+        if (ps.length && pathChildEqual(ps[0], last)) {
             return prev
                 ? { type: 'select', selection: path.slice(0, -1).concat(prev) }
                 : goLeft(path.slice(0, -1), map);
@@ -60,44 +67,22 @@ export const goRight = (
     path: Path[],
     idx: number,
     map: Map,
-    fromTannot = false,
-): KeyUpdate => {
+): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
-    if (!fromTannot && map[idx].tannot && idx !== last.idx) {
-        const sel = selectStart(
-            map[idx].tannot!,
-            path.concat({
-                idx: idx,
-                child: { type: 'tannot' },
-            }),
-            map,
-        );
-        if (sel) {
-            return {
-                type: 'select',
-                selection: sel,
-            };
-        }
-    }
 
     const pnodes = getNodes(map[last.idx]).reverse();
     let prev: Path[] | null = null;
     for (let pnode of pnodes) {
         const ps = pathSelForNode(pnode, last.idx, 'start', map);
         if (!ps) continue;
-        if (ps.length && equal(ps[0].child, last.child)) {
+        if (ps.length && pathChildEqual(ps[0], last)) {
             return prev
                 ? {
                       type: 'select',
                       selection: path.slice(0, -1).concat(prev),
                   }
-                : goRight(
-                      path.slice(0, -1),
-                      last.idx,
-                      map,
-                      last.child.type === 'tannot',
-                  );
+                : goRight(path.slice(0, -1), last.idx, map);
         }
         prev = ps;
     }
@@ -116,42 +101,42 @@ export const pathSelForNode = (
         case 'punct':
             return null;
         case 'blinker':
-            return [{ idx, child: { type: node.loc } }];
+            return [{ idx, type: node.loc }];
         case 'render':
-            return [{ idx, child: { type: loc } }];
+            return [{ idx, type: loc }];
         case 'ref': {
-            const path: Path[] = [{ idx, child: node.path }];
+            const path: Path[] = [{ idx, ...node.path }];
             const cnode = map[node.id];
-            if (cnode.tannot && loc === 'end') {
-                return selectEnd(
-                    cnode.tannot,
-                    path.concat({
-                        idx: node.id,
-                        child: { type: 'tannot' },
-                    }),
-                    map,
-                );
-            }
+            // if (cnode.tannot && loc === 'end') {
+            //     return selectEnd(
+            //         cnode.tannot,
+            //         path.concat({
+            //             idx: node.id,
+            //              type: 'tannot' ,
+            //         }),
+            //         map,
+            //     );
+            // }
             switch (cnode.type) {
                 case 'array':
                 case 'list':
                 case 'record':
                 case 'string':
-                    return [...path, { idx: node.id, child: { type: loc } }];
+                    return [...path, { idx: node.id, type: loc }];
                 case 'identifier':
                     return path.concat([
                         {
                             idx: node.id,
-                            child: {
-                                type: 'subtext',
-                                at:
-                                    loc === 'start'
-                                        ? 0
-                                        : splitGraphemes(cnode.text).length,
-                            },
+
+                            type: 'subtext',
+                            at:
+                                loc === 'start'
+                                    ? 0
+                                    : splitGraphemes(cnode.text).length,
                         },
                     ]);
                 case 'spread':
+                case 'annot':
                 case 'recordAccess':
                     if (loc === 'end') {
                         return selectEnd(node.id, path, map);
@@ -160,7 +145,7 @@ export const pathSelForNode = (
                         return selectStart(node.id, path, map);
                     }
             }
-            return path.concat([{ idx: node.id, child: { type: loc } }]);
+            return path.concat([{ idx: node.id, type: loc }]);
         }
     }
 };

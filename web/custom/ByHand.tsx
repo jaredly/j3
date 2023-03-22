@@ -1,39 +1,39 @@
-import equal from 'fast-deep-equal';
-import React, {
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-} from 'react';
-import { sexp } from '../../progress/sexp';
-import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
+import React, { useMemo } from 'react';
+import { parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import { applyUpdateMap, getKeyUpdate, State } from '../mods/getKeyUpdate';
+import { type ClipboardItem, paste } from '../mods/clipboard';
+import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
-import { Path } from '../store';
-import { Render } from './Render';
-import { closestSelection, verticalMove } from './verticalMove';
+import { Path } from '../mods/path';
+import { Cursors } from './Cursors';
+import { Menu } from './Menu';
+import { DebugClipboard } from './DebugClipboard';
+import { HiddenInput } from './HiddenInput';
+import { Root } from './Root';
+import { verticalMove } from './verticalMove';
 
 const examples = {
     let: '(let [x 10] (+ x 20))',
     lists: '(1 2) (3 [] 4) (5 6)',
-    string: `"Some 🤔 things"`,
+    string: `"Some 🤔 things\nare here for \${you} to\nsee"`,
 
     sink: `
 (def live (vec4 1. 0.6 1. 1.))
 (def dead (vec4 0. 0. 0. 1.))
 (defn isLive [{x}:Vec4] (> x 0.5))
+{..one two three ..four five ..(one two) three four}
 (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
-(def person {name "Person" age 32 cats 1.5
+(def person {name "Person" age 32 animals {cats 1.5 dogs 0}
 description "This is a person with a \${"kinda"} normal-length description"
 subtitle "Return of the person"
 parties (let [parties (isLive (vec4 1.0)) another true]
 (if parties "Some parties" "probably way too many parties"))})
+person.description
+person.animals.dogs
 (defn shape-to-svg [shape:shape]
   (switch shape
     ('Circle {$ pos radius})
@@ -48,18 +48,12 @@ parties (let [parties (isLive (vec4 1.0)) another true]
 `.trim(),
 };
 
-// const initialText = `
-// (def person {name "Pers\${aaaaaaaaaaaa}on"
-// parties (let)})
-// `.trim();
-
-// '(fn [one:two three:(four five)]:six {10 20 yes "ok ${(some [2 3 "inner" ..more] ..things)} and ${a}"})';
-
 export type UIState = {
     regs: RegMap;
+    clipboard: ClipboardItem[][];
 } & State;
 
-type RegMap = {
+export type RegMap = {
     [key: number]: {
         main?: { node: HTMLSpanElement; path: Path[] } | null;
         start?: { node: HTMLSpanElement; path: Path[] } | null;
@@ -74,18 +68,30 @@ export type Action =
           add?: boolean;
           at: { start: Path[]; end?: Path[] }[];
       }
+    | { type: 'copy'; items: ClipboardItem[] }
     | {
           type: 'key';
           key: string;
+          mods: Mods;
+      }
+    | {
+          type: 'paste';
+          items: ClipboardItem[];
       };
 
 const reduce = (state: UIState, action: Action): UIState => {
     switch (action.type) {
+        case 'copy':
+            return { ...state, clipboard: [action.items, ...state.clipboard] };
         case 'key':
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
-                return verticalMove(state, action.key === 'ArrowUp');
+                return verticalMove(
+                    state,
+                    action.key === 'ArrowUp',
+                    action.mods,
+                );
             }
-            const newState = handleKey(state, action.key);
+            const newState = handleKey(state, action.key, action.mods);
             if (newState) {
                 if (newState.at.some((at) => isRootPath(at.start))) {
                     console.log('not selecting root node');
@@ -103,6 +109,9 @@ const reduce = (state: UIState, action: Action): UIState => {
                 ...state,
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
+        case 'paste': {
+            return { ...state, ...paste(state, action.items) };
+        }
     }
 };
 
@@ -130,17 +139,26 @@ export const ByHand = () => {
     );
 };
 
+export const clipboardPrefix = '<!--""" jerd-clipboard ';
+export const clipboardSuffix = ' """-->';
+
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        const map = parseByCharacter(initialText, debug).map;
+        const { map, nidx } = parseByCharacter(
+            initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
+            debug,
+        );
         const idx = (map[-1] as ListLikeContents).values[0];
-        const at = selectEnd(
-            idx,
-            [{ idx: -1, child: { type: 'child', at: 0 } }],
+        const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
+        return {
             map,
-        )!;
-        return { map, root: -1, at: [{ start: at }], regs: {} };
+            nidx,
+            root: -1,
+            regs: {},
+            clipboard: [],
+            at: [{ start: at }],
+        };
     });
 
     // @ts-ignore
@@ -150,95 +168,28 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     const ctx = React.useMemo(() => {
         const ctx = newCtx();
-        nodeToExpr(fromMCST(state.root, state.map), ctx);
-        tops.forEach((top) => {
-            layout(top, 0, state.map, ctx.display, true);
-        });
+        try {
+            nodeToExpr(fromMCST(state.root, state.map), ctx);
+            tops.forEach((top) => {
+                layout(top, 0, state.map, ctx.display, true);
+            });
+        } catch (err) {
+            console.error(err);
+        }
         return ctx;
     }, [state.map]);
 
-    const reg = useCallback(
-        (
-            node: HTMLSpanElement | null,
-            idx: number,
-            path: Path[],
-            loc?: 'start' | 'end' | 'inside',
-        ) => {
-            if (!state.regs[idx]) {
-                state.regs[idx] = {};
-            }
-            state.regs[idx][loc ?? 'main'] = node ? { node, path } : null;
-        },
-        [],
-    );
-
-    useEffect(() => {
-        if (document.activeElement !== hiddenInput.current) {
-            hiddenInput.current?.focus();
-        }
-    }, [state.at]);
-
-    useEffect(() => {
-        window.addEventListener(
-            'blur',
-            (evt) => {
-                setTimeout(() => {
-                    if (document.activeElement === document.body) {
-                        hiddenInput.current?.focus();
-                    }
-                }, 50);
-            },
-            true,
-        );
-    }, []);
-
-    const hiddenInput = useRef(null as null | HTMLInputElement);
-
-    const [drag, setDrag] = useState(false);
+    const menu = useMemo(() => {
+        if (state.at.length > 1 || state.at[0].end) return;
+        const path = state.at[0].start;
+        const last = path[path.length - 1];
+        const items = ctx.display[last.idx]?.autoComplete;
+        return items ? { idx: last.idx, items } : undefined;
+    }, [state.map, state.at, ctx]);
 
     return (
-        <div style={{ padding: 16 }}>
-            {/* always capturing! dunno if this is totally wise lol */}
-            <input
-                ref={hiddenInput}
-                autoFocus
-                // onBlur={(evt) => evt.currentTarget.focus()}
-                style={{
-                    width: 0,
-                    height: 0,
-                    opacity: 0,
-                    position: 'absolute',
-                    border: 'none',
-                    pointerEvents: 'none',
-                }}
-                onKeyDown={(evt) => {
-                    if (evt.metaKey || evt.ctrlKey || evt.altKey) {
-                        return;
-                    }
-
-                    evt.stopPropagation();
-                    evt.preventDefault();
-                    if (evt.key !== 'Unidentified') {
-                        dispatch({ type: 'key', key: evt.key });
-                    }
-                }}
-                onInput={(evt) => {
-                    // console.log('Input', evt, evt.currentTarget.value);
-                    if (evt.currentTarget.value) {
-                        dispatch({ type: 'key', key: evt.currentTarget.value });
-                        evt.currentTarget.value = '';
-                    }
-                }}
-                onCompositionStart={(evt) => {
-                    console.log(evt);
-                }}
-                onCompositionEnd={(evt) => {
-                    console.log('end', evt);
-                }}
-                onCompositionUpdate={(evt) => {
-                    console.log('update', evt);
-                }}
-            />
+        <div>
+            <HiddenInput state={state} dispatch={dispatch} />
             <button
                 onClick={() => setDebug(!debug)}
                 style={{
@@ -249,330 +200,36 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             >
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
-            <div
-                style={{ cursor: 'text' }}
-                onMouseDownCapture={() => {
-                    setDrag(true);
-                }}
-                onMouseDown={(evt) => {
-                    const sel = closestSelection(state.regs, {
-                        x: evt.clientX,
-                        y: evt.clientY,
-                    });
-                    if (sel) {
-                        dispatch({
-                            type: 'select',
-                            add: evt.altKey,
-                            at: [{ start: sel }],
-                        });
-                    }
-                }}
-                onMouseMove={(evt) => {
-                    if (!drag) {
-                        return;
-                    }
-                    const sel = closestSelection(state.regs, {
-                        x: evt.clientX,
-                        y: evt.clientY,
-                    });
-                    if (sel) {
-                        if (equal(sel, state.at[0].start)) {
-                            dispatch({
-                                type: 'select',
-                                add: evt.altKey,
-                                at: [
-                                    {
-                                        start: state.at[0].start,
-                                    },
-                                ],
-                            });
-                        } else {
-                            dispatch({
-                                type: 'select',
-                                add: evt.altKey,
-                                at: [
-                                    {
-                                        start: state.at[0].start,
-                                        end: sel,
-                                    },
-                                ],
-                            });
-                        }
-                    }
-                }}
-                onMouseUpCapture={(evt) => {
-                    if (drag) {
-                        setDrag(false);
-                        const sel = closestSelection(state.regs, {
-                            x: evt.clientX,
-                            y: evt.clientY,
-                        });
-                        if (sel && !equal(sel, state.at[0].start)) {
-                            dispatch({
-                                type: 'select',
-                                add: evt.altKey,
-                                at: [
-                                    {
-                                        start: state.at[0].start,
-                                        end: sel,
-                                    },
-                                ],
-                            });
-                        }
-                    }
-                }}
-            >
-                {tops.map((top, i) => (
-                    <div key={top} style={{ marginBottom: 8 }}>
-                        <Render
-                            debug={debug}
-                            idx={top}
-                            map={state.map}
-                            reg={reg}
-                            display={ctx.display}
-                            dispatch={dispatch}
-                            selection={state.at}
-                            path={[
-                                {
-                                    idx: state.root,
-                                    child: { type: 'child', at: i },
-                                },
-                            ]}
-                        />
-                        {debug ? (
-                            <div>{sexp(fromMCST(top, state.map))}</div>
-                        ) : null}
-                    </div>
-                ))}
-            </div>
+            <Root
+                state={state}
+                dispatch={dispatch}
+                tops={tops}
+                debug={debug}
+                ctx={ctx}
+            />
             <Cursors state={state} />
-            {debug ? (
-                <div>
-                    <div>
-                        Sel:{' '}
-                        {/* {JSON.stringify(
-                            state.at.map((at) => [at.start.sel, at.end?.sel]),
-                        )} */}
-                        <div>{JSON.stringify(state.at[0].start)}</div>
-                    </div>
-                    <div>Path: </div>
-                    <div>
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <td>idx</td>
-                                    <td>child</td>
-                                </tr>
-
-                                {state.at.map((at, a) =>
-                                    at.start.map((item, i) => (
-                                        <tr key={i + ':' + a}>
-                                            <td>{item.idx}</td>
-                                            <td>
-                                                {JSON.stringify(item.child)}
-                                            </td>
-                                        </tr>
-                                    )),
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div style={{ whiteSpace: 'pre-wrap' }}>
-                        {JSON.stringify(ctx.display, null, 2)}
-                    </div>
-                </div>
+            {menu?.items.length ? (
+                <Menu state={state} ctx={ctx} menu={menu} />
             ) : null}
+            <DebugClipboard state={state} debug={debug} ctx={ctx} />
         </div>
     );
-};
-
-export const Cursors = ({ state }: { state: UIState }) => {
-    const [blink, setBlink] = useState(false);
-
-    const [cursorPos, setCursorPos] = useState(
-        [] as ({ x: number; y: number; h: number; color?: string } | null)[],
-    );
-
-    const tid = useRef(null as null | NodeJS.Timeout);
-
-    useLayoutEffect(() => {
-        if (tid.current != null) {
-            clearTimeout(tid.current);
-        } else {
-            setBlink(false);
-        }
-        tid.current = setTimeout(() => {
-            setBlink(true);
-            tid.current = null;
-        }, 500);
-        setCursorPos(
-            state.at.flatMap((at) => {
-                const res: any = [];
-                const box = calcCursorPos(at.start, state.regs);
-                if (box) {
-                    const offsetY = document.body.scrollTop;
-                    const offsetX = document.body.scrollLeft;
-                    res.push({
-                        x: box.left - offsetX,
-                        y: box.top - offsetY,
-                        h: box.height,
-                        color: box.color,
-                    });
-                }
-                if (at.end) {
-                    const box2 = calcCursorPos(at.end, state.regs);
-                    if (box2) {
-                        const offsetY = document.body.scrollTop;
-                        const offsetX = document.body.scrollLeft;
-                        res.push({
-                            x: box2.left - offsetX,
-                            y: box2.top - offsetY,
-                            h: box2.height,
-                            color: box2.color,
-                        });
-                    }
-                }
-                return res;
-            }),
-        );
-    }, [state.at]);
-
-    return (
-        <div>
-            {cursorPos.map((cursorPos, i) =>
-                cursorPos ? (
-                    <div
-                        key={i}
-                        style={{
-                            position: 'absolute',
-                            width: 1,
-                            pointerEvents: 'none',
-                            backgroundColor: cursorPos.color ?? 'white',
-                            left: cursorPos.x,
-                            height: cursorPos.h,
-                            top: cursorPos.y,
-                            animationDuration: '1s',
-                            animationName: blink ? 'blink' : 'unset',
-                            animationIterationCount: 'infinite',
-                        }}
-                    />
-                ) : null,
-            )}
-        </div>
-    );
-};
-
-const subRect = (
-    one: DOMRect,
-    two: DOMRect,
-    color?: string,
-): { left: number; top: number; height: number; color?: string } => {
-    return {
-        left: one.left - two.left,
-        top: one.top - two.top,
-        height: one.height,
-        color,
-    };
-};
-
-export const calcCursorPos = (
-    fullPath: Path[],
-    regs: RegMap,
-): void | { left: number; top: number; height: number; color?: string } => {
-    const last = fullPath[fullPath.length - 1];
-    // const loc = pathPos(fullPath)
-    const idx = last.idx;
-    // const { idx, loc } = sel;
-    const nodes = regs[idx];
-    if (!nodes) {
-        console.error('no nodes, sorry');
-        return;
-    }
-    switch (last.child.type) {
-        case 'start':
-        case 'end':
-        case 'inside':
-            const blinker = nodes[last.child.type];
-            if (blinker) {
-                return subRect(
-                    blinker.node.getBoundingClientRect(),
-                    blinker.node.offsetParent!.getBoundingClientRect(),
-                );
-            }
-        case 'subtext':
-            if (nodes.main) {
-                const r = new Range();
-                r.selectNode(nodes.main.node);
-                const textRaw = nodes.main.node.textContent!;
-                const text = splitGraphemes(textRaw);
-                if (!nodes.main.node.firstChild) {
-                    // nothing to do here
-                } else if (
-                    last.child.type === 'start' ||
-                    (last.child.type === 'subtext' && last.child.at === 0)
-                ) {
-                    r.setStart(nodes.main.node.firstChild!, 0);
-                    r.collapse(true);
-                } else if (
-                    last.child.type === 'end' ||
-                    (last.child.type === 'subtext' &&
-                        last.child.at === text.length)
-                ) {
-                    r.setStart(nodes.main.node.firstChild!, textRaw.length);
-                    r.collapse(true);
-                } else if (last.child.type === 'subtext') {
-                    r.setStart(
-                        nodes.main.node.firstChild!,
-                        text.slice(0, last.child.at).join('').length,
-                    );
-                    r.collapse(true);
-                } else {
-                    // console.log('dunno loc', loc, nodes.main);
-                    return;
-                }
-                const color = getComputedStyle(nodes.main.node).color;
-                return subRect(
-                    r.getBoundingClientRect(),
-                    nodes.main.node.offsetParent!.getBoundingClientRect(),
-                    color,
-                );
-            } else {
-                console.error('no box', last, nodes);
-                return;
-            }
-    }
 };
 
 const isRootPath = (path: Path[]) => {
-    return path.length === 1 && path[0].child.type !== 'child';
+    return path.length === 1 && path[0].type !== 'child';
 };
 
-export const handleKey = (state: UIState, key: string): UIState => {
-    state = { ...state };
-    state.at = state.at.slice();
+export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
     for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(key, state, state.at[i].start);
-        if (!update) continue;
-        if (update?.type === 'select' && isRootPath(update.selection)) {
-            continue;
-        }
-        if (
-            update?.type === 'update' &&
-            update.update &&
-            isRootPath(update.update.selection)
-        ) {
-            continue;
-        }
-        if (update.type === 'select') {
-            state.at[i] = {
-                start: update.selection,
-            };
-        } else if (update.update) {
-            state.map = applyUpdateMap(state.map, update.update.map);
-            state.at[i] = {
-                start: update.update.selection,
-            };
-        }
+        const update = getKeyUpdate(
+            key,
+            state.map,
+            state.at[i],
+            state.nidx,
+            mods,
+        );
+        state = { ...state, ...applyUpdate(state, i, update) };
     }
     return state;
 };

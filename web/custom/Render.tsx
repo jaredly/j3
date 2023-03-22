@@ -1,9 +1,11 @@
 import React from 'react';
+import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { rainbow } from '../old/Nodes';
 import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
-import { calcOffset } from './RenderONode';
+import { isCoveredBySelection } from './isCoveredBySelection';
+import { calcOffset } from './calcOffset';
 import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
@@ -58,7 +60,7 @@ export const textStyle = (
                 return { fontStyle: 'normal', color };
             }
         }
-        return { fontStyle: 'normal' };
+        return { fontStyle: 'normal', color: 'orange' };
     }
     switch (node.type) {
         case 'identifier':
@@ -66,6 +68,7 @@ export const textStyle = (
         case 'stringText':
             return { color: color, whiteSpace: 'pre' };
     }
+    return { color: 'violet' };
 };
 
 export const Render = (props: RenderProps) => {
@@ -103,15 +106,29 @@ export const RenderNNode = (
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
 
+    const coverageLevel = isCoveredBySelection(props.selection, path, map);
+
+    const selectStyle =
+        coverageLevel?.type === 'full' ||
+        ('text' in node && coverageLevel?.type === 'partial')
+            ? {
+                  borderRadius: 6,
+                  backgroundColor: '#225',
+                  textShadow: '2px 2px 1px black',
+              }
+            : {};
+
     switch (nnode.type) {
         case 'vert':
         case 'horiz':
+        case 'inline':
             return (
                 <span
                     style={{
-                        display: 'flex',
+                        display: nnode.type === 'inline' ? 'inline' : 'flex',
                         alignItems: 'flex-start',
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
+                        ...selectStyle,
                     }}
                 >
                     {nnode.children.map((nnode, i) => (
@@ -139,7 +156,13 @@ export const RenderNNode = (
             );
         case 'punct':
             return (
-                <span style={{ whiteSpace: 'pre', color: nnode.color }}>
+                <span
+                    style={{
+                        whiteSpace: 'pre',
+                        color: nnode.color,
+                        ...selectStyle,
+                    }}
+                >
                     {nnode.text}
                 </span>
             );
@@ -154,16 +177,61 @@ export const RenderNNode = (
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
                         fontVariationSettings: isSelected ? '"wght" 900' : '',
+                        ...selectStyle,
                     }}
                 >
                     {nnode.text}
                 </span>
             );
-        case 'text':
+        case 'text': {
+            let body;
+            if (coverageLevel?.type === 'inner') {
+                const text = splitGraphemes(nnode.text);
+                const start =
+                    coverageLevel.start.type === 'subtext'
+                        ? coverageLevel.start.at
+                        : coverageLevel.start.type === 'end'
+                        ? text.length
+                        : 0;
+                const end =
+                    coverageLevel.end.type === 'subtext'
+                        ? coverageLevel.end.at
+                        : coverageLevel.end.type === 'start'
+                        ? 0
+                        : text.length;
+                body = (
+                    <>
+                        {text.slice(0, start).join('')}
+                        <span
+                            style={{ backgroundColor: '#225', borderRadius: 6 }}
+                        >
+                            {text.slice(start, end).join('')}
+                        </span>
+                        {text.slice(end).join('')}
+                    </>
+                );
+            } else {
+                body = nnode.text;
+            }
             return (
                 <span
                     ref={(node) => reg(node, idx, path)}
-                    style={textStyle(node, display[idx])}
+                    style={{
+                        ...textStyle(node, display[idx]),
+                        ...selectStyle,
+                    }}
+                    onDoubleClick={() => {
+                        // console.log('dbl');
+                        dispatch({
+                            type: 'select',
+                            at: [
+                                {
+                                    start: path.concat({ idx, type: 'start' }),
+                                    end: path.concat({ idx, type: 'end' }),
+                                },
+                            ],
+                        });
+                    }}
                     className="idlike"
                     onMouseDown={(evt) => {
                         evt.stopPropagation();
@@ -175,22 +243,21 @@ export const RenderNNode = (
                                 {
                                     start: path.concat({
                                         idx,
-                                        child: {
-                                            type: 'subtext',
-                                            at: calcOffset(
-                                                evt.currentTarget,
-                                                evt.clientX,
-                                            ),
-                                        },
+                                        type: 'subtext',
+                                        at: calcOffset(
+                                            evt.currentTarget,
+                                            evt.clientX,
+                                        ),
                                     }),
                                 },
                             ],
                         });
                     }}
                 >
-                    {nnode.text}
+                    {body}
                 </span>
             );
+        }
         case 'ref':
             return (
                 <Render
@@ -201,7 +268,7 @@ export const RenderNNode = (
                     idx={nnode.id}
                     selection={props.selection}
                     debug={props.debug}
-                    path={path.concat([{ idx, child: nnode.path }])}
+                    path={path.concat([{ idx, ...nnode.path }])}
                 />
             );
         case 'pairs':
