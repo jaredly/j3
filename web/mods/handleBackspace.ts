@@ -445,6 +445,8 @@ export const removeNodes = (
             pre(node, path) {
                 if (node.loc.idx !== -2) {
                     toRemove[node.loc.idx] = true;
+                } else {
+                    console.warn('Aaaaa');
                 }
             },
         }),

@@ -394,7 +394,12 @@ export const collectNodes = (
                         break;
                     }
                     case 'recordAccess': {
-                        let first = children[0];
+                        let first = children.length
+                            ? children[0]
+                            : {
+                                  type: 'blank' as const,
+                                  loc: { idx: -2, start: 0, end: 0 },
+                              };
                         const kids = children.slice(1) as (accessText &
                             NodeExtra)[];
                         if (first.type !== 'identifier') {
@@ -403,6 +408,13 @@ export const collectNodes = (
                                 text: (first as accessText).text,
                                 loc: first.loc,
                             };
+                        }
+                        if (!kids.length) {
+                            kids.push({
+                                type: 'accessText',
+                                loc: { idx: -2, start: 0, end: 0 },
+                                text: '',
+                            });
                         }
                         node = {
                             ...node,
@@ -419,7 +431,10 @@ export const collectNodes = (
                             node = children[0];
                             break;
                         }
-                        if (children[0].type !== 'stringText') {
+                        if (
+                            !children.length ||
+                            children[0].type !== 'stringText'
+                        ) {
                             children.unshift({
                                 type: 'stringText',
                                 text: '',

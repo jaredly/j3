@@ -249,11 +249,15 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     const collected = useMemo(
         () =>
             state.at
-                .map((sel) =>
-                    sel.end
-                        ? collectNodes(state.map, sel.start, sel.end)
-                        : null,
-                )
+                .map((sel) => {
+                    if (!sel.end) return null;
+                    const [start, end] =
+                        cmpFullPath(sel.start, sel.end) < 0
+                            ? [sel.start, sel.end]
+                            : [sel.end, sel.start];
+
+                    return collectNodes(state.map, start, end);
+                })
                 .filter(Boolean) as ClipboardItem[],
         [state.map, state.at],
     );
