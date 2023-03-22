@@ -9,9 +9,11 @@ import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
 export function HiddenInput({
     state,
     dispatch,
+    menuCount,
 }: {
     state: UIState;
     dispatch: React.Dispatch<Action>;
+    menuCount?: number;
 }) {
     useEffect(() => {
         if (document.activeElement !== hiddenInput.current) {
@@ -112,6 +114,21 @@ export function HiddenInput({
 
                 evt.stopPropagation();
                 evt.preventDefault();
+
+                if (menuCount != null) {
+                    if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp') {
+                        dispatch({
+                            type: 'menu',
+                            selection:
+                                ((state.menu?.selection ?? 0) +
+                                    (evt.key === 'ArrowDown' ? 1 : -1) +
+                                    menuCount) %
+                                menuCount,
+                        });
+                        return;
+                    }
+                }
+
                 if (evt.key !== 'Unidentified') {
                     dispatch({
                         type: 'key',

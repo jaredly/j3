@@ -18,13 +18,14 @@ export const Menu = ({
 
     const box = node.getBoundingClientRect();
 
+    const selectionIndex = state.menu?.selection ?? 0;
+
     return (
         <div
             style={{
                 position: 'absolute',
                 top: box.bottom,
                 left: box.left,
-                gap: '0px 8px',
                 padding: 8,
                 maxHeight: 500,
                 overflow: 'auto',
@@ -35,16 +36,35 @@ export const Menu = ({
                 gridTemplateColumns: 'max-content max-content',
             }}
         >
-            {menu.items?.map((item, i) => (
-                <React.Fragment key={i}>
-                    <div style={{ gridColumn: 1, padding: 4 }}>{item.text}</div>
-                    <div style={{ gridColumn: 2, padding: 4 }}>
-                        {item.type === 'replace'
-                            ? nodeToString(nodeForType(item.ann, ctx))
-                            : null}
-                    </div>
-                </React.Fragment>
-            ))}
+            {menu.items?.map((item, i) => {
+                const selected = i === selectionIndex;
+                return (
+                    <React.Fragment key={i}>
+                        <div
+                            style={{
+                                padding: 4,
+                                gridColumn: 1,
+                                cursor: 'pointer',
+                                backgroundColor: selected ? '#222' : '',
+                            }}
+                        >
+                            {item.text}
+                        </div>
+                        <div
+                            style={{
+                                padding: 4,
+                                gridColumn: 2,
+                                cursor: 'pointer',
+                                backgroundColor: selected ? '#222' : '',
+                            }}
+                        >
+                            {item.type === 'replace'
+                                ? nodeToString(nodeForType(item.ann, ctx))
+                                : null}
+                        </div>
+                    </React.Fragment>
+                );
+            })}
         </div>
     );
 };

@@ -29,8 +29,6 @@ export const Menu = ({
                 border: '1px solid rgba(255,255,255,0.3)',
                 display: 'grid',
                 gridTemplateColumns: 'max-content max-content',
-                // gap: 4,
-                // padding: 8,
                 alignItems: 'stretch',
             }}
         >

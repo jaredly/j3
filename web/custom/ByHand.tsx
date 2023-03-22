@@ -69,6 +69,7 @@ export type Action =
           at: { start: Path[]; end?: Path[] }[];
       }
     | { type: 'copy'; items: ClipboardItem[] }
+    | { type: 'menu'; selection: number }
     | {
           type: 'key';
           key: string;
@@ -80,7 +81,10 @@ export type Action =
       };
 
 const reduce = (state: UIState, action: Action): UIState => {
+    state = { ...state, menu: undefined };
     switch (action.type) {
+        case 'menu':
+            return { ...state, menu: { selection: action.selection } };
         case 'copy':
             return { ...state, clipboard: [action.items, ...state.clipboard] };
         case 'key':
@@ -189,7 +193,11 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     return (
         <div>
-            <HiddenInput state={state} dispatch={dispatch} />
+            <HiddenInput
+                state={state}
+                dispatch={dispatch}
+                menuCount={menu?.items.length}
+            />
             <button
                 onClick={() => setDebug(!debug)}
                 style={{
