@@ -439,7 +439,16 @@ export const removeNodes = (
         return;
     }
     const toRemove: { [idx: number]: boolean } = {};
-    nodes.forEach((node) => (toRemove[node.loc.idx] = true));
+    // nodes.forEach((node) => (toRemove[node.loc.idx] = true));
+    nodes.forEach((node) =>
+        transformNode(node, {
+            pre(node, path) {
+                if (node.loc.idx !== -2) {
+                    toRemove[node.loc.idx] = true;
+                }
+            },
+        }),
+    );
 
     // hmmm changed?
     let update: UpdateMap = {};
