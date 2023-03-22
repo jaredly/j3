@@ -410,17 +410,14 @@ export const collectNodes = (
                             };
                         }
                         if (!kids.length) {
-                            kids.push({
-                                type: 'accessText',
-                                loc: { idx: -2, start: 0, end: 0 },
-                                text: '',
-                            });
+                            node = first;
+                        } else {
+                            node = {
+                                ...node,
+                                target: first,
+                                items: kids,
+                            };
                         }
-                        node = {
-                            ...node,
-                            target: first,
-                            items: kids,
-                        };
                         break;
                     }
                     case 'string': {
