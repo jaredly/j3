@@ -9,7 +9,7 @@ I'll need to update all the `text in` dealios, right?
 - [x] make a node
 - [x] render it fake
 - [x] change idText to get the real text from it thanks
-- [ ] change left/right to use the real text
+- [x] change left/right to use the real text
 
 # Ok folks, so the basic editor, is looking pretty neat
 
@@ -23,7 +23,7 @@ I'll need to update all the `text in` dealios, right?
     BUT state keeps track of the selection index.
     and maybe other things? if the menu gets fancy
     oh and it can indicate whether it's been dismissed, right?
-- [ ] then the 'hash' dealiwhap
+- [x] then the 'hash' dealiwhap
 
 
 - [ ] oof, ok so removal is very broken

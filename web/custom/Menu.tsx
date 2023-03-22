@@ -2,16 +2,18 @@ import React from 'react';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
-import { UIState } from './ByHand';
+import { Action, UIState } from './ByHand';
 
 export const Menu = ({
     state,
     ctx,
     menu,
+    dispatch,
 }: {
     state: UIState;
     ctx: Ctx;
     menu: { idx: number; items: AutoCompleteResult[] };
+    dispatch: React.Dispatch<Action>;
 }) => {
     const node = state.regs[menu.idx]?.main?.node;
     if (!node) return null;
@@ -37,26 +39,39 @@ export const Menu = ({
             }}
         >
             {menu.items?.map((item, i) => {
-                const selected = i === selectionIndex;
+                const selected =
+                    i === selectionIndex && item.type === 'replace';
+                const onClick = (evt: React.MouseEvent) => {
+                    if (item.type === 'replace') {
+                        dispatch({
+                            type: 'menu-select',
+                            idx: menu.idx,
+                            item,
+                        });
+                    }
+                };
+                const style = {
+                    padding: 4,
+                    cursor: item.type === 'replace' ? 'pointer' : 'text',
+                    backgroundColor: selected ? '#222' : '',
+                };
                 return (
                     <React.Fragment key={i}>
                         <div
                             style={{
-                                padding: 4,
                                 gridColumn: 1,
-                                cursor: 'pointer',
-                                backgroundColor: selected ? '#222' : '',
+                                ...style,
                             }}
+                            onClick={onClick}
                         >
                             {item.text}
                         </div>
                         <div
                             style={{
-                                padding: 4,
                                 gridColumn: 2,
-                                cursor: 'pointer',
-                                backgroundColor: selected ? '#222' : '',
+                                ...style,
                             }}
+                            onClick={onClick}
                         >
                             {item.type === 'replace'
                                 ? nodeToString(nodeForType(item.ann, ctx))

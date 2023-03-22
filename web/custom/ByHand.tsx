@@ -253,7 +253,12 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             />
             <Cursors state={state} />
             {!state.menu?.dismissed && menu?.items.length ? (
-                <Menu state={state} ctx={state.ctx} menu={menu} />
+                <Menu
+                    state={state}
+                    ctx={state.ctx}
+                    menu={menu}
+                    dispatch={dispatch}
+                />
             ) : null}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
         </div>
