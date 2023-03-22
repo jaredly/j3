@@ -458,6 +458,27 @@ export const removeNodes = (
                 }
                 return;
             }
+            // if (node.type === 'recordAccess') {
+            //     if (toRemove[node.target.loc.idx]) {
+            //         update[node.target.loc.idx] = {
+            //             type: 'blank',
+            //             loc: node.target.loc,
+            //         };
+            //     }
+            // }
+            // HM
+            if (node.type === 'spread') {
+                if (toRemove[node.contents.loc.idx]) {
+                    console.log('remove node contents', node);
+                    update[node.contents.loc.idx] = {
+                        type: 'blank',
+                        loc: node.contents.loc,
+                    };
+                }
+            }
+            if (node.type === 'annot') {
+                //
+            }
             if (node.type === 'string') {
                 let first = node.first;
                 if (toRemove[first.loc.idx]) {
@@ -509,11 +530,16 @@ export const removeNodes = (
         },
     });
 
+    if (update[-2] !== undefined) {
+        console.log('got some');
+        delete update[-2];
+    }
+    console.log('removing', update);
+
     const updated = { ...map, ...update } as Map;
 
     let left = start;
 
-    let last = start[start.length - 1];
     let parent = start[start.length - 2];
     if (parent.type === 'child' && parent.at === 0) {
         const node = updated[parent.idx];

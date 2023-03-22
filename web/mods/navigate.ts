@@ -3,7 +3,7 @@ import { splitGraphemes } from '../../src/parse/parse';
 import { Map } from '../../src/types/mcst';
 import { getNodes } from '../overheat/getNestedNodes';
 import { ONode } from '../overheat/types';
-import { StateChange, StateSelect } from './getKeyUpdate';
+import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
 
 export const selectStart = (

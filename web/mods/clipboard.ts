@@ -183,6 +183,11 @@ export const selectionStatus = (
             }
         }
     }
+
+    // if (start[start.length - 2].type === 'spread-contents') {
+    //     e = -1;
+    // }
+
     if (s < 0 && e < 0) {
         return { type: 'full' };
     }
@@ -454,6 +459,7 @@ export const collectNodes = (
                         node = { ...(node as any), values: children };
                         break;
                 }
+                node = { ...node, loc: { idx: -2, start: 0, end: 0 } };
                 if (waiting.length) {
                     waiting[waiting.length - 1].children.push(node);
                 } else {

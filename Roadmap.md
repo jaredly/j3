@@ -3,9 +3,14 @@
 
 - [x] ah first, get rid of non-nested get-nodes
 - [ ] autocomplete pls
-- [ ] 
+- [ ] then the 'hash' dealiwhap
 
 
+- [ ] oof, ok so removal is very broken
+  that is to say
+  because we're preserving collections ...
+  they're getting weird
+  I need to zero out the locs of the collections that are modified
 
 
 # Newlines though

@@ -1,6 +1,8 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
+import { Type } from '../../src/types/ast';
 import { Map, MNode } from '../../src/types/mcst';
 import { UpdateMap } from '../store';
+import { ClipboardItem } from './clipboard';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
 import { handleStringText } from './handleStringText';
@@ -54,11 +56,37 @@ and `onLeft` and `onRight`, but no keypress stuff.
 
 */
 
+export type MenuAction = {
+    type: 'hash';
+    hash: string;
+};
+
+export type MenuLabel =
+    | {
+          type: 'label';
+          text: string;
+      }
+    | {
+          type: 'typed';
+          text: string;
+          typ: Type;
+      };
+
+export type Menu = {
+    selection: number;
+    items: Array<{
+        label: MenuLabel;
+        action: MenuAction;
+    }>;
+    location: number;
+};
+
 export type State = {
     nidx: () => number;
     map: Map;
     root: number;
     at: { start: Path[]; end?: Path[] }[];
+    menu?: Menu;
 };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {

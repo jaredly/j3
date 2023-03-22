@@ -1,5 +1,11 @@
 import equal from 'fast-deep-equal';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { sexp } from '../../progress/sexp';
 import {
     idxSource,
@@ -43,6 +49,7 @@ const examples = {
 (def live (vec4 1. 0.6 1. 1.))
 (def dead (vec4 0. 0. 0. 1.))
 (defn isLive [{x}:Vec4] (> x 0.5))
+{..one two three ..four five ..(one two) three four}
 (defn neighbor [offset:Vec2 coord:Vec2 res:Vec2 buffer:sampler2D] (let [coord (+ coord offset)] (if (isLive ([coord / res] buffer)) 1 0)))
 (def person {name "Person" age 32 animals {cats 1.5 dogs 0}
 description "This is a person with a \${"kinda"} normal-length description"
@@ -74,6 +81,7 @@ person.animals.dogs
 
 export type UIState = {
     regs: RegMap;
+    clipboard: ClipboardItem[][];
 } & State;
 
 export type RegMap = {
@@ -91,6 +99,7 @@ export type Action =
           add?: boolean;
           at: { start: Path[]; end?: Path[] }[];
       }
+    | { type: 'copy'; items: ClipboardItem[] }
     | {
           type: 'key';
           key: string;
@@ -103,6 +112,8 @@ export type Action =
 
 const reduce = (state: UIState, action: Action): UIState => {
     switch (action.type) {
+        case 'copy':
+            return { ...state, clipboard: [action.items, ...state.clipboard] };
         case 'key':
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
                 return verticalMove(
@@ -130,7 +141,7 @@ const reduce = (state: UIState, action: Action): UIState => {
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
         case 'paste': {
-            return { ...paste(state, action.items), regs: state.regs };
+            return { ...state, ...paste(state, action.items) };
         }
     }
 };
@@ -174,6 +185,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             at: [{ start: at }],
             regs: {},
             nidx,
+            clipboard: [],
         };
     });
 
@@ -234,6 +246,18 @@ export const Doc = ({ initialText }: { initialText: string }) => {
 
     const [drag, setDrag] = useState(false);
 
+    const collected = useMemo(
+        () =>
+            state.at
+                .map((sel) =>
+                    sel.end
+                        ? collectNodes(state.map, sel.start, sel.end)
+                        : null,
+                )
+                .filter(Boolean) as ClipboardItem[],
+        [state.map, state.at],
+    );
+
     const selections = state.at
         .filter((s) => s.end)
         .map(({ start, end }) => {
@@ -263,6 +287,8 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     if (!items.length) {
                         return;
                     }
+
+                    dispatch({ type: 'copy', items });
 
                     const text = clipboardText(items);
                     navigator.clipboard.write([
@@ -447,6 +473,24 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             </div>
             <Cursors state={state} />
             <div>
+                {[collected, ...state.clipboard].map((copy, i) =>
+                    copy.length ? (
+                        <div
+                            key={i}
+                            style={{
+                                padding: 8,
+                                margin: 8,
+                                backgroundColor: '#335',
+                            }}
+                        >
+                            {copy.map((item, i) => (
+                                <div key={i}>{clipboardText([item])}</div>
+                            ))}
+                        </div>
+                    ) : null,
+                )}
+            </div>
+            <div>
                 <div>
                     At:{' '}
                     <div>
@@ -524,7 +568,7 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             state.nidx,
             mods,
         );
-        state = { ...applyUpdate(state, i, update), regs: state.regs };
+        state = { ...state, ...applyUpdate(state, i, update) };
     }
     return state;
 };
