@@ -7,14 +7,9 @@ import React, {
     useState,
 } from 'react';
 import { sexp } from '../../progress/sexp';
-import {
-    idxSource,
-    parseByCharacter,
-    splitGraphemes,
-} from '../../src/parse/parse';
+import { parseByCharacter } from '../../src/parse/parse';
 import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { nodeToString } from '../../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
@@ -25,17 +20,10 @@ import {
     collectNodes,
     paste,
 } from '../mods/clipboard';
-import {
-    applyUpdate,
-    applyUpdateMap,
-    getKeyUpdate,
-    StateChange,
-    State,
-    Mods,
-} from '../mods/getKeyUpdate';
+import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../mods/path';
-import { Cursors } from './Cursors';
+import { Cursors, Menu } from './Cursors';
 import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
 import { closestSelection, verticalMove } from './verticalMove';
@@ -435,22 +423,6 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 onMouseUpCapture={(evt) => {
                     if (drag) {
                         setDrag(false);
-                        // const sel = closestSelection(state.regs, {
-                        //     x: evt.clientX,
-                        //     y: evt.clientY,
-                        // });
-                        // if (sel && !equal(sel, state.at[0].start)) {
-                        //     dispatch({
-                        //         type: 'select',
-                        //         add: evt.altKey,
-                        //         at: [
-                        //             {
-                        //                 start: state.at[0].start,
-                        //                 end: sel,
-                        //             },
-                        //         ],
-                        //     });
-                        // }
                     }
                 }}
             >
@@ -479,6 +451,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 ))}
             </div>
             <Cursors state={state} />
+            <Menu state={state} ctx={ctx} />
             <div>
                 {[collected, ...state.clipboard].map((copy, i) =>
                     copy.length ? (
@@ -525,11 +498,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             {debug ? (
                 <div>
                     <div>
-                        Sel:{' '}
-                        {/* {JSON.stringify(
-                            state.at.map((at) => [at.start.sel, at.end?.sel]),
-                        )} */}
-                        <div>{JSON.stringify(state.at[0].start)}</div>
+                        Sel: <div>{JSON.stringify(state.at[0].start)}</div>
                     </div>
                     <div>Path: </div>
                     <div>

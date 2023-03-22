@@ -1,8 +1,83 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { Path } from '../mods/path';
 import { UIState, RegMap } from './ByHand';
 import { selectWithin } from './calcOffset';
+
+export const Menu = ({ state, ctx }: { state: UIState; ctx: Ctx }) => {
+    const menu = useMemo(() => {
+        if (state.at.length > 1 || state.at[0].end) return;
+        const path = state.at[0].start;
+        const last = path[path.length - 1];
+        return { idx: last.idx, items: ctx.display[last.idx]?.autoComplete };
+    }, [state.map, state.at, ctx]);
+
+    if (!menu) return null;
+
+    const node = state.regs[menu.idx]?.main?.node;
+    if (!node) return null;
+
+    const box = node.getBoundingClientRect();
+
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                top: box.bottom,
+                left: box.left,
+                width: 300,
+                maxHeight: 500,
+                overflow: 'auto',
+                zIndex: 1000,
+                backgroundColor: 'black',
+                border: '1px solid #ccc',
+            }}
+        >
+            A menu
+            {JSON.stringify(menu)}
+        </div>
+    );
+};
+
+// const [menuPos, setMenuPos] = useState(
+//     [] as ({ x: number; y: number; h: number; color?: string } | null)[],
+// );
+// useLayoutEffect(() => {
+//     setMenuPos(
+//         state.at.flatMap((at) => {
+//             // if (at.end) {
+//             //     return;
+//             // }
+//             const res: any = [];
+//             const box = calcCursorPos(at.start, state.regs);
+//             if (box) {
+//                 const offsetY = document.body.scrollTop;
+//                 const offsetX = document.body.scrollLeft;
+//                 res.push({
+//                     x: box.left - offsetX,
+//                     y: box.top - offsetY,
+//                     h: box.height,
+//                     color: box.color,
+//                 });
+//             }
+//             if (at.end) {
+//                 const box2 = calcCursorPos(at.end, state.regs);
+//                 if (box2) {
+//                     const offsetY = document.body.scrollTop;
+//                     const offsetX = document.body.scrollLeft;
+//                     res.push({
+//                         x: box2.left - offsetX,
+//                         y: box2.top - offsetY,
+//                         h: box2.height,
+//                         color: box2.color,
+//                     });
+//                 }
+//             }
+//             return res;
+//         }),
+//     );
+// }, [state.at]);
 
 export const Cursors = ({ state }: { state: UIState }) => {
     const [blink, setBlink] = useState(false);
