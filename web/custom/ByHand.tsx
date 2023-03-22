@@ -176,7 +176,10 @@ const clipboardSuffix = ' """-->';
 export const Doc = ({ initialText }: { initialText: string }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        const { map, nidx } = parseByCharacter(initialText, debug);
+        const { map, nidx } = parseByCharacter(
+            initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
+            debug,
+        );
         const idx = (map[-1] as ListLikeContents).values[0];
         const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
         return {

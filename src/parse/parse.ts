@@ -34,9 +34,7 @@ export const splitGraphemes = (text: string) => {
 export const parseByCharacter = (rawText: string, debug = false): State => {
     let state: State = initialState();
 
-    const text = splitGraphemes(
-        rawText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
-    );
+    const text = splitGraphemes(rawText);
 
     let clipboard: ClipboardItem[] = [];
 

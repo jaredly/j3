@@ -234,6 +234,10 @@ id
 abcde^L^L^C^l^V
 abdecde
 id
+
+!!!(a  ^l^b
+(a )
+(list id blank)
 `;
 
 // hi:^b
