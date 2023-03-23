@@ -143,6 +143,7 @@ export const addBuiltin = (
     builtins.names[name] = [hash].concat(builtins.names[name] ?? []);
     builtins.terms[hash] = type;
     reverseNames[hash] = name;
+    return hash;
 };
 
 export const builtinFn = (
@@ -153,7 +154,7 @@ export const builtinFn = (
     args: Type[],
     body: Type,
 ) => {
-    addBuiltin(builtins, reverseNames, name, {
+    return addBuiltin(builtins, reverseNames, name, {
         type: 'fn',
         args,
         body,
@@ -208,15 +209,57 @@ export const imageFileLazy = extendRecord(imageFileBase, [
 
 const basicReverse: { [key: string]: string } = {};
 
+export const mathHashes: {
+    int: { [key: string]: string };
+    uint: { [key: string]: string };
+    float: { [key: string]: string };
+} = { int: {}, float: {}, uint: {} };
+
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
-    builtinFn(basicBuiltins, basicReverse, name, [tint, tint], tbool);
-    builtinFn(basicBuiltins, basicReverse, name, [tuint, tuint], tbool);
-    builtinFn(basicBuiltins, basicReverse, name, [tfloat, tfloat], tbool);
+    mathHashes.int[name] = builtinFn(
+        basicBuiltins,
+        basicReverse,
+        name,
+        [tint, tint],
+        tbool,
+    );
+    mathHashes.uint[name] = builtinFn(
+        basicBuiltins,
+        basicReverse,
+        name,
+        [tuint, tuint],
+        tbool,
+    );
+    mathHashes.float[name] = builtinFn(
+        basicBuiltins,
+        basicReverse,
+        name,
+        [tfloat, tfloat],
+        tbool,
+    );
 });
 ['+', '-', '*', '/'].map((name) => {
-    builtinFn(basicBuiltins, basicReverse, name, [tint, tint], tint);
-    builtinFn(basicBuiltins, basicReverse, name, [tuint, tuint], tuint);
-    builtinFn(basicBuiltins, basicReverse, name, [tfloat, tfloat], tfloat);
+    mathHashes.int[name] = builtinFn(
+        basicBuiltins,
+        basicReverse,
+        name,
+        [tint, tint],
+        tint,
+    );
+    mathHashes.uint[name] = builtinFn(
+        basicBuiltins,
+        basicReverse,
+        name,
+        [tuint, tuint],
+        tuint,
+    );
+    mathHashes.float[name] = builtinFn(
+        basicBuiltins,
+        basicReverse,
+        name,
+        [tfloat, tfloat],
+        tfloat,
+    );
 });
 builtinFn(basicBuiltins, basicReverse, '==', [tbool, tbool], tbool);
 builtinFn(basicBuiltins, basicReverse, 'toString', [tint], tstring);

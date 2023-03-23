@@ -19,12 +19,10 @@ export const Menu = ({
     const [node, setNode] = useState(null as null | any);
 
     useLayoutEffect(() => {
-        if (!node) {
-            const idx = menu.path[menu.path.length - 1].idx;
-            const node = state.regs[idx]?.main?.node;
-            setNode(node);
-        }
-    }, [state, menu]);
+        const idx = menu.path[menu.path.length - 1].idx;
+        const node = state.regs[idx]?.main?.node;
+        setNode(node);
+    }, [menu]);
 
     if (!node) return null;
     const box = node?.getBoundingClientRect();

@@ -4,7 +4,20 @@
 - [x] I need to persist .. the ... hashes
   - oh is that just applying the mods?
 - [x] replace should move cursor to end
-- [ ] auto-select a menu item thanks
+- [x] auto-select a menu item thanks
+
+# Arg type inference
+
+Ok frogs, what's the plan here.
+- [one] needs-string -> [one:string]
+- [one:string] needs-int needs-string -> [one:string]
+- [one:string] needs-int -> [one:int]
+- [one:string] needs-"hi" -> [one:string] but like a squigly underline
+  indicating that the argument is over-general?
+
+ok so what's the mechanism.
+after ... each change ... do an ~inference pass?
+to see what we can see.
 
 # the Hash node
 - [x] process ctx mods

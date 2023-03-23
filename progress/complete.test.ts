@@ -1,7 +1,7 @@
 // Now bringing in autocomplete and such
 
 import { parseByCharacter } from '../src/parse/parse';
-import { newCtx } from '../src/to-ast/Ctx';
+import { basicBuiltins, mathHashes, newCtx } from '../src/to-ast/Ctx';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 
@@ -17,6 +17,12 @@ const data = `
 
 (fn [o:int one:int] one)
 (fn [o#:0:int one#:1:int] #:1)
+
+(fn [one] (has-prefix? one "thing"))
+(fn [one#:0:string] (#${basicBuiltins.names['has-prefix?'][0]} #:0 "thing"))
+
+(+ 2 32)
+(#${mathHashes.int['+']} 2 32)
 `
     .trim()
     .split('\n\n');

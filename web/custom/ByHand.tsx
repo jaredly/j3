@@ -129,7 +129,8 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         const { map, nidx } = parseByCharacter(
             initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
             newCtx(),
-            true,
+            // lol turning this on slows things down a tonnn
+            false,
             debug,
         );
         const idx = (map[-1] as ListLikeContents).values[0];

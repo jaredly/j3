@@ -266,7 +266,7 @@ export const nodeToPattern = (
                     }
                     args = map.map[text].args;
                 } else {
-                    console.log('badres', res);
+                    // console.log('badres', res);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
                 return {

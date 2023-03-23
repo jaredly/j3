@@ -79,15 +79,13 @@ export function applyMenuItem(
         ...state,
         at: [
             {
-                start: path
-                    .slice(0, -1)
-                    .concat([
-                        {
-                            idx,
-                            type: 'subtext',
-                            at: splitGraphemes(item.text).length,
-                        },
-                    ]),
+                start: path.slice(0, -1).concat([
+                    {
+                        idx,
+                        type: 'subtext',
+                        at: splitGraphemes(item.text).length,
+                    },
+                ]),
             },
         ],
         map: { ...state.map, [idx]: { loc: state.map[idx].loc, ...item.node } },
