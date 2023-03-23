@@ -5,6 +5,7 @@ import {
     clipboardText,
     collectClipboard,
 } from '../mods/clipboard';
+import { Path } from '../mods/path';
 import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
 
 export function HiddenInput({
@@ -15,7 +16,7 @@ export function HiddenInput({
 }: {
     state: UIState;
     dispatch: React.Dispatch<Action>;
-    menu?: { idx: number; items: AutoCompleteResult[] };
+    menu?: { path: Path[]; items: AutoCompleteResult[] };
     ctx: Ctx;
 }) {
     useEffect(() => {
@@ -147,7 +148,7 @@ export function HiddenInput({
                         } else if (selected.type === 'replace') {
                             dispatch({
                                 type: 'menu-select',
-                                idx: menu.idx,
+                                path: menu.path,
                                 item: selected,
                             });
                         }

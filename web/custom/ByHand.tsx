@@ -72,7 +72,7 @@ export type Action =
       }
     | { type: 'copy'; items: ClipboardItem[] }
     | { type: 'menu'; selection: number }
-    | { type: 'menu-select'; idx: number; item: AutoCompleteReplace }
+    | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
     | {
           type: 'key';
           key: string;
@@ -138,17 +138,19 @@ const reduceInner = (state: UIState, action: Action): UIState => {
     switch (action.type) {
         case 'menu':
             return { ...state, menu: { selection: action.selection } };
-        case 'menu-select':
+        case 'menu-select': {
+            const idx = action.path[action.path.length - 1].idx;
             return {
                 ...state,
                 map: {
                     ...state.map,
-                    [action.idx]: {
-                        loc: state.map[action.idx].loc,
+                    [idx]: {
+                        loc: state.map[idx].loc,
                         ...action.item.node,
                     },
                 },
             };
+        }
         case 'copy':
             return { ...state, clipboard: [action.items, ...state.clipboard] };
         case 'key':
@@ -249,7 +251,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         const path = state.at[0].start;
         const last = path[path.length - 1];
         const items = state.ctx.display[last.idx]?.autoComplete;
-        return items ? { idx: last.idx, items } : undefined;
+        return items ? { path, items } : undefined;
     }, [state.map, state.at, state.ctx]);
 
     return (

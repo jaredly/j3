@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useState } from 'react';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
+import { Path } from '../mods/path';
 import { Action, UIState } from './ByHand';
 
 export const Menu = ({
@@ -12,14 +13,15 @@ export const Menu = ({
 }: {
     state: UIState;
     ctx: Ctx;
-    menu: { idx: number; items: AutoCompleteResult[] };
+    menu: { path: Path[]; items: AutoCompleteResult[] };
     dispatch: React.Dispatch<Action>;
 }) => {
     const [node, setNode] = useState(null as null | any);
 
     useLayoutEffect(() => {
         if (!node) {
-            const node = state.regs[menu.idx]?.main?.node;
+            const idx = menu.path[menu.path.length - 1].idx;
+            const node = state.regs[idx]?.main?.node;
             setNode(node);
         }
     }, [state, menu]);
@@ -50,7 +52,11 @@ export const Menu = ({
                     i === selectionIndex && item.type === 'replace';
                 const onClick = (evt: React.MouseEvent) => {
                     if (item.type === 'replace') {
-                        dispatch({ type: 'menu-select', idx: menu.idx, item });
+                        dispatch({
+                            type: 'menu-select',
+                            path: menu.path,
+                            item,
+                        });
                     }
                 };
                 const style = {
