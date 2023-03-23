@@ -72,6 +72,14 @@ export const nodeToString_ = (
             return `${node.text}${node.hash ? '#' + node.hash : ''}`;
         case 'blank':
             return '';
+        case 'hash':
+            return `#${node.hash}`;
+        case 'comment':
+            return `$comment$`;
+        case 'rich-text':
+            return `rich?text`;
+        case 'attachment':
+            return `?attachment?`;
         case 'annot':
             return `${nodeToString(node.target, sm)}:${nodeToString(
                 node.annot,
@@ -100,6 +108,8 @@ export const nodeToString_ = (
                 .join('')}"`;
         case 'unparsed':
             return node.raw;
+        default:
+            let _: never = node;
     }
-    return `NOP(${node.type})`;
+    return `NOP(${(node as any).type})`;
 };

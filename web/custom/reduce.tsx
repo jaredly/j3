@@ -1,7 +1,8 @@
 import { splitGraphemes } from '../../src/parse/parse';
 import { paste } from '../mods/clipboard';
 import { verticalMove } from './verticalMove';
-import { UIState, Action, getCtx, handleKey, isRootPath, lidx } from './ByHand';
+import { UIState, Action, handleKey, isRootPath, lidx } from './ByHand';
+import { getCtx } from './getCtx';
 
 export const reduce = (state: UIState, action: Action): UIState => {
     const newState = reduceInner(state, action);

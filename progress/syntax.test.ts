@@ -271,7 +271,7 @@ describe('a test', () => {
                     map: data,
                     at,
                     nidx,
-                } = parseByCharacter(jerd, ctx, only);
+                } = parseByCharacter(jerd, ctx, false, only);
                 const selection = at[0].start;
                 Object.keys(data).forEach((key) => {
                     expect(data[+key].loc.idx).toEqual(+key);

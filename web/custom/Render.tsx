@@ -12,7 +12,7 @@ export function getRainbowHashColor(hash: string) {
     const idx = hash.startsWith(':')
         ? Math.floor(+hash.slice(1) * (rainbow.length / 5 - 1))
         : parseInt(hash, 16);
-    console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
+    // console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
     const color = rainbow[idx % rainbow.length];
     return color;
 }

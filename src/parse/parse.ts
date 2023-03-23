@@ -1,5 +1,7 @@
 // hmm
+import { applyMods } from '../../web/custom/getCtx';
 import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
+import { layout } from '../../web/layout';
 import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
 import {
     applyUpdate,
@@ -9,7 +11,8 @@ import {
 } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/mods/path';
 import { Ctx } from '../to-ast/Ctx';
-import { Map, MNode } from '../types/mcst';
+import { nodeToExpr } from '../to-ast/nodeToExpr';
+import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
 export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
     switch (node.type) {
@@ -37,6 +40,7 @@ export const splitGraphemes = (text: string) => {
 export const parseByCharacter = (
     rawText: string,
     ctx: Ctx,
+    updateCtx = false,
     debug = false,
 ): State => {
     let state: State = initialState();
@@ -99,6 +103,16 @@ export const parseByCharacter = (
         }
 
         state = applyUpdate(state, 0, update) ?? state;
+
+        if (updateCtx) {
+            nodeToExpr(fromMCST(state.root, state.map), ctx);
+            // const tops = (state.map[state.root] as ListLikeContents).values;
+            // tops.forEach((top) => {
+            //     layout(top, 0, state.map, ctx.display, true);
+            // });
+            state = { ...state, map: { ...state.map } };
+            applyMods(ctx, state.map);
+        }
     }
     return state;
 };

@@ -1,10 +1,8 @@
 import React, { useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
 import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
+import { ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
-import { layout } from '../layout';
 import { type ClipboardItem } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
@@ -15,6 +13,7 @@ import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { reduce } from './reduce';
+import { getCtx } from './getCtx';
 
 const examples = {
     let: '(let [x 10] (+ x 20))',
@@ -86,7 +85,7 @@ export type Action =
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
 
-const maxSym = (map: Map) => {
+export const maxSym = (map: Map) => {
     let max = 0;
     Object.keys(map).forEach((id) => {
         const node = map[+id];
@@ -95,35 +94,6 @@ const maxSym = (map: Map) => {
         }
     });
     return max;
-};
-
-export const getCtx = (map: Map, root: number) => {
-    const tops = (map[root] as ListLikeContents).values;
-    const ctx = newCtx();
-    ctx.sym.current = maxSym(map) + 1;
-    try {
-        nodeToExpr(fromMCST(root, map), ctx);
-        tops.forEach((top) => {
-            layout(top, 0, map, ctx.display, true);
-        });
-        const mods = Object.keys(ctx.mods);
-        if (mods.length) {
-            map = { ...map };
-            mods.forEach((key) => {
-                ctx.mods[+key].forEach((mod) => {
-                    if (mod.type === 'hash') {
-                        const node = map[+key];
-                        if (node.type === 'identifier') {
-                            map[+key] = { ...node, hash: mod.hash };
-                        }
-                    }
-                });
-            });
-        }
-        return { ctx, map };
-    } catch (err) {
-        return { ctx, map };
-    }
 };
 
 export const ByHand = () => {
@@ -159,6 +129,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         const { map, nidx } = parseByCharacter(
             initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
             newCtx(),
+            false,
             debug,
         );
         const idx = (map[-1] as ListLikeContents).values[0];
