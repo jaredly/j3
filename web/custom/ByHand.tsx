@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { parseByCharacter } from '../../src/parse/parse';
+import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
 import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
@@ -142,6 +142,17 @@ const reduceInner = (state: UIState, action: Action): UIState => {
             const idx = action.path[action.path.length - 1].idx;
             return {
                 ...state,
+                at: [
+                    {
+                        start: action.path.slice(0, -1).concat([
+                            {
+                                idx,
+                                type: 'subtext',
+                                at: splitGraphemes(action.item.text).length,
+                            },
+                        ]),
+                    },
+                ],
                 map: {
                     ...state.map,
                     [idx]: {

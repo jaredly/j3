@@ -3,7 +3,7 @@
 
 - [ ] I need to persist .. the ... hashes
   - oh is that just applying the mods?
-- [ ] replace should move cursor to end
+- [x] replace should move cursor to end
 
 # the Hash node
 - [x] process ctx mods
