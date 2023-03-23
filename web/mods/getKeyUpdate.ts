@@ -1,5 +1,5 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { Ctx, NodeStyle } from '../../src/to-ast/Ctx';
 import { Type } from '../../src/types/ast';
 import { Map, MNode } from '../../src/types/mcst';
 import { UpdateMap } from '../store';
@@ -451,9 +451,17 @@ export const insertText = (
     if (
         node.type === 'identifier' ||
         node.type === 'accessText' ||
-        node.type === 'stringText'
+        node.type === 'stringText' ||
+        node.type === 'hash'
     ) {
-        return updateText(node, pos, input, idx, fullPath.slice(0, -1));
+        return updateText(
+            node,
+            pos,
+            input,
+            idx,
+            fullPath.slice(0, -1),
+            display[idx]?.style,
+        );
     }
 
     if (flast.type === 'inside') {
@@ -497,13 +505,15 @@ function addToListLike(
 }
 
 function updateText(
-    node: Extract<MNode, { text: string }>,
+    node: Extract<MNode, { text: string }> | Extract<MNode, { type: 'hash' }>,
     pos: number,
     input: string[],
     idx: number,
     path: Path[],
+    style: NodeStyle | undefined,
 ): StateUpdate {
-    let text = splitGraphemes(node.text);
+    const raw = idText(node, style) ?? 'no-id-text';
+    let text = splitGraphemes(raw);
     if (pos === 0) {
         text.unshift(...input);
     } else if (pos === text.length) {
@@ -513,7 +523,16 @@ function updateText(
     }
     return {
         type: 'update',
-        map: { [idx]: { ...node, text: text.join('') } },
+        map: {
+            [idx]:
+                node.type !== 'hash'
+                    ? { ...node, text: text.join('') }
+                    : {
+                          type: 'identifier',
+                          loc: node.loc,
+                          text: text.join(''),
+                      },
+        },
         selection: path.concat([
             {
                 idx,

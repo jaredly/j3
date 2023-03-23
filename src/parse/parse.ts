@@ -99,6 +99,7 @@ export const parseByCharacter = (
             ) as AutoCompleteReplace[];
             if (matches?.length) {
                 state = applyMenuItem(state.at[0].start, matches[0], state);
+                nodeToExpr(fromMCST(state.root, state.map), ctx);
                 continue;
             }
         }
@@ -107,7 +108,7 @@ export const parseByCharacter = (
             key,
             state.map,
             state.at[0],
-            ctx,
+            ctx.display,
             state.nidx,
             mods,
         );
