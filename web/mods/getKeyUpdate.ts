@@ -31,12 +31,14 @@ export type StateUpdate = {
     map: UpdateMap;
     selection: Path[];
     selectionEnd?: Path[];
+    autoComplete?: boolean;
 };
 
 export type StateSelect = {
     type: 'select';
     selection: Path[];
     selectionEnd?: Path[];
+    autoComplete?: boolean;
 };
 
 export type StateChange = StateUpdate | StateSelect | void;
@@ -330,7 +332,9 @@ export const getKeyUpdate = (
 
     if (')]}'.includes(key)) {
         const selection = closeListLike(key, fullPath, map);
-        return selection ? { type: 'select', selection } : undefined;
+        return selection
+            ? { type: 'select', selection, autoComplete: true }
+            : undefined;
     }
 
     if (key === ':') {

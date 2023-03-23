@@ -1,6 +1,7 @@
 // hmm
 import { applyMods } from '../../web/custom/getCtx';
 import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
+import { applyMenuItem } from '../../web/custom/reduce';
 import { layout } from '../../web/layout';
 import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
 import {
@@ -10,7 +11,7 @@ import {
     State,
 } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/mods/path';
-import { Ctx } from '../to-ast/Ctx';
+import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
 import { nodeToExpr } from '../to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
@@ -61,6 +62,7 @@ export const parseByCharacter = (
                 R: 'ArrowRight',
                 C: 'Copy',
                 V: 'Paste',
+                n: 'Enter',
             }[text[i + 1]]!;
             if (!key) {
                 throw new Error(`Unexpected ^${text[i + 1]}`);
@@ -90,6 +92,17 @@ export const parseByCharacter = (
             continue;
         }
 
+        if (key === 'Enter' && updateCtx) {
+            const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+            const matches = ctx.display[idx]?.autoComplete?.filter(
+                (s) => s.type === 'replace',
+            ) as AutoCompleteReplace[];
+            if (matches?.length) {
+                state = applyMenuItem(state.at[0].start, matches[0], state);
+                continue;
+            }
+        }
+
         const update = getKeyUpdate(
             key,
             state.map,
@@ -98,6 +111,17 @@ export const parseByCharacter = (
             state.nidx,
             mods,
         );
+
+        if (updateCtx && update?.autoComplete) {
+            const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+            const exacts = ctx.display[idx]?.autoComplete?.filter(
+                (s) => s.type === 'replace' && s.exact,
+            ) as AutoCompleteReplace[];
+            if (exacts?.length === 1) {
+                state = applyMenuItem(state.at[0].start, exacts[0], state);
+            }
+        }
+
         if (debug) {
             console.log(JSON.stringify(key), state.at[0].start);
         }
@@ -106,12 +130,11 @@ export const parseByCharacter = (
 
         if (updateCtx) {
             nodeToExpr(fromMCST(state.root, state.map), ctx);
-            // const tops = (state.map[state.root] as ListLikeContents).values;
-            // tops.forEach((top) => {
-            //     layout(top, 0, state.map, ctx.display, true);
-            // });
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map);
+
+            if (update?.autoComplete) {
+            }
         }
     }
     return state;

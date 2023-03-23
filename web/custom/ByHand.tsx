@@ -12,7 +12,7 @@ import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
-import { reduce } from './reduce';
+import { applyMenuItem, reduce } from './reduce';
 import { getCtx } from './getCtx';
 
 const examples = {
@@ -129,7 +129,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
         const { map, nidx } = parseByCharacter(
             initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
             newCtx(),
-            false,
+            true,
             debug,
         );
         const idx = (map[-1] as ListLikeContents).values[0];
@@ -211,6 +211,20 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             state.nidx,
             mods,
         );
+
+        if (update?.autoComplete && !state.menu?.dismissed) {
+            const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+            const exacts = state.ctx.display[idx]?.autoComplete?.filter(
+                (s) => s.type === 'replace' && s.exact,
+            ) as AutoCompleteReplace[];
+            if (exacts?.length === 1) {
+                state = {
+                    ...state,
+                    ...applyMenuItem(state.at[0].start, exacts[0], state),
+                };
+            }
+        }
+
         state = { ...state, ...applyUpdate(state, i, update) };
     }
     return state;

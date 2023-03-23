@@ -61,6 +61,7 @@ export const newNodeAfter = (
                             : extra.length,
                 })
                 .concat(newThing.selection),
+            autoComplete: true,
         };
     }
 };

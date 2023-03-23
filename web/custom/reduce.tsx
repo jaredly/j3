@@ -3,6 +3,9 @@ import { paste } from '../mods/clipboard';
 import { verticalMove } from './verticalMove';
 import { UIState, Action, handleKey, isRootPath, lidx } from './ByHand';
 import { getCtx } from './getCtx';
+import { Path } from '../mods/path';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
+import { State } from '../mods/getKeyUpdate';
 
 export const reduce = (state: UIState, action: Action): UIState => {
     const newState = reduceInner(state, action);
@@ -12,32 +15,15 @@ export const reduce = (state: UIState, action: Action): UIState => {
     }
     return newState;
 };
+
 const reduceInner = (state: UIState, action: Action): UIState => {
     switch (action.type) {
         case 'menu':
             return { ...state, menu: { selection: action.selection } };
         case 'menu-select': {
-            const idx = action.path[action.path.length - 1].idx;
             return {
                 ...state,
-                at: [
-                    {
-                        start: action.path.slice(0, -1).concat([
-                            {
-                                idx,
-                                type: 'subtext',
-                                at: splitGraphemes(action.item.text).length,
-                            },
-                        ]),
-                    },
-                ],
-                map: {
-                    ...state.map,
-                    [idx]: {
-                        loc: state.map[idx].loc,
-                        ...action.item.node,
-                    },
-                },
+                ...applyMenuItem(action.path, action.item, state),
             };
         }
         case 'copy':
@@ -82,3 +68,28 @@ const reduceInner = (state: UIState, action: Action): UIState => {
         }
     }
 };
+
+export function applyMenuItem(
+    path: Path[],
+    item: AutoCompleteReplace,
+    state: State,
+) {
+    const idx = path[path.length - 1].idx;
+    return {
+        ...state,
+        at: [
+            {
+                start: path
+                    .slice(0, -1)
+                    .concat([
+                        {
+                            idx,
+                            type: 'subtext',
+                            at: splitGraphemes(item.text).length,
+                        },
+                    ]),
+            },
+        ],
+        map: { ...state.map, [idx]: { loc: state.map[idx].loc, ...item.node } },
+    };
+}
