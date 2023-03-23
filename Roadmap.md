@@ -1,7 +1,7 @@
 
 # ByHand, the final steps?
 
-- [ ] I need to persist .. the ... hashes
+- [x] I need to persist .. the ... hashes
   - oh is that just applying the mods?
 - [x] replace should move cursor to end
 
