@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
-import { parseByCharacter, splitGraphemes } from '../../src/parse/parse';
+import { parseByCharacter } from '../../src/parse/parse';
 import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { layout } from '../layout';
-import { type ClipboardItem, paste } from '../mods/clipboard';
+import { type ClipboardItem } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../mods/path';
@@ -14,7 +14,7 @@ import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
-import { verticalMove } from './verticalMove';
+import { reduce } from './reduce';
 
 const examples = {
     let: '(let [x 10] (+ x 20))',
@@ -83,7 +83,8 @@ export type Action =
           items: ClipboardItem[];
       };
 
-const lidx = (at: State['at']) => at[0].start[at[0].start.length - 1].idx;
+export const lidx = (at: State['at']) =>
+    at[0].start[at[0].start.length - 1].idx;
 
 const maxSym = (map: Map) => {
     let max = 0;
@@ -96,7 +97,7 @@ const maxSym = (map: Map) => {
     return max;
 };
 
-const getCtx = (map: Map, root: number) => {
+export const getCtx = (map: Map, root: number) => {
     const tops = (map[root] as ListLikeContents).values;
     const ctx = newCtx();
     ctx.sym.current = maxSym(map) + 1;
@@ -122,86 +123,6 @@ const getCtx = (map: Map, root: number) => {
         return { ctx, map };
     } catch (err) {
         return { ctx, map };
-    }
-};
-
-const reduce = (state: UIState, action: Action): UIState => {
-    const newState = reduceInner(state, action);
-    if (state.map !== newState.map) {
-        const ctx = getCtx(newState.map, newState.root);
-        return ctx ? { ...newState, ...ctx } : newState;
-    }
-    return newState;
-};
-
-const reduceInner = (state: UIState, action: Action): UIState => {
-    switch (action.type) {
-        case 'menu':
-            return { ...state, menu: { selection: action.selection } };
-        case 'menu-select': {
-            const idx = action.path[action.path.length - 1].idx;
-            return {
-                ...state,
-                at: [
-                    {
-                        start: action.path.slice(0, -1).concat([
-                            {
-                                idx,
-                                type: 'subtext',
-                                at: splitGraphemes(action.item.text).length,
-                            },
-                        ]),
-                    },
-                ],
-                map: {
-                    ...state.map,
-                    [idx]: {
-                        loc: state.map[idx].loc,
-                        ...action.item.node,
-                    },
-                },
-            };
-        }
-        case 'copy':
-            return { ...state, clipboard: [action.items, ...state.clipboard] };
-        case 'key':
-            if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
-                return verticalMove(
-                    { ...state, menu: undefined },
-                    action.key === 'ArrowUp',
-                    action.mods,
-                );
-            }
-            if (action.key === 'Escape') {
-                console.log('dismiss');
-                return { ...state, menu: { dismissed: true, selection: 0 } };
-            }
-            const newState = handleKey(state, action.key, action.mods);
-            if (newState) {
-                if (newState.at.some((at) => isRootPath(at.start))) {
-                    console.log('not selecting root node');
-                    return state;
-                }
-                const idx = lidx(newState.at);
-                const prev = lidx(state.at);
-                if (idx !== prev) {
-                    return { ...newState, menu: undefined };
-                }
-                return newState;
-            }
-            return state;
-        case 'select':
-            // Ignore attempts to select the root node
-            if (action.at.some((at) => isRootPath(at.start))) {
-                return state;
-            }
-            return {
-                ...state,
-                at: action.add ? state.at.concat(action.at) : action.at,
-            };
-        case 'paste': {
-            return { ...state, ...paste(state, state.ctx, action.items) };
-        }
     }
 };
 
@@ -305,7 +226,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     );
 };
 
-const isRootPath = (path: Path[]) => {
+export const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].type !== 'child';
 };
 
