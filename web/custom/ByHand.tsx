@@ -286,6 +286,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                     dispatch={dispatch}
                 />
             ) : null}
+            Menu: {JSON.stringify(state.menu)}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
         </div>
     );

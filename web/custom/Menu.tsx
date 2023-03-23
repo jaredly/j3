@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
@@ -15,10 +15,17 @@ export const Menu = ({
     menu: { idx: number; items: AutoCompleteResult[] };
     dispatch: React.Dispatch<Action>;
 }) => {
-    const node = state.regs[menu.idx]?.main?.node;
-    if (!node) return null;
+    const [node, setNode] = useState(null as null | any);
 
-    const box = node.getBoundingClientRect();
+    useLayoutEffect(() => {
+        if (!node) {
+            const node = state.regs[menu.idx]?.main?.node;
+            setNode(node);
+        }
+    }, [state, menu]);
+
+    if (!node) return null;
+    const box = node?.getBoundingClientRect();
 
     const selectionIndex = state.menu?.selection ?? 0;
 

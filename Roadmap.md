@@ -3,8 +3,10 @@
 
 - [ ] I need to persist .. the ... hashes
   - oh is that just applying the mods?
+- [ ] replace should move cursor to end
 
 # the Hash node
+- [x] process ctx mods
 
 it's a node that doesn't own its own text
 selections could get wonky if the text changes out from under them.
