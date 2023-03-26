@@ -121,6 +121,8 @@ export const parseByCharacter = (
             if (exacts?.length === 1) {
                 state = applyMenuItem(state.at[0].start, exacts[0], state);
             }
+
+            // Now we do like inference, right?
         }
 
         if (debug) {

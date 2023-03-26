@@ -1,11 +1,4 @@
 
-# ByHand, the final steps?
-
-- [x] I need to persist .. the ... hashes
-  - oh is that just applying the mods?
-- [x] replace should move cursor to end
-- [x] auto-select a menu item thanks
-
 # Arg type inference
 
 Ok frogs, what's the plan here.
@@ -18,6 +11,26 @@ Ok frogs, what's the plan here.
 ok so what's the mechanism.
 after ... each change ... do an ~inference pass?
 to see what we can see.
+
+oh yeah, so
+I need to like figure out constraints.
+what's why I'm slow on it.
+
+
+
+## What kinds of things
+
+- [ ] usage of a variable updates the type annotation for that vbl
+- [ ] usage of an arg
+
+
+
+# ByHand, the final steps?
+
+- [x] I need to persist .. the ... hashes
+  - oh is that just applying the mods?
+- [x] replace should move cursor to end
+- [x] auto-select a menu item thanks
 
 # the Hash node
 - [x] process ctx mods
