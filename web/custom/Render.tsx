@@ -131,7 +131,8 @@ export const RenderNNode = (
 
     const errorStyle = errors?.length
         ? {
-              outline: '1px solid red',
+              textDecoration: 'underline wavy',
+              textDecorationColor: 'rgba(255,0,0,0.4)',
           }
         : {};
 

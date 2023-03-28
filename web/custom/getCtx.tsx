@@ -1,5 +1,7 @@
+import { getType } from '../../src/get-type/get-types-new';
 import { Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
+import { Node } from '../../src/types/cst';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { layout } from '../layout';
 import { maxSym } from './ByHand';
@@ -9,7 +11,11 @@ export const getCtx = (map: Map, root: number) => {
     const ctx = newCtx();
     ctx.sym.current = maxSym(map) + 1;
     try {
-        nodeToExpr(fromMCST(root, map), ctx);
+        const rootNode = fromMCST(root, map) as { values: Node[] };
+        rootNode.values.forEach((node) => {
+            const expr = nodeToExpr(node, ctx);
+            getType(expr, ctx, { errors: ctx.errors, types: {} });
+        });
         tops.forEach((top) => {
             layout(top, 0, map, ctx.display, true);
         });
