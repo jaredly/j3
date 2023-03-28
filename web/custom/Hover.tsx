@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useState } from 'react';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
+import { errorToString } from '../../src/to-cst/show-errors';
 import { State } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';
 import { Action, UIState } from './ByHand';
@@ -18,10 +19,16 @@ export const Hover = ({
     state: UIState;
     dispatch: React.Dispatch<Action>;
 }) => {
-    const node = getRegNode(
-        state.hover[state.hover.length - 1]?.idx,
-        state.regs,
-    );
+    let found: null | number = null;
+    for (let i = state.hover.length - 1; i >= 0; i--) {
+        let idx = state.hover[i].idx;
+        if (state.ctx.errors[idx]?.length) {
+            found = idx;
+            break;
+        }
+    }
+
+    const node = found != null ? getRegNode(found, state.regs) : null;
 
     // useLayoutEffect(() => {
     //     const idx = state.hover[state.hover.length - 1].idx;
@@ -30,7 +37,7 @@ export const Hover = ({
     // }, [menu]);
 
     // console.log('hov', node, regs, state.hover[state.hover.length - 1]);
-    if (!node) return null;
+    if (!node || found == null) return null;
     const box = node?.getBoundingClientRect();
 
     const selectionIndex = state.menu?.selection ?? 0;
@@ -48,14 +55,16 @@ export const Hover = ({
                     overflow: 'auto',
                     zIndex: 1000,
                     backgroundColor: 'black',
-                    border: '1px solid #ccc',
+                    color: '#f55',
+                    border: '1px solid #555',
                     display: 'grid',
                     gridTemplateColumns: 'max-content max-content',
                 }}
             >
-                Hoverrrr
+                {state.ctx.errors[found]
+                    .map((err) => errorToString(err, state.ctx))
+                    .join('\n')}
             </div>
-            {JSON.stringify(state.hover)}
         </div>
     );
 };

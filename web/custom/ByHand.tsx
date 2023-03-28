@@ -192,10 +192,10 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 ctx={state.ctx}
             />
             <Cursors state={state} />
+            <Hover state={state} dispatch={dispatch} />
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
-            <Hover state={state} dispatch={dispatch} />
             Menu: {JSON.stringify(state.menu)}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
         </div>

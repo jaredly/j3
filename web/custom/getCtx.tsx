@@ -1,4 +1,5 @@
 import { getType } from '../../src/get-type/get-types-new';
+import { validateExpr } from '../../src/get-type/validate';
 import { Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
@@ -15,6 +16,7 @@ export const getCtx = (map: Map, root: number) => {
         rootNode.values.forEach((node) => {
             const expr = nodeToExpr(node, ctx);
             getType(expr, ctx, { errors: ctx.errors, types: {} });
+            validateExpr(expr, ctx, ctx.errors);
         });
         tops.forEach((top) => {
             layout(top, 0, map, ctx.display, true);
