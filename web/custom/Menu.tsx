@@ -61,7 +61,11 @@ export const Menu = ({
                     padding: 4,
                     cursor: item.type === 'replace' ? 'pointer' : 'text',
                     backgroundColor:
-                        i === hover ? '#444' : selected ? '#222' : '',
+                        i === hover && item.type === 'replace'
+                            ? '#444'
+                            : selected
+                            ? '#222'
+                            : '',
                 };
                 return (
                     <React.Fragment key={i}>
