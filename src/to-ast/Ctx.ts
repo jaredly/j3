@@ -52,7 +52,6 @@ export type Global = {
         types: { [name: string]: TVar[] };
     };
     terms: { [hash: string]: { expr: Expr; type: Type } };
-    termTypes: { [hash: string]: Type };
     names: { [name: string]: string[] };
     types: { [hash: string]: Type };
     typeNames: { [name: string]: string[] };
@@ -289,7 +288,6 @@ export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {
     builtins: basicBuiltins,
     terms: {},
-    termTypes: {},
     names: {},
     types: {},
     typeNames: {},

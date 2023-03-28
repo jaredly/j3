@@ -111,7 +111,7 @@ export const allTerms = (ctx: Ctx): Result[] => {
                     type: 'global',
                     name,
                     hash,
-                    typ: ctx.global.termTypes[hash],
+                    typ: ctx.global.terms[hash].type,
                 } satisfies Result),
         ),
     );

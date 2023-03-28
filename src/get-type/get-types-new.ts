@@ -118,7 +118,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return ctx.localMap.terms[expr.sym]?.type;
         case 'global':
             // Should we cache? idk
-            return ctx.global.termTypes[expr.hash];
+            return ctx.global.terms[expr.hash].type;
         case 'type-apply': {
             const target = getType(expr.target, ctx, report);
             if (!target) {
