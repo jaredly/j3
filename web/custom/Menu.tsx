@@ -7,12 +7,10 @@ import { Action, UIState } from './ByHand';
 
 export const Menu = ({
     state,
-    ctx,
     menu,
     dispatch,
 }: {
     state: UIState;
-    ctx: Ctx;
     menu: { path: Path[]; items: AutoCompleteResult[] };
     dispatch: React.Dispatch<Action>;
 }) => {
@@ -75,7 +73,7 @@ export const Menu = ({
                             onClick={onClick}
                         >
                             {item.type === 'replace' && item.ann
-                                ? nodeToString(nodeForType(item.ann, ctx))
+                                ? nodeToString(nodeForType(item.ann, state.ctx))
                                 : null}
                         </div>
                     </React.Fragment>

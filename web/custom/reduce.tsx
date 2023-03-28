@@ -18,6 +18,8 @@ export const reduce = (state: UIState, action: Action): UIState => {
 
 const reduceInner = (state: UIState, action: Action): UIState => {
     switch (action.type) {
+        case 'hover':
+            return { ...state, hover: action.path };
         case 'menu':
             return { ...state, menu: { selection: action.selection } };
         case 'menu-select': {

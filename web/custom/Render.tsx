@@ -160,6 +160,7 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
                     {nnode.children.map((nnode, i) => (
                         <RenderNNode
@@ -211,6 +212,12 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    onMouseEnter={() =>
+                        dispatch({
+                            type: 'hover',
+                            path: path.concat({ idx, type: 'start' }),
+                        })
+                    }
                 >
                     {nnode.text}
                 </span>
@@ -253,6 +260,12 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    onMouseEnter={() =>
+                        dispatch({
+                            type: 'hover',
+                            path: path.concat({ idx, at: 0, type: 'subtext' }),
+                        })
+                    }
                     onDoubleClick={() => {
                         // console.log('dbl');
                         dispatch({
@@ -315,6 +328,7 @@ export const RenderNNode = (
                             flexDirection: 'column',
                             gap: '0 8px',
                         }}
+                        onMouseEnter={() => dispatch({ type: 'hover', path })}
                     >
                         {nnode.children.map((pair, i) =>
                             pair.length === 1 ? (
@@ -343,7 +357,10 @@ export const RenderNNode = (
                 );
             }
             return (
-                <span style={{ display: 'grid', gap: '0 8px' }}>
+                <span
+                    style={{ display: 'grid', gap: '0 8px' }}
+                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                >
                     {nnode.children.flatMap((pair, i) =>
                         pair.length === 1
                             ? [
@@ -370,7 +387,10 @@ export const RenderNNode = (
             );
         case 'indent':
             return (
-                <span style={{ display: 'inline-block', paddingLeft: 10 }}>
+                <span
+                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    style={{ display: 'inline-block', paddingLeft: 10 }}
+                >
                     <RenderNNode {...props} nnode={nnode.child} />
                 </span>
             );

@@ -17,6 +17,7 @@ import { applyMods, getCtx } from './getCtx';
 import { infer } from '../../src/infer/infer';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
+import { Hover } from './Hover';
 
 const examples = {
     infer: '(+ 2)',
@@ -56,6 +57,7 @@ export type UIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
     ctx: Ctx;
+    hover: Path[];
 } & State;
 
 export type RegMap = {
@@ -68,6 +70,7 @@ export type RegMap = {
 };
 
 export type Action =
+    | { type: 'hover'; path: Path[] }
     | {
           type: 'select';
           add?: boolean;
@@ -144,6 +147,7 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             root: -1,
             regs: {},
             clipboard: [],
+            hover: [],
             at: [{ start: at }],
             ...getCtx(map, -1),
         };
@@ -189,13 +193,9 @@ export const Doc = ({ initialText }: { initialText: string }) => {
             />
             <Cursors state={state} />
             {!state.menu?.dismissed && menu?.items.length ? (
-                <Menu
-                    state={state}
-                    ctx={state.ctx}
-                    menu={menu}
-                    dispatch={dispatch}
-                />
+                <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
+            <Hover state={state} dispatch={dispatch} />
             Menu: {JSON.stringify(state.menu)}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
         </div>
