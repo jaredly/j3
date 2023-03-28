@@ -23,6 +23,7 @@ export const resolveExpr = (
     ctx.display[form.loc.idx] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form, prefix, suffix);
+        ctx.display[form.loc.idx].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
             form,

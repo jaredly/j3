@@ -217,16 +217,20 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             mods,
         );
 
+        const at = state.at;
+
         if (update?.autoComplete && !state.menu?.dismissed) {
-            const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+            const idx = at[0].start[at[0].start.length - 1].idx;
             const exacts = state.ctx.display[idx]?.autoComplete?.filter(
                 (s) => s.type === 'replace' && s.exact,
             ) as AutoCompleteReplace[];
+            console.log('trying to update?', exacts);
             if (exacts?.length === 1) {
                 state = {
                     ...state,
-                    ...applyMenuItem(state.at[0].start, exacts[0], state),
+                    ...applyMenuItem(at[0].start, exacts[0], state),
                 };
+                console.log('applying I guess', exacts[0]);
             }
         }
 
@@ -235,15 +239,18 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
         if (update?.autoComplete) {
             const root = fromMCST(state.root, state.map) as { values: Node[] };
             const exprs = root.values.map((node) =>
-                nodeToExpr(node, state.ctx),
+                nodeToExpr(node, {
+                    ...state.ctx,
+                    display: {},
+                    mods: {},
+                    errors: {},
+                }),
             );
-            // state = { ...state, map: { ...state.map } };
-            // applyMods(state.ctx, state.map);
+            state = { ...state, map: { ...state.map } };
+            applyMods(state.ctx, state.map);
 
-            console.log('ctx', state.ctx);
             // Now we do like inference, right?
             const mods = infer(exprs, state.ctx);
-            console.log('inferred', mods);
             Object.keys(mods).forEach((id) => {
                 state.map[+id] = {
                     ...state.map[+id],

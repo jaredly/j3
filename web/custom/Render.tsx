@@ -42,6 +42,8 @@ export const textStyle = (
     const color = nodeColor(node.type);
     if (display?.style) {
         switch (display.style.type) {
+            case 'unresolved':
+                return { color: 'red' };
             case 'record-attr':
                 return {
                     fontStyle: 'italic',

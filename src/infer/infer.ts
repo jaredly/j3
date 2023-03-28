@@ -105,6 +105,8 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
                             auto.ann.args.forEach((arg, i) => {
                                 if (i < args.length) {
                                     if (
+                                        args[i] &&
+                                        arg &&
                                         matchesType(args[i], arg, ctx, arg.form)
                                     ) {
                                         score += 1;

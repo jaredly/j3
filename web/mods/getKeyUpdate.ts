@@ -138,7 +138,6 @@ export const applyUpdate = (
             map: applyUpdateMap(state.map, update.map),
         };
     }
-    return state;
 };
 
 // export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
