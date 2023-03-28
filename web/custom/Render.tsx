@@ -127,6 +127,14 @@ export const RenderNNode = (
 
     const coverageLevel = isCoveredBySelection(props.selection, path, map);
 
+    const errors = props.errors[node.loc.idx];
+
+    const errorStyle = errors?.length
+        ? {
+              outline: '1px solid red',
+          }
+        : {};
+
     const selectStyle =
         coverageLevel?.type === 'full' ||
         (('text' in node || node.type === 'hash') &&
@@ -149,6 +157,7 @@ export const RenderNNode = (
                         alignItems: 'flex-start',
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
                         ...selectStyle,
+                        ...errorStyle,
                     }}
                 >
                     {nnode.children.map((nnode, i) => (
@@ -181,6 +190,7 @@ export const RenderNNode = (
                         whiteSpace: 'pre',
                         color: nnode.color,
                         ...selectStyle,
+                        ...errorStyle,
                     }}
                 >
                     {nnode.text}
@@ -198,6 +208,7 @@ export const RenderNNode = (
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
                         fontVariationSettings: isSelected ? '"wght" 900' : '',
                         ...selectStyle,
+                        ...errorStyle,
                     }}
                 >
                     {nnode.text}
@@ -239,6 +250,7 @@ export const RenderNNode = (
                     style={{
                         ...textStyle(node, display[idx]),
                         ...selectStyle,
+                        ...errorStyle,
                     }}
                     onDoubleClick={() => {
                         // console.log('dbl');
@@ -283,6 +295,7 @@ export const RenderNNode = (
                 <Render
                     map={map}
                     display={display}
+                    errors={props.errors}
                     dispatch={dispatch}
                     reg={reg}
                     idx={nnode.id}

@@ -99,6 +99,7 @@ export function Root({
                         map={state.map}
                         reg={reg}
                         display={ctx.display}
+                        errors={ctx.errors}
                         dispatch={dispatch}
                         selection={selections}
                         path={[

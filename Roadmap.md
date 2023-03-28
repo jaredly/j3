@@ -1,4 +1,19 @@
 
+# Drag & Drop
+
+could be so cool as a refactoring dealio.
+
+multiselect some things, drag them around, and it's
+"extract to a function at the top level". Very cool.
+
+# Type-directed function resolution
+
+- [ ] So um, there should be an easy way to remove the hash
+  other than, I guess, just deleting a char or adding one
+- [ ] Alsoo autocomplete should prioritize instances that match
+  argument types if they already exist.
+- [ ] I hsould definitely have simple type-on-hover dealio
+
 # Arg type inference
 
 Ok frogs, what's the plan here.

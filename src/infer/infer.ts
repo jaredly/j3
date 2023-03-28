@@ -63,7 +63,7 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
     const locals: { [idx: number]: Expr[] } = {};
 
     const visit: Visitor<null> = {
-        Expr(node) {
+        ExprPost(node) {
             if (node.type === 'local') {
                 const sym = node.sym;
                 if (!locals[sym]) {
@@ -99,7 +99,7 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
                     const scored = auto
                         .map((auto) => {
                             if (auto.ann.type !== 'fn') {
-                                return { auto, score: -1 };
+                                return { auto, res: null, score: -1 };
                             }
                             let score = 0;
                             auto.ann.args.forEach((arg, i) => {
@@ -113,7 +113,7 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
                                     }
                                 }
                             });
-                            return { auto, score };
+                            return { auto, score, res: auto.ann.body };
                         })
                         .sort((a, b) => b.score - a.score);
                     const best = scored[0];
@@ -121,6 +121,7 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
                     // one matching arg
                     if (best.score > 0) {
                         mods[node.target.form.loc.idx] = best.auto;
+                        report.types[node.form.loc.idx] = best.res!;
                     }
                 }
             }

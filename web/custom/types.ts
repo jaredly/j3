@@ -18,5 +18,6 @@ export type RenderProps = {
     reg: Reg;
     path: Path[];
     display: Ctx['display'];
+    errors: Ctx['errors'];
     dispatch: React.Dispatch<Action>;
 };
