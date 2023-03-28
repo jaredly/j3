@@ -38,6 +38,7 @@ export const resolveExpr = (
                     type: 'id',
                     hash: ':' + local.sym,
                     text: local.name,
+                    ann: local.type,
                 };
                 return { type: 'local', sym: local.sym, form };
             }
@@ -50,6 +51,7 @@ export const resolveExpr = (
                     type: 'id',
                     hash,
                     text: ctx.global.reverseNames[hash],
+                    ann: global.type,
                 };
                 return { type: 'global', hash, form };
             }
@@ -59,6 +61,7 @@ export const resolveExpr = (
                     type: 'id',
                     hash,
                     text: ctx.global.reverseNames[hash],
+                    ann: builtin,
                 };
                 return { type: 'builtin', hash, form };
             }

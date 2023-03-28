@@ -51,7 +51,7 @@ export type Global = {
         names: { [name: string]: string[] };
         types: { [name: string]: TVar[] };
     };
-    terms: { [hash: string]: Expr };
+    terms: { [hash: string]: { expr: Expr; type: Type } };
     termTypes: { [hash: string]: Type };
     names: { [name: string]: string[] };
     types: { [hash: string]: Type };
@@ -74,6 +74,7 @@ export type NodeStyle =
     | {
           type: 'id';
           hash: string;
+          ann?: Type;
           text?: string;
       };
 

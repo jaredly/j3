@@ -12,7 +12,7 @@ multiselect some things, drag them around, and it's
   other than, I guess, just deleting a char or adding one
 - [ ] Alsoo autocomplete should prioritize instances that match
   argument types if they already exist.
-- [ ] I hsould definitely have simple type-on-hover dealio
+- [x] I hsould definitely have simple type-on-hover dealio
 
 # Arg type inference
 

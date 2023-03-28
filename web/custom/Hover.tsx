@@ -1,8 +1,11 @@
 import React, { useLayoutEffect, useState } from 'react';
+import { getType } from '../../src/get-type/get-types-new';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
+import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { errorToString } from '../../src/to-cst/show-errors';
+import { fromMCST } from '../../src/types/mcst';
 import { State } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';
 import { Action, UIState } from './ByHand';
@@ -19,25 +22,41 @@ export const Hover = ({
     state: UIState;
     dispatch: React.Dispatch<Action>;
 }) => {
-    let found: null | number = null;
+    let found: null | { idx: number; text: string } = null;
     for (let i = state.hover.length - 1; i >= 0; i--) {
         let idx = state.hover[i].idx;
         if (state.ctx.errors[idx]?.length) {
-            found = idx;
+            found = {
+                idx,
+                text: state.ctx.errors[idx]
+                    .map((err) => errorToString(err, state.ctx))
+                    .join('\n'),
+            };
             break;
         }
     }
+    if (found == null) {
+        const last = state.hover[state.hover.length - 1]?.idx;
+        if (last != null) {
+            const style = state.ctx.display[last]?.style;
+            if (style?.type === 'id' || style?.type === 'id-decl') {
+                found = {
+                    idx: last,
+                    text:
+                        (style.type === 'id' && style.ann
+                            ? nodeToString(nodeForType(style.ann, state.ctx)) +
+                              '\n'
+                            : '') +
+                        ' ' +
+                        style.hash,
+                };
+            }
+        }
+    }
 
-    const node = found != null ? getRegNode(found, state.regs) : null;
-
-    // useLayoutEffect(() => {
-    //     const idx = state.hover[state.hover.length - 1].idx;
-    //     const node = state.regs[idx]?.main?.node;
-    //     setNode(node);
-    // }, [menu]);
-
-    // console.log('hov', node, regs, state.hover[state.hover.length - 1]);
+    const node = found != null ? getRegNode(found.idx, state.regs) : null;
     if (!node || found == null) return null;
+
     const box = node?.getBoundingClientRect();
 
     const selectionIndex = state.menu?.selection ?? 0;
@@ -55,15 +74,13 @@ export const Hover = ({
                     overflow: 'auto',
                     zIndex: 1000,
                     backgroundColor: 'black',
-                    color: '#f55',
+                    color: '#777',
                     border: '1px solid #555',
                     display: 'grid',
                     gridTemplateColumns: 'max-content max-content',
                 }}
             >
-                {state.ctx.errors[found]
-                    .map((err) => errorToString(err, state.ctx))
-                    .join('\n')}
+                {found.text}
             </div>
         </div>
     );

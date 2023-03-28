@@ -52,6 +52,9 @@ export function Root({
             onMouseDownCapture={() => {
                 setDrag(true);
             }}
+            onMouseLeave={(evt) => {
+                dispatch({ type: 'hover', path: [] });
+            }}
             onMouseDown={(evt) => {
                 const sel = closestSelection(state.regs, {
                     x: evt.clientX,

@@ -167,7 +167,11 @@ export const Doc = ({ initialText }: { initialText: string }) => {
     }, [state.map, state.at, state.ctx]);
 
     return (
-        <div>
+        <div
+            onMouseEnter={(evt) => {
+                dispatch({ type: 'hover', path: [] });
+            }}
+        >
             <HiddenInput
                 ctx={state.ctx}
                 state={state}

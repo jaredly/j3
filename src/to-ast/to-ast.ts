@@ -94,7 +94,7 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
                 ...ctx.global,
                 terms: {
                     ...ctx.global.terms,
-                    [res.hash]: res,
+                    [res.hash]: { expr: res, type },
                 },
                 termTypes: {
                     ...ctx.global.termTypes,
