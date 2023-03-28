@@ -233,7 +233,6 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
         state = { ...state, ...applyUpdate(state, i, update) };
 
         if (update?.autoComplete) {
-            console.log('auto yes');
             const root = fromMCST(state.root, state.map) as { values: Node[] };
             const exprs = root.values.map((node) =>
                 nodeToExpr(node, state.ctx),
@@ -241,6 +240,7 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             // state = { ...state, map: { ...state.map } };
             // applyMods(state.ctx, state.map);
 
+            console.log('ctx', state.ctx);
             // Now we do like inference, right?
             const mods = infer(exprs, state.ctx);
             console.log('inferred', mods);

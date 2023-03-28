@@ -83,9 +83,8 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
             //     })
             // }
             if (node.type === 'apply') {
-                console.log('apply', node);
                 const auto = ctx.display[
-                    node.form.loc.idx
+                    node.target.form.loc.idx
                 ]?.autoComplete?.filter((t) => t.type === 'replace') as
                     | AutoCompleteReplace[]
                     | undefined;
@@ -119,7 +118,7 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
                     // Don't autoselect unless we have at least
                     // one matching arg
                     if (best.score > 0) {
-                        mods[node.form.loc.idx] = best.auto;
+                        mods[node.target.form.loc.idx] = best.auto;
                     }
                 }
             }
