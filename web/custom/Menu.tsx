@@ -21,6 +21,7 @@ export const Menu = ({
         const node = state.regs[idx]?.main?.node;
         setNode(node);
     }, [menu]);
+    const [hover, setHover] = useState(null as null | number);
 
     if (!node) return null;
     const box = node?.getBoundingClientRect();
@@ -42,6 +43,7 @@ export const Menu = ({
                 display: 'grid',
                 gridTemplateColumns: 'max-content max-content',
             }}
+            onMouseLeave={(evt) => setHover(null)}
         >
             {menu.items?.map((item, i) => {
                 const selected =
@@ -58,19 +60,22 @@ export const Menu = ({
                 const style = {
                     padding: 4,
                     cursor: item.type === 'replace' ? 'pointer' : 'text',
-                    backgroundColor: selected ? '#222' : '',
+                    backgroundColor:
+                        i === hover ? '#444' : selected ? '#222' : '',
                 };
                 return (
                     <React.Fragment key={i}>
                         <div
                             style={{ gridColumn: 1, ...style }}
                             onClick={onClick}
+                            onMouseEnter={(evt) => setHover(i)}
                         >
                             {item.text}
                         </div>
                         <div
                             style={{ gridColumn: 2, ...style }}
                             onClick={onClick}
+                            onMouseEnter={(evt) => setHover(i)}
                         >
                             {item.type === 'replace' && item.ann
                                 ? nodeToString(nodeForType(item.ann, state.ctx))
