@@ -11,8 +11,10 @@ import {
     State,
 } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/mods/path';
+import { infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
 import { nodeToExpr } from '../to-ast/nodeToExpr';
+import { Node } from '../types/cst';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
 export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
@@ -121,8 +123,6 @@ export const parseByCharacter = (
             if (exacts?.length === 1) {
                 state = applyMenuItem(state.at[0].start, exacts[0], state);
             }
-
-            // Now we do like inference, right?
         }
 
         if (debug) {
@@ -132,11 +132,20 @@ export const parseByCharacter = (
         state = applyUpdate(state, 0, update) ?? state;
 
         if (updateCtx) {
-            nodeToExpr(fromMCST(state.root, state.map), ctx);
+            const root = fromMCST(state.root, state.map) as { values: Node[] };
+            const exprs = root.values.map((node) => nodeToExpr(node, ctx));
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map);
 
             if (update?.autoComplete) {
+                // Now we do like inference, right?
+                const mods = infer(exprs, ctx);
+                Object.keys(mods).forEach((id) => {
+                    state.map[+id] = {
+                        ...state.map[+id],
+                        ...mods[+id].node,
+                    };
+                });
             }
         }
     }

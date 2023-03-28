@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
 import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
-import { ListLikeContents, Map } from '../../src/types/mcst';
+import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { type ClipboardItem } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
@@ -13,9 +13,13 @@ import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { applyMenuItem, reduce } from './reduce';
-import { getCtx } from './getCtx';
+import { applyMods, getCtx } from './getCtx';
+import { infer } from '../../src/infer/infer';
+import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
+import { Node } from '../../src/types/cst';
 
 const examples = {
+    infer: '(+ 2)',
     let: '(let [x 10] (+ x 20))',
     lists: '(1 2) (3 [] 4) (5 6)',
     string: `"Some 🤔 things\nare here for \${you} to\nsee"`,
@@ -227,6 +231,28 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
         }
 
         state = { ...state, ...applyUpdate(state, i, update) };
+
+        if (update?.autoComplete) {
+            console.log('auto yes');
+            const root = fromMCST(state.root, state.map) as { values: Node[] };
+            const exprs = root.values.map((node) =>
+                nodeToExpr(node, state.ctx),
+            );
+            // state = { ...state, map: { ...state.map } };
+            // applyMods(state.ctx, state.map);
+
+            // Now we do like inference, right?
+            const mods = infer(exprs, state.ctx);
+            console.log('inferred', mods);
+            Object.keys(mods).forEach((id) => {
+                state.map[+id] = {
+                    ...state.map[+id],
+                    ...mods[+id].node,
+                };
+            });
+        } else {
+            console.log('auto no');
+        }
     }
     return state;
 };
