@@ -8,8 +8,12 @@ I guess I'll be operating on the expr? yeah.
 
 import { getType, Report } from '../get-type/get-types-new';
 import { matchesType } from '../get-type/matchesType';
+import { unifyTypes } from '../get-type/unifyTypes';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
-import { Expr, Type } from '../types/ast';
+import { nodeForType } from '../to-cst/nodeForType';
+import { Expr, Node, Pattern, Type } from '../types/ast';
+import { Map, toMCST } from '../types/mcst';
+import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
 
 // Question:
@@ -54,29 +58,84 @@ import { transformExpr, Visitor } from '../types/walk-ast';
 //     };
 // };
 
+export type InferMod =
+    | AutoCompleteReplace
+    | {
+          type: 'wrap';
+          node: Node;
+      }
+    | {
+          type: 'replace-full';
+          node: Node;
+      };
+
 export const infer = (exprs: Expr[], ctx: Ctx) => {
     const report: Report = { types: {}, errors: {} };
     exprs.forEach((expr) => getType(expr, ctx, report));
 
-    const mods: { [idx: number]: AutoCompleteReplace } = {};
+    const mods: { [idx: number]: InferMod } = {};
 
-    const locals: { [idx: number]: Expr[] } = {};
+    const usages: { [idx: number]: Type[] } = {};
+    const syms: {
+        [sym: number]: {
+            type: 'direct';
+            idx: number;
+            wrap: boolean;
+        };
+    } = {};
+
+    type PPath = Pattern['type'];
 
     const visit: Visitor<null> = {
-        ExprPost(node) {
-            if (node.type === 'local') {
-                const sym = node.sym;
-                if (!locals[sym]) {
-                    locals[sym] = [];
-                }
-                // locals[sym].push(report.types[node.]])
-                // OK START HERE
-                // so what I actually want is like a system
-                // that builds up the constraints on a given thing
-                // ... yeah, and then I can do a compare ...
-                // fortunately, I'm not trying to do it all at once.
-                // right?
+        Expr(node, ctx) {
+            if (node.type === 'fn') {
+                node.args.forEach((arg) => {
+                    if (arg.pattern.type === 'local') {
+                        if (arg.type.form.loc.idx !== -1) {
+                            syms[arg.pattern.sym] = {
+                                type: 'direct',
+                                idx: arg.type.form.loc.idx,
+                                wrap: false,
+                            };
+                        } else {
+                            syms[arg.pattern.sym] = {
+                                type: 'direct',
+                                idx: arg.pattern.form.loc.idx,
+                                wrap: true,
+                            };
+                        }
+                    }
+                });
             }
+            if (node.type === 'apply') {
+                if (node.target.type === 'local') {
+                    // hmm I should do something here
+                }
+                const t = report.types[node.target.form.loc.idx];
+                if (t && t.type === 'fn') {
+                    t.args.forEach((arg, i) => {
+                        if (i < node.args.length) {
+                            const narg = node.args[i];
+                            if (narg.type === 'local') {
+                                if (!usages[narg.sym]) {
+                                    usages[narg.sym] = [];
+                                }
+                                usages[narg.sym].push(arg);
+                            }
+                        }
+                    });
+                }
+            }
+            return null;
+        },
+        ExprPost(node) {
+            // if (node.type === 'local') {
+            //     const sym = node.sym;
+            //     if (!usages[sym]) {
+            //         usages[sym] = [];
+            //     }
+            //     usages[sym].push(report.types[node.form.loc.idx]);
+            // }
             // if (node.type === 'fn') {
             //     node.args.forEach(arg => {
             //         locals[arg.pattern.form.loc.idx]
@@ -131,8 +190,85 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
 
     exprs.forEach((expr) => transformExpr(expr, visit, null));
 
+    const inferredTypes: { [sym: number]: Type } = {};
+    Object.keys(usages).forEach((key) => {
+        const types = usages[+key];
+        if (types.length === 1) {
+            inferredTypes[+key] = types[0];
+        } else {
+            let res = types[0];
+            for (let t of types.slice(1)) {
+                const un = unifyTypes(res, t, ctx, t.form);
+                if (un) {
+                    res = un;
+                }
+            }
+            inferredTypes[+key] = res;
+        }
+    });
+
+    Object.keys(syms).forEach((sym) => {
+        const definition = syms[+sym];
+        if (!inferredTypes[+sym]) {
+            console.log('no inferred for', sym);
+            return;
+        }
+        switch (definition.type) {
+            case 'direct': {
+                if (definition.wrap) {
+                    mods[definition.idx] = {
+                        type: 'wrap',
+                        node: nodeForType(inferredTypes[+sym], ctx),
+                    };
+                } else {
+                    mods[definition.idx] = {
+                        type: 'replace-full',
+                        node: nodeForType(inferredTypes[+sym], ctx),
+                    };
+                }
+            }
+        }
+    });
+
+    console.log(usages, syms);
+
     // next up, we find all the usages of a given local,
     // along with the type annotation.
     // We try to reconcile these things.
     return mods;
 };
+
+export const reidx = (node: Node, nidx: () => number) =>
+    transformNode(node, {
+        pre(node, path) {
+            return { ...node, loc: { ...node.loc, idx: nidx() } };
+        },
+    });
+
+export function applyInferMod(
+    mod: InferMod,
+    map: Map,
+    nidx: () => number,
+    id: number,
+) {
+    if (mod.type === 'replace') {
+        map[id] = {
+            ...map[id],
+            ...mod.node,
+        };
+    } else if (mod.type === 'wrap') {
+        const id1 = nidx();
+        const id2 = toMCST(reidx(mod.node, nidx), map);
+        // const id2 = nidx()
+        map[id1] = {
+            ...map[id],
+            loc: { ...map[id].loc, idx: id1 },
+        };
+        map[id] = {
+            type: 'annot',
+            target: id1,
+            annot: id2,
+            loc: { idx: id, start: 0, end: 0 },
+        };
+    }
+}

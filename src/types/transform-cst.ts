@@ -89,7 +89,11 @@ export const transformNode = (
                 visitor,
                 path.concat({ idx, type: 'record-target' }),
             );
-            if (target.type !== 'identifier' && target.type !== 'blank') {
+            if (
+                target.type !== 'identifier' &&
+                target.type !== 'blank' &&
+                target.type !== 'hash'
+            ) {
                 throw new Error(`record access target must be id or blank`);
             }
             let changed = target !== node.target;

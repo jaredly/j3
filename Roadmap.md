@@ -1,4 +1,29 @@
 
+# Weird editing
+
+- [ ] still can't delete an annot
+- [ ] backspace shouldn't nix whole listlikes. it should go in.
+- [ ] changing a toplevel def should update usages of that def
+- [ ] can't . on a hash
+- [ ] '(' at start of hash at start of attr should wrap
+- [ ] backspace at '(' should unwrap
+- [ ] select and '(' should wrap!
+- [ ] let's get a little undo/redo in the house
+- [ ] endddd how about undo/redo snapshots? like they
+  don't have to persist the whole undo stack, but
+  some snapshots would be nice? you know.
+- [x] highlight specials (defn deftype etc.) with special color
+
+# Errors / Warnings / Incompletes
+
+I kindof want to change the render of type errors
+depending on the location of your cursor. You know?
+like, if your cursor is ... within ... a certain range,
+you're probably going to be getting to it in a moment.
+And so, we can render those errors as like warning things
+little gray underlines.
+But otherwise, we want them to be somewhat loud.
+
 # Drag & Drop
 
 could be so cool as a refactoring dealio.
@@ -15,6 +40,8 @@ multiselect some things, drag them around, and it's
 - [x] I hsould definitely have simple type-on-hover dealio
 
 # Arg type inference
+
+- [ ] run `infer` after selecting something from autocomplete
 
 Ok frogs, what's the plan here.
 - [one] needs-string -> [one:string]

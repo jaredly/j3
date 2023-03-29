@@ -7,7 +7,6 @@ import { Layout, MNodeContents } from '../types/mcst';
 export type AutoCompleteReplace = {
     type: 'replace';
     text: string;
-    // hash: string;
     node: MNodeContents;
     exact: boolean;
     ann: Type;

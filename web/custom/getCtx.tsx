@@ -15,6 +15,9 @@ export const getCtx = (map: Map, root: number) => {
     try {
         const rootNode = fromMCST(root, map) as { values: Node[] };
         rootNode.values.forEach((node) => {
+            if (node.type === 'blank' || node.type === 'comment') {
+                return;
+            }
             const expr = nodeToExpr(node, ctx);
             getType(expr, ctx, { errors: ctx.errors, types: {} });
             validateExpr(expr, ctx, ctx.errors);

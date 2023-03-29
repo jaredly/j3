@@ -83,7 +83,7 @@ export const getNestedNodes = (
                         id: node.target,
                         path: { type: 'annot-target' },
                     },
-                    { type: 'punct', text: ':', color: 'unset' },
+                    { type: 'punct', text: ':', color: '#666' },
                     {
                         type: 'ref',
                         id: node.annot,

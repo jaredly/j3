@@ -11,7 +11,7 @@ import {
     State,
 } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/mods/path';
-import { infer } from '../infer/infer';
+import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
 import { nodeToExpr } from '../to-ast/nodeToExpr';
 import { Node } from '../types/cst';
@@ -141,10 +141,12 @@ export const parseByCharacter = (
                 // Now we do like inference, right?
                 const mods = infer(exprs, ctx);
                 Object.keys(mods).forEach((id) => {
-                    state.map[+id] = {
-                        ...state.map[+id],
-                        ...mods[+id].node,
-                    };
+                    applyInferMod(mods[+id], state.map, state.nidx, +id);
+
+                    // state.map[+id] = {
+                    //     ...state.map[+id],
+                    //     ...mods[+id].node,
+                    // };
                 });
             }
         }

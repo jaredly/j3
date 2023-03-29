@@ -17,11 +17,13 @@ export function getRainbowHashColor(hash: string) {
     return color;
 }
 
-const nodeColor = (type: MNode['type']) => {
-    return colors[type];
+const nodeColor = (type: MNode['type'], text?: string | null) => {
+    return specials.includes(text!) ? '#814d4d' : colors[type];
 };
 
 const columnRecords = true;
+
+const specials = ['defn', 'def', 'deftype', 'fn', 'match'];
 
 export const colors: {
     [key: string]: string;
@@ -39,7 +41,10 @@ export const textStyle = (
     node: MNode,
     display?: Ctx['display'][0],
 ): React.CSSProperties | undefined => {
-    const color = nodeColor(node.type);
+    const color = nodeColor(
+        node.type,
+        node.type === 'identifier' ? node.text : null,
+    );
     if (display?.style) {
         switch (display.style.type) {
             case 'unresolved':

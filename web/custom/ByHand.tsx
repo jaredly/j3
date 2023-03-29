@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
 import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
-import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
+import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { type ClipboardItem } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
@@ -14,10 +14,12 @@ import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { applyMenuItem, reduce } from './reduce';
 import { applyMods, getCtx } from './getCtx';
-import { infer } from '../../src/infer/infer';
+import { applyInferMod, infer, InferMod } from '../../src/infer/infer';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';
+import { Expr } from '../../src/types/ast';
+import { transformNode } from '../../src/types/transform-cst';
 
 const examples = {
     infer: '(+ 2)',
@@ -105,6 +107,9 @@ export const maxSym = (map: Map) => {
 
 export const ByHand = () => {
     const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
+    const extra = Object.keys(localStorage).filter((k) =>
+        k.startsWith('j3-ex-'),
+    );
     return (
         <div>
             {Object.keys(examples).map((k) => (
@@ -119,39 +124,107 @@ export const ByHand = () => {
                     {k}
                 </button>
             ))}
+            {extra.map((ex) => (
+                <button
+                    key={ex}
+                    style={{ margin: 8 }}
+                    onClick={() => setWhich(ex)}
+                    disabled={which === ex}
+                >
+                    {ex}
+                </button>
+            ))}
+            <button
+                onClick={() => {
+                    const id = 'j3-ex-' + Math.random().toString(36).slice(2);
+                    saveState(
+                        id,
+                        parseByCharacter('"hello"', newCtx(), false, false),
+                    );
+                    setWhich(id);
+                }}
+            >
+                +
+            </button>
             <Doc
                 key={which}
-                initialText={examples[which as 'sink'] ?? 'what'}
+                initialState={
+                    examples[which as 'sink']
+                        ? parseByCharacter(
+                              examples[which as 'sink'].replace(/\s+/g, (f) =>
+                                  f.includes('\n') ? '\n' : ' ',
+                              ),
+                              newCtx(),
+                              // lol turning this on slows things down a tonnn
+                              false,
+                              false,
+                          )
+                        : localStorage[which]
+                        ? loadState(localStorage[which])
+                        : parseByCharacter('"hello"', newCtx(), false, false)
+                }
+                saveKey={which.startsWith('j3-ex') ? which : undefined}
             />
         </div>
     );
 };
 
+export const saveState = (id: string, state: State) => {
+    localStorage[id] = JSON.stringify(state.map);
+};
+
+export const loadState = (raw: string): State => {
+    const map = JSON.parse(raw);
+    console.log('LOAD');
+    let max = -1;
+    transformNode(fromMCST(-1, map), {
+        pre(node, path) {
+            max = Math.max(max, node.loc.idx);
+        },
+    });
+    max += 1;
+    return {
+        nidx: () => max++,
+        map,
+        root: -1,
+        at: [],
+    };
+};
+
+export const uiState = (state: State): UIState => {
+    const idx = (state.map[-1] as ListLikeContents).values[0];
+    const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], state.map)!;
+    return {
+        nidx: state.nidx,
+        root: -1,
+        regs: {},
+        clipboard: [],
+        hover: [],
+        at: [{ start: at }],
+        ...getCtx(state.map, -1),
+    };
+};
+
 export const clipboardPrefix = '<!--""" jerd-clipboard ';
 export const clipboardSuffix = ' """-->';
 
-export const Doc = ({ initialText }: { initialText: string }) => {
+export const Doc = ({
+    initialState,
+    saveKey,
+}: {
+    initialState: State;
+    saveKey?: string;
+}) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        const { map, nidx } = parseByCharacter(
-            initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
-            newCtx(),
-            // lol turning this on slows things down a tonnn
-            false,
-            debug,
-        );
-        const idx = (map[-1] as ListLikeContents).values[0];
-        const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
-        return {
-            nidx,
-            root: -1,
-            regs: {},
-            clipboard: [],
-            hover: [],
-            at: [{ start: at }],
-            ...getCtx(map, -1),
-        };
+        return uiState(initialState);
     });
+
+    useEffect(() => {
+        if (saveKey) {
+            saveState(saveKey, state);
+        }
+    }, [state]);
 
     // @ts-ignore
     window.state = state;
@@ -242,24 +315,28 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
 
         if (update?.autoComplete) {
             const root = fromMCST(state.root, state.map) as { values: Node[] };
-            const exprs = root.values.map((node) =>
-                nodeToExpr(node, {
-                    ...state.ctx,
-                    display: {},
-                    mods: {},
-                    errors: {},
-                }),
-            );
+            let exprs = root.values
+                .map((node) =>
+                    node.type === 'blank' || node.type === 'comment'
+                        ? null
+                        : nodeToExpr(node, {
+                              ...state.ctx,
+                              display: {},
+                              mods: {},
+                              errors: {},
+                          }),
+                )
+                .filter(Boolean) as Expr[];
             state = { ...state, map: { ...state.map } };
             applyMods(state.ctx, state.map);
 
             // Now we do like inference, right?
             const mods = infer(exprs, state.ctx);
-            Object.keys(mods).forEach((id) => {
-                state.map[+id] = {
-                    ...state.map[+id],
-                    ...mods[+id].node,
-                };
+            console.log('inferMods', mods);
+            const keys = Object.keys(mods);
+            // if (!keys.length) break;
+            keys.forEach((id) => {
+                applyInferMod(mods[+id], state.map, state.nidx, +id);
             });
         } else {
             console.log('auto no');

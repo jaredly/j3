@@ -63,7 +63,7 @@ export const specials: {
                     );
                     return { pattern, type };
                 } else {
-                    let type = { ...any, form: arg };
+                    let type = any;
                     const pattern = nodeToPattern(arg, type, ctx, locals);
                     return { pattern, type };
                 }
