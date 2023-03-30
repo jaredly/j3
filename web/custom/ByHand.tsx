@@ -273,8 +273,8 @@ export const Doc = ({
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
-            Menu: {JSON.stringify(state.menu)}
-            <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
+            {/* Menu: {JSON.stringify(state.menu)}
+            <DebugClipboard state={state} debug={debug} ctx={state.ctx} /> */}
         </div>
     );
 };
@@ -305,7 +305,7 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             if (exacts?.length === 1) {
                 state = {
                     ...state,
-                    ...applyMenuItem(at[0].start, exacts[0], state),
+                    ...applyMenuItem(at[0].start, exacts[0], state, state.ctx),
                 };
                 console.log('applying I guess', exacts[0]);
             }
@@ -338,8 +338,6 @@ export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
             keys.forEach((id) => {
                 applyInferMod(mods[+id], state.map, state.nidx, +id);
             });
-        } else {
-            console.log('auto no');
         }
     }
     return state;

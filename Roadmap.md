@@ -13,6 +13,11 @@
   don't have to persist the whole undo stack, but
   some snapshots would be nice? you know.
 - [x] highlight specials (defn deftype etc.) with special color
+- [ ] selecting a spread from the left should select the whole thing though
+
+... type inference ... do I really want to reify it?
+or do I just want to re-infer it every time?
+idk let's try incremental inference for now
 
 # Errors / Warnings / Incompletes
 

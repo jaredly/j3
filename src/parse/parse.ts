@@ -100,7 +100,12 @@ export const parseByCharacter = (
                 (s) => s.type === 'replace',
             ) as AutoCompleteReplace[];
             if (matches?.length) {
-                state = applyMenuItem(state.at[0].start, matches[0], state);
+                state = applyMenuItem(
+                    state.at[0].start,
+                    matches[0],
+                    state,
+                    ctx,
+                );
                 nodeToExpr(fromMCST(state.root, state.map), ctx);
                 continue;
             }
@@ -121,7 +126,7 @@ export const parseByCharacter = (
                 (s) => s.type === 'replace' && s.exact,
             ) as AutoCompleteReplace[];
             if (exacts?.length === 1) {
-                state = applyMenuItem(state.at[0].start, exacts[0], state);
+                state = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
             }
         }
 
