@@ -2,11 +2,19 @@ import React from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { rainbow } from '../old/Nodes';
 import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import { calcOffset } from './calcOffset';
 import { RenderProps } from './types';
+
+const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
+export const rainbow: string[] = ['#669'];
+for (let i = 0; i < raw.length; i += 6) {
+    rainbow.push('#' + raw.slice(i, i + 6));
+}
+
+// We'll start at depth=1, so this just rolls it one over
+rainbow.unshift(rainbow.pop()!);
 
 export function getRainbowHashColor(hash: string) {
     const idx = hash.startsWith(':')
