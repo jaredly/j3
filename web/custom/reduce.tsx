@@ -11,7 +11,7 @@ import {
     applyUpdate,
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
-import { fromMCST } from '../../src/types/mcst';
+import { Map, fromMCST } from '../../src/types/mcst';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Expr } from '../../src/types/ast';
@@ -43,20 +43,7 @@ const actionToUpdate = (
             return { type: 'menu', menu: { selection: action.selection } };
         case 'menu-select': {
             const idx = action.path[action.path.length - 1].idx;
-            return {
-                type: 'update',
-                map: {
-                    [idx]: { loc: state.map[idx].loc, ...action.item.node },
-                },
-                selection: action.path.slice(0, -1).concat([
-                    {
-                        idx,
-                        type: 'subtext',
-                        at: splitGraphemes(action.item.text).length,
-                    },
-                ]),
-                autoComplete: true,
-            };
+            return autoCompleteUpdate(idx, state.map, action.path, action.item);
         }
         case 'copy':
             return {
@@ -124,6 +111,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
             if (update.autoComplete && !state.menu?.dismissed) {
                 state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
             }
+            // debugger;
             state = { ...state, ...applyUpdate(state, 0, update) };
             let { ctx, map, exprs } = getCtx(state.map, state.root);
             state.map = map;
@@ -138,7 +126,6 @@ export const reduce = (state: UIState, action: Action): UIState => {
                     if (!modded.length) {
                         break;
                     }
-                    console.log('mods!', mods);
                     modded.forEach((id) => {
                         applyInferMod(mods[+id], state.map, state.nidx, +id);
                         console.log(state.map[+id]);
@@ -162,54 +149,79 @@ export const reduce = (state: UIState, action: Action): UIState => {
     }
 };
 
+export function autoCompleteUpdate(
+    idx: number,
+    map: Map,
+    path: Path[],
+    item: AutoCompleteReplace,
+): StateChange {
+    if (!map[idx]) {
+        console.log(idx, 'not in the map');
+        debugger;
+    }
+    return {
+        type: 'update',
+        map: {
+            [idx]: { loc: map[idx].loc, ...item.node },
+        },
+        selection: path.slice(0, -1).concat([
+            {
+                idx,
+                type: 'subtext',
+                at: splitGraphemes(item.text).length,
+            },
+        ]),
+        autoComplete: true,
+    };
+}
+
 // @deprecated TODO REMOVE THIS, migrate to the reduce up here
 export function applyMenuItem(
     path: Path[],
     item: AutoCompleteReplace,
     state: State,
     ctx: Ctx,
-) {
+): StateChange {
     const idx = path[path.length - 1].idx;
-    state = {
-        ...state,
-        at: [
-            {
-                start: path.slice(0, -1).concat([
-                    {
-                        idx,
-                        type: 'subtext',
-                        at: splitGraphemes(item.text).length,
-                    },
-                ]),
-            },
-        ],
-        map: { ...state.map, [idx]: { loc: state.map[idx].loc, ...item.node } },
-    };
+    return autoCompleteUpdate(idx, state.map, path, item);
+    // state = {
+    //     ...state,
+    //     at: [
+    //         {
+    //             start: path.slice(0, -1).concat([
+    //                 {
+    //                     idx,
+    //                     type: 'subtext',
+    //                     at: splitGraphemes(item.text).length,
+    //                 },
+    //             ]),
+    //         },
+    //     ],
+    //     // map: { ...state.map, [idx]: { loc: state.map[idx].loc, ...item.node } },
+    // };
 
-    const root = fromMCST(state.root, state.map) as { values: Node[] };
-    let exprs = root.values
-        .map((node) =>
-            node.type === 'blank' || node.type === 'comment'
-                ? null
-                : nodeToExpr(node, {
-                      ...ctx,
-                      display: {},
-                      mods: {},
-                      errors: {},
-                  }),
-        )
-        .filter(Boolean) as Expr[];
-    state = { ...state, map: { ...state.map } };
-    applyMods(ctx, state.map);
+    // const root = fromMCST(state.root, state.map) as { values: Node[] };
+    // let exprs = root.values
+    //     .map((node) =>
+    //         node.type === 'blank' || node.type === 'comment'
+    //             ? null
+    //             : nodeToExpr(node, {
+    //                   ...ctx,
+    //                   display: {},
+    //                   mods: {},
+    //                   errors: {},
+    //               }),
+    //     )
+    //     .filter(Boolean) as Expr[];
+    // state = { ...state, map: { ...state.map } };
+    // applyMods(ctx, state.map);
 
-    // Now we do like inference, right?
-    const mods = infer(exprs, ctx, state.map);
-    console.log('inferMods', mods);
-    const keys = Object.keys(mods);
-    // if (!keys.length) break;
-    keys.forEach((id) => {
-        applyInferMod(mods[+id], state.map, state.nidx, +id);
-    });
-
-    return state;
+    // // Now we do like inference, right?
+    // const mods = infer(exprs, ctx, state.map);
+    // console.log('inferMods', mods);
+    // const keys = Object.keys(mods);
+    // // if (!keys.length) break;
+    // keys.forEach((id) => {
+    //     applyInferMod(mods[+id], state.map, state.nidx, +id);
+    // });
 }

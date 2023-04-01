@@ -77,6 +77,9 @@ export const nodeToString_ = (
             return '';
         case 'hash': {
             const style = hashNames[node.loc.idx]?.style;
+            if (node.hash.startsWith(':builtin:')) {
+                return node.hash.slice(':builtin:'.length);
+            }
             return style?.type === 'id'
                 ? style.text ?? '<no hash name>'
                 : `<hash not found ${node.hash}>`;

@@ -12,7 +12,7 @@ import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
-import { applyMenuItem, reduce } from './reduce';
+import { reduce } from './reduce';
 import { applyMods, getCtx } from './getCtx';
 import { applyInferMod, infer, InferMod } from '../../src/infer/infer';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
