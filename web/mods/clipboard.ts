@@ -1,5 +1,9 @@
 import equal from 'fast-deep-equal';
-import { idText, splitGraphemes } from '../../src/parse/parse';
+import {
+    idText,
+    orderStartAndEnd,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
@@ -342,6 +346,7 @@ export const collectClipboard = (
     const items: ClipboardItem[] = [];
     selections.forEach(({ start, end }) => {
         if (end) {
+            [start, end] = orderStartAndEnd(start, end);
             items.push(collectNodes(map, start, end, display));
         }
     });

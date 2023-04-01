@@ -1,13 +1,8 @@
 import { UpdateMap } from '../store';
-import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
+import { ListLikeContents, Map, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
-import {
-    StateChange,
-    maybeClearParentList,
-    getKeyUpdate,
-    StateSelect,
-} from './getKeyUpdate';
+import { StateChange, maybeClearParentList } from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
 import {
     idText,
@@ -16,7 +11,6 @@ import {
 } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 import { collectNodes } from './clipboard';
-import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../../src/to-ast/Ctx';
@@ -114,30 +108,28 @@ export function handleBackspace(
             const target = map[parent.target];
             return replacePathWith(fullPath.slice(0, -2), map, {
                 idx: parent.target,
-                map:
-                    target.type === 'blank' && !node.text
-                        ? {}
-                        : {
-                              [parent.target]:
-                                  target.type === 'identifier'
-                                      ? {
-                                            ...target,
-                                            text: target.text + node.text,
-                                        }
-                                      : {
-                                            type: 'identifier',
-                                            text: node.text,
-                                            loc: target.loc,
-                                        },
-                          },
-                selection: [
-                    {
-                        idx: parent.target,
-                        ...(target.type === 'identifier'
-                            ? { type: 'subtext', at: target.text.length }
-                            : { type: 'end' }),
-                    },
-                ],
+                map: !node.text
+                    ? {}
+                    : {
+                          [parent.target]:
+                              target.type === 'identifier' ||
+                              target.type === 'hash'
+                                  ? {
+                                        type: 'identifier',
+                                        text:
+                                            idText(
+                                                target,
+                                                display[target.loc.idx]?.style,
+                                            ) + node.text,
+                                        loc: target.loc,
+                                    }
+                                  : {
+                                        type: 'identifier',
+                                        text: node.text,
+                                        loc: target.loc,
+                                    },
+                      },
+                selection: selectEnd(parent.target, [], map)!,
             });
         }
 

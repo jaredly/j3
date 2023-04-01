@@ -107,16 +107,6 @@ export const pathSelForNode = (
         case 'ref': {
             const path: Path[] = [{ idx, ...node.path }];
             const cnode = map[node.id];
-            // if (cnode.tannot && loc === 'end') {
-            //     return selectEnd(
-            //         cnode.tannot,
-            //         path.concat({
-            //             idx: node.id,
-            //              type: 'tannot' ,
-            //         }),
-            //         map,
-            //     );
-            // }
             switch (cnode.type) {
                 case 'array':
                 case 'list':

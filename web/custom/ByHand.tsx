@@ -273,6 +273,12 @@ export const Doc = ({
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
+            {debug ? (
+                <div>
+                    MENU: STATE MENU {JSON.stringify(state.menu)} AND THE
+                    {JSON.stringify(menu)}
+                </div>
+            ) : null}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
         </div>
     );

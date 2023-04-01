@@ -8,6 +8,8 @@
     if they're no longer in scope
   - 
 
+- [ ] BUG (backspace on a '.' when the target is a hash, doesn't select correctly, because it doesn't know how "long" the text of the hashed is.)
+
 HOL' UP
 what about `sym` being ditched altogether, in favor
 of `idx`?

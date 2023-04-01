@@ -286,6 +286,20 @@ export const getKeyUpdate = (
         return rrr;
     }
 
+    if (key === 'Tab') {
+        return mods?.shift
+            ? goLeft(fullPath, map)
+            : goRight(fullPath, idx, map);
+        // if (rrr && mods?.shift) {
+        //     return {
+        //         type: 'select',
+        //         selection: selection.start,
+        //         selectionEnd: rrr.selection,
+        //     };
+        // }
+        // return rrr;
+    }
+
     if (node.type === 'stringText') {
         return handleStringText({
             key,
@@ -378,7 +392,10 @@ export const getKeyUpdate = (
             return addToListLike(map, flast.idx, fullPath, nat);
         }
 
-        if (node.type === 'identifier' && !textRaw.match(/^-?[0-9]+$/)) {
+        if (
+            (node.type === 'identifier' && !textRaw.match(/^-?[0-9]+$/)) ||
+            node.type === 'hash'
+        ) {
             const nat = newRecordAccess(
                 idx,
                 text.slice(pos).join(''),
@@ -388,7 +405,11 @@ export const getKeyUpdate = (
             if (pos === 0) {
                 nat.map[idx] = { type: 'blank', loc: map[idx].loc };
             } else if (pos < text.length) {
-                nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
+                nat.map[idx] = {
+                    type: 'identifier',
+                    text: text.slice(0, pos).join(''),
+                    loc: node.loc,
+                };
             }
             return replacePathWith(fullPath.slice(0, -1), map, nat);
         }
