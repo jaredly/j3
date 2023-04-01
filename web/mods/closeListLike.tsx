@@ -24,7 +24,7 @@ export const closeListLike = (
                 throw new Error(`what is happening`);
             }
             if (parent.at - 1 >= node.templates.length) {
-                console.log(nodeToString(fromMCST(-1, map)));
+                console.log(nodeToString(fromMCST(-1, map), {}));
                 throw new Error(`${parent.at} - ${JSON.stringify(node)}`);
             }
             const suffix = node.templates[parent.at - 1].suffix;

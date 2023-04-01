@@ -41,7 +41,7 @@ const string = (first: string, ...templates: [Node, string][]): Node => ({
 
 describe('nodeToString', () => {
     it('should work', () => {
-        expect(nodeToString(array(id('hi')))).toEqual('[hi]');
+        expect(nodeToString(array(id('hi')), {})).toEqual('[hi]');
     });
 
     it('should do complex', () => {
@@ -52,14 +52,15 @@ describe('nodeToString', () => {
                     array(id('1'), id('2')),
                     record(spread(id('pos')), id('x'), id('10')),
                 ),
+                {},
             ),
         ).toEqual('(hello [1 2] {...pos x 10})');
     });
 
     it('should do string', () => {
-        expect(nodeToString(string('Hello ', [id('cruel'), ' world']))).toEqual(
-            `"Hello \${cruel} world"`,
-        );
+        expect(
+            nodeToString(string('Hello ', [id('cruel'), ' world']), {}),
+        ).toEqual(`"Hello \${cruel} world"`);
     });
 
     it('should sourcemap', () => {

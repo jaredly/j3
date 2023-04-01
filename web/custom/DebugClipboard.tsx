@@ -47,7 +47,9 @@ export function DebugClipboard({
                             }}
                         >
                             {copy.map((item, i) => (
-                                <div key={i}>{clipboardText([item])}</div>
+                                <div key={i}>
+                                    {clipboardText([item], state.ctx.display)}
+                                </div>
                             ))}
                         </div>
                     ) : null,

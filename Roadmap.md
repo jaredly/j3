@@ -1,6 +1,21 @@
 
 - [ ] do I change node, to not have .hash on ID?
 
+- [ ] REFACTOR I'm using `Ctx[display]` a bunch of places
+  that should really just be a `{[idx: number]: string}`.
+  I want to change `Ctx` to have that nameLookup on it.
+  - alsooo when pasting, we need to de-hashify locals
+    if they're no longer in scope
+  - 
+
+HOL' UP
+what about `sym` being ditched altogether, in favor
+of `idx`?
+
+
+- [ ] COPY/PASTE needs to re-sym locals too.
+  - ClipboardItem needs that nameLookup, turns out
+
 # Weird editing
 
 - [x] can't baclspace an empty hashhh?

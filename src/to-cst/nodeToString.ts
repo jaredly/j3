@@ -1,4 +1,5 @@
 import { Path } from '../../web/mods/path';
+import { Ctx } from '../to-ast/Ctx';
 import { Node } from '../types/cst';
 
 export type SourceMap = {
@@ -8,12 +9,13 @@ export type SourceMap = {
 
 export const nodeToString = (
     node: Node,
+    hashNames: Ctx['display'],
     sm: SourceMap = { map: {}, cur: 0 },
     addBefore = 0,
 ): string => {
     sm.cur += addBefore;
     const start = sm.cur;
-    let body = nodeToString_(node, sm);
+    let body = nodeToString_(node, hashNames, sm);
     sm.cur = start + body.length;
     sm.map[node.loc.idx] = { start, end: sm.cur };
     return body;
@@ -53,27 +55,32 @@ export const showSourceMap = (text: string, sm: SourceMap) => {
 
 export const nodeToString_ = (
     node: Node,
+    hashNames: Ctx['display'],
     sm: SourceMap = { map: {}, cur: 0 },
 ): string => {
     switch (node.type) {
         case 'array':
             return `[${node.values
-                .map((v) => nodeToString(v, sm, 1))
+                .map((v) => nodeToString(v, hashNames, sm, 1))
                 .join(' ')}]`;
         case 'list':
             return `(${node.values
-                .map((v) => nodeToString(v, sm, 1))
+                .map((v) => nodeToString(v, hashNames, sm, 1))
                 .join(' ')})`;
         case 'record':
             return `{${node.values
-                .map((v) => nodeToString(v, sm, 1))
+                .map((v) => nodeToString(v, hashNames, sm, 1))
                 .join(' ')}}`;
         case 'identifier':
-            return `${node.text}${node.hash ? '#' + node.hash : ''}`;
+            return node.text;
         case 'blank':
             return '';
-        case 'hash':
-            return `#${node.hash}`;
+        case 'hash': {
+            const style = hashNames[node.loc.idx]?.style;
+            return style?.type === 'id'
+                ? style.text ?? '<no hash name>'
+                : `<hash not found ${node.hash}>`;
+        }
         case 'comment':
             return `$comment$`;
         case 'rich-text':
@@ -81,29 +88,36 @@ export const nodeToString_ = (
         case 'attachment':
             return `?attachment?`;
         case 'annot':
-            return `${nodeToString(node.target, sm)}:${nodeToString(
+            return `${nodeToString(node.target, hashNames, sm)}:${nodeToString(
                 node.annot,
+                hashNames,
                 sm,
                 1,
             )}`;
         case 'recordAccess':
-            return `${nodeToString(node.target, sm)}${node.items
-                .map((item) => '.' + nodeToString(item, sm, 1))
+            return `${nodeToString(node.target, hashNames, sm)}${node.items
+                .map((item) => '.' + nodeToString(item, hashNames, sm, 1))
                 .join('')}`;
         case 'spread':
-            return `..${nodeToString(node.contents, sm, 2)}`;
+            return `..${nodeToString(node.contents, hashNames, sm, 2)}`;
         case 'accessText':
         case 'stringText':
             return node.text;
         case 'string':
-            return `"${nodeToString(node.first, sm, 1)}${node.templates
+            return `"${nodeToString(
+                node.first,
+                hashNames,
+                sm,
+                1,
+            )}${node.templates
                 .map(
                     (item) =>
-                        `\${${nodeToString(item.expr, sm, 2)}}${nodeToString(
-                            item.suffix,
+                        `\${${nodeToString(
+                            item.expr,
+                            hashNames,
                             sm,
-                            1,
-                        )}`,
+                            2,
+                        )}}${nodeToString(item.suffix, hashNames, sm, 1)}`,
                 )
                 .join('')}"`;
         case 'unparsed':

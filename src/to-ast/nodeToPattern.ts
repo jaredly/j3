@@ -15,14 +15,6 @@ export const nodeToPattern = (
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
-        // case 'tag': {
-        //     return {
-        //         type: 'tag',
-        //         name: form.text,
-        //         args: [],
-        //         form,
-        //     };
-        // }
         case 'identifier': {
             let sym;
             if (!form.hash) {
@@ -51,13 +43,6 @@ export const nodeToPattern = (
                 sym,
             };
         }
-        // case 'number':
-        //     return {
-        //         type: 'number',
-        //         value: Number(form.raw),
-        //         kind: form.raw.includes('.') ? 'float' : 'int',
-        //         form,
-        //     };
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; form: Node; value: Pattern }[] = [];

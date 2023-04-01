@@ -17,7 +17,9 @@ export function verifyToplevels(
             const result = ectx.results[top.loc.idx];
             if (result.status === 'errors') {
                 console.error(store.map);
-                console.log(nodeToString(fromMCST(store.root, store.map)));
+                console.log(
+                    nodeToString(fromMCST(store.root, store.map), ectx.ctx),
+                );
                 expect(result.errors).toEqual({});
             }
             expect(result.status).toEqual('success');

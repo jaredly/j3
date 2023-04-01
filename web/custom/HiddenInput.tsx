@@ -69,7 +69,7 @@ export function HiddenInput({
 
                 dispatch({ type: 'copy', items });
 
-                const text = clipboardText(items);
+                const text = clipboardText(items, ctx.display);
                 navigator.clipboard.write([
                     new ClipboardItem({
                         ['text/plain']: new Blob([text], {

@@ -278,7 +278,11 @@ describe('a test', () => {
                 });
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
-                const backOrig = nodeToString(fromMCST(idx, data), sourceMap);
+                const backOrig = nodeToString(
+                    fromMCST(idx, data),
+                    ctx.display,
+                    sourceMap,
+                );
                 let back = backOrig;
                 if (expected.includes('|')) {
                     const pos = remapPos(selection, sourceMap);

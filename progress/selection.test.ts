@@ -103,7 +103,11 @@ describe('a test', () => {
 
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
-                const back = nodeToString(fromMCST(idx, data), sourceMap);
+                const back = nodeToString(
+                    fromMCST(idx, data),
+                    ctx.display,
+                    sourceMap,
+                );
                 expect(back).toEqual(input);
 
                 const first = selections.indexOf('^');
@@ -130,7 +134,7 @@ describe('a test', () => {
                     secondPath,
                     ctx.display,
                 );
-                const printed = clipboardText([collected]);
+                const printed = clipboardText([collected], ctx.display);
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);

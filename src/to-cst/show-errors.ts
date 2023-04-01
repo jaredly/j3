@@ -13,20 +13,24 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
             return `Enum mismatch at ${error.path.join('.')} - ('${
                 error.tag
             } ${error.one
-                .map((x) => nodeToString(nodeForType(x, ctx)))
+                .map((x) => nodeToString(nodeForType(x, ctx), ctx.display))
                 .join(', ')}) vs ('${error.tag} ${error.two
-                .map((x) => nodeToString(nodeForType(x, ctx)))
+                .map((x) => nodeToString(nodeForType(x, ctx), ctx.display))
                 .join(', ')}')`;
         case 'unresolved':
             return `identifier not linked`;
         case 'unparsed':
-            return `Unparsed: ${nodeToString(error.form)}`;
+            return `Unparsed: ${nodeToString(error.form, ctx.display)}`;
         case 'misc':
             return error.message;
         case 'invalid type':
             return `Invalid type.\nExpected: ${nodeToString(
                 nodeForType(error.expected, ctx),
-            )}\nFound: ${nodeToString(nodeForType(error.found, ctx))}`;
+                ctx.display,
+            )}\nFound: ${nodeToString(
+                nodeForType(error.found, ctx),
+                ctx.display,
+            )}`;
     }
     return `Some error happened ${error.type} : ${JSON.stringify(error)}`;
 };

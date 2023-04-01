@@ -319,12 +319,17 @@ export const paste = (
     return;
 };
 
-export const clipboardText = (items: ClipboardItem[]) => {
+export const clipboardText = (
+    items: ClipboardItem[],
+    display: Ctx['display'],
+) => {
     return items
         .map((item) =>
             item.type === 'text'
                 ? item.text
-                : item.nodes.map((node) => nodeToString(node)).join(' '),
+                : item.nodes
+                      .map((node) => nodeToString(node, display))
+                      .join(' '),
         )
         .join('\n');
 };
