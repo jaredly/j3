@@ -1,7 +1,7 @@
 import { calcOffset } from './calcOffset';
 import { UIState } from './ByHand';
 import { calcCursorPos } from './Cursors';
-import { Mods } from '../mods/getKeyUpdate';
+import { Mods, StateSelect } from '../mods/getKeyUpdate';
 import { cmpFullPath } from './isCoveredBySelection';
 import { Path } from '../mods/path';
 
@@ -9,11 +9,11 @@ export const verticalMove = (
     state: UIState,
     up: boolean,
     mods: Mods,
-): UIState => {
+): StateSelect | void => {
     const sel = state.at[0];
     const current = calcCursorPos(sel.end ?? sel.start, state.regs);
     if (!current) {
-        return state;
+        return;
     }
     const best = closestSelection(
         state.regs,
@@ -27,16 +27,13 @@ export const verticalMove = (
         !up ? current.top + current.height + 5 : undefined,
         !up ? undefined : current.top - 5,
     );
-    return best
-        ? {
-              ...state,
-              at: [
-                  mods.shift
-                      ? { start: sel.start, end: best }
-                      : { start: best },
-              ],
-          }
-        : state;
+    if (best) {
+        if (mods.shift) {
+            return { type: 'select', selection: sel.start, selectionEnd: best };
+        } else {
+            return { type: 'select', selection: best };
+        }
+    }
 };
 
 export const closestSelection = (

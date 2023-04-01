@@ -1,8 +1,174 @@
 
+# Weird editing
+
+- [x] can't baclspace an empty hashhh?
+- [ ] still can't delete an annot
+- [ ] backspace shouldn't nix whole listlikes. it should go in.
+- [ ] changing a toplevel def should update usages of that def
+- [ ] can't . on a hash
+- [ ] '(' at start of hash at start of attr should wrap
+- [ ] backspace at '(' should unwrap
+- [ ] select and '(' should wrap!
+- [ ] let's get a little undo/redo in the house
+- [ ] endddd how about undo/redo snapshots? like they
+  don't have to persist the whole undo stack, but
+  some snapshots would be nice? you know.
+- [x] highlight specials (defn deftype etc.) with special color
+- [ ] selecting a spread from the left should select the whole thing though
+
+... type inference ... do I really want to reify it?
+or do I just want to re-infer it every time?
+idk let's try incremental inference for now
+
+# When to update Ctx, and how, and such.
+
+So, I think we can actually run the ctx from scratch on
+every edit.
+Right?
+Like there's nothing ~useful that persists between moments.
+We'll have to take care about updating hashes, obvs.
+
+
+-> action => update
+
+-> autocompleteBefore
+-> apply update
+-> nodeToExpr (populates mods)
+-> apply mods
+-> run inference
+  -> apply inference updates
+  -> nodeToExpr (verify that no more mods)
+  -> loop to inference again
+
+
+
+
+sooo I think I want a better approach to multi-select updates
+
+
+
+
+
+
+
+
+
+
+
+
+
+-> action (INCLUDES doing a menu autocomplete, potentially)
+(map, selection) -> (map, selection)
+-> populate ctx, and optionally reconcile
+b/c, if we're in an auto-completing mood, we need to
+ctx it up to populate the autocomplete menu.
+
+IF (action) is an "autocomplete*first*", when we
+use the previous autocomplete info, and apply what,
+before we run the action.
+Can we try that?
+
+--> fromMCST
+--> nodeToExpr (populates mods and autocomplete)
+--> mods it up
+      - mods changes don't produce a different Expr
+        so we don't need to re-nodeToExpr
+
+--> autoComplete
+
+```
+
+```
+
+oh yeah, when does inference happen.
+
+
+
+
+
+
+
+
+
+
+
+# Errors / Warnings / Incompletes
+
+I kindof want to change the render of type errors
+depending on the location of your cursor. You know?
+like, if your cursor is ... within ... a certain range,
+you're probably going to be getting to it in a moment.
+And so, we can render those errors as like warning things
+little gray underlines.
+But otherwise, we want them to be somewhat loud.
+
+# Drag & Drop
+
+could be so cool as a refactoring dealio.
+
+multiselect some things, drag them around, and it's
+"extract to a function at the top level". Very cool.
+
+# Type-directed function resolution
+
+- [ ] So um, there should be an easy way to remove the hash
+  other than, I guess, just deleting a char or adding one
+- [ ] Alsoo autocomplete should prioritize instances that match
+  argument types if they already exist.
+- [x] I hsould definitely have simple type-on-hover dealio
+
+# Arg type inference
+
+- [ ] run `infer` after selecting something from autocomplete
+
+Ok frogs, what's the plan here.
+- [one] needs-string -> [one:string]
+- [one:string] needs-int needs-string -> [one:string]
+- [one:string] needs-int -> [one:int]
+- [one:string] needs-"hi" -> [one:string] but like a squigly underline
+  indicating that the argument is over-general?
+
+ok so what's the mechanism.
+after ... each change ... do an ~inference pass?
+to see what we can see.
+
+oh yeah, so
+I need to like figure out constraints.
+what's why I'm slow on it.
+
+
+
+## What kinds of things
+
+- [ ] usage of a variable updates the type annotation for that vbl
+- [ ] usage of an arg
+
+
+
+# ByHand, the final steps?
+
+- [x] I need to persist .. the ... hashes
+  - oh is that just applying the mods?
+- [x] replace should move cursor to end
+- [x] auto-select a menu item thanks
+
+# the Hash node
+- [x] process ctx mods
+
+it's a node that doesn't own its own text
+selections could get wonky if the text changes out from under them.
+
+I'll need to update all the `text in` dealios, right?
+
+- [x] make a node
+- [x] render it fake
+- [x] change idText to get the real text from it thanks
+- [x] change left/right to use the real text
+
 # Ok folks, so the basic editor, is looking pretty neat
 
 - [x] ah first, get rid of non-nested get-nodes
-- [ ] autocomplete pls
+- [x] autocomplete pls
   - question. is autocomplete always... calculable
     from the state / loc / ctx
   - answer, I certainly hope so.
@@ -11,10 +177,10 @@
     BUT state keeps track of the selection index.
     and maybe other things? if the menu gets fancy
     oh and it can indicate whether it's been dismissed, right?
-- [ ] then the 'hash' dealiwhap
+- [x] then the 'hash' dealiwhap
 
 
-- [ ] oof, ok so removal is very broken
+- [x] oof, ok so removal is very broken
   that is to say
   because we're preserving collections ...
   they're getting weird

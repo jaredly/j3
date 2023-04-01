@@ -48,6 +48,7 @@ export type RichText = {
 export type NodeContents =
     // identifier-like
     | Identifier
+    | { type: 'hash'; hash: string }
 
     // list-like
     | NodeList
@@ -78,7 +79,8 @@ export type accessText = {
 
 export type recordAccess = {
     type: 'recordAccess';
-    target: (Identifier | { type: 'blank' }) & NodeExtra;
+    target: (Identifier | { type: 'blank' } | { type: 'hash'; hash: string }) &
+        NodeExtra;
     items: (accessText & NodeExtra)[];
 };
 

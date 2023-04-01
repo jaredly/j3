@@ -155,6 +155,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
 
             return resolveExpr(form.text, form.hash, ctx, form);
         }
+        case 'hash':
+            return resolveExpr('', form.hash, ctx, form);
         case 'unparsed':
             if (form.raw.startsWith('\\')) {
                 let options: AutoCompleteResult[] = [

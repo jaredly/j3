@@ -1,22 +1,30 @@
-import React from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
-import { UIState } from './ByHand';
+import { Path } from '../mods/path';
+import { Action, UIState } from './ByHand';
 
 export const Menu = ({
     state,
-    ctx,
     menu,
+    dispatch,
 }: {
     state: UIState;
-    ctx: Ctx;
-    menu: { idx: number; items: AutoCompleteResult[] };
+    menu: { path: Path[]; items: AutoCompleteResult[] };
+    dispatch: React.Dispatch<Action>;
 }) => {
-    const node = state.regs[menu.idx]?.main?.node;
-    if (!node) return null;
+    const [node, setNode] = useState(null as null | any);
 
-    const box = node.getBoundingClientRect();
+    useLayoutEffect(() => {
+        const idx = menu.path[menu.path.length - 1].idx;
+        const node = state.regs[idx]?.main?.node;
+        setNode(node);
+    }, [menu]);
+    const [hover, setHover] = useState(null as null | number);
+
+    if (!node) return null;
+    const box = node?.getBoundingClientRect();
 
     const selectionIndex = state.menu?.selection ?? 0;
 
@@ -35,31 +43,46 @@ export const Menu = ({
                 display: 'grid',
                 gridTemplateColumns: 'max-content max-content',
             }}
+            onMouseLeave={(evt) => setHover(null)}
         >
             {menu.items?.map((item, i) => {
-                const selected = i === selectionIndex;
+                const selected =
+                    i === selectionIndex && item.type === 'replace';
+                const onClick = (evt: React.MouseEvent) => {
+                    if (item.type === 'replace') {
+                        dispatch({
+                            type: 'menu-select',
+                            path: menu.path,
+                            item,
+                        });
+                    }
+                };
+                const style = {
+                    padding: 4,
+                    cursor: item.type === 'replace' ? 'pointer' : 'text',
+                    backgroundColor:
+                        i === hover && item.type === 'replace'
+                            ? '#444'
+                            : selected
+                            ? '#222'
+                            : '',
+                };
                 return (
                     <React.Fragment key={i}>
                         <div
-                            style={{
-                                padding: 4,
-                                gridColumn: 1,
-                                cursor: 'pointer',
-                                backgroundColor: selected ? '#222' : '',
-                            }}
+                            style={{ gridColumn: 1, ...style }}
+                            onClick={onClick}
+                            onMouseEnter={(evt) => setHover(i)}
                         >
                             {item.text}
                         </div>
                         <div
-                            style={{
-                                padding: 4,
-                                gridColumn: 2,
-                                cursor: 'pointer',
-                                backgroundColor: selected ? '#222' : '',
-                            }}
+                            style={{ gridColumn: 2, ...style }}
+                            onClick={onClick}
+                            onMouseEnter={(evt) => setHover(i)}
                         >
-                            {item.type === 'replace'
-                                ? nodeToString(nodeForType(item.ann, ctx))
+                            {item.type === 'replace' && item.ann
+                                ? nodeToString(nodeForType(item.ann, state.ctx))
                                 : null}
                         </div>
                     </React.Fragment>

@@ -18,7 +18,7 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 .map((x) => nodeToString(nodeForType(x, ctx)))
                 .join(', ')}')`;
         case 'unresolved':
-            return `Unresolved identifier: ${nodeToString(error.form)}`;
+            return `identifier not linked`;
         case 'unparsed':
             return `Unparsed: ${nodeToString(error.form)}`;
         case 'misc':

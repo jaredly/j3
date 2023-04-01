@@ -1,12 +1,12 @@
 import { Ctx } from '../src/to-ast/Ctx';
-import { Layout, Map, MNodeContents } from '../src/types/mcst';
+import { Layout, Map, MNode, MNodeContents } from '../src/types/mcst';
 
 const maxWidth = 100;
 // const maxWidth = 100;
 // const maxWidth = 20;
 
 export const calculateLayout = (
-    node: MNodeContents,
+    node: MNode,
     pos: number,
     display: Ctx['display'],
     map: Map,
@@ -16,6 +16,15 @@ export const calculateLayout = (
         case 'identifier':
         case 'comment':
             return { type: 'flat', width: node.text.length, pos };
+        case 'hash': {
+            const style = display[node.loc.idx].style;
+
+            return {
+                type: 'flat',
+                width: style?.type === 'id' ? style.text?.length ?? 0 : 0,
+                pos,
+            };
+        }
         case 'unparsed':
             return { type: 'flat', width: node.raw.length, pos };
         case 'record': {

@@ -10,17 +10,20 @@ import { RenderProps } from './types';
 
 export function getRainbowHashColor(hash: string) {
     const idx = hash.startsWith(':')
-        ? +hash.slice(1) * (rainbow.length / 5 - 1)
+        ? Math.floor(+hash.slice(1) * (rainbow.length / 5 - 1))
         : parseInt(hash, 16);
+    // console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
     const color = rainbow[idx % rainbow.length];
     return color;
 }
 
-const nodeColor = (type: MNode['type']) => {
-    return colors[type];
+const nodeColor = (type: MNode['type'], text?: string | null) => {
+    return specials.includes(text!) ? '#814d4d' : colors[type];
 };
 
 const columnRecords = true;
+
+const specials = ['defn', 'def', 'deftype', 'fn', 'match'];
 
 export const colors: {
     [key: string]: string;
@@ -38,9 +41,14 @@ export const textStyle = (
     node: MNode,
     display?: Ctx['display'][0],
 ): React.CSSProperties | undefined => {
-    const color = nodeColor(node.type);
+    const color = nodeColor(
+        node.type,
+        node.type === 'identifier' ? node.text : null,
+    );
     if (display?.style) {
         switch (display.style.type) {
+            case 'unresolved':
+                return { color: 'red' };
             case 'record-attr':
                 return {
                     fontStyle: 'italic',
@@ -73,21 +81,37 @@ export const textStyle = (
 
 export const Render = (props: RenderProps) => {
     const { idx, map, display, path } = props;
-    const nnode = getNestedNodes(map[idx], display[idx]?.layout);
+    const nnode = getNestedNodes(
+        map[idx],
+        display[idx]?.style,
+        display[idx]?.layout,
+    );
 
     if (path.length > 1000) {
         return <span>DEEP</span>;
     }
 
+    const node = map[idx];
     return props.debug ? (
         <span style={{ display: 'flex' }}>
             <span
-                style={{ opacity: 0.5, fontSize: '50%' }}
+                style={{ opacity: 0.5, fontSize: '50%', lineHeight: '20px' }}
                 data-display={JSON.stringify(props.display[idx])}
             >
                 {idx}
             </span>
             <RenderNNode {...props} nnode={nnode} />
+            {node.type === 'hash' || node.type === 'identifier' ? (
+                <span
+                    style={{
+                        opacity: 0.5,
+                        fontSize: '50%',
+                        lineHeight: '20px',
+                    }}
+                >
+                    {node.hash}
+                </span>
+            ) : null}
         </span>
     ) : (
         <RenderNNode {...props} nnode={nnode} />
@@ -108,9 +132,19 @@ export const RenderNNode = (
 
     const coverageLevel = isCoveredBySelection(props.selection, path, map);
 
+    const errors = props.errors[node.loc.idx];
+
+    const errorStyle = errors?.length
+        ? {
+              textDecoration: 'underline wavy',
+              textDecorationColor: 'rgba(255,0,0,0.4)',
+          }
+        : {};
+
     const selectStyle =
         coverageLevel?.type === 'full' ||
-        ('text' in node && coverageLevel?.type === 'partial')
+        (('text' in node || node.type === 'hash') &&
+            coverageLevel?.type === 'partial')
             ? {
                   borderRadius: 6,
                   backgroundColor: '#225',
@@ -129,7 +163,9 @@ export const RenderNNode = (
                         alignItems: 'flex-start',
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
                         ...selectStyle,
+                        ...errorStyle,
                     }}
+                    onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
                     {nnode.children.map((nnode, i) => (
                         <RenderNNode
@@ -161,6 +197,7 @@ export const RenderNNode = (
                         whiteSpace: 'pre',
                         color: nnode.color,
                         ...selectStyle,
+                        ...errorStyle,
                     }}
                 >
                     {nnode.text}
@@ -178,7 +215,14 @@ export const RenderNNode = (
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
                         fontVariationSettings: isSelected ? '"wght" 900' : '',
                         ...selectStyle,
+                        ...errorStyle,
                     }}
+                    onMouseEnter={() =>
+                        dispatch({
+                            type: 'hover',
+                            path: path.concat({ idx, type: 'start' }),
+                        })
+                    }
                 >
                     {nnode.text}
                 </span>
@@ -219,7 +263,14 @@ export const RenderNNode = (
                     style={{
                         ...textStyle(node, display[idx]),
                         ...selectStyle,
+                        ...errorStyle,
                     }}
+                    onMouseEnter={() =>
+                        dispatch({
+                            type: 'hover',
+                            path: path.concat({ idx, at: 0, type: 'subtext' }),
+                        })
+                    }
                     onDoubleClick={() => {
                         // console.log('dbl');
                         dispatch({
@@ -263,6 +314,7 @@ export const RenderNNode = (
                 <Render
                     map={map}
                     display={display}
+                    errors={props.errors}
                     dispatch={dispatch}
                     reg={reg}
                     idx={nnode.id}
@@ -281,6 +333,7 @@ export const RenderNNode = (
                             flexDirection: 'column',
                             gap: '0 8px',
                         }}
+                        onMouseEnter={() => dispatch({ type: 'hover', path })}
                     >
                         {nnode.children.map((pair, i) =>
                             pair.length === 1 ? (
@@ -309,7 +362,10 @@ export const RenderNNode = (
                 );
             }
             return (
-                <span style={{ display: 'grid', gap: '0 8px' }}>
+                <span
+                    style={{ display: 'grid', gap: '0 8px' }}
+                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                >
                     {nnode.children.flatMap((pair, i) =>
                         pair.length === 1
                             ? [
@@ -336,7 +392,10 @@ export const RenderNNode = (
             );
         case 'indent':
             return (
-                <span style={{ display: 'inline-block', paddingLeft: 10 }}>
+                <span
+                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    style={{ display: 'inline-block', paddingLeft: 10 }}
+                >
                     <RenderNNode {...props} nnode={nnode.child} />
                 </span>
             );

@@ -53,26 +53,20 @@ export const specials: {
             let args: { pattern: Pattern; type: Type }[] = filterComments(
                 contents[0].values,
             ).map((arg) => {
-                let type;
-                // if (arg.tannot == null) {
-                //     addMod(ctx, arg.loc.idx, {
-                //         type: 'tannot',
-                //         node: {
-                //             ...any.form,
-                //             loc: {
-                //                 ...arg.loc,
-                //                 idx: nidx(),
-                //             },
-                //         },
-                //     });
-                //     type = { ...any, form: arg };
-                // } else if (arg.tannot.type !== 'blank') {
-                //     type = nodeToType(arg.tannot, ctx);
-                // } else {
-                type = { ...any, form: arg };
-                // }
-                const pattern = nodeToPattern(arg, type, ctx, locals);
-                return { pattern, type };
+                if (arg.type === 'annot') {
+                    let type = nodeToType(arg.annot, ctx);
+                    const pattern = nodeToPattern(
+                        arg.target,
+                        type,
+                        ctx,
+                        locals,
+                    );
+                    return { pattern, type };
+                } else {
+                    let type = any;
+                    const pattern = nodeToPattern(arg, type, ctx, locals);
+                    return { pattern, type };
+                }
             });
 
             // let pairs: { pat: Node; type?: Node }[] = [];

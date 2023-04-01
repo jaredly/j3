@@ -1,4 +1,5 @@
 import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
+import { Ctx, NodeStyle } from '../../src/to-ast/Ctx';
 import { Type } from '../../src/types/ast';
 import { Map, MNode } from '../../src/types/mcst';
 import { UpdateMap } from '../store';
@@ -30,15 +31,25 @@ export type StateUpdate = {
     map: UpdateMap;
     selection: Path[];
     selectionEnd?: Path[];
+    autoComplete?: boolean;
 };
 
 export type StateSelect = {
     type: 'select';
     selection: Path[];
     selectionEnd?: Path[];
+    autoComplete?: boolean;
 };
 
-export type StateChange = StateUpdate | StateSelect | void;
+export type StateChange =
+    | StateUpdate
+    | StateSelect
+    | void
+    | {
+          type: 'menu';
+          menu: State['menu'];
+          autoComplete?: boolean;
+      };
 
 /*
 So, keys:
@@ -124,7 +135,7 @@ export const applyUpdate = (
             end: update.selectionEnd,
         };
         return { ...state, at };
-    } else {
+    } else if (update.type === 'update') {
         at[i] = {
             start: update.selection,
             end: update.selectionEnd,
@@ -134,8 +145,11 @@ export const applyUpdate = (
             at,
             map: applyUpdateMap(state.map, update.map),
         };
+    } else if (update.type === 'menu') {
+        return { ...state, menu: update.menu };
     }
-    return state;
+    let _: never = update;
+    throw new Error(`unexpected update`);
 };
 
 // export const applyUpdate = (state: State, update: KeyUpdate): State | void => {
@@ -172,6 +186,7 @@ export const getKeyUpdate = (
     key: string,
     map: Map,
     selection: { start: Path[]; end?: Path[] },
+    display: Ctx['display'],
     nidx: () => number,
     mods?: Mods,
 ): StateChange => {
@@ -197,35 +212,38 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, selection);
+        return handleBackspace(map, selection, display);
     }
 
-    const textRaw = idText(node) ?? '';
+    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
-        if ('text' in node && !isPathAtStart(node.text, flast)) {
-            const pos = pathPos(fullPath, node.text);
-            const next = fullPath.slice(0, -1).concat([
-                {
-                    idx,
-                    type: 'subtext',
-                    at: pos - 1,
-                },
-            ]);
-            if (mods?.shift) {
+        if ('text' in node || node.type === 'hash') {
+            const text = idText(node, display[node.loc.idx]?.style) ?? '';
+            if (!isPathAtStart(text, flast)) {
+                const pos = pathPos(fullPath, text);
+                const next = fullPath.slice(0, -1).concat([
+                    {
+                        idx,
+                        type: 'subtext',
+                        at: pos - 1,
+                    },
+                ]);
+                if (mods?.shift) {
+                    return {
+                        type: 'select',
+                        selection: selection.start,
+                        selectionEnd: next,
+                    };
+                }
                 return {
                     type: 'select',
-                    selection: selection.start,
-                    selectionEnd: next,
+                    selection: next,
                 };
             }
-            return {
-                type: 'select',
-                selection: next,
-            };
         }
         const lll = goLeft(fullPath, map);
         if (lll && mods?.shift) {
@@ -325,7 +343,9 @@ export const getKeyUpdate = (
 
     if (')]}'.includes(key)) {
         const selection = closeListLike(key, fullPath, map);
-        return selection ? { type: 'select', selection } : undefined;
+        return selection
+            ? { type: 'select', selection, autoComplete: true }
+            : undefined;
     }
 
     if (key === ':') {
@@ -421,13 +441,14 @@ export const getKeyUpdate = (
         }
     }
 
-    return insertText(key, map, fullPath, nidx);
+    return insertText(key, map, fullPath, display, nidx);
 };
 
 export const insertText = (
     inputRaw: string,
     map: Map,
     fullPath: Path[],
+    display: Ctx['display'],
     nidx: () => number,
 ) => {
     const flast = fullPath[fullPath.length - 1];
@@ -435,15 +456,23 @@ export const insertText = (
     const idx = flast.idx;
     // Ok, so now we're updating things
     const input = splitGraphemes(inputRaw);
-    const textRaw = idText(node) ?? '';
+    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
     const pos = pathPos(fullPath, textRaw);
 
     if (
         node.type === 'identifier' ||
         node.type === 'accessText' ||
-        node.type === 'stringText'
+        node.type === 'stringText' ||
+        node.type === 'hash'
     ) {
-        return updateText(node, pos, input, idx, fullPath.slice(0, -1));
+        return updateText(
+            node,
+            pos,
+            input,
+            idx,
+            fullPath.slice(0, -1),
+            display[idx]?.style,
+        );
     }
 
     if (flast.type === 'inside') {
@@ -487,13 +516,15 @@ function addToListLike(
 }
 
 function updateText(
-    node: Extract<MNode, { text: string }>,
+    node: Extract<MNode, { text: string }> | Extract<MNode, { type: 'hash' }>,
     pos: number,
     input: string[],
     idx: number,
     path: Path[],
+    style: NodeStyle | undefined,
 ): StateUpdate {
-    let text = splitGraphemes(node.text);
+    const raw = idText(node, style) ?? 'no-id-text';
+    let text = splitGraphemes(raw);
     if (pos === 0) {
         text.unshift(...input);
     } else if (pos === text.length) {
@@ -503,7 +534,16 @@ function updateText(
     }
     return {
         type: 'update',
-        map: { [idx]: { ...node, text: text.join('') } },
+        map: {
+            [idx]:
+                node.type !== 'hash'
+                    ? { ...node, text: text.join('') }
+                    : {
+                          type: 'identifier',
+                          loc: node.loc,
+                          text: text.join(''),
+                      },
+        },
         selection: path.concat([
             {
                 idx,

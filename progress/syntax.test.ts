@@ -2,6 +2,7 @@
 
 import { validateExpr } from '../src/get-type/validate';
 import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
+import { newCtx } from '../src/to-ast/Ctx';
 import {
     nodeToString,
     remapPos,
@@ -265,7 +266,12 @@ describe('a test', () => {
                 chunks.length === 2 ? chunks : chunks.slice(1);
 
             (only ? it.only : it)(i + ' ' + jerd, () => {
-                const { map: data, at, nidx } = parseByCharacter(jerd, only);
+                const ctx = newCtx();
+                const {
+                    map: data,
+                    at,
+                    nidx,
+                } = parseByCharacter(jerd, ctx, false, only);
                 const selection = at[0].start;
                 Object.keys(data).forEach((key) => {
                     expect(data[+key].loc.idx).toEqual(+key);
@@ -373,7 +379,9 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
+        const ctx = newCtx();
+        const curText =
+            idText(state.map[pathIdx(state.at[0].start)], undefined) ?? '';
         const pos = pathPos(state.at[0].start, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
@@ -385,14 +393,22 @@ function doABunchOfKeys({
                 backOrig.slice(0, startPos) + '|' + backOrig.slice(startPos),
             );
         }
-        const update = getKeyUpdate(key, state.map, state.at[0], state.nidx);
+        const update = getKeyUpdate(
+            key,
+            state.map,
+            state.at[0],
+            ctx.display,
+            state.nidx,
+        );
         expect(update).toBeTruthy();
         if (update) {
             if (update.type !== 'select') {
                 expect(update).toMatchObject({ type: 'select' });
             } else {
                 state = applyUpdate(state, 0, update)!;
-                expect(validatePath(state.map, update.selection)).toBeTruthy();
+                expect(
+                    validatePath(state.map, update.selection, ctx.display),
+                ).toBeTruthy();
             }
         }
         const newPos = remapPos(state.at[0].start, sourceMap);

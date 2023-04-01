@@ -1,5 +1,6 @@
 import equal from 'fast-deep-equal';
-import { splitGraphemes } from '../../src/parse/parse';
+import { idText, splitGraphemes } from '../../src/parse/parse';
+import { Ctx } from '../../src/to-ast/Ctx';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
 import {
@@ -21,6 +22,7 @@ import {
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path } from './path';
+import { UpdateMap } from '../store';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -51,7 +53,11 @@ export const commonAncestor = (one: Path[], two: Path[]) => {
     return i >= 0 ? one[i - 1].idx : null;
 };
 
-export const validatePath = (map: Map, path: Path[]) => {
+export const validatePath = (
+    map: Map,
+    path: Path[],
+    display: Ctx['display'],
+) => {
     for (let i = 0; i < path.length - 1; i++) {
         const next = path[i + 1].idx;
         const { idx, ...child } = path[i];
@@ -120,10 +126,12 @@ export const validatePath = (map: Map, path: Path[]) => {
                 }
                 break;
             case 'subtext':
-                if (!('text' in node)) {
+                if (!('text' in node) && node.type !== 'hash') {
                     return false;
                 }
-                const text = splitGraphemes(node.text);
+                const text = splitGraphemes(
+                    idText(node, display[node.loc.idx]?.style) ?? '',
+                );
                 if (child.at < 0 || child.at > text.length) {
                     return false;
                 }
@@ -210,33 +218,55 @@ export type ClipboardItem =
       }
     | { type: 'nodes'; nodes: Node[] };
 
-export const paste = (state: State, items: ClipboardItem[]): State => {
+export const paste = (
+    state: State,
+    ctx: Ctx,
+    items: ClipboardItem[],
+): StateUpdate | void => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
         const item = items[0];
         switch (item.type) {
             case 'text': {
                 if (item.trusted) {
                     const path = state.at[0].start;
-                    const update = insertText(
+                    return insertText(
                         item.text,
                         state.map,
                         path,
+                        ctx.display,
                         state.nidx,
                     );
-                    return applyUpdate(state, 0, update);
                 } else {
                     const chars = splitGraphemes(item.text);
+                    let tmp = { ...state };
                     for (let char of chars) {
-                        const path = state.at[0].start;
+                        const path = tmp.at[0].start;
                         const update = getKeyUpdate(
                             char,
-                            state.map,
-                            state.at[0],
-                            state.nidx,
+                            tmp.map,
+                            tmp.at[0],
+                            ctx.display,
+                            tmp.nidx,
                         );
-                        state = applyUpdate(state, 0, update);
+                        tmp = applyUpdate(tmp, 0, update);
                     }
-                    return state;
+                    const update: UpdateMap = {};
+                    for (let key of Object.keys(tmp.map)) {
+                        if (tmp.map[+key] !== state.map[+key]) {
+                            update[+key] = tmp.map[+key];
+                        }
+                    }
+                    for (let key of Object.keys(state.map)) {
+                        if (!tmp.map[+key]) {
+                            update[+key] = null;
+                        }
+                    }
+                    return {
+                        type: 'update',
+                        map: update,
+                        selection: tmp.at[0].start,
+                        selectionEnd: tmp.at[0].end,
+                    };
                 }
             }
             case 'nodes': {
@@ -262,7 +292,7 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                         ...pnode,
                         values,
                     };
-                    const update: StateUpdate = {
+                    return {
                         type: 'update',
                         map,
                         selection: start
@@ -274,21 +304,19 @@ export const paste = (state: State, items: ClipboardItem[]): State => {
                             })
                             .concat(selection),
                     };
-                    return applyUpdate(state, 0, update);
                 }
 
-                const update = newNodeAfter(
+                return newNodeAfter(
                     start,
                     state.map,
                     { map, idx: lidx, selection },
                     state.nidx,
                     idxes.slice(0, -1),
                 );
-                return applyUpdate(state, 0, update);
             }
         }
     }
-    return state;
+    return;
 };
 
 export const clipboardText = (items: ClipboardItem[]) => {
@@ -301,11 +329,15 @@ export const clipboardText = (items: ClipboardItem[]) => {
         .join('\n');
 };
 
-export const collectClipboard = (map: Map, selections: State['at']) => {
+export const collectClipboard = (
+    map: Map,
+    selections: State['at'],
+    display: Ctx['display'],
+) => {
     const items: ClipboardItem[] = [];
     selections.forEach(({ start, end }) => {
         if (end) {
-            items.push(collectNodes(map, start, end));
+            items.push(collectNodes(map, start, end, display));
         }
     });
     return items;
@@ -315,14 +347,17 @@ export const collectNodes = (
     map: Map,
     start: Path[],
     end: Path[],
+    display: Ctx['display'],
 ): ClipboardItem => {
     if (start.length === end.length) {
         const slast = start[start.length - 1];
         const elast = end[end.length - 1];
         if (slast.idx === elast.idx) {
             const node = fromMCST(slast.idx, map);
-            if ('text' in node) {
-                const text = splitGraphemes(node.text);
+            if ('text' in node || node.type === 'hash') {
+                const text = splitGraphemes(
+                    idText(node, display[node.loc.idx]?.style) ?? '',
+                );
                 const sloc =
                     slast.type === 'subtext'
                         ? slast.at
@@ -356,7 +391,7 @@ export const collectNodes = (
 
     transformNode(fromMCST(-1, map), {
         pre(node, path) {
-            const isatom = 'text' in node;
+            const isatom = 'text' in node || node.type === 'hash';
             const status = selectionStatus(path, start, end, map);
             if (!status) {
                 return false;

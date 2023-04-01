@@ -1,11 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
-import { AutoCompleteReplace, newCtx } from '../../src/to-ast/Ctx';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { fromMCST, ListLikeContents } from '../../src/types/mcst';
+import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
+import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
-import { layout } from '../layout';
-import { type ClipboardItem, paste } from '../mods/clipboard';
+import { type ClipboardItem } from '../mods/clipboard';
 import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
 import { selectEnd } from '../mods/navigate';
 import { Path } from '../mods/path';
@@ -14,12 +12,21 @@ import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
-import { verticalMove } from './verticalMove';
+import { applyMenuItem, reduce } from './reduce';
+import { applyMods, getCtx } from './getCtx';
+import { applyInferMod, infer, InferMod } from '../../src/infer/infer';
+import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
+import { Node } from '../../src/types/cst';
+import { Hover } from './Hover';
+import { Expr } from '../../src/types/ast';
+import { transformNode } from '../../src/types/transform-cst';
 
 const examples = {
+    infer: '(+ 2)',
     let: '(let [x 10] (+ x 20))',
     lists: '(1 2) (3 [] 4) (5 6)',
     string: `"Some 🤔 things\nare here for \${you} to\nsee"`,
+    fn: `(fn [hello:int] (+ hello 2))`,
 
     sink: `
 (def live (vec4 1. 0.6 1. 1.))
@@ -51,6 +58,8 @@ person.animals.dogs
 export type UIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
+    ctx: Ctx;
+    hover: Path[];
 } & State;
 
 export type RegMap = {
@@ -63,6 +72,7 @@ export type RegMap = {
 };
 
 export type Action =
+    | { type: 'hover'; path: Path[] }
     | {
           type: 'select';
           add?: boolean;
@@ -70,7 +80,7 @@ export type Action =
       }
     | { type: 'copy'; items: ClipboardItem[] }
     | { type: 'menu'; selection: number }
-    | { type: 'menu-select'; idx: number; item: AutoCompleteReplace }
+    | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
     | {
           type: 'key';
           key: string;
@@ -81,68 +91,25 @@ export type Action =
           items: ClipboardItem[];
       };
 
-const lidx = (at: State['at']) => at[0].start[at[0].start.length - 1].idx;
+export const lidx = (at: State['at']) =>
+    at[0].start[at[0].start.length - 1].idx;
 
-const reduce = (state: UIState, action: Action): UIState => {
-    switch (action.type) {
-        case 'menu':
-            return { ...state, menu: { selection: action.selection } };
-        case 'menu-select':
-            return {
-                ...state,
-                map: {
-                    ...state.map,
-                    [action.idx]: {
-                        loc: state.map[action.idx].loc,
-                        ...action.item.node,
-                    },
-                },
-            };
-        case 'copy':
-            return { ...state, clipboard: [action.items, ...state.clipboard] };
-        case 'key':
-            if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
-                return verticalMove(
-                    { ...state, menu: undefined },
-                    action.key === 'ArrowUp',
-                    action.mods,
-                );
-            }
-            if (action.key === 'Escape') {
-                console.log('dismiss');
-                return { ...state, menu: { dismissed: true, selection: 0 } };
-            }
-            const newState = handleKey(state, action.key, action.mods);
-            if (newState) {
-                if (newState.at.some((at) => isRootPath(at.start))) {
-                    console.log('not selecting root node');
-                    return state;
-                }
-                const idx = lidx(newState.at);
-                const prev = lidx(state.at);
-                if (idx !== prev) {
-                    return { ...newState, menu: undefined };
-                }
-                return newState;
-            }
-            return state;
-        case 'select':
-            // Ignore attempts to select the root node
-            if (action.at.some((at) => isRootPath(at.start))) {
-                return state;
-            }
-            return {
-                ...state,
-                at: action.add ? state.at.concat(action.at) : action.at,
-            };
-        case 'paste': {
-            return { ...state, ...paste(state, action.items) };
+export const maxSym = (map: Map) => {
+    let max = 0;
+    Object.keys(map).forEach((id) => {
+        const node = map[+id];
+        if (node.type === 'identifier' && node.hash?.startsWith(':')) {
+            max = Math.max(max, +node.hash.slice(1));
         }
-    }
+    });
+    return max;
 };
 
 export const ByHand = () => {
     const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
+    const extra = Object.keys(localStorage).filter((k) =>
+        k.startsWith('j3-ex-'),
+    );
     return (
         <div>
             {Object.keys(examples).map((k) => (
@@ -157,65 +124,129 @@ export const ByHand = () => {
                     {k}
                 </button>
             ))}
+            {extra.map((ex) => (
+                <button
+                    key={ex}
+                    style={{ margin: 8 }}
+                    onClick={() => setWhich(ex)}
+                    disabled={which === ex}
+                >
+                    {ex}
+                </button>
+            ))}
+            <button
+                onClick={() => {
+                    const id = 'j3-ex-' + Math.random().toString(36).slice(2);
+                    saveState(
+                        id,
+                        parseByCharacter('"hello"', newCtx(), false, false),
+                    );
+                    setWhich(id);
+                }}
+            >
+                +
+            </button>
             <Doc
                 key={which}
-                initialText={examples[which as 'sink'] ?? 'what'}
+                initialState={
+                    examples[which as 'sink']
+                        ? parseByCharacter(
+                              examples[which as 'sink'].replace(/\s+/g, (f) =>
+                                  f.includes('\n') ? '\n' : ' ',
+                              ),
+                              newCtx(),
+                              // lol turning this on slows things down a tonnn
+                              false,
+                              false,
+                          )
+                        : localStorage[which]
+                        ? loadState(localStorage[which])
+                        : parseByCharacter('"hello"', newCtx(), false, false)
+                }
+                saveKey={which.startsWith('j3-ex') ? which : undefined}
             />
         </div>
     );
 };
 
+export const saveState = (id: string, state: State) => {
+    localStorage[id] = JSON.stringify(state.map);
+};
+
+export const loadState = (raw: string): State => {
+    const map = JSON.parse(raw);
+    console.log('LOAD');
+    let max = -1;
+    transformNode(fromMCST(-1, map), {
+        pre(node, path) {
+            max = Math.max(max, node.loc.idx);
+        },
+    });
+    max += 1;
+    return {
+        nidx: () => max++,
+        map,
+        root: -1,
+        at: [],
+    };
+};
+
+export const uiState = (state: State): UIState => {
+    const idx = (state.map[-1] as ListLikeContents).values[0];
+    const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], state.map)!;
+    return {
+        nidx: state.nidx,
+        root: -1,
+        regs: {},
+        clipboard: [],
+        hover: [],
+        at: [{ start: at }],
+        ...getCtx(state.map, -1),
+    };
+};
+
 export const clipboardPrefix = '<!--""" jerd-clipboard ';
 export const clipboardSuffix = ' """-->';
 
-export const Doc = ({ initialText }: { initialText: string }) => {
+export const Doc = ({
+    initialState,
+    saveKey,
+}: {
+    initialState: State;
+    saveKey?: string;
+}) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        const { map, nidx } = parseByCharacter(
-            initialText.replace(/\s+/g, (f) => (f.includes('\n') ? '\n' : ' ')),
-            debug,
-        );
-        const idx = (map[-1] as ListLikeContents).values[0];
-        const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], map)!;
-        return {
-            map,
-            nidx,
-            root: -1,
-            regs: {},
-            clipboard: [],
-            at: [{ start: at }],
-        };
+        return uiState(initialState);
     });
+
+    useEffect(() => {
+        if (saveKey) {
+            saveState(saveKey, state);
+        }
+    }, [state]);
 
     // @ts-ignore
     window.state = state;
 
     const tops = (state.map[state.root] as ListLikeContents).values;
 
-    const ctx = React.useMemo(() => {
-        const ctx = newCtx();
-        try {
-            nodeToExpr(fromMCST(state.root, state.map), ctx);
-            tops.forEach((top) => {
-                layout(top, 0, state.map, ctx.display, true);
-            });
-        } catch (err) {
-            console.error(err);
-        }
-        return ctx;
-    }, [state.map]);
-
     const menu = useMemo(() => {
         if (state.at.length > 1 || state.at[0].end) return;
         const path = state.at[0].start;
         const last = path[path.length - 1];
-        const items = ctx.display[last.idx]?.autoComplete;
-        return items ? { idx: last.idx, items } : undefined;
-    }, [state.map, state.at, ctx]);
+        const items = state.ctx.display[last.idx]?.autoComplete;
+        return items ? { path, items } : undefined;
+    }, [state.map, state.at, state.ctx]);
 
     return (
-        <div>
+        <div
+            onMouseEnter={(evt) => {
+                dispatch({ type: 'hover', path: [] });
+            }}
+        >
             <HiddenInput
+                ctx={state.ctx}
                 state={state}
                 dispatch={dispatch}
                 menu={!state.menu?.dismissed ? menu : undefined}
@@ -235,31 +266,79 @@ export const Doc = ({ initialText }: { initialText: string }) => {
                 dispatch={dispatch}
                 tops={tops}
                 debug={debug}
-                ctx={ctx}
+                ctx={state.ctx}
             />
             <Cursors state={state} />
+            <Hover state={state} dispatch={dispatch} />
             {!state.menu?.dismissed && menu?.items.length ? (
-                <Menu state={state} ctx={ctx} menu={menu} />
+                <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
-            <DebugClipboard state={state} debug={debug} ctx={ctx} />
+            {/* Menu: {JSON.stringify(state.menu)}
+            <DebugClipboard state={state} debug={debug} ctx={state.ctx} /> */}
         </div>
     );
 };
 
-const isRootPath = (path: Path[]) => {
+export const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].type !== 'child';
 };
 
-export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
-    for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(
-            key,
-            state.map,
-            state.at[i],
-            state.nidx,
-            mods,
-        );
-        state = { ...state, ...applyUpdate(state, i, update) };
-    }
-    return state;
-};
+// export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
+//     for (let i = 0; i < state.at.length; i++) {
+//         const update = getKeyUpdate(
+//             key,
+//             state.map,
+//             state.at[i],
+//             state.ctx.display,
+//             state.nidx,
+//             mods,
+//         );
+
+//         const at = state.at;
+
+//         if (update?.autoComplete && !state.menu?.dismissed) {
+//             const idx = at[0].start[at[0].start.length - 1].idx;
+//             const exacts = state.ctx.display[idx]?.autoComplete?.filter(
+//                 (s) => s.type === 'replace' && s.exact,
+//             ) as AutoCompleteReplace[];
+//             console.log('trying to update?', exacts);
+//             if (exacts?.length === 1) {
+//                 state = {
+//                     ...state,
+//                     ...applyMenuItem(at[0].start, exacts[0], state, state.ctx),
+//                 };
+//                 console.log('applying I guess', exacts[0]);
+//             }
+//         }
+
+//         state = { ...state, ...applyUpdate(state, i, update) };
+
+//         if (update?.autoComplete) {
+//             const root = fromMCST(state.root, state.map) as { values: Node[] };
+//             let exprs = root.values
+//                 .map((node) =>
+//                     node.type === 'blank' || node.type === 'comment'
+//                         ? null
+//                         : nodeToExpr(node, {
+//                               ...state.ctx,
+//                               display: {},
+//                               mods: {},
+//                               errors: {},
+//                           }),
+//                 )
+//                 .filter(Boolean) as Expr[];
+//             state = { ...state, map: { ...state.map } };
+//             applyMods(state.ctx, state.map);
+
+//             // Now we do like inference, right?
+//             const mods = infer(exprs, state.ctx);
+//             console.log('inferMods', mods);
+//             const keys = Object.keys(mods);
+//             // if (!keys.length) break;
+//             keys.forEach((id) => {
+//                 applyInferMod(mods[+id], state.map, state.nidx, +id);
+//             });
+//         }
+//     }
+//     return state;
+// };

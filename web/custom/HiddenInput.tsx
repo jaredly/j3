@@ -1,20 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { AutoCompleteResult } from '../../src/to-ast/Ctx';
+import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
     collectClipboard,
 } from '../mods/clipboard';
+import { Path } from '../mods/path';
 import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
 
 export function HiddenInput({
     state,
     dispatch,
     menu,
+    ctx,
 }: {
     state: UIState;
     dispatch: React.Dispatch<Action>;
-    menu?: { idx: number; items: AutoCompleteResult[] };
+    menu?: { path: Path[]; items: AutoCompleteResult[] };
+    ctx: Ctx;
 }) {
     useEffect(() => {
         if (document.activeElement !== hiddenInput.current) {
@@ -55,7 +58,11 @@ export function HiddenInput({
             }}
             onCopy={(evt) => {
                 evt.preventDefault();
-                const items = collectClipboard(state.map, state.at);
+                const items = collectClipboard(
+                    state.map,
+                    state.at,
+                    ctx.display,
+                );
                 if (!items.length) {
                     return;
                 }
@@ -141,7 +148,7 @@ export function HiddenInput({
                         } else if (selected.type === 'replace') {
                             dispatch({
                                 type: 'menu-select',
-                                idx: menu.idx,
+                                path: menu.path,
                                 item: selected,
                             });
                         }

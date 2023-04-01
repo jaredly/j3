@@ -1,5 +1,8 @@
 // hmm
+import { applyMods } from '../../web/custom/getCtx';
 import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
+import { applyMenuItem } from '../../web/custom/reduce';
+import { layout } from '../../web/layout';
 import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
 import {
     applyUpdate,
@@ -8,9 +11,13 @@ import {
     State,
 } from '../../web/mods/getKeyUpdate';
 import { Path } from '../../web/mods/path';
-import { Map, MNode } from '../types/mcst';
+import { applyInferMod, infer } from '../infer/infer';
+import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
+import { nodeToExpr } from '../to-ast/nodeToExpr';
+import { Node } from '../types/cst';
+import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
-export const idText = (node: MNode) => {
+export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
@@ -22,6 +29,8 @@ export const idText = (node: MNode) => {
             return node.text;
         case 'blank':
             return '';
+        case 'hash':
+            return style?.type === 'id' ? style.text : null;
     }
 };
 
@@ -31,7 +40,12 @@ export const splitGraphemes = (text: string) => {
     return [...seg.segment(text)].map((seg) => seg.segment);
 };
 
-export const parseByCharacter = (rawText: string, debug = false): State => {
+export const parseByCharacter = (
+    rawText: string,
+    ctx: Ctx,
+    updateCtx = false,
+    debug = false,
+): State => {
     let state: State = initialState();
 
     const text = splitGraphemes(rawText);
@@ -40,57 +54,71 @@ export const parseByCharacter = (rawText: string, debug = false): State => {
 
     for (let i = 0; i < text.length; i++) {
         let mods: Mods = {};
-        let key = text[i];
-        if (key === '^') {
-            key = {
-                l: 'ArrowLeft',
-                r: 'ArrowRight',
-                b: 'Backspace',
-                L: 'ArrowLeft',
-                R: 'ArrowRight',
-                C: 'Copy',
-                V: 'Paste',
-            }[text[i + 1]]!;
-            if (!key) {
-                throw new Error(`Unexpected ^${text[i + 1]}`);
-            }
-            if (text[i + 1] === 'L' || text[i + 1] === 'R') {
-                mods.shift = true;
-            }
-            i++;
-        }
-        if (key === '\n') {
-            key = 'Enter';
-        }
+        let key;
+        ({ key, i } = determineKey(text, i, mods));
+
         if (key === 'Copy') {
             let { start, end } = state.at[0];
             if (!end) {
                 throw new Error(`need end for copy`);
             }
 
-            [start, end] =
-                cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+            [start, end] = orderStartAndEnd(start, end);
 
-            clipboard = [collectNodes(state.map, start, end)];
+            clipboard = [collectNodes(state.map, start, end, ctx.display)];
             continue;
         }
         if (key === 'Paste') {
-            state = paste(state, clipboard);
+            state = applyUpdate(state, 0, paste(state, ctx, clipboard));
             continue;
+        }
+
+        if (key === 'Enter' && updateCtx) {
+            const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+            const matches = ctx.display[idx]?.autoComplete?.filter(
+                (s) => s.type === 'replace',
+            ) as AutoCompleteReplace[];
+            if (matches?.length) {
+                state = applyMenuItem(
+                    state.at[0].start,
+                    matches[0],
+                    state,
+                    ctx,
+                );
+                nodeToExpr(fromMCST(state.root, state.map), ctx);
+                continue;
+            }
         }
 
         const update = getKeyUpdate(
             key,
             state.map,
             state.at[0],
+            ctx.display,
             state.nidx,
             mods,
         );
-        if (debug) {
-            console.log(JSON.stringify(key), state.at[0].start);
+
+        if (updateCtx && update?.autoComplete) {
+            state = autoCompleteIfNeeded(state, ctx);
         }
 
         state = applyUpdate(state, 0, update) ?? state;
+
+        if (updateCtx) {
+            const root = fromMCST(state.root, state.map) as { values: Node[] };
+            const exprs = root.values.map((node) => nodeToExpr(node, ctx));
+            state = { ...state, map: { ...state.map } };
+            applyMods(ctx, state.map);
+
+            if (update?.autoComplete) {
+                // Now we do like inference, right?
+                const mods = infer(exprs, ctx, state.map);
+                Object.keys(mods).forEach((id) => {
+                    applyInferMod(mods[+id], state.map, state.nidx, +id);
+                });
+            }
+        }
     }
     return state;
 };
@@ -99,6 +127,48 @@ export const idxSource = () => {
     let idx = 0;
     return () => idx++;
 };
+
+export function orderStartAndEnd(start: Path[], end: Path[]): [Path[], Path[]] {
+    return cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+}
+
+function determineKey(text: string[], i: number, mods: Mods) {
+    let key = text[i];
+    if (key === '^') {
+        key = {
+            l: 'ArrowLeft',
+            r: 'ArrowRight',
+            b: 'Backspace',
+            L: 'ArrowLeft',
+            R: 'ArrowRight',
+            C: 'Copy',
+            V: 'Paste',
+            n: 'Enter',
+        }[text[i + 1]]!;
+        if (!key) {
+            throw new Error(`Unexpected ^${text[i + 1]}`);
+        }
+        if (text[i + 1] === 'L' || text[i + 1] === 'R') {
+            mods.shift = true;
+        }
+        i++;
+    }
+    if (key === '\n') {
+        key = 'Enter';
+    }
+    return { key, i };
+}
+
+export function autoCompleteIfNeeded(state: State, ctx: Ctx) {
+    const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+    const exacts = ctx.display[idx]?.autoComplete?.filter(
+        (s) => s.type === 'replace' && s.exact,
+    ) as AutoCompleteReplace[];
+    if (exacts?.length === 1) {
+        state = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
+    }
+    return state;
+}
 
 function initialState() {
     const nidx = idxSource();

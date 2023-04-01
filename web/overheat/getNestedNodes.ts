@@ -1,5 +1,5 @@
 import { idText } from '../../src/parse/parse';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { Ctx, NodeStyle } from '../../src/to-ast/Ctx';
 import { Layout, MCString, MNode, MNodeExtra } from '../../src/types/mcst';
 import { Path, PathChild } from '../store';
 import { ONode } from './types';
@@ -17,7 +17,8 @@ export type NNode =
     | { type: 'ref'; id: number; path: PathChild }
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
-export const getNodes = (node: MNode) => unnestNodes(getNestedNodes(node));
+export const getNodes = (node: MNode, display?: NodeStyle) =>
+    unnestNodes(getNestedNodes(node, display));
 
 export const unnestNodes = (node: NNode): ONode[] => {
     switch (node.type) {
@@ -54,7 +55,11 @@ export const unnestNodes = (node: NNode): ONode[] => {
     }
 };
 
-export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
+export const getNestedNodes = (
+    node: MNode,
+    display?: NodeStyle,
+    layout?: Layout,
+): NNode => {
     switch (node.type) {
         case 'spread':
             return {
@@ -78,7 +83,7 @@ export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
                         id: node.target,
                         path: { type: 'annot-target' },
                     },
-                    { type: 'punct', text: ':', color: 'unset' },
+                    { type: 'punct', text: ':', color: '#666' },
                     {
                         type: 'ref',
                         id: node.annot,
@@ -195,7 +200,8 @@ export const getNestedNodes = (node: MNode, layout?: Layout): NNode => {
         case 'stringText':
         case 'attachment':
         case 'rich-text':
-            return { type: 'text', text: idText(node) ?? '' };
+        case 'hash':
+            return { type: 'text', text: idText(node, display) ?? '' };
         default:
             let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);

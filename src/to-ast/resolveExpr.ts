@@ -23,6 +23,7 @@ export const resolveExpr = (
     ctx.display[form.loc.idx] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form, prefix, suffix);
+        ctx.display[form.loc.idx].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
             form,
@@ -37,6 +38,7 @@ export const resolveExpr = (
                     type: 'id',
                     hash: ':' + local.sym,
                     text: local.name,
+                    ann: local.type,
                 };
                 return { type: 'local', sym: local.sym, form };
             }
@@ -49,6 +51,7 @@ export const resolveExpr = (
                     type: 'id',
                     hash,
                     text: ctx.global.reverseNames[hash],
+                    ann: global.type,
                 };
                 return { type: 'global', hash, form };
             }
@@ -58,6 +61,7 @@ export const resolveExpr = (
                     type: 'id',
                     hash,
                     text: ctx.global.reverseNames[hash],
+                    ann: builtin,
                 };
                 return { type: 'builtin', hash, form };
             }
@@ -107,7 +111,7 @@ export const allTerms = (ctx: Ctx): Result[] => {
                     type: 'global',
                     name,
                     hash,
-                    typ: ctx.global.termTypes[hash],
+                    typ: ctx.global.terms[hash].type,
                 } satisfies Result),
         ),
     );
