@@ -1,6 +1,7 @@
 import {
     ListLikeContents,
     Map,
+    MCRecordAccess,
     MCSpread,
     MCString,
     MNodeExtra,

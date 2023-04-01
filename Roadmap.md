@@ -1,5 +1,13 @@
 
+- [ ] am I 
+
 - [ ] do I change node, to not have .hash on ID?
+  - nope, because I need it for id-defns
+
+- [x] delet the prefix /suffix stuff
+- [ ] types and suchh
+  - [x] autocomplete
+  - [x] validate I think
 
 - [ ] REFACTOR I'm using `Ctx[display]` a bunch of places
   that should really just be a `{[idx: number]: string}`.
@@ -14,7 +22,6 @@ HOL' UP
 what about `sym` being ditched altogether, in favor
 of `idx`?
 
-
 - [ ] COPY/PASTE needs to re-sym locals too.
   - ClipboardItem needs that nameLookup, turns out
 
@@ -24,7 +31,7 @@ of `idx`?
 - [x] still can't delete an annot
 - [ ] backspace shouldn't nix whole listlikes. it should go in.
 - [ ] changing a toplevel def should update usages of that def
-- [ ] can't . on a hash
+- [x] can't . on a hash
 - [ ] '(' at start of hash at start of attr should wrap
 - [ ] backspace at '(' should unwrap
 - [ ] select and '(' should wrap!

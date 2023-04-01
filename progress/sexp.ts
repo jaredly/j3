@@ -4,6 +4,8 @@ export const sexp = (node: Node): string => {
     switch (node.type) {
         case 'identifier':
             return 'id';
+        case 'hash':
+            return node.hash;
         case 'list':
         case 'array':
         case 'record':

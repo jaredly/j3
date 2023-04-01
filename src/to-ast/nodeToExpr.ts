@@ -132,26 +132,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     form,
                 };
             }
-            // if (form.text.includes('.')) {
-            //     const [expr, ...rest] = form.text.split('.');
-            //     let inner: Expr = resolveExpr(
-            //         expr,
-            //         form.hash,
-            //         ctx,
-            //         form,
-            //         '.' + rest.join('.'),
-            //     );
-            //     while (rest.length) {
-            //         const next = rest.shift()!;
-            //         inner = {
-            //             type: 'attribute',
-            //             target: inner,
-            //             attr: next,
-            //             form,
-            //         };
-            //     }
-            //     return inner;
-            // }
 
             return resolveExpr(form.text, form.hash, ctx, form);
         }

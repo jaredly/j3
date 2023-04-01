@@ -239,8 +239,6 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         }
     });
 
-    console.log(usages, syms);
-
     // next up, we find all the usages of a given local,
     // along with the type annotation.
     // We try to reconcile these things.

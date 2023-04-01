@@ -30,6 +30,12 @@ export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
         case 'blank':
             return '';
         case 'hash':
+            if (node.hash.startsWith(':builtin:')) {
+                return node.hash.slice(':builtin:'.length);
+            }
+            if (!(style?.type === 'id')) {
+                console.log('no hash name', node.loc.idx, node.hash, style);
+            }
             return style?.type === 'id' ? style.text : null;
     }
 };

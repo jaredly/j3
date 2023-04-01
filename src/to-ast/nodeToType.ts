@@ -12,6 +12,8 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
         case 'identifier': {
             return resolveType(form.text, form.hash, ctx, form);
         }
+        case 'hash':
+            return resolveType('', form.hash, ctx, form);
         case 'blank':
             return nilt;
         // STOPSHIP

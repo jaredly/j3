@@ -1,6 +1,6 @@
 import { Node } from '../types/cst';
 import { Expr } from '../types/ast';
-import { Ctx } from './Ctx';
+import { Ctx, any } from './Ctx';
 import { Result } from './to-ast';
 import { populateAutocomplete } from './populateAutocomplete';
 
@@ -11,8 +11,6 @@ export const resolveExpr = (
     hash: string | undefined,
     ctx: Ctx,
     form: Node,
-    suffix?: string,
-    prefix?: string,
 ): Expr => {
     if (!text.length && !hash) {
         return { type: 'unresolved', form, reason: 'blank' };
@@ -22,7 +20,7 @@ export const resolveExpr = (
     }
     ctx.display[form.loc.idx] = {};
     if (!hash) {
-        populateAutocomplete(ctx, text, form, prefix, suffix);
+        populateAutocomplete(ctx, text, form);
         ctx.display[form.loc.idx].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
@@ -42,7 +40,7 @@ export const resolveExpr = (
                 };
                 return { type: 'local', sym: local.sym, form };
             }
-            populateAutocomplete(ctx, text, form, prefix, suffix);
+            populateAutocomplete(ctx, text, form);
             return { type: 'unresolved', form, reason: 'local missing' };
         } else {
             const global = ctx.global.terms[hash];
@@ -65,7 +63,7 @@ export const resolveExpr = (
                 };
                 return { type: 'builtin', hash, form };
             }
-            populateAutocomplete(ctx, text, form, prefix, suffix);
+            populateAutocomplete(ctx, text, form);
             return {
                 type: 'unresolved',
                 form,
@@ -73,34 +71,6 @@ export const resolveExpr = (
             };
         }
     }
-    // const local = ctx.local.terms.find((t) => t.name === text);
-    // if (local) {
-    //     ctx.display[form.loc.idx].style = {
-    //         type: 'id',
-    //         hash: ':' + local.sym,
-    //         inferred: true,
-    //     };
-    //     return { type: 'local', sym: local.sym, form };
-    // }
-    // if (ctx.global.names[text]?.length) {
-    //     const hash = ctx.global.names[text][0];
-    //     ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
-    //     return {
-    //         type: 'global',
-    //         hash,
-    //         form,
-    //     };
-    // }
-    // if (ctx.global.builtins.names[text]) {
-    //     const hash = ctx.global.builtins.names[text][0];
-    //     ctx.display[form.loc.idx].style = { type: 'id', hash, inferred: true };
-    //     return { type: 'builtin', hash, form };
-    // }
-    // return {
-    //     type: 'unresolved',
-    //     form,
-    //     reason: `id "${text}" not resolved`,
-    // };
 };
 
 export const allTerms = (ctx: Ctx): Result[] => {
@@ -135,6 +105,44 @@ export const allTerms = (ctx: Ctx): Result[] => {
                     type: 'local',
                     name,
                     typ: type,
+                    hash: `:${sym}`,
+                } satisfies Result),
+        ),
+        ...globals,
+    ];
+};
+
+export const allTypes = (ctx: Ctx): Result[] => {
+    const globals = Object.entries(ctx.global.typeNames).flatMap(
+        ([name, hashes]) =>
+            hashes.map(
+                (hash) =>
+                    ({
+                        type: 'global',
+                        name,
+                        hash,
+                        typ: ctx.global.types[hash],
+                    } satisfies Result),
+            ),
+    );
+    const builtins = Object.entries(ctx.global.builtins.types).map(
+        ([name, tvars]) =>
+            ({
+                type: 'builtin',
+                name,
+                hash: ':builtin:' + name,
+                // TODO
+                typ: any,
+            } satisfies Result),
+    );
+    return [
+        ...builtins,
+        ...ctx.local.types.map(
+            ({ name, sym, bound }) =>
+                ({
+                    type: 'local',
+                    name,
+                    typ: bound ?? any,
                     hash: `:${sym}`,
                 } satisfies Result),
         ),
