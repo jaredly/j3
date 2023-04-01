@@ -55,6 +55,7 @@ const actionToUpdate = (
                         at: splitGraphemes(action.item.text).length,
                     },
                 ]),
+                autoComplete: true,
             };
         }
         case 'copy':
@@ -124,14 +125,14 @@ export const reduce = (state: UIState, action: Action): UIState => {
                 state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
             }
             state = { ...state, ...applyUpdate(state, 0, update) };
+            let { ctx, map, exprs } = getCtx(state.map, state.root);
+            state.map = map;
+            state.ctx = ctx;
             if (update.autoComplete) {
                 for (let i = 0; i < 10; i++) {
                     if (i > 8) {
                         throw new Error(`why so manyy inference`);
                     }
-                    const { ctx, map, exprs } = getCtx(state.map, state.root);
-                    state.map = map;
-                    state.ctx = ctx;
                     const mods = infer(exprs, ctx, state.map);
                     const modded = Object.keys(mods);
                     if (!modded.length) {
@@ -142,6 +143,9 @@ export const reduce = (state: UIState, action: Action): UIState => {
                         applyInferMod(mods[+id], state.map, state.nidx, +id);
                         console.log(state.map[+id]);
                     });
+                    ({ ctx, map, exprs } = getCtx(state.map, state.root));
+                    state.map = map;
+                    state.ctx = ctx;
                 }
             }
             return state;

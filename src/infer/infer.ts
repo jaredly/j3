@@ -211,7 +211,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
     Object.keys(syms).forEach((sym) => {
         const definition = syms[+sym];
         if (!inferredTypes[+sym]) {
-            console.log('no inferred for', sym);
+            // console.log('no inferred for', sym);
             return;
         }
         switch (definition.type) {
@@ -229,9 +229,9 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                             { ...map[definition.idx], loc: noloc },
                         )
                     ) {
-                        console.log('🎉 New Infer');
-                        console.log('-> ', node);
-                        console.log('<- ', map[definition.idx]);
+                        // console.log('🎉 New Infer');
+                        // console.log('-> ', node);
+                        // console.log('<- ', map[definition.idx]);
                         mods[definition.idx] = { type: 'replace-full', node };
                     }
                 }

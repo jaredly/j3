@@ -1,4 +1,25 @@
 
+# Weird editing
+
+- [x] can't baclspace an empty hashhh?
+- [ ] still can't delete an annot
+- [ ] backspace shouldn't nix whole listlikes. it should go in.
+- [ ] changing a toplevel def should update usages of that def
+- [ ] can't . on a hash
+- [ ] '(' at start of hash at start of attr should wrap
+- [ ] backspace at '(' should unwrap
+- [ ] select and '(' should wrap!
+- [ ] let's get a little undo/redo in the house
+- [ ] endddd how about undo/redo snapshots? like they
+  don't have to persist the whole undo stack, but
+  some snapshots would be nice? you know.
+- [x] highlight specials (defn deftype etc.) with special color
+- [ ] selecting a spread from the left should select the whole thing though
+
+... type inference ... do I really want to reify it?
+or do I just want to re-infer it every time?
+idk let's try incremental inference for now
+
 # When to update Ctx, and how, and such.
 
 So, I think we can actually run the ctx from scratch on
@@ -23,6 +44,7 @@ We'll have to take care about updating hashes, obvs.
 
 
 sooo I think I want a better approach to multi-select updates
+
 
 
 
@@ -69,26 +91,6 @@ oh yeah, when does inference happen.
 
 
 
-
-# Weird editing
-
-- [ ] still can't delete an annot
-- [ ] backspace shouldn't nix whole listlikes. it should go in.
-- [ ] changing a toplevel def should update usages of that def
-- [ ] can't . on a hash
-- [ ] '(' at start of hash at start of attr should wrap
-- [ ] backspace at '(' should unwrap
-- [ ] select and '(' should wrap!
-- [ ] let's get a little undo/redo in the house
-- [ ] endddd how about undo/redo snapshots? like they
-  don't have to persist the whole undo stack, but
-  some snapshots would be nice? you know.
-- [x] highlight specials (defn deftype etc.) with special color
-- [ ] selecting a spread from the left should select the whole thing though
-
-... type inference ... do I really want to reify it?
-or do I just want to re-infer it every time?
-idk let's try incremental inference for now
 
 # Errors / Warnings / Incompletes
 

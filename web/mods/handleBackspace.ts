@@ -375,7 +375,9 @@ export function handleBackspace(
             type: 'update',
             map: {
                 [flast.idx]:
-                    atEnd && text.length === 1 && node.type === 'identifier'
+                    atEnd &&
+                    text.length === 1 &&
+                    (node.type === 'identifier' || node.type === 'hash')
                         ? { type: 'blank', loc: node.loc }
                         : node.type === 'hash'
                         ? {
