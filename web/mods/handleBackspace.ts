@@ -8,7 +8,7 @@ import {
     getKeyUpdate,
     StateSelect,
 } from './getKeyUpdate';
-import { replacePathWith } from './replacePathWith';
+import { replacePath, replacePathWith } from './replacePathWith';
 import {
     idText,
     orderStartAndEnd,
@@ -249,6 +249,26 @@ export function handleBackspace(
     }
 
     if (node.type === 'blank') {
+        if (ppath.type === 'annot-annot' && parent.type === 'annot') {
+            const update = replacePath(
+                fullPath[fullPath.length - 3],
+                parent.target,
+                map,
+            );
+            const sel = selectEnd(parent.target, fullPath.slice(0, -2), map);
+            if (!sel) {
+                console.error(
+                    'Unable to select end of target',
+                    map[parent.target],
+                );
+                return;
+            }
+            return {
+                type: 'update',
+                map: update,
+                selection: sel,
+            };
+        }
         if (ppath.type === 'expr') {
             const parent = map[ppath.idx];
             if (parent.type !== 'string') {

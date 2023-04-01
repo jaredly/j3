@@ -2,7 +2,7 @@
 # Weird editing
 
 - [x] can't baclspace an empty hashhh?
-- [ ] still can't delete an annot
+- [x] still can't delete an annot
 - [ ] backspace shouldn't nix whole listlikes. it should go in.
 - [ ] changing a toplevel def should update usages of that def
 - [ ] can't . on a hash
