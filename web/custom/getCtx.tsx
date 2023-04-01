@@ -3,6 +3,7 @@ import { validateExpr } from '../../src/get-type/validate';
 import { Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { addDef } from '../../src/to-ast/to-ast';
+import { Expr } from '../../src/types/ast';
 import { Node } from '../../src/types/cst';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { layout } from '../layout';
@@ -14,11 +15,13 @@ export const getCtx = (map: Map, root: number) => {
     ctx.sym.current = maxSym(map) + 1;
     try {
         const rootNode = fromMCST(root, map) as { values: Node[] };
+        const exprs: Expr[] = [];
         rootNode.values.forEach((node) => {
             if (node.type === 'blank' || node.type === 'comment') {
                 return;
             }
             const expr = nodeToExpr(node, ctx);
+            exprs.push(expr);
             getType(expr, ctx, { errors: ctx.errors, types: {} });
             validateExpr(expr, ctx, ctx.errors);
             ctx = addDef(expr, ctx);
@@ -31,9 +34,9 @@ export const getCtx = (map: Map, root: number) => {
             map = { ...map };
             applyMods(ctx, map);
         }
-        return { ctx, map };
+        return { ctx, map, exprs };
     } catch (err) {
-        return { ctx, map };
+        return { ctx, map, exprs: [] };
     }
 };
 

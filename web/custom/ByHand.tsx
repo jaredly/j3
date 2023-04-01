@@ -283,62 +283,62 @@ export const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].type !== 'child';
 };
 
-export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
-    for (let i = 0; i < state.at.length; i++) {
-        const update = getKeyUpdate(
-            key,
-            state.map,
-            state.at[i],
-            state.ctx.display,
-            state.nidx,
-            mods,
-        );
+// export const handleKey = (state: UIState, key: string, mods: Mods): UIState => {
+//     for (let i = 0; i < state.at.length; i++) {
+//         const update = getKeyUpdate(
+//             key,
+//             state.map,
+//             state.at[i],
+//             state.ctx.display,
+//             state.nidx,
+//             mods,
+//         );
 
-        const at = state.at;
+//         const at = state.at;
 
-        if (update?.autoComplete && !state.menu?.dismissed) {
-            const idx = at[0].start[at[0].start.length - 1].idx;
-            const exacts = state.ctx.display[idx]?.autoComplete?.filter(
-                (s) => s.type === 'replace' && s.exact,
-            ) as AutoCompleteReplace[];
-            console.log('trying to update?', exacts);
-            if (exacts?.length === 1) {
-                state = {
-                    ...state,
-                    ...applyMenuItem(at[0].start, exacts[0], state, state.ctx),
-                };
-                console.log('applying I guess', exacts[0]);
-            }
-        }
+//         if (update?.autoComplete && !state.menu?.dismissed) {
+//             const idx = at[0].start[at[0].start.length - 1].idx;
+//             const exacts = state.ctx.display[idx]?.autoComplete?.filter(
+//                 (s) => s.type === 'replace' && s.exact,
+//             ) as AutoCompleteReplace[];
+//             console.log('trying to update?', exacts);
+//             if (exacts?.length === 1) {
+//                 state = {
+//                     ...state,
+//                     ...applyMenuItem(at[0].start, exacts[0], state, state.ctx),
+//                 };
+//                 console.log('applying I guess', exacts[0]);
+//             }
+//         }
 
-        state = { ...state, ...applyUpdate(state, i, update) };
+//         state = { ...state, ...applyUpdate(state, i, update) };
 
-        if (update?.autoComplete) {
-            const root = fromMCST(state.root, state.map) as { values: Node[] };
-            let exprs = root.values
-                .map((node) =>
-                    node.type === 'blank' || node.type === 'comment'
-                        ? null
-                        : nodeToExpr(node, {
-                              ...state.ctx,
-                              display: {},
-                              mods: {},
-                              errors: {},
-                          }),
-                )
-                .filter(Boolean) as Expr[];
-            state = { ...state, map: { ...state.map } };
-            applyMods(state.ctx, state.map);
+//         if (update?.autoComplete) {
+//             const root = fromMCST(state.root, state.map) as { values: Node[] };
+//             let exprs = root.values
+//                 .map((node) =>
+//                     node.type === 'blank' || node.type === 'comment'
+//                         ? null
+//                         : nodeToExpr(node, {
+//                               ...state.ctx,
+//                               display: {},
+//                               mods: {},
+//                               errors: {},
+//                           }),
+//                 )
+//                 .filter(Boolean) as Expr[];
+//             state = { ...state, map: { ...state.map } };
+//             applyMods(state.ctx, state.map);
 
-            // Now we do like inference, right?
-            const mods = infer(exprs, state.ctx);
-            console.log('inferMods', mods);
-            const keys = Object.keys(mods);
-            // if (!keys.length) break;
-            keys.forEach((id) => {
-                applyInferMod(mods[+id], state.map, state.nidx, +id);
-            });
-        }
-    }
-    return state;
-};
+//             // Now we do like inference, right?
+//             const mods = infer(exprs, state.ctx);
+//             console.log('inferMods', mods);
+//             const keys = Object.keys(mods);
+//             // if (!keys.length) break;
+//             keys.forEach((id) => {
+//                 applyInferMod(mods[+id], state.map, state.nidx, +id);
+//             });
+//         }
+//     }
+//     return state;
+// };

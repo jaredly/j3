@@ -1,4 +1,75 @@
 
+# When to update Ctx, and how, and such.
+
+So, I think we can actually run the ctx from scratch on
+every edit.
+Right?
+Like there's nothing ~useful that persists between moments.
+We'll have to take care about updating hashes, obvs.
+
+
+-> action => update
+
+-> autocompleteBefore
+-> apply update
+-> nodeToExpr (populates mods)
+-> apply mods
+-> run inference
+  -> apply inference updates
+  -> nodeToExpr (verify that no more mods)
+  -> loop to inference again
+
+
+
+
+sooo I think I want a better approach to multi-select updates
+
+
+
+
+
+
+
+
+
+
+
+
+-> action (INCLUDES doing a menu autocomplete, potentially)
+(map, selection) -> (map, selection)
+-> populate ctx, and optionally reconcile
+b/c, if we're in an auto-completing mood, we need to
+ctx it up to populate the autocomplete menu.
+
+IF (action) is an "autocomplete*first*", when we
+use the previous autocomplete info, and apply what,
+before we run the action.
+Can we try that?
+
+--> fromMCST
+--> nodeToExpr (populates mods and autocomplete)
+--> mods it up
+      - mods changes don't produce a different Expr
+        so we don't need to re-nodeToExpr
+
+--> autoComplete
+
+```
+
+```
+
+oh yeah, when does inference happen.
+
+
+
+
+
+
+
+
+
+
+
 # Weird editing
 
 - [ ] still can't delete an annot

@@ -8,6 +8,7 @@ import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
 import { UIState, Action } from './ByHand';
+import { orderStartAndEnd } from '../../src/parse/parse';
 
 export function Root({
     state,
@@ -25,8 +26,8 @@ export function Root({
     const selections = state.at
         .filter((s) => s.end)
         .map(({ start, end }) => {
-            const cmp = cmpFullPath(start, end!);
-            return cmp > 0 ? { start: end!, end: start } : { start, end };
+            [start, end] = orderStartAndEnd(start, end!);
+            return { start, end };
         });
 
     const reg = useCallback(

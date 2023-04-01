@@ -22,6 +22,7 @@ import {
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path } from './path';
+import { UpdateMap } from '../store';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -221,35 +222,51 @@ export const paste = (
     state: State,
     ctx: Ctx,
     items: ClipboardItem[],
-): State => {
+): StateUpdate | void => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
         const item = items[0];
         switch (item.type) {
             case 'text': {
                 if (item.trusted) {
                     const path = state.at[0].start;
-                    const update = insertText(
+                    return insertText(
                         item.text,
                         state.map,
                         path,
                         ctx.display,
                         state.nidx,
                     );
-                    return applyUpdate(state, 0, update);
                 } else {
                     const chars = splitGraphemes(item.text);
+                    let tmp = { ...state };
                     for (let char of chars) {
-                        const path = state.at[0].start;
+                        const path = tmp.at[0].start;
                         const update = getKeyUpdate(
                             char,
-                            state.map,
-                            state.at[0],
+                            tmp.map,
+                            tmp.at[0],
                             ctx.display,
-                            state.nidx,
+                            tmp.nidx,
                         );
-                        state = applyUpdate(state, 0, update);
+                        tmp = applyUpdate(tmp, 0, update);
                     }
-                    return state;
+                    const update: UpdateMap = {};
+                    for (let key of Object.keys(tmp.map)) {
+                        if (tmp.map[+key] !== state.map[+key]) {
+                            update[+key] = tmp.map[+key];
+                        }
+                    }
+                    for (let key of Object.keys(state.map)) {
+                        if (!tmp.map[+key]) {
+                            update[+key] = null;
+                        }
+                    }
+                    return {
+                        type: 'update',
+                        map: update,
+                        selection: tmp.at[0].start,
+                        selectionEnd: tmp.at[0].end,
+                    };
                 }
             }
             case 'nodes': {
@@ -275,7 +292,7 @@ export const paste = (
                         ...pnode,
                         values,
                     };
-                    const update: StateUpdate = {
+                    return {
                         type: 'update',
                         map,
                         selection: start
@@ -287,21 +304,19 @@ export const paste = (
                             })
                             .concat(selection),
                     };
-                    return applyUpdate(state, 0, update);
                 }
 
-                const update = newNodeAfter(
+                return newNodeAfter(
                     start,
                     state.map,
                     { map, idx: lidx, selection },
                     state.nidx,
                     idxes.slice(0, -1),
                 );
-                return applyUpdate(state, 0, update);
             }
         }
     }
-    return state;
+    return;
 };
 
 export const clipboardText = (items: ClipboardItem[]) => {

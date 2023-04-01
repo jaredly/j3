@@ -7,6 +7,7 @@ import {
 } from '../mods/clipboard';
 import { cmpFullPath } from './isCoveredBySelection';
 import { UIState } from './ByHand';
+import { orderStartAndEnd } from '../../src/parse/parse';
 
 export function DebugClipboard({
     state,
@@ -22,10 +23,7 @@ export function DebugClipboard({
             state.at
                 .map((sel) => {
                     if (!sel.end) return null;
-                    const [start, end] =
-                        cmpFullPath(sel.start, sel.end) < 0
-                            ? [sel.start, sel.end]
-                            : [sel.end, sel.start];
+                    const [start, end] = orderStartAndEnd(sel.start, sel.end);
 
                     return collectNodes(state.map, start, end, ctx['display']);
                 })

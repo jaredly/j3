@@ -178,7 +178,12 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
 
 export const toMCST = (node: Node, map: UpdateMap): number => {
     if (map[node.loc.idx]) {
-        console.error(`Duplicate node in map??`, node.loc.idx, map);
+        console.error(
+            `Duplicate node in map??`,
+            node.loc.idx,
+            map[node.loc.idx],
+            node,
+        );
     }
     map[node.loc.idx] = {
         ...toMNode(node, map),

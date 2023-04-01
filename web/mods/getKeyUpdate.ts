@@ -41,7 +41,15 @@ export type StateSelect = {
     autoComplete?: boolean;
 };
 
-export type StateChange = StateUpdate | StateSelect | void;
+export type StateChange =
+    | StateUpdate
+    | StateSelect
+    | void
+    | {
+          type: 'menu';
+          menu: State['menu'];
+          autoComplete?: boolean;
+      };
 
 /*
 So, keys:
@@ -127,7 +135,7 @@ export const applyUpdate = (
             end: update.selectionEnd,
         };
         return { ...state, at };
-    } else {
+    } else if (update.type === 'update') {
         at[i] = {
             start: update.selection,
             end: update.selectionEnd,
@@ -137,7 +145,11 @@ export const applyUpdate = (
             at,
             map: applyUpdateMap(state.map, update.map),
         };
+    } else if (update.type === 'menu') {
+        return { ...state, menu: update.menu };
     }
+    let _: never = update;
+    throw new Error(`unexpected update`);
 };
 
 // export const applyUpdate = (state: State, update: KeyUpdate): State | void => {

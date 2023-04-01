@@ -9,7 +9,11 @@ import {
     StateSelect,
 } from './getKeyUpdate';
 import { replacePathWith } from './replacePathWith';
-import { idText, splitGraphemes } from '../../src/parse/parse';
+import {
+    idText,
+    orderStartAndEnd,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 import { collectNodes } from './clipboard';
 import { cmpFullPath } from '../custom/isCoveredBySelection';
@@ -23,10 +27,7 @@ export function handleBackspace(
     display: Ctx['display'],
 ): StateChange {
     if (selection.end) {
-        const [start, end] =
-            cmpFullPath(selection.start, selection.end) < 0
-                ? [selection.start, selection.end]
-                : [selection.end, selection.start];
+        const [start, end] = orderStartAndEnd(selection.start, selection.end);
         const item = collectNodes(map, start, end, display);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];

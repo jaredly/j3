@@ -6,10 +6,11 @@ I guess I'll be operating on the expr? yeah.
 
 */
 
+import equal from 'fast-deep-equal';
 import { getType, Report } from '../get-type/get-types-new';
 import { matchesType } from '../get-type/matchesType';
 import { unifyTypes } from '../get-type/unifyTypes';
-import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
+import { AutoCompleteReplace, Ctx, noloc } from '../to-ast/Ctx';
 import { nodeForType } from '../to-cst/nodeForType';
 import { Expr, Node, Pattern, Type } from '../types/ast';
 import { Map, toMCST } from '../types/mcst';
@@ -69,7 +70,7 @@ export type InferMod =
           node: Node;
       };
 
-export const infer = (exprs: Expr[], ctx: Ctx) => {
+export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
     const report: Report = { types: {}, errors: {} };
     exprs.forEach((expr) => getType(expr, ctx, report));
 
@@ -221,10 +222,18 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
                         node: nodeForType(inferredTypes[+sym], ctx),
                     };
                 } else {
-                    mods[definition.idx] = {
-                        type: 'replace-full',
-                        node: nodeForType(inferredTypes[+sym], ctx),
-                    };
+                    const node = nodeForType(inferredTypes[+sym], ctx);
+                    if (
+                        !equal(
+                            { ...node, loc: noloc },
+                            { ...map[definition.idx], loc: noloc },
+                        )
+                    ) {
+                        console.log('🎉 New Infer');
+                        console.log('-> ', node);
+                        console.log('<- ', map[definition.idx]);
+                        mods[definition.idx] = { type: 'replace-full', node };
+                    }
                 }
             }
         }
@@ -238,10 +247,11 @@ export const infer = (exprs: Expr[], ctx: Ctx) => {
     return mods;
 };
 
-export const reidx = (node: Node, nidx: () => number) =>
+export const reidx = (node: Node, nidx: () => number, preserveTop = false) =>
     transformNode(node, {
-        pre(node, path) {
-            return { ...node, loc: { ...node.loc, idx: nidx() } };
+        pre(child, path) {
+            if (child === node && preserveTop) return child;
+            return { ...child, loc: { ...child.loc, idx: nidx() } };
         },
     });
 
@@ -256,6 +266,9 @@ export function applyInferMod(
             ...map[id],
             ...mod.node,
         };
+    } else if (mod.type === 'replace-full') {
+        mod.node.loc.idx = id;
+        toMCST(reidx(mod.node, nidx, true), map);
     } else if (mod.type === 'wrap') {
         const id1 = nidx();
         const id2 = toMCST(reidx(mod.node, nidx), map);
@@ -270,5 +283,7 @@ export function applyInferMod(
             annot: id2,
             loc: { idx: id, start: 0, end: 0 },
         };
+    } else {
+        throw new Error('bad mod');
     }
 }

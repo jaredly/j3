@@ -54,43 +54,22 @@ export const parseByCharacter = (
 
     for (let i = 0; i < text.length; i++) {
         let mods: Mods = {};
-        let key = text[i];
-        if (key === '^') {
-            key = {
-                l: 'ArrowLeft',
-                r: 'ArrowRight',
-                b: 'Backspace',
-                L: 'ArrowLeft',
-                R: 'ArrowRight',
-                C: 'Copy',
-                V: 'Paste',
-                n: 'Enter',
-            }[text[i + 1]]!;
-            if (!key) {
-                throw new Error(`Unexpected ^${text[i + 1]}`);
-            }
-            if (text[i + 1] === 'L' || text[i + 1] === 'R') {
-                mods.shift = true;
-            }
-            i++;
-        }
-        if (key === '\n') {
-            key = 'Enter';
-        }
+        let key;
+        ({ key, i } = determineKey(text, i, mods));
+
         if (key === 'Copy') {
             let { start, end } = state.at[0];
             if (!end) {
                 throw new Error(`need end for copy`);
             }
 
-            [start, end] =
-                cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+            [start, end] = orderStartAndEnd(start, end);
 
             clipboard = [collectNodes(state.map, start, end, ctx.display)];
             continue;
         }
         if (key === 'Paste') {
-            state = paste(state, ctx, clipboard);
+            state = applyUpdate(state, 0, paste(state, ctx, clipboard));
             continue;
         }
 
@@ -121,17 +100,7 @@ export const parseByCharacter = (
         );
 
         if (updateCtx && update?.autoComplete) {
-            const idx = state.at[0].start[state.at[0].start.length - 1].idx;
-            const exacts = ctx.display[idx]?.autoComplete?.filter(
-                (s) => s.type === 'replace' && s.exact,
-            ) as AutoCompleteReplace[];
-            if (exacts?.length === 1) {
-                state = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
-            }
-        }
-
-        if (debug) {
-            console.log(JSON.stringify(key), state.at[0].start);
+            state = autoCompleteIfNeeded(state, ctx);
         }
 
         state = applyUpdate(state, 0, update) ?? state;
@@ -144,14 +113,9 @@ export const parseByCharacter = (
 
             if (update?.autoComplete) {
                 // Now we do like inference, right?
-                const mods = infer(exprs, ctx);
+                const mods = infer(exprs, ctx, state.map);
                 Object.keys(mods).forEach((id) => {
                     applyInferMod(mods[+id], state.map, state.nidx, +id);
-
-                    // state.map[+id] = {
-                    //     ...state.map[+id],
-                    //     ...mods[+id].node,
-                    // };
                 });
             }
         }
@@ -163,6 +127,48 @@ export const idxSource = () => {
     let idx = 0;
     return () => idx++;
 };
+
+export function orderStartAndEnd(start: Path[], end: Path[]): [Path[], Path[]] {
+    return cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+}
+
+function determineKey(text: string[], i: number, mods: Mods) {
+    let key = text[i];
+    if (key === '^') {
+        key = {
+            l: 'ArrowLeft',
+            r: 'ArrowRight',
+            b: 'Backspace',
+            L: 'ArrowLeft',
+            R: 'ArrowRight',
+            C: 'Copy',
+            V: 'Paste',
+            n: 'Enter',
+        }[text[i + 1]]!;
+        if (!key) {
+            throw new Error(`Unexpected ^${text[i + 1]}`);
+        }
+        if (text[i + 1] === 'L' || text[i + 1] === 'R') {
+            mods.shift = true;
+        }
+        i++;
+    }
+    if (key === '\n') {
+        key = 'Enter';
+    }
+    return { key, i };
+}
+
+export function autoCompleteIfNeeded(state: State, ctx: Ctx) {
+    const idx = state.at[0].start[state.at[0].start.length - 1].idx;
+    const exacts = ctx.display[idx]?.autoComplete?.filter(
+        (s) => s.type === 'replace' && s.exact,
+    ) as AutoCompleteReplace[];
+    if (exacts?.length === 1) {
+        state = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
+    }
+    return state;
+}
 
 function initialState() {
     const nidx = idxSource();
