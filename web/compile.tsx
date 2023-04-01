@@ -168,6 +168,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             };
             last[idx] = hash;
         } catch (err) {
+            console.error(err);
             results[idx] = {
                 status: 'failure',
                 error: (err as Error).message,
@@ -319,11 +320,12 @@ const rmPrevious = (ctx: Ctx, node?: EvalCtx['nodes'][0]): Ctx => {
     return ctx;
 };
 
-const tryIt = <T,>(v: () => T, mod: (err: unknown) => void) => {
-    try {
-        return v();
-    } catch (err) {
-        mod(err);
-        throw err;
-    }
-};
+// const tryIt = <T,>(v: () => T, mod: (err: unknown) => void) => {
+//     try {
+//         return v();
+//     } catch (err) {
+//         console.eorr
+//         mod(err);
+//         throw err;
+//     }
+// };

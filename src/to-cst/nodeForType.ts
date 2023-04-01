@@ -11,8 +11,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
         case 'builtin':
             return {
                 loc: type.form.loc,
-                type: 'identifier',
-                text: type.name,
+                type: 'hash',
+                hash: `:builtin:${type.name}`,
             };
         case 'bool':
             return {
@@ -143,8 +143,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             });
         case 'global':
             return {
-                type: 'identifier',
-                text: ctx.global.reverseNames[type.hash],
+                type: 'hash',
+                hash: type.hash,
                 loc: type.form.loc,
             };
         case 'local':

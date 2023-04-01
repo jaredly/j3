@@ -20,14 +20,14 @@ export const getCtx = (map: Map, root: number) => {
             if (node.type === 'blank' || node.type === 'comment') {
                 return;
             }
-            console.log('processing a node', node.loc.idx);
+            // console.log('processing a node', node.loc.idx);
             const expr = nodeToExpr(node, ctx);
             exprs.push(expr);
             getType(expr, ctx, { errors: ctx.errors, types: {} });
             validateExpr(expr, ctx, ctx.errors);
             ctx = addDef(expr, ctx);
         });
-        console.log('done with it U guess');
+        // console.log('done with it U guess');
         tops.forEach((top) => {
             layout(top, 0, map, ctx.display, true);
         });

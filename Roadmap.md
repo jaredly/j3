@@ -9,6 +9,16 @@
   - [x] autocomplete
   - [x] validate I think
 
+- [ ] so I kindof want a .. flag on listlikes, where I can
+  say 'I want this to be multiline' or not.
+  and like, if you press the `enter` key, it should flip
+  that bit.
+
+- [ ] ooooh record item names should not be autocompletable
+  - oh wait they're not it's fine.
+- [ ] also it's weird that `{x}` is punned, it just shouldn't.
+  - maybe I'll disable some punning
+
 - [ ] REFACTOR I'm using `Ctx[display]` a bunch of places
   that should really just be a `{[idx: number]: string}`.
   I want to change `Ctx` to have that nameLookup on it.

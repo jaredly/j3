@@ -158,7 +158,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                     );
                     const scored = auto
                         .map((auto) => {
-                            if (auto.ann.type !== 'fn') {
+                            if (auto.ann?.type !== 'fn') {
                                 return { auto, res: null, score: -1 };
                             }
                             let score = 0;

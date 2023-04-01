@@ -411,7 +411,8 @@ export const getKeyUpdate = (
                     loc: node.loc,
                 };
             }
-            return replacePathWith(fullPath.slice(0, -1), map, nat);
+            const up = replacePathWith(fullPath.slice(0, -1), map, nat);
+            return up ? { ...up, autoComplete: true } : up;
         }
         if (node.type === 'accessText' && ppath.type === 'attribute') {
             if (parent.type !== 'recordAccess') {

@@ -3,7 +3,7 @@ import { Pattern, Type } from '../types/ast';
 import { nextSym } from './to-ast';
 import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
-import { Report } from '../get-type/get-types-new';
+import { Report, recordMap } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';
 import { addMod } from './specials';
@@ -55,13 +55,7 @@ export const nodeToPattern = (
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
 
-            const prm =
-                res.type === 'record'
-                    ? res.entries.reduce((map, item) => {
-                          map[item.name] = item.value;
-                          return map;
-                      }, {} as { [key: string]: Type })
-                    : null;
+            const prm = res.type === 'record' ? recordMap(res, ctx) : null;
             if (!prm) {
                 err(ctx.errors, form, {
                     type: 'misc',
@@ -74,7 +68,9 @@ export const nodeToPattern = (
                 if (!prm || !prm[name]) {
                     err(ctx.errors, form, {
                         type: 'misc',
-                        message: `attribute not in type`,
+                        message: `attribute ${name} not in type ${JSON.stringify(
+                            prm,
+                        )}`,
                     });
                 }
                 entries.push({
@@ -83,7 +79,7 @@ export const nodeToPattern = (
                     value: nodeToPattern(
                         values[0],
                         prm
-                            ? prm[name] ?? {
+                            ? prm[name]?.value ?? {
                                   type: 'unresolved',
                                   form: t.form,
                                   reason: `attribute not in type ${name}`,
@@ -130,7 +126,7 @@ export const nodeToPattern = (
                         form: name,
                         value: nodeToPattern(
                             name,
-                            prm[namev] ?? nilt,
+                            prm[namev]?.value ?? nilt,
                             ctx,
                             bindings,
                         ),
@@ -172,7 +168,7 @@ export const nodeToPattern = (
                         form: name,
                         value: nodeToPattern(
                             value,
-                            prm[namev] ?? nilt,
+                            prm[namev]?.value ?? nilt,
                             ctx,
                             bindings,
                         ),
