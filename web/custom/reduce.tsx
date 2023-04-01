@@ -109,8 +109,6 @@ export const reduce = (state: UIState, action: Action): UIState => {
     switch (update.type) {
         case 'full-select':
             return { ...state, at: update.at };
-        case 'select':
-            return { ...state, ...applyUpdate(state, 0, update) };
         case 'ui':
             return {
                 ...state,
@@ -119,6 +117,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
             };
         case 'menu':
             return { ...state, menu: update.menu };
+        case 'select':
         case 'update': {
             // Here's where the real work happens.
             if (update.autoComplete) {

@@ -31,6 +31,8 @@ export function DebugClipboard({
         [state.map, state.at],
     );
 
+    if (!debug) return null;
+
     return (
         <div>
             <div>

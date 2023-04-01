@@ -1,4 +1,6 @@
 
+- [ ] do I change node, to not have .hash on ID?
+
 # Weird editing
 
 - [x] can't baclspace an empty hashhh?
