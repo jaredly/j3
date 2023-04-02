@@ -2,7 +2,7 @@
 - [ ] can I separate things out, so that I can get a toyish
   language working?
 
-- [ ] oh another bieve of fixings, let's
+- [x] oh another bieve of fixings, let's
   dooo the `Ctx[display]` everywhere has to go
 
 - [ ] also, `sym -> idx` please
@@ -14,7 +14,7 @@
   - ok yeah, so a usage is out of whack
 
 
-- [ ] whyyyyyy is it zeroing out identifiers?
+- [x] whyyyyyy is it zeroing out identifiers?
   - oh noes, we have map entries that have the wrong locs!
 
 <!-- - [ ] am I  -->
