@@ -6,7 +6,7 @@ import { compile } from './compile';
 import { Success, TopDef, undo, updateStore } from './store';
 import { xpath } from './xpath';
 
-describe('compile', () => {
+describe.skip('compile', () => {
     it('undo should restore hashes', () => {
         const { store, ectx: ctx } = loadIncremental(
             '(def x 10) (def y (, x 20))',

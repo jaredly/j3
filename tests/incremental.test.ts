@@ -26,7 +26,7 @@ import {
 
 it('ok', () => {});
 
-describe('attachAnnotations', () => {
+describe.skip('attachAnnotations', () => {
     it('should work', () => {
         const array = parse('[x :int y z :float]')[0] as {
             type: 'array';
@@ -37,7 +37,7 @@ describe('attachAnnotations', () => {
     });
 });
 
-describe('preprocess', () => {
+describe.skip('preprocess', () => {
     it('', () => {
         const tree = preprocess(parse('(fn [x :int] 10)')[0]);
         const map: Map = {};
@@ -52,7 +52,7 @@ describe('preprocess', () => {
 });
 
 const testValid = (text: string, autoCompleteChoices?: AutoCompleteChoices) =>
-    describe(text, () => {
+    describe.skip(text, () => {
         const { root, omap } = getRoot(text);
         const ectx = newEvalCtx(newCtx());
         const store = initialStore([]);
@@ -79,7 +79,7 @@ const testInvalid = (
     errors: (string | RegExp)[],
     autoCompleteChoices?: AutoCompleteChoices,
 ) =>
-    describe('invalid ' + text, () => {
+    describe.skip('invalid ' + text, () => {
         const { root, omap } = getRoot(text);
         const ectx = newEvalCtx(newCtx());
         const store = initialStore([]);

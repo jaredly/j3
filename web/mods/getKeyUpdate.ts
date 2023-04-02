@@ -635,19 +635,22 @@ export function openListLike({
         flast.type === 'start' ||
         (flast.type === 'subtext' && flast.at === 0)
     ) {
-        for (let i = fullPath.length - 1; i--; i >= 2) {
-            console.log('howww', i, fullPath[i - 1], fullPath);
-            if (wrappable.includes(fullPath[i - 1].type)) {
-                return replacePathWith(
-                    fullPath.slice(0, i),
-                    map,
-                    newListLike(type, nidx(), {
-                        idx,
-                        map: {},
-                        selection: [flast],
-                    }),
-                );
-            }
+        if (wrappable.includes(fullPath[fullPath.length - 2].type)) {
+            // for (let i = fullPath.length - 1; i--; i >= 2) {
+            //     console.log('howww', i, fullPath[i - 1], fullPath);
+            //     if (wrappable.includes(fullPath[i - 1].type)) {
+            //         return replacePathWith(
+            //             fullPath.slice(0, i),
+            // }
+            return replacePathWith(
+                fullPath.slice(0, -1),
+                map,
+                newListLike(type, nidx(), {
+                    idx,
+                    map: {},
+                    selection: [flast],
+                }),
+            );
         }
     }
 

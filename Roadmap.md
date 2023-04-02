@@ -1,4 +1,15 @@
 
+- [ ] can I separate things out, so that I can get a toyish
+  language working?
+
+- [ ] oh another bieve of fixings, let's
+  dooo the `Ctx[display]` everywhere has to go
+
+- [ ] also, `sym -> idx` please
+  - ... are we sure about that?
+  - alsooo I'm not sure about whether I want it to be
+    a number or a string
+
 - [ ] hrmmmmm we're fighting inference here.
   - ok yeah, so a usage is out of whack
 

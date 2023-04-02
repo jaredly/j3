@@ -276,6 +276,8 @@ builtinFn(
 );
 
 // We want it to be generic, which is the trick
+// and ... at this point, do we have to actually do a type
+// system?
 // builtinFn(
 //     basicBuiltins,
 //     basicReverse,
@@ -331,7 +333,7 @@ export const initialGlobal: Global = {
 };
 
 export const newCtx = (): Ctx => {
-    console.log('newCtx');
+    // console.log('newCtx');
     return {
         sym: { current: 0 },
         global: initialGlobal,
