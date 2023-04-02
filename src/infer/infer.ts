@@ -85,8 +85,6 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         };
     } = {};
 
-    type PPath = Pattern['type'];
-
     const visit: Visitor<null> = {
         Expr(node, ctx) {
             if (node.type === 'fn') {
@@ -263,6 +261,7 @@ export function applyInferMod(
         map[id] = {
             ...map[id],
             ...mod.node,
+            loc: map[id].loc,
         };
     } else if (mod.type === 'replace-full') {
         mod.node.loc.idx = id;

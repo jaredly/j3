@@ -33,6 +33,7 @@ export const getCtx = (map: Map, root: number) => {
         });
         const mods = Object.keys(ctx.mods);
         if (mods.length) {
+            console.log('2️⃣ mods', ctx.mods, map);
             map = { ...map };
             applyMods(ctx, map);
         }

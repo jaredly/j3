@@ -21,6 +21,9 @@ export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
+            if (!node.text) {
+                console.log('empty node text', node);
+            }
             return node.text;
         case 'unparsed':
             return node.raw;
@@ -33,9 +36,10 @@ export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
             if (node.hash.startsWith(':builtin:')) {
                 return node.hash.slice(':builtin:'.length);
             }
-            // if (!(style?.type === 'id')) {
-            //     console.log('no hash name', node.loc.idx, node.hash, style);
-            // }
+            if (!(style?.type === 'id')) {
+                console.log('no hash name', node.loc.idx, node.hash, style);
+                debugger;
+            }
             return style?.type === 'id' ? style.text : null;
     }
 };

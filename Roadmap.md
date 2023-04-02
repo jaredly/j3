@@ -2,7 +2,9 @@
 - [ ] hrmmmmm we're fighting inference here.
   - ok yeah, so a usage is out of whack
 
+
 - [ ] whyyyyyy is it zeroing out identifiers?
+  - oh noes, we have map entries that have the wrong locs!
 
 <!-- - [ ] am I  -->
 

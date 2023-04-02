@@ -55,7 +55,6 @@ export const resolveType = (
 
     const global = ctx.global.types[hash];
     if (global) {
-        // console.log('doing a resolve', form, hash);
         ensure(ctx.display, form.loc.idx, {}).style = {
             type: 'id',
             hash,

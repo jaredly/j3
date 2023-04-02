@@ -106,14 +106,18 @@ export const reduce = (state: UIState, action: Action): UIState => {
             return { ...state, menu: update.menu };
         case 'select':
         case 'update': {
+            console.log('1️⃣ update', update);
             const prev = state.at[0];
             // Here's where the real work happens.
             if (update.autoComplete && !state.menu?.dismissed) {
                 state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
+                verifyLocs(state.map, 'autocomplete');
             }
             // debugger;
             state = { ...state, ...applyUpdate(state, 0, update) };
+            verifyLocs(state.map, 'apply update');
             let { ctx, map, exprs } = getCtx(state.map, state.root);
+            verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;
             if (update.autoComplete) {
@@ -126,11 +130,14 @@ export const reduce = (state: UIState, action: Action): UIState => {
                     if (!modded.length) {
                         break;
                     }
+                    console.log('3️⃣ infer mods', mods);
                     modded.forEach((id) => {
                         applyInferMod(mods[+id], state.map, state.nidx, +id);
+                        verifyLocs(state.map, 'apply infer mod');
                         console.log(state.map[+id]);
                     });
                     ({ ctx, map, exprs } = getCtx(state.map, state.root));
+                    verifyLocs(state.map, 'get ctx');
                     state.map = map;
                     state.ctx = ctx;
                 }
@@ -184,3 +191,15 @@ export function applyMenuItem(
     const idx = path[path.length - 1].idx;
     return autoCompleteUpdate(idx, state.map, path, item);
 }
+
+export const verifyLocs = (map: Map, message: string) => {
+    Object.keys(map).forEach((k) => {
+        if (+k !== map[+k].loc.idx) {
+            console.log(+k, map[+k].loc.idx);
+            // debugger;
+            console.error(
+                new Error(`loc has the wrong loc! during ${message}`),
+            );
+        }
+    });
+};

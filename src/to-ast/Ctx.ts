@@ -275,6 +275,13 @@ builtinFn(
     tbool,
 );
 
+// We want it to be generic, which is the trick
+// builtinFn(
+//     basicBuiltins,
+//     basicReverse,
+//     'reduce',
+// )
+
 const record = (entries: TRecord['entries']): TRecord => ({
     type: 'record',
     entries,
@@ -324,6 +331,7 @@ export const initialGlobal: Global = {
 };
 
 export const newCtx = (): Ctx => {
+    console.log('newCtx');
     return {
         sym: { current: 0 },
         global: initialGlobal,

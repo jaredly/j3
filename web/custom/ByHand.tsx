@@ -239,6 +239,11 @@ export const Doc = ({
         return items ? { path, items } : undefined;
     }, [state.map, state.at, state.ctx]);
 
+    const start = state.at[0].start;
+    const idx = start[start.length - 1].idx;
+    const node = state.map[idx];
+    const display = state.ctx.display[idx];
+
     return (
         <div
             onMouseEnter={(evt) => {
@@ -280,6 +285,11 @@ export const Doc = ({
                 </div>
             ) : null}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
+            <div>
+                {JSON.stringify(node)}
+                <br />
+                {JSON.stringify(display)}
+            </div>
         </div>
     );
 };
