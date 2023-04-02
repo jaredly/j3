@@ -8,16 +8,7 @@ import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
 
 export const filterComments = (nodes: Node[]) =>
-    nodes.filter(
-        (node) =>
-            node.type !== 'comment' &&
-            node.type !== 'blank' &&
-            !(
-                node.type === 'identifier' &&
-                node.text === '' &&
-                (!node.hash || node.hash === '')
-            ),
-    );
+    nodes.filter((node) => node.type !== 'comment' && node.type !== 'blank');
 
 export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
     if (!type) {

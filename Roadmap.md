@@ -1,7 +1,10 @@
 
 - [ ] hrmmmmm we're fighting inference here.
+  - ok yeah, so a usage is out of whack
 
-- [ ] am I 
+- [ ] whyyyyyy is it zeroing out identifiers?
+
+<!-- - [ ] am I  -->
 
 - [ ] do I change node, to not have .hash on ID?
   - nope, because I need it for id-defns

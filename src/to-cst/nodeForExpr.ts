@@ -40,17 +40,15 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
     switch (expr.type) {
         case 'local':
             return {
-                type: 'identifier',
-                text: '',
-                hash: '#:' + expr.sym,
+                type: 'hash',
+                hash: ':' + expr.sym,
                 loc: expr.form.loc,
             };
 
         case 'global':
             return {
-                type: 'identifier',
-                text: '',
-                hash: '#' + expr.hash,
+                type: 'hash',
+                hash: expr.hash,
                 loc: expr.form.loc,
             };
         case 'unresolved':

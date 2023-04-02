@@ -22,7 +22,7 @@ export const resolveType = (
     ctx: Ctx,
     form: Node,
 ): Type => {
-    console.log('resolve typpe', text);
+    // console.log('resolve typpe', text);
     if (!hash && text === any.form.text) {
         return { ...any, form };
     }
@@ -30,7 +30,7 @@ export const resolveType = (
         return { ...none, form };
     }
     if (!hash) {
-        console.log('res type no hash', text);
+        // console.log('res type no hash', text);
         populateAutocompleteType(ctx, text, form);
         ctx.display[form.loc.idx].style = { type: 'unresolved' };
         return {
@@ -55,7 +55,7 @@ export const resolveType = (
 
     const global = ctx.global.types[hash];
     if (global) {
-        console.log('doing a resolve', form, hash);
+        // console.log('doing a resolve', form, hash);
         ensure(ctx.display, form.loc.idx, {}).style = {
             type: 'id',
             hash,
