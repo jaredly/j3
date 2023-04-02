@@ -17,7 +17,7 @@ import { nodeToExpr } from '../to-ast/nodeToExpr';
 import { Node } from '../types/cst';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
-export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
+export const idText = (node: MNode) => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
@@ -36,11 +36,7 @@ export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
             if (node.hash.startsWith(':builtin:')) {
                 return node.hash.slice(':builtin:'.length);
             }
-            if (!(style?.type === 'id')) {
-                console.log('no hash name', node.loc.idx, node.hash, style);
-                debugger;
-            }
-            return style?.type === 'id' ? style.text : null;
+            return null;
     }
 };
 
@@ -75,7 +71,7 @@ export const parseByCharacter = (
 
             [start, end] = orderStartAndEnd(start, end);
 
-            clipboard = [collectNodes(state.map, start, end, ctx.display)];
+            clipboard = [collectNodes(state.map, start, end, ctx.hashNames)];
             continue;
         }
         if (key === 'Paste') {
@@ -105,7 +101,7 @@ export const parseByCharacter = (
             key,
             state.map,
             state.at[0],
-            ctx.display,
+            ctx.hashNames,
             state.nidx,
             mods,
         );

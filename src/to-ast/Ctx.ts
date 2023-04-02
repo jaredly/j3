@@ -30,6 +30,7 @@ export type Ctx = {
     mods: {
         [idx: number]: Mod[];
     };
+    hashNames: { [idx: number]: string };
     display: {
         [idx: number]: {
             style?: NodeStyle;
@@ -339,6 +340,7 @@ export const newCtx = (): Ctx => {
         global: initialGlobal,
         local: emptyLocal,
         localMap: { terms: {}, types: {} },
+        hashNames: {},
         errors: {},
         display: {},
         mods: {},

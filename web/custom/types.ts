@@ -14,6 +14,7 @@ export type RenderProps = {
     debug?: boolean;
     idx: number;
     map: Map;
+    hashNames: Ctx['hashNames'];
     selection: UIState['at'];
     reg: Reg;
     path: Path[];

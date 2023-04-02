@@ -384,8 +384,7 @@ function doABunchOfKeys({
 }) {
     while (true) {
         const ctx = newCtx();
-        const curText =
-            idText(state.map[pathIdx(state.at[0].start)], undefined) ?? '';
+        const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
         const pos = pathPos(state.at[0].start, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
@@ -401,7 +400,7 @@ function doABunchOfKeys({
             key,
             state.map,
             state.at[0],
-            ctx.display,
+            ctx.hashNames,
             state.nidx,
         );
         expect(update).toBeTruthy();
@@ -411,7 +410,7 @@ function doABunchOfKeys({
             } else {
                 state = applyUpdate(state, 0, update)!;
                 expect(
-                    validatePath(state.map, update.selection, ctx.display),
+                    validatePath(state.map, update.selection, ctx.hashNames),
                 ).toBeTruthy();
             }
         }

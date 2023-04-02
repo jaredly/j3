@@ -17,8 +17,8 @@ export type NNode =
     | { type: 'ref'; id: number; path: PathChild }
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
-export const getNodes = (node: MNode, display?: NodeStyle) =>
-    unnestNodes(getNestedNodes(node, display));
+export const getNodes = (node: MNode, text?: string) =>
+    unnestNodes(getNestedNodes(node, text));
 
 export const unnestNodes = (node: NNode): ONode[] => {
     switch (node.type) {
@@ -57,7 +57,7 @@ export const unnestNodes = (node: NNode): ONode[] => {
 
 export const getNestedNodes = (
     node: MNode,
-    display?: NodeStyle,
+    text?: string,
     layout?: Layout,
 ): NNode => {
     switch (node.type) {
@@ -142,11 +142,6 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'end' },
                 ],
             };
-        // return [
-        //     ...withCommas(node.values, layout),
-        //     { type: 'punct', text: '}', color: 'rainbow' },
-        //     { type: 'blinker', loc: 'end' },
-        // ];
         case 'list':
             return {
                 type: 'horiz',
@@ -201,7 +196,7 @@ export const getNestedNodes = (
         case 'attachment':
         case 'rich-text':
         case 'hash':
-            return { type: 'text', text: idText(node, display) ?? '' };
+            return { type: 'text', text: text ?? idText(node) ?? '' };
         default:
             let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);

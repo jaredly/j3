@@ -65,7 +65,7 @@ export const posToPath = (
             'ArrowRight',
             map,
             { start: path },
-            ctx.display,
+            ctx.hashNames,
             nidx,
         );
         if (update?.type === 'select') {
@@ -132,7 +132,7 @@ describe('a test', () => {
                     data,
                     firstPath,
                     secondPath,
-                    ctx.display,
+                    ctx.hashNames,
                 );
                 const printed = clipboardText([collected], ctx.display);
                 if (printed !== output) {

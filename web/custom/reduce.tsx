@@ -69,7 +69,7 @@ const actionToUpdate = (
                 action.key,
                 state.map,
                 state.at[0],
-                state.ctx.display,
+                state.ctx.hashNames,
                 state.nidx,
                 action.mods,
             );

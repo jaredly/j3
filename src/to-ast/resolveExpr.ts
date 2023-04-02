@@ -38,6 +38,7 @@ export const resolveExpr = (
                     text: local.name,
                     ann: local.type,
                 };
+                ctx.hashNames[form.loc.idx] = local.name;
                 return { type: 'local', sym: local.sym, form };
             }
             populateAutocomplete(ctx, text, form);
@@ -61,6 +62,7 @@ export const resolveExpr = (
                     text: ctx.global.reverseNames[hash],
                     ann: builtin,
                 };
+                ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
                 return { type: 'builtin', hash, form };
             }
             populateAutocomplete(ctx, text, form);

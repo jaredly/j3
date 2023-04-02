@@ -61,7 +61,7 @@ export function HiddenInput({
                 const items = collectClipboard(
                     state.map,
                     state.at,
-                    ctx.display,
+                    ctx.hashNames,
                 );
                 if (!items.length) {
                     return;

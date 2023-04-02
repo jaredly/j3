@@ -13,7 +13,7 @@ export const removeNodes = (
     end: Path[],
     nodes: Node[],
     map: Map,
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
 ): StateChange | void => {
     const ancestor = commonAncestor(start, end);
     if (!ancestor) {
@@ -162,7 +162,7 @@ export const removeNodes = (
     //     console.log('cannot left');
     //     return;
     // }
-    while (!validatePath(updated, left!, display)) {
+    while (!validatePath(updated, left!, hashNames)) {
         left = goLeft(left!, map)?.selection!;
         if (!left) {
             console.log('cannot left');

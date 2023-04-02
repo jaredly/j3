@@ -88,10 +88,10 @@ export const textStyle = (
 };
 
 export const Render = (props: RenderProps) => {
-    const { idx, map, display, path } = props;
+    const { idx, map, display, hashNames, path } = props;
     const nnode = getNestedNodes(
         map[idx],
-        display[idx]?.style,
+        hashNames[idx],
         display[idx]?.layout,
     );
 
@@ -325,6 +325,7 @@ export const RenderNNode = (
                     errors={props.errors}
                     dispatch={dispatch}
                     reg={reg}
+                    hashNames={props.hashNames}
                     idx={nnode.id}
                     selection={props.selection}
                     debug={props.debug}

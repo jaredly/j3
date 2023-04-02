@@ -18,16 +18,15 @@ import { Ctx } from '../../src/to-ast/Ctx';
 export function handleBackspace(
     map: Map,
     selection: { start: Path[]; end?: Path[] },
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
 ): StateChange {
     if (selection.end) {
         const [start, end] = orderStartAndEnd(selection.start, selection.end);
-        const item = collectNodes(map, start, end, display);
+        const item = collectNodes(map, start, end, hashNames);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {
-                const fullText =
-                    idText(node, display[node.loc.idx]?.style) ?? '';
+                const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
                 const split = splitGraphemes(fullText);
                 const text = split
                     .slice(0, item.source.start)
@@ -53,7 +52,7 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            return removeNodes(start, end, item.nodes, map, display);
+            return removeNodes(start, end, item.nodes, map, hashNames);
         }
     }
 
@@ -117,10 +116,8 @@ export function handleBackspace(
                                   ? {
                                         type: 'identifier',
                                         text:
-                                            idText(
-                                                target,
-                                                display[target.loc.idx]?.style,
-                                            ) + node.text,
+                                            hashNames[target.loc.idx] ??
+                                            idText(target) + node.text,
                                         loc: target.loc,
                                     }
                                   : {
@@ -367,7 +364,7 @@ export function handleBackspace(
     }
 
     if (!atStart && ('text' in node || node.type === 'hash')) {
-        const fullText = idText(node, display[node.loc.idx]?.style) ?? '';
+        const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
         const text = splitGraphemes(fullText);
         const atEnd =
             flast.type === 'end' ||

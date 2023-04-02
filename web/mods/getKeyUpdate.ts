@@ -186,7 +186,7 @@ export const getKeyUpdate = (
     key: string,
     map: Map,
     selection: { start: Path[]; end?: Path[] },
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
     nidx: () => number,
     mods?: Mods,
 ): StateChange => {
@@ -212,17 +212,17 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, selection, display);
+        return handleBackspace(map, selection, hashNames);
     }
 
-    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
+    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
         if ('text' in node || node.type === 'hash') {
-            const text = idText(node, display[node.loc.idx]?.style) ?? '';
+            const text = hashNames[node.loc.idx] ?? idText(node) ?? '';
             if (!isPathAtStart(text, flast)) {
                 const pos = pathPos(fullPath, text);
                 const next = fullPath.slice(0, -1).concat([
@@ -463,14 +463,14 @@ export const getKeyUpdate = (
         }
     }
 
-    return insertText(key, map, fullPath, display, nidx);
+    return insertText(key, map, fullPath, hashNames, nidx);
 };
 
 export const insertText = (
     inputRaw: string,
     map: Map,
     fullPath: Path[],
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
     nidx: () => number,
 ) => {
     const flast = fullPath[fullPath.length - 1];
@@ -478,7 +478,7 @@ export const insertText = (
     const idx = flast.idx;
     // Ok, so now we're updating things
     const input = splitGraphemes(inputRaw);
-    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
+    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
     const pos = pathPos(fullPath, textRaw);
 
     if (
@@ -493,7 +493,7 @@ export const insertText = (
             input,
             idx,
             fullPath.slice(0, -1),
-            display[idx]?.style,
+            hashNames[idx],
         );
     }
 
@@ -543,9 +543,9 @@ function updateText(
     input: string[],
     idx: number,
     path: Path[],
-    style: NodeStyle | undefined,
+    hashName?: string,
 ): StateUpdate {
-    const raw = idText(node, style) ?? 'no-id-text';
+    const raw = hashName ?? idText(node) ?? 'no-id-text';
     let text = splitGraphemes(raw);
     if (pos === 0) {
         text.unshift(...input);
