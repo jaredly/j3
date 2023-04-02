@@ -285,11 +285,15 @@ export const Doc = ({
                 </div>
             ) : null}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
-            <div>
+            {/* <div>
                 {JSON.stringify(node)}
                 <br />
                 {JSON.stringify(display)}
-            </div>
+                <br />
+                <div style={{ whiteSpace: 'pre' }}>
+                    {JSON.stringify(state.ctx.hashNames, null, 2)}
+                </div>
+            </div> */}
         </div>
     );
 };

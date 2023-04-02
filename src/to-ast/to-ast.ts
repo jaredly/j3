@@ -49,6 +49,7 @@ export const resolveType = (
                 hash: text,
                 text,
             };
+            ctx.hashNames[form.loc.idx] = text;
             return { type: 'builtin', name: text, form };
         }
     }
@@ -61,6 +62,7 @@ export const resolveType = (
             text: ctx.global.reverseNames[hash],
             ann: global,
         };
+        ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
         return { type: 'global', hash, form };
     }
     populateAutocompleteType(ctx, text, form);

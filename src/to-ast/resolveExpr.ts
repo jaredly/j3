@@ -52,6 +52,7 @@ export const resolveExpr = (
                     text: ctx.global.reverseNames[hash],
                     ann: global.type,
                 };
+                ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
             const builtin = ctx.global.builtins.terms[hash];

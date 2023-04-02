@@ -196,7 +196,10 @@ export const getNestedNodes = (
         case 'attachment':
         case 'rich-text':
         case 'hash':
-            return { type: 'text', text: text ?? idText(node) ?? '' };
+            return {
+                type: 'text',
+                text: text ?? idText(node) ?? '🚨',
+            };
         default:
             let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);
