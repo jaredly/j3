@@ -1,10 +1,13 @@
 import { noForm } from '../src/to-ast/Ctx';
 import { Loc } from '../src/types/cst';
 import { ListLikeContents, MNode } from '../src/types/mcst';
-import { loadIncremental } from '../tests/incrementallyBuildTree';
 import { compile } from './compile';
 import { Success, TopDef, undo, updateStore } from './store';
 import { xpath } from './xpath';
+
+const loadIncremental = (text: string): any => {
+    throw new Error('nop');
+};
 
 describe.skip('compile', () => {
     it('undo should restore hashes', () => {
