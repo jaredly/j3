@@ -12,6 +12,8 @@ export type AutoCompleteReplace = {
     ann: Type;
 };
 
+export const noloc: Loc = { start: -1, end: -1, idx: -1 };
+
 export type AutoCompleteResult =
     | AutoCompleteReplace
     | { type: 'info'; text: string }; // TODO also autofixers probably?
@@ -90,6 +92,7 @@ export const btype = (v: string): Type => ({
 export const basicBuiltins: Global['builtins'] = {
     types: {
         uint: [],
+        texture: [],
         int: [],
         float: [],
         bool: [],
@@ -271,6 +274,33 @@ builtinFn(
     [tstring, tstring],
     tbool,
 );
+
+const record = (entries: TRecord['entries']): TRecord => ({
+    type: 'record',
+    entries,
+    form: { type: 'blank', loc: noloc },
+    open: false,
+    spreads: [],
+});
+
+builtinFn(
+    basicBuiltins,
+    basicReverse,
+    'texture-get',
+    [
+        btype('texture'),
+        record([
+            { name: 'x', value: tfloat },
+            { name: 'y', value: tfloat },
+        ]),
+    ],
+    record([
+        { name: 'x', value: tfloat },
+        { name: 'y', value: tfloat },
+        { name: 'z', value: tfloat },
+        { name: 'w', value: tfloat },
+    ]),
+);
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
     type: 'tfn',
     args: [{ sym: 0, form: blank, name: 'Value' }],
@@ -304,8 +334,6 @@ export const newCtx = (): Ctx => {
         mods: {},
     };
 };
-
-export const noloc: Loc = { start: -1, end: -1, idx: -1 };
 
 export const nil: Expr = {
     type: 'record',

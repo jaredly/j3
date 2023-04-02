@@ -1,4 +1,6 @@
 
+- [ ] hrmmmmm we're fighting inference here.
+
 - [ ] am I 
 
 - [ ] do I change node, to not have .hash on ID?

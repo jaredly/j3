@@ -175,7 +175,6 @@ export function autoCompleteUpdate(
     };
 }
 
-// @deprecated TODO REMOVE THIS, migrate to the reduce up here
 export function applyMenuItem(
     path: Path[],
     item: AutoCompleteReplace,
@@ -184,44 +183,4 @@ export function applyMenuItem(
 ): StateChange {
     const idx = path[path.length - 1].idx;
     return autoCompleteUpdate(idx, state.map, path, item);
-    // state = {
-    //     ...state,
-    //     at: [
-    //         {
-    //             start: path.slice(0, -1).concat([
-    //                 {
-    //                     idx,
-    //                     type: 'subtext',
-    //                     at: splitGraphemes(item.text).length,
-    //                 },
-    //             ]),
-    //         },
-    //     ],
-    //     // map: { ...state.map, [idx]: { loc: state.map[idx].loc, ...item.node } },
-    // };
-
-    // const root = fromMCST(state.root, state.map) as { values: Node[] };
-    // let exprs = root.values
-    //     .map((node) =>
-    //         node.type === 'blank' || node.type === 'comment'
-    //             ? null
-    //             : nodeToExpr(node, {
-    //                   ...ctx,
-    //                   display: {},
-    //                   mods: {},
-    //                   errors: {},
-    //               }),
-    //     )
-    //     .filter(Boolean) as Expr[];
-    // state = { ...state, map: { ...state.map } };
-    // applyMods(ctx, state.map);
-
-    // // Now we do like inference, right?
-    // const mods = infer(exprs, ctx, state.map);
-    // console.log('inferMods', mods);
-    // const keys = Object.keys(mods);
-    // // if (!keys.length) break;
-    // keys.forEach((id) => {
-    //     applyInferMod(mods[+id], state.map, state.nidx, +id);
-    // });
 }
