@@ -1,3 +1,5 @@
+// hm
+
 export const fuzzyScore = (
     exactWeight: number,
     query: string,
@@ -98,7 +100,7 @@ export const compareScores = (one: FuzzyScore, two: FuzzyScore): number => {
     }
     if (one.full && two.full) {
         if (one.score == two.score) {
-            return two.loc - one.loc;
+            return one.loc - two.loc;
         }
         return one.score - two.score;
     }

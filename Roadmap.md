@@ -1,4 +1,10 @@
 
+# So, I'll want to actually make a "library" or something
+in contracts to the sandbox that you're working in.
+
+
+# Um
+
 - [ ] can I separate things out, so that I can get a toyish
   language working?
 
@@ -53,8 +59,16 @@ of `idx`?
 - [ ] COPY/PASTE needs to re-sym locals too.
   - ClipboardItem needs that nameLookup, turns out
 
+# MAKE IT So unlinked references don't just die
+
+- which means, we want a `hashNames`, that is retained
+  at the ... top ... of a given toplevel? Yeah that sounds right?
+  I guess it could be at the top of the sandbox, right?
+  might as well I guess.
+
 # Weird editing
 
+- [ ] color deftype ids
 - [x] can't baclspace an empty hashhh?
 - [x] still can't delete an annot
 - [ ] backspace shouldn't nix whole listlikes. it should go in.
