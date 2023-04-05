@@ -19,6 +19,9 @@ in contracts to the sandbox that you're working in.
 - [ ] hrmmmmm we're fighting inference here.
   - ok yeah, so a usage is out of whack
 
+- [x] ALSO there's this bug that happens ,where I'm changing something
+  and all of the sudden these things autocomplete to <
+  ok I think I fixed it
 
 - [x] whyyyyyy is it zeroing out identifiers?
   - oh noes, we have map entries that have the wrong locs!

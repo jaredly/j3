@@ -5,6 +5,7 @@ import { ensure } from './nodeToExpr';
 import { allTerms, allTypes } from './resolveExpr';
 
 export function populateAutocomplete(ctx: Ctx, text: string, form: Node) {
+    if (!text.length) return;
     const results = allTerms(ctx);
     const withScores = results
         .map((result) => ({

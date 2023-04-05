@@ -436,7 +436,7 @@ function doABunchOfKeys({
             );
             console.log(state.at[0].start);
             expect(newPos).toEqual(
-                `it should have been different? ${startPos}`,
+                `it should have been different after ${key}? ${startPos}`,
             );
         }
         if (newPos === stop) {
