@@ -1,6 +1,5 @@
 import { Node } from '../types/cst';
 import { Pattern, Type } from '../types/ast';
-import { nextSym } from './to-ast';
 import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
 import { Report, recordMap } from '../get-type/get-types-new';
@@ -17,30 +16,30 @@ export const nodeToPattern = (
     switch (form.type) {
         case 'identifier': {
             let sym;
-            if (!form.hash) {
-                sym = nextSym(ctx);
-                addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
-            } else {
-                sym = +form.hash.slice(1);
-                if (isNaN(sym)) {
-                    throw new Error(`non-number sym? ${form.hash}`);
-                }
-            }
+            // if (!form.hash) {
+            //     sym = nextSym(ctx);
+            //     addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
+            // } else {
+            //     sym = +form.hash.slice(1);
+            //     if (isNaN(sym)) {
+            //         throw new Error(`non-number sym? ${form.hash}`);
+            //     }
+            // }
             ctx.display[form.loc.idx] = {
                 style: {
                     type: 'id-decl',
-                    hash: ':' + sym,
+                    hash: form.loc.idx,
                 },
             };
             bindings.push({
                 name: form.text,
-                sym,
+                sym: form.loc.idx,
                 type: t,
             });
             return {
                 type: 'local',
+                sym: form.loc.idx,
                 form,
-                sym,
             };
         }
         case 'record': {

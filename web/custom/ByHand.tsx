@@ -94,16 +94,16 @@ export type Action =
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
 
-export const maxSym = (map: Map) => {
-    let max = 0;
-    Object.keys(map).forEach((id) => {
-        const node = map[+id];
-        if (node.type === 'identifier' && node.hash?.startsWith(':')) {
-            max = Math.max(max, +node.hash.slice(1));
-        }
-    });
-    return max;
-};
+// export const maxSym = (map: Map) => {
+//     let max = 0;
+//     Object.keys(map).forEach((id) => {
+//         const node = map[+id];
+//         if (node.type === 'identifier' && node.hash?.startsWith(':')) {
+//             max = Math.max(max, +node.hash.slice(1));
+//         }
+//     });
+//     return max;
+// };
 
 export const ByHand = () => {
     const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');

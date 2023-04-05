@@ -96,9 +96,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         }
         case 'identifier': {
-            if (!form.text && !form.hash) {
-                return { type: 'blank', form };
-            }
             if (form.text.match(/^-?[0-9]+$/)) {
                 ensure(ctx.display, form.loc.idx, {}).style = {
                     type: 'number',
@@ -124,7 +121,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 };
             }
 
-            return resolveExpr(form.text, form.hash, ctx, form);
+            return resolveExpr(form.text, undefined, ctx, form);
         }
         case 'hash':
             return resolveExpr('', form.hash, ctx, form);

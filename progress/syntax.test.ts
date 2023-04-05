@@ -239,6 +239,10 @@ id
 (a  ^l^b
 (a )
 (list id blank)
+
+a.b^l^l^l(
+(a.b)
+(list (access id 1))
 `;
 
 // hi:^b
@@ -280,7 +284,7 @@ describe('a test', () => {
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
                 const backOrig = nodeToString(
                     fromMCST(idx, data),
-                    ctx.display,
+                    ctx.hashNames,
                     sourceMap,
                 );
                 let back = backOrig;

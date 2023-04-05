@@ -8,7 +8,7 @@ import { populateAutocomplete } from './populateAutocomplete';
 
 export const resolveExpr = (
     text: string,
-    hash: string | undefined,
+    hash: string | number | undefined,
     ctx: Ctx,
     form: Node,
 ): Expr => {
@@ -28,13 +28,13 @@ export const resolveExpr = (
             reason: `No hash specified`,
         };
     } else {
-        if (hash.startsWith(':')) {
-            const sym = +hash.slice(1);
+        if (typeof hash === 'number') {
+            const sym = hash;
             const local = ctx.local.terms.find((t) => t.sym === sym);
             if (local) {
                 ctx.display[form.loc.idx].style = {
                     type: 'id',
-                    hash: ':' + local.sym,
+                    hash: local.sym,
                     text: local.name,
                     ann: local.type,
                 };
@@ -108,7 +108,7 @@ export const allTerms = (ctx: Ctx): Result[] => {
                     type: 'local',
                     name,
                     typ: type,
-                    hash: `:${sym}`,
+                    hash: sym,
                 } satisfies Result),
         ),
         ...globals,
@@ -146,7 +146,7 @@ export const allTypes = (ctx: Ctx): Result[] => {
                     type: 'local',
                     name,
                     typ: bound ?? any,
-                    hash: `:${sym}`,
+                    hash: sym,
                 } satisfies Result),
         ),
         ...globals,

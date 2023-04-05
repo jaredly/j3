@@ -635,21 +635,33 @@ export function openListLike({
         flast.type === 'start' ||
         (flast.type === 'subtext' && flast.at === 0)
     ) {
-        if (wrappable.includes(fullPath[fullPath.length - 2].type)) {
-            // for (let i = fullPath.length - 1; i--; i >= 2) {
-            //     console.log('howww', i, fullPath[i - 1], fullPath);
-            //     if (wrappable.includes(fullPath[i - 1].type)) {
+        let ppath = fullPath[fullPath.length - 2];
+        let subPath = fullPath;
+        let nw: NewThing = {
+            idx,
+            map: {},
+            selection: [flast],
+        };
+        if (ppath.type === 'record-target') {
+            nw.selection = fullPath.slice(-2);
+            subPath = fullPath.slice(0, -1);
+            nw.idx = ppath.idx;
+            //     idx: ppath.idx
+            // }
+            ppath = subPath[subPath.length - 2];
+        }
+
+        if (wrappable.includes(subPath[subPath.length - 2].type)) {
+            // for (let i = subPath.length - 1; i--; i >= 2) {
+            //     console.log('howww', i, subPath[i - 1], subPath);
+            //     if (wrappable.includes(subPath[i - 1].type)) {
             //         return replacePathWith(
-            //             fullPath.slice(0, i),
+            //             subPath.slice(0, i),
             // }
             return replacePathWith(
-                fullPath.slice(0, -1),
+                subPath.slice(0, -1),
                 map,
-                newListLike(type, nidx(), {
-                    idx,
-                    map: {},
-                    selection: [flast],
-                }),
+                newListLike(type, nidx(), nw),
             );
         }
     }

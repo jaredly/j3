@@ -18,12 +18,10 @@ export type AutoCompleteResult =
     | AutoCompleteReplace
     | { type: 'info'; text: string }; // TODO also autofixers probably?
 
-export type Mod =
-    | {
-          type: 'tannot';
-          node: Node;
-      }
-    | { type: 'hash'; hash: string };
+export type Mod = {
+    type: 'tannot';
+    node: Node;
+};
 
 export type Ctx = {
     errors: Report['errors'];
@@ -38,7 +36,7 @@ export type Ctx = {
             autoComplete?: AutoCompleteResult[];
         };
     };
-    sym: { current: number };
+    // sym: { current: number };
     global: Global;
     local: Local;
     localMap: {
@@ -71,10 +69,10 @@ export type NodeStyle =
     | { type: 'let-pairs' }
     | { type: 'unresolved' }
     | { type: 'number'; kind: NumberKind }
-    | { type: 'id-decl'; hash: string }
+    | { type: 'id-decl'; hash: string | number }
     | {
           type: 'id';
-          hash: string;
+          hash: string | number;
           ann?: Type;
           text?: string;
       };
@@ -336,7 +334,7 @@ export const initialGlobal: Global = {
 export const newCtx = (): Ctx => {
     // console.log('newCtx');
     return {
-        sym: { current: 0 },
+        // sym: { current: 0 },
         global: initialGlobal,
         local: emptyLocal,
         localMap: { terms: {}, types: {} },

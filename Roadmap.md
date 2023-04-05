@@ -5,7 +5,7 @@
 - [x] oh another bieve of fixings, let's
   dooo the `Ctx[display]` everywhere has to go
 
-- [ ] also, `sym -> idx` please
+- [x] also, `sym -> idx` please
   - ... are we sure about that?
   - alsooo I'm not sure about whether I want it to be
     a number or a string

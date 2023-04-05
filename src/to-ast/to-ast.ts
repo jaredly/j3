@@ -8,7 +8,7 @@ import { populateAutocompleteType } from './populateAutocomplete';
 import { ensure } from './nodeToExpr';
 
 export type Result =
-    | { type: 'local'; name: string; typ: Type; hash: string }
+    | { type: 'local'; name: string; typ: Type; hash: number }
     | {
           type: 'global' | 'builtin';
           name: string;
@@ -18,7 +18,7 @@ export type Result =
 
 export const resolveType = (
     text: string,
-    hash: string | undefined,
+    hash: string | number | undefined,
     ctx: Ctx,
     form: Node,
 ): Type => {
@@ -40,7 +40,7 @@ export const resolveType = (
         };
     }
 
-    if (hash.startsWith(':builtin:')) {
+    if (typeof hash === 'string' && hash.startsWith(':builtin:')) {
         text = hash.slice(':builtin:'.length);
         const builtin = ctx.global.builtins.types[text];
         if (builtin) {
@@ -54,16 +54,18 @@ export const resolveType = (
         }
     }
 
-    const global = ctx.global.types[hash];
-    if (global) {
-        ensure(ctx.display, form.loc.idx, {}).style = {
-            type: 'id',
-            hash,
-            text: ctx.global.reverseNames[hash],
-            ann: global,
-        };
-        ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
-        return { type: 'global', hash, form };
+    if (typeof hash === 'string') {
+        const global = ctx.global.types[hash];
+        if (global) {
+            ensure(ctx.display, form.loc.idx, {}).style = {
+                type: 'id',
+                hash,
+                text: ctx.global.reverseNames[hash],
+                ann: global,
+            };
+            ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
+            return { type: 'global', hash, form };
+        }
     }
     populateAutocompleteType(ctx, text, form);
     return {
@@ -73,7 +75,7 @@ export const resolveType = (
     };
 };
 
-export const nextSym = (ctx: Ctx) => ctx.sym.current++;
+// export const nextSym = (ctx: Ctx) => ctx.sym.current++;
 
 export const addDef = (res: Expr, ctx: Ctx): Ctx => {
     if (res.type === 'deftype') {

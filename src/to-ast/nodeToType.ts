@@ -1,6 +1,6 @@
 import { Node } from '../types/cst';
 import { Type } from '../types/ast';
-import { resolveType, nextSym } from './to-ast';
+import { resolveType } from './to-ast';
 import { Ctx, nilt } from './Ctx';
 import { filterComments } from './nodeToExpr';
 import { err } from './nodeToPattern';
@@ -10,7 +10,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
         case 'unparsed':
             return nilt;
         case 'identifier': {
-            return resolveType(form.text, form.hash, ctx, form);
+            return resolveType(form.text, undefined, ctx, form);
         }
         case 'hash':
             return resolveType('', form.hash, ctx, form);
@@ -131,7 +131,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                     // const type = nodeToType(arg, ctx)
                     return {
                         name: arg.type === 'identifier' ? arg.text : 'NOPE',
-                        sym: nextSym(ctx),
+                        sym: arg.loc.idx, // nextSym(ctx),
                         form: arg,
                     };
                 });

@@ -1,7 +1,7 @@
 // Now bringing in autocomplete and such
 
 import { parseByCharacter } from '../src/parse/parse';
-import { basicBuiltins, mathHashes, newCtx } from '../src/to-ast/Ctx';
+import { newCtx } from '../src/to-ast/Ctx';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 
@@ -38,7 +38,7 @@ describe('completion and such', () => {
             const ctx = newCtx();
             const { map: data } = parseByCharacter(input, ctx, true, false);
             const idx = (data[-1] as ListLikeContents).values[0];
-            expect(nodeToString(fromMCST(idx, data), ctx.display)).toEqual(
+            expect(nodeToString(fromMCST(idx, data), ctx.hashNames)).toEqual(
                 expected,
             );
         });

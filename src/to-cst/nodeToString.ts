@@ -7,9 +7,14 @@ export type SourceMap = {
     cur: number;
 };
 
+// export type NTSConfig = {
+//     sm: SourceMap,
+//     hashNames: Ctx['display']
+// }
+
 export const nodeToString = (
     node: Node,
-    hashNames: Ctx['display'],
+    hashNames: Ctx['hashNames'],
     sm: SourceMap = { map: {}, cur: 0 },
     addBefore = 0,
 ): string => {
@@ -55,7 +60,7 @@ export const showSourceMap = (text: string, sm: SourceMap) => {
 
 export const nodeToString_ = (
     node: Node,
-    hashNames: Ctx['display'],
+    hashNames: Ctx['hashNames'],
     sm: SourceMap = { map: {}, cur: 0 },
 ): string => {
     switch (node.type) {
@@ -76,13 +81,16 @@ export const nodeToString_ = (
         case 'blank':
             return '';
         case 'hash': {
-            const style = hashNames[node.loc.idx]?.style;
-            if (node.hash.startsWith(':builtin:')) {
+            if (
+                typeof node.hash === 'string' &&
+                node.hash.startsWith(':builtin:')
+            ) {
                 return node.hash.slice(':builtin:'.length);
             }
-            return style?.type === 'id'
-                ? style.text ?? '<no hash name>'
-                : `<hash not found ${node.hash}>`;
+            return (
+                hashNames[node.loc.idx] ??
+                `<hashName not recorded ${node.loc.idx}>`
+            );
         }
         case 'comment':
             return `$comment$`;

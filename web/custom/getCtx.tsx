@@ -7,12 +7,12 @@ import { Expr } from '../../src/types/ast';
 import { Node } from '../../src/types/cst';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { layout } from '../layout';
-import { maxSym } from './ByHand';
+// import { maxSym } from './ByHand';
 
 export const getCtx = (map: Map, root: number) => {
     const tops = (map[root] as ListLikeContents).values;
     let ctx = newCtx();
-    ctx.sym.current = maxSym(map) + 1;
+    // ctx.sym.current = maxSym(map) + 1;
     try {
         const rootNode = fromMCST(root, map) as { values: Node[] };
         const exprs: Expr[] = [];
@@ -48,12 +48,7 @@ export const getCtx = (map: Map, root: number) => {
 export function applyMods(ctx: Ctx, map: Map) {
     Object.keys(ctx.mods).forEach((key) => {
         ctx.mods[+key].forEach((mod) => {
-            if (mod.type === 'hash') {
-                const node = map[+key];
-                if (node.type === 'identifier') {
-                    map[+key] = { ...node, hash: mod.hash };
-                }
-            }
+            // UMMMM MAYBE
         });
     });
 }

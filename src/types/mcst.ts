@@ -21,7 +21,6 @@ export type Atom =
     | {
           type: 'identifier'; // likeThis
           text: string;
-          hash?: string;
       }
     | { type: 'unparsed'; raw: string };
 // `LikeThis
@@ -39,7 +38,7 @@ export type MNodeContents =
     | stringText
     | RichText
     | Attachment
-    | { type: 'hash'; hash: string }
+    | { type: 'hash'; hash: string | number }
 
     // list-like
     | { type: 'comment'; text: string }

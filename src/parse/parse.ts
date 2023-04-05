@@ -33,7 +33,10 @@ export const idText = (node: MNode) => {
         case 'blank':
             return '';
         case 'hash':
-            if (node.hash.startsWith(':builtin:')) {
+            if (
+                typeof node.hash === 'string' &&
+                node.hash.startsWith(':builtin:')
+            ) {
                 return node.hash.slice(':builtin:'.length);
             }
             return null;

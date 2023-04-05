@@ -31,17 +31,17 @@ export const compile = (store: Store, ectx: EvalCtx) => {
     const allStyles: Ctx['display'] = {};
     const prevStyles = ctx.display;
 
-    const usedHashes: { [hash: string]: number[] } = {};
-    Object.keys(store.map).forEach((ridx) => {
-        const idx = +ridx;
-        const node = store.map[idx];
-        if (node.type === 'identifier' && node.hash) {
-            if (!usedHashes[node.hash]) {
-                usedHashes[node.hash] = [];
-            }
-            usedHashes[node.hash].push(idx);
-        }
-    });
+    // const usedHashes: { [hash: string]: number[] } = {};
+    // Object.keys(store.map).forEach((ridx) => {
+    //     const idx = +ridx;
+    //     const node = store.map[idx];
+    //     if (node.type === 'identifier' && node.hash) {
+    //         if (!usedHashes[node.hash]) {
+    //             usedHashes[node.hash] = [];
+    //         }
+    //         usedHashes[node.hash].push(idx);
+    //     }
+    // });
 
     const updateMap: UpdateMap = {};
     const tmpMap: Map = { ...store.map };
@@ -59,22 +59,7 @@ export const compile = (store: Store, ectx: EvalCtx) => {
             return;
         }
 
-        ctx.sym.current = 0;
         const node = fromMCST(idx, tmpMap);
-        transformNode(node, {
-            pre(node) {
-                if (
-                    node.type === 'identifier' &&
-                    node.hash &&
-                    node.hash.startsWith(':')
-                ) {
-                    const sym = +node.hash.slice(1);
-                    if (!isNaN(sym) && sym >= ctx.sym.current) {
-                        ctx.sym.current = sym + 1;
-                    }
-                }
-            },
-        });
 
         const report: Report = { errors: {}, types: {} };
         ctx.errors = report.errors;
@@ -83,20 +68,6 @@ export const compile = (store: Store, ectx: EvalCtx) => {
 
         const res = nodeToExpr(node, ctx);
         const hash = objectHash(noForm(res));
-
-        Object.keys(ctx.mods).forEach((idx) => {
-            ctx.mods[+idx].forEach((mod) => {
-                if (mod.type === 'hash') {
-                    const node = updateMap[+idx] ?? store.map[+idx];
-                    if (node.type === 'identifier') {
-                        updateMap[+idx] = {
-                            ...node,
-                            hash: mod.hash,
-                        };
-                    }
-                }
-            });
-        });
 
         layout(idx, 0, tmpMap, ctx.display, true);
 
@@ -181,34 +152,34 @@ export const compile = (store: Store, ectx: EvalCtx) => {
         }
 
         const newHashes = exprHashes(res);
-        if (prevHashes) {
-            const newNames: { [key: string]: string } = {};
-            if (newHashes) {
-                Object.keys(newHashes).forEach(
-                    (name) => (newNames[newHashes[name]] = name),
-                );
-            }
-            Object.entries(prevHashes).forEach(([name, hash]) => {
-                const newHash = newHashes?.[name];
-                if (newHash === hash || newNames[hash]) {
-                    return;
-                }
-                // These are the idx's of identifiers
-                // that use the hash.
-                const idxs = usedHashes[hash];
-                if (idxs) {
-                    idxs.forEach((idx) => {
-                        const node = tmpMap[idx] as Identifier & {
-                            loc: Loc;
-                        };
-                        updateMap[idx] = tmpMap[idx] = {
-                            ...node,
-                            hash: newHash,
-                        };
-                    });
-                }
-            });
-        }
+        // if (prevHashes) {
+        //     const newNames: { [key: string]: string } = {};
+        //     if (newHashes) {
+        //         Object.keys(newHashes).forEach(
+        //             (name) => (newNames[newHashes[name]] = name),
+        //         );
+        //     }
+        //     Object.entries(prevHashes).forEach(([name, hash]) => {
+        //         const newHash = newHashes?.[name];
+        //         if (newHash === hash || newNames[hash]) {
+        //             return;
+        //         }
+        //         // These are the idx's of identifiers
+        //         // that use the hash.
+        //         const idxs = usedHashes[hash];
+        //         if (idxs) {
+        //             idxs.forEach((idx) => {
+        //                 const node = tmpMap[idx] as Identifier & {
+        //                     loc: Loc;
+        //                 };
+        //                 updateMap[idx] = tmpMap[idx] = {
+        //                     ...node,
+        //                     hash: newHash,
+        //                 };
+        //             });
+        //         }
+        //     });
+        // }
 
         ctx = addDef(res, ctx);
         if (res.type === 'def') {
