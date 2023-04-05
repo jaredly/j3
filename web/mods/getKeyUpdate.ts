@@ -172,7 +172,7 @@ const isPathAtStart = (text: string, path: Path) => {
     return (
         // !(path.type === 'end' && text.length > 0) &&
         // !(typeof loc === 'number' && loc > 0)
-        path.type === 'start' || (path.type === 'subtext' && path.at === 0)
+        path.type === 'start' || (path.type === 'subtext' && path.at <= 0)
     );
 };
 
@@ -545,7 +545,7 @@ function updateText(
     path: Path[],
     hashName?: string,
 ): StateUpdate {
-    const raw = hashName ?? idText(node) ?? 'no-id-text';
+    const raw = hashName ?? idText(node) ?? '';
     let text = splitGraphemes(raw);
     if (pos === 0) {
         text.unshift(...input);

@@ -84,7 +84,7 @@ export const Menu = ({
                             {item.type === 'replace' && item.ann
                                 ? nodeToString(
                                       nodeForType(item.ann, state.ctx),
-                                      state.ctx.display,
+                                      state.ctx.hashNames,
                                   )
                                 : null}
                         </div>

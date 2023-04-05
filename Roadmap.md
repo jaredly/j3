@@ -59,6 +59,13 @@ of `idx`?
 - [x] still can't delete an annot
 - [ ] backspace shouldn't nix whole listlikes. it should go in.
 - [ ] changing a toplevel def should update usages of that def
+- [ ] IF we have an unlinked reference ...
+  - hmmmmm yeah ok this is why we need a toplevel hashNames thing
+    so that we can hang onto names that were.
+    And now that `sym`s are globally unique, we don't need to use
+    the loc of that whatsit, we can just use either the hash
+    for a global or the sym for a local. Seems reasonable.
+
 - [x] can't . on a hash
 - [ ] '(' at start of hash at start of attr should wrap
 - [ ] backspace at '(' should unwrap

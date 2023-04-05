@@ -7,11 +7,6 @@ export type SourceMap = {
     cur: number;
 };
 
-// export type NTSConfig = {
-//     sm: SourceMap,
-//     hashNames: Ctx['display']
-// }
-
 export const nodeToString = (
     node: Node,
     hashNames: Ctx['hashNames'],

@@ -39,7 +39,7 @@ export const idText = (node: MNode) => {
             ) {
                 return node.hash.slice(':builtin:'.length);
             }
-            return null;
+            return '🚨';
     }
 };
 

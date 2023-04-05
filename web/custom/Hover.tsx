@@ -46,7 +46,7 @@ export const Hover = ({
                         (style.type === 'id' && style.ann
                             ? nodeToString(
                                   nodeForType(style.ann, state.ctx),
-                                  state.ctx.display,
+                                  state.ctx.hashNames,
                               ) + '\n'
                             : '') +
                         ' ' +

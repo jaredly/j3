@@ -269,7 +269,12 @@ export function applyInferMod(
     } else if (mod.type === 'wrap') {
         const id1 = nidx();
         const id2 = toMCST(reidx(mod.node, nidx), map);
-        // const id2 = nidx()
+        Object.keys(map).forEach((k) => {
+            const node = map[+k];
+            if (node.type === 'hash' && node.hash === id) {
+                map[+k] = { ...node, hash: id1 };
+            }
+        });
         map[id1] = {
             ...map[id],
             loc: { ...map[id].loc, idx: id1 },

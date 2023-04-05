@@ -106,7 +106,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
             return { ...state, menu: update.menu };
         case 'select':
         case 'update': {
-            console.log('1️⃣ update', update);
+            // console.log('1️⃣ update', update);
             const prev = state.at[0];
             // Here's where the real work happens.
             if (update.autoComplete && !state.menu?.dismissed) {
