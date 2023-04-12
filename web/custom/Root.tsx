@@ -9,6 +9,9 @@ import { Render } from './Render';
 import { closestSelection } from './verticalMove';
 import { UIState, Action } from './ByHand';
 import { orderStartAndEnd } from '../../src/parse/parse';
+import { Expr } from '../../src/types/ast';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { nodeForExpr } from '../../src/to-cst/nodeForExpr';
 
 export function Root({
     state,
@@ -46,6 +49,8 @@ export function Root({
     );
 
     const [drag, setDrag] = useState(false);
+    const exprMap: { [idx: number]: Expr } = {};
+    state.exprs.forEach((expr) => (exprMap[expr.form.loc.idx] = expr));
 
     return (
         <div
@@ -115,6 +120,14 @@ export function Root({
                             },
                         ]}
                     />
+                    {exprMap[top] ? (
+                        <div>
+                            {nodeToString(
+                                nodeForExpr(exprMap[top], ctx),
+                                ctx.hashNames,
+                            )}
+                        </div>
+                    ) : null}
                     {debug ? <div>{sexp(fromMCST(top, state.map))}</div> : null}
                 </div>
             ))}

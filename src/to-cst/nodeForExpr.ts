@@ -1,4 +1,4 @@
-import { Ctx, nilt } from '../to-ast/Ctx';
+import { Ctx, nilt, noloc } from '../to-ast/Ctx';
 import { recordMap } from '../get-type/get-types-new';
 import {
     Expr,
@@ -9,6 +9,7 @@ import {
     TRecord,
     Type,
 } from '../types/ast';
+import { nodeForType } from './nodeForType';
 
 export const loc = (loc: Loc, contents: NodeContents): Node => ({
     loc,
@@ -65,11 +66,48 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                     ...expr.args.map((arg) => nodeForExpr(arg, ctx)),
                 ],
             };
+        case 'def':
+            return {
+                loc: expr.form.loc,
+                type: 'list',
+                values: [
+                    id('def', noloc),
+                    id(expr.name, noloc),
+                    nodeForExpr(expr.value, ctx),
+                ],
+            };
+        case 'number':
+            return {
+                loc: expr.form.loc,
+                type: 'identifier',
+                text: expr.value.toString(),
+            };
+        case 'builtin':
+            return { loc: expr.form.loc, type: 'hash', hash: expr.hash };
+        case 'fn':
+            return {
+                loc: expr.form.loc,
+                type: 'list',
+                values: [
+                    id('fn', noloc),
+                    {
+                        type: 'array',
+                        loc: noloc,
+                        values: expr.args.map((arg) => ({
+                            type: 'annot',
+                            target: id('pattern', noloc),
+                            annot: nodeForType(arg.type, ctx),
+                            loc: noloc,
+                        })),
+                    },
+                    ...expr.body.map((expr) => nodeForExpr(expr, ctx)),
+                ],
+            };
     }
     // return expr.form;
     return {
         loc: expr.form.loc,
         type: 'identifier',
-        text: 'nodeForExpr ' + expr.type,
+        text: '$$nodeForExpr ' + expr.type,
     };
 };

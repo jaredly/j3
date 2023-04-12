@@ -127,4 +127,31 @@ The algebraic effects system makes use of a type macro for convenience.
 (deftype name type)
 ```
 
+## Other type macros
+
+```clj
+(@typeof value) -> the typeof that value
+```
+
+Options for getting the length of an array type
+
+```clj
+; a bespoke array-len macro
+(@array-len (@typeof [1 2 3])) -> 3u
+; allow .0 .1 .2 tuple access to builtin parameterized type args
+(.1 (@typeof [1 2 3])) -> 3u
+; allow .record access to builtin parameterized type args, seems a little
+; more fragile?
+(.len (@typeof [1 2 3])) -> 3u
+; @args produces the tuple of arguments to a builtin parameterized type...
+(.1 (@args (typeof [1 2 3]))) -> 3u
+; can I make my own array-len?
+(deftype array-len
+  (tfn [T:(array _ uint)] (.1 T)))
+; and then
+(array-len (@typeof [1 2 3]))
+```
+
+Relatedly...
+can I infer the type args to `reduce` from the args?
 

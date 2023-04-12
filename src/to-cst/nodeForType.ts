@@ -91,18 +91,19 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     id('tfn', noloc),
                     loc(noloc, {
                         type: 'array',
-                        values: type.args.flatMap((arg) => {
+                        values: type.args.flatMap((arg): Node[] => {
                             map[arg.form.loc.idx] = arg.name;
                             ctx.hashNames[arg.form.loc.idx] = arg.name;
+                            const name = id(arg.name, noloc);
                             return [
-                                id(
-                                    // ctx.reverseNames[arg.sym] ??
-                                    arg.name,
-                                    noloc,
-                                ),
-                                ...(arg.bound
-                                    ? [nodeForType(arg.bound, ctx)]
-                                    : []),
+                                arg.bound
+                                    ? {
+                                          type: 'annot',
+                                          target: name,
+                                          annot: nodeForType(arg.bound, ctx),
+                                          loc: noloc,
+                                      }
+                                    : name,
                             ];
                         }),
                     }),
@@ -156,15 +157,19 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             };
         case 'local':
             return {
-                type: 'identifier',
-                // hmmm ok can't count on localMap
-                // if the type variable is from
-                // something I didn't just evaluate
-                // 🤔
-                // Does that apply to local values?
-                // no just types I think.
-                // ctx.reverseNames[type.sym] ??
-                text: `tvar${type.sym}`,
+                type: 'hash',
+                hash: type.sym,
+                // type: 'identifier',
+                // // hmmm ok can't count on localMap
+                // // if the type variable is from
+                // // something I didn't just evaluate
+                // // 🤔
+                // // Does that apply to local values?
+                // // no just types I think.
+                // // ctx.reverseNames[type.sym] ??
+                // text:
+                // ctx.hashNames
+                // `tvar${type.sym}`,
                 loc: type.form.loc,
             };
     }

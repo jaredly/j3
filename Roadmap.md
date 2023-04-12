@@ -7,9 +7,18 @@ and then I indicate, which ones should match which
 
 OH I should make it so `(fn hi<T> [a:T] a)` works
 
-- [ ] TVars ... let's ditch the `sym`s there too
+- [x] TVars ... let's ditch the `sym`s there too
   use locs. Howbout builtins use idx's that are all negative?
   sounds cool to me
+- [ ] backspace at the end of a tapply should just remove the tapply bit
+- [x] TVars toString aren't hangingin on to local names
+
+```clj
+Cannn I ... inferrrr? ....
+(@typeof reduce) ->
+(tfn [Input Output ArrayLen:uint]
+  (fn [(array Input ArrayLen) Output (fn [Input Output] Output)] Output))
+```
 
 
 # Type application
@@ -23,7 +32,10 @@ Sure, why not.
 Wow, that was ... easy? Strangely so.
 I wonder if macros will do a similar thing?
 
+
+
 # So, I'll want to actually make a "library" or something
+
 in contrast to the sandbox that you're working in.
 
 

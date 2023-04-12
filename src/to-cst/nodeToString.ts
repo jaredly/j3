@@ -84,7 +84,8 @@ export const nodeToString_ = (
             }
             return (
                 hashNames[node.loc.idx] ??
-                `<hashName not recorded ${node.loc.idx}>`
+                (typeof node.hash === 'number' ? hashNames[node.hash] : null) ??
+                `<hashName not recorded ${node.loc.idx} ${node.hash}>`
             );
         }
         case 'comment':

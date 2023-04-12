@@ -205,6 +205,7 @@ builtinFn(
 );
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
+const targ3 = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'reduce', {
     type: 'tfn',
     args: [
@@ -216,14 +217,14 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
             form: blankAt(targ2),
             name: 'Output',
         },
+        {
+            form: blankAt(targ3),
+            name: 'ArrayLen',
+            bound: btype('uint'),
+        },
     ],
     body: {
         type: 'fn',
-        body: {
-            type: 'local',
-            form: blank,
-            sym: targ2,
-        },
         args: [
             {
                 type: 'apply',
@@ -239,6 +240,11 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
                         form: blank,
                         sym: targ1,
                     },
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: targ3,
+                    },
                 ],
             },
             {
@@ -249,11 +255,6 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
             {
                 type: 'fn',
                 form: blank,
-                body: {
-                    type: 'local',
-                    form: blank,
-                    sym: targ2,
-                },
                 args: [
                     {
                         type: 'local',
@@ -266,8 +267,18 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
                         sym: targ2,
                     },
                 ],
+                body: {
+                    type: 'local',
+                    form: blank,
+                    sym: targ2,
+                },
             },
         ],
+        body: {
+            type: 'local',
+            form: blank,
+            sym: targ2,
+        },
         form: blank,
     },
     form: blank,
