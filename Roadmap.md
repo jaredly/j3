@@ -1,4 +1,13 @@
 
+# Type Checking Bonanza
+
+So, I think I want a war of all against all
+like, I define a bunch of different types
+and then I indicate, which ones should match which
+
+OH I should make it so `(fn hi<T> [a:T] a)` works
+
+
 # Type application
 What gives?
 

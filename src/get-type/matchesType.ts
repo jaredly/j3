@@ -142,6 +142,43 @@ export const _matchesType = (
             }
             return inv(candidate, expected, path);
         }
+        case 'apply':
+            if (expected.type === 'apply') {
+                const target = _matchOrExpand(
+                    candidate.target,
+                    expected.target,
+                    ctx,
+                    path.concat('target'),
+                );
+                if (target !== true) {
+                    return target;
+                }
+                if (candidate.args.length !== expected.args.length) {
+                    return {
+                        type: 'wrong number of arguments',
+                        expected: expected.args.length,
+                        received: candidate.args.length,
+                        form: candidate.form,
+                        path,
+                    };
+                }
+                for (let i = 0; i < candidate.args.length; i++) {
+                    const can = candidate.args[i];
+                    const exp = expected.args[i];
+                    const res = _matchOrExpand(
+                        can,
+                        exp,
+                        ctx,
+                        path.concat([i + '']),
+                    );
+                    if (res !== true) {
+                        return res;
+                    }
+                }
+                return true;
+            } else {
+                return inv(candidate, expected, path);
+            }
         case 'builtin':
             return (
                 (expected.type === 'builtin' &&
@@ -293,6 +330,13 @@ export const _matchesType = (
         }
     }
     return inv(candidate, expected, path);
+    // return {
+    //     type: 'unification',
+    //     one: expected,
+    //     two: candidate,
+    //     form: blank,
+    //     path,
+    // };
 };
 
 export const applyAndResolve = (
