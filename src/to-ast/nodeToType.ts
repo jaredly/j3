@@ -122,7 +122,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
 
             if (first.type === 'identifier' && first.text === 'tfn') {
                 const targs = args.shift()!;
-                if (targs.type !== 'array') {
+                if (!targs || targs.type !== 'array') {
                     return {
                         type: 'unresolved',
                         form,
@@ -142,13 +142,15 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 return {
                     type: 'tfn',
                     args: parsed,
-                    body: nodeToType(args[0], {
-                        ...ctx,
-                        local: {
-                            ...ctx.local,
-                            types: [...parsed, ...ctx.local.types],
-                        },
-                    }),
+                    body: args.length
+                        ? nodeToType(args[0], {
+                              ...ctx,
+                              local: {
+                                  ...ctx.local,
+                                  types: [...parsed, ...ctx.local.types],
+                              },
+                          })
+                        : nilt,
                     form,
                 };
             }

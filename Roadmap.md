@@ -7,6 +7,10 @@ and then I indicate, which ones should match which
 
 OH I should make it so `(fn hi<T> [a:T] a)` works
 
+- [ ] TVars ... let's ditch the `sym`s there too
+  use locs. Howbout builtins use idx's that are all negative?
+  sounds cool to me
+
 
 # Type application
 What gives?

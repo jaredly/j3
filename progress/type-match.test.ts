@@ -22,9 +22,9 @@ true bool
 false bool
 'hi ['hi 'ho]
 ('hi 10) [('hi int)]
+('hi 10) ((tfn [T] [('hi T)]) int)
 `;
 // 1. float
-// ('hi 10) : ((tfn [T] [('hi T)]) int)
 // (lettype [vec2 {x float y float}] (array vec2 4)) : (array {x float y float})
 
 declare global {

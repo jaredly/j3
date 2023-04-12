@@ -1,4 +1,5 @@
-import { blank, Ctx, fileLazy, imageFileLazy, nilt } from '../to-ast/Ctx';
+import { blank, Ctx, nilt } from '../to-ast/Ctx';
+import { fileLazy, imageFileLazy } from '../to-ast/builtins';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,
