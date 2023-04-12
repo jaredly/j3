@@ -243,18 +243,19 @@ id
 a.b^l^l^l(
 (a.b)
 (list (access id 1))
+
+hi:^b
+hi
+id
+
+(.^b)
+(list)
+
+( (^la^l^lb
+(b a ())
+(list id id (list))
+
 `;
-
-// hi:^b
-// hi
-// id
-
-// (.^b)
-// (list)
-
-// ( (^la^l^lb
-// (b a ())
-// (list id id (list))
 
 describe('a test', () => {
     data.trim()

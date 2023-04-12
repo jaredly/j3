@@ -344,8 +344,9 @@ export const getKeyUpdate = (
             }
         }
         if (
-            flast.type === 'start' ||
-            (flast.type === 'subtext' && flast.at === 0)
+            node.type !== 'blank' &&
+            (flast.type === 'start' ||
+                (flast.type === 'subtext' && flast.at === 0))
         ) {
             return newNodeBefore(fullPath.slice(0, -1), map, {
                 ...newBlank(nidx()),
