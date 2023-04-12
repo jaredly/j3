@@ -275,20 +275,25 @@ export const Doc = ({
             ) : null}
             {debug ? (
                 <div>
+                    <button
+                        onClick={() => {
+                            console.log(state);
+                            const node = fromMCST(-1, state.map);
+                            console.log(node);
+                            (node as { values: Node[] }).values.forEach(
+                                (node) =>
+                                    console.log(nodeToExpr(node, state.ctx)),
+                            );
+                        }}
+                    >
+                        Log state and nodes
+                    </button>
+                    <br />
                     MENU: STATE MENU {JSON.stringify(state.menu)} AND THE
                     {JSON.stringify(menu)}
                 </div>
             ) : null}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
-            {/* <div>
-                {JSON.stringify(node)}
-                <br />
-                {JSON.stringify(display)}
-                <br />
-                <div style={{ whiteSpace: 'pre' }}>
-                    {JSON.stringify(state.ctx.hashNames, null, 2)}
-                </div>
-            </div> */}
         </div>
     );
 };

@@ -3,7 +3,7 @@ import { Expr, NumberKind, TVar, Type } from '../types/ast';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
 import { basicBuiltins, basicReverse } from './builtins';
-export { none, nil, nilt, noloc, blank, any } from './builtins';
+export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
 
 export type AutoCompleteReplace = {
     type: 'replace';
@@ -46,6 +46,7 @@ export type Ctx = {
 
 export type Global = {
     builtins: {
+        bidx: number;
         terms: { [hash: string]: Type };
         names: { [name: string]: string[] };
         types: { [name: string]: TVar[] };
@@ -75,22 +76,6 @@ export type NodeStyle =
           ann?: Type;
           text?: string;
       };
-
-export const noForm = (obj: any): any => {
-    if (Array.isArray(obj)) {
-        return obj.map(noForm);
-    }
-    if (obj && typeof obj === 'object') {
-        const res: any = {};
-        Object.keys(obj).forEach((k) => {
-            if (k !== 'form') {
-                res[k] = noForm(obj[k]);
-            }
-        });
-        return res;
-    }
-    return obj;
-};
 
 export const emptyLocal: Local = { terms: [], types: [] };
 export const initialGlobal: Global = {

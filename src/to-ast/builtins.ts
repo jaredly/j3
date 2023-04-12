@@ -1,13 +1,34 @@
 import { Expr, Loc, Node, TRecord, Type } from '../types/ast';
 import objectHash from 'object-hash';
-import { Global, noForm } from './Ctx';
+import { Global } from './Ctx';
+
+export const noForm = (obj: any): any => {
+    if (Array.isArray(obj)) {
+        return obj.map(noForm);
+    }
+    if (obj && typeof obj === 'object') {
+        const res: any = {};
+        Object.keys(obj).forEach((k) => {
+            if (k !== 'form') {
+                res[k] = noForm(obj[k]);
+            }
+        });
+        return res;
+    }
+    return obj;
+};
 
 export const noloc: Loc = { start: -1, end: -1, idx: -1 };
 
 export const blank: Node = {
     type: 'blank',
-    loc: { start: -1, end: -1, idx: -1 },
+    loc: noloc,
 };
+
+export const blankAt = (idx: number): Node => ({
+    ...blank,
+    loc: { ...noloc, idx },
+});
 
 export const btype = (v: string): Type => ({
     type: 'builtin',
@@ -16,6 +37,7 @@ export const btype = (v: string): Type => ({
 });
 
 export const basicBuiltins: Global['builtins'] = {
+    bidx: -3,
     types: {
         uint: [],
         texture: [],
@@ -26,10 +48,9 @@ export const basicBuiltins: Global['builtins'] = {
         bytes: [],
         'attachment-handle': [],
         array: [
-            { sym: 0, form: blank, name: 'Value' },
+            { form: blankAt(-2), name: 'Value' },
             {
-                sym: 1,
-                form: blank,
+                form: blankAt(-3),
                 name: 'Length',
                 default_: {
                     type: 'builtin',
@@ -182,14 +203,26 @@ builtinFn(
     [tstring, tstring],
     tbool,
 );
+const targ1 = basicBuiltins.bidx--;
+const targ2 = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'reduce', {
     type: 'tfn',
+    args: [
+        {
+            form: blankAt(targ1),
+            name: 'Input',
+        },
+        {
+            form: blankAt(targ2),
+            name: 'Output',
+        },
+    ],
     body: {
         type: 'fn',
         body: {
             type: 'local',
             form: blank,
-            sym: 1,
+            sym: targ2,
         },
         args: [
             {
@@ -204,14 +237,14 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
                     {
                         type: 'local',
                         form: blank,
-                        sym: 0,
+                        sym: targ1,
                     },
                 ],
             },
             {
                 type: 'local',
                 form: blank,
-                sym: 1,
+                sym: targ2,
             },
             {
                 type: 'fn',
@@ -219,36 +252,24 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
                 body: {
                     type: 'local',
                     form: blank,
-                    sym: 1,
+                    sym: targ2,
                 },
                 args: [
                     {
                         type: 'local',
                         form: blank,
-                        sym: 0,
+                        sym: targ1,
                     },
                     {
                         type: 'local',
                         form: blank,
-                        sym: 1,
+                        sym: targ2,
                     },
                 ],
             },
         ],
         form: blank,
     },
-    args: [
-        {
-            form: blank,
-            sym: 0,
-            name: 'Input',
-        },
-        {
-            form: blank,
-            sym: 1,
-            name: 'Output',
-        },
-    ],
     form: blank,
 });
 // We want it to be generic, which is the trick
@@ -284,12 +305,13 @@ builtinFn(
         { name: 'w', value: tfloat },
     ]),
 );
+const darg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
     type: 'tfn',
-    args: [{ sym: 0, form: blank, name: 'Value' }],
+    args: [{ form: blankAt(darg), name: 'Value' }],
     body: {
         type: 'fn',
-        args: [{ type: 'local', sym: 0, form: blank }],
+        args: [{ type: 'local', sym: darg, form: blank }],
         body: tstring,
         form: blank,
     },

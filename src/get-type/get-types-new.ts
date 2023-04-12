@@ -157,7 +157,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                         return;
                     }
                 }
-                map[target.args[i].sym] = expr.args[i];
+                map[target.args[i].form.loc.idx] = expr.args[i];
             }
             return applyTypeVariables(target.body, map);
         }

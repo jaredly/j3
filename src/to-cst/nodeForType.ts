@@ -92,7 +92,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     loc(noloc, {
                         type: 'array',
                         values: type.args.flatMap((arg) => {
-                            map[arg.sym] = arg.name;
+                            map[arg.form.loc.idx] = arg.name;
+                            ctx.hashNames[arg.form.loc.idx] = arg.name;
                             return [
                                 id(
                                     // ctx.reverseNames[arg.sym] ??

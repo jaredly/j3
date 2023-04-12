@@ -1,6 +1,6 @@
 import { Node } from '../types/cst';
 import { Type } from '../types/ast';
-import { resolveType } from './to-ast';
+import { resolveType } from './resolveType';
 import { Ctx, nilt } from './Ctx';
 import { filterComments, maybeParseNumber } from './nodeToExpr';
 import { err } from './nodeToPattern';
