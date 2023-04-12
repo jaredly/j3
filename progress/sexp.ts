@@ -4,6 +4,8 @@ export const sexp = (node: Node): string => {
     switch (node.type) {
         case 'identifier':
             return 'id';
+        case 'hash':
+            return node.hash + '';
         case 'list':
         case 'array':
         case 'record':
@@ -34,7 +36,20 @@ export const sexp = (node: Node): string => {
                     .join(' ')})`;
             }
             return 'string';
+        case 'tapply':
+            return `(tapply ${sexp(node.target)} ${node.values
+                .map(sexp)
+                .join(' ')})`;
+        case 'comment':
+            return 'comment';
+        case 'rich-text':
+            return 'rich-text';
+        case 'attachment':
+            return 'attachment';
+        case 'unparsed':
+            return 'unparsed';
         default:
-            return 'AA' + node.type;
+            let _: never = node;
+            return 'AA' + (node as any).type;
     }
 };

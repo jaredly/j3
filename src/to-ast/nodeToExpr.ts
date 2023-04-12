@@ -6,18 +6,10 @@ import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
+import { nodeToType } from './nodeToType';
 
 export const filterComments = (nodes: Node[]) =>
-    nodes.filter(
-        (node) =>
-            node.type !== 'comment' &&
-            node.type !== 'blank' &&
-            !(
-                node.type === 'identifier' &&
-                node.text === '' &&
-                (!node.hash || node.hash === '')
-            ),
-    );
+    nodes.filter((node) => node.type !== 'comment' && node.type !== 'blank');
 
 export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
     if (!type) {
@@ -105,22 +97,32 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         }
         case 'identifier': {
-            if (!form.text && !form.hash) {
-                return { type: 'blank', form };
-            }
-            if (form.text.match(/^[0-9]+$/)) {
+            if (form.text.match(/^[0-9]+u$/)) {
                 ensure(ctx.display, form.loc.idx, {}).style = {
                     type: 'number',
-                    kind: 'int',
+                    kind: 'uint',
                 };
                 return {
                     type: 'number',
-                    kind: 'int',
-                    value: parseInt(form.text),
+                    kind: 'uint',
+                    value: parseInt(form.text.replace(/u$/, '')),
                     form,
                 };
             }
-            if (form.text.match(/^[0-9]+\.[0-9]*$/)) {
+            if (form.text.match(/^-?[0-9]+[if]?$/)) {
+                const kind = form.text.endsWith('f') ? 'float' : 'int';
+                ensure(ctx.display, form.loc.idx, {}).style = {
+                    type: 'number',
+                    kind,
+                };
+                return {
+                    type: 'number',
+                    kind,
+                    value: parseInt(form.text.replace(/[if]$/, '')),
+                    form,
+                };
+            }
+            if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
                 ensure(ctx.display, form.loc.idx, {}).style = {
                     type: 'number',
                     kind: 'float',
@@ -128,32 +130,12 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 return {
                     type: 'number',
                     kind: 'float',
-                    value: parseFloat(form.text),
+                    value: parseFloat(form.text.replace(/f$/, '')),
                     form,
                 };
             }
-            // if (form.text.includes('.')) {
-            //     const [expr, ...rest] = form.text.split('.');
-            //     let inner: Expr = resolveExpr(
-            //         expr,
-            //         form.hash,
-            //         ctx,
-            //         form,
-            //         '.' + rest.join('.'),
-            //     );
-            //     while (rest.length) {
-            //         const next = rest.shift()!;
-            //         inner = {
-            //             type: 'attribute',
-            //             target: inner,
-            //             attr: next,
-            //             form,
-            //         };
-            //     }
-            //     return inner;
-            // }
 
-            return resolveExpr(form.text, form.hash, ctx, form);
+            return resolveExpr(form.text, undefined, ctx, form);
         }
         case 'hash':
             return resolveExpr('', form.hash, ctx, form);
@@ -242,6 +224,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             // console.log('record values', values);
             let open = false;
             let spreads: Expr[] = [];
+            /*
             if (values.length === 1 && values[0].type === 'identifier') {
                 entries.push({
                     name: values[0].text,
@@ -258,9 +241,11 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             name: item.text,
                             value: nodeToExpr(item, ctx),
                         });
-                        ctx.display[item.loc.idx] = {
-                            style: { type: 'record-attr' },
-                        };
+                        if (!ctx.display[item.loc.idx]?.style) {
+                            ensure(ctx.display, item.loc.idx, {}).style = {
+                                type: 'record-attr',
+                            };
+                        }
                     } else {
                         entries.push({
                             name: '_ignored',
@@ -273,65 +258,68 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     }
                 });
             } else {
-                for (let i = 0; i < values.length; ) {
-                    const name = values[i];
-                    if (name.type === 'spread') {
-                        if (name.contents.type === 'blank') {
-                            err(ctx.errors, name, {
-                                type: 'misc',
-                                message: 'no empty spread in expressions',
-                            });
-                            i++;
-                            continue;
-                        }
-                        const spread = nodeToExpr(name.contents, ctx);
-                        const t = getType(spread, ctx);
-                        if (t) {
-                            const tt = applyAndResolve(t, ctx, []);
-                            if (tt.type === 'record') {
-                                spreads.push(spread);
-                            } else {
-                                err(ctx.errors, name, {
-                                    type: 'misc',
-                                    message: `can only spread records, not ${tt.type}`,
-                                });
-                            }
-                        } else {
-                            err(ctx.errors, name, {
-                                type: 'misc',
-                                message: `illegal spread`,
-                            });
-                        }
+                */
+            for (let i = 0; i < values.length; ) {
+                const name = values[i];
+                if (name.type === 'spread') {
+                    if (name.contents.type === 'blank') {
+                        err(ctx.errors, name, {
+                            type: 'misc',
+                            message: 'no empty spread in expressions',
+                        });
                         i++;
                         continue;
                     }
+                    const spread = nodeToExpr(name.contents, ctx);
+                    const t = getType(spread, ctx);
+                    if (t) {
+                        const tt = applyAndResolve(t, ctx, []);
+                        if (tt.type === 'record') {
+                            spreads.push(spread);
+                        } else {
+                            err(ctx.errors, name, {
+                                type: 'misc',
+                                message: `can only spread records, not ${tt.type}`,
+                            });
+                        }
+                    } else {
+                        err(ctx.errors, name, {
+                            type: 'misc',
+                            message: `illegal spread`,
+                        });
+                    }
+                    i++;
+                    continue;
+                }
 
-                    ctx.display[name.loc.idx] = {
-                        style: { type: 'record-attr' },
+                if (!ctx.display[name.loc.idx]?.style) {
+                    ensure(ctx.display, name.loc.idx, {}).style = {
+                        type: 'record-attr',
                     };
-                    if (name.type !== 'identifier') {
-                        err(ctx.errors, name, {
-                            type: 'misc',
-                            message: `invalid record item ${name.type}`,
-                        });
-                        i += 1;
-                        continue;
-                    }
-                    const namev = name.text;
-                    const value = values[i + 1];
-                    i += 2;
-                    if (!value) {
-                        err(ctx.errors, name, {
-                            type: 'misc',
-                            message: `missing value for field ${namev}`,
-                        });
-                    }
-                    entries.push({
-                        name: namev,
-                        value: value ? nodeToExpr(value, ctx) : nil,
+                }
+                if (name.type !== 'identifier') {
+                    err(ctx.errors, name, {
+                        type: 'misc',
+                        message: `invalid record item ${name.type}`,
+                    });
+                    i += 1;
+                    continue;
+                }
+                const namev = name.text;
+                const value = values[i + 1];
+                i += 2;
+                if (!value) {
+                    err(ctx.errors, name, {
+                        type: 'misc',
+                        message: `missing value for field ${namev}`,
                     });
                 }
+                entries.push({
+                    name: namev,
+                    value: value ? nodeToExpr(value, ctx) : nil,
+                });
             }
+            // }
             return { type: 'record', entries, spreads, form };
         }
         case 'list': {
@@ -392,7 +380,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         case 'annot':
             return nodeToExpr(form.target, ctx);
-        // throw new Error(`annot not yet toExpr`);
+        case 'tapply':
+            return {
+                type: 'type-apply',
+                target: nodeToExpr(form.target, ctx),
+                args: form.values.map((arg) => nodeToType(arg, ctx)),
+                form,
+            };
     }
     let _: never = form;
     throw new Error(

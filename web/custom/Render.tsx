@@ -16,10 +16,11 @@ for (let i = 0; i < raw.length; i += 6) {
 // We'll start at depth=1, so this just rolls it one over
 rainbow.unshift(rainbow.pop()!);
 
-export function getRainbowHashColor(hash: string) {
-    const idx = hash.startsWith(':')
-        ? Math.floor(+hash.slice(1) * (rainbow.length / 5 - 1))
-        : parseInt(hash, 16);
+export function getRainbowHashColor(hash: string | number) {
+    const idx =
+        typeof hash === 'number'
+            ? Math.floor(hash * (rainbow.length / 5 - 1))
+            : parseInt(hash, 16);
     // console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
     const color = rainbow[idx % rainbow.length];
     return color;
@@ -88,10 +89,10 @@ export const textStyle = (
 };
 
 export const Render = (props: RenderProps) => {
-    const { idx, map, display, path } = props;
+    const { idx, map, display, hashNames, path } = props;
     const nnode = getNestedNodes(
         map[idx],
-        display[idx]?.style,
+        hashNames[idx],
         display[idx]?.layout,
     );
 
@@ -109,7 +110,7 @@ export const Render = (props: RenderProps) => {
                 {idx}
             </span>
             <RenderNNode {...props} nnode={nnode} />
-            {node.type === 'hash' || node.type === 'identifier' ? (
+            {node.type === 'hash' ? (
                 <span
                     style={{
                         opacity: 0.5,
@@ -325,6 +326,7 @@ export const RenderNNode = (
                     errors={props.errors}
                     dispatch={dispatch}
                     reg={reg}
+                    hashNames={props.hashNames}
                     idx={nnode.id}
                     selection={props.selection}
                     debug={props.debug}

@@ -48,10 +48,14 @@ export const specials: {
                 form,
             };
         }
-        if (contents[0].type === 'array') {
+        let argNode = contents[0];
+        if (argNode.type === 'annot') {
+            argNode = argNode.target;
+        }
+        if (argNode.type === 'array') {
             let locals: Local['terms'] = [];
             let args: { pattern: Pattern; type: Type }[] = filterComments(
-                contents[0].values,
+                argNode.values,
             ).map((arg) => {
                 if (arg.type === 'annot') {
                     let type = nodeToType(arg.annot, ctx);
@@ -69,52 +73,6 @@ export const specials: {
                 }
             });
 
-            // let pairs: { pat: Node; type?: Node }[] = [];
-            // contents[0].values.forEach((arg) => {
-            //     // if (arg.type === 'identifier' && arg.text.startsWith(':')) {
-            //     //     if (pairs.length) {
-            //     //         pairs[pairs.length - 1].type = {
-            //     //             ...arg,
-            //     //             text: arg.text.slice(1),
-            //     //         };
-            //     //     }
-            //     // } else if (
-            //     //     arg.type === 'list' &&
-            //     //     arg.values.length > 1 &&
-            //     //     arg.values[0].type === 'identifier' &&
-            //     //     arg.values[0].text === ':'
-            //     // ) {
-            //     //     if (pairs.length) {
-            //     //         pairs[pairs.length - 1].type =
-            //     //             arg.values.length > 2
-            //     //                 ? {
-            //     //                       ...arg,
-            //     //                       values: arg.values.slice(1),
-            //     //                   }
-            //     //                 : arg.values[1];
-            //     //     }
-            //     // } else {
-            //     //     pairs.push({ pat: arg });
-            //     // }
-            // });
-
-            // pairs.forEach(({ pat, type }) => {
-            //     const t: Type = type
-            //         ? nodeToType(type, ctx)
-            //         : { ...any, form: pat };
-            //     if (t.type === 'unresolved') {
-            //         err(ctx.errors, pat, {
-            //             type: 'misc',
-            //             message: `no type given`,
-            //         });
-            //     }
-            //     args.push({
-            //         pattern: nodeToPattern(pat, t, ctx, locals),
-            //         type: t,
-            //     });
-            // });
-
-            // console.log(pairs);
             locals.forEach(
                 (loc) =>
                     (ctx.localMap.terms[loc.sym] = {

@@ -140,7 +140,7 @@ export type PathChild =
     | { type: 'expr' | 'text' | 'attribute'; at: number }
     | { type: 'annot-target' | 'annot-annot' }
     | { type: 'inside' | 'start' | 'end' }
-    | { type: 'record-target' | 'spread-contents' };
+    | { type: 'record-target' | 'spread-contents' | 'tapply-target' };
 // | {
 //       type: 'decorator';
 //       key: string;

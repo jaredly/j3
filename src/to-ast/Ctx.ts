@@ -12,22 +12,23 @@ export type AutoCompleteReplace = {
     ann: Type;
 };
 
+export const noloc: Loc = { start: -1, end: -1, idx: -1 };
+
 export type AutoCompleteResult =
     | AutoCompleteReplace
     | { type: 'info'; text: string }; // TODO also autofixers probably?
 
-export type Mod =
-    | {
-          type: 'tannot';
-          node: Node;
-      }
-    | { type: 'hash'; hash: string };
+export type Mod = {
+    type: 'tannot';
+    node: Node;
+};
 
 export type Ctx = {
     errors: Report['errors'];
     mods: {
         [idx: number]: Mod[];
     };
+    hashNames: { [idx: number]: string };
     display: {
         [idx: number]: {
             style?: NodeStyle;
@@ -35,7 +36,7 @@ export type Ctx = {
             autoComplete?: AutoCompleteResult[];
         };
     };
-    sym: { current: number };
+    // sym: { current: number };
     global: Global;
     local: Local;
     localMap: {
@@ -68,10 +69,10 @@ export type NodeStyle =
     | { type: 'let-pairs' }
     | { type: 'unresolved' }
     | { type: 'number'; kind: NumberKind }
-    | { type: 'id-decl'; hash: string }
+    | { type: 'id-decl'; hash: string | number }
     | {
           type: 'id';
-          hash: string;
+          hash: string | number;
           ann?: Type;
           text?: string;
       };
@@ -90,13 +91,14 @@ export const btype = (v: string): Type => ({
 export const basicBuiltins: Global['builtins'] = {
     types: {
         uint: [],
+        texture: [],
         int: [],
         float: [],
         bool: [],
         string: [],
         bytes: [],
         'attachment-handle': [],
-        Array: [
+        array: [
             { sym: 0, form: blank, name: 'Value' },
             {
                 sym: 1,
@@ -271,6 +273,112 @@ builtinFn(
     [tstring, tstring],
     tbool,
 );
+
+addBuiltin(basicBuiltins, basicReverse, 'reduce', {
+    type: 'tfn',
+    body: {
+        type: 'fn',
+        body: {
+            type: 'local',
+            form: blank,
+            sym: 1,
+        },
+        args: [
+            {
+                type: 'apply',
+                target: {
+                    type: 'builtin',
+                    form: blank,
+                    name: 'array',
+                },
+                form: blank,
+                args: [
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: 0,
+                    },
+                ],
+            },
+            {
+                type: 'local',
+                form: blank,
+                sym: 1,
+            },
+            {
+                type: 'fn',
+                form: blank,
+                body: {
+                    type: 'local',
+                    form: blank,
+                    sym: 1,
+                },
+                args: [
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: 0,
+                    },
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: 1,
+                    },
+                ],
+            },
+        ],
+        form: blank,
+    },
+    args: [
+        {
+            form: blank,
+            sym: 0,
+            name: 'Input',
+        },
+        {
+            form: blank,
+            sym: 1,
+            name: 'Output',
+        },
+    ],
+    form: blank,
+});
+
+// We want it to be generic, which is the trick
+// and ... at this point, do we have to actually do a type
+// system?
+// builtinFn(
+//     basicBuiltins,
+//     basicReverse,
+//     'reduce',
+// )
+
+const record = (entries: TRecord['entries']): TRecord => ({
+    type: 'record',
+    entries,
+    form: { type: 'blank', loc: noloc },
+    open: false,
+    spreads: [],
+});
+
+builtinFn(
+    basicBuiltins,
+    basicReverse,
+    'texture-get',
+    [
+        btype('texture'),
+        record([
+            { name: 'x', value: tfloat },
+            { name: 'y', value: tfloat },
+        ]),
+    ],
+    record([
+        { name: 'x', value: tfloat },
+        { name: 'y', value: tfloat },
+        { name: 'z', value: tfloat },
+        { name: 'w', value: tfloat },
+    ]),
+);
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
     type: 'tfn',
     args: [{ sym: 0, form: blank, name: 'Value' }],
@@ -294,18 +402,18 @@ export const initialGlobal: Global = {
 };
 
 export const newCtx = (): Ctx => {
+    // console.log('newCtx');
     return {
-        sym: { current: 0 },
+        // sym: { current: 0 },
         global: initialGlobal,
         local: emptyLocal,
         localMap: { terms: {}, types: {} },
+        hashNames: {},
         errors: {},
         display: {},
         mods: {},
     };
 };
-
-export const noloc: Loc = { start: -1, end: -1, idx: -1 };
 
 export const nil: Expr = {
     type: 'record',

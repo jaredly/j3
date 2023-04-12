@@ -25,7 +25,7 @@ export function DebugClipboard({
                     if (!sel.end) return null;
                     const [start, end] = orderStartAndEnd(sel.start, sel.end);
 
-                    return collectNodes(state.map, start, end, ctx['display']);
+                    return collectNodes(state.map, start, end, ctx.hashNames);
                 })
                 .filter(Boolean) as ClipboardItem[],
         [state.map, state.at],
@@ -47,7 +47,9 @@ export function DebugClipboard({
                             }}
                         >
                             {copy.map((item, i) => (
-                                <div key={i}>{clipboardText([item])}</div>
+                                <div key={i}>
+                                    {clipboardText([item], state.ctx.hashNames)}
+                                </div>
                             ))}
                         </div>
                     ) : null,

@@ -82,7 +82,10 @@ export const Menu = ({
                             onMouseEnter={(evt) => setHover(i)}
                         >
                             {item.type === 'replace' && item.ann
-                                ? nodeToString(nodeForType(item.ann, state.ctx))
+                                ? nodeToString(
+                                      nodeForType(item.ann, state.ctx),
+                                      state.ctx.hashNames,
+                                  )
                                 : null}
                         </div>
                     </React.Fragment>

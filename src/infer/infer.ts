@@ -85,8 +85,6 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         };
     } = {};
 
-    type PPath = Pattern['type'];
-
     const visit: Visitor<null> = {
         Expr(node, ctx) {
             if (node.type === 'fn') {
@@ -158,7 +156,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                     );
                     const scored = auto
                         .map((auto) => {
-                            if (auto.ann.type !== 'fn') {
+                            if (auto.ann?.type !== 'fn') {
                                 return { auto, res: null, score: -1 };
                             }
                             let score = 0;
@@ -239,8 +237,6 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         }
     });
 
-    console.log(usages, syms);
-
     // next up, we find all the usages of a given local,
     // along with the type annotation.
     // We try to reconcile these things.
@@ -265,6 +261,7 @@ export function applyInferMod(
         map[id] = {
             ...map[id],
             ...mod.node,
+            loc: map[id].loc,
         };
     } else if (mod.type === 'replace-full') {
         mod.node.loc.idx = id;
@@ -272,7 +269,12 @@ export function applyInferMod(
     } else if (mod.type === 'wrap') {
         const id1 = nidx();
         const id2 = toMCST(reidx(mod.node, nidx), map);
-        // const id2 = nidx()
+        Object.keys(map).forEach((k) => {
+            const node = map[+k];
+            if (node.type === 'hash' && node.hash === id) {
+                map[+k] = { ...node, hash: id1 };
+            }
+        });
         map[id1] = {
             ...map[id],
             loc: { ...map[id].loc, idx: id1 },

@@ -36,50 +36,19 @@ export const asTuple = (record: TRecord, ctx: Ctx): Type[] | null => {
     return res;
 };
 
-// export type RCtx = Ctx & {
-//     reverseNames: { [hash: string]: string };
-// };
-
-// export const makeRCtx = (ctx: Ctx): RCtx => {
-//     // const reverseNames: { [hash: string]: string } = {};
-//     // for (const name in ctx.global.names) {
-//     //     ctx.global.names[name].forEach((hash) => (reverseNames[hash] = name));
-//     // }
-//     // for (const name in ctx.global.typeNames) {
-//     //     ctx.global.typeNames[name].forEach(
-//     //         (hash) => (reverseNames[hash] = name),
-//     //     );
-//     // }
-//     // for (const name in ctx.global.builtins.names) {
-//     //     ctx.global.builtins.names[name].forEach(
-//     //         (hash) => (reverseNames[hash] = name),
-//     //     );
-//     // }
-//     // THIS THO
-//     // for (const sym in ctx.localMap.terms) {
-//     //     reverseNames[sym] = ctx.localMap.terms[sym].name;
-//     // }
-//     // for (const sym in ctx.localMap.types) {
-//     //     reverseNames[sym] = ctx.localMap.types[sym].name;
-//     // }
-//     // return { ...ctx, reverseNames };
-// };
-
 export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
     switch (expr.type) {
         case 'local':
             return {
-                type: 'identifier',
-                text: '',
-                hash: '#' + expr.sym,
+                type: 'hash',
+                hash: ':' + expr.sym,
                 loc: expr.form.loc,
             };
 
         case 'global':
             return {
-                type: 'identifier',
-                text: '',
-                hash: '#' + expr.hash,
+                type: 'hash',
+                hash: expr.hash,
                 loc: expr.form.loc,
             };
         case 'unresolved':

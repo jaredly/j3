@@ -65,7 +65,7 @@ export const posToPath = (
             'ArrowRight',
             map,
             { start: path },
-            ctx.display,
+            ctx.hashNames,
             nidx,
         );
         if (update?.type === 'select') {
@@ -103,7 +103,11 @@ describe('a test', () => {
 
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
-                const back = nodeToString(fromMCST(idx, data), sourceMap);
+                const back = nodeToString(
+                    fromMCST(idx, data),
+                    ctx.hashNames,
+                    sourceMap,
+                );
                 expect(back).toEqual(input);
 
                 const first = selections.indexOf('^');
@@ -128,9 +132,9 @@ describe('a test', () => {
                     data,
                     firstPath,
                     secondPath,
-                    ctx.display,
+                    ctx.hashNames,
                 );
-                const printed = clipboardText([collected]);
+                const printed = clipboardText([collected], ctx.hashNames);
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);

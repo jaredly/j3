@@ -1,13 +1,8 @@
 import { UpdateMap } from '../store';
-import { ListLikeContents, Map, MNode, MNodeExtra } from '../../src/types/mcst';
+import { ListLikeContents, Map, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
-import {
-    StateChange,
-    maybeClearParentList,
-    getKeyUpdate,
-    StateSelect,
-} from './getKeyUpdate';
+import { StateChange, maybeClearParentList } from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
 import {
     idText,
@@ -16,7 +11,6 @@ import {
 } from '../../src/parse/parse';
 import { accessText, Identifier, stringText } from '../../src/types/cst';
 import { collectNodes } from './clipboard';
-import { cmpFullPath } from '../custom/isCoveredBySelection';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../../src/to-ast/Ctx';
@@ -24,16 +18,15 @@ import { Ctx } from '../../src/to-ast/Ctx';
 export function handleBackspace(
     map: Map,
     selection: { start: Path[]; end?: Path[] },
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
 ): StateChange {
     if (selection.end) {
         const [start, end] = orderStartAndEnd(selection.start, selection.end);
-        const item = collectNodes(map, start, end, display);
+        const item = collectNodes(map, start, end, hashNames);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {
-                const fullText =
-                    idText(node, display[node.loc.idx]?.style) ?? '';
+                const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
                 const split = splitGraphemes(fullText);
                 const text = split
                     .slice(0, item.source.start)
@@ -59,7 +52,7 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            return removeNodes(start, end, item.nodes, map, display);
+            return removeNodes(start, end, item.nodes, map, hashNames);
         }
     }
 
@@ -101,7 +94,7 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
-    if (node.type === 'accessText' && atStart) {
+    if (node.type === 'accessText' && (atStart || node.text === '')) {
         if (parent.type !== 'recordAccess') {
             throw new Error(
                 `accessText not child of recordAccess ${parent.type}`,
@@ -112,32 +105,37 @@ export function handleBackspace(
         }
         if (ppath.at === 1 && parent.items.length === 1) {
             const target = map[parent.target];
+            if (!node.text && target.type === 'blank') {
+                const cleared = maybeClearParentList(
+                    fullPath.slice(0, -2),
+                    map,
+                );
+                if (cleared) {
+                    return cleared;
+                }
+            }
             return replacePathWith(fullPath.slice(0, -2), map, {
                 idx: parent.target,
-                map:
-                    target.type === 'blank' && !node.text
-                        ? {}
-                        : {
-                              [parent.target]:
-                                  target.type === 'identifier'
-                                      ? {
-                                            ...target,
-                                            text: target.text + node.text,
-                                        }
-                                      : {
-                                            type: 'identifier',
-                                            text: node.text,
-                                            loc: target.loc,
-                                        },
-                          },
-                selection: [
-                    {
-                        idx: parent.target,
-                        ...(target.type === 'identifier'
-                            ? { type: 'subtext', at: target.text.length }
-                            : { type: 'end' }),
-                    },
-                ],
+                map: !node.text
+                    ? {}
+                    : {
+                          [parent.target]:
+                              target.type === 'identifier' ||
+                              target.type === 'hash'
+                                  ? {
+                                        type: 'identifier',
+                                        text:
+                                            hashNames[target.loc.idx] ??
+                                            idText(target) + node.text,
+                                        loc: target.loc,
+                                    }
+                                  : {
+                                        type: 'identifier',
+                                        text: node.text,
+                                        loc: target.loc,
+                                    },
+                      },
+                selection: selectEnd(parent.target, [], map)!,
             });
         }
 
@@ -375,7 +373,7 @@ export function handleBackspace(
     }
 
     if (!atStart && ('text' in node || node.type === 'hash')) {
-        const fullText = idText(node, display[node.loc.idx]?.style) ?? '';
+        const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
         const text = splitGraphemes(fullText);
         const atEnd =
             flast.type === 'end' ||

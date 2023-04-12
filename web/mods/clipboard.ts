@@ -1,5 +1,9 @@
 import equal from 'fast-deep-equal';
-import { idText, splitGraphemes } from '../../src/parse/parse';
+import {
+    idText,
+    orderStartAndEnd,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
@@ -56,7 +60,7 @@ export const commonAncestor = (one: Path[], two: Path[]) => {
 export const validatePath = (
     map: Map,
     path: Path[],
-    display: Ctx['display'],
+    hashNames: { [key: number]: string },
 ) => {
     for (let i = 0; i < path.length - 1; i++) {
         const next = path[i + 1].idx;
@@ -130,7 +134,7 @@ export const validatePath = (
                     return false;
                 }
                 const text = splitGraphemes(
-                    idText(node, display[node.loc.idx]?.style) ?? '',
+                    hashNames[node.loc.idx] ?? idText(node) ?? '',
                 );
                 if (child.at < 0 || child.at > text.length) {
                     return false;
@@ -233,7 +237,7 @@ export const paste = (
                         item.text,
                         state.map,
                         path,
-                        ctx.display,
+                        ctx.hashNames,
                         state.nidx,
                     );
                 } else {
@@ -245,7 +249,7 @@ export const paste = (
                             char,
                             tmp.map,
                             tmp.at[0],
-                            ctx.display,
+                            ctx.hashNames,
                             tmp.nidx,
                         );
                         tmp = applyUpdate(tmp, 0, update);
@@ -319,12 +323,17 @@ export const paste = (
     return;
 };
 
-export const clipboardText = (items: ClipboardItem[]) => {
+export const clipboardText = (
+    items: ClipboardItem[],
+    display: Ctx['hashNames'],
+) => {
     return items
         .map((item) =>
             item.type === 'text'
                 ? item.text
-                : item.nodes.map((node) => nodeToString(node)).join(' '),
+                : item.nodes
+                      .map((node) => nodeToString(node, display))
+                      .join(' '),
         )
         .join('\n');
 };
@@ -332,12 +341,13 @@ export const clipboardText = (items: ClipboardItem[]) => {
 export const collectClipboard = (
     map: Map,
     selections: State['at'],
-    display: Ctx['display'],
+    hashNames: { [key: number]: string },
 ) => {
     const items: ClipboardItem[] = [];
     selections.forEach(({ start, end }) => {
         if (end) {
-            items.push(collectNodes(map, start, end, display));
+            [start, end] = orderStartAndEnd(start, end);
+            items.push(collectNodes(map, start, end, hashNames));
         }
     });
     return items;
@@ -347,7 +357,7 @@ export const collectNodes = (
     map: Map,
     start: Path[],
     end: Path[],
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
 ): ClipboardItem => {
     if (start.length === end.length) {
         const slast = start[start.length - 1];
@@ -356,7 +366,7 @@ export const collectNodes = (
             const node = fromMCST(slast.idx, map);
             if ('text' in node || node.type === 'hash') {
                 const text = splitGraphemes(
-                    idText(node, display[node.loc.idx]?.style) ?? '',
+                    hashNames[node.loc.idx] ?? idText(node) ?? '',
                 );
                 const sloc =
                     slast.type === 'subtext'

@@ -175,6 +175,7 @@ export const calcCursorPos = (
                 }
         }
     } catch (err) {
+        console.error(err);
         return;
     }
 };

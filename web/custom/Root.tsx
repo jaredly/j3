@@ -103,6 +103,7 @@ export function Root({
                         map={state.map}
                         reg={reg}
                         display={ctx.display}
+                        hashNames={ctx.hashNames}
                         errors={ctx.errors}
                         dispatch={dispatch}
                         selection={selections}

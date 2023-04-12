@@ -41,7 +41,7 @@ const string = (first: string, ...templates: [Node, string][]): Node => ({
 
 describe('nodeToString', () => {
     it('should work', () => {
-        expect(nodeToString(array(id('hi')))).toEqual('[hi]');
+        expect(nodeToString(array(id('hi')), {})).toEqual('[hi]');
     });
 
     it('should do complex', () => {
@@ -52,14 +52,15 @@ describe('nodeToString', () => {
                     array(id('1'), id('2')),
                     record(spread(id('pos')), id('x'), id('10')),
                 ),
+                {},
             ),
-        ).toEqual('(hello [1 2] {...pos x 10})');
+        ).toEqual('(hello [1 2] {..pos x 10})');
     });
 
     it('should do string', () => {
-        expect(nodeToString(string('Hello ', [id('cruel'), ' world']))).toEqual(
-            `"Hello \${cruel} world"`,
-        );
+        expect(
+            nodeToString(string('Hello ', [id('cruel'), ' world']), {}),
+        ).toEqual(`"Hello \${cruel} world"`);
     });
 
     it('should sourcemap', () => {
@@ -72,10 +73,11 @@ describe('nodeToString', () => {
                 record(spread(id('pos')), id('x'), id('10')),
                 string('Hello ', [id('folks'), ' and'], [id('1'), '']),
             ),
+            {},
             sm,
         );
         expect(ser).toEqual(
-            '(hello [1 2] {...pos x 10} "Hello ${folks} and${1}")',
+            '(hello [1 2] {..pos x 10} "Hello ${folks} and${1}")',
         );
         expect(showSourceMap(ser, sm)).toEqual(
             `
@@ -84,13 +86,13 @@ describe('nodeToString', () => {
         2: 2
         3: [1 2]
         4: pos
-        5: ...pos
+        5: ..pos
         6: x
         7: 10
-        8: {...pos x 10}
+        8: {..pos x 10}
         9: folks
         10: 1
-        11: Hello 
+        11: \`Hello \`
         12: \` and\`
         13: \`\`
         14: "Hello \${folks} and\${1}"

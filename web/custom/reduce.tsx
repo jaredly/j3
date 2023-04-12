@@ -11,7 +11,7 @@ import {
     applyUpdate,
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
-import { fromMCST } from '../../src/types/mcst';
+import { Map, fromMCST } from '../../src/types/mcst';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Expr } from '../../src/types/ast';
@@ -43,20 +43,7 @@ const actionToUpdate = (
             return { type: 'menu', menu: { selection: action.selection } };
         case 'menu-select': {
             const idx = action.path[action.path.length - 1].idx;
-            return {
-                type: 'update',
-                map: {
-                    [idx]: { loc: state.map[idx].loc, ...action.item.node },
-                },
-                selection: action.path.slice(0, -1).concat([
-                    {
-                        idx,
-                        type: 'subtext',
-                        at: splitGraphemes(action.item.text).length,
-                    },
-                ]),
-                autoComplete: true,
-            };
+            return autoCompleteUpdate(idx, state.map, action.path, action.item);
         }
         case 'copy':
             return {
@@ -82,7 +69,7 @@ const actionToUpdate = (
                 action.key,
                 state.map,
                 state.at[0],
-                state.ctx.display,
+                state.ctx.hashNames,
                 state.nidx,
                 action.mods,
             );
@@ -108,7 +95,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
     }
     switch (update.type) {
         case 'full-select':
-            return { ...state, at: update.at };
+            return { ...state, at: update.at, menu: undefined };
         case 'ui':
             return {
                 ...state,
@@ -119,12 +106,18 @@ export const reduce = (state: UIState, action: Action): UIState => {
             return { ...state, menu: update.menu };
         case 'select':
         case 'update': {
+            // console.log('1️⃣ update', update);
+            const prev = state.at[0];
             // Here's where the real work happens.
-            if (update.autoComplete) {
+            if (update.autoComplete && !state.menu?.dismissed) {
                 state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
+                verifyLocs(state.map, 'autocomplete');
             }
+            // debugger;
             state = { ...state, ...applyUpdate(state, 0, update) };
+            verifyLocs(state.map, 'apply update');
             let { ctx, map, exprs } = getCtx(state.map, state.root);
+            verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;
             if (update.autoComplete) {
@@ -137,15 +130,23 @@ export const reduce = (state: UIState, action: Action): UIState => {
                     if (!modded.length) {
                         break;
                     }
-                    console.log('mods!', mods);
+                    console.log('3️⃣ infer mods', mods);
                     modded.forEach((id) => {
                         applyInferMod(mods[+id], state.map, state.nidx, +id);
+                        verifyLocs(state.map, 'apply infer mod');
                         console.log(state.map[+id]);
                     });
                     ({ ctx, map, exprs } = getCtx(state.map, state.root));
+                    verifyLocs(state.map, 'get ctx');
                     state.map = map;
                     state.ctx = ctx;
                 }
+            }
+            if (
+                prev.start[prev.start.length - 1].idx !==
+                state.at[0].start[state.at[0].start.length - 1].idx
+            ) {
+                state.menu = undefined;
             }
             return state;
         }
@@ -155,54 +156,50 @@ export const reduce = (state: UIState, action: Action): UIState => {
     }
 };
 
-// @deprecated TODO REMOVE THIS, migrate to the reduce up here
+export function autoCompleteUpdate(
+    idx: number,
+    map: Map,
+    path: Path[],
+    item: AutoCompleteReplace,
+): StateChange {
+    if (!map[idx]) {
+        console.log(idx, 'not in the map');
+        debugger;
+    }
+    return {
+        type: 'update',
+        map: {
+            [idx]: { loc: map[idx].loc, ...item.node },
+        },
+        selection: path.slice(0, -1).concat([
+            {
+                idx,
+                type: 'subtext',
+                at: splitGraphemes(item.text).length,
+            },
+        ]),
+        autoComplete: true,
+    };
+}
+
 export function applyMenuItem(
     path: Path[],
     item: AutoCompleteReplace,
     state: State,
     ctx: Ctx,
-) {
+): StateChange {
     const idx = path[path.length - 1].idx;
-    state = {
-        ...state,
-        at: [
-            {
-                start: path.slice(0, -1).concat([
-                    {
-                        idx,
-                        type: 'subtext',
-                        at: splitGraphemes(item.text).length,
-                    },
-                ]),
-            },
-        ],
-        map: { ...state.map, [idx]: { loc: state.map[idx].loc, ...item.node } },
-    };
-
-    const root = fromMCST(state.root, state.map) as { values: Node[] };
-    let exprs = root.values
-        .map((node) =>
-            node.type === 'blank' || node.type === 'comment'
-                ? null
-                : nodeToExpr(node, {
-                      ...ctx,
-                      display: {},
-                      mods: {},
-                      errors: {},
-                  }),
-        )
-        .filter(Boolean) as Expr[];
-    state = { ...state, map: { ...state.map } };
-    applyMods(ctx, state.map);
-
-    // Now we do like inference, right?
-    const mods = infer(exprs, ctx, state.map);
-    console.log('inferMods', mods);
-    const keys = Object.keys(mods);
-    // if (!keys.length) break;
-    keys.forEach((id) => {
-        applyInferMod(mods[+id], state.map, state.nidx, +id);
-    });
-
-    return state;
+    return autoCompleteUpdate(idx, state.map, path, item);
 }
+
+export const verifyLocs = (map: Map, message: string) => {
+    Object.keys(map).forEach((k) => {
+        if (+k !== map[+k].loc.idx) {
+            console.log(+k, map[+k].loc.idx);
+            // debugger;
+            console.error(
+                new Error(`loc has the wrong loc! during ${message}`),
+            );
+        }
+    });
+};

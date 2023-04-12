@@ -20,11 +20,12 @@ import {
     newRecordAccess,
     newSpread,
     newString,
+    newTapply,
 } from './newNodes';
 import { Path } from './path';
 import { replacePathWith } from './replacePathWith';
 
-export const wrappable = ['spread-contents', 'expr', 'child'];
+export const wrappable: Path['type'][] = ['spread-contents', 'expr', 'child'];
 
 export type StateUpdate = {
     type: 'update';
@@ -170,9 +171,11 @@ export const applyUpdate = (
 
 const isPathAtStart = (text: string, path: Path) => {
     return (
+        text.length === 0 ||
         // !(path.type === 'end' && text.length > 0) &&
         // !(typeof loc === 'number' && loc > 0)
-        path.type === 'start' || (path.type === 'subtext' && path.at === 0)
+        path.type === 'start' ||
+        (path.type === 'subtext' && path.at <= 0)
     );
 };
 
@@ -186,7 +189,7 @@ export const getKeyUpdate = (
     key: string,
     map: Map,
     selection: { start: Path[]; end?: Path[] },
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
     nidx: () => number,
     mods?: Mods,
 ): StateChange => {
@@ -212,17 +215,17 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, selection, display);
+        return handleBackspace(map, selection, hashNames);
     }
 
-    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
+    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
         if ('text' in node || node.type === 'hash') {
-            const text = idText(node, display[node.loc.idx]?.style) ?? '';
+            const text = hashNames[node.loc.idx] ?? idText(node) ?? '';
             if (!isPathAtStart(text, flast)) {
                 const pos = pathPos(fullPath, text);
                 const next = fullPath.slice(0, -1).concat([
@@ -286,6 +289,20 @@ export const getKeyUpdate = (
         return rrr;
     }
 
+    if (key === 'Tab') {
+        return mods?.shift
+            ? goLeft(fullPath, map)
+            : goRight(fullPath, idx, map);
+        // if (rrr && mods?.shift) {
+        //     return {
+        //         type: 'select',
+        //         selection: selection.start,
+        //         selectionEnd: rrr.selection,
+        //     };
+        // }
+        // return rrr;
+    }
+
     if (node.type === 'stringText') {
         return handleStringText({
             key,
@@ -330,8 +347,10 @@ export const getKeyUpdate = (
             }
         }
         if (
-            flast.type === 'start' ||
-            (flast.type === 'subtext' && flast.at === 0)
+            node.type !== 'blank' &&
+            node.type !== 'accessText' &&
+            (flast.type === 'start' ||
+                (flast.type === 'subtext' && flast.at === 0))
         ) {
             return newNodeBefore(fullPath.slice(0, -1), map, {
                 ...newBlank(nidx()),
@@ -339,6 +358,27 @@ export const getKeyUpdate = (
             });
         }
         return newNodeAfter(fullPath, map, newBlank(nidx()), nidx);
+    }
+
+    if (key === '<' && (node.type === 'identifier' || node.type === 'hash')) {
+        // return replacePathWith
+        const nat = newTapply(idx, '', nidx(), nidx());
+        return replacePathWith(fullPath.slice(0, -1), map, nat);
+    }
+    if (key === '>' && node.type !== 'blank') {
+        for (let i = fullPath.length - 1; i >= 0; i--) {
+            const parent = fullPath[i];
+            if (parent.type === 'end') {
+                continue;
+            }
+            const node = map[parent.idx];
+            if (node.type === 'tapply') {
+                const sel = fullPath
+                    .slice(0, i)
+                    .concat({ idx: parent.idx, type: 'end' });
+                return { type: 'select', selection: sel, autoComplete: true };
+            }
+        }
     }
 
     if (')]}'.includes(key)) {
@@ -378,7 +418,10 @@ export const getKeyUpdate = (
             return addToListLike(map, flast.idx, fullPath, nat);
         }
 
-        if (node.type === 'identifier' && !textRaw.match(/^-?[0-9]+$/)) {
+        if (
+            (node.type === 'identifier' && !textRaw.match(/^-?[0-9]+$/)) ||
+            node.type === 'hash'
+        ) {
             const nat = newRecordAccess(
                 idx,
                 text.slice(pos).join(''),
@@ -388,9 +431,14 @@ export const getKeyUpdate = (
             if (pos === 0) {
                 nat.map[idx] = { type: 'blank', loc: map[idx].loc };
             } else if (pos < text.length) {
-                nat.map[idx] = { ...node, text: text.slice(0, pos).join('') };
+                nat.map[idx] = {
+                    type: 'identifier',
+                    text: text.slice(0, pos).join(''),
+                    loc: node.loc,
+                };
             }
-            return replacePathWith(fullPath.slice(0, -1), map, nat);
+            const up = replacePathWith(fullPath.slice(0, -1), map, nat);
+            return up ? { ...up, autoComplete: true } : up;
         }
         if (node.type === 'accessText' && ppath.type === 'attribute') {
             if (parent.type !== 'recordAccess') {
@@ -441,14 +489,14 @@ export const getKeyUpdate = (
         }
     }
 
-    return insertText(key, map, fullPath, display, nidx);
+    return insertText(key, map, fullPath, hashNames, nidx);
 };
 
 export const insertText = (
     inputRaw: string,
     map: Map,
     fullPath: Path[],
-    display: Ctx['display'],
+    hashNames: { [idx: number]: string },
     nidx: () => number,
 ) => {
     const flast = fullPath[fullPath.length - 1];
@@ -456,7 +504,7 @@ export const insertText = (
     const idx = flast.idx;
     // Ok, so now we're updating things
     const input = splitGraphemes(inputRaw);
-    const textRaw = idText(node, display[node.loc.idx]?.style) ?? '';
+    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
     const pos = pathPos(fullPath, textRaw);
 
     if (
@@ -471,7 +519,7 @@ export const insertText = (
             input,
             idx,
             fullPath.slice(0, -1),
-            display[idx]?.style,
+            hashNames[idx],
         );
     }
 
@@ -521,9 +569,9 @@ function updateText(
     input: string[],
     idx: number,
     path: Path[],
-    style: NodeStyle | undefined,
+    hashName?: string,
 ): StateUpdate {
-    const raw = idText(node, style) ?? 'no-id-text';
+    const raw = hashName ?? idText(node) ?? '';
     let text = splitGraphemes(raw);
     if (pos === 0) {
         text.unshift(...input);
@@ -613,15 +661,33 @@ export function openListLike({
         flast.type === 'start' ||
         (flast.type === 'subtext' && flast.at === 0)
     ) {
-        if (wrappable.includes(fullPath[fullPath.length - 2].type)) {
+        let ppath = fullPath[fullPath.length - 2];
+        let subPath = fullPath;
+        let nw: NewThing = {
+            idx,
+            map: {},
+            selection: [flast],
+        };
+        if (ppath.type === 'record-target') {
+            nw.selection = fullPath.slice(-2);
+            subPath = fullPath.slice(0, -1);
+            nw.idx = ppath.idx;
+            //     idx: ppath.idx
+            // }
+            ppath = subPath[subPath.length - 2];
+        }
+
+        if (wrappable.includes(subPath[subPath.length - 2].type)) {
+            // for (let i = subPath.length - 1; i--; i >= 2) {
+            //     console.log('howww', i, subPath[i - 1], subPath);
+            //     if (wrappable.includes(subPath[i - 1].type)) {
+            //         return replacePathWith(
+            //             subPath.slice(0, i),
+            // }
             return replacePathWith(
-                fullPath.slice(0, -1),
+                subPath.slice(0, -1),
                 map,
-                newListLike(type, nidx(), {
-                    idx,
-                    map: {},
-                    selection: [flast],
-                }),
+                newListLike(type, nidx(), nw),
             );
         }
     }

@@ -12,7 +12,7 @@ import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
-import { applyMenuItem, reduce } from './reduce';
+import { reduce } from './reduce';
 import { applyMods, getCtx } from './getCtx';
 import { applyInferMod, infer, InferMod } from '../../src/infer/infer';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
@@ -94,16 +94,16 @@ export type Action =
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
 
-export const maxSym = (map: Map) => {
-    let max = 0;
-    Object.keys(map).forEach((id) => {
-        const node = map[+id];
-        if (node.type === 'identifier' && node.hash?.startsWith(':')) {
-            max = Math.max(max, +node.hash.slice(1));
-        }
-    });
-    return max;
-};
+// export const maxSym = (map: Map) => {
+//     let max = 0;
+//     Object.keys(map).forEach((id) => {
+//         const node = map[+id];
+//         if (node.type === 'identifier' && node.hash?.startsWith(':')) {
+//             max = Math.max(max, +node.hash.slice(1));
+//         }
+//     });
+//     return max;
+// };
 
 export const ByHand = () => {
     const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
@@ -239,6 +239,11 @@ export const Doc = ({
         return items ? { path, items } : undefined;
     }, [state.map, state.at, state.ctx]);
 
+    const start = state.at[0].start;
+    const idx = start[start.length - 1].idx;
+    const node = state.map[idx];
+    const display = state.ctx.display[idx];
+
     return (
         <div
             onMouseEnter={(evt) => {
@@ -273,7 +278,22 @@ export const Doc = ({
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
+            {debug ? (
+                <div>
+                    MENU: STATE MENU {JSON.stringify(state.menu)} AND THE
+                    {JSON.stringify(menu)}
+                </div>
+            ) : null}
             <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
+            {/* <div>
+                {JSON.stringify(node)}
+                <br />
+                {JSON.stringify(display)}
+                <br />
+                <div style={{ whiteSpace: 'pre' }}>
+                    {JSON.stringify(state.ctx.hashNames, null, 2)}
+                </div>
+            </div> */}
         </div>
     );
 };

@@ -1,9 +1,8 @@
 import { Node } from '../types/cst';
 import { Pattern, Type } from '../types/ast';
-import { nextSym } from './to-ast';
 import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
-import { Report } from '../get-type/get-types-new';
+import { Report, recordMap } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';
 import { addMod } from './specials';
@@ -15,49 +14,34 @@ export const nodeToPattern = (
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
-        // case 'tag': {
-        //     return {
-        //         type: 'tag',
-        //         name: form.text,
-        //         args: [],
-        //         form,
-        //     };
-        // }
         case 'identifier': {
             let sym;
-            if (!form.hash) {
-                sym = nextSym(ctx);
-                addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
-            } else {
-                sym = +form.hash.slice(1);
-                if (isNaN(sym)) {
-                    throw new Error(`non-number sym? ${form.hash}`);
-                }
-            }
+            // if (!form.hash) {
+            //     sym = nextSym(ctx);
+            //     addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
+            // } else {
+            //     sym = +form.hash.slice(1);
+            //     if (isNaN(sym)) {
+            //         throw new Error(`non-number sym? ${form.hash}`);
+            //     }
+            // }
             ctx.display[form.loc.idx] = {
                 style: {
                     type: 'id-decl',
-                    hash: ':' + sym,
+                    hash: form.loc.idx,
                 },
             };
             bindings.push({
                 name: form.text,
-                sym,
+                sym: form.loc.idx,
                 type: t,
             });
             return {
                 type: 'local',
+                sym: form.loc.idx,
                 form,
-                sym,
             };
         }
-        // case 'number':
-        //     return {
-        //         type: 'number',
-        //         value: Number(form.raw),
-        //         kind: form.raw.includes('.') ? 'float' : 'int',
-        //         form,
-        //     };
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; form: Node; value: Pattern }[] = [];
@@ -70,13 +54,7 @@ export const nodeToPattern = (
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
 
-            const prm =
-                res.type === 'record'
-                    ? res.entries.reduce((map, item) => {
-                          map[item.name] = item.value;
-                          return map;
-                      }, {} as { [key: string]: Type })
-                    : null;
+            const prm = res.type === 'record' ? recordMap(res, ctx) : null;
             if (!prm) {
                 err(ctx.errors, form, {
                     type: 'misc',
@@ -89,7 +67,9 @@ export const nodeToPattern = (
                 if (!prm || !prm[name]) {
                     err(ctx.errors, form, {
                         type: 'misc',
-                        message: `attribute not in type`,
+                        message: `attribute ${name} not in type ${JSON.stringify(
+                            prm,
+                        )}`,
                     });
                 }
                 entries.push({
@@ -98,7 +78,7 @@ export const nodeToPattern = (
                     value: nodeToPattern(
                         values[0],
                         prm
-                            ? prm[name] ?? {
+                            ? prm[name]?.value ?? {
                                   type: 'unresolved',
                                   form: t.form,
                                   reason: `attribute not in type ${name}`,
@@ -145,7 +125,7 @@ export const nodeToPattern = (
                         form: name,
                         value: nodeToPattern(
                             name,
-                            prm[namev] ?? nilt,
+                            prm[namev]?.value ?? nilt,
                             ctx,
                             bindings,
                         ),
@@ -187,7 +167,7 @@ export const nodeToPattern = (
                         form: name,
                         value: nodeToPattern(
                             value,
-                            prm[namev] ?? nilt,
+                            prm[namev]?.value ?? nilt,
                             ctx,
                             bindings,
                         ),

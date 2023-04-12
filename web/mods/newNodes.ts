@@ -66,6 +66,40 @@ export const newRecordAccess = (
     };
 };
 
+export const newTapply = (
+    tid: number,
+    text: string,
+    idx: number,
+    aidx: number,
+): NewThing => {
+    return {
+        map: {
+            [idx]: {
+                type: 'tapply',
+                target: tid,
+                values: text ? [aidx] : [],
+                loc: { idx, start: 0, end: 0 },
+            },
+            ...(text
+                ? {
+                      [aidx]: {
+                          type: 'identifier',
+                          text,
+                          loc: { idx: aidx, start: 0, end: 0 },
+                      },
+                  }
+                : {}),
+        },
+        idx,
+        selection: text
+            ? [
+                  { idx, type: 'child', at: 0 },
+                  { idx: aidx, type: 'start' },
+              ]
+            : [{ idx, type: 'inside' }],
+    };
+};
+
 export const newAccessText = (text: string[], idx: number): NewThing => {
     return {
         map: {

@@ -107,16 +107,6 @@ export const pathSelForNode = (
         case 'ref': {
             const path: Path[] = [{ idx, ...node.path }];
             const cnode = map[node.id];
-            // if (cnode.tannot && loc === 'end') {
-            //     return selectEnd(
-            //         cnode.tannot,
-            //         path.concat({
-            //             idx: node.id,
-            //              type: 'tannot' ,
-            //         }),
-            //         map,
-            //     );
-            // }
             switch (cnode.type) {
                 case 'array':
                 case 'list':
@@ -135,6 +125,11 @@ export const pathSelForNode = (
                                     : splitGraphemes(cnode.text).length,
                         },
                     ]);
+                case 'tapply':
+                    if (loc === 'start') {
+                        return selectStart(node.id, path, map);
+                    }
+                    break;
                 case 'spread':
                 case 'annot':
                 case 'recordAccess':

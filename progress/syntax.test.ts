@@ -239,18 +239,31 @@ id
 (a  ^l^b
 (a )
 (list id blank)
+
+a.b^l^l^l(
+(a.b)
+(list (access id 1))
+
+hi:^b
+hi
+id
+
+(.^b)
+()
+(list)
+
+( (^la^l^lb
+(b a ())
+(list id id (list))
+
+(. ^l^b)
+( )
+(list blank blank)
+
+hello<friend>
+hello<friend>
+(tapply id id)
 `;
-
-// hi:^b
-// hi
-// id
-
-// (.^b)
-// (list)
-
-// ( (^la^l^lb
-// (b a ())
-// (list id id (list))
 
 describe('a test', () => {
     data.trim()
@@ -278,7 +291,11 @@ describe('a test', () => {
                 });
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
-                const backOrig = nodeToString(fromMCST(idx, data), sourceMap);
+                const backOrig = nodeToString(
+                    fromMCST(idx, data),
+                    ctx.hashNames,
+                    sourceMap,
+                );
                 let back = backOrig;
                 if (expected.includes('|')) {
                     const pos = remapPos(selection, sourceMap);
@@ -380,8 +397,7 @@ function doABunchOfKeys({
 }) {
     while (true) {
         const ctx = newCtx();
-        const curText =
-            idText(state.map[pathIdx(state.at[0].start)], undefined) ?? '';
+        const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
         const pos = pathPos(state.at[0].start, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));
@@ -397,7 +413,7 @@ function doABunchOfKeys({
             key,
             state.map,
             state.at[0],
-            ctx.display,
+            ctx.hashNames,
             state.nidx,
         );
         expect(update).toBeTruthy();
@@ -407,7 +423,7 @@ function doABunchOfKeys({
             } else {
                 state = applyUpdate(state, 0, update)!;
                 expect(
-                    validatePath(state.map, update.selection, ctx.display),
+                    validatePath(state.map, update.selection, ctx.hashNames),
                 ).toBeTruthy();
             }
         }
@@ -429,7 +445,7 @@ function doABunchOfKeys({
             );
             console.log(state.at[0].start);
             expect(newPos).toEqual(
-                `it should have been different? ${startPos}`,
+                `it should have been different after ${key}? ${startPos}`,
             );
         }
         if (newPos === stop) {

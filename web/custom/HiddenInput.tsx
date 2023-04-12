@@ -61,7 +61,7 @@ export function HiddenInput({
                 const items = collectClipboard(
                     state.map,
                     state.at,
-                    ctx.display,
+                    ctx.hashNames,
                 );
                 if (!items.length) {
                     return;
@@ -69,7 +69,7 @@ export function HiddenInput({
 
                 dispatch({ type: 'copy', items });
 
-                const text = clipboardText(items);
+                const text = clipboardText(items, ctx.hashNames);
                 navigator.clipboard.write([
                     new ClipboardItem({
                         ['text/plain']: new Blob([text], {

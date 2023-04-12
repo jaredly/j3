@@ -11,7 +11,6 @@ export type NodeList = { type: 'list'; values: Node[] };
 export type Identifier = {
     type: 'identifier'; // likeThis
     text: string;
-    hash?: string;
 };
 
 export type NodeArray = {
@@ -48,7 +47,7 @@ export type RichText = {
 export type NodeContents =
     // identifier-like
     | Identifier
-    | { type: 'hash'; hash: string }
+    | { type: 'hash'; hash: string | number }
 
     // list-like
     | NodeList
@@ -65,6 +64,7 @@ export type NodeContents =
     | spread
     | RichText
     | Attachment
+    | tapply
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
 
@@ -77,9 +77,19 @@ export type accessText = {
     text: string;
 };
 
+export type tapply = {
+    type: 'tapply';
+    target: Node;
+    values: Node[];
+};
+
 export type recordAccess = {
     type: 'recordAccess';
-    target: (Identifier | { type: 'blank' } | { type: 'hash'; hash: string }) &
+    target: (
+        | Identifier
+        | { type: 'blank' }
+        | { type: 'hash'; hash: string | number }
+    ) &
         NodeExtra;
     items: (accessText & NodeExtra)[];
 };

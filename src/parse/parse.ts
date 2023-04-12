@@ -1,7 +1,7 @@
 // hmm
 import { applyMods } from '../../web/custom/getCtx';
 import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
-import { applyMenuItem } from '../../web/custom/reduce';
+import { applyMenuItem, autoCompleteUpdate } from '../../web/custom/reduce';
 import { layout } from '../../web/layout';
 import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
 import {
@@ -17,10 +17,13 @@ import { nodeToExpr } from '../to-ast/nodeToExpr';
 import { Node } from '../types/cst';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
-export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
+export const idText = (node: MNode) => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
+            if (!node.text) {
+                console.log('empty node text', node);
+            }
             return node.text;
         case 'unparsed':
             return node.raw;
@@ -30,7 +33,13 @@ export const idText = (node: MNode, style: Ctx['display'][0]['style']) => {
         case 'blank':
             return '';
         case 'hash':
-            return style?.type === 'id' ? style.text : null;
+            if (
+                typeof node.hash === 'string' &&
+                node.hash.startsWith(':builtin:')
+            ) {
+                return node.hash.slice(':builtin:'.length);
+            }
+            return '🚨';
     }
 };
 
@@ -65,7 +74,7 @@ export const parseByCharacter = (
 
             [start, end] = orderStartAndEnd(start, end);
 
-            clipboard = [collectNodes(state.map, start, end, ctx.display)];
+            clipboard = [collectNodes(state.map, start, end, ctx.hashNames)];
             continue;
         }
         if (key === 'Paste') {
@@ -79,12 +88,13 @@ export const parseByCharacter = (
                 (s) => s.type === 'replace',
             ) as AutoCompleteReplace[];
             if (matches?.length) {
-                state = applyMenuItem(
+                const update = applyMenuItem(
                     state.at[0].start,
                     matches[0],
                     state,
                     ctx,
                 );
+                state = applyUpdate(state, 0, update);
                 nodeToExpr(fromMCST(state.root, state.map), ctx);
                 continue;
             }
@@ -94,7 +104,7 @@ export const parseByCharacter = (
             key,
             state.map,
             state.at[0],
-            ctx.display,
+            ctx.hashNames,
             state.nidx,
             mods,
         );
@@ -165,7 +175,8 @@ export function autoCompleteIfNeeded(state: State, ctx: Ctx) {
         (s) => s.type === 'replace' && s.exact,
     ) as AutoCompleteReplace[];
     if (exacts?.length === 1) {
-        state = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
+        const update = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
+        state = applyUpdate(state, 0, update);
     }
     return state;
 }

@@ -44,8 +44,10 @@ export const Hover = ({
                     idx: last,
                     text:
                         (style.type === 'id' && style.ann
-                            ? nodeToString(nodeForType(style.ann, state.ctx)) +
-                              '\n'
+                            ? nodeToString(
+                                  nodeForType(style.ann, state.ctx),
+                                  state.ctx.hashNames,
+                              ) + '\n'
                             : '') +
                         ' ' +
                         style.hash,
@@ -66,6 +68,7 @@ export const Hover = ({
             <div
                 style={{
                     position: 'absolute',
+                    whiteSpace: 'pre-wrap',
                     top: box.bottom + 5,
                     left: box.left,
                     pointerEvents: 'none',

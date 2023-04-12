@@ -1,13 +1,109 @@
 
+# Type Checking Bonanza
+
+So, I think I want a war of all against all
+like, I define a bunch of different types
+and then I indicate, which ones should match which
+
+OH I should make it so `(fn hi<T> [a:T] a)` works
+
+
+# Type application
+What gives?
+
+(some<int> 10 20)
+
+Is that how I want to live my life?
+Sure, why not.
+
+Wow, that was ... easy? Strangely so.
+I wonder if macros will do a similar thing?
+
+# So, I'll want to actually make a "library" or something
+in contrast to the sandbox that you're working in.
+
+
+# Um
+
+- [ ] can I separate things out, so that I can get a toyish
+  language working?
+
+- [x] oh another bieve of fixings, let's
+  dooo the `Ctx[display]` everywhere has to go
+
+- [x] also, `sym -> idx` please
+  - ... are we sure about that?
+  - alsooo I'm not sure about whether I want it to be
+    a number or a string
+
+- [ ] hrmmmmm we're fighting inference here.
+  - ok yeah, so a usage is out of whack
+
+- [x] ALSO there's this bug that happens ,where I'm changing something
+  and all of the sudden these things autocomplete to <
+  ok I think I fixed it
+
+- [x] whyyyyyy is it zeroing out identifiers?
+  - oh noes, we have map entries that have the wrong locs!
+
+<!-- - [ ] am I  -->
+
 - [ ] do I change node, to not have .hash on ID?
+  - nope, because I need it for id-defns
+
+- [x] delet the prefix /suffix stuff
+- [ ] types and suchh
+  - [x] autocomplete
+  - [x] validate I think
+
+- [ ] so I kindof want a .. flag on listlikes, where I can
+  say 'I want this to be multiline' or not.
+  and like, if you press the `enter` key, it should flip
+  that bit.
+
+- [ ] ooooh record item names should not be autocompletable
+  - oh wait they're not it's fine.
+- [ ] also it's weird that `{x}` is punned, it just shouldn't.
+  - maybe I'll disable some punning
+
+- [ ] REFACTOR I'm using `Ctx[display]` a bunch of places
+  that should really just be a `{[idx: number]: string}`.
+  I want to change `Ctx` to have that nameLookup on it.
+  - alsooo when pasting, we need to de-hashify locals
+    if they're no longer in scope
+  - 
+
+- [ ] BUG (backspace on a '.' when the target is a hash, doesn't select correctly, because it doesn't know how "long" the text of the hashed is.)
+
+HOL' UP
+what about `sym` being ditched altogether, in favor
+of `idx`?
+
+- [ ] COPY/PASTE needs to re-sym locals too.
+  - ClipboardItem needs that nameLookup, turns out
+
+# MAKE IT So unlinked references don't just die
+
+- which means, we want a `hashNames`, that is retained
+  at the ... top ... of a given toplevel? Yeah that sounds right?
+  I guess it could be at the top of the sandbox, right?
+  might as well I guess.
 
 # Weird editing
 
+- [ ] color deftype ids
 - [x] can't baclspace an empty hashhh?
 - [x] still can't delete an annot
 - [ ] backspace shouldn't nix whole listlikes. it should go in.
 - [ ] changing a toplevel def should update usages of that def
-- [ ] can't . on a hash
+- [ ] IF we have an unlinked reference ...
+  - hmmmmm yeah ok this is why we need a toplevel hashNames thing
+    so that we can hang onto names that were.
+    And now that `sym`s are globally unique, we don't need to use
+    the loc of that whatsit, we can just use either the hash
+    for a global or the sym for a local. Seems reasonable.
+
+- [x] can't . on a hash
 - [ ] '(' at start of hash at start of attr should wrap
 - [ ] backspace at '(' should unwrap
 - [ ] select and '(' should wrap!
