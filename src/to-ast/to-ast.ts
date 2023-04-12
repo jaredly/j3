@@ -22,6 +22,12 @@ export const resolveType = (
     ctx: Ctx,
     form: Node,
 ): Type => {
+    if (text === 'true' || text === 'false') {
+        return { type: 'bool', value: text === 'true', form };
+    }
+    if (text.startsWith("'")) {
+        return { type: 'tag', name: text, args: [], form };
+    }
     // console.log('resolve typpe', text);
     if (!hash && text === any.form.text) {
         return { ...any, form };

@@ -18,6 +18,9 @@ export const resolveExpr = (
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
+    if (text.startsWith("'")) {
+        return { type: 'tag', name: text, form };
+    }
     ctx.display[form.loc.idx] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form);
