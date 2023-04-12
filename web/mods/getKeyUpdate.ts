@@ -170,9 +170,11 @@ export const applyUpdate = (
 
 const isPathAtStart = (text: string, path: Path) => {
     return (
+        text.length === 0 ||
         // !(path.type === 'end' && text.length > 0) &&
         // !(typeof loc === 'number' && loc > 0)
-        path.type === 'start' || (path.type === 'subtext' && path.at <= 0)
+        path.type === 'start' ||
+        (path.type === 'subtext' && path.at <= 0)
     );
 };
 
@@ -345,6 +347,7 @@ export const getKeyUpdate = (
         }
         if (
             node.type !== 'blank' &&
+            node.type !== 'accessText' &&
             (flast.type === 'start' ||
                 (flast.type === 'subtext' && flast.at === 0))
         ) {

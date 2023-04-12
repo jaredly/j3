@@ -94,7 +94,7 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
-    if (node.type === 'accessText' && atStart) {
+    if (node.type === 'accessText' && (atStart || node.text === '')) {
         if (parent.type !== 'recordAccess') {
             throw new Error(
                 `accessText not child of recordAccess ${parent.type}`,
@@ -105,6 +105,15 @@ export function handleBackspace(
         }
         if (ppath.at === 1 && parent.items.length === 1) {
             const target = map[parent.target];
+            if (!node.text && target.type === 'blank') {
+                const cleared = maybeClearParentList(
+                    fullPath.slice(0, -2),
+                    map,
+                );
+                if (cleared) {
+                    return cleared;
+                }
+            }
             return replacePathWith(fullPath.slice(0, -2), map, {
                 idx: parent.target,
                 map: !node.text

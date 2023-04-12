@@ -249,12 +249,16 @@ hi
 id
 
 (.^b)
+()
 (list)
 
 ( (^la^l^lb
 (b a ())
 (list id id (list))
 
+(. ^l^b)
+( )
+(list blank blank)
 `;
 
 describe('a test', () => {
