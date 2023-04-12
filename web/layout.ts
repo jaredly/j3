@@ -135,8 +135,19 @@ export const calculateLayout = (
             }
             return { type: 'flat', width: cw - pos, pos };
         }
-        case 'tapply':
-        // TODO
+        case 'tapply': {
+            const cw = childWidth(
+                [node.target, ...node.values],
+                recursive,
+                pos,
+                display,
+                map,
+            );
+            if (cw === false || cw > maxWidth) {
+                return { type: 'multiline', pos, tightFirst: 1, cw };
+            }
+            return { type: 'flat', width: cw - pos, pos };
+        }
         default:
             let _: never = node;
             return { type: 'flat', width: 10, pos };

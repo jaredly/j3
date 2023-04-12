@@ -1,5 +1,5 @@
-import { Node } from '../types/cst';
-import { Expr, Record, Type } from '../types/ast';
+import { Identifier, Node, NodeExtra } from '../types/cst';
+import { Expr, Number, Record, Type } from '../types/ast';
 import { specials } from './specials';
 import { resolveExpr } from './resolveExpr';
 import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
@@ -97,45 +97,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         }
         case 'identifier': {
-            if (form.text.match(/^[0-9]+u$/)) {
-                ensure(ctx.display, form.loc.idx, {}).style = {
-                    type: 'number',
-                    kind: 'uint',
-                };
-                return {
-                    type: 'number',
-                    kind: 'uint',
-                    value: parseInt(form.text.replace(/u$/, '')),
-                    form,
-                };
-            }
-            if (form.text.match(/^-?[0-9]+[if]?$/)) {
-                const kind = form.text.endsWith('f') ? 'float' : 'int';
-                ensure(ctx.display, form.loc.idx, {}).style = {
-                    type: 'number',
-                    kind,
-                };
-                return {
-                    type: 'number',
-                    kind,
-                    value: parseInt(form.text.replace(/[if]$/, '')),
-                    form,
-                };
-            }
-            if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
-                ensure(ctx.display, form.loc.idx, {}).style = {
-                    type: 'number',
-                    kind: 'float',
-                };
-                return {
-                    type: 'number',
-                    kind: 'float',
-                    value: parseFloat(form.text.replace(/f$/, '')),
-                    form,
-                };
-            }
-
-            return resolveExpr(form.text, undefined, ctx, form);
+            const res = maybeParseNumber(form, ctx);
+            return res ?? resolveExpr(form.text, undefined, ctx, form);
         }
         case 'hash':
             return resolveExpr('', form.hash, ctx, form);
@@ -394,4 +357,48 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             form,
         )}`,
     );
+};
+
+export const maybeParseNumber = (
+    form: Identifier & NodeExtra,
+    ctx: Ctx,
+): null | Number => {
+    if (form.text.match(/^[0-9]+u$/)) {
+        ensure(ctx.display, form.loc.idx, {}).style = {
+            type: 'number',
+            kind: 'uint',
+        };
+        return {
+            type: 'number',
+            kind: 'uint',
+            value: parseInt(form.text.replace(/u$/, '')),
+            form,
+        };
+    }
+    if (form.text.match(/^-?[0-9]+[if]?$/)) {
+        const kind = form.text.endsWith('f') ? 'float' : 'int';
+        ensure(ctx.display, form.loc.idx, {}).style = {
+            type: 'number',
+            kind,
+        };
+        return {
+            type: 'number',
+            kind,
+            value: parseInt(form.text.replace(/[if]$/, '')),
+            form,
+        };
+    }
+    if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
+        ensure(ctx.display, form.loc.idx, {}).style = {
+            type: 'number',
+            kind: 'float',
+        };
+        return {
+            type: 'number',
+            kind: 'float',
+            value: parseFloat(form.text.replace(/f$/, '')),
+            form,
+        };
+    }
+    return null;
 };

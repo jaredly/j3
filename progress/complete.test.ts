@@ -36,7 +36,9 @@ describe('completion and such', () => {
         const [input, expected] = chunk.split('\n');
         (only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
-            const { map: data } = parseByCharacter(input, ctx, true, false);
+            const { map: data } = parseByCharacter(input, ctx, {
+                updateCtx: true,
+            });
             const idx = (data[-1] as ListLikeContents).values[0];
             expect(nodeToString(fromMCST(idx, data), ctx.hashNames)).toEqual(
                 expected,

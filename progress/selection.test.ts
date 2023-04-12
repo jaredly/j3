@@ -94,12 +94,9 @@ describe('a test', () => {
 
             (only ? it.only : it)(i + ' ' + input, () => {
                 const ctx = newCtx();
-                const { map: data, nidx } = parseByCharacter(
-                    input,
-                    ctx,
-                    false,
-                    only,
-                );
+                const { map: data, nidx } = parseByCharacter(input, ctx, {
+                    debug: only,
+                });
 
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };

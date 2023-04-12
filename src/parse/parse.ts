@@ -14,6 +14,7 @@ import { Path } from '../../web/mods/path';
 import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
 import { nodeToExpr } from '../to-ast/nodeToExpr';
+import { nodeToType } from '../to-ast/nodeToType';
 import { Node } from '../types/cst';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
@@ -52,8 +53,10 @@ export const splitGraphemes = (text: string) => {
 export const parseByCharacter = (
     rawText: string,
     ctx: Ctx,
-    updateCtx = false,
-    debug = false,
+    {
+        updateCtx,
+        kind,
+    }: { updateCtx?: boolean; kind?: 'type' | 'expr'; debug?: boolean } = {},
 ): State => {
     let state: State = initialState();
 
@@ -117,11 +120,18 @@ export const parseByCharacter = (
 
         if (updateCtx) {
             const root = fromMCST(state.root, state.map) as { values: Node[] };
-            const exprs = root.values.map((node) => nodeToExpr(node, ctx));
+            const exprs =
+                !kind || kind === 'expr'
+                    ? root.values.map((node) => nodeToExpr(node, ctx))
+                    : null;
+            if (kind === 'type') {
+                // TODO: Allow deftype here pls
+                root.values.map((node) => nodeToType(node, ctx));
+            }
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map);
 
-            if (update?.autoComplete) {
+            if (exprs && update?.autoComplete) {
                 // Now we do like inference, right?
                 const mods = infer(exprs, ctx, state.map);
                 Object.keys(mods).forEach((id) => {

@@ -126,7 +126,12 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             });
         }
         case 'unresolved':
-            return type.form;
+            // return type.form;
+            return {
+                type: 'identifier',
+                text: JSON.stringify(type.form),
+                loc: type.form.loc,
+            };
         case 'union':
             return loc(type.form.loc, {
                 type: 'array',

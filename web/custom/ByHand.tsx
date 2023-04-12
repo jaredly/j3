@@ -137,10 +137,7 @@ export const ByHand = () => {
             <button
                 onClick={() => {
                     const id = 'j3-ex-' + Math.random().toString(36).slice(2);
-                    saveState(
-                        id,
-                        parseByCharacter('"hello"', newCtx(), false, false),
-                    );
+                    saveState(id, parseByCharacter('"hello"', newCtx()));
                     setWhich(id);
                 }}
             >
@@ -155,13 +152,11 @@ export const ByHand = () => {
                                   f.includes('\n') ? '\n' : ' ',
                               ),
                               newCtx(),
-                              // lol turning this on slows things down a tonnn
-                              false,
-                              false,
+                              // lol turning on updateCtx slows things down a tonnn
                           )
                         : localStorage[which]
                         ? loadState(localStorage[which])
-                        : parseByCharacter('"hello"', newCtx(), false, false)
+                        : parseByCharacter('"hello"', newCtx())
                 }
                 saveKey={which.startsWith('j3-ex') ? which : undefined}
             />

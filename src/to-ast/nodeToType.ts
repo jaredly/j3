@@ -2,7 +2,7 @@ import { Node } from '../types/cst';
 import { Type } from '../types/ast';
 import { resolveType } from './to-ast';
 import { Ctx, nilt } from './Ctx';
-import { filterComments } from './nodeToExpr';
+import { filterComments, maybeParseNumber } from './nodeToExpr';
 import { err } from './nodeToPattern';
 
 export const nodeToType = (form: Node, ctx: Ctx): Type => {
@@ -10,7 +10,10 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
         case 'unparsed':
             return nilt;
         case 'identifier': {
-            return resolveType(form.text, undefined, ctx, form);
+            return (
+                maybeParseNumber(form, ctx) ??
+                resolveType(form.text, undefined, ctx, form)
+            );
         }
         case 'hash':
             return resolveType('', form.hash, ctx, form);
