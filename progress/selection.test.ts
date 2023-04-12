@@ -105,7 +105,7 @@ describe('a test', () => {
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
                 const back = nodeToString(
                     fromMCST(idx, data),
-                    ctx.display,
+                    ctx.hashNames,
                     sourceMap,
                 );
                 expect(back).toEqual(input);
@@ -134,7 +134,7 @@ describe('a test', () => {
                     secondPath,
                     ctx.hashNames,
                 );
-                const printed = clipboardText([collected], ctx.display);
+                const printed = clipboardText([collected], ctx.hashNames);
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);

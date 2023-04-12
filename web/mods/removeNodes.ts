@@ -45,7 +45,7 @@ export const removeNodes = (
                 );
                 if (values.length < node.values.length) {
                     update[node.loc.idx] = {
-                        ...node,
+                        ...(node as any),
                         values: values.map((v) => v.loc.idx),
                     };
                 }

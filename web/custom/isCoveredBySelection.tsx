@@ -27,6 +27,9 @@ export const isCoveredBySelection = (
     return null;
 };
 
+// Soooo what if I just ran `getNestedNodes` on the shared parent,
+// and then compare positions there?
+// That would be much nicer.
 export const cmpPath = (one: Path, two: Path): number => {
     if (one.type === two.type) {
         switch (one.type) {
@@ -37,6 +40,7 @@ export const cmpPath = (one: Path, two: Path): number => {
             case 'annot-annot':
             case 'record-target':
             case 'spread-contents':
+            case 'tapply-target':
                 return 0;
             case 'subtext':
             case 'attribute':
@@ -71,6 +75,13 @@ export const cmpPath = (one: Path, two: Path): number => {
         return -1;
     }
     if (two.type === 'annot-target' && one.type === 'annot-annot') {
+        return 1;
+    }
+
+    if (one.type === 'tapply-target' && two.type === 'child') {
+        return -1;
+    }
+    if (two.type === 'tapply-target' && one.type === 'child') {
         return 1;
     }
 

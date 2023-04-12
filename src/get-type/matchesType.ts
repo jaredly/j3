@@ -1,4 +1,4 @@
-import { blank, Ctx } from '../to-ast/Ctx';
+import { blank, Ctx, nilt } from '../to-ast/Ctx';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
 import { errf, recordMap, Report } from './get-types-new';
@@ -327,6 +327,59 @@ export const applyAndResolve = (
                     path,
                     form: type.target.form,
                 },
+            };
+        }
+        if (inner.type === 'builtin') {
+            // TODO: Check to see if the number of arguments is correct
+            // ALSO here's where we can fill in default arguments.
+            const args = ctx.global.builtins.types[inner.name];
+            if (type.args.length > args.length) {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'wrong number of arguments',
+                        expected: args.length,
+                        received: type.args.length,
+                        form: type.form,
+                        path,
+                    },
+                };
+            }
+            let error: MatchError | null = null;
+            const result = args.map((arg, i) => {
+                if (i >= type.args.length) {
+                    if (arg.default_) {
+                        return arg.default_;
+                    }
+                    error = {
+                        type: 'wrong number of arguments',
+                        expected: args.length,
+                        received: type.args.length,
+                        form: type.form,
+                        path,
+                    };
+                    return nilt;
+                }
+                if (arg.bound) {
+                    const res = _matchOrExpand(
+                        type.args[i],
+                        arg.bound!,
+                        ctx,
+                        path.concat([i.toString()]),
+                    );
+                    if (res !== true) {
+                        error = res;
+                    }
+                }
+                return type.args[i];
+            });
+            if (error) {
+                return { type: 'error', error };
+            }
+            return {
+                ...type,
+                target: inner,
+                args: result,
             };
         }
         if (inner.type !== 'tfn') {

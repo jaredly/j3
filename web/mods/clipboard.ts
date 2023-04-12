@@ -325,7 +325,7 @@ export const paste = (
 
 export const clipboardText = (
     items: ClipboardItem[],
-    display: Ctx['display'],
+    display: Ctx['hashNames'],
 ) => {
     return items
         .map((item) =>

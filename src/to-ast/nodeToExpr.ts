@@ -6,6 +6,7 @@ import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
+import { nodeToType } from './nodeToType';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter((node) => node.type !== 'comment' && node.type !== 'blank');
@@ -96,19 +97,32 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         }
         case 'identifier': {
-            if (form.text.match(/^-?[0-9]+$/)) {
+            if (form.text.match(/^[0-9]+u$/)) {
                 ensure(ctx.display, form.loc.idx, {}).style = {
                     type: 'number',
-                    kind: 'int',
+                    kind: 'uint',
                 };
                 return {
                     type: 'number',
-                    kind: 'int',
-                    value: parseInt(form.text),
+                    kind: 'uint',
+                    value: parseInt(form.text.replace(/u$/, '')),
                     form,
                 };
             }
-            if (form.text.match(/^-?[0-9]+\.[0-9]*$/)) {
+            if (form.text.match(/^-?[0-9]+[if]?$/)) {
+                const kind = form.text.endsWith('f') ? 'float' : 'int';
+                ensure(ctx.display, form.loc.idx, {}).style = {
+                    type: 'number',
+                    kind,
+                };
+                return {
+                    type: 'number',
+                    kind,
+                    value: parseInt(form.text.replace(/[if]$/, '')),
+                    form,
+                };
+            }
+            if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
                 ensure(ctx.display, form.loc.idx, {}).style = {
                     type: 'number',
                     kind: 'float',
@@ -116,7 +130,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 return {
                     type: 'number',
                     kind: 'float',
-                    value: parseFloat(form.text),
+                    value: parseFloat(form.text.replace(/f$/, '')),
                     form,
                 };
             }
@@ -366,7 +380,13 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
             };
         case 'annot':
             return nodeToExpr(form.target, ctx);
-        // throw new Error(`annot not yet toExpr`);
+        case 'tapply':
+            return {
+                type: 'type-apply',
+                target: nodeToExpr(form.target, ctx),
+                args: form.values.map((arg) => nodeToType(arg, ctx)),
+                form,
+            };
     }
     let _: never = form;
     throw new Error(

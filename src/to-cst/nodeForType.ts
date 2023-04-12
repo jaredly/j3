@@ -29,7 +29,8 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     (type.kind === 'float' &&
                     !type.value.toString().includes('.')
                         ? '.'
-                        : ''),
+                        : '') +
+                    (type.kind === 'uint' ? 'u' : ''),
             };
         case 'tag':
             if (type.args.length === 0) {

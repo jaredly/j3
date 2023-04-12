@@ -259,6 +259,10 @@ id
 (. ^l^b)
 ( )
 (list blank blank)
+
+hello<friend>
+hello<friend>
+(tapply id id)
 `;
 
 describe('a test', () => {

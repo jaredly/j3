@@ -1,6 +1,17 @@
 
+# Type application
+What gives?
+
+(some<int> 10 20)
+
+Is that how I want to live my life?
+Sure, why not.
+
+Wow, that was ... easy? Strangely so.
+I wonder if macros will do a similar thing?
+
 # So, I'll want to actually make a "library" or something
-in contracts to the sandbox that you're working in.
+in contrast to the sandbox that you're working in.
 
 
 # Um

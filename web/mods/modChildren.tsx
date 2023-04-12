@@ -8,6 +8,7 @@ export const modChildren = (
         case 'array':
         case 'list':
         case 'record':
+        case 'tapply':
             const values = node.values.slice();
             fn(values);
             return { ...node, values };

@@ -135,6 +135,8 @@ export const calculateLayout = (
             }
             return { type: 'flat', width: cw - pos, pos };
         }
+        case 'tapply':
+        // TODO
         default:
             let _: never = node;
             return { type: 'flat', width: 10, pos };

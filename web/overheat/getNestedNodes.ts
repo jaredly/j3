@@ -166,6 +166,21 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'end' },
                 ],
             };
+        case 'tapply':
+            return {
+                type: 'horiz',
+                children: [
+                    {
+                        type: 'ref',
+                        id: node.target,
+                        path: { type: 'tapply-target' },
+                    },
+                    { type: 'brace', text: '<', at: 'start' },
+                    ...withCommas(node.values),
+                    { type: 'brace', text: '>', at: 'end' },
+                    { type: 'blinker', loc: 'end' },
+                ],
+            };
         case 'string':
             return {
                 type: 'horiz',

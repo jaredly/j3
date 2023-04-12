@@ -68,6 +68,7 @@ export const Hover = ({
             <div
                 style={{
                     position: 'absolute',
+                    whiteSpace: 'pre-wrap',
                     top: box.bottom + 5,
                     left: box.left,
                     pointerEvents: 'none',

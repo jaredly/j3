@@ -20,6 +20,7 @@ import {
     newRecordAccess,
     newSpread,
     newString,
+    newTapply,
 } from './newNodes';
 import { Path } from './path';
 import { replacePathWith } from './replacePathWith';
@@ -357,6 +358,27 @@ export const getKeyUpdate = (
             });
         }
         return newNodeAfter(fullPath, map, newBlank(nidx()), nidx);
+    }
+
+    if (key === '<' && (node.type === 'identifier' || node.type === 'hash')) {
+        // return replacePathWith
+        const nat = newTapply(idx, '', nidx(), nidx());
+        return replacePathWith(fullPath.slice(0, -1), map, nat);
+    }
+    if (key === '>' && node.type !== 'blank') {
+        for (let i = fullPath.length - 1; i >= 0; i--) {
+            const parent = fullPath[i];
+            if (parent.type === 'end') {
+                continue;
+            }
+            const node = map[parent.idx];
+            if (node.type === 'tapply') {
+                const sel = fullPath
+                    .slice(0, i)
+                    .concat({ idx: parent.idx, type: 'end' });
+                return { type: 'select', selection: sel, autoComplete: true };
+            }
+        }
     }
 
     if (')]}'.includes(key)) {

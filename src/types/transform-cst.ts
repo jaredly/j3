@@ -148,6 +148,30 @@ export const transformNode = (
             node = contents !== node.contents ? { ...node, contents } : node;
             break;
         }
+        case 'tapply': {
+            const target = transformNode(
+                node.target,
+                visitor,
+                path.concat({ idx, type: 'tapply-target' }),
+            );
+            node = target !== node.target ? { ...node, target } : node;
+
+            let changed = false;
+            const values = node.values.map((n, i) => {
+                const res = transformNode(
+                    n,
+                    visitor,
+                    path.concat({ idx, type: 'child', at: i }),
+                );
+                changed = changed || res !== n;
+                return res;
+            });
+
+            if (changed) {
+                node = { ...node, values };
+            }
+            break;
+        }
         default:
             let _: never = node;
     }

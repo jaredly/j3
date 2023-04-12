@@ -46,6 +46,7 @@ export type MNodeContents =
     | { type: 'annot'; target: number; annot: number }
     | MCRecordAccess
     | { type: 'accessText'; text: string }
+    | { type: 'tapply'; target: number; values: number[] }
 
     // random stuff
     // | { type: 'spread'; contents: number }
@@ -117,6 +118,12 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
                 target: fromMCST(node.target, map),
                 annot: fromMCST(node.annot, map),
             };
+        case 'tapply':
+            return {
+                ...node,
+                target: fromMCST(node.target, map),
+                values: node.values.map((arg) => fromMCST(arg, map)),
+            };
         case 'spread':
             return { ...node, contents: fromMCST(node.contents, map) };
         default:
@@ -167,6 +174,12 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
                 ...node,
                 target: toMCST(node.target, map),
                 annot: toMCST(node.annot, map),
+            };
+        case 'tapply':
+            return {
+                ...node,
+                target: toMCST(node.target, map),
+                values: node.values.map((arg) => toMCST(arg, map)),
             };
         case 'spread':
             return { ...node, contents: toMCST(node.contents, map) };

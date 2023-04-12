@@ -72,10 +72,10 @@ expect.extend({
                         lines.push(
                             `Invalid type! Expected ${nodeToString(
                                 nodeForType(err.expected, ctx),
-                                ctx.display,
+                                ctx.hashNames,
                             )}, found ${nodeToString(
                                 nodeForType(err.found, ctx),
-                                ctx.display,
+                                ctx.hashNames,
                             )} at idx ${err.found.form.loc.idx}`,
                         );
                         break;
@@ -96,10 +96,10 @@ expect.extend({
                 lines.push(
                     `Expected type \`${nodeToString(
                         nodeForType(type, ctx),
-                        ctx.display,
+                        ctx.hashNames,
                     )}\` at ${idx}, but found \`${nodeToString(
                         nodeForType(report.types[idx], ctx),
-                        ctx.display,
+                        ctx.hashNames,
                     )}\``,
                 );
             }

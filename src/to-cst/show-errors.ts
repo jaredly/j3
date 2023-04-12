@@ -32,5 +32,9 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 ctx.hashNames,
             )}`;
     }
-    return `Some error happened ${error.type} : ${JSON.stringify(error)}`;
+    return `Some error happened ${error.type} : ${JSON.stringify(
+        error,
+        null,
+        2,
+    )}`;
 };

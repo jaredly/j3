@@ -98,7 +98,7 @@ export const basicBuiltins: Global['builtins'] = {
         string: [],
         bytes: [],
         'attachment-handle': [],
-        Array: [
+        array: [
             { sym: 0, form: blank, name: 'Value' },
             {
                 sym: 1,
@@ -273,6 +273,76 @@ builtinFn(
     [tstring, tstring],
     tbool,
 );
+
+addBuiltin(basicBuiltins, basicReverse, 'reduce', {
+    type: 'tfn',
+    body: {
+        type: 'fn',
+        body: {
+            type: 'local',
+            form: blank,
+            sym: 1,
+        },
+        args: [
+            {
+                type: 'apply',
+                target: {
+                    type: 'builtin',
+                    form: blank,
+                    name: 'array',
+                },
+                form: blank,
+                args: [
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: 0,
+                    },
+                ],
+            },
+            {
+                type: 'local',
+                form: blank,
+                sym: 1,
+            },
+            {
+                type: 'fn',
+                form: blank,
+                body: {
+                    type: 'local',
+                    form: blank,
+                    sym: 1,
+                },
+                args: [
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: 0,
+                    },
+                    {
+                        type: 'local',
+                        form: blank,
+                        sym: 1,
+                    },
+                ],
+            },
+        ],
+        form: blank,
+    },
+    args: [
+        {
+            form: blank,
+            sym: 0,
+            name: 'Input',
+        },
+        {
+            form: blank,
+            sym: 1,
+            name: 'Output',
+        },
+    ],
+    form: blank,
+});
 
 // We want it to be generic, which is the trick
 // and ... at this point, do we have to actually do a type

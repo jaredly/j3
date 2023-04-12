@@ -109,6 +109,10 @@ export const nodeToString_ = (
         case 'accessText':
         case 'stringText':
             return node.text;
+        case 'tapply':
+            return `${nodeToString(node.target, hashNames, sm, 0)}<${node.values
+                .map((arg) => nodeToString(arg, hashNames, sm, 1))
+                .join(' ')}>`;
         case 'string':
             return `"${nodeToString(
                 node.first,

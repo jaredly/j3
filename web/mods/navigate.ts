@@ -125,6 +125,11 @@ export const pathSelForNode = (
                                     : splitGraphemes(cnode.text).length,
                         },
                     ]);
+                case 'tapply':
+                    if (loc === 'start') {
+                        return selectStart(node.id, path, map);
+                    }
+                    break;
                 case 'spread':
                 case 'annot':
                 case 'recordAccess':

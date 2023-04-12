@@ -64,6 +64,7 @@ export type NodeContents =
     | spread
     | RichText
     | Attachment
+    | tapply
     | { type: 'blank' }
     | { type: 'unparsed'; raw: string };
 
@@ -74,6 +75,12 @@ export type spread = {
 export type accessText = {
     type: 'accessText';
     text: string;
+};
+
+export type tapply = {
+    type: 'tapply';
+    target: Node;
+    values: Node[];
 };
 
 export type recordAccess = {
