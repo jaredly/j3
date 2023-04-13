@@ -9,6 +9,7 @@ import { fromMCST } from '../../src/types/mcst';
 import { State } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';
 import { Action, UIState } from './ByHand';
+import { subRect } from './Cursors';
 
 const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
@@ -59,7 +60,10 @@ export const Hover = ({
     const node = found != null ? getRegNode(found.idx, state.regs) : null;
     if (!node || found == null) return null;
 
-    const box = node?.getBoundingClientRect();
+    const box = subRect(
+        node.getBoundingClientRect(),
+        node.offsetParent!.getBoundingClientRect(),
+    );
 
     const selectionIndex = state.menu?.selection ?? 0;
 
@@ -69,7 +73,7 @@ export const Hover = ({
                 style={{
                     position: 'absolute',
                     whiteSpace: 'pre-wrap',
-                    top: box.bottom + 5,
+                    top: box.top + box.height + 5,
                     left: box.left,
                     pointerEvents: 'none',
                     padding: 8,

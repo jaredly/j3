@@ -31,11 +31,9 @@ export const Cursors = ({ state }: { state: UIState }) => {
                 const res: any = [];
                 const box = calcCursorPos(at.start, state.regs);
                 if (box) {
-                    const offsetY = document.body.scrollTop;
-                    const offsetX = document.body.scrollLeft;
                     res.push({
-                        x: box.left - offsetX,
-                        y: box.top - offsetY,
+                        x: box.left,
+                        y: box.top,
                         h: box.height,
                         color: box.color,
                     });
@@ -43,11 +41,9 @@ export const Cursors = ({ state }: { state: UIState }) => {
                 if (at.end) {
                     const box2 = calcCursorPos(at.end, state.regs);
                     if (box2) {
-                        const offsetY = document.body.scrollTop;
-                        const offsetX = document.body.scrollLeft;
                         res.push({
-                            x: box2.left - offsetX,
-                            y: box2.top - offsetY,
+                            x: box2.left,
+                            y: box2.top,
                             h: box2.height,
                             color: box2.color,
                         });
@@ -82,7 +78,8 @@ export const Cursors = ({ state }: { state: UIState }) => {
         </div>
     );
 };
-const subRect = (
+
+export const subRect = (
     one: DOMRect,
     two: DOMRect,
     color?: string,

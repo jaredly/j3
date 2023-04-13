@@ -22,6 +22,9 @@ Cannn I ... inferrrr? ....
 
 # Indexing! Let's do it please
 
+- [ ] um
+- [x] arrays don't layout
+- [x] hovers don't work with scrolling
 
 # Type application
 What gives?

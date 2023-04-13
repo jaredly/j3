@@ -4,6 +4,7 @@ import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { Path } from '../mods/path';
 import { Action, UIState } from './ByHand';
+import { subRect } from './Cursors';
 
 export const Menu = ({
     state,
@@ -24,7 +25,10 @@ export const Menu = ({
     const [hover, setHover] = useState(null as null | number);
 
     if (!node) return null;
-    const box = node?.getBoundingClientRect();
+    const box = subRect(
+        node.getBoundingClientRect(),
+        node.offsetParent!.getBoundingClientRect(),
+    );
 
     const selectionIndex = state.menu?.selection ?? 0;
 
@@ -32,7 +36,7 @@ export const Menu = ({
         <div
             style={{
                 position: 'absolute',
-                top: box.bottom,
+                top: box.top + box.height,
                 left: box.left,
                 padding: 8,
                 maxHeight: 500,
