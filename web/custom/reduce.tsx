@@ -106,16 +106,17 @@ export const reduce = (state: UIState, action: Action): UIState => {
             return { ...state, menu: update.menu };
         case 'select':
         case 'update': {
-            // console.log('1️⃣ update', update);
             const prev = state.at[0];
             // Here's where the real work happens.
             if (update.autoComplete && !state.menu?.dismissed) {
                 state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
                 verifyLocs(state.map, 'autocomplete');
             }
-            // debugger;
             state = { ...state, ...applyUpdate(state, 0, update) };
             verifyLocs(state.map, 'apply update');
+            if (update.type === 'select') {
+                return state;
+            }
             let { ctx, map, exprs } = getCtx(state.map, state.root);
             verifyLocs(state.map, 'get ctx');
             state.map = map;

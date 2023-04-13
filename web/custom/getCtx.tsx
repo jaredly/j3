@@ -10,6 +10,7 @@ import { layout } from '../layout';
 // import { maxSym } from './ByHand';
 
 export const getCtx = (map: Map, root: number) => {
+    console.log('get ctx');
     const tops = (map[root] as ListLikeContents).values;
     let ctx = newCtx();
     // ctx.sym.current = maxSym(map) + 1;

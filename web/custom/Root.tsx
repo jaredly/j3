@@ -28,12 +28,16 @@ export function Root({
     debug: boolean;
     ctx: Ctx;
 }) {
-    const selections = state.at
-        .filter((s) => s.end)
-        .map(({ start, end }) => {
-            [start, end] = orderStartAndEnd(start, end!);
-            return { start, end };
-        });
+    const selections = React.useMemo(
+        () =>
+            state.at
+                .filter((s) => s.end)
+                .map(({ start, end }) => {
+                    [start, end] = orderStartAndEnd(start, end!);
+                    return { start, end };
+                }),
+        [state.at],
+    );
 
     const reg = useCallback(
         (

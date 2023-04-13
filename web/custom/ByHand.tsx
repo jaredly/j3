@@ -95,17 +95,6 @@ export type Action =
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
 
-// export const maxSym = (map: Map) => {
-//     let max = 0;
-//     Object.keys(map).forEach((id) => {
-//         const node = map[+id];
-//         if (node.type === 'identifier' && node.hash?.startsWith(':')) {
-//             max = Math.max(max, +node.hash.slice(1));
-//         }
-//     });
-//     return max;
-// };
-
 export const ByHand = () => {
     const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
     const extra = Object.keys(localStorage).filter((k) =>
@@ -138,7 +127,7 @@ export const ByHand = () => {
             <button
                 onClick={() => {
                     const id = 'j3-ex-' + Math.random().toString(36).slice(2);
-                    saveState(id, parseByCharacter('"hello"', newCtx()));
+                    saveState(id, parseByCharacter('"hello"', newCtx()).map);
                     setWhich(id);
                 }}
             >
@@ -165,8 +154,8 @@ export const ByHand = () => {
     );
 };
 
-export const saveState = (id: string, state: State) => {
-    localStorage[id] = JSON.stringify(state.map);
+export const saveState = (id: string, map: Map) => {
+    localStorage[id] = JSON.stringify(map);
 };
 
 export const loadState = (raw: string): State => {
@@ -218,9 +207,9 @@ export const Doc = ({
 
     useEffect(() => {
         if (saveKey) {
-            saveState(saveKey, state);
+            saveState(saveKey, state.map);
         }
-    }, [state]);
+    }, [state.map]);
 
     // @ts-ignore
     window.state = state;
@@ -242,6 +231,7 @@ export const Doc = ({
 
     return (
         <div
+            style={{ paddingBottom: 500 }}
             onMouseEnter={(evt) => {
                 dispatch({ type: 'hover', path: [] });
             }}

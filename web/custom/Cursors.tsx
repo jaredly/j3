@@ -143,6 +143,9 @@ export const calcCursorPos = (
                         if (lc.nodeName !== '#text') {
                             lc = lc.lastChild!;
                         }
+                        if (!lc.textContent) {
+                            return;
+                        }
                         r.setStart(lc, lc.textContent!.length);
                         r.collapse(true);
                     } else if (last.type === 'subtext') {

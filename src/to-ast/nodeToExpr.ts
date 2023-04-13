@@ -106,7 +106,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     });
                 });
                 const target: Expr = first.hash
-                    ? { type: 'global', hash: first.hash, form: first }
+                    ? resolveExpr('', first.hash, ctx, first)
                     : { type: 'unresolved', form: first };
                 if (!first.hash) {
                     populateAutocomplete(ctx, '[]', first);
