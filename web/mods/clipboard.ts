@@ -241,7 +241,9 @@ export const paste = (
                         state.nidx,
                     );
                 } else {
-                    const chars = splitGraphemes(item.text);
+                    const chars = splitGraphemes(
+                        item.text.replace(/\s+/g, ' '),
+                    );
                     let tmp = { ...state };
                     for (let char of chars) {
                         const path = tmp.at[0].start;

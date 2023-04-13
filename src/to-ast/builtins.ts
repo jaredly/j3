@@ -240,6 +240,7 @@ const vec4 = record([
 bfn('fract', [tfloat], tfloat);
 bfn('sin', [tfloat], tfloat);
 bfn('dot', [vec2, vec2], tfloat);
+bfn('length', [vec2], tfloat);
 bfn(
     'texture-get',
     [btype('texture'), vec2],

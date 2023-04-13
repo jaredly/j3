@@ -264,37 +264,46 @@ export const specials: {
             return { type: 'unresolved', form, reason: 'first not array' };
         }
         ctx.display[first.loc.idx] = { style: { type: 'let-pairs' } };
-        const locals: Local['terms'] = [];
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         const values = filterComments(first.values);
+        const allLocals: Local['terms'] = [];
         for (let i = 0; i < values.length - 1; i += 2) {
             const value = nodeToExpr(values[i + 1], ctx);
             const inferred = getType(value, ctx) ?? nilt;
+            const locals: Local['terms'] = [];
             bindings.push({
                 pattern: nodeToPattern(values[i], inferred, ctx, locals),
                 value,
                 type: inferred,
             });
+            locals.forEach(
+                (loc) =>
+                    (ctx.localMap.terms[loc.sym] = {
+                        name: loc.name,
+                        type: loc.type,
+                    }),
+            );
+            // allLocals.push(...locals);
+            ctx = {
+                ...ctx,
+                local: {
+                    ...ctx.local,
+                    terms: [...locals, ...ctx.local.terms],
+                },
+            };
         }
-        locals.forEach(
-            (loc) =>
-                (ctx.localMap.terms[loc.sym] = {
-                    name: loc.name,
-                    type: loc.type,
-                }),
-        );
-        const ct2: Ctx = {
-            ...ctx,
-            local: {
-                ...ctx.local,
-                terms: [...locals, ...ctx.local.terms],
-            },
-        };
+        // const ct2: Ctx = {
+        //     ...ctx,
+        //     local: {
+        //         ...ctx.local,
+        //         terms: [...allLocals, ...ctx.local.terms],
+        //     },
+        // };
         return {
             type: 'let',
             bindings,
             form,
-            body: contents.slice(1).map((child) => nodeToExpr(child, ct2)),
+            body: contents.slice(1).map((child) => nodeToExpr(child, ctx)),
         };
     },
     if: (form, contents, ctx): Expr => {

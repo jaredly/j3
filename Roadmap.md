@@ -27,6 +27,27 @@ Cannn I ... inferrrr? ....
 - [x] hovers don't work with scrolling
 - [x] Arrayssss should have hashhh
 - [x] um more scrolling
+- [x] performance ... trying to make it better
+  - hrm ok so a production build is plenty fast
+
+## Critical things for getting conway to work
+- [ ] let should behaving like let* instead
+
+## A bunch of quality of life things
+- [ ] I should hang on to the `hashNames` on state somewhere,
+associated with the top level of a thing ...
+  OK also, I don't think I should be doing the whole "toplevel items
+  are just values[] of the top `list`. I think I want them to be
+  explicit.
+  Anyway, then `path`'s first item will be the `top`, not -1
+  and there won't be any way to "select" the -1 pseudo-thing
+- [ ] ALSO when you update a toplevel (addDef) I need to go through
+and change anything that depends on it ... right? Yeah seems like it.
+- [ ] ALSO let's get undo/redo in here real quick
+
+- [ ] um, so now I want to like ... generate and run code?
+  also, it would be nice if ... things worked faster?
+  yeah maybe I need the "library / sandbox" differentiation?"
 
 # Type application
 What gives?
