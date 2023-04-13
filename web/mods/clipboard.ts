@@ -1,10 +1,11 @@
 import equal from 'fast-deep-equal';
 import {
+    autoCompleteIfNeeded,
     idText,
     orderStartAndEnd,
     splitGraphemes,
 } from '../../src/parse/parse';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { Ctx, newCtx } from '../../src/to-ast/Ctx';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
 import {
@@ -27,6 +28,12 @@ import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path } from './path';
 import { UpdateMap } from '../store';
+import { filterComments, nodeToExpr } from '../../src/to-ast/nodeToExpr';
+import { applyMods } from '../custom/getCtx';
+import { getType } from '../../src/get-type/get-types-new';
+import { validateExpr } from '../../src/get-type/validate';
+import { addDef } from '../../src/to-ast/to-ast';
+import { applyInferMod, infer } from '../../src/infer/infer';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -241,38 +248,7 @@ export const paste = (
                         state.nidx,
                     );
                 } else {
-                    const chars = splitGraphemes(
-                        item.text.replace(/\s+/g, ' '),
-                    );
-                    let tmp = { ...state };
-                    for (let char of chars) {
-                        const path = tmp.at[0].start;
-                        const update = getKeyUpdate(
-                            char,
-                            tmp.map,
-                            tmp.at[0],
-                            ctx.hashNames,
-                            tmp.nidx,
-                        );
-                        tmp = applyUpdate(tmp, 0, update);
-                    }
-                    const update: UpdateMap = {};
-                    for (let key of Object.keys(tmp.map)) {
-                        if (tmp.map[+key] !== state.map[+key]) {
-                            update[+key] = tmp.map[+key];
-                        }
-                    }
-                    for (let key of Object.keys(state.map)) {
-                        if (!tmp.map[+key]) {
-                            update[+key] = null;
-                        }
-                    }
-                    return {
-                        type: 'update',
-                        map: update,
-                        selection: tmp.at[0].start,
-                        selectionEnd: tmp.at[0].end,
-                    };
+                    return generateRawPasteUpdate(item, state);
                 }
             }
             case 'nodes': {
@@ -547,3 +523,71 @@ export const reLoc = (node: Node, nidx: () => number): Node => {
         },
     });
 };
+
+export function generateRawPasteUpdate(
+    item: Extract<ClipboardItem, { type: 'text' }>,
+    state: State,
+): StateUpdate {
+    const chars = splitGraphemes(item.text.replace(/\s+/g, ' '));
+    let tmp = { ...state };
+    let tctx = newCtx();
+    for (let char of chars) {
+        const update = getKeyUpdate(
+            char,
+            tmp.map,
+            tmp.at[0],
+            tctx.hashNames,
+            tmp.nidx,
+        );
+        if (update?.autoComplete) {
+            tmp = autoCompleteIfNeeded(tmp, tctx);
+        }
+
+        tmp = applyUpdate(tmp, 0, update);
+
+        tctx = newCtx();
+
+        const root = fromMCST(tmp.root, tmp.map) as {
+            values: Node[];
+        };
+        const exprs = filterComments(root.values).map((node) => {
+            const expr = nodeToExpr(node, tctx);
+            let t = getType(expr, tctx, {
+                errors: tctx.errors,
+                types: {},
+            });
+            validateExpr(expr, tctx, tctx.errors);
+            if (t) {
+                tctx = addDef(expr, tctx);
+            }
+            return expr;
+        });
+
+        tmp = { ...tmp, map: { ...tmp.map } };
+        applyMods(tctx, tmp.map);
+
+        if (update?.autoComplete) {
+            const mods = infer(exprs, tctx, tmp.map);
+            Object.keys(mods).forEach((id) => {
+                applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);
+            });
+        }
+    }
+    const update: UpdateMap = {};
+    for (let key of Object.keys(tmp.map)) {
+        if (tmp.map[+key] !== state.map[+key]) {
+            update[+key] = tmp.map[+key];
+        }
+    }
+    for (let key of Object.keys(state.map)) {
+        if (!tmp.map[+key]) {
+            update[+key] = null;
+        }
+    }
+    return {
+        type: 'update',
+        map: update,
+        selection: tmp.at[0].start,
+        selectionEnd: tmp.at[0].end,
+    };
+}

@@ -31,7 +31,22 @@ Cannn I ... inferrrr? ....
   - hrm ok so a production build is plenty fast
 
 ## Critical things for getting conway to work
-- [ ] let should behaving like let* instead
+- [x] let should behaving like let* instead
+- [-] paste should do the autocomplete business, yes it should
+  - [ ] So parsing a thing char by char should preserve the toplevels
+    before the current toplevel.
+    I Think this goes along with having the toplevels not "just be a list".
+
+## PERF STUFF
+
+- [x] Basic useMemo. At least hover no longer tanks things.
+- [ ] Next, I should be clever about only re-rendering things
+  where a `selection` intersects with your `path`.
+- [ ] pasting!!!! Takes suuuuper long. Looks like a BIG part of it
+  is the `objectHash` story. Maybe I can do fake objectHashes while I'm pasting? Or something?
+
+
+
 
 ## A bunch of quality of life things
 - [ ] I should hang on to the `hashNames` on state somewhere,

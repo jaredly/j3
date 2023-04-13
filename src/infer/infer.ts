@@ -261,7 +261,7 @@ export function applyInferMod(
     if (mod.type === 'update') {
         map[id] = applyAutoUpdateToNode(map[id], mod);
     } else if (mod.type === 'replace-full') {
-        mod.node.loc.idx = id;
+        mod.node = { ...mod.node, loc: { ...mod.node.loc, idx: id } };
         toMCST(reidx(mod.node, nidx, true), map);
     } else if (mod.type === 'wrap') {
         const id1 = nidx();

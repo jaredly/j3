@@ -12,11 +12,13 @@
 (v2 1. -1.)
 (v2 0. 1.)
 (v2 0. -1.)])
+
 (defn + [one:vec2 two:vec2] {x (+ one.x two.x) y (+ one.y two.y)})
 (defn - [one:vec2 two:vec2] {x (- one.x two.x) y (- one.y two.y)})
 (defn / [one:vec2 two:vec2] {x (/ one.x two.x) y (/ one.y two.y)})
 (defn / [one:vec2 two:float] {x (/ one.x two) y (/ one.y two)})
-(defn neighbor [offset:vec2 coord:vec2 res:vec2 buffer:texture] (let [coord (/ coord res)] (if (isLive (texture-get buffer (+ coord offset))) 1 0)))
+
+(defn neighbor [offset:vec2 coord:vec2 res:vec2 buffer:texture] (let [sub-coord (/ coord res)] (if (isLive (texture-get buffer (+ sub-coord offset))) 1 0)))
 (defn countNeighbors [coord:vec2 res:vec2 buffer:texture] (reduce<vec2 int 8u> neighborhood 0 (fn [offset:vec2 total:int] (+ total (neighbor offset coord res buffer)))))
 (defn random [st:vec2] (fract (* 43758.54531 (sin (dot {x st.x y st.y} (v2 12.98980 78.2330))))))
 (def live (v4 1. 0.6 1. 1.))

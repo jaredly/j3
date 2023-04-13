@@ -17,6 +17,8 @@ export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
     }
 };
 
+const doHash = (x: Expr | Type) => JSON.stringify(noForm(x)); // objectHash
+
 export const specials: {
     [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
 } = {
@@ -151,11 +153,12 @@ export const specials: {
                 form,
             };
         }
+        const vt = nodeToType(value, ctx);
         return {
             type: 'deftype',
             name: name.text,
-            hash: objectHash(noForm(value)),
-            value: nodeToType(value, ctx),
+            hash: doHash(vt),
+            value: vt,
             form,
         };
     },
@@ -177,7 +180,7 @@ export const specials: {
             };
         }
         const value = specials.fn(form, rest, ctx);
-        const hash = objectHash(noForm(value));
+        const hash = doHash(value);
         // console.log('hash', hash);
         ctx.display[name.loc.idx] = {
             style: { type: 'id', hash },
@@ -203,7 +206,7 @@ export const specials: {
             };
         }
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
-        const hash = objectHash(noForm(value));
+        const hash = doHash(value);
         // console.log('def hash', first.text, hash);
         ctx.display[first.loc.idx] = { style: { type: 'id', hash } };
         return {

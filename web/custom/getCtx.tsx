@@ -9,7 +9,6 @@ import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { layout } from '../layout';
 
 export const getCtx = (map: Map, root: number) => {
-    console.log('get ctx');
     const tops = (map[root] as ListLikeContents).values;
     let ctx = newCtx();
     try {
