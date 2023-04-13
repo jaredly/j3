@@ -7,13 +7,11 @@ import { Expr } from '../../src/types/ast';
 import { Node } from '../../src/types/cst';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { layout } from '../layout';
-// import { maxSym } from './ByHand';
 
 export const getCtx = (map: Map, root: number) => {
     console.log('get ctx');
     const tops = (map[root] as ListLikeContents).values;
     let ctx = newCtx();
-    // ctx.sym.current = maxSym(map) + 1;
     try {
         const rootNode = fromMCST(root, map) as { values: Node[] };
         const exprs: Expr[] = [];
@@ -21,14 +19,12 @@ export const getCtx = (map: Map, root: number) => {
             if (node.type === 'blank' || node.type === 'comment') {
                 return;
             }
-            // console.log('processing a node', node.loc.idx);
             const expr = nodeToExpr(node, ctx);
             exprs.push(expr);
             getType(expr, ctx, { errors: ctx.errors, types: {} });
             validateExpr(expr, ctx, ctx.errors);
             ctx = addDef(expr, ctx);
         });
-        // console.log('done with it U guess');
         tops.forEach((top) => {
             layout(top, 0, map, ctx.display, true);
         });

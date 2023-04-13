@@ -69,8 +69,8 @@ export function Root({
             }}
             onMouseDown={(evt) => {
                 const sel = closestSelection(state.regs, {
-                    x: evt.clientX,
-                    y: evt.clientY,
+                    x: evt.clientX + window.scrollX,
+                    y: evt.clientY + window.scrollY,
                 });
                 if (sel) {
                     dispatch({
@@ -85,8 +85,8 @@ export function Root({
                     return;
                 }
                 const sel = closestSelection(state.regs, {
-                    x: evt.clientX,
-                    y: evt.clientY,
+                    x: evt.clientX + window.scrollX,
+                    y: evt.clientY + window.scrollY,
                 });
                 if (sel) {
                     const at = state.at.slice();

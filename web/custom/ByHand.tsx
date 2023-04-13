@@ -13,8 +13,7 @@ import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { reduce } from './reduce';
-import { applyMods, getCtx } from './getCtx';
-import { applyInferMod, infer, InferMod } from '../../src/infer/infer';
+import { getCtx } from './getCtx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';
@@ -226,8 +225,6 @@ export const Doc = ({
 
     const start = state.at[0].start;
     const idx = start[start.length - 1].idx;
-    const node = state.map[idx];
-    const display = state.ctx.display[idx];
 
     return (
         <div

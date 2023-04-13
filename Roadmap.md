@@ -25,7 +25,8 @@ Cannn I ... inferrrr? ....
 - [ ] um
 - [x] arrays don't layout
 - [x] hovers don't work with scrolling
-- [ ] Arrayssss should have hashhh
+- [x] Arrayssss should have hashhh
+- [x] um more scrolling
 
 # Type application
 What gives?
