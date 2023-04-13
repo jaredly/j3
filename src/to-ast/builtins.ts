@@ -95,6 +95,7 @@ export const builtinFn = (
         form: blank,
     });
 };
+
 const tint = btype('int');
 const tuint = btype('uint');
 const tfloat = btype('float');
@@ -142,6 +143,10 @@ export const imageFileLazy = extendRecord(imageFileBase, [
 ]);
 export const basicReverse: { [key: string]: string } = {};
 
+export const bfn = (name: string, args: Type[], body: Type) => {
+    return builtinFn(basicBuiltins, basicReverse, name, args, body);
+};
+
 export const mathHashes: {
     int: { [key: string]: string };
     uint: { [key: string]: string };
@@ -149,151 +154,71 @@ export const mathHashes: {
 } = { int: {}, float: {}, uint: {} };
 
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
-    mathHashes.int[name] = builtinFn(
-        basicBuiltins,
-        basicReverse,
-        name,
-        [tint, tint],
-        tbool,
-    );
-    mathHashes.uint[name] = builtinFn(
-        basicBuiltins,
-        basicReverse,
-        name,
-        [tuint, tuint],
-        tbool,
-    );
-    mathHashes.float[name] = builtinFn(
-        basicBuiltins,
-        basicReverse,
-        name,
-        [tfloat, tfloat],
-        tbool,
-    );
+    mathHashes.int[name] = bfn(name, [tint, tint], tbool);
+    mathHashes.uint[name] = bfn(name, [tuint, tuint], tbool);
+    mathHashes.float[name] = bfn(name, [tfloat, tfloat], tbool);
 });
 ['+', '-', '*', '/'].map((name) => {
-    mathHashes.int[name] = builtinFn(
-        basicBuiltins,
-        basicReverse,
-        name,
-        [tint, tint],
-        tint,
-    );
-    mathHashes.uint[name] = builtinFn(
-        basicBuiltins,
-        basicReverse,
-        name,
-        [tuint, tuint],
-        tuint,
-    );
-    mathHashes.float[name] = builtinFn(
-        basicBuiltins,
-        basicReverse,
-        name,
-        [tfloat, tfloat],
-        tfloat,
-    );
+    mathHashes.int[name] = bfn(name, [tint, tint], tint);
+    mathHashes.uint[name] = bfn(name, [tuint, tuint], tuint);
+    mathHashes.float[name] = bfn(name, [tfloat, tfloat], tfloat);
 });
-builtinFn(basicBuiltins, basicReverse, '||', [tbool, tbool], tbool);
-builtinFn(basicBuiltins, basicReverse, '&&', [tbool, tbool], tbool);
-builtinFn(basicBuiltins, basicReverse, '==', [tbool, tbool], tbool);
-builtinFn(basicBuiltins, basicReverse, 'toString', [tint], tstring);
-builtinFn(basicBuiltins, basicReverse, 'toString', [tbool], tstring);
-builtinFn(
-    basicBuiltins,
-    basicReverse,
-    'has-prefix?',
-    [tstring, tstring],
-    tbool,
-);
+
+bfn('||', [tbool, tbool], tbool);
+bfn('&&', [tbool, tbool], tbool);
+bfn('==', [tbool, tbool], tbool);
+bfn('toString', [tint], tstring);
+bfn('toString', [tbool], tstring);
+bfn('has-prefix?', [tstring, tstring], tbool);
+
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
 const targ3 = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'reduce', {
     type: 'tfn',
     args: [
-        {
-            form: blankAt(targ1),
-            name: 'Input',
-        },
-        {
-            form: blankAt(targ2),
-            name: 'Output',
-        },
-        {
-            form: blankAt(targ3),
-            name: 'ArrayLen',
-            bound: btype('uint'),
-        },
+        { form: blankAt(targ1), name: 'Input' },
+        { form: blankAt(targ2), name: 'Output' },
+        { form: blankAt(targ3), name: 'ArrayLen', bound: btype('uint') },
     ],
     body: {
         type: 'fn',
         args: [
             {
                 type: 'apply',
-                target: {
-                    type: 'builtin',
-                    form: blank,
-                    name: 'array',
-                },
+                target: { type: 'builtin', form: blank, name: 'array' },
                 form: blank,
                 args: [
-                    {
-                        type: 'local',
-                        form: blank,
-                        sym: targ1,
-                    },
-                    {
-                        type: 'local',
-                        form: blank,
-                        sym: targ3,
-                    },
+                    { type: 'local', form: blank, sym: targ1 },
+                    { type: 'local', form: blank, sym: targ3 },
                 ],
             },
-            {
-                type: 'local',
-                form: blank,
-                sym: targ2,
-            },
+            { type: 'local', form: blank, sym: targ2 },
             {
                 type: 'fn',
                 form: blank,
                 args: [
-                    {
-                        type: 'local',
-                        form: blank,
-                        sym: targ1,
-                    },
-                    {
-                        type: 'local',
-                        form: blank,
-                        sym: targ2,
-                    },
+                    { type: 'local', form: blank, sym: targ1 },
+                    { type: 'local', form: blank, sym: targ2 },
                 ],
-                body: {
-                    type: 'local',
-                    form: blank,
-                    sym: targ2,
-                },
+                body: { type: 'local', form: blank, sym: targ2 },
             },
         ],
-        body: {
-            type: 'local',
-            form: blank,
-            sym: targ2,
-        },
+        body: { type: 'local', form: blank, sym: targ2 },
         form: blank,
     },
     form: blank,
 });
+
 // We want it to be generic, which is the trick
 // and ... at this point, do we have to actually do a type
 // system?
-// builtinFn(
+// bfn(
 //     basicBuiltins,
 //     basicReverse,
 //     'reduce',
 // )
+
 const record = (entries: TRecord['entries']): TRecord => ({
     type: 'record',
     entries,
@@ -305,12 +230,11 @@ const vec2 = record([
     { name: 'x', value: tfloat },
     { name: 'y', value: tfloat },
 ]);
-builtinFn(basicBuiltins, basicReverse, 'fract', [tfloat], tfloat);
-builtinFn(basicBuiltins, basicReverse, 'sin', [tfloat], tfloat);
-builtinFn(basicBuiltins, basicReverse, 'dot', [vec2, vec2], tfloat);
-builtinFn(
-    basicBuiltins,
-    basicReverse,
+
+bfn('fract', [tfloat], tfloat);
+bfn('sin', [tfloat], tfloat);
+bfn('dot', [vec2, vec2], tfloat);
+bfn(
     'texture-get',
     [btype('texture'), vec2],
     record([
@@ -320,6 +244,7 @@ builtinFn(
         { name: 'w', value: tfloat },
     ]),
 );
+
 const darg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
     type: 'tfn',
@@ -337,29 +262,17 @@ export const nil: Expr = {
     type: 'record',
     entries: [],
     spreads: [],
-    form: {
-        type: 'list',
-        values: [],
-        loc: noloc,
-    },
+    form: { type: 'list', values: [], loc: noloc },
 };
 
 export const any = {
     type: 'any',
-    form: {
-        type: 'identifier',
-        text: '𝕌',
-        loc: noloc,
-    },
+    form: { type: 'identifier', text: '𝕌', loc: noloc },
 } satisfies Type;
 
 export const none = {
     type: 'none',
-    form: {
-        type: 'identifier',
-        text: '⍉',
-        loc: noloc,
-    },
+    form: { type: 'identifier', text: '⍉', loc: noloc },
 } satisfies Type;
 
 export const nilt = {
@@ -367,9 +280,5 @@ export const nilt = {
     entries: [],
     open: false,
     spreads: [],
-    form: {
-        type: 'list',
-        values: [],
-        loc: noloc,
-    },
+    form: { type: 'list', values: [], loc: noloc },
 } satisfies Type;
