@@ -361,9 +361,12 @@ export const getKeyUpdate = (
     }
 
     if (key === '<' && (node.type === 'identifier' || node.type === 'hash')) {
-        // return replacePathWith
         const nat = newTapply(idx, '', nidx(), nidx());
-        return replacePathWith(fullPath.slice(0, -1), map, nat);
+        const up = replacePathWith(fullPath.slice(0, -1), map, nat);
+        if (up) {
+            up.autoComplete = true;
+        }
+        return up;
     }
     if (key === '>' && node.type !== 'blank') {
         for (let i = fullPath.length - 1; i >= 0; i--) {

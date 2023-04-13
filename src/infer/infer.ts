@@ -144,9 +144,9 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
             if (node.type === 'apply') {
                 const auto = ctx.display[
                     node.target.form.loc.idx
-                ]?.autoComplete?.filter((t) => t.type === 'update') as
-                    | AutoCompleteReplace[]
-                    | undefined;
+                ]?.autoComplete?.filter(
+                    (t) => t.type === 'update' && t.exact,
+                ) as AutoCompleteReplace[] | undefined;
                 if (
                     node.target.type === 'unresolved' &&
                     node.args.length &&
@@ -178,7 +178,11 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                     const best = scored[0];
                     // Don't autoselect unless we have at least
                     // one matching arg
-                    if (best.score > 0) {
+                    // But don't select if multiple have equal score
+                    if (
+                        best.score > 0 &&
+                        (scored.length === 1 || scored[1].score < best.score)
+                    ) {
                         mods[node.target.form.loc.idx] = best.auto;
                         report.types[node.form.loc.idx] = best.res!;
                     }
@@ -262,6 +266,7 @@ export function applyInferMod(
         map[id] = applyAutoUpdateToNode(map[id], mod);
     } else if (mod.type === 'replace-full') {
         mod.node = { ...mod.node, loc: { ...mod.node.loc, idx: id } };
+        delete map[id];
         toMCST(reidx(mod.node, nidx, true), map);
     } else if (mod.type === 'wrap') {
         const id1 = nidx();
