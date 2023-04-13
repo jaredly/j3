@@ -230,6 +230,12 @@ const vec2 = record([
     { name: 'x', value: tfloat },
     { name: 'y', value: tfloat },
 ]);
+const vec4 = record([
+    { name: 'x', value: tfloat },
+    { name: 'y', value: tfloat },
+    { name: 'z', value: tfloat },
+    { name: 'w', value: tfloat },
+]);
 
 bfn('fract', [tfloat], tfloat);
 bfn('sin', [tfloat], tfloat);
@@ -244,6 +250,8 @@ bfn(
         { name: 'w', value: tfloat },
     ]),
 );
+
+bfn('[]', [btype('texture'), vec2], vec4);
 
 const darg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
