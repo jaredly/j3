@@ -130,11 +130,11 @@ export const getNestedNodes = (
                     { type: 'brace', text: '{', at: 'start' },
                     ...(layout?.type === 'multiline'
                         ? [
-                              {
-                                  type: 'punct',
-                                  text: ' ',
-                                  color: 'white',
-                              } satisfies NNode,
+                              //   {
+                              //       type: 'punct',
+                              //       text: ' ',
+                              //       color: 'white',
+                              //   } satisfies NNode,
                               recordPairs(node.values, layout),
                           ]
                         : withCommas(node.values)),
@@ -161,7 +161,17 @@ export const getNestedNodes = (
                 children: [
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '[', at: 'start' },
-                    ...withCommas(node.values),
+                    // ...withCommas(node.values),
+                    ...(layout?.type === 'multiline'
+                        ? layout.pairs
+                            ? [recordPairs(node.values, layout)]
+                            : [
+                                  renderList(
+                                      node,
+                                      layout?.tightFirst,
+                                  ) satisfies NNode,
+                              ]
+                        : withCommas(node.values)),
                     { type: 'brace', text: ']', at: 'end' },
                     { type: 'blinker', loc: 'end' },
                 ],
@@ -334,7 +344,6 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
 
 function renderList(
     node: {
-        type: 'list';
         values: number[];
     } & MNodeExtra,
     tightFirst?: number,
@@ -364,15 +373,15 @@ function renderList(
         };
     }
     return {
-        type: 'indent',
-        child: {
-            type: 'vert',
-            children: node.values.map((id, i) => ({
-                type: 'ref',
-                id,
-                path: { type: 'child', at: i },
-            })),
-        },
+        // type: 'indent',
+        // child: {
+        type: 'vert',
+        children: node.values.map((id, i) => ({
+            type: 'ref',
+            id,
+            path: { type: 'child', at: i },
+        })),
+        // },
     };
 }
 

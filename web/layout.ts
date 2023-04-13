@@ -1,7 +1,7 @@
 import { Ctx } from '../src/to-ast/Ctx';
 import { Layout, Map, MNode, MNodeContents } from '../src/types/mcst';
 
-const maxWidth = 100;
+const maxWidth = 60;
 // const maxWidth = 100;
 // const maxWidth = 20;
 
@@ -45,7 +45,13 @@ export const calculateLayout = (
         case 'array': {
             const cw = childWidth(node.values, recursive, pos, display, map);
             if (cw === false || cw > maxWidth) {
-                return { type: 'multiline', tightFirst: 0, pos, cw };
+                return {
+                    type: 'multiline',
+                    tightFirst: 0,
+                    pos,
+                    cw,
+                    pairs: display[node.loc.idx]?.style?.type === 'let-pairs',
+                };
             }
             return { type: 'flat', width: cw - pos, pos };
         }

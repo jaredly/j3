@@ -20,6 +20,8 @@ Cannn I ... inferrrr? ....
   (fn [(array Input ArrayLen) Output (fn [Input Output] Output)] Output))
 ```
 
+# Indexing! Let's do it please
+
 
 # Type application
 What gives?

@@ -40,12 +40,15 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
     switch (form.type) {
         case 'recordAccess':
             return nodeToRecordAccess(form, ctx);
-        case 'identifier': {
-            const res = maybeParseNumber(form, ctx);
-            return res ?? resolveExpr(form.text, undefined, ctx, form);
-        }
+        case 'identifier':
+            return (
+                maybeParseNumber(form, ctx) ??
+                resolveExpr(form.text, undefined, ctx, form)
+            );
         case 'hash':
             return resolveExpr('', form.hash, ctx, form);
+        case 'record':
+            return nodeToRecord(form, ctx);
 
         case 'unparsed':
             if (form.raw.startsWith('\\')) {
@@ -78,10 +81,6 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                 })),
             };
 
-        case 'record': {
-            return nodeToRecord(form, ctx);
-        }
-
         case 'list': {
             const values = filterComments(form.values);
             if (!values.length) {
@@ -93,6 +92,18 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     return specials[first.text](form, values.slice(1), ctx);
                 }
             }
+            // if (first.type === 'array') {
+            //     // ([a b c] hello)
+            //     const args = first.values.map(arg => (
+            //         nodeToExpr(arg, ctx)
+            //     ));
+            //     return {
+            //         type: 'apply',
+            //         form,
+            //         target: {},
+            //         args: [],
+            //     }
+            // }
             const [target, ...args] = values.map((child) =>
                 nodeToExpr(child, ctx),
             );
