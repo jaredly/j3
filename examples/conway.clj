@@ -1,5 +1,4 @@
 
-
 (def live (vec4 1. .6 1. 1.))
 (def dead (vec4 0. 0. 0. 1.))
 
@@ -34,7 +33,11 @@
 (defn countNeighbors [coord :Vec2 res :Vec2 buffer :sampler2D]
     (reduce neighborhood 0 (fn [offset total] (+ total (neighbor offset coord res buffer)))))
 
-(defn drawToBuffer [env :GLSLEnv fragCoord :Vec2 buffer :sampler2D]
+(defn random [st:vec2]
+    (fract (* 43758.54531 (sin (dot st (vec2 12.98980 78.2330))))))
+
+
+(defn drawToBuffer [env:GLSLEnv fragCoord:Vec2 buffer:sampler2D]
     (if (< (.time env) 0.01)
         (if (> (random (/ fragCoord (.resolution env))) 0.95)
             live dead)

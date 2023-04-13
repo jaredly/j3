@@ -281,7 +281,6 @@ export const RenderNNode = (
                         })
                     }
                     onDoubleClick={() => {
-                        // console.log('dbl');
                         dispatch({
                             type: 'select',
                             at: [

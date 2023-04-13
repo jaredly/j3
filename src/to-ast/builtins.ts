@@ -147,6 +147,7 @@ export const mathHashes: {
     uint: { [key: string]: string };
     float: { [key: string]: string };
 } = { int: {}, float: {}, uint: {} };
+
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
     mathHashes.int[name] = builtinFn(
         basicBuiltins,
@@ -193,6 +194,8 @@ export const mathHashes: {
         tfloat,
     );
 });
+builtinFn(basicBuiltins, basicReverse, '||', [tbool, tbool], tbool);
+builtinFn(basicBuiltins, basicReverse, '&&', [tbool, tbool], tbool);
 builtinFn(basicBuiltins, basicReverse, '==', [tbool, tbool], tbool);
 builtinFn(basicBuiltins, basicReverse, 'toString', [tint], tstring);
 builtinFn(basicBuiltins, basicReverse, 'toString', [tbool], tstring);
@@ -298,17 +301,18 @@ const record = (entries: TRecord['entries']): TRecord => ({
     open: false,
     spreads: [],
 });
+const vec2 = record([
+    { name: 'x', value: tfloat },
+    { name: 'y', value: tfloat },
+]);
+builtinFn(basicBuiltins, basicReverse, 'fract', [tfloat], tfloat);
+builtinFn(basicBuiltins, basicReverse, 'sin', [tfloat], tfloat);
+builtinFn(basicBuiltins, basicReverse, 'dot', [vec2, vec2], tfloat);
 builtinFn(
     basicBuiltins,
     basicReverse,
     'texture-get',
-    [
-        btype('texture'),
-        record([
-            { name: 'x', value: tfloat },
-            { name: 'y', value: tfloat },
-        ]),
-    ],
+    [btype('texture'), vec2],
     record([
         { name: 'x', value: tfloat },
         { name: 'y', value: tfloat },

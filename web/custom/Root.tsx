@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { Ctx, nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../mods/path';
 import { cmpFullPath } from './isCoveredBySelection';
@@ -12,6 +12,8 @@ import { orderStartAndEnd } from '../../src/parse/parse';
 import { Expr } from '../../src/types/ast';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForExpr } from '../../src/to-cst/nodeForExpr';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+import { getType } from '../../src/get-type/get-types-new';
 
 export function Root({
     state,
@@ -121,9 +123,18 @@ export function Root({
                         ]}
                     />
                     {exprMap[top] ? (
-                        <div>
+                        <div
+                            style={{
+                                fontSize: '80%',
+                                opacity: 0.3,
+                                marginTop: 4,
+                            }}
+                        >
                             {nodeToString(
-                                nodeForExpr(exprMap[top], ctx),
+                                nodeForType(
+                                    getType(exprMap[top], ctx) ?? nilt,
+                                    ctx,
+                                ),
                                 ctx.hashNames,
                             )}
                         </div>
