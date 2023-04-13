@@ -47,7 +47,7 @@ export const Menu = ({
                 display: 'grid',
                 gridTemplateColumns: 'max-content max-content',
             }}
-            onMouseLeave={(evt) => setHover(null)}
+            onMouseLeave={() => setHover(null)}
         >
             {menu.items?.map((item, i) => {
                 const selected =
