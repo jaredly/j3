@@ -16,6 +16,7 @@ export type Identifier = {
 export type NodeArray = {
     type: 'array';
     values: Node[];
+    hash?: string;
 };
 
 export type AttachedFile = {

@@ -13,7 +13,7 @@ import { unifyTypes } from '../get-type/unifyTypes';
 import { AutoCompleteReplace, Ctx, noloc } from '../to-ast/Ctx';
 import { nodeForType } from '../to-cst/nodeForType';
 import { Expr, Node, Pattern, Type } from '../types/ast';
-import { Map, toMCST } from '../types/mcst';
+import { Map, MNode, toMCST } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
 
@@ -262,7 +262,7 @@ export function applyInferMod(
             ...map[id],
             ...mod.node,
             loc: map[id].loc,
-        };
+        } as MNode;
     } else if (mod.type === 'replace-full') {
         mod.node.loc.idx = id;
         toMCST(reidx(mod.node, nidx, true), map);

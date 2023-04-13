@@ -325,7 +325,7 @@ export const getKeyUpdate = (
 
     if (key === ' ' || key === 'Enter') {
         if (ppath.type === 'child' && 'values' in parent) {
-            // const parent = map[last.idx] as ListLikeContents;
+            // Move forward into next blank, if it exists
             if (
                 parent.values.length > ppath.at + 1 &&
                 map[parent.values[ppath.at + 1]].type === 'blank'
@@ -548,7 +548,7 @@ function addToListLike(
     newThing.map[pidx] = {
         ...pnode,
         ...modChildren(pnode, (items) => items.unshift(newThing.idx)),
-    };
+    } as MNode;
     return {
         type: 'update',
         ...newThing,
