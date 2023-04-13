@@ -7,6 +7,7 @@ import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
 import { nodeToType } from './nodeToType';
+import { populateAutocomplete } from './populateAutocomplete';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter((node) => node.type !== 'comment' && node.type !== 'blank');
@@ -92,18 +93,31 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     return specials[first.text](form, values.slice(1), ctx);
                 }
             }
-            // if (first.type === 'array') {
-            //     // ([a b c] hello)
-            //     const args = first.values.map(arg => (
-            //         nodeToExpr(arg, ctx)
-            //     ));
-            //     return {
-            //         type: 'apply',
-            //         form,
-            //         target: {},
-            //         args: [],
-            //     }
-            // }
+            if (first.type === 'array') {
+                // ([a b c] hello)
+                const args = first.values.map((arg) => nodeToExpr(arg, ctx));
+                const rest = values
+                    .slice(1)
+                    .map((child) => nodeToExpr(child, ctx));
+                rest.slice(1).forEach((item) => {
+                    err(ctx.errors, item.form, {
+                        type: 'misc',
+                        message: '[] indexing only takes one target',
+                    });
+                });
+                const target: Expr = first.hash
+                    ? { type: 'global', hash: first.hash, form: first }
+                    : { type: 'unresolved', form: first };
+                if (!first.hash) {
+                    populateAutocomplete(ctx, '[]', first);
+                }
+                return {
+                    type: 'apply',
+                    target,
+                    args: [rest[0] ?? nil, ...args],
+                    form,
+                };
+            }
             const [target, ...args] = values.map((child) =>
                 nodeToExpr(child, ctx),
             );
@@ -215,45 +229,45 @@ export const maybeParseNumber = (
 
 export function backslashComplete(): AutoCompleteResult[] {
     return [
-        {
-            type: 'replace',
-            exact: false,
-            ann: {
-                type: 'builtin',
-                name: 'string',
-                form: nilt.form,
-            },
-            text: 'Rich Text',
-            node: {
-                type: 'rich-text',
-                lexicalJSON: {
-                    root: {
-                        children: [
-                            {
-                                children: [],
-                                direction: null,
-                                format: '',
-                                indent: 0,
-                                type: 'paragraph',
-                                version: 1,
-                            },
-                        ],
-                        direction: null,
-                        format: '',
-                        indent: 0,
-                        type: 'root',
-                        version: 1,
-                    },
-                },
-            },
-        },
-        {
-            type: 'replace',
-            exact: false,
-            ann: { type: 'builtin', name: 'file', form: nilt.form },
-            text: 'Attachment',
-            node: { type: 'attachment', name: '', file: null },
-        },
+        // {
+        //     type: 'update',
+        //     exact: false,
+        //     ann: {
+        //         type: 'builtin',
+        //         name: 'string',
+        //         form: nilt.form,
+        //     },
+        //     text: 'Rich Text',
+        //     node: {
+        //         type: 'rich-text',
+        //         lexicalJSON: {
+        //             root: {
+        //                 children: [
+        //                     {
+        //                         children: [],
+        //                         direction: null,
+        //                         format: '',
+        //                         indent: 0,
+        //                         type: 'paragraph',
+        //                         version: 1,
+        //                     },
+        //                 ],
+        //                 direction: null,
+        //                 format: '',
+        //                 indent: 0,
+        //                 type: 'root',
+        //                 version: 1,
+        //             },
+        //         },
+        //     },
+        // },
+        // {
+        //     type: 'replace',
+        //     exact: false,
+        //     ann: { type: 'builtin', name: 'file', form: nilt.form },
+        //     text: 'Attachment',
+        //     node: { type: 'attachment', name: '', file: null },
+        // },
     ];
 }
 
@@ -389,9 +403,9 @@ export function nodeToRecordAccess(
                         Object.entries(options).map(
                             ([name, { value }]) =>
                                 ({
-                                    type: 'replace',
+                                    type: 'update',
                                     text: name,
-                                    node: {
+                                    update: {
                                         type: 'accessText',
                                         text: name,
                                     },

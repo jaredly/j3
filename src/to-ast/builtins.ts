@@ -252,6 +252,8 @@ bfn(
 );
 
 bfn('[]', [btype('texture'), vec2], vec4);
+bfn('[]', [tfloat, tfloat], tfloat);
+addBuiltin(basicBuiltins, basicReverse, 'PI', tfloat);
 
 const darg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {

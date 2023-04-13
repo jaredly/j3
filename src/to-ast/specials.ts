@@ -298,12 +298,21 @@ export const specials: {
         };
     },
     if: (form, contents, ctx): Expr => {
-        const [cond, yes, no] = contents;
+        const nodes = contents.map((node) => nodeToExpr(node, ctx));
+        const [cond, yes, no] = nodes;
+        if (nodes.length > 3) {
+            nodes.slice(3).forEach((node) => {
+                err(ctx.errors, node.form, {
+                    type: 'misc',
+                    message: 'too many items in `if` form',
+                });
+            });
+        }
         return {
             type: 'if',
-            cond: cond ? nodeToExpr(cond, ctx) : nil,
-            yes: yes ? nodeToExpr(yes, ctx) : nil,
-            no: no ? nodeToExpr(no, ctx) : nil,
+            cond: cond ?? nil,
+            yes: yes ?? nil,
+            no: no ?? nil,
             form,
         };
     },

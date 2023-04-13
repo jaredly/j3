@@ -88,7 +88,7 @@ export const parseByCharacter = (
         if (key === 'Enter' && updateCtx) {
             const idx = state.at[0].start[state.at[0].start.length - 1].idx;
             const matches = ctx.display[idx]?.autoComplete?.filter(
-                (s) => s.type === 'replace',
+                (s) => s.type === 'update',
             ) as AutoCompleteReplace[];
             if (matches?.length) {
                 const update = applyMenuItem(
@@ -182,7 +182,7 @@ function determineKey(text: string[], i: number, mods: Mods) {
 export function autoCompleteIfNeeded(state: State, ctx: Ctx) {
     const idx = state.at[0].start[state.at[0].start.length - 1].idx;
     const exacts = ctx.display[idx]?.autoComplete?.filter(
-        (s) => s.type === 'replace' && s.exact,
+        (s) => s.type === 'update' && s.exact,
     ) as AutoCompleteReplace[];
     if (exacts?.length === 1) {
         const update = applyMenuItem(state.at[0].start, exacts[0], state, ctx);

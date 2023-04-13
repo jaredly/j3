@@ -11,7 +11,7 @@ import {
     applyUpdate,
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
-import { Map, fromMCST } from '../../src/types/mcst';
+import { MNode, Map, fromMCST } from '../../src/types/mcst';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Expr } from '../../src/types/ast';
@@ -166,10 +166,11 @@ export function autoCompleteUpdate(
         console.log(idx, 'not in the map');
         debugger;
     }
+    const current = map[idx];
     return {
         type: 'update',
         map: {
-            [idx]: { loc: map[idx].loc, ...item.node },
+            [idx]: applyAutoUpdateToNode(current, item),
         },
         selection: path.slice(0, -1).concat([
             {
@@ -180,6 +181,25 @@ export function autoCompleteUpdate(
         ]),
         autoComplete: true,
     };
+}
+
+export function applyAutoUpdateToNode(
+    current: MNode,
+    item: AutoCompleteReplace,
+): MNode {
+    return current.type === 'array' && item.update.type === 'array-hash'
+        ? { ...current, hash: item.update.hash }
+        : item.update.type === 'accessText'
+        ? {
+              loc: current.loc,
+              type: 'accessText',
+              text: item.update.text,
+          }
+        : {
+              loc: current.loc,
+              type: 'hash',
+              hash: item.update.hash,
+          };
 }
 
 export function applyMenuItem(

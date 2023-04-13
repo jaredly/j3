@@ -145,7 +145,7 @@ export function HiddenInput({
                             console.warn(
                                 `selected a menu item that wasn't there`,
                             );
-                        } else if (selected.type === 'replace') {
+                        } else if (selected.type === 'update') {
                             dispatch({
                                 type: 'menu-select',
                                 path: menu.path,

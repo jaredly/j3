@@ -6,11 +6,23 @@ import { basicBuiltins, basicReverse } from './builtins';
 export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
 
 export type AutoCompleteReplace = {
-    type: 'replace';
-    text: string;
-    node: MNodeContents;
+    type: 'update';
+    update:
+        | {
+              type: 'hash';
+              hash: string | number;
+          }
+        | {
+              type: 'accessText';
+              text: string;
+          }
+        | {
+              type: 'array-hash';
+              hash: string;
+          };
     exact: boolean;
-    ann: Type;
+    text: string;
+    ann?: Type;
 };
 
 export type AutoCompleteResult =

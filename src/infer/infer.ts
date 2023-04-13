@@ -16,6 +16,7 @@ import { Expr, Node, Pattern, Type } from '../types/ast';
 import { Map, MNode, toMCST } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
+import { applyAutoUpdateToNode } from '../../web/custom/reduce';
 
 // Question:
 // do I only do this for the tree that I'm
@@ -143,7 +144,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
             if (node.type === 'apply') {
                 const auto = ctx.display[
                     node.target.form.loc.idx
-                ]?.autoComplete?.filter((t) => t.type === 'replace') as
+                ]?.autoComplete?.filter((t) => t.type === 'update') as
                     | AutoCompleteReplace[]
                     | undefined;
                 if (
@@ -257,12 +258,8 @@ export function applyInferMod(
     nidx: () => number,
     id: number,
 ) {
-    if (mod.type === 'replace') {
-        map[id] = {
-            ...map[id],
-            ...mod.node,
-            loc: map[id].loc,
-        } as MNode;
+    if (mod.type === 'update') {
+        map[id] = applyAutoUpdateToNode(map[id], mod);
     } else if (mod.type === 'replace-full') {
         mod.node.loc.idx = id;
         toMCST(reidx(mod.node, nidx, true), map);

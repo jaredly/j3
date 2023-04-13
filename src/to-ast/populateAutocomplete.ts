@@ -14,14 +14,17 @@ export function populateAutocomplete(ctx: Ctx, text: string, form: Node) {
         }))
         .filter(({ score }) => score.full)
         .sort((a, b) => compareScores(a.score, b.score));
-    ctx.display[form.loc.idx].autoComplete = [
+    ensure(ctx.display, form.loc.idx, {}).autoComplete = [
         ...withScores.map(
             ({ result }) =>
                 ({
-                    type: 'replace',
+                    type: 'update',
                     text: result.name,
-                    node: { type: 'hash', hash: result.hash },
-                    // { type: 'identifier', text: '', hash: result.hash },
+                    update: {
+                        type: text === '[]' ? 'array-hash' : 'hash',
+                        // Hmmm shouldn't have any locals, right?
+                        hash: result.hash as string,
+                    },
                     exact: result.name === text,
                     ann: result.typ,
                 } satisfies AutoCompleteResult),
@@ -50,9 +53,12 @@ export function populateAutocompleteType(ctx: Ctx, text: string, form: Node) {
         ...withScores.map(
             ({ result }) =>
                 ({
-                    type: 'replace',
+                    type: 'update',
                     text: result.name,
-                    node: { type: 'hash', hash: result.hash },
+                    update: {
+                        type: 'hash',
+                        hash: result.hash,
+                    },
                     exact: result.name === text,
                     ann: result.typ,
                 } satisfies AutoCompleteResult),
