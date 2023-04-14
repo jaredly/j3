@@ -35,6 +35,12 @@ const data = `
 
 (+ 2 32)
 (+ 2 32)
+
+(fn [hello] (+ 2 hello))
+(fn [hello:int] (+ 2 hello))
+
+(fn [hello] (+ hello 2))
+(fn [hello:int] (+ hello 2))
 `
     .trim()
     .split('\n\n');

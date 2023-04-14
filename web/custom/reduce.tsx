@@ -114,7 +114,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
             }
             state = { ...state, ...applyUpdate(state, 0, update) };
             verifyLocs(state.map, 'apply update');
-            if (update.type === 'select') {
+            if (update.type === 'select' && !update.autoComplete) {
                 return state;
             }
             let { ctx, map, exprs } = getCtx(state.map, state.root);

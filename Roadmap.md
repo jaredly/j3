@@ -1,4 +1,10 @@
 
+# Inference and such
+
+- [ ] if the current type annotation is ... allowably more specific
+  than the inferred type, we should let it go, right?
+- [x] make inference stop the infinite loopings
+
 # Type Checking Bonanza
 
 So, I think I want a war of all against all

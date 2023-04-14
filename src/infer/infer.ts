@@ -196,6 +196,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
 
     const inferredTypes: { [sym: number]: Type } = {};
     Object.keys(usages).forEach((key) => {
+        if (!syms[+key]) return;
         const types = usages[+key];
         if (types.length === 1) {
             if (types[0] === syms[+key].current) {
@@ -207,8 +208,8 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
             for (let t of types.slice(1)) {
                 const un = unifyTypes(res, t, ctx, t.form);
                 if (!un) {
-                    // return; // if we can't unify, bail
-                    continue;
+                    return; // if we can't unify, bail
+                    // contine;
                 }
                 res = un;
             }

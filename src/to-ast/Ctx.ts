@@ -34,6 +34,21 @@ export type Mod = {
     node: Node;
 };
 
+// export type CompilationResults = {
+//     errors: Report['errors'];
+//     mods: {
+//         [idx: number]: Mod[];
+//     };
+//     hashNames: { [idx: number]: string };
+//     display: {
+//         [idx: number]: {
+//             style?: NodeStyle;
+//             layout?: Layout;
+//             autoComplete?: AutoCompleteResult[];
+//         };
+//     };
+// }
+
 export type Ctx = {
     errors: Report['errors'];
     mods: {
