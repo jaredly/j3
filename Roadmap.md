@@ -22,13 +22,13 @@ Cannn I ... inferrrr? ....
 
 # Indexing! Let's do it please
 
-- [ ] um
 - [x] arrays don't layout
 - [x] hovers don't work with scrolling
 - [x] Arrayssss should have hashhh
 - [x] um more scrolling
 - [x] performance ... trying to make it better
   - hrm ok so a production build is plenty fast
+- [x] shift-click not working?
 
 ## Critical things for getting conway to work
 - [x] let should behaving like let* instead
@@ -44,6 +44,10 @@ Cannn I ... inferrrr? ....
   where a `selection` intersects with your `path`.
 - [ ] pasting!!!! Takes suuuuper long. Looks like a BIG part of it
   is the `objectHash` story. Maybe I can do fake objectHashes while I'm pasting? Or something?
+    - [ ] OHHHH IDEA IDEA! How about, in the sandbox, we don't hash at all!
+      We *just* use the toplevel name's IDX. That way we don't have to
+      deal with changing things in the sandbox breaking references.
+      But once we commit something to the library, it's all good.
 
 
 

@@ -73,11 +73,23 @@ export function Root({
                     y: evt.clientY + window.scrollY,
                 });
                 if (sel) {
-                    dispatch({
-                        type: 'select',
-                        add: evt.altKey,
-                        at: [{ start: sel }],
-                    });
+                    if (evt.shiftKey && state.at.length) {
+                        const sels = state.at.slice();
+                        sels[sels.length - 1] = {
+                            ...sels[sels.length - 1],
+                            end: sel,
+                        };
+                        dispatch({
+                            type: 'select',
+                            at: sels,
+                        });
+                    } else {
+                        dispatch({
+                            type: 'select',
+                            add: evt.altKey,
+                            at: [{ start: sel }],
+                        });
+                    }
                 }
             }}
             onMouseMove={(evt) => {
