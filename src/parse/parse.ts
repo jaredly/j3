@@ -13,7 +13,7 @@ import {
 import { Path } from '../../web/mods/path';
 import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
-import { nodeToExpr } from '../to-ast/nodeToExpr';
+import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
 import { Node } from '../types/cst';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
@@ -122,7 +122,9 @@ export const parseByCharacter = (
             const root = fromMCST(state.root, state.map) as { values: Node[] };
             const exprs =
                 !kind || kind === 'expr'
-                    ? root.values.map((node) => nodeToExpr(node, ctx))
+                    ? filterComments(root.values).map((node) =>
+                          nodeToExpr(node, ctx),
+                      )
                     : null;
             if (kind === 'type') {
                 // TODO: Allow deftype here pls

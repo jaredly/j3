@@ -5,6 +5,7 @@ export type {
     NodeList,
     Loc,
     stringText,
+    tapply,
     CString,
     NodeExtra,
     NodeArray,
@@ -174,6 +175,12 @@ export type Shared =
 export type TypeArg = { name: string; bound?: Type; form: Node };
 export type Type =
     | Shared
+    | {
+          type: 'string';
+          first: { text: string; form: Node };
+          templates: { type: Type; suffix: { text: string; form: Node } }[];
+          form: Node;
+      }
     | { type: 'any'; form: Node }
     | { type: 'none'; form: Node }
     | {

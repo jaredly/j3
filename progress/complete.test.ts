@@ -21,6 +21,18 @@ const data = `
 (fn [one] (has-prefix? one "thing"))
 (fn [one:string] (has-prefix? one "thing"))
 
+(fn [one:int] (has-prefix? one "thing"))
+(fn [one:int] (has-prefix? one "thing"))
+
+(fn [one:"hi" two:(fn ["ho"] int)] (two one))
+(fn [one:string two:(fn ["ho"] int)] (two one))
+
+(fn [one:"hi" two:(fn ["hi"] int)] (two one))
+(fn [one:"hi" two:(fn ["hi"] int)] (two one))
+
+(fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] int)] (two one))
+(fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] int)] (two one))
+
 (+ 2 32)
 (+ 2 32)
 `

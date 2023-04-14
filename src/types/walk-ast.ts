@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -45,6 +45,8 @@ export type Visitor<Ctx> = {
     spreadPost?: (node: spread, ctx: Ctx) => null | spread,
     accessText?: (node: accessText, ctx: Ctx) => null | false | accessText | [accessText | null, Ctx],
     accessTextPost?: (node: accessText, ctx: Ctx) => null | accessText,
+    tapply?: (node: tapply, ctx: Ctx) => null | false | tapply | [tapply | null, Ctx],
+    tapplyPost?: (node: tapply, ctx: Ctx) => null | tapply,
     stringText?: (node: stringText, ctx: Ctx) => null | false | stringText | [stringText | null, Ctx],
     stringTextPost?: (node: stringText, ctx: Ctx) => null | stringText,
     CString?: (node: CString, ctx: Ctx) => null | false | CString | [CString | null, Ctx],
@@ -523,6 +525,49 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
         let updatedNode = node;
 
         switch (node.type) {
+            case 'string': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                let updatedNode$0node$templates = updatedNode$0specified.templates;
+                {
+                    let changed3 = false;
+                    const arr2 = updatedNode$0specified.templates.map((updatedNode$0node$templates$item2) => {
+                        
+            let result = updatedNode$0node$templates$item2;
+            {
+                let changed4 = false;
+                
+                const result$type = transformType(updatedNode$0node$templates$item2.type, visitor, ctx);
+                changed4 = changed4 || result$type !== updatedNode$0node$templates$item2.type;
+                if (changed4) {
+                    result =  {...result, type: result$type};
+                    changed3 = true;
+                }
+            }
+            
+                        return result
+                    })
+                    if (changed3) {
+                        updatedNode$0node$templates = arr2;
+                        changed2 = true;
+                    }
+                }
+                
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, templates: updatedNode$0node$templates};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
+
             case 'any': break;
 
             case 'none': break;
@@ -2169,6 +2214,40 @@ export const transformaccessText = <Ctx>(node: accessText, visitor: Visitor<Ctx>
         node = updatedNode;
         if (visitor.accessTextPost) {
             const transformed = visitor.accessTextPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformtapply = <Ctx>(node: tapply, visitor: Visitor<Ctx>, ctx: Ctx): tapply => {
+        if (!node) {
+            throw new Error('No tapply provided');
+        }
+        
+        const transformed = visitor.tapply ? visitor.tapply(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.tapplyPost) {
+            const transformed = visitor.tapplyPost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }

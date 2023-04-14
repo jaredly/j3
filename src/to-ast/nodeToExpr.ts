@@ -140,8 +140,9 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
 
         case 'comment':
         case 'blank':
+            console.log(form);
             throw new Error(
-                `How did we get here? Comments and blanks should be filtered out`,
+                `How did we get here? Comments and blanks should be filtered out: ${form.type}`,
             );
         case 'stringText':
         case 'accessText':

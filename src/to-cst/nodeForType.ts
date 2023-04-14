@@ -52,6 +52,25 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     ...type.args.map((arg) => nodeForType(arg, ctx)),
                 ],
             };
+        case 'string': {
+            return {
+                type: 'string',
+                first: {
+                    text: type.first.text,
+                    loc: type.first.form.loc,
+                    type: 'stringText',
+                },
+                templates: type.templates.map(({ type, suffix }) => ({
+                    expr: nodeForType(type, ctx),
+                    suffix: {
+                        type: 'stringText',
+                        text: suffix.text,
+                        loc: suffix.form.loc,
+                    },
+                })),
+                loc: type.form.loc,
+            };
+        }
         case 'record':
             const tuple = asTuple(type, ctx);
             if (tuple) {

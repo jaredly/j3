@@ -82,7 +82,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         [sym: number]: {
             type: 'direct';
             idx: number;
-            wrap: boolean;
+            current?: Type;
         };
     } = {};
 
@@ -92,16 +92,16 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                 node.args.forEach((arg) => {
                     if (arg.pattern.type === 'local') {
                         if (arg.type.form.loc.idx !== -1) {
+                            usages[arg.pattern.sym] = [arg.type];
                             syms[arg.pattern.sym] = {
                                 type: 'direct',
                                 idx: arg.type.form.loc.idx,
-                                wrap: false,
+                                current: arg.type,
                             };
                         } else {
                             syms[arg.pattern.sym] = {
                                 type: 'direct',
                                 idx: arg.pattern.form.loc.idx,
-                                wrap: true,
                             };
                         }
                     }
@@ -198,14 +198,19 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
     Object.keys(usages).forEach((key) => {
         const types = usages[+key];
         if (types.length === 1) {
+            if (types[0] === syms[+key].current) {
+                return;
+            }
             inferredTypes[+key] = types[0];
         } else {
             let res = types[0];
             for (let t of types.slice(1)) {
                 const un = unifyTypes(res, t, ctx, t.form);
-                if (un) {
-                    res = un;
+                if (!un) {
+                    // return; // if we can't unify, bail
+                    continue;
                 }
+                res = un;
             }
             inferredTypes[+key] = res;
         }
@@ -219,13 +224,14 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         }
         switch (definition.type) {
             case 'direct': {
-                if (definition.wrap) {
+                if (!definition.current) {
                     mods[definition.idx] = {
                         type: 'wrap',
                         node: nodeForType(inferredTypes[+sym], ctx),
                     };
                 } else {
                     const node = nodeForType(inferredTypes[+sym], ctx);
+                    // if (matchesType(inferredTypes[+sym], definition.current, ctx, []))
                     if (
                         !equal(
                             { ...node, loc: noloc },

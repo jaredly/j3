@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { Type } from '../types/ast';
 import { resolveType } from './resolveType';
-import { Ctx, nilt } from './Ctx';
+import { Ctx, any, nilt } from './Ctx';
 import { filterComments, maybeParseNumber } from './nodeToExpr';
 import { err } from './nodeToPattern';
 
@@ -19,6 +19,16 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             return resolveType('', form.hash, ctx, form);
         case 'blank':
             return nilt;
+        case 'string':
+            return {
+                type: 'string',
+                first: { text: form.first.text, form: form.first },
+                templates: form.templates.map(({ expr, suffix }) => ({
+                    type: nodeToType(expr, ctx),
+                    suffix: { text: suffix.text, form: suffix },
+                })),
+                form,
+            };
         // STOPSHIP
         // case 'number':
         //     return {
@@ -101,11 +111,19 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
 
             if (first.type === 'identifier' && first.text === 'fn') {
                 const targs = args.shift()!;
-                if (targs.type !== 'array') {
+                if (!targs || targs.type !== 'array') {
+                    // return {
+                    //     // type: 'unresolved',
+                    //     // form,
+                    //     // reason: `fn needs array as second item`,
+                    //     type: 'any',
+                    //     form,
+                    // };
                     return {
-                        type: 'unresolved',
+                        type: 'fn',
+                        args: [],
+                        body: any,
                         form,
-                        reason: `fn needs array as second item`,
                     };
                 }
                 const tvalues = filterComments(targs.values);
@@ -115,7 +133,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 return {
                     type: 'fn',
                     args: parsed,
-                    body: nodeToType(args[0], ctx),
+                    body: args.length ? nodeToType(args[0], ctx) : any,
                     form,
                 };
             }
