@@ -1,5 +1,5 @@
 import { Ctx, nilt, noloc } from '../to-ast/Ctx';
-import { recordMap } from '../get-type/get-types-new';
+import { RecordMap, recordMap } from '../get-type/get-types-new';
 import {
     Expr,
     Loc,
@@ -22,8 +22,15 @@ export const id = (text: string, loc: Loc): Node => ({
     loc,
 });
 
-export const asTuple = (record: TRecord, ctx: Ctx): Type[] | null => {
-    const map = recordMap(record, ctx);
+export const asTuple = (record: TRecord): Type[] | null => {
+    const map: RecordMap = {};
+    if (record.spreads) {
+        return null;
+    }
+    record.entries.forEach((entry) => {
+        map[entry.name] = entry;
+    });
+
     const res: Type[] = [];
     for (let i = 0; i < record.entries.length; i++) {
         if (!map[i.toString()]) {
@@ -100,7 +107,7 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                         values: expr.args.map((arg) => ({
                             type: 'annot',
                             target: id('pattern', noloc),
-                            annot: nodeForType(arg.type, ctx),
+                            annot: nodeForType(arg.type, ctx.hashNames),
                             loc: noloc,
                         })),
                     },

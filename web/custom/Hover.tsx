@@ -30,7 +30,7 @@ export const Hover = ({
             found = {
                 idx,
                 text: state.ctx.errors[idx]
-                    .map((err) => errorToString(err, state.ctx))
+                    .map((err) => errorToString(err, state.ctx.hashNames))
                     .join('\n'),
             };
             break;
@@ -46,7 +46,7 @@ export const Hover = ({
                     text:
                         (style.type === 'id' && style.ann
                             ? nodeToString(
-                                  nodeForType(style.ann, state.ctx),
+                                  nodeForType(style.ann, state.ctx.hashNames),
                                   state.ctx.hashNames,
                               ) + '\n'
                             : '') +

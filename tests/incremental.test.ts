@@ -4,7 +4,7 @@ import { Map, toMCST } from '../src/types/mcst';
 import { xpath } from '../web/xpath';
 import { attachAnnotations, preprocess } from './preprocess';
 
-it('ok', () => {});
+it.skip('ok', () => {});
 
 describe.skip('attachAnnotations', () => {
     it('should work', () => {

@@ -10,13 +10,14 @@ import equal from 'fast-deep-equal';
 import { getType, Report } from '../get-type/get-types-new';
 import { matchesType } from '../get-type/matchesType';
 import { unifyTypes } from '../get-type/unifyTypes';
-import { AutoCompleteReplace, Ctx, noloc } from '../to-ast/Ctx';
+import { AutoCompleteReplace, noloc } from '../to-ast/Ctx';
 import { nodeForType } from '../to-cst/nodeForType';
 import { Expr, Node, Pattern, Type } from '../types/ast';
 import { Map, MNode, toMCST } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
 import { applyAutoUpdateToNode } from '../../web/custom/reduce';
+import { Ctx } from '../to-ast/library';
 
 // Question:
 // do I only do this for the tree that I'm
@@ -142,7 +143,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
             //     })
             // }
             if (node.type === 'apply') {
-                const auto = ctx.display[
+                const auto = ctx.results.display[
                     node.target.form.loc.idx
                 ]?.autoComplete?.filter(
                     (t) => t.type === 'update' && t.exact,
@@ -228,10 +229,13 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                 if (!definition.current) {
                     mods[definition.idx] = {
                         type: 'wrap',
-                        node: nodeForType(inferredTypes[+sym], ctx),
+                        node: nodeForType(inferredTypes[+sym], ctx.hashNames),
                     };
                 } else {
-                    const node = nodeForType(inferredTypes[+sym], ctx);
+                    const node = nodeForType(
+                        inferredTypes[+sym],
+                        ctx.hashNames,
+                    );
                     // if (matchesType(inferredTypes[+sym], definition.current, ctx, []))
                     if (
                         !equal(

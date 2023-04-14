@@ -1,6 +1,7 @@
 import { getType } from '../../src/get-type/get-types-new';
 import { validateExpr } from '../../src/get-type/validate';
 import { Ctx, newCtx } from '../../src/to-ast/Ctx';
+import { CstCtx } from '../../src/to-ast/library';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { addDef } from '../../src/to-ast/to-ast';
 import { Expr } from '../../src/types/ast';
@@ -20,8 +21,8 @@ export const getCtx = (map: Map, root: number) => {
             }
             const expr = nodeToExpr(node, ctx);
             exprs.push(expr);
-            getType(expr, ctx, { errors: ctx.errors, types: {} });
-            validateExpr(expr, ctx, ctx.errors);
+            getType(expr, ctx, { errors: ctx.results.errors, types: {} });
+            validateExpr(expr, ctx, ctx.results.errors);
             ctx = addDef(expr, ctx);
         });
         tops.forEach((top) => {
@@ -41,9 +42,9 @@ export const getCtx = (map: Map, root: number) => {
     }
 };
 
-export function applyMods(ctx: Ctx, map: Map) {
-    Object.keys(ctx.mods).forEach((key) => {
-        ctx.mods[+key].forEach((mod) => {
+export function applyMods(ctx: CstCtx, map: Map) {
+    Object.keys(ctx.results.mods).forEach((key) => {
+        ctx.results.mods[+key].forEach((mod) => {
             // UMMMM MAYBE
         });
     });

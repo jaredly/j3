@@ -3,6 +3,7 @@ import { Expr, NumberKind, TVar, Type } from '../types/ast';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
 import { basicBuiltins, basicReverse } from './builtins';
+import { Builtins, CstCtx, Library } from './library';
 export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
 
 export type AutoCompleteReplace = {
@@ -34,21 +35,6 @@ export type Mod = {
     node: Node;
 };
 
-// export type CompilationResults = {
-//     errors: Report['errors'];
-//     mods: {
-//         [idx: number]: Mod[];
-//     };
-//     hashNames: { [idx: number]: string };
-//     display: {
-//         [idx: number]: {
-//             style?: NodeStyle;
-//             layout?: Layout;
-//             autoComplete?: AutoCompleteResult[];
-//         };
-//     };
-// }
-
 export type Ctx = {
     errors: Report['errors'];
     mods: {
@@ -62,7 +48,6 @@ export type Ctx = {
             autoComplete?: AutoCompleteResult[];
         };
     };
-    // sym: { current: number };
     global: Global;
     local: Local;
     localMap: {
@@ -113,16 +98,63 @@ export const initialGlobal: Global = {
     reverseNames: { ...basicReverse },
 };
 
-export const newCtx = (): Ctx => {
-    // console.log('newCtx');
+const splitNamespaces = (name: string) => {
+    if (name.endsWith('//')) {
+        return name.slice(0, -2).split('/').concat(['/']);
+    }
+    return name.split('/');
+};
+
+export const newCtx = (): CstCtx => {
+    const builtins: Builtins = {};
+    const ns: Library['namespaces'] = { '': {} };
+    let aaa = 0;
+
+    const add = (name: string) => {
+        let cn = ns[''];
+        const parts = splitNamespaces(name);
+        parts.forEach((n, i) => {
+            if (!Object.hasOwn(cn, n)) {
+                const hash = aaa++ + '';
+                cn[n] = hash;
+            }
+            if (!ns[cn[n]]) {
+                ns[cn[n]] = {};
+            }
+            cn = ns[cn[n]];
+            if (i >= parts.length - 1) {
+                cn[''] = ':builtin:' + name;
+            }
+        });
+    };
+
+    Object.keys(basicBuiltins.terms).forEach((name) => {
+        builtins[name] = { type: 'term', ann: basicBuiltins.terms[name] };
+        add(name);
+    });
+    Object.keys(basicBuiltins.types).forEach((name) => {
+        builtins[name] = { type: 'type', args: basicBuiltins.types[name] };
+        add(name);
+    });
+
     return {
-        // sym: { current: 0 },
-        global: initialGlobal,
+        global: {
+            builtins,
+            library: {
+                definitions: {},
+                history: [],
+                namespaces: ns,
+                root: '',
+            },
+        },
         local: emptyLocal,
-        localMap: { terms: {}, types: {} },
-        hashNames: {},
-        errors: {},
-        display: {},
-        mods: {},
+        results: {
+            localMap: { terms: {}, types: {} },
+            hashNames: {},
+            errors: {},
+            display: {},
+            mods: {},
+            toplevel: {},
+        },
     };
 };

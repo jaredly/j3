@@ -86,7 +86,10 @@ export const Menu = ({
                         >
                             {item.type === 'update' && item.ann
                                 ? nodeToString(
-                                      nodeForType(item.ann, state.ctx),
+                                      nodeForType(
+                                          item.ann,
+                                          state.ctx.hashNames,
+                                      ),
                                       state.ctx.hashNames,
                                   )
                                 : null}

@@ -1,6 +1,49 @@
 
 # Sandbox and stuff?
 
+ummmm namespacely
+so clojure allows `/`, or `one/two`, or `one//`, but not `one///` or `one////`.
+So `/` can't be a namespace name, but it can be a terminal name.
+andddd honestly it's probably fine.
+https://twitter.com/jaredforsyth/status/1538179622004834307
+
+## Ok can we sandbox?
+
+- So the `state` ... needs a library, that's been prepopulated with builtins, and also it needs builtins, and a sandbox.
+
+WAAIT 
+ok
+so
+my ctx
+needs to .. know about the sandbox
+a little bit
+like it needs a place to stick sandboxy defiintions
+
+- toplevel: [idx => Expr]
+  sounds good to me
+
+### Get tests running with new library / sandbox story
+
+So... what do I do about `Local`.
+
+WHILE COMPILING (cst->ast)
+I need `Local`
+AFTER COMPILING
+I need `ComplationResults`
+for display, and interactivity, and such
+
+OH so thoughts on shadowing, eh let's just not have it.
+ALSO local (`let`s) can't do namespaces. off-limits folks.
+
+
+## Tests
+- selection, syntax, nodeToString -- don't use ctx
+- type-match does, but incidentally
+- complete does the full deal
+
+> nodeForType remove ctx
+
+
 ## Road to the sandbox
 
 - [x] So, builtins ...
@@ -83,6 +126,8 @@ BUT you *do* need to give the toplevel thing a name.
 Not getting away from that.
 Nice. Ok so no cheating on naming things, they're important folks.
 
+OK NOW THAT I've decided I'm not doing anything magical with mutual recursion / multiple bindings ...
+that means I can start in on namespaces and such, right?
 
 # Inference and such
 

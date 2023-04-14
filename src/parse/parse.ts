@@ -13,6 +13,7 @@ import {
 import { Path } from '../../web/mods/path';
 import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
+import { CompilationResults, CstCtx } from '../to-ast/library';
 import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
 import { Node } from '../types/cst';
@@ -55,11 +56,8 @@ export const splitGraphemes = (text: string) => {
 
 export const parseByCharacter = (
     rawText: string,
-    ctx: Ctx,
-    {
-        updateCtx,
-        kind,
-    }: { updateCtx?: boolean; kind?: 'type' | 'expr'; debug?: boolean } = {},
+    ctx: CstCtx | null,
+    { kind }: { kind?: 'type' | 'expr'; debug?: boolean } = {},
 ): State => {
     let state: State = initialState();
 
@@ -80,17 +78,28 @@ export const parseByCharacter = (
 
             [start, end] = orderStartAndEnd(start, end);
 
-            clipboard = [collectNodes(state.map, start, end, ctx.hashNames)];
+            clipboard = [
+                collectNodes(
+                    state.map,
+                    start,
+                    end,
+                    ctx?.results.hashNames ?? {},
+                ),
+            ];
             continue;
         }
         if (key === 'Paste') {
-            state = applyUpdate(state, 0, paste(state, ctx, clipboard));
+            state = applyUpdate(
+                state,
+                0,
+                paste(state, ctx?.results.hashNames ?? {}, clipboard),
+            );
             continue;
         }
 
-        if (key === 'Enter' && updateCtx) {
+        if (key === 'Enter' && ctx) {
             const idx = state.at[0].start[state.at[0].start.length - 1].idx;
-            const matches = ctx.display[idx]?.autoComplete?.filter(
+            const matches = ctx.results.display[idx]?.autoComplete?.filter(
                 (s) => s.type === 'update',
             ) as AutoCompleteReplace[];
             if (matches?.length) {
@@ -98,7 +107,6 @@ export const parseByCharacter = (
                     state.at[0].start,
                     matches[0],
                     state,
-                    ctx,
                 );
                 state = applyUpdate(state, 0, update);
                 nodeToExpr(fromMCST(state.root, state.map), ctx);
@@ -110,18 +118,18 @@ export const parseByCharacter = (
             key,
             state.map,
             state.at[0],
-            ctx.hashNames,
+            ctx?.results.hashNames ?? {},
             state.nidx,
             mods,
         );
 
-        if (updateCtx && update?.autoComplete) {
-            state = autoCompleteIfNeeded(state, ctx);
+        if (ctx && update?.autoComplete) {
+            state = autoCompleteIfNeeded(state, ctx.results.display);
         }
 
         state = applyUpdate(state, 0, update) ?? state;
 
-        if (updateCtx) {
+        if (ctx) {
             const root = fromMCST(state.root, state.map) as { values: Node[] };
             const exprs =
                 !kind || kind === 'expr'
@@ -184,13 +192,17 @@ function determineKey(text: string[], i: number, mods: Mods) {
     return { key, i };
 }
 
-export function autoCompleteIfNeeded(state: State, ctx: Ctx) {
+export function autoCompleteIfNeeded(
+    state: State,
+    // STOPSHIP check usages of this
+    display: CompilationResults['display'],
+) {
     const idx = state.at[0].start[state.at[0].start.length - 1].idx;
-    const exacts = ctx.display[idx]?.autoComplete?.filter(
+    const exacts = display[idx]?.autoComplete?.filter(
         (s) => s.type === 'update' && s.exact,
     ) as AutoCompleteReplace[];
     if (exacts?.length === 1) {
-        const update = applyMenuItem(state.at[0].start, exacts[0], state, ctx);
+        const update = applyMenuItem(state.at[0].start, exacts[0], state);
         state = applyUpdate(state, 0, update);
     }
     return state;

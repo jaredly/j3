@@ -11,6 +11,7 @@ export type MatchError =
           found: Type;
           path: string[];
       }
+    | { type: 'misc'; path: string[]; message: string; form: Node }
     | {
           type: 'unification';
           path: string[];

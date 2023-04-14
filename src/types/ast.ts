@@ -68,6 +68,23 @@ export type recordAccess = {
     form: Node;
 };
 
+export type DefType = {
+    type: 'deftype';
+    name: string;
+    hash: string;
+    value: Type;
+    form: Node;
+};
+
+export type Def = {
+    type: 'def';
+    name: string;
+    hash: string;
+    value: Expr;
+    form: Node;
+    ann?: Type;
+};
+
 export type Expr =
     | Shared
     | {
@@ -76,8 +93,8 @@ export type Expr =
           form: Node;
       }
     | { type: 'blank'; form: Node }
-    | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
-    | { type: 'deftype'; name: string; hash: string; value: Type; form: Node }
+    | Def
+    | DefType
     | String
     | { type: 'if'; cond: Expr; yes: Expr; no: Expr; form: Node }
     | {

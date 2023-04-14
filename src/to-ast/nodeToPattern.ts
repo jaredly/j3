@@ -6,11 +6,12 @@ import { Report, recordMap } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';
 import { addMod } from './specials';
+import { CstCtx } from './library';
 
 export const nodeToPattern = (
     form: Node,
     t: Type,
-    ctx: Ctx,
+    ctx: CstCtx,
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
@@ -25,7 +26,7 @@ export const nodeToPattern = (
             //         throw new Error(`non-number sym? ${form.hash}`);
             //     }
             // }
-            ctx.display[form.loc.idx] = {
+            ctx.results.display[form.loc.idx] = {
                 style: {
                     type: 'id-decl',
                     hash: form.loc.idx,
@@ -45,18 +46,19 @@ export const nodeToPattern = (
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; form: Node; value: Pattern }[] = [];
-            const res = applyAndResolve(t, ctx, []);
+            const res = applyAndResolve(t, ctx.global, []);
             if (!res) {
-                err(ctx.errors, form, {
+                err(ctx.results.errors, form, {
                     type: 'misc',
                     message: `bad type`,
                 });
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
 
-            const prm = res.type === 'record' ? recordMap(res, ctx) : null;
+            const prm =
+                res.type === 'record' ? recordMap(res, ctx.global) : null;
             if (!prm) {
-                err(ctx.errors, form, {
+                err(ctx.results.errors, form, {
                     type: 'misc',
                     message: `type ${t.type} not a record`,
                 });
@@ -65,7 +67,7 @@ export const nodeToPattern = (
             if (values.length === 1 && values[0].type === 'identifier') {
                 const name = values[0].text;
                 if (!prm || !prm[name]) {
-                    err(ctx.errors, form, {
+                    err(ctx.results.errors, form, {
                         type: 'misc',
                         message: `attribute ${name} not in type ${JSON.stringify(
                             prm,
@@ -100,7 +102,7 @@ export const nodeToPattern = (
                 for (let i = 1; i < values.length; i++) {
                     const name = values[i];
                     if (name.type !== 'identifier') {
-                        err(ctx.errors, values[i], {
+                        err(ctx.results.errors, values[i], {
                             type: 'misc',
                             message: 'expected identifier',
                         });
@@ -108,11 +110,11 @@ export const nodeToPattern = (
                     }
 
                     const namev = name.text;
-                    ctx.display[name.loc.idx] = {
+                    ctx.results.display[name.loc.idx] = {
                         style: { type: 'record-attr' },
                     };
                     if (!prm[namev]) {
-                        err(ctx.errors, values[i], {
+                        err(ctx.results.errors, values[i], {
                             type: 'misc',
                             message: `attribute not in type ${namev} ${Object.keys(
                                 prm,
@@ -136,18 +138,18 @@ export const nodeToPattern = (
                     const name = values[i];
                     const value = values[i + 1];
                     if (name.type !== 'identifier') {
-                        err(ctx.errors, values[i], {
+                        err(ctx.results.errors, values[i], {
                             type: 'misc',
                             message: 'expected identifier or integer literal',
                         });
                         continue;
                     }
                     const namev = name.text;
-                    ctx.display[name.loc.idx] = {
+                    ctx.results.display[name.loc.idx] = {
                         style: { type: 'record-attr' },
                     };
                     if (!prm[namev]) {
-                        err(ctx.errors, values[i], {
+                        err(ctx.results.errors, values[i], {
                             type: 'misc',
                             message: `attribute not in type ${namev} ${Object.keys(
                                 prm,
@@ -156,7 +158,7 @@ export const nodeToPattern = (
                         continue;
                     }
                     if (!value) {
-                        err(ctx.errors, values[i], {
+                        err(ctx.results.errors, values[i], {
                             type: 'misc',
                             message: 'expected value',
                         });
@@ -225,8 +227,8 @@ export const nodeToPattern = (
             }
             if (first.type === 'identifier' && first.text.startsWith("'")) {
                 const text = first.text.slice(1);
-                ctx.display[first.loc.idx] = { style: { type: 'tag' } };
-                const res = applyAndResolve(t, ctx, []);
+                ctx.results.display[first.loc.idx] = { style: { type: 'tag' } };
+                const res = applyAndResolve(t, ctx.global, []);
                 if (!res) {
                     console.log('no t', t);
                     return { type: 'unresolved', form, reason: 'bad type' };
@@ -239,7 +241,7 @@ export const nodeToPattern = (
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
-                    const map = expandEnumItems(res.items, ctx, []);
+                    const map = expandEnumItems(res.items, ctx.global, []);
                     if (map.type === 'error' || !map.map[text]) {
                         console.log('nomap', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };

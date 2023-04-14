@@ -149,7 +149,7 @@ export function Root({
                             {nodeToString(
                                 nodeForType(
                                     getType(exprMap[top], ctx) ?? nilt,
-                                    ctx,
+                                    ctx.hashNames,
                                 ),
                                 ctx.hashNames,
                             )}

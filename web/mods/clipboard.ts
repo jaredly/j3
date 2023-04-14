@@ -231,7 +231,7 @@ export type ClipboardItem =
 
 export const paste = (
     state: State,
-    ctx: Ctx,
+    hashNames: { [idx: number]: string },
     items: ClipboardItem[],
 ): StateUpdate | void => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
@@ -244,7 +244,7 @@ export const paste = (
                         item.text,
                         state.map,
                         path,
-                        ctx.hashNames,
+                        hashNames,
                         state.nidx,
                     );
                 } else {
@@ -536,11 +536,11 @@ export function generateRawPasteUpdate(
             char,
             tmp.map,
             tmp.at[0],
-            tctx.hashNames,
+            tctx.results.hashNames,
             tmp.nidx,
         );
         if (update?.autoComplete) {
-            tmp = autoCompleteIfNeeded(tmp, tctx);
+            tmp = autoCompleteIfNeeded(tmp, tctx.results.display);
         }
 
         tmp = applyUpdate(tmp, 0, update);
@@ -553,10 +553,10 @@ export function generateRawPasteUpdate(
         const exprs = filterComments(root.values).map((node) => {
             const expr = nodeToExpr(node, tctx);
             let t = getType(expr, tctx, {
-                errors: tctx.errors,
+                errors: tctx.results.errors,
                 types: {},
             });
-            validateExpr(expr, tctx, tctx.errors);
+            validateExpr(expr, tctx, tctx.results.errors);
             if (t) {
                 tctx = addDef(expr, tctx);
             }

@@ -109,7 +109,10 @@ export const reduce = (state: UIState, action: Action): UIState => {
             const prev = state.at[0];
             // Here's where the real work happens.
             if (update.autoComplete && !state.menu?.dismissed) {
-                state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
+                state = {
+                    ...state,
+                    ...autoCompleteIfNeeded(state, state.ctx.display),
+                };
                 verifyLocs(state.map, 'autocomplete');
             }
             state = { ...state, ...applyUpdate(state, 0, update) };
@@ -207,7 +210,6 @@ export function applyMenuItem(
     path: Path[],
     item: AutoCompleteReplace,
     state: State,
-    ctx: Ctx,
 ): StateChange {
     const idx = path[path.length - 1].idx;
     return autoCompleteUpdate(idx, state.map, path, item);

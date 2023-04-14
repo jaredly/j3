@@ -4,8 +4,9 @@ import { resolveType } from './resolveType';
 import { Ctx, any, nilt } from './Ctx';
 import { filterComments, maybeParseNumber } from './nodeToExpr';
 import { err } from './nodeToPattern';
+import { CstCtx } from './library';
 
-export const nodeToType = (form: Node, ctx: Ctx): Type => {
+export const nodeToType = (form: Node, ctx: CstCtx): Type => {
     switch (form.type) {
         case 'unparsed':
             return nilt;
@@ -72,13 +73,15 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                 i += 2;
 
                 if (name.type !== 'identifier') {
-                    err(ctx.errors, name, {
+                    err(ctx.results.errors, name, {
                         type: 'misc',
                         message: `record entry name must be an identifier`,
                     });
                     continue;
                 }
-                ctx.display[name.loc.idx] = { style: { type: 'record-attr' } };
+                ctx.results.display[name.loc.idx] = {
+                    style: { type: 'record-attr' },
+                };
                 entries.push({
                     name: name.text,
                     value: value ? nodeToType(value, ctx) : nilt,
@@ -100,7 +103,7 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
-                ctx.display[first.loc.idx] = { style: { type: 'tag' } };
+                ctx.results.display[first.loc.idx] = { style: { type: 'tag' } };
                 return {
                     type: 'tag',
                     form,
@@ -156,7 +159,9 @@ export const nodeToType = (form: Node, ctx: Ctx): Type => {
                         form: arg,
                     };
                 });
-                parsed.forEach((targ) => (ctx.localMap.types[targ.sym] = targ));
+                parsed.forEach(
+                    (targ) => (ctx.results.localMap.types[targ.sym] = targ),
+                );
                 return {
                     type: 'tfn',
                     args: parsed,

@@ -1,15 +1,16 @@
 import { Node } from '../types/cst';
 import { Expr } from '../types/ast';
-import { Ctx, any } from './Ctx';
+import { any, nilt } from './Ctx';
 import { Result } from './to-ast';
 import { populateAutocomplete } from './populateAutocomplete';
+import { CstCtx, Ctx, Library } from './library';
 
 // TODO cache this?
 
 export const resolveExpr = (
     text: string,
     hash: string | number | undefined,
-    ctx: Ctx,
+    ctx: CstCtx,
     form: Node,
 ): Expr => {
     if (!text.length && !hash) {
@@ -21,10 +22,10 @@ export const resolveExpr = (
     if (text.startsWith("'")) {
         return { type: 'tag', name: text, form };
     }
-    ctx.display[form.loc.idx] = {};
+    ctx.results.display[form.loc.idx] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form);
-        ctx.display[form.loc.idx].style = { type: 'unresolved' };
+        ctx.results.display[form.loc.idx].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
             form,
@@ -35,13 +36,13 @@ export const resolveExpr = (
             const sym = hash;
             const local = ctx.local.terms.find((t) => t.sym === sym);
             if (local) {
-                ctx.display[form.loc.idx].style = {
+                ctx.results.display[form.loc.idx].style = {
                     type: 'id',
                     hash: local.sym,
                     text: local.name,
                     ann: local.type,
                 };
-                ctx.hashNames[form.loc.idx] = local.name;
+                ctx.results.hashNames[form.loc.idx] = local.name;
                 return { type: 'local', sym: local.sym, form };
             }
             populateAutocomplete(ctx, text, form);
@@ -49,28 +50,28 @@ export const resolveExpr = (
         } else {
             if (hash.startsWith(':builtin:')) {
                 text = hash.slice(':builtin:'.length);
-                const builtin = ctx.global.builtins.terms[text];
-                if (builtin) {
+                const builtin = ctx.global.builtins[text];
+                if (builtin?.type === 'term') {
                     const last = text.split('/').slice(-1)[0];
-                    ctx.display[form.loc.idx].style = {
+                    ctx.results.display[form.loc.idx].style = {
                         type: 'id',
                         hash,
                         text: last,
-                        ann: builtin,
+                        ann: builtin.ann,
                     };
-                    ctx.hashNames[form.loc.idx] = last;
+                    ctx.results.hashNames[form.loc.idx] = last;
                     return { type: 'builtin', name: text, form };
                 }
             }
-            const global = ctx.global.terms[hash];
-            if (global) {
-                ctx.display[form.loc.idx].style = {
+            const global = ctx.global.library.definitions[hash];
+            if (global?.type === 'term') {
+                ctx.results.display[form.loc.idx].style = {
                     type: 'id',
                     hash,
-                    text: ctx.global.reverseNames[hash],
-                    ann: global.type,
+                    text: 'STOPSHIP', //ctx.global.reverseNames[hash],
+                    ann: global.ann,
                 };
-                ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
+                ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
             populateAutocomplete(ctx, text, form);
@@ -83,29 +84,67 @@ export const resolveExpr = (
     }
 };
 
-export const allTerms = (ctx: Ctx): Result[] => {
-    const globals = Object.entries(ctx.global.names).flatMap(([name, hashes]) =>
-        hashes.map(
-            (hash) =>
-                ({
+export const libraryMap = (lib: Library) => {
+    const map: { [key: string]: string } = {};
+    const nsMap = (hash: string, path: string) => {
+        Object.entries(lib.namespaces[hash]).forEach(([name, hash]) => {
+            if (name === '') {
+                map[path] = hash;
+            } else {
+                nsMap(hash, path + '/' + name);
+            }
+        });
+    };
+    nsMap(lib.root, '');
+    return map;
+};
+
+export const allTerms = (ctx: CstCtx): Result[] => {
+    const sandboxes = Object.entries(ctx.results.toplevel).flatMap(
+        ([idx, expr]) =>
+            expr.type === 'def'
+                ? [
+                      {
+                          type: 'global',
+                          name: expr.name,
+                          hash: idx + '',
+                          typ: expr.ann ?? nilt,
+                      } satisfies Result,
+                  ]
+                : [],
+    );
+
+    const globals = Object.entries(libraryMap(ctx.global.library)).flatMap(
+        ([name, hash]): Result[] => {
+            if (hash.startsWith(':builtin:')) {
+                const name = hash.slice(':builtin:'.length);
+                const value = ctx.global.builtins[name];
+                return value.type === 'term'
+                    ? [
+                          {
+                              type: 'builtin',
+                              name,
+                              hash: ':builtin:' + name,
+                              typ: value.ann,
+                          },
+                      ]
+                    : [];
+            }
+            const term = ctx.global.library.definitions[hash];
+            if (term.type !== 'term') {
+                return [];
+            }
+            return [
+                {
                     type: 'global',
                     name,
                     hash,
-                    typ: ctx.global.terms[hash].type,
-                } satisfies Result),
-        ),
-    );
-    const builtins = Object.entries(ctx.global.builtins.terms).map(
-        ([name, value]) =>
-            ({
-                type: 'builtin',
-                name,
-                hash: ':builtin:' + name,
-                typ: value,
-            } satisfies Result),
+                    typ: term.ann,
+                },
+            ];
+        },
     );
     return [
-        ...builtins,
         ...ctx.local.terms.map(
             ({ name, type, sym }) =>
                 ({
@@ -115,35 +154,72 @@ export const allTerms = (ctx: Ctx): Result[] => {
                     hash: sym,
                 } satisfies Result),
         ),
+        ...sandboxes,
         ...globals,
     ];
 };
 
-export const allTypes = (ctx: Ctx): Result[] => {
-    const globals = Object.entries(ctx.global.typeNames).flatMap(
-        ([name, hashes]) =>
-            hashes.map(
-                (hash) =>
-                    ({
-                        type: 'global',
-                        name,
+export const allTypes = (ctx: CstCtx): Result[] => {
+    const sandboxes = Object.entries(ctx.results.toplevel).flatMap(
+        ([idx, expr]) =>
+            expr.type === 'deftype'
+                ? [
+                      {
+                          type: 'global',
+                          name: expr.name,
+                          hash: idx + '',
+                          typ: expr.value,
+                      } satisfies Result,
+                  ]
+                : [],
+    );
+
+    const globals = Object.entries(libraryMap(ctx.global.library)).flatMap(
+        ([name, hash]): Result[] => {
+            if (hash.startsWith(':builtin:')) {
+                const term =
+                    ctx.global.builtins[hash.slice(':builtin:'.length)];
+                if (term.type !== 'type') {
+                    return [];
+                }
+                return [
+                    {
+                        type: 'builtin',
+                        name: hash.slice(':builtin:'.length),
                         hash,
-                        typ: ctx.global.types[hash],
-                    } satisfies Result),
-            ),
+                        // TODO
+                        typ: any,
+                    },
+                ];
+            }
+            const term = ctx.global.library.definitions[hash];
+            if (term.type !== 'type') {
+                return [];
+            }
+            return [
+                {
+                    type: 'global',
+                    name,
+                    hash,
+                    typ: term.value,
+                },
+            ];
+        },
     );
-    const builtins = Object.entries(ctx.global.builtins.types).map(
-        ([name, tvars]) =>
-            ({
-                type: 'builtin',
-                name,
-                hash: ':builtin:' + name,
-                // TODO
-                typ: any,
-            } satisfies Result),
-    );
+    // const builtins = Object.entries(ctx.global.builtins)
+    //     .filter(([k, v]) => v.type === 'type')
+    //     .map(
+    //         ([name, tvars]) =>
+    //             ({
+    //                 type: 'builtin',
+    //                 name,
+    //                 hash: ':builtin:' + name,
+    //                 // TODO
+    //                 typ: any,
+    //             } satisfies Result),
+    //     );
     return [
-        ...builtins,
+        // ...builtins,
         ...ctx.local.types.map(
             ({ name, sym, bound }) =>
                 ({
@@ -153,6 +229,7 @@ export const allTypes = (ctx: Ctx): Result[] => {
                     hash: sym,
                 } satisfies Result),
         ),
+        ...sandboxes,
         ...globals,
     ];
 };

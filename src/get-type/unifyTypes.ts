@@ -4,11 +4,12 @@ import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
 import { applyAndResolve } from './matchesType';
+import { Env } from '../to-ast/library';
 
 export const unifyTypes = (
     one: Type,
     two: Type,
-    ctx: Ctx,
+    ctx: Env,
     form: Node,
     report?: Report,
 ): Type | void => {
@@ -37,7 +38,7 @@ export const une = (
 export const _unifyTypes = (
     one: Type,
     two: Type,
-    ctx: Ctx,
+    ctx: Env,
     path: string[],
 ): Type | { type: 'error'; error: MatchError } => {
     if (one.type === 'builtin' && two.type === 'builtin') {
@@ -175,7 +176,7 @@ export const _unifyTypes = (
 export const unifyMaps = (
     one: RecordMap,
     two: RecordMap,
-    ctx: Ctx,
+    ctx: Env,
     path: string[],
 ):
     | {

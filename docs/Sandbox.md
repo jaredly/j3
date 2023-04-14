@@ -15,6 +15,11 @@ used by other things in the sandbox, those sandbox items start pointing to the s
 > 🤔 does that mean I'll want `global` | `local` | `sandbox`? Or just `global:hash` as `number|string`?
 > It does mean that `Ctx` will need ... some changes idk
 
+IF a thing has multiple names
+we choose the name that's closest to the current namespace
+you can also like list preferred namespaces or something?
+oh I mean if you like say `some.deep.ns -> myns` then myns.thing will be closest.
+
 
 LIRBRARY:
 I doin't think I want the sha thing, it doesn't really seem necessary? idk

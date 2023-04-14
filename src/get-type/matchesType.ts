@@ -1,14 +1,15 @@
-import { blank, Ctx, nilt } from '../to-ast/Ctx';
+import { blank, Ctx, nil, nilt } from '../to-ast/Ctx';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
 import { errf, recordMap, Report } from './get-types-new';
 import { transformType } from '../types/walk-ast';
 import { unifyTypes, _unifyTypes } from './unifyTypes';
+import { CompilationResults, Env, globalType } from '../to-ast/library';
 
 export const matchesType = (
     candidate: Type,
     expected: Type,
-    ctx: Ctx,
+    ctx: Env,
     form: Node,
     report?: Report,
 ): boolean => {
@@ -37,7 +38,7 @@ export const inv = (
 export const _matchOrExpand = (
     candidate: Type,
     expected: Type,
-    ctx: Ctx,
+    ctx: Env,
     path: string[],
 ): MatchError | true => {
     const first = _matchesType(candidate, expected, ctx, path);
@@ -64,7 +65,7 @@ export const _matchOrExpand = (
 export const _matchesType = (
     candidate: Type,
     expected: Type,
-    ctx: Ctx,
+    ctx: Env,
     path: string[],
 ): MatchError | true => {
     switch (candidate.type) {
@@ -341,14 +342,25 @@ export const _matchesType = (
 
 export const applyAndResolve = (
     type: Type,
-    ctx: Ctx,
+    env: Env,
     path: string[],
 ):
     | Type
     | { type: 'error'; error: MatchError }
     | { type: 'local-bound'; bound?: Type } => {
     if (type.type === 'global') {
-        return ctx.global.types[type.hash];
+        const defn = env.library.definitions[type.hash];
+        return defn?.type === 'type'
+            ? defn.value
+            : {
+                  type: 'error',
+                  error: {
+                      type: 'misc',
+                      message: 'missing global',
+                      form: type.form,
+                      path,
+                  },
+              };
     }
     // TODO locals
     if (type.type === 'local') {
@@ -357,7 +369,7 @@ export const applyAndResolve = (
     if (type.type === 'apply') {
         const inner = applyAndResolve(
             type.target,
-            ctx,
+            env,
             path.concat(['target']),
         );
         if (inner.type === 'error') {
@@ -376,7 +388,19 @@ export const applyAndResolve = (
         if (inner.type === 'builtin') {
             // TODO: Check to see if the number of arguments is correct
             // ALSO here's where we can fill in default arguments.
-            const args = ctx.global.builtins.types[inner.name];
+            const bin = env.builtins[inner.name];
+            if (bin?.type !== 'type') {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'unknown builtin',
+                        form: type.target.form,
+                        path,
+                    },
+                };
+            }
+            const args = bin.args;
             if (type.args.length > args.length) {
                 return {
                     type: 'error',
@@ -408,7 +432,7 @@ export const applyAndResolve = (
                     const res = _matchOrExpand(
                         type.args[i],
                         arg.bound!,
-                        ctx,
+                        env,
                         path.concat([i.toString()]),
                     );
                     if (res !== true) {
@@ -456,7 +480,7 @@ export const applyAndResolve = (
                 const res = _matchOrExpand(
                     type.args[i],
                     inner.args[i].bound!,
-                    ctx,
+                    env,
                     path.concat([i.toString()]),
                 );
                 if (res !== true) {
@@ -500,7 +524,7 @@ export type EnumMap = {
  */
 export const expandEnumItems = (
     items: Type[],
-    ctx: Ctx,
+    ctx: Env,
     path: string[],
 ):
     | { type: 'success'; map: { [key: string]: { args: Type[]; form: Node } } }
@@ -510,7 +534,19 @@ export const expandEnumItems = (
         let item = items[i];
 
         if (item.type === 'global') {
-            item = ctx.global.types[item.hash];
+            const defn = globalType(ctx.library, item.hash);
+            if (!defn) {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'unknown global',
+                        path,
+                        form: nil.form,
+                    },
+                };
+            }
+            item = defn.value;
         }
         if (item.type === 'local') {
             throw new Error(`need something else to expand local types`);
@@ -563,7 +599,7 @@ export const unifyEnumArgs = (
     map: EnumMap,
     form: Node,
     path: string[],
-    ctx: Ctx,
+    ctx: Env,
 ): void | MatchError => {
     if (map[tag].args.length !== args.length) {
         return {

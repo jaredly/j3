@@ -2,7 +2,7 @@
 
 import { Expr, Term, Type } from '../types/ast';
 import { getType } from '../get-type/get-types-new';
-import { Ctx } from './Ctx';
+import { Ctx } from './library';
 
 export type Result =
     | { type: 'local'; name: string; typ: Type; hash: number }

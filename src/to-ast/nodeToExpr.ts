@@ -2,12 +2,13 @@ import { Identifier, Node, NodeExtra, recordAccess } from '../types/cst';
 import { Expr, Number, Record, Type } from '../types/ast';
 import { specials } from './specials';
 import { resolveExpr } from './resolveExpr';
-import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
+import { AutoCompleteResult, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
 import { nodeToType } from './nodeToType';
 import { populateAutocomplete } from './populateAutocomplete';
+import { CstCtx, Ctx } from './library';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter((node) => node.type !== 'comment' && node.type !== 'blank');
@@ -16,12 +17,12 @@ export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
     if (!type) {
         return null;
     }
-    let res = applyAndResolve(type, ctx, []);
+    let res = applyAndResolve(type, ctx.global, []);
     if (res.type === 'local-bound' && res.bound) {
         res = res.bound;
     }
     if (res.type === 'record') {
-        return recordMap(res, ctx);
+        return recordMap(res, ctx.global);
     }
     return null;
 };
@@ -37,7 +38,7 @@ export const ensure = <T, K>(
     return map[key];
 };
 
-export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
+export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
     switch (form.type) {
         case 'recordAccess':
             return nodeToRecordAccess(form, ctx);
@@ -100,7 +101,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     .slice(1)
                     .map((child) => nodeToExpr(child, ctx));
                 rest.slice(1).forEach((item) => {
-                    err(ctx.errors, item.form, {
+                    err(ctx.results.errors, item.form, {
                         type: 'misc',
                         message: '[] indexing only takes one target',
                     });
@@ -148,7 +149,7 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'spread':
-            err(ctx.errors, form, {
+            err(ctx.results.errors, form, {
                 type: 'misc',
                 message: 'dangling spread',
             });
@@ -186,10 +187,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
 
 export const maybeParseNumber = (
     form: Identifier & NodeExtra,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): null | Number => {
     if (form.text.match(/^[0-9]+u$/)) {
-        ensure(ctx.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc.idx, {}).style = {
             type: 'number',
             kind: 'uint',
         };
@@ -202,7 +203,7 @@ export const maybeParseNumber = (
     }
     if (form.text.match(/^-?[0-9]+[if]?$/)) {
         const kind = form.text.endsWith('f') ? 'float' : 'int';
-        ensure(ctx.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc.idx, {}).style = {
             type: 'number',
             kind,
         };
@@ -214,7 +215,7 @@ export const maybeParseNumber = (
         };
     }
     if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
-        ensure(ctx.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc.idx, {}).style = {
             type: 'number',
             kind: 'float',
         };
@@ -298,8 +299,8 @@ export function nodeToRecord(
                     name: item.text,
                     value: nodeToExpr(item, ctx),
                 });
-                if (!ctx.display[item.loc.idx]?.style) {
-                    ensure(ctx.display, item.loc.idx, {}).style = {
+                if (!ctx.results.display[item.loc.idx]?.style) {
+                    ensure(ctx.results.display, item.loc.idx, {}).style = {
                         type: 'record-attr',
                     };
                 }
@@ -320,7 +321,7 @@ export function nodeToRecord(
         const name = values[i];
         if (name.type === 'spread') {
             if (name.contents.type === 'blank') {
-                err(ctx.errors, name, {
+                err(ctx.results.errors, name, {
                     type: 'misc',
                     message: 'no empty spread in expressions',
                 });
@@ -334,13 +335,13 @@ export function nodeToRecord(
                 if (tt.type === 'record') {
                     spreads.push(spread);
                 } else {
-                    err(ctx.errors, name, {
+                    err(ctx.results.errors, name, {
                         type: 'misc',
                         message: `can only spread records, not ${tt.type}`,
                     });
                 }
             } else {
-                err(ctx.errors, name, {
+                err(ctx.results.errors, name, {
                     type: 'misc',
                     message: `illegal spread`,
                 });
@@ -349,13 +350,13 @@ export function nodeToRecord(
             continue;
         }
 
-        if (!ctx.display[name.loc.idx]?.style) {
-            ensure(ctx.display, name.loc.idx, {}).style = {
+        if (!ctx.results.display[name.loc.idx]?.style) {
+            ensure(ctx.results.display, name.loc.idx, {}).style = {
                 type: 'record-attr',
             };
         }
         if (name.type !== 'identifier') {
-            err(ctx.errors, name, {
+            err(ctx.results.errors, name, {
                 type: 'misc',
                 message: `invalid record item ${name.type}`,
             });
@@ -366,7 +367,7 @@ export function nodeToRecord(
         const value = values[i + 1];
         i += 2;
         if (!value) {
-            err(ctx.errors, name, {
+            err(ctx.results.errors, name, {
                 type: 'misc',
                 message: `missing value for field ${namev}`,
             });
@@ -381,7 +382,7 @@ export function nodeToRecord(
 
 export function nodeToRecordAccess(
     form: recordAccess & NodeExtra,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): Expr {
     const target =
         form.target.type !== 'blank' ? nodeToExpr(form.target, ctx) : null;
@@ -391,7 +392,7 @@ export function nodeToRecordAccess(
             for (let item of form.items) {
                 const options = getRecordMap(ttype, ctx);
                 if (!options) {
-                    err(ctx.errors, item, {
+                    err(ctx.results.errors, item, {
                         type: 'misc',
                         message: 'not a record',
                     });
@@ -400,7 +401,7 @@ export function nodeToRecordAccess(
                 if (options[item.text]) {
                     ttype = options[item.text].value;
                 } else {
-                    ensure(ctx.display, item.loc.idx, {}).autoComplete =
+                    ensure(ctx.results.display, item.loc.idx, {}).autoComplete =
                         Object.entries(options).map(
                             ([name, { value }]) =>
                                 ({
@@ -414,8 +415,8 @@ export function nodeToRecordAccess(
                                     ann: value,
                                 } satisfies AutoCompleteResult),
                         );
-                    ctx.display[item.loc.idx];
-                    err(ctx.errors, item, {
+                    ctx.results.display[item.loc.idx];
+                    err(ctx.results.errors, item, {
                         type: 'misc',
                         message: `no "${item.text}" attribute on record`,
                     });
@@ -427,7 +428,7 @@ export function nodeToRecordAccess(
         type: 'recordAccess',
         items: form.items.map((item) => {
             if (item.text === '') {
-                err(ctx.errors, item, {
+                err(ctx.results.errors, item, {
                     type: 'misc',
                     message: 'empty attribute',
                 });
