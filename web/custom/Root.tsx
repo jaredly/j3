@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { Ctx, nilt } from '../../src/to-ast/Ctx';
+import { nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../mods/path';
 import { cmpFullPath } from './isCoveredBySelection';
@@ -14,6 +14,7 @@ import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForExpr } from '../../src/to-cst/nodeForExpr';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { getType } from '../../src/get-type/get-types-new';
+import { Ctx } from '../../src/to-ast/library';
 
 export function Root({
     state,
@@ -125,9 +126,9 @@ export function Root({
                         idx={top}
                         map={state.map}
                         reg={reg}
-                        display={ctx.display}
-                        hashNames={ctx.hashNames}
-                        errors={ctx.errors}
+                        display={ctx.results.display}
+                        hashNames={ctx.results.hashNames}
+                        errors={ctx.results.errors}
                         dispatch={dispatch}
                         selection={selections}
                         path={[
@@ -149,9 +150,9 @@ export function Root({
                             {nodeToString(
                                 nodeForType(
                                     getType(exprMap[top], ctx) ?? nilt,
-                                    ctx.hashNames,
+                                    ctx.results.hashNames,
                                 ),
-                                ctx.hashNames,
+                                ctx.results.hashNames,
                             )}
                         </div>
                     ) : null}

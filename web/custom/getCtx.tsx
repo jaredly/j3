@@ -26,11 +26,11 @@ export const getCtx = (map: Map, root: number) => {
             ctx = addDef(expr, ctx);
         });
         tops.forEach((top) => {
-            layout(top, 0, map, ctx.display, true);
+            layout(top, 0, map, ctx.results.display, true);
         });
-        const mods = Object.keys(ctx.mods);
+        const mods = Object.keys(ctx.results.mods);
         if (mods.length) {
-            console.log('2️⃣ mods', ctx.mods, map);
+            console.log('2️⃣ mods', ctx.results.mods, map);
             map = { ...map };
             applyMods(ctx, map);
         }

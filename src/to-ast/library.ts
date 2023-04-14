@@ -94,5 +94,5 @@ export type Library = {
 export type Sandbox = {
     root: number;
     map: { [idx: number]: MNode };
-    namespace: string[];
+    // namespace: string[];
 };

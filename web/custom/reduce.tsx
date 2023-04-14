@@ -69,7 +69,7 @@ const actionToUpdate = (
                 action.key,
                 state.map,
                 state.at[0],
-                state.ctx.hashNames,
+                state.ctx.results.hashNames,
                 state.nidx,
                 action.mods,
             );
@@ -111,7 +111,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
             if (update.autoComplete && !state.menu?.dismissed) {
                 state = {
                     ...state,
-                    ...autoCompleteIfNeeded(state, state.ctx.display),
+                    ...autoCompleteIfNeeded(state, state.ctx.results.display),
                 };
                 verifyLocs(state.map, 'autocomplete');
             }

@@ -5,7 +5,7 @@ import {
     orderStartAndEnd,
     splitGraphemes,
 } from '../../src/parse/parse';
-import { Ctx, newCtx } from '../../src/to-ast/Ctx';
+import { newCtx } from '../../src/to-ast/Ctx';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
 import {
@@ -34,6 +34,7 @@ import { getType } from '../../src/get-type/get-types-new';
 import { validateExpr } from '../../src/get-type/validate';
 import { addDef } from '../../src/to-ast/to-ast';
 import { applyInferMod, infer } from '../../src/infer/infer';
+import { Ctx } from '../../src/to-ast/library';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -303,7 +304,7 @@ export const paste = (
 
 export const clipboardText = (
     items: ClipboardItem[],
-    display: Ctx['hashNames'],
+    display: Ctx['results']['hashNames'],
 ) => {
     return items
         .map((item) =>

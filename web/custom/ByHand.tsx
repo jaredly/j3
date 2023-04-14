@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
-import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { type ClipboardItem } from '../mods/clipboard';
@@ -19,6 +19,7 @@ import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';
 import { Expr } from '../../src/types/ast';
 import { transformNode } from '../../src/types/transform-cst';
+import { Ctx } from '../../src/to-ast/library';
 
 const examples = {
     infer: '(+ 2)',
@@ -55,11 +56,13 @@ person.animals.dogs
 };
 
 export type UIState = {
+    // ui:{
     regs: RegMap;
     clipboard: ClipboardItem[][];
     ctx: Ctx;
     hover: Path[];
     exprs: Expr[];
+    // }
 } & State;
 
 export type RegMap = {
@@ -219,7 +222,7 @@ export const Doc = ({
         if (state.at.length > 1 || state.at[0].end) return;
         const path = state.at[0].start;
         const last = path[path.length - 1];
-        const items = state.ctx.display[last.idx]?.autoComplete;
+        const items = state.ctx.results.display[last.idx]?.autoComplete;
         return items ? { path, items } : undefined;
     }, [state.map, state.at, state.ctx]);
 
@@ -270,7 +273,12 @@ export const Doc = ({
                             console.log(node);
                             (node as { values: Node[] }).values.forEach(
                                 (node) =>
-                                    console.log(nodeToExpr(node, state.ctx)),
+                                    console.log(
+                                        nodeToExpr(node, {
+                                            ...state.ctx,
+                                            local: { terms: [], types: [] },
+                                        }),
+                                    ),
                             );
                         }}
                     >

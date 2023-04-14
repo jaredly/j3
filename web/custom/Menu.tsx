@@ -88,9 +88,9 @@ export const Menu = ({
                                 ? nodeToString(
                                       nodeForType(
                                           item.ann,
-                                          state.ctx.hashNames,
+                                          state.ctx.results.hashNames,
                                       ),
-                                      state.ctx.hashNames,
+                                      state.ctx.results.hashNames,
                                   )
                                 : null}
                         </div>

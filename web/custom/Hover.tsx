@@ -26,11 +26,13 @@ export const Hover = ({
     let found: null | { idx: number; text: string } = null;
     for (let i = state.hover.length - 1; i >= 0; i--) {
         let idx = state.hover[i].idx;
-        if (state.ctx.errors[idx]?.length) {
+        if (state.ctx.results.errors[idx]?.length) {
             found = {
                 idx,
-                text: state.ctx.errors[idx]
-                    .map((err) => errorToString(err, state.ctx.hashNames))
+                text: state.ctx.results.errors[idx]
+                    .map((err) =>
+                        errorToString(err, state.ctx.results.hashNames),
+                    )
                     .join('\n'),
             };
             break;
@@ -39,15 +41,18 @@ export const Hover = ({
     if (found == null) {
         const last = state.hover[state.hover.length - 1]?.idx;
         if (last != null) {
-            const style = state.ctx.display[last]?.style;
+            const style = state.ctx.results.display[last]?.style;
             if (style?.type === 'id' || style?.type === 'id-decl') {
                 found = {
                     idx: last,
                     text:
                         (style.type === 'id' && style.ann
                             ? nodeToString(
-                                  nodeForType(style.ann, state.ctx.hashNames),
-                                  state.ctx.hashNames,
+                                  nodeForType(
+                                      style.ann,
+                                      state.ctx.results.hashNames,
+                                  ),
+                                  state.ctx.results.hashNames,
                               ) + '\n'
                             : '') +
                         ' ' +

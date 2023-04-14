@@ -46,7 +46,7 @@ export const nodeToPattern = (
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; form: Node; value: Pattern }[] = [];
-            const res = applyAndResolve(t, ctx.global, []);
+            const res = applyAndResolve(t, ctx, []);
             if (!res) {
                 err(ctx.results.errors, form, {
                     type: 'misc',
@@ -55,8 +55,7 @@ export const nodeToPattern = (
                 return { type: 'unresolved', form, reason: 'bad type' };
             }
 
-            const prm =
-                res.type === 'record' ? recordMap(res, ctx.global) : null;
+            const prm = res.type === 'record' ? recordMap(res, ctx) : null;
             if (!prm) {
                 err(ctx.results.errors, form, {
                     type: 'misc',

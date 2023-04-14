@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { Ctx } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
@@ -8,6 +7,7 @@ import {
 import { cmpFullPath } from './isCoveredBySelection';
 import { UIState } from './ByHand';
 import { orderStartAndEnd } from '../../src/parse/parse';
+import { Ctx } from '../../src/to-ast/library';
 
 export function DebugClipboard({
     state,
@@ -25,7 +25,12 @@ export function DebugClipboard({
                     if (!sel.end) return null;
                     const [start, end] = orderStartAndEnd(sel.start, sel.end);
 
-                    return collectNodes(state.map, start, end, ctx.hashNames);
+                    return collectNodes(
+                        state.map,
+                        start,
+                        end,
+                        ctx.results.hashNames,
+                    );
                 })
                 .filter(Boolean) as ClipboardItem[],
         [state.map, state.at],
@@ -48,7 +53,10 @@ export function DebugClipboard({
                         >
                             {copy.map((item, i) => (
                                 <div key={i}>
-                                    {clipboardText([item], state.ctx.hashNames)}
+                                    {clipboardText(
+                                        [item],
+                                        state.ctx.results.hashNames,
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -106,7 +114,7 @@ export function DebugClipboard({
                         </table>
                     </div>
                     <div style={{ whiteSpace: 'pre-wrap' }}>
-                        {JSON.stringify(ctx.display, null, 2)}
+                        {JSON.stringify(ctx.results.display, null, 2)}
                     </div>
                 </div>
             ) : null}
