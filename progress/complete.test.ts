@@ -45,7 +45,7 @@ const data = `
     .trim()
     .split('\n\n');
 
-describe.skip('completion and such', () => {
+describe('completion and such', () => {
     data.forEach((chunk, i) => {
         const only = chunk.startsWith('!!!');
         if (only) {

@@ -62,7 +62,8 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                             .startsWith(form.raw.slice(1).toLowerCase()),
                     );
                 }
-                ensure(ctx.display, form.loc.idx, {}).autoComplete = options;
+                ensure(ctx.results.display, form.loc.idx, {}).autoComplete =
+                    options;
             }
             return { type: 'unresolved', form };
 

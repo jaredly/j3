@@ -1,15 +1,15 @@
-import { Ctx, nilt } from '../to-ast/Ctx';
+import { nilt } from '../to-ast/Ctx';
 import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
 import { applyAndResolve } from './matchesType';
-import { Env } from '../to-ast/library';
+import { Ctx, Env } from '../to-ast/library';
 
 export const unifyTypes = (
     one: Type,
     two: Type,
-    ctx: Env,
+    ctx: Ctx,
     form: Node,
     report?: Report,
 ): Type | void => {
@@ -38,7 +38,7 @@ export const une = (
 export const _unifyTypes = (
     one: Type,
     two: Type,
-    ctx: Env,
+    ctx: Ctx,
     path: string[],
 ): Type | { type: 'error'; error: MatchError } => {
     if (one.type === 'builtin' && two.type === 'builtin') {
@@ -176,7 +176,7 @@ export const _unifyTypes = (
 export const unifyMaps = (
     one: RecordMap,
     two: RecordMap,
-    ctx: Env,
+    ctx: Ctx,
     path: string[],
 ):
     | {

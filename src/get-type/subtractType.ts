@@ -1,13 +1,14 @@
 import { Ctx } from '../to-ast/Ctx';
+import { CstCtx } from '../to-ast/library';
 import { Type } from '../types/ast';
 import { applyAndResolve } from './matchesType';
 
 export const subtractType = (
     outerR: Type,
     inner: Type,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): Type | null => {
-    const applied = applyAndResolve(outerR, ctx, []);
+    const applied = applyAndResolve(outerR, ctx.global, []);
     if (applied.type === 'error' || applied.type === 'local-bound') {
         return null;
     }

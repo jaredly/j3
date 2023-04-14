@@ -1,4 +1,4 @@
-import { blank, Ctx, nilt } from '../to-ast/Ctx';
+import { blank, nilt } from '../to-ast/Ctx';
 import { fileLazy, imageFileLazy } from '../to-ast/builtins';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
@@ -9,6 +9,7 @@ import {
 import type { Error } from '../types/types';
 import { unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
+import { Ctx, Env } from '../to-ast/library';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
 // TODO: do we want to error report here?
@@ -58,7 +59,8 @@ export const getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
 const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
     switch (expr.type) {
         case 'builtin': {
-            return ctx.global.builtins.terms[expr.name];
+            const bin = ctx.global.builtins[expr.name];
+            return bin?.type === 'term' ? bin.ann : void 0;
         }
         case 'unresolved':
             if (report) {
@@ -98,7 +100,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                         matchesType(
                             t,
                             { type: 'builtin', name: 'string', form: blank },
-                            ctx,
+                            ctx.global,
                             expr.form,
                             report,
                         );
@@ -111,16 +113,16 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'bool':
             return expr;
         case 'local':
-            if (report && !ctx.localMap.terms[expr.sym]) {
+            if (report && !ctx.results.localMap.terms[expr.sym]) {
                 err(report, expr, {
                     type: 'misc',
                     message: `local not found ${expr.sym}`,
                 });
             }
-            return ctx.localMap.terms[expr.sym]?.type;
+            return ctx.results.localMap.terms[expr.sym]?.type;
         case 'global':
-            // Should we cache? idk
-            return ctx.global.terms[expr.hash].type;
+            const defn = ctx.global.library.definitions[expr.hash];
+            return defn?.type === 'term' ? defn.ann : void 0;
         case 'type-apply': {
             const target = getType(expr.target, ctx, report);
             if (!target) {
@@ -150,7 +152,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     const match = matchesType(
                         expr.args[i],
                         target.args[i].bound!,
-                        ctx,
+                        ctx.global,
                         expr.form,
                         report,
                     );
@@ -175,7 +177,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 matchesType(
                     cond,
                     { type: 'builtin', name: 'bool', form: blank },
-                    ctx,
+                    ctx.global,
                     expr.form,
                     report,
                 );
@@ -246,7 +248,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     matchesType(
                         args[i],
                         target.args[i],
-                        ctx,
+                        ctx.global,
                         expr.args[i].form,
                         report,
                     );
@@ -575,7 +577,7 @@ export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {
             return;
         case 'local':
             report.types[pattern.form.loc.idx] =
-                ctx.localMap.terms[pattern.sym].type;
+                ctx.results.localMap.terms[pattern.sym].type;
             return;
         case 'record':
             pattern.entries.forEach((entry) => {
