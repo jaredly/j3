@@ -19,13 +19,15 @@ export function populateAutocomplete(ctx: Ctx, text: string, form: Node) {
             ({ result }) =>
                 ({
                     type: 'update',
-                    text: result.name,
+                    text: result.name.split('/').slice(-1)[0],
                     update: {
                         type: text === '[]' ? 'array-hash' : 'hash',
                         // Hmmm shouldn't have any locals, right?
                         hash: result.hash as string,
                     },
-                    exact: result.name === text,
+                    exact:
+                        result.name === text ||
+                        result.name.endsWith('/' + text),
                     ann: result.typ,
                 } satisfies AutoCompleteResult),
         ),

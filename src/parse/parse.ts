@@ -38,7 +38,10 @@ export const idText = (node: MNode) => {
                 typeof node.hash === 'string' &&
                 node.hash.startsWith(':builtin:')
             ) {
-                return node.hash.slice(':builtin:'.length);
+                return node.hash
+                    .slice(':builtin:'.length)
+                    .split('/')
+                    .slice(-1)[0];
             }
             return '🚨';
     }

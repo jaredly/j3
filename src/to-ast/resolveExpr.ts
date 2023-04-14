@@ -50,15 +50,15 @@ export const resolveExpr = (
             if (hash.startsWith(':builtin:')) {
                 text = hash.slice(':builtin:'.length);
                 const builtin = ctx.global.builtins.terms[text];
-                console.log(`bin`, text, hash, builtin);
                 if (builtin) {
+                    const last = text.split('/').slice(-1)[0];
                     ctx.display[form.loc.idx].style = {
                         type: 'id',
                         hash,
-                        text,
+                        text: last,
                         ann: builtin,
                     };
-                    ctx.hashNames[form.loc.idx] = text;
+                    ctx.hashNames[form.loc.idx] = last;
                     return { type: 'builtin', name: text, form };
                 }
             }

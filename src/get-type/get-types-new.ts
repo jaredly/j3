@@ -58,8 +58,7 @@ export const getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
 const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
     switch (expr.type) {
         case 'builtin': {
-            return ctx.global.builtins.terms[':builtin:' + expr.name];
-            // STOPSHIP: figure this out
+            return ctx.global.builtins.terms[expr.name];
         }
         case 'unresolved':
             if (report) {
