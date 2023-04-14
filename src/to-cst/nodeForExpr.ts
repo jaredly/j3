@@ -49,10 +49,15 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
         case 'local':
             return {
                 type: 'hash',
-                hash: ':' + expr.sym,
+                hash: expr.sym,
                 loc: expr.form.loc,
             };
-
+        case 'toplevel':
+            return {
+                type: 'hash',
+                hash: expr.hash,
+                loc: expr.form.loc,
+            };
         case 'global':
             return {
                 type: 'hash',

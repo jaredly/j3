@@ -406,6 +406,14 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
         case 'local': {
             return t.identifier('s' + expr.sym);
         }
+        case 'toplevel': {
+            // return t.identifier('h' + expr.hash);
+            return t.memberExpression(
+                t.identifier('$terms'),
+                t.stringLiteral(expr.hash + ''),
+                true,
+            );
+        }
         case 'global': {
             // return t.identifier('h' + expr.hash);
             return t.memberExpression(

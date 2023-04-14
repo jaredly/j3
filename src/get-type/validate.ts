@@ -84,7 +84,7 @@ export const validateExpr = (
             if (ctx.results.toplevel[expr.hash]?.type !== 'def') {
                 err(errors, expr, {
                     type: 'misc',
-                    message: 'unresolved global ' + expr.hash,
+                    message: 'unresolved toplevel ' + expr.hash,
                 });
             }
             return;
@@ -157,6 +157,13 @@ export const validateType = (
                 : err(errors, type, {
                       type: 'misc',
                       message: 'unresolved local ' + type.sym,
+                  });
+        case 'toplevel':
+            return ctx.results.toplevel[type.hash]?.type === 'deftype'
+                ? null
+                : err(errors, type, {
+                      type: 'misc',
+                      message: 'unresolved toplevel ' + type.hash,
                   });
         case 'global':
             return ctx.global.library.definitions[type.hash]?.type === 'type'

@@ -107,6 +107,15 @@ export const _matchesType = (
             }
             return inv(candidate, expected, path);
         }
+        case 'toplevel': {
+            if (
+                expected.type === 'toplevel' &&
+                candidate.hash === expected.hash
+            ) {
+                return true;
+            }
+            return inv(candidate, expected, path);
+        }
         case 'global': {
             if (
                 expected.type === 'global' &&
