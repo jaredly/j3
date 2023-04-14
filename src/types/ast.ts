@@ -72,7 +72,7 @@ export type Expr =
     | Shared
     | {
           type: 'builtin';
-          hash: string;
+          name: string;
           form: Node;
       }
     | { type: 'blank'; form: Node }

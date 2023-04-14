@@ -67,7 +67,7 @@ export const resolveExpr = (
                     ann: builtin,
                 };
                 ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
-                return { type: 'builtin', hash, form };
+                return { type: 'builtin', name: 'STOPSHIP', form };
             }
             populateAutocomplete(ctx, text, form);
             return {

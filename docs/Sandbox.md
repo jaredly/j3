@@ -45,6 +45,16 @@ So, I guess I kindof want an immutable data structure?
 idk if it's worth the trouble
 
 ```ts
+type Builtins = {
+  [name: string]: {
+    type: 'type',
+    args: TVar[],
+  } | {
+    type: 'term',
+    ann: Type,
+  },
+}
+
 type Library = {
   root: string,
   // Do I want like commit messages or something? hmmm
@@ -52,6 +62,16 @@ type Library = {
   namespaces: {
     [hash: string]: {
       [name: string]: string, // hashessss. '': hash is the toplevel for that ns
+      [name: string]: {
+        type: 'namespace',
+        hash: string,
+      } | {
+        type: 'definition',
+        hash: string,
+        sub?: number,
+      }
+      // so if `name` is ``, the hash points into definitions or builtins (if it starts with :builtin:)
+      // otherwise, it's pointing to another namespace.
     }
   },
   definitions: {
@@ -64,30 +84,15 @@ type Library = {
       type: 'type',
       value: Type,
       originalName: string,
-    } | {
-      type: 'builtin-type',
-      args: TVar[],
-      originalName: string,
-      originalProvider: string, // the platform it was added by
-      // providedBy: string, // identifier of the platform?
-      // hmmm but we should allow multiple platforms to implement
-      // each others builtins.
-      // so, when 'loading' a provider into the ... editor ...
-      // we modify the library?
-      // Yeah I guess, it's like loading any third-party package.
-      //
-      // How do I enable ... multiple platforms ... to match each
-      // others builtin types?
-    } | {
-      type: 'builtin-term',
-      ann: Type,
     }
   }
 }
 
 type Sandbox = {
+  root: number;
   map: {[idx: number]: MNode},
-  hashNames: {[idx: number]: string},
+  namespace: string[],
+
 }
 
 ```

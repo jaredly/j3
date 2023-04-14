@@ -366,7 +366,9 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             return t.booleanLiteral(expr.value);
         case 'apply': {
             if (expr.target.type === 'builtin') {
-                const name = ctx.global.reverseNames[expr.target.hash];
+                const name = expr.target.name.slice(
+                    expr.target.name.lastIndexOf('/') + 1,
+                );
                 if (binops.includes(name as '+') && expr.args.length === 2) {
                     return t.binaryExpression(
                         name as typeof binops[0],
@@ -504,7 +506,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 t.stringLiteral('unresolved ' + expr.reason),
             ]);
         case 'builtin': {
-            const name = ctx.global.reverseNames[expr.hash];
+            const name = expr.name.slice(expr.name.lastIndexOf('/') + 1);
             if (binops.includes(name as '+')) {
                 return t.arrowFunctionExpression(
                     [t.identifier('x'), t.identifier('y')],

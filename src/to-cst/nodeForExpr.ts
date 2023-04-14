@@ -83,7 +83,11 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                 text: expr.value.toString(),
             };
         case 'builtin':
-            return { loc: expr.form.loc, type: 'hash', hash: expr.hash };
+            return {
+                loc: expr.form.loc,
+                type: 'hash',
+                hash: `:builtin:${expr.name}`,
+            };
         case 'fn':
             return {
                 loc: expr.form.loc,

@@ -195,18 +195,22 @@ export const specials: {
     },
     def: (form, contents, ctx): Expr => {
         if (!contents.length) {
-            return { type: 'unresolved', form, reason: 'no contents' };
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: 'def needs a name and a body',
+            });
+            return { type: 'def', name: '', hash: '', value: nil, form };
         }
         const first = contents[0];
-        if (first.type !== 'identifier') {
-            return {
-                type: 'unresolved',
-                form,
-                reason: 'first arg must be an identifier',
-            };
-        }
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
         const hash = doHash(value);
+        if (first.type !== 'identifier') {
+            err(ctx.errors, form, {
+                type: 'misc',
+                message: 'def name must be an identifier',
+            });
+            return { type: 'def', name: '', hash: '', value, form };
+        }
         // console.log('def hash', first.text, hash);
         ctx.display[first.loc.idx] = { style: { type: 'id', hash } };
         return {

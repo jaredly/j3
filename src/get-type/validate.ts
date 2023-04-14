@@ -57,12 +57,13 @@ export const validateExpr = (
         case 'bool':
             return;
         case 'builtin':
-            if (!ctx.global.builtins.terms[expr.hash]) {
-                err(errors, expr, {
-                    type: 'misc',
-                    message: 'unresolved builtin ' + expr.hash,
-                });
-            }
+            // STOPSHIP do I validate these?
+            // if (!ctx.global.builtins.terms[expr.hash]) {
+            //     err(errors, expr, {
+            //         type: 'misc',
+            //         message: 'unresolved builtin ' + expr.hash,
+            //     });
+            // }
             return;
         case 'local':
             if (!ctx.localMap.terms[expr.sym]) {

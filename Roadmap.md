@@ -1,4 +1,89 @@
 
+# Sandbox and stuff?
+
+## Road to the sandbox
+
+- [x] So, builtins ...
+  - builtin types, will be just defined by jerd, no-one else.
+  - and they have unique (namespaced) names.
+  - builtin terms, same story. unique namespaced names.
+  -- this means builtins don't need to live in the library.
+  -- they just exist.
+  - [x] builtin terms, Expr has a name, not a hash.
+  - hmm what if all builtins lived in the `builtin/` namespace?
+    - does that mean they'd live in the library though?
+      like. idk about that.
+      I don't want to invalidate everyone's ... libraries ...
+      well, honestly maybe that's fine. like if they want the
+      new builtin they can pull it?
+    - ok so it wouldn't be like a fixed namespace or anything.
+      people could put them anywhere they wanted.
+    - BUT they wouldn't live in `definitions`. the "hash" would
+      be a `:builtin:/int/+` or whatever.
+
+- [x] Decide what data structure is holding my builtins
+- [ ] make a code to prepopulate the library with builtins
+- [ ] 
+
+ok so the library keeps good track of namespaces, which I like.
+
+Ok, so the hashNames idea is really just being lazy. When I delete a sandbox term, I should go through and find all things that reference it and turn them into {identifier}s.
+
+Ok but is there anything else that the sandbox needs?
+I guess it needs to know its current namespace, right?
+oh history for sure
+
+hrmrmmmmmmm yeah ok so this is where having a little more sophisticated toplevel representation would be good, because ... I'd like to .. keep track of the library definition that I brought in to edit, you know?
+although ... I guess if the defn has the proper namespaced name,
+then you'll know what you're editing. So that's fine I guess.
+OK BUT also, I should make mutually recursive terms, so I make sure
+the new sandbox & library shtick will support them.
+Right?
+Or I guess I'd need to make a bunch of changes to things as they are, so might as well migrate to the new thing first anyway.
+
+Anyway, so the way I've decided to handle mutually recursive things, is that they need to live within a big ol' `(@loop (@recur))`.
+
+ONE way to make it so I can do things like
+`(def {$ one two} {one 10 two 5})`
+is to split it into
+```clj
+(def onetwo {one 10 two 5})
+(def one onetwo.one)
+(def two onetwo.two)
+```
+
+BUT I really don't love that.
+also, what about
+```clj
+(def [a b ..c] [1 2 3 4])
+```
+Do I really just allow arbitrarily complex patterns?
+WAIT
+actually all I need is to be able to represent that we're
+binding to a sub-name... right?
+do I reference it by name though? That doesn't sound awesome.
+because what happens when I change the ... name ... wait maybe its fine
+
+OK so
+`sub` will refer to the *normalized idx* of the binding pattern.
+that way, the hash can be stable, and we can refer to things.
+anddd if you move things around such that the normalized idx issss
+diffffferentttttt then hrmmmmmm wait that would be a problem too.
+
+yeah actually any fanciness in namespaces is all for nought, because they are just aliases to the hashes that get persisted into the CST/AST.
+
+MEANING
+I need a different kind of definition? That is a "something fun"?
+naw
+I think I'll justtttt 
+yeah actually.
+So the "sugar" part of things
+would happen in auto-creating `(def one onetwo.one)` if you want.
+BUT you *do* need to give the toplevel thing a name.
+Not getting away from that.
+Nice. Ok so no cheating on naming things, they're important folks.
+
+
 # Inference and such
 
 - [ ] if the current type annotation is ... allowably more specific
