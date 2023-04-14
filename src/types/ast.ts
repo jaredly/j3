@@ -172,16 +172,9 @@ export type TVar = {
 };
 
 export type Identifier =
-    | {
-          type: 'global';
-          hash: string;
-          form: Node;
-      }
-    | {
-          type: 'local';
-          sym: number;
-          form: Node;
-      };
+    | { type: 'global'; hash: string; form: Node }
+    | { type: 'toplevel'; hash: number; form: Node }
+    | { type: 'local'; sym: number; form: Node };
 
 export type Shared =
     | Identifier

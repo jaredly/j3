@@ -120,9 +120,14 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 });
             }
             return ctx.results.localMap.terms[expr.sym]?.type;
-        case 'global':
+        case 'global': {
             const defn = ctx.global.library.definitions[expr.hash];
             return defn?.type === 'term' ? defn.ann : void 0;
+        }
+        case 'toplevel': {
+            const defn = ctx.results.toplevel[expr.hash];
+            return defn?.type === 'def' ? defn.ann : void 0;
+        }
         case 'type-apply': {
             const target = getType(expr.target, ctx, report);
             if (!target) {

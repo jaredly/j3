@@ -71,6 +71,16 @@ export const resolveExpr = (
                 ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
+            const top = ctx.results.toplevel[+hash];
+            if (top?.type === 'def') {
+                ctx.results.display[form.loc.idx].style = {
+                    type: 'id',
+                    hash,
+                    ann: top.ann ?? undefined,
+                };
+                ctx.results.hashNames[form.loc.idx] = top.name;
+                return { type: 'global', hash, form };
+            }
             populateAutocomplete(ctx, text, form);
             return {
                 type: 'unresolved',
@@ -102,9 +112,9 @@ export const allTerms = (ctx: CstCtx): Result[] => {
             expr.type === 'def'
                 ? [
                       {
-                          type: 'global',
+                          type: 'toplevel',
                           name: expr.name,
-                          hash: idx + '',
+                          hash: +idx,
                           typ: expr.ann ?? nilt,
                       } satisfies Result,
                   ]
@@ -162,9 +172,9 @@ export const allTypes = (ctx: CstCtx): Result[] => {
             expr.type === 'deftype'
                 ? [
                       {
-                          type: 'global',
+                          type: 'toplevel',
                           name: expr.name,
-                          hash: idx + '',
+                          hash: +idx,
                           typ: expr.value,
                       } satisfies Result,
                   ]

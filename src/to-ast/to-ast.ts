@@ -5,7 +5,7 @@ import { getType } from '../get-type/get-types-new';
 import { Ctx } from './library';
 
 export type Result =
-    | { type: 'local'; name: string; typ: Type; hash: number }
+    | { type: 'local' | 'toplevel'; name: string; typ: Type; hash: number }
     | {
           type: 'global' | 'builtin';
           name: string;

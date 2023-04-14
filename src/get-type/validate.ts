@@ -80,6 +80,14 @@ export const validateExpr = (
                 });
             }
             return;
+        case 'toplevel':
+            if (ctx.results.toplevel[expr.hash]?.type !== 'def') {
+                err(errors, expr, {
+                    type: 'misc',
+                    message: 'unresolved global ' + expr.hash,
+                });
+            }
+            return;
         case 'let':
             // TODO validate patterns?
             expr.bindings.forEach((binding) =>
