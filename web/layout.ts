@@ -9,6 +9,7 @@ export const calculateLayout = (
     node: MNode,
     pos: number,
     display: Ctx['display'],
+    hashNames: Ctx['hashNames'],
     map: Map,
     recursive = false,
 ): Layout => {
@@ -17,18 +18,23 @@ export const calculateLayout = (
         case 'comment':
             return { type: 'flat', width: node.text.length, pos };
         case 'hash': {
-            const style = display[node.loc.idx].style;
-
             return {
                 type: 'flat',
-                width: style?.type === 'id' ? style.text?.length ?? 0 : 0,
+                width: hashNames[node.loc.idx]?.length ?? 0,
                 pos,
             };
         }
         case 'unparsed':
             return { type: 'flat', width: node.raw.length, pos };
         case 'record': {
-            const cw = childWidth(node.values, recursive, pos, display, map);
+            const cw = childWidth(
+                node.values,
+                recursive,
+                pos,
+                display,
+                hashNames,
+                map,
+            );
             if (cw === false || cw > maxWidth) {
                 return {
                     type: 'multiline',
@@ -43,7 +49,14 @@ export const calculateLayout = (
         case 'blank':
             return { type: 'flat', width: 0, pos };
         case 'array': {
-            const cw = childWidth(node.values, recursive, pos, display, map);
+            const cw = childWidth(
+                node.values,
+                recursive,
+                pos,
+                display,
+                hashNames,
+                map,
+            );
             if (cw === false || cw > maxWidth) {
                 return {
                     type: 'multiline',
@@ -56,7 +69,14 @@ export const calculateLayout = (
             return { type: 'flat', width: cw - pos, pos };
         }
         case 'list': {
-            const cw = childWidth(node.values, recursive, pos, display, map);
+            const cw = childWidth(
+                node.values,
+                recursive,
+                pos,
+                display,
+                hashNames,
+                map,
+            );
             const firstName = idName(map[node.values[0]]);
             if (
                 cw === false ||
@@ -81,6 +101,7 @@ export const calculateLayout = (
                 recursive,
                 pos,
                 display,
+                hashNames,
                 map,
             );
             if (cw === false || cw > maxWidth) {
@@ -102,6 +123,7 @@ export const calculateLayout = (
                 recursive,
                 pos,
                 display,
+                hashNames,
                 map,
             );
             if (cw === false || cw > maxWidth) {
@@ -115,6 +137,7 @@ export const calculateLayout = (
                 recursive,
                 pos,
                 display,
+                hashNames,
                 map,
             );
             if (cw === false || cw > maxWidth) {
@@ -134,6 +157,7 @@ export const calculateLayout = (
                 recursive,
                 pos,
                 display,
+                hashNames,
                 map,
             );
             if (cw === false || cw > maxWidth) {
@@ -147,6 +171,7 @@ export const calculateLayout = (
                 recursive,
                 pos,
                 display,
+                hashNames,
                 map,
             );
             if (cw === false || cw > maxWidth) {
@@ -186,6 +211,7 @@ export const layout = (
     pos: number,
     map: Map,
     display: Ctx['display'],
+    hashNames: Ctx['hashNames'],
     recursive = false,
 ): Layout => {
     const item = display[idx] ?? (display[idx] = {});
@@ -193,6 +219,7 @@ export const layout = (
         map[idx],
         pos,
         display,
+        hashNames,
         map,
         recursive,
     ));
@@ -203,6 +230,7 @@ function childWidth(
     recursive: boolean,
     pos: number,
     display: Ctx['display'],
+    hashNames: Ctx['hashNames'],
     map: Map,
     spacer = 1,
 ) {
@@ -217,12 +245,12 @@ function childWidth(
         let { layout: l } = display[idx] ?? {};
         if (!l || l.pos !== total) {
             // gotta relayout
-            l = layout(idx, total, map, display, recursive);
+            l = layout(idx, total, map, display, hashNames, recursive);
         }
         // Break out, relayout everything for multi-bit
         if (l.type === 'multiline' || total >= maxWidth) {
             for (let idx of children) {
-                layout(idx, pos, map, display, recursive);
+                layout(idx, pos, map, display, hashNames, recursive);
             }
             return false;
         } else {
@@ -231,7 +259,7 @@ function childWidth(
     }
     if (total >= maxWidth) {
         for (let idx of children) {
-            layout(idx, pos, map, display, recursive);
+            layout(idx, pos, map, display, hashNames, recursive);
         }
     }
     return total;

@@ -30,14 +30,6 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 })),
                 form,
             };
-        // STOPSHIP
-        // case 'number':
-        //     return {
-        //         type: 'number',
-        //         form,
-        //         kind: form.raw.includes('.') ? 'float' : 'int',
-        //         value: +form.raw,
-        //     };
         case 'array':
             return {
                 type: 'union',
@@ -47,15 +39,6 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     nodeToType(value, ctx),
                 ),
             };
-        // STOPSHIP
-        // case 'tag':
-        //     ctx.display[form.loc.idx] = { style: { type: 'tag' } };
-        //     return {
-        //         type: 'tag',
-        //         form,
-        //         name: form.text,
-        //         args: [],
-        //     };
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; value: Type }[] = [];

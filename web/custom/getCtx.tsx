@@ -26,7 +26,14 @@ export const getCtx = (map: Map, root: number) => {
             ctx = addDef(expr, ctx) as CstCtx;
         });
         tops.forEach((top) => {
-            layout(top, 0, map, ctx.results.display, true);
+            layout(
+                top,
+                0,
+                map,
+                ctx.results.display,
+                ctx.results.hashNames,
+                true,
+            );
         });
         const mods = Object.keys(ctx.results.mods);
         if (mods.length) {

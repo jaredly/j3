@@ -85,7 +85,6 @@ export type NodeStyle =
           type: 'id';
           hash: string | number;
           ann?: Type;
-          text?: string;
       };
 
 export const emptyLocal: Local = { terms: [], types: [] };

@@ -194,7 +194,6 @@ function determineKey(text: string[], i: number, mods: Mods) {
 
 export function autoCompleteIfNeeded(
     state: State,
-    // STOPSHIP check usages of this
     display: CompilationResults['display'],
 ) {
     const idx = state.at[0].start[state.at[0].start.length - 1].idx;

@@ -43,7 +43,6 @@ export const resolveType = (
                 ensure(ctx.results.display, form.loc.idx, {}).style = {
                     type: 'id',
                     hash: text,
-                    text,
                 };
                 ctx.results.hashNames[form.loc.idx] = text;
                 return { type: 'builtin', name: text, form };
@@ -55,7 +54,6 @@ export const resolveType = (
             ensure(ctx.results.display, form.loc.idx, {}).style = {
                 type: 'id',
                 hash,
-                text: 'STOPSHIP', // ctx.global.reverseNames[hash],
                 ann: global.value,
             };
             ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; //ctx.global.reverseNames[hash];
@@ -70,7 +68,6 @@ export const resolveType = (
             ensure(ctx.results.display, form.loc.idx, {}).style = {
                 type: 'id',
                 hash: local.sym,
-                text: local.name,
                 // ann: local.type,
             };
             ctx.results.hashNames[form.loc.idx] = local.name;

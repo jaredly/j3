@@ -39,7 +39,6 @@ export const resolveExpr = (
                 ctx.results.display[form.loc.idx].style = {
                     type: 'id',
                     hash: local.sym,
-                    text: local.name,
                     ann: local.type,
                 };
                 ctx.results.hashNames[form.loc.idx] = local.name;
@@ -56,7 +55,6 @@ export const resolveExpr = (
                     ctx.results.display[form.loc.idx].style = {
                         type: 'id',
                         hash,
-                        text: last,
                         ann: builtin.ann,
                     };
                     ctx.results.hashNames[form.loc.idx] = last;
@@ -68,7 +66,6 @@ export const resolveExpr = (
                 ctx.results.display[form.loc.idx].style = {
                     type: 'id',
                     hash,
-                    text: 'STOPSHIP', //ctx.global.reverseNames[hash],
                     ann: global.ann,
                 };
                 ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
