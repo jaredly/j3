@@ -139,7 +139,11 @@ export const validateType = (
 ): unknown => {
     switch (type.type) {
         case 'unresolved':
-            return err(errors, type, { type: 'unresolved', form: type.form });
+            return err(errors, type, {
+                type: 'unresolved',
+                form: type.form,
+                reason: type.reason,
+            });
         case 'local':
             return ctx.localMap.types[type.sym] != null
                 ? null

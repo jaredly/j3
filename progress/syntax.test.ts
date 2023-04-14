@@ -264,6 +264,7 @@ hello<friend>
 hello<friend>
 (tapply id id)
 `;
+// (@loop (fn [x] (if x (@recur false) 10)))
 
 describe('a test', () => {
     data.trim()

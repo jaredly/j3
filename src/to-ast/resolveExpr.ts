@@ -47,6 +47,21 @@ export const resolveExpr = (
             populateAutocomplete(ctx, text, form);
             return { type: 'unresolved', form, reason: 'local missing' };
         } else {
+            if (hash.startsWith(':builtin:')) {
+                text = hash.slice(':builtin:'.length);
+                const builtin = ctx.global.builtins.terms[text];
+                console.log(`bin`, text, hash, builtin);
+                if (builtin) {
+                    ctx.display[form.loc.idx].style = {
+                        type: 'id',
+                        hash,
+                        text,
+                        ann: builtin,
+                    };
+                    ctx.hashNames[form.loc.idx] = text;
+                    return { type: 'builtin', name: text, form };
+                }
+            }
             const global = ctx.global.terms[hash];
             if (global) {
                 ctx.display[form.loc.idx].style = {
@@ -57,17 +72,6 @@ export const resolveExpr = (
                 };
                 ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
-            }
-            const builtin = ctx.global.builtins.terms[hash];
-            if (builtin) {
-                ctx.display[form.loc.idx].style = {
-                    type: 'id',
-                    hash,
-                    text: ctx.global.reverseNames[hash],
-                    ann: builtin,
-                };
-                ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
-                return { type: 'builtin', name: 'STOPSHIP', form };
             }
             populateAutocomplete(ctx, text, form);
             return {
@@ -91,17 +95,14 @@ export const allTerms = (ctx: Ctx): Result[] => {
                 } satisfies Result),
         ),
     );
-    const builtins = Object.entries(ctx.global.builtins.names).flatMap(
-        ([name, hashes]) =>
-            hashes.map(
-                (hash) =>
-                    ({
-                        type: 'builtin',
-                        name,
-                        hash,
-                        typ: ctx.global.builtins.terms[hash],
-                    } satisfies Result),
-            ),
+    const builtins = Object.entries(ctx.global.builtins.terms).map(
+        ([name, value]) =>
+            ({
+                type: 'builtin',
+                name,
+                hash: ':builtin:' + name,
+                typ: value,
+            } satisfies Result),
     );
     return [
         ...builtins,

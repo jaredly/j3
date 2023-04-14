@@ -75,7 +75,6 @@ export type Global = {
     builtins: {
         bidx: number;
         terms: { [hash: string]: Type };
-        names: { [name: string]: string[] };
         types: { [name: string]: TVar[] };
     };
     terms: { [hash: string]: { expr: Expr; type: Type } };

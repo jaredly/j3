@@ -60,7 +60,6 @@ export const basicBuiltins: Global['builtins'] = {
             },
         ],
     },
-    names: {},
     terms: {},
 };
 
@@ -70,14 +69,12 @@ export const addBuiltin = (
     name: string,
     type: Type,
 ) => {
-    const hash = objectHash(name + ' ' + JSON.stringify(noForm(type)));
-    if (builtins.terms[hash]) {
-        throw new Error(`Dupliocate hash?? ${hash}`);
+    if (builtins.terms[name]) {
+        throw new Error(`Dupliocate hash?? ${name}`);
     }
-    builtins.names[name] = [hash].concat(builtins.names[name] ?? []);
-    builtins.terms[hash] = type;
-    reverseNames[hash] = name;
-    return hash;
+    builtins.terms[name] = type;
+    reverseNames[name] = name;
+    return name;
 };
 
 export const builtinFn = (
