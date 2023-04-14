@@ -4,12 +4,7 @@ import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
 import { newEvalCtx } from '../web/store';
-import {
-    DecExpected,
-    getLine,
-    idxLines,
-    removeDecorators,
-} from '../src/to-ast/utils';
+import { DecExpected, getLine, idxLines } from '../src/to-ast/utils';
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';

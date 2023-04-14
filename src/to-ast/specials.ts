@@ -169,7 +169,14 @@ export const specials: {
                 type: 'misc',
                 message: 'defn needs a name and args and a body',
             });
-            return { type: 'def', name: '', hash: '', value: nil, form };
+            return {
+                type: 'def',
+                name: '',
+                hash: '',
+                value: nil,
+                form,
+                ann: void 0,
+            };
             // return { type: 'unresolved', form, reason: 'no engouh args' };
         }
         const [name, ...rest] = contents;
@@ -192,6 +199,7 @@ export const specials: {
             hash,
             value,
             form,
+            ann: getType(value, ctx),
         };
     },
     def: (form, contents, ctx): Expr => {
@@ -200,7 +208,14 @@ export const specials: {
                 type: 'misc',
                 message: 'def needs a name and a body',
             });
-            return { type: 'def', name: '', hash: '', value: nil, form };
+            return {
+                type: 'def',
+                name: '',
+                hash: '',
+                value: nil,
+                form,
+                ann: void 0,
+            };
         }
         const first = contents[0];
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
@@ -210,7 +225,14 @@ export const specials: {
                 type: 'misc',
                 message: 'def name must be an identifier',
             });
-            return { type: 'def', name: '', hash: '', value, form };
+            return {
+                type: 'def',
+                name: '',
+                hash: '',
+                value,
+                form,
+                ann: void 0,
+            };
         }
         // console.log('def hash', first.text, hash);
         ctx.results.display[first.loc.idx] = { style: { type: 'id', hash } };
@@ -220,6 +242,7 @@ export const specials: {
             hash,
             value,
             form,
+            ann: getType(value, ctx),
         };
     },
     switch: (form, contents, ctx): Expr => {

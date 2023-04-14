@@ -100,7 +100,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                         matchesType(
                             t,
                             { type: 'builtin', name: 'string', form: blank },
-                            ctx.global,
+                            ctx,
                             expr.form,
                             report,
                         );
@@ -152,7 +152,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     const match = matchesType(
                         expr.args[i],
                         target.args[i].bound!,
-                        ctx.global,
+                        ctx,
                         expr.form,
                         report,
                     );
@@ -177,7 +177,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 matchesType(
                     cond,
                     { type: 'builtin', name: 'bool', form: blank },
-                    ctx.global,
+                    ctx,
                     expr.form,
                     report,
                 );
@@ -248,7 +248,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     matchesType(
                         args[i],
                         target.args[i],
-                        ctx.global,
+                        ctx,
                         expr.args[i].form,
                         report,
                     );

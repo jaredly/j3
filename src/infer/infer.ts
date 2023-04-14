@@ -229,12 +229,15 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                 if (!definition.current) {
                     mods[definition.idx] = {
                         type: 'wrap',
-                        node: nodeForType(inferredTypes[+sym], ctx.hashNames),
+                        node: nodeForType(
+                            inferredTypes[+sym],
+                            ctx.results.hashNames,
+                        ),
                     };
                 } else {
                     const node = nodeForType(
                         inferredTypes[+sym],
-                        ctx.hashNames,
+                        ctx.results.hashNames,
                     );
                     // if (matchesType(inferredTypes[+sym], definition.current, ctx, []))
                     if (

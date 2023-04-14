@@ -44,7 +44,7 @@ export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
 expect.extend({
     toMatchType(candidate: Type, expected: Type, ctx: CstCtx) {
         // const report: Report = {errors: {},types: {}}
-        const result = _matchOrExpand(candidate, expected, ctx.global, []);
+        const result = _matchOrExpand(candidate, expected, ctx, []);
         if (result === true) {
             return {
                 message: () => `matched`,

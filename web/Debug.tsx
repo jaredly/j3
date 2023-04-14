@@ -3,7 +3,7 @@ import { parse } from '../src/grammar';
 import { newEvalCtx } from './store';
 import { addDef } from '../src/to-ast/to-ast';
 import { newCtx, noForm } from '../src/to-ast/Ctx';
-import { idxLines, removeDecorators } from '../src/to-ast/utils';
+import { idxLines } from '../src/to-ast/utils';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { getType, Report } from '../src/get-type/get-types-new';
 

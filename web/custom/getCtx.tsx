@@ -23,7 +23,7 @@ export const getCtx = (map: Map, root: number) => {
             exprs.push(expr);
             getType(expr, ctx, { errors: ctx.results.errors, types: {} });
             validateExpr(expr, ctx, ctx.results.errors);
-            ctx = addDef(expr, ctx);
+            ctx = addDef(expr, ctx) as CstCtx;
         });
         tops.forEach((top) => {
             layout(top, 0, map, ctx.results.display, true);

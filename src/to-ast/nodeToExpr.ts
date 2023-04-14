@@ -17,12 +17,12 @@ export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
     if (!type) {
         return null;
     }
-    let res = applyAndResolve(type, ctx.global, []);
+    let res = applyAndResolve(type, ctx, []);
     if (res.type === 'local-bound' && res.bound) {
         res = res.bound;
     }
     if (res.type === 'record') {
-        return recordMap(res, ctx.global);
+        return recordMap(res, ctx);
     }
     return null;
 };
@@ -276,7 +276,7 @@ export function backslashComplete(): AutoCompleteResult[] {
 
 export function nodeToRecord(
     form: { type: 'record'; values: Node[] } & NodeExtra,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): Expr {
     const entries: Record['entries'] = [];
     const values = filterComments(form.values);

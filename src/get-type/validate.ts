@@ -186,7 +186,7 @@ export const validateType = (
             }
             return null;
         case 'union':
-            const map = expandEnumItems(type.items, ctx.global, []);
+            const map = expandEnumItems(type.items, ctx, []);
             if (map.type === 'error') {
                 return err(errors, map.error, map.error);
             }

@@ -82,7 +82,7 @@ export type Def = {
     hash: string;
     value: Expr;
     form: Node;
-    ann?: Type;
+    ann: Type | void;
 };
 
 export type Expr =

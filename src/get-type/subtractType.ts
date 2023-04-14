@@ -8,7 +8,7 @@ export const subtractType = (
     inner: Type,
     ctx: CstCtx,
 ): Type | null => {
-    const applied = applyAndResolve(outerR, ctx.global, []);
+    const applied = applyAndResolve(outerR, ctx, []);
     if (applied.type === 'error' || applied.type === 'local-bound') {
         return null;
     }

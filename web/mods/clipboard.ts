@@ -34,7 +34,7 @@ import { getType } from '../../src/get-type/get-types-new';
 import { validateExpr } from '../../src/get-type/validate';
 import { addDef } from '../../src/to-ast/to-ast';
 import { applyInferMod, infer } from '../../src/infer/infer';
-import { Ctx } from '../../src/to-ast/library';
+import { CstCtx, Ctx } from '../../src/to-ast/library';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -559,7 +559,7 @@ export function generateRawPasteUpdate(
             });
             validateExpr(expr, tctx, tctx.results.errors);
             if (t) {
-                tctx = addDef(expr, tctx);
+                tctx = addDef(expr, tctx) as CstCtx;
             }
             return expr;
         });

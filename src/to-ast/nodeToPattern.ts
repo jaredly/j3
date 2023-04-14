@@ -227,7 +227,7 @@ export const nodeToPattern = (
             if (first.type === 'identifier' && first.text.startsWith("'")) {
                 const text = first.text.slice(1);
                 ctx.results.display[first.loc.idx] = { style: { type: 'tag' } };
-                const res = applyAndResolve(t, ctx.global, []);
+                const res = applyAndResolve(t, ctx, []);
                 if (!res) {
                     console.log('no t', t);
                     return { type: 'unresolved', form, reason: 'bad type' };
@@ -240,7 +240,7 @@ export const nodeToPattern = (
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
-                    const map = expandEnumItems(res.items, ctx.global, []);
+                    const map = expandEnumItems(res.items, ctx, []);
                     if (map.type === 'error' || !map.map[text]) {
                         console.log('nomap', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
