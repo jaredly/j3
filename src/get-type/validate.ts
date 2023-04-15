@@ -1,4 +1,4 @@
-import { Ctx } from '../to-ast/Ctx';
+import { Ctx } from '../to-ast/library';
 import type { Expr, Loc, Type } from '../types/ast';
 import type { Error, MatchError } from '../types/types';
 import type { Report } from './get-types-new';
@@ -57,15 +57,15 @@ export const validateExpr = (
         case 'bool':
             return;
         case 'builtin':
-            if (!ctx.global.builtins.terms[expr.hash]) {
+            if (ctx.global.builtins[expr.name]?.type !== 'term') {
                 err(errors, expr, {
                     type: 'misc',
-                    message: 'unresolved builtin ' + expr.hash,
+                    message: 'unresolved builtin ' + expr.name,
                 });
             }
             return;
         case 'local':
-            if (!ctx.localMap.terms[expr.sym]) {
+            if (!ctx.results.localMap.terms[expr.sym]) {
                 err(errors, expr, {
                     type: 'misc',
                     message: 'unresolved local ' + expr.sym,
@@ -73,10 +73,18 @@ export const validateExpr = (
             }
             return;
         case 'global':
-            if (!ctx.global.terms[expr.hash]) {
+            if (ctx.global.library.definitions[expr.hash]?.type !== 'term') {
                 err(errors, expr, {
                     type: 'misc',
                     message: 'unresolved global ' + expr.hash,
+                });
+            }
+            return;
+        case 'toplevel':
+            if (ctx.results.toplevel[expr.hash]?.type !== 'def') {
+                err(errors, expr, {
+                    type: 'misc',
+                    message: 'unresolved toplevel ' + expr.hash,
                 });
             }
             return;
@@ -138,23 +146,34 @@ export const validateType = (
 ): unknown => {
     switch (type.type) {
         case 'unresolved':
-            return err(errors, type, { type: 'unresolved', form: type.form });
+            return err(errors, type, {
+                type: 'unresolved',
+                form: type.form,
+                reason: type.reason,
+            });
         case 'local':
-            return ctx.localMap.types[type.sym] != null
+            return ctx.results.localMap.types[type.sym] != null
                 ? null
                 : err(errors, type, {
                       type: 'misc',
                       message: 'unresolved local ' + type.sym,
                   });
+        case 'toplevel':
+            return ctx.results.toplevel[type.hash]?.type === 'deftype'
+                ? null
+                : err(errors, type, {
+                      type: 'misc',
+                      message: 'unresolved toplevel ' + type.hash,
+                  });
         case 'global':
-            return ctx.global.types[type.hash] != null
+            return ctx.global.library.definitions[type.hash]?.type === 'type'
                 ? null
                 : err(errors, type, {
                       type: 'misc',
                       message: 'unresolved global ' + type.hash,
                   });
         case 'builtin':
-            return ctx.global.builtins.types[type.name] != null
+            return ctx.global.builtins[type.name]?.type === 'type'
                 ? null
                 : type.form.loc;
         case 'none':

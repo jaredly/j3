@@ -1,5 +1,5 @@
 import { Ctx, nilt, noloc } from '../to-ast/Ctx';
-import { recordMap } from '../get-type/get-types-new';
+import { RecordMap, recordMap } from '../get-type/get-types-new';
 import {
     Expr,
     Loc,
@@ -22,8 +22,15 @@ export const id = (text: string, loc: Loc): Node => ({
     loc,
 });
 
-export const asTuple = (record: TRecord, ctx: Ctx): Type[] | null => {
-    const map = recordMap(record, ctx);
+export const asTuple = (record: TRecord): Type[] | null => {
+    const map: RecordMap = {};
+    if (record.spreads) {
+        return null;
+    }
+    record.entries.forEach((entry) => {
+        map[entry.name] = entry;
+    });
+
     const res: Type[] = [];
     for (let i = 0; i < record.entries.length; i++) {
         if (!map[i.toString()]) {
@@ -42,10 +49,15 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
         case 'local':
             return {
                 type: 'hash',
-                hash: ':' + expr.sym,
+                hash: expr.sym,
                 loc: expr.form.loc,
             };
-
+        case 'toplevel':
+            return {
+                type: 'hash',
+                hash: expr.hash,
+                loc: expr.form.loc,
+            };
         case 'global':
             return {
                 type: 'hash',
@@ -83,7 +95,11 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                 text: expr.value.toString(),
             };
         case 'builtin':
-            return { loc: expr.form.loc, type: 'hash', hash: expr.hash };
+            return {
+                loc: expr.form.loc,
+                type: 'hash',
+                hash: `:builtin:${expr.name}`,
+            };
         case 'fn':
             return {
                 loc: expr.form.loc,
@@ -96,7 +112,7 @@ export const nodeForExpr = (expr: Expr, ctx: Ctx): Node => {
                         values: expr.args.map((arg) => ({
                             type: 'annot',
                             target: id('pattern', noloc),
-                            annot: nodeForType(arg.type, ctx),
+                            annot: nodeForType(arg.type, ctx.hashNames),
                             loc: noloc,
                         })),
                     },

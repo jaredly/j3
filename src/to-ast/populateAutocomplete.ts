@@ -1,10 +1,11 @@
 import { Node } from '../types/cst';
 import { AutoCompleteResult, Ctx } from './Ctx';
 import { compareScores, fuzzyScore } from './fuzzy';
+import { CstCtx } from './library';
 import { ensure } from './nodeToExpr';
 import { allTerms, allTypes } from './resolveExpr';
 
-export function populateAutocomplete(ctx: Ctx, text: string, form: Node) {
+export function populateAutocomplete(ctx: CstCtx, text: string, form: Node) {
     if (!text.length) return;
     const results = allTerms(ctx);
     const withScores = results
@@ -14,15 +15,20 @@ export function populateAutocomplete(ctx: Ctx, text: string, form: Node) {
         }))
         .filter(({ score }) => score.full)
         .sort((a, b) => compareScores(a.score, b.score));
-    ctx.display[form.loc.idx].autoComplete = [
+    ensure(ctx.results.display, form.loc.idx, {}).autoComplete = [
         ...withScores.map(
             ({ result }) =>
                 ({
-                    type: 'replace',
-                    text: result.name,
-                    node: { type: 'hash', hash: result.hash },
-                    // { type: 'identifier', text: '', hash: result.hash },
-                    exact: result.name === text,
+                    type: 'update',
+                    text: result.name.split('/').slice(-1)[0],
+                    update: {
+                        type: text === '[]' ? 'array-hash' : 'hash',
+                        // Hmmm shouldn't have any locals, right?
+                        hash: result.hash as string,
+                    },
+                    exact:
+                        result.name === text ||
+                        result.name.endsWith('/' + text),
                     ann: result.typ,
                 } satisfies AutoCompleteResult),
         ),
@@ -37,7 +43,11 @@ export function populateAutocomplete(ctx: Ctx, text: string, form: Node) {
     ];
 }
 
-export function populateAutocompleteType(ctx: Ctx, text: string, form: Node) {
+export function populateAutocompleteType(
+    ctx: CstCtx,
+    text: string,
+    form: Node,
+) {
     const results = allTypes(ctx);
     const withScores = results
         .map((result) => ({
@@ -46,13 +56,16 @@ export function populateAutocompleteType(ctx: Ctx, text: string, form: Node) {
         }))
         .filter(({ score }) => score.full)
         .sort((a, b) => compareScores(a.score, b.score));
-    ensure(ctx.display, form.loc.idx, {}).autoComplete = [
+    ensure(ctx.results.display, form.loc.idx, {}).autoComplete = [
         ...withScores.map(
             ({ result }) =>
                 ({
-                    type: 'replace',
+                    type: 'update',
                     text: result.name,
-                    node: { type: 'hash', hash: result.hash },
+                    update: {
+                        type: 'hash',
+                        hash: result.hash,
+                    },
                     exact: result.name === text,
                     ann: result.typ,
                 } satisfies AutoCompleteResult),

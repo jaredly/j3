@@ -1,4 +1,140 @@
 
+# Sandbox and stuff?
+
+ummmm namespacely
+so clojure allows `/`, or `one/two`, or `one//`, but not `one///` or `one////`.
+So `/` can't be a namespace name, but it can be a terminal name.
+andddd honestly it's probably fine.
+https://twitter.com/jaredforsyth/status/1538179622004834307
+
+## Ok can we sandbox?
+
+- So the `state` ... needs a library, that's been prepopulated with builtins, and also it needs builtins, and a sandbox.
+
+WAAIT 
+ok
+so
+my ctx
+needs to .. know about the sandbox
+a little bit
+like it needs a place to stick sandboxy defiintions
+
+- toplevel: [idx => Expr]
+  sounds good to me
+
+### Get tests running with new library / sandbox story
+
+So... what do I do about `Local`.
+
+WHILE COMPILING (cst->ast)
+I need `Local`
+AFTER COMPILING
+I need `ComplationResults`
+for display, and interactivity, and such
+
+OH so thoughts on shadowing, eh let's just not have it.
+ALSO local (`let`s) can't do namespaces. off-limits folks.
+
+
+## Tests
+- selection, syntax, nodeToString -- don't use ctx
+- type-match does, but incidentally
+- complete does the full deal
+
+> nodeForType remove ctx
+
+
+## Road to the sandbox
+
+- [x] So, builtins ...
+  - builtin types, will be just defined by jerd, no-one else.
+  - and they have unique (namespaced) names.
+  - builtin terms, same story. unique namespaced names.
+  -- this means builtins don't need to live in the library.
+  -- they just exist.
+  - [x] builtin terms, Expr has a name, not a hash.
+  - hmm what if all builtins lived in the `builtin/` namespace?
+    - does that mean they'd live in the library though?
+      like. idk about that.
+      I don't want to invalidate everyone's ... libraries ...
+      well, honestly maybe that's fine. like if they want the
+      new builtin they can pull it?
+    - ok so it wouldn't be like a fixed namespace or anything.
+      people could put them anywhere they wanted.
+    - BUT they wouldn't live in `definitions`. the "hash" would
+      be a `:builtin:/int/+` or whatever.
+
+- [x] Decide what data structure is holding my builtins
+- [ ] make a code to prepopulate the library with builtins
+- [ ] 
+
+ok so the library keeps good track of namespaces, which I like.
+
+Ok, so the hashNames idea is really just being lazy. When I delete a sandbox term, I should go through and find all things that reference it and turn them into {identifier}s.
+
+Ok but is there anything else that the sandbox needs?
+I guess it needs to know its current namespace, right?
+oh history for sure
+
+hrmrmmmmmmm yeah ok so this is where having a little more sophisticated toplevel representation would be good, because ... I'd like to .. keep track of the library definition that I brought in to edit, you know?
+although ... I guess if the defn has the proper namespaced name,
+then you'll know what you're editing. So that's fine I guess.
+OK BUT also, I should make mutually recursive terms, so I make sure
+the new sandbox & library shtick will support them.
+Right?
+Or I guess I'd need to make a bunch of changes to things as they are, so might as well migrate to the new thing first anyway.
+
+Anyway, so the way I've decided to handle mutually recursive things, is that they need to live within a big ol' `(@loop (@recur))`.
+
+ONE way to make it so I can do things like
+`(def {$ one two} {one 10 two 5})`
+is to split it into
+```clj
+(def onetwo {one 10 two 5})
+(def one onetwo.one)
+(def two onetwo.two)
+```
+
+BUT I really don't love that.
+also, what about
+```clj
+(def [a b ..c] [1 2 3 4])
+```
+Do I really just allow arbitrarily complex patterns?
+WAIT
+actually all I need is to be able to represent that we're
+binding to a sub-name... right?
+do I reference it by name though? That doesn't sound awesome.
+because what happens when I change the ... name ... wait maybe its fine
+
+OK so
+`sub` will refer to the *normalized idx* of the binding pattern.
+that way, the hash can be stable, and we can refer to things.
+anddd if you move things around such that the normalized idx issss
+diffffferentttttt then hrmmmmmm wait that would be a problem too.
+
+yeah actually any fanciness in namespaces is all for nought, because they are just aliases to the hashes that get persisted into the CST/AST.
+
+MEANING
+I need a different kind of definition? That is a "something fun"?
+naw
+I think I'll justtttt 
+yeah actually.
+So the "sugar" part of things
+would happen in auto-creating `(def one onetwo.one)` if you want.
+BUT you *do* need to give the toplevel thing a name.
+Not getting away from that.
+Nice. Ok so no cheating on naming things, they're important folks.
+
+OK NOW THAT I've decided I'm not doing anything magical with mutual recursion / multiple bindings ...
+that means I can start in on namespaces and such, right?
+
+# Inference and such
+
+- [ ] if the current type annotation is ... allowably more specific
+  than the inferred type, we should let it go, right?
+- [x] make inference stop the infinite loopings
+
 # Type Checking Bonanza
 
 So, I think I want a war of all against all
@@ -22,10 +158,51 @@ Cannn I ... inferrrr? ....
 
 # Indexing! Let's do it please
 
-- [ ] um
 - [x] arrays don't layout
 - [x] hovers don't work with scrolling
-- [ ] Arrayssss should have hashhh
+- [x] Arrayssss should have hashhh
+- [x] um more scrolling
+- [x] performance ... trying to make it better
+  - hrm ok so a production build is plenty fast
+- [x] shift-click not working?
+
+## Critical things for getting conway to work
+- [x] let should behaving like let* instead
+- [-] paste should do the autocomplete business, yes it should
+  - [ ] So parsing a thing char by char should preserve the toplevels
+    before the current toplevel.
+    I Think this goes along with having the toplevels not "just be a list".
+
+## PERF STUFF
+
+- [x] Basic useMemo. At least hover no longer tanks things.
+- [ ] Next, I should be clever about only re-rendering things
+  where a `selection` intersects with your `path`.
+- [ ] pasting!!!! Takes suuuuper long. Looks like a BIG part of it
+  is the `objectHash` story. Maybe I can do fake objectHashes while I'm pasting? Or something?
+    - [ ] OHHHH IDEA IDEA! How about, in the sandbox, we don't hash at all!
+      We *just* use the toplevel name's IDX. That way we don't have to
+      deal with changing things in the sandbox breaking references.
+      But once we commit something to the library, it's all good.
+
+
+
+
+## A bunch of quality of life things
+- [ ] I should hang on to the `hashNames` on state somewhere,
+associated with the top level of a thing ...
+  OK also, I don't think I should be doing the whole "toplevel items
+  are just values[] of the top `list`. I think I want them to be
+  explicit.
+  Anyway, then `path`'s first item will be the `top`, not -1
+  and there won't be any way to "select" the -1 pseudo-thing
+- [ ] ALSO when you update a toplevel (addDef) I need to go through
+and change anything that depends on it ... right? Yeah seems like it.
+- [ ] ALSO let's get undo/redo in here real quick
+
+- [ ] um, so now I want to like ... generate and run code?
+  also, it would be nice if ... things worked faster?
+  yeah maybe I need the "library / sandbox" differentiation?"
 
 # Type application
 What gives?

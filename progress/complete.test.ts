@@ -21,8 +21,26 @@ const data = `
 (fn [one] (has-prefix? one "thing"))
 (fn [one:string] (has-prefix? one "thing"))
 
+(fn [one:int] (has-prefix? one "thing"))
+(fn [one:int] (has-prefix? one "thing"))
+
+(fn [one:"hi" two:(fn ["ho"] int)] (two one))
+(fn [one:string two:(fn ["ho"] int)] (two one))
+
+(fn [one:"hi" two:(fn ["hi"] int)] (two one))
+(fn [one:"hi" two:(fn ["hi"] int)] (two one))
+
+(fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] int)] (two one))
+(fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] int)] (two one))
+
 (+ 2 32)
 (+ 2 32)
+
+(fn [hello] (+ 2 hello))
+(fn [hello:int] (+ 2 hello))
+
+(fn [hello] (+ hello 2))
+(fn [hello:int] (+ hello 2))
 `
     .trim()
     .split('\n\n');
@@ -36,13 +54,11 @@ describe('completion and such', () => {
         const [input, expected] = chunk.split('\n');
         (only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
-            const { map: data } = parseByCharacter(input, ctx, {
-                updateCtx: true,
-            });
+            const { map: data } = parseByCharacter(input, ctx);
             const idx = (data[-1] as ListLikeContents).values[0];
-            expect(nodeToString(fromMCST(idx, data), ctx.hashNames)).toEqual(
-                expected,
-            );
+            expect(
+                nodeToString(fromMCST(idx, data), ctx.results.hashNames),
+            ).toEqual(expected);
         });
     });
 });

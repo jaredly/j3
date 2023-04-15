@@ -1,31 +1,18 @@
+import { applyInferMod, infer } from '../../src/infer/infer';
 import { autoCompleteIfNeeded, splitGraphemes } from '../../src/parse/parse';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
+import { MNode, Map } from '../../src/types/mcst';
 import { paste } from '../mods/clipboard';
-import { verticalMove } from './verticalMove';
-import { UIState, Action, isRootPath, lidx } from './ByHand';
-import { applyMods, getCtx } from './getCtx';
-import { Path } from '../mods/path';
-import { AutoCompleteReplace, Ctx } from '../../src/to-ast/Ctx';
 import {
     State,
-    StateUpdate,
+    StateChange,
     applyUpdate,
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
-import { Map, fromMCST } from '../../src/types/mcst';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { Node } from '../../src/types/cst';
-import { Expr } from '../../src/types/ast';
-import { applyInferMod, infer } from '../../src/infer/infer';
-import { StateChange } from '../mods/getKeyUpdate';
-
-// export const reduce = (state: UIState, action: Action): UIState => {
-//     const newState = reduceInner(state, action);
-//     if (state.map !== newState.map) {
-//         const ctx = getCtx(newState.map, newState.root);
-//         return ctx ? { ...newState, ...ctx } : newState;
-//     }
-//     return newState;
-// };
+import { Path } from '../mods/path';
+import { Action, UIState, isRootPath } from './ByHand';
+import { getCtx } from './getCtx';
+import { verticalMove } from './verticalMove';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
@@ -69,7 +56,7 @@ const actionToUpdate = (
                 action.key,
                 state.map,
                 state.at[0],
-                state.ctx.hashNames,
+                state.ctx.results.hashNames,
                 state.nidx,
                 action.mods,
             );
@@ -106,17 +93,21 @@ export const reduce = (state: UIState, action: Action): UIState => {
             return { ...state, menu: update.menu };
         case 'select':
         case 'update': {
-            // console.log('1️⃣ update', update);
             const prev = state.at[0];
             // Here's where the real work happens.
             if (update.autoComplete && !state.menu?.dismissed) {
-                state = { ...state, ...autoCompleteIfNeeded(state, state.ctx) };
+                state = {
+                    ...state,
+                    ...autoCompleteIfNeeded(state, state.ctx.results.display),
+                };
                 verifyLocs(state.map, 'autocomplete');
             }
-            // debugger;
             state = { ...state, ...applyUpdate(state, 0, update) };
             verifyLocs(state.map, 'apply update');
-            let { ctx, map, exprs } = getCtx(state.map, state.root);
+            if (update.type === 'select' && !update.autoComplete) {
+                return state;
+            }
+            let { ctx, map } = getCtx(state.map, state.root);
             verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;
@@ -125,7 +116,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
                     if (i > 8) {
                         throw new Error(`why so manyy inference`);
                     }
-                    const mods = infer(exprs, ctx, state.map);
+                    const mods = infer(ctx, state.map);
                     const modded = Object.keys(mods);
                     if (!modded.length) {
                         break;
@@ -136,7 +127,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
                         verifyLocs(state.map, 'apply infer mod');
                         console.log(state.map[+id]);
                     });
-                    ({ ctx, map, exprs } = getCtx(state.map, state.root));
+                    ({ ctx, map } = getCtx(state.map, state.root));
                     verifyLocs(state.map, 'get ctx');
                     state.map = map;
                     state.ctx = ctx;
@@ -166,10 +157,11 @@ export function autoCompleteUpdate(
         console.log(idx, 'not in the map');
         debugger;
     }
+    const current = map[idx];
     return {
         type: 'update',
         map: {
-            [idx]: { loc: map[idx].loc, ...item.node },
+            [idx]: applyAutoUpdateToNode(current, item),
         },
         selection: path.slice(0, -1).concat([
             {
@@ -182,11 +174,29 @@ export function autoCompleteUpdate(
     };
 }
 
+export function applyAutoUpdateToNode(
+    current: MNode,
+    item: AutoCompleteReplace,
+): MNode {
+    return current.type === 'array' && item.update.type === 'array-hash'
+        ? { ...current, hash: item.update.hash }
+        : item.update.type === 'accessText'
+        ? {
+              loc: current.loc,
+              type: 'accessText',
+              text: item.update.text,
+          }
+        : {
+              loc: current.loc,
+              type: 'hash',
+              hash: item.update.hash,
+          };
+}
+
 export function applyMenuItem(
     path: Path[],
     item: AutoCompleteReplace,
     state: State,
-    ctx: Ctx,
 ): StateChange {
     const idx = path[path.length - 1].idx;
     return autoCompleteUpdate(idx, state.map, path, item);

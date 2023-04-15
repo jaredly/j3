@@ -30,7 +30,7 @@ export type Atom =
 export type ListLikeContents =
     | { type: 'list'; values: number[] }
     | { type: 'record'; values: number[] }
-    | { type: 'array'; values: number[] };
+    | { type: 'array'; values: number[]; hash?: string };
 
 export type MNodeContents =
     | Atom
@@ -89,8 +89,8 @@ export type Layout =
 export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
     switch (node.type) {
         case 'list':
-        case 'array':
         case 'record':
+        case 'array':
             return {
                 ...node,
                 values: node.values.map((child) => fromMCST(child, map)),
@@ -135,10 +135,9 @@ export const fromMCST = (idx: number, map: Map): Node => {
     const node = map[idx];
     if (!node) {
         return { type: 'blank', loc: { idx: -1, start: 0, end: 0 } };
-        // throw new Error(`idx not in map ${idx} ${Object.keys(map).join(',')}`);
     }
     return {
-        ...node,
+        loc: node.loc,
         ...fromMNode(node, map),
     };
 };

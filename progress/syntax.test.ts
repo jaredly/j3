@@ -2,7 +2,6 @@
 
 import { validateExpr } from '../src/get-type/validate';
 import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
-import { newCtx } from '../src/to-ast/Ctx';
 import {
     nodeToString,
     remapPos,
@@ -264,6 +263,7 @@ hello<friend>
 hello<friend>
 (tapply id id)
 `;
+// (@loop (fn [x] (if x (@recur false) 10)))
 
 describe('a test', () => {
     data.trim()
@@ -279,12 +279,11 @@ describe('a test', () => {
                 chunks.length === 2 ? chunks : chunks.slice(1);
 
             (only ? it.only : it)(i + ' ' + jerd, () => {
-                const ctx = newCtx();
                 const {
                     map: data,
                     at,
                     nidx,
-                } = parseByCharacter(jerd, ctx, { debug: only });
+                } = parseByCharacter(jerd, null, { debug: only });
                 const selection = at[0].start;
                 Object.keys(data).forEach((key) => {
                     expect(data[+key].loc.idx).toEqual(+key);
@@ -293,7 +292,7 @@ describe('a test', () => {
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
                 const backOrig = nodeToString(
                     fromMCST(idx, data),
-                    ctx.hashNames,
+                    {},
                     sourceMap,
                 );
                 let back = backOrig;
@@ -396,7 +395,6 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const ctx = newCtx();
         const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
         const pos = pathPos(state.at[0].start, curText);
         if (only) {
@@ -413,7 +411,7 @@ function doABunchOfKeys({
             key,
             state.map,
             state.at[0],
-            ctx.hashNames,
+            {},
             state.nidx,
         );
         expect(update).toBeTruthy();
@@ -423,7 +421,7 @@ function doABunchOfKeys({
             } else {
                 state = applyUpdate(state, 0, update)!;
                 expect(
-                    validatePath(state.map, update.selection, ctx.hashNames),
+                    validatePath(state.map, update.selection, {}),
                 ).toBeTruthy();
             }
         }

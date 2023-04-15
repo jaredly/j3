@@ -325,7 +325,7 @@ export const getKeyUpdate = (
 
     if (key === ' ' || key === 'Enter') {
         if (ppath.type === 'child' && 'values' in parent) {
-            // const parent = map[last.idx] as ListLikeContents;
+            // Move forward into next blank, if it exists
             if (
                 parent.values.length > ppath.at + 1 &&
                 map[parent.values[ppath.at + 1]].type === 'blank'
@@ -361,9 +361,12 @@ export const getKeyUpdate = (
     }
 
     if (key === '<' && (node.type === 'identifier' || node.type === 'hash')) {
-        // return replacePathWith
         const nat = newTapply(idx, '', nidx(), nidx());
-        return replacePathWith(fullPath.slice(0, -1), map, nat);
+        const up = replacePathWith(fullPath.slice(0, -1), map, nat);
+        if (up) {
+            up.autoComplete = true;
+        }
+        return up;
     }
     if (key === '>' && node.type !== 'blank') {
         for (let i = fullPath.length - 1; i >= 0; i--) {
@@ -548,7 +551,7 @@ function addToListLike(
     newThing.map[pidx] = {
         ...pnode,
         ...modChildren(pnode, (items) => items.unshift(newThing.idx)),
-    };
+    } as MNode;
     return {
         type: 'update',
         ...newThing,

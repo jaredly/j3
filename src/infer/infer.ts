@@ -10,12 +10,14 @@ import equal from 'fast-deep-equal';
 import { getType, Report } from '../get-type/get-types-new';
 import { matchesType } from '../get-type/matchesType';
 import { unifyTypes } from '../get-type/unifyTypes';
-import { AutoCompleteReplace, Ctx, noloc } from '../to-ast/Ctx';
+import { AutoCompleteReplace, noloc } from '../to-ast/Ctx';
 import { nodeForType } from '../to-cst/nodeForType';
 import { Expr, Node, Pattern, Type } from '../types/ast';
-import { Map, toMCST } from '../types/mcst';
+import { Map, MNode, toMCST } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
+import { applyAutoUpdateToNode } from '../../web/custom/reduce';
+import { Ctx } from '../to-ast/library';
 
 // Question:
 // do I only do this for the tree that I'm
@@ -70,9 +72,9 @@ export type InferMod =
           node: Node;
       };
 
-export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
+export const infer = (ctx: Ctx, map: Map) => {
     const report: Report = { types: {}, errors: {} };
-    exprs.forEach((expr) => getType(expr, ctx, report));
+    Object.values(ctx.results.toplevel).forEach((k) => getType(k, ctx, report));
 
     const mods: { [idx: number]: InferMod } = {};
 
@@ -81,7 +83,7 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         [sym: number]: {
             type: 'direct';
             idx: number;
-            wrap: boolean;
+            current?: Type;
         };
     } = {};
 
@@ -91,16 +93,16 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                 node.args.forEach((arg) => {
                     if (arg.pattern.type === 'local') {
                         if (arg.type.form.loc.idx !== -1) {
+                            usages[arg.pattern.sym] = [arg.type];
                             syms[arg.pattern.sym] = {
                                 type: 'direct',
                                 idx: arg.type.form.loc.idx,
-                                wrap: false,
+                                current: arg.type,
                             };
                         } else {
                             syms[arg.pattern.sym] = {
                                 type: 'direct',
                                 idx: arg.pattern.form.loc.idx,
-                                wrap: true,
                             };
                         }
                     }
@@ -141,11 +143,11 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
             //     })
             // }
             if (node.type === 'apply') {
-                const auto = ctx.display[
+                const auto = ctx.results.display[
                     node.target.form.loc.idx
-                ]?.autoComplete?.filter((t) => t.type === 'replace') as
-                    | AutoCompleteReplace[]
-                    | undefined;
+                ]?.autoComplete?.filter(
+                    (t) => t.type === 'update' && t.exact,
+                ) as AutoCompleteReplace[] | undefined;
                 if (
                     node.target.type === 'unresolved' &&
                     node.args.length &&
@@ -177,7 +179,11 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
                     const best = scored[0];
                     // Don't autoselect unless we have at least
                     // one matching arg
-                    if (best.score > 0) {
+                    // But don't select if multiple have equal score
+                    if (
+                        best.score > 0 &&
+                        (scored.length === 1 || scored[1].score < best.score)
+                    ) {
                         mods[node.target.form.loc.idx] = best.auto;
                         report.types[node.form.loc.idx] = best.res!;
                     }
@@ -187,20 +193,28 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         },
     };
 
-    exprs.forEach((expr) => transformExpr(expr, visit, null));
+    Object.values(ctx.results.toplevel).forEach((k) =>
+        transformExpr(k, visit, null),
+    );
 
     const inferredTypes: { [sym: number]: Type } = {};
     Object.keys(usages).forEach((key) => {
+        if (!syms[+key]) return;
         const types = usages[+key];
         if (types.length === 1) {
+            if (types[0] === syms[+key].current) {
+                return;
+            }
             inferredTypes[+key] = types[0];
         } else {
             let res = types[0];
             for (let t of types.slice(1)) {
                 const un = unifyTypes(res, t, ctx, t.form);
-                if (un) {
-                    res = un;
+                if (!un) {
+                    return; // if we can't unify, bail
+                    // contine;
                 }
+                res = un;
             }
             inferredTypes[+key] = res;
         }
@@ -214,13 +228,20 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         }
         switch (definition.type) {
             case 'direct': {
-                if (definition.wrap) {
+                if (!definition.current) {
                     mods[definition.idx] = {
                         type: 'wrap',
-                        node: nodeForType(inferredTypes[+sym], ctx),
+                        node: nodeForType(
+                            inferredTypes[+sym],
+                            ctx.results.hashNames,
+                        ),
                     };
                 } else {
-                    const node = nodeForType(inferredTypes[+sym], ctx);
+                    const node = nodeForType(
+                        inferredTypes[+sym],
+                        ctx.results.hashNames,
+                    );
+                    // if (matchesType(inferredTypes[+sym], definition.current, ctx, []))
                     if (
                         !equal(
                             { ...node, loc: noloc },
@@ -257,14 +278,11 @@ export function applyInferMod(
     nidx: () => number,
     id: number,
 ) {
-    if (mod.type === 'replace') {
-        map[id] = {
-            ...map[id],
-            ...mod.node,
-            loc: map[id].loc,
-        };
+    if (mod.type === 'update') {
+        map[id] = applyAutoUpdateToNode(map[id], mod);
     } else if (mod.type === 'replace-full') {
-        mod.node.loc.idx = id;
+        mod.node = { ...mod.node, loc: { ...mod.node.loc, idx: id } };
+        delete map[id];
         toMCST(reidx(mod.node, nidx, true), map);
     } else if (mod.type === 'wrap') {
         const id1 = nidx();

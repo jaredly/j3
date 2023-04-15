@@ -60,7 +60,6 @@ export const basicBuiltins: Global['builtins'] = {
             },
         ],
     },
-    names: {},
     terms: {},
 };
 
@@ -70,14 +69,12 @@ export const addBuiltin = (
     name: string,
     type: Type,
 ) => {
-    const hash = objectHash(name + ' ' + JSON.stringify(noForm(type)));
-    if (builtins.terms[hash]) {
-        throw new Error(`Dupliocate hash?? ${hash}`);
+    if (builtins.terms[name]) {
+        throw new Error(`Dupliocate hash?? ${name}`);
     }
-    builtins.names[name] = [hash].concat(builtins.names[name] ?? []);
-    builtins.terms[hash] = type;
-    reverseNames[hash] = name;
-    return hash;
+    builtins.terms[name] = type;
+    reverseNames[name] = name;
+    return name;
 };
 
 export const builtinFn = (
@@ -147,28 +144,28 @@ export const bfn = (name: string, args: Type[], body: Type) => {
     return builtinFn(basicBuiltins, basicReverse, name, args, body);
 };
 
-export const mathHashes: {
-    int: { [key: string]: string };
-    uint: { [key: string]: string };
-    float: { [key: string]: string };
-} = { int: {}, float: {}, uint: {} };
+// export const mathHashes: {
+//     int: { [key: string]: string };
+//     uint: { [key: string]: string };
+//     float: { [key: string]: string };
+// } = { int: {}, float: {}, uint: {} };
 
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
-    mathHashes.int[name] = bfn(name, [tint, tint], tbool);
-    mathHashes.uint[name] = bfn(name, [tuint, tuint], tbool);
-    mathHashes.float[name] = bfn(name, [tfloat, tfloat], tbool);
+    bfn(`int/` + name, [tint, tint], tbool);
+    bfn(`uint/` + name, [tuint, tuint], tbool);
+    bfn(`float/` + name, [tfloat, tfloat], tbool);
 });
 ['+', '-', '*', '/'].map((name) => {
-    mathHashes.int[name] = bfn(name, [tint, tint], tint);
-    mathHashes.uint[name] = bfn(name, [tuint, tuint], tuint);
-    mathHashes.float[name] = bfn(name, [tfloat, tfloat], tfloat);
+    bfn(`int/` + name, [tint, tint], tint);
+    bfn(`uint/` + name, [tuint, tuint], tuint);
+    bfn(`float/` + name, [tfloat, tfloat], tfloat);
 });
 
 bfn('||', [tbool, tbool], tbool);
 bfn('&&', [tbool, tbool], tbool);
 bfn('==', [tbool, tbool], tbool);
-bfn('toString', [tint], tstring);
-bfn('toString', [tbool], tstring);
+bfn('int/toString', [tint], tstring);
+bfn('bool/toString', [tbool], tstring);
 bfn('has-prefix?', [tstring, tstring], tbool);
 
 const targ1 = basicBuiltins.bidx--;
@@ -240,18 +237,9 @@ const vec4 = record([
 bfn('fract', [tfloat], tfloat);
 bfn('sin', [tfloat], tfloat);
 bfn('dot', [vec2, vec2], tfloat);
-bfn(
-    'texture-get',
-    [btype('texture'), vec2],
-    record([
-        { name: 'x', value: tfloat },
-        { name: 'y', value: tfloat },
-        { name: 'z', value: tfloat },
-        { name: 'w', value: tfloat },
-    ]),
-);
-
-bfn('[]', [btype('texture'), vec2], vec4);
+bfn('length', [vec2], tfloat);
+bfn('texture/[]', [btype('texture'), vec2], vec4);
+addBuiltin(basicBuiltins, basicReverse, 'PI', tfloat);
 
 const darg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, basicReverse, 'debugToString', {

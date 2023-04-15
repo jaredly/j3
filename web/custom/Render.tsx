@@ -88,44 +88,63 @@ export const textStyle = (
     return { color: 'violet' };
 };
 
-export const Render = (props: RenderProps) => {
-    const { idx, map, display, hashNames, path } = props;
-    const nnode = getNestedNodes(
-        map[idx],
-        hashNames[idx],
-        display[idx]?.layout,
-    );
+export const Render = React.memo(
+    (props: RenderProps) => {
+        const { idx, map, display, hashNames, path } = props;
+        const nnode = getNestedNodes(
+            map[idx],
+            hashNames[idx],
+            display[idx]?.layout,
+        );
 
-    if (path.length > 1000) {
-        return <span>DEEP</span>;
-    }
+        if (path.length > 1000) {
+            return <span>DEEP</span>;
+        }
 
-    const node = map[idx];
-    return props.debug ? (
-        <span style={{ display: 'flex' }}>
-            <span
-                style={{ opacity: 0.5, fontSize: '50%', lineHeight: '20px' }}
-                data-display={JSON.stringify(props.display[idx])}
-            >
-                {idx}
-            </span>
-            <RenderNNode {...props} nnode={nnode} />
-            {node.type === 'hash' ? (
+        const node = map[idx];
+        return props.debug ? (
+            <span style={{ display: 'flex' }}>
                 <span
                     style={{
                         opacity: 0.5,
                         fontSize: '50%',
                         lineHeight: '20px',
                     }}
+                    data-display={JSON.stringify(props.display[idx])}
                 >
-                    {node.hash}
+                    {idx}
                 </span>
-            ) : null}
-        </span>
-    ) : (
-        <RenderNNode {...props} nnode={nnode} />
-    );
-};
+                <RenderNNode {...props} nnode={nnode} />
+                {node.type === 'hash' ? (
+                    <span
+                        style={{
+                            opacity: 0.5,
+                            fontSize: '50%',
+                            lineHeight: '20px',
+                        }}
+                    >
+                        {node.hash}
+                    </span>
+                ) : null}
+            </span>
+        ) : (
+            <RenderNNode {...props} nnode={nnode} />
+        );
+    },
+    // (prevProps: RenderProps, nextProps: RenderProps) => {
+    //     for (let key of Object.keys(prevProps)) {
+    //         if (
+    //             // key !== 'path' &&
+    //             // key !== 'selection' &&
+    //             prevProps[key] !== nextProps[key]
+    //         ) {
+    //             // console.log('diff', key, prevProps[key]);
+    //             return false;
+    //         }
+    //     }
+    //     return true;
+    // },
+);
 
 export const RenderNNode = (
     props: RenderProps & { nnode: NNode },
@@ -292,26 +311,26 @@ export const RenderNNode = (
                         });
                     }}
                     className="idlike"
-                    onMouseDown={(evt) => {
-                        evt.stopPropagation();
-                        evt.preventDefault();
-                        dispatch({
-                            type: 'select',
-                            add: evt.altKey,
-                            at: [
-                                {
-                                    start: path.concat({
-                                        idx,
-                                        type: 'subtext',
-                                        at: calcOffset(
-                                            evt.currentTarget,
-                                            evt.clientX,
-                                        ),
-                                    }),
-                                },
-                            ],
-                        });
-                    }}
+                    // onMouseDown={(evt) => {
+                    //     evt.stopPropagation();
+                    //     evt.preventDefault();
+                    //     dispatch({
+                    //         type: 'select',
+                    //         add: evt.altKey,
+                    //         at: [
+                    //             {
+                    //                 start: path.concat({
+                    //                     idx,
+                    //                     type: 'subtext',
+                    //                     at: calcOffset(
+                    //                         evt.currentTarget,
+                    //                         evt.clientX,
+                    //                     ),
+                    //                 }),
+                    //             },
+                    //         ],
+                    //     });
+                    // }}
                 >
                     {body}
                 </span>

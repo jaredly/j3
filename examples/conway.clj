@@ -46,7 +46,7 @@
             (if (|| (&& self (== 2 neighbors)) (== neighbors 3))
                 live dead))))
 
-(defn drawToScreen [env :GLSLEnv fragCoord :Vec2 buffer0 :sampler2D]
+(defn drawToScreen [env:GLSLEnv fragCoord:Vec2 buffer0:sampler2D]
     (let [diff  (- fragCoord env.mouse)
           coord (if (< (length diff) 250.)
                     (- env.mouse (/ diff 4.))

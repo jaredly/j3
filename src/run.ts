@@ -8,6 +8,7 @@ import { newCtx, noForm } from './to-ast/Ctx';
 import { nodeToExpr } from './to-ast/nodeToExpr';
 import { Node } from './types/cst';
 import { toTs } from './to-ast/to-ts';
+import { CstCtx } from './to-ast/library.js';
 
 const [_, __, fname] = process.argv;
 
@@ -24,10 +25,10 @@ const cst: Node[] = parse(fs.readFileSync(fname, 'utf8'));
 let ctx = newCtx();
 const exprs = cst.map((node) => {
     const res = nodeToExpr(node, ctx);
-    ctx = addDef(res, ctx);
+    ctx = addDef(res, ctx) as CstCtx;
     console.log(JSON.stringify(noForm(res)));
     // console.log(typeForExpr_deprecated(res, ctx));
     return res;
 });
 
-console.log(toTs(exprs, ctx));
+// console.log(toTs(exprs, ctx));

@@ -1,9 +1,10 @@
-import { Ctx, nilt } from '../to-ast/Ctx';
+import { nilt } from '../to-ast/Ctx';
 import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
 import { applyAndResolve } from './matchesType';
+import { Ctx, Env } from '../to-ast/library';
 
 export const unifyTypes = (
     one: Type,
@@ -85,6 +86,40 @@ export const _unifyTypes = (
                   name: 'bool',
                   form: one.form,
               };
+    }
+
+    if (one.type === 'string' && two.type === 'string') {
+        if (one.first.text === two.first.text) {
+            if (one.templates.length === two.templates.length) {
+                const twot = two.templates;
+                let wrong = false;
+                let tpls = one.templates.map((item, i) => {
+                    const other = twot[i];
+                    if (item.suffix.text !== other.suffix.text) {
+                        wrong = true;
+                        return item;
+                    }
+                    const un = unifyTypes(item.type, other.type, ctx, one.form);
+                    if (!un) {
+                        wrong = true;
+                        return item;
+                    }
+                    return {
+                        suffix: item.suffix,
+                        type: un,
+                    };
+                });
+                if (wrong) {
+                    return { type: 'builtin', name: 'string', form: one.form };
+                }
+                return { ...one, templates: tpls };
+            }
+        }
+        return {
+            type: 'builtin',
+            name: 'string',
+            form: one.form,
+        };
     }
 
     // - [ ] Constants as builtins

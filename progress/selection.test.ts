@@ -59,13 +59,12 @@ export const posToPath = (
 ) => {
     let at = 0;
     let path = selectStart(root, [{ idx: -1, type: 'child', at: 0 }], map)!;
-    const ctx = newCtx();
     while (at < pos) {
         const update = getKeyUpdate(
             'ArrowRight',
             map,
             { start: path },
-            ctx.hashNames,
+            {},
             nidx,
         );
         if (update?.type === 'select') {
@@ -93,18 +92,13 @@ describe('a test', () => {
             const [input, selections, output] = chunk.split('\n');
 
             (only ? it.only : it)(i + ' ' + input, () => {
-                const ctx = newCtx();
-                const { map: data, nidx } = parseByCharacter(input, ctx, {
+                const { map: data, nidx } = parseByCharacter(input, null, {
                     debug: only,
                 });
 
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };
-                const back = nodeToString(
-                    fromMCST(idx, data),
-                    ctx.hashNames,
-                    sourceMap,
-                );
+                const back = nodeToString(fromMCST(idx, data), {}, sourceMap);
                 expect(back).toEqual(input);
 
                 const first = selections.indexOf('^');
@@ -125,13 +119,8 @@ describe('a test', () => {
                     throw new Error('could not second postopath');
                 }
 
-                const collected = collectNodes(
-                    data,
-                    firstPath,
-                    secondPath,
-                    ctx.hashNames,
-                );
-                const printed = clipboardText([collected], ctx.hashNames);
+                const collected = collectNodes(data, firstPath, secondPath, {});
+                const printed = clipboardText([collected], {});
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);

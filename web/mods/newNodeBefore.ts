@@ -1,8 +1,9 @@
-import { Map } from '../../src/types/mcst';
+import { MNode, Map } from '../../src/types/mcst';
 import { modChildren } from './modChildren';
 import { newBlank } from './newNodes';
 import { NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
+import { Node } from '../../src/types/cst';
 
 export const newNodeAfter = (
     path: Path[],
@@ -44,7 +45,7 @@ export const newNodeAfter = (
                 }
                 return items;
             }),
-        };
+        } as MNode;
         return {
             type: 'update',
             ...newThing,
@@ -89,7 +90,7 @@ export const newNodeBefore = (
                 items.splice(at, 0, newThing.idx);
                 return items;
             }),
-        };
+        } as MNode;
         return {
             type: 'update',
             ...newThing,

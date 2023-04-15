@@ -83,11 +83,20 @@ export const subRect = (
     one: DOMRect,
     two: DOMRect,
     color?: string,
-): { left: number; top: number; height: number; color?: string } => {
+): {
+    left: number;
+    top: number;
+    height: number;
+    bottom: number;
+    right: number;
+    color?: string;
+} => {
     return {
         left: one.left - two.left,
         top: one.top - two.top,
         height: one.height,
+        bottom: one.top - two.top + one.height,
+        right: one.left - two.left + one.width,
         color,
     };
 };
@@ -143,6 +152,9 @@ export const calcCursorPos = (
                         if (lc.nodeName !== '#text') {
                             lc = lc.lastChild!;
                         }
+                        if (!lc.textContent) {
+                            return;
+                        }
                         r.setStart(lc, lc.textContent!.length);
                         r.collapse(true);
                     } else if (last.type === 'subtext') {
@@ -157,7 +169,6 @@ export const calcCursorPos = (
                         }
                         r.collapse(true);
                     } else {
-                        // console.log('dunno loc', loc, nodes.main);
                         return;
                     }
                     const color = getComputedStyle(nodes.main.node).color;

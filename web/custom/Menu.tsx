@@ -50,10 +50,9 @@ export const Menu = ({
             onMouseLeave={() => setHover(null)}
         >
             {menu.items?.map((item, i) => {
-                const selected =
-                    i === selectionIndex && item.type === 'replace';
+                const selected = i === selectionIndex && item.type === 'update';
                 const onClick = (evt: React.MouseEvent) => {
-                    if (item.type === 'replace') {
+                    if (item.type === 'update') {
                         dispatch({
                             type: 'menu-select',
                             path: menu.path,
@@ -63,9 +62,9 @@ export const Menu = ({
                 };
                 const style = {
                     padding: 4,
-                    cursor: item.type === 'replace' ? 'pointer' : 'text',
+                    cursor: item.type === 'update' ? 'pointer' : 'text',
                     backgroundColor:
-                        i === hover && item.type === 'replace'
+                        i === hover && item.type === 'update'
                             ? '#444'
                             : selected
                             ? '#222'
@@ -85,10 +84,13 @@ export const Menu = ({
                             onClick={onClick}
                             onMouseEnter={(evt) => setHover(i)}
                         >
-                            {item.type === 'replace' && item.ann
+                            {item.type === 'update' && item.ann
                                 ? nodeToString(
-                                      nodeForType(item.ann, state.ctx),
-                                      state.ctx.hashNames,
+                                      nodeForType(
+                                          item.ann,
+                                          state.ctx.results.hashNames,
+                                      ),
+                                      state.ctx.results.hashNames,
                                   )
                                 : null}
                         </div>

@@ -5,6 +5,7 @@ export type {
     NodeList,
     Loc,
     stringText,
+    tapply,
     CString,
     NodeExtra,
     NodeArray,
@@ -67,16 +68,33 @@ export type recordAccess = {
     form: Node;
 };
 
+export type DefType = {
+    type: 'deftype';
+    name: string;
+    hash: string;
+    value: Type;
+    form: Node;
+};
+
+export type Def = {
+    type: 'def';
+    name: string;
+    hash: string;
+    value: Expr;
+    form: Node;
+    ann: Type | void;
+};
+
 export type Expr =
     | Shared
     | {
           type: 'builtin';
-          hash: string;
+          name: string;
           form: Node;
       }
     | { type: 'blank'; form: Node }
-    | { type: 'def'; name: string; hash: string; value: Expr; form: Node }
-    | { type: 'deftype'; name: string; hash: string; value: Type; form: Node }
+    | Def
+    | DefType
     | String
     | { type: 'if'; cond: Expr; yes: Expr; no: Expr; form: Node }
     | {
@@ -154,16 +172,9 @@ export type TVar = {
 };
 
 export type Identifier =
-    | {
-          type: 'global';
-          hash: string;
-          form: Node;
-      }
-    | {
-          type: 'local';
-          sym: number;
-          form: Node;
-      };
+    | { type: 'global'; hash: string; form: Node }
+    | { type: 'toplevel'; hash: number; form: Node }
+    | { type: 'local'; sym: number; form: Node };
 
 export type Shared =
     | Identifier
@@ -174,6 +185,12 @@ export type Shared =
 export type TypeArg = { name: string; bound?: Type; form: Node };
 export type Type =
     | Shared
+    | {
+          type: 'string';
+          first: { text: string; form: Node };
+          templates: { type: Type; suffix: { text: string; form: Node } }[];
+          form: Node;
+      }
     | { type: 'any'; form: Node }
     | { type: 'none'; form: Node }
     | {

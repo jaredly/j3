@@ -8,6 +8,7 @@ import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
+import { CstCtx } from './library';
 
 export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
     if (!ctx.mods[idx]) {
@@ -17,12 +18,14 @@ export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
     }
 };
 
+const doHash = (x: Expr | Type) => JSON.stringify(noForm(x)); // objectHash
+
 export const specials: {
-    [key: string]: (form: Node, args: Node[], ctx: Ctx) => Expr;
+    [key: string]: (form: Node, args: Node[], ctx: CstCtx) => Expr;
 } = {
     '<>': (form, contents, ctx) => {
         if (contents.length < 2) {
-            err(ctx.errors, form, {
+            err(ctx.results.errors, form, {
                 type: 'misc',
                 message: `<> requires at least 2 arguments`,
             });
@@ -75,12 +78,12 @@ export const specials: {
 
             locals.forEach(
                 (loc) =>
-                    (ctx.localMap.terms[loc.sym] = {
+                    (ctx.results.localMap.terms[loc.sym] = {
                         name: loc.name,
                         type: loc.type,
                     }),
             );
-            const ct2: Ctx = {
+            const ct2: CstCtx = {
                 ...ctx,
                 local: {
                     ...ctx.local,
@@ -151,21 +154,29 @@ export const specials: {
                 form,
             };
         }
+        const vt = nodeToType(value, ctx);
         return {
             type: 'deftype',
             name: name.text,
-            hash: objectHash(noForm(value)),
-            value: nodeToType(value, ctx),
+            hash: doHash(vt),
+            value: vt,
             form,
         };
     },
     defn: (form, contents, ctx): Expr => {
         if (contents.length < 2) {
-            err(ctx.errors, form, {
+            err(ctx.results.errors, form, {
                 type: 'misc',
                 message: 'defn needs a name and args and a body',
             });
-            return { type: 'def', name: '', hash: '', value: nil, form };
+            return {
+                type: 'def',
+                name: '',
+                hash: '',
+                value: nil,
+                form,
+                ann: void 0,
+            };
             // return { type: 'unresolved', form, reason: 'no engouh args' };
         }
         const [name, ...rest] = contents;
@@ -177,9 +188,9 @@ export const specials: {
             };
         }
         const value = specials.fn(form, rest, ctx);
-        const hash = objectHash(noForm(value));
+        const hash = doHash(value);
         // console.log('hash', hash);
-        ctx.display[name.loc.idx] = {
+        ctx.results.display[name.loc.idx] = {
             style: { type: 'id', hash },
         };
         return {
@@ -188,30 +199,50 @@ export const specials: {
             hash,
             value,
             form,
+            ann: getType(value, ctx),
         };
     },
     def: (form, contents, ctx): Expr => {
         if (!contents.length) {
-            return { type: 'unresolved', form, reason: 'no contents' };
-        }
-        const first = contents[0];
-        if (first.type !== 'identifier') {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'def needs a name and a body',
+            });
             return {
-                type: 'unresolved',
+                type: 'def',
+                name: '',
+                hash: '',
+                value: nil,
                 form,
-                reason: 'first arg must be an identifier',
+                ann: void 0,
             };
         }
+        const first = contents[0];
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
-        const hash = objectHash(noForm(value));
+        const hash = doHash(value);
+        if (first.type !== 'identifier') {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'def name must be an identifier',
+            });
+            return {
+                type: 'def',
+                name: '',
+                hash: '',
+                value,
+                form,
+                ann: void 0,
+            };
+        }
         // console.log('def hash', first.text, hash);
-        ctx.display[first.loc.idx] = { style: { type: 'id', hash } };
+        ctx.results.display[first.loc.idx] = { style: { type: 'id', hash } };
         return {
             type: 'def',
             name: first.text,
             hash,
             value,
             form,
+            ann: getType(value, ctx),
         };
     },
     switch: (form, contents, ctx): Expr => {
@@ -240,7 +271,7 @@ export const specials: {
             });
             const subtracted = subtractType(typ, pt, ctx);
             if (!subtracted) {
-                err(ctx.errors, cases[i], {
+                err(ctx.results.errors, cases[i], {
                     type: 'misc',
                     message: `unreachable case or something`,
                 });
@@ -250,7 +281,7 @@ export const specials: {
 
             bindings.forEach(
                 (loc) =>
-                    (ctx.localMap.terms[loc.sym] = {
+                    (ctx.results.localMap.terms[loc.sym] = {
                         name: loc.name,
                         type: loc.type,
                     }),
@@ -263,47 +294,65 @@ export const specials: {
         if (!first || first.type !== 'array') {
             return { type: 'unresolved', form, reason: 'first not array' };
         }
-        ctx.display[first.loc.idx] = { style: { type: 'let-pairs' } };
-        const locals: Local['terms'] = [];
+        ctx.results.display[first.loc.idx] = { style: { type: 'let-pairs' } };
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         const values = filterComments(first.values);
+        const allLocals: Local['terms'] = [];
         for (let i = 0; i < values.length - 1; i += 2) {
             const value = nodeToExpr(values[i + 1], ctx);
             const inferred = getType(value, ctx) ?? nilt;
+            const locals: Local['terms'] = [];
             bindings.push({
                 pattern: nodeToPattern(values[i], inferred, ctx, locals),
                 value,
                 type: inferred,
             });
+            locals.forEach(
+                (loc) =>
+                    (ctx.results.localMap.terms[loc.sym] = {
+                        name: loc.name,
+                        type: loc.type,
+                    }),
+            );
+            // allLocals.push(...locals);
+            ctx = {
+                ...ctx,
+                local: {
+                    ...ctx.local,
+                    terms: [...locals, ...ctx.local.terms],
+                },
+            };
         }
-        locals.forEach(
-            (loc) =>
-                (ctx.localMap.terms[loc.sym] = {
-                    name: loc.name,
-                    type: loc.type,
-                }),
-        );
-        const ct2: Ctx = {
-            ...ctx,
-            local: {
-                ...ctx.local,
-                terms: [...locals, ...ctx.local.terms],
-            },
-        };
+        // const ct2: Ctx = {
+        //     ...ctx,
+        //     local: {
+        //         ...ctx.local,
+        //         terms: [...allLocals, ...ctx.local.terms],
+        //     },
+        // };
         return {
             type: 'let',
             bindings,
             form,
-            body: contents.slice(1).map((child) => nodeToExpr(child, ct2)),
+            body: contents.slice(1).map((child) => nodeToExpr(child, ctx)),
         };
     },
     if: (form, contents, ctx): Expr => {
-        const [cond, yes, no] = contents;
+        const nodes = contents.map((node) => nodeToExpr(node, ctx));
+        const [cond, yes, no] = nodes;
+        if (nodes.length > 3) {
+            nodes.slice(3).forEach((node) => {
+                err(ctx.results.errors, node.form, {
+                    type: 'misc',
+                    message: 'too many items in `if` form',
+                });
+            });
+        }
         return {
             type: 'if',
-            cond: cond ? nodeToExpr(cond, ctx) : nil,
-            yes: yes ? nodeToExpr(yes, ctx) : nil,
-            no: no ? nodeToExpr(no, ctx) : nil,
+            cond: cond ?? nil,
+            yes: yes ?? nil,
+            no: no ?? nil,
             form,
         };
     },

@@ -1,8 +1,7 @@
 import { calcOffset } from './calcOffset';
 import { UIState } from './ByHand';
-import { calcCursorPos } from './Cursors';
+import { calcCursorPos, subRect } from './Cursors';
 import { Mods, StateSelect } from '../mods/getKeyUpdate';
-import { cmpFullPath } from './isCoveredBySelection';
 import { Path } from '../mods/path';
 
 export const verticalMove = (
@@ -53,7 +52,10 @@ export const closestSelection = (
             if (!value) {
                 return;
             }
-            const box = value.node.getBoundingClientRect();
+            const box = subRect(
+                value.node.getBoundingClientRect(),
+                value.node.offsetParent!.getBoundingClientRect(),
+            );
             const dy =
                 box.top <= pos.y && pos.y <= box.bottom
                     ? 0

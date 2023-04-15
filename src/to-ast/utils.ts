@@ -54,46 +54,46 @@ export type DecExpected = {
     }[];
 };
 
-export const removeDecorators = (node: Node, ctx: Ctx) => {
-    const result: {
-        errors: {
-            message: string;
-            idx: number;
-        }[];
-        expected: {
-            type: Type;
-            idx: number;
-        }[];
-    } = { errors: [], expected: [] };
-    node = transformNode(node, {
-        pre(node) {
-            const values = callWith(node, '@error');
-            if (!values) {
-                const values = callWith(node, '@type');
-                if (!values) {
-                    return;
-                }
-                if (values.length !== 2) {
-                    throw new Error(`misconfigured, wrong size`);
-                }
-                result.expected.push({
-                    type: nodeToType(values[0], ctx),
-                    idx: values[1].loc.idx,
-                });
-                return values[1];
-            }
-            if (values.length !== 2) {
-                throw new Error(`misconfigured, wrong size`);
-            }
-            if (values[0].type !== 'string') {
-                throw new Error(`error non a string`);
-            }
-            result.errors.push({
-                message: values[0].first.text,
-                idx: values[1].loc.idx,
-            });
-            return values[1];
-        },
-    });
-    return { expected: result, node };
-};
+// export const removeDecorators = (node: Node, ctx: Ctx) => {
+//     const result: {
+//         errors: {
+//             message: string;
+//             idx: number;
+//         }[];
+//         expected: {
+//             type: Type;
+//             idx: number;
+//         }[];
+//     } = { errors: [], expected: [] };
+//     node = transformNode(node, {
+//         pre(node) {
+//             const values = callWith(node, '@error');
+//             if (!values) {
+//                 const values = callWith(node, '@type');
+//                 if (!values) {
+//                     return;
+//                 }
+//                 if (values.length !== 2) {
+//                     throw new Error(`misconfigured, wrong size`);
+//                 }
+//                 result.expected.push({
+//                     type: nodeToType(values[0], ctx),
+//                     idx: values[1].loc.idx,
+//                 });
+//                 return values[1];
+//             }
+//             if (values.length !== 2) {
+//                 throw new Error(`misconfigured, wrong size`);
+//             }
+//             if (values[0].type !== 'string') {
+//                 throw new Error(`error non a string`);
+//             }
+//             result.errors.push({
+//                 message: values[0].first.text,
+//                 idx: values[1].loc.idx,
+//             });
+//             return values[1];
+//         },
+//     });
+//     return { expected: result, node };
+// };

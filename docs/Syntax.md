@@ -1,4 +1,16 @@
 
+## Concrete syntax
+
+this is the layer that's close to the text.
+
+We have, fundamentally:
+
+
+
+
+
+
+
 ## Enumerating syntactic forms
 
 ```clj

@@ -2,11 +2,13 @@ import { Identifier, Node, NodeExtra, recordAccess } from '../types/cst';
 import { Expr, Number, Record, Type } from '../types/ast';
 import { specials } from './specials';
 import { resolveExpr } from './resolveExpr';
-import { AutoCompleteResult, Ctx, nil, nilt } from './Ctx';
+import { AutoCompleteResult, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
 import { nodeToType } from './nodeToType';
+import { populateAutocomplete } from './populateAutocomplete';
+import { CstCtx, Ctx } from './library';
 
 export const filterComments = (nodes: Node[]) =>
     nodes.filter((node) => node.type !== 'comment' && node.type !== 'blank');
@@ -36,7 +38,7 @@ export const ensure = <T, K>(
     return map[key];
 };
 
-export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
+export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
     switch (form.type) {
         case 'recordAccess':
             return nodeToRecordAccess(form, ctx);
@@ -60,7 +62,8 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                             .startsWith(form.raw.slice(1).toLowerCase()),
                     );
                 }
-                ensure(ctx.display, form.loc.idx, {}).autoComplete = options;
+                ensure(ctx.results.display, form.loc.idx, {}).autoComplete =
+                    options;
             }
             return { type: 'unresolved', form };
 
@@ -92,18 +95,31 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
                     return specials[first.text](form, values.slice(1), ctx);
                 }
             }
-            // if (first.type === 'array') {
-            //     // ([a b c] hello)
-            //     const args = first.values.map(arg => (
-            //         nodeToExpr(arg, ctx)
-            //     ));
-            //     return {
-            //         type: 'apply',
-            //         form,
-            //         target: {},
-            //         args: [],
-            //     }
-            // }
+            if (first.type === 'array') {
+                // ([a b c] hello)
+                const args = first.values.map((arg) => nodeToExpr(arg, ctx));
+                const rest = values
+                    .slice(1)
+                    .map((child) => nodeToExpr(child, ctx));
+                rest.slice(1).forEach((item) => {
+                    err(ctx.results.errors, item.form, {
+                        type: 'misc',
+                        message: '[] indexing only takes one target',
+                    });
+                });
+                const target: Expr = first.hash
+                    ? resolveExpr('', first.hash, ctx, first)
+                    : { type: 'unresolved', form: first };
+                if (!first.hash) {
+                    populateAutocomplete(ctx, '[]', first);
+                }
+                return {
+                    type: 'apply',
+                    target,
+                    args: [rest[0] ?? nil, ...args],
+                    form,
+                };
+            }
             const [target, ...args] = values.map((child) =>
                 nodeToExpr(child, ctx),
             );
@@ -126,14 +142,15 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
 
         case 'comment':
         case 'blank':
+            console.log(form);
             throw new Error(
-                `How did we get here? Comments and blanks should be filtered out`,
+                `How did we get here? Comments and blanks should be filtered out: ${form.type}`,
             );
         case 'stringText':
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'spread':
-            err(ctx.errors, form, {
+            err(ctx.results.errors, form, {
                 type: 'misc',
                 message: 'dangling spread',
             });
@@ -171,10 +188,10 @@ export const nodeToExpr = (form: Node, ctx: Ctx): Expr => {
 
 export const maybeParseNumber = (
     form: Identifier & NodeExtra,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): null | Number => {
     if (form.text.match(/^[0-9]+u$/)) {
-        ensure(ctx.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc.idx, {}).style = {
             type: 'number',
             kind: 'uint',
         };
@@ -187,7 +204,7 @@ export const maybeParseNumber = (
     }
     if (form.text.match(/^-?[0-9]+[if]?$/)) {
         const kind = form.text.endsWith('f') ? 'float' : 'int';
-        ensure(ctx.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc.idx, {}).style = {
             type: 'number',
             kind,
         };
@@ -199,7 +216,7 @@ export const maybeParseNumber = (
         };
     }
     if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
-        ensure(ctx.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc.idx, {}).style = {
             type: 'number',
             kind: 'float',
         };
@@ -215,51 +232,51 @@ export const maybeParseNumber = (
 
 export function backslashComplete(): AutoCompleteResult[] {
     return [
-        {
-            type: 'replace',
-            exact: false,
-            ann: {
-                type: 'builtin',
-                name: 'string',
-                form: nilt.form,
-            },
-            text: 'Rich Text',
-            node: {
-                type: 'rich-text',
-                lexicalJSON: {
-                    root: {
-                        children: [
-                            {
-                                children: [],
-                                direction: null,
-                                format: '',
-                                indent: 0,
-                                type: 'paragraph',
-                                version: 1,
-                            },
-                        ],
-                        direction: null,
-                        format: '',
-                        indent: 0,
-                        type: 'root',
-                        version: 1,
-                    },
-                },
-            },
-        },
-        {
-            type: 'replace',
-            exact: false,
-            ann: { type: 'builtin', name: 'file', form: nilt.form },
-            text: 'Attachment',
-            node: { type: 'attachment', name: '', file: null },
-        },
+        // {
+        //     type: 'update',
+        //     exact: false,
+        //     ann: {
+        //         type: 'builtin',
+        //         name: 'string',
+        //         form: nilt.form,
+        //     },
+        //     text: 'Rich Text',
+        //     node: {
+        //         type: 'rich-text',
+        //         lexicalJSON: {
+        //             root: {
+        //                 children: [
+        //                     {
+        //                         children: [],
+        //                         direction: null,
+        //                         format: '',
+        //                         indent: 0,
+        //                         type: 'paragraph',
+        //                         version: 1,
+        //                     },
+        //                 ],
+        //                 direction: null,
+        //                 format: '',
+        //                 indent: 0,
+        //                 type: 'root',
+        //                 version: 1,
+        //             },
+        //         },
+        //     },
+        // },
+        // {
+        //     type: 'replace',
+        //     exact: false,
+        //     ann: { type: 'builtin', name: 'file', form: nilt.form },
+        //     text: 'Attachment',
+        //     node: { type: 'attachment', name: '', file: null },
+        // },
     ];
 }
 
 export function nodeToRecord(
     form: { type: 'record'; values: Node[] } & NodeExtra,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): Expr {
     const entries: Record['entries'] = [];
     const values = filterComments(form.values);
@@ -283,8 +300,8 @@ export function nodeToRecord(
                     name: item.text,
                     value: nodeToExpr(item, ctx),
                 });
-                if (!ctx.display[item.loc.idx]?.style) {
-                    ensure(ctx.display, item.loc.idx, {}).style = {
+                if (!ctx.results.display[item.loc.idx]?.style) {
+                    ensure(ctx.results.display, item.loc.idx, {}).style = {
                         type: 'record-attr',
                     };
                 }
@@ -305,7 +322,7 @@ export function nodeToRecord(
         const name = values[i];
         if (name.type === 'spread') {
             if (name.contents.type === 'blank') {
-                err(ctx.errors, name, {
+                err(ctx.results.errors, name, {
                     type: 'misc',
                     message: 'no empty spread in expressions',
                 });
@@ -319,13 +336,13 @@ export function nodeToRecord(
                 if (tt.type === 'record') {
                     spreads.push(spread);
                 } else {
-                    err(ctx.errors, name, {
+                    err(ctx.results.errors, name, {
                         type: 'misc',
                         message: `can only spread records, not ${tt.type}`,
                     });
                 }
             } else {
-                err(ctx.errors, name, {
+                err(ctx.results.errors, name, {
                     type: 'misc',
                     message: `illegal spread`,
                 });
@@ -334,13 +351,13 @@ export function nodeToRecord(
             continue;
         }
 
-        if (!ctx.display[name.loc.idx]?.style) {
-            ensure(ctx.display, name.loc.idx, {}).style = {
+        if (!ctx.results.display[name.loc.idx]?.style) {
+            ensure(ctx.results.display, name.loc.idx, {}).style = {
                 type: 'record-attr',
             };
         }
         if (name.type !== 'identifier') {
-            err(ctx.errors, name, {
+            err(ctx.results.errors, name, {
                 type: 'misc',
                 message: `invalid record item ${name.type}`,
             });
@@ -351,7 +368,7 @@ export function nodeToRecord(
         const value = values[i + 1];
         i += 2;
         if (!value) {
-            err(ctx.errors, name, {
+            err(ctx.results.errors, name, {
                 type: 'misc',
                 message: `missing value for field ${namev}`,
             });
@@ -366,7 +383,7 @@ export function nodeToRecord(
 
 export function nodeToRecordAccess(
     form: recordAccess & NodeExtra,
-    ctx: Ctx,
+    ctx: CstCtx,
 ): Expr {
     const target =
         form.target.type !== 'blank' ? nodeToExpr(form.target, ctx) : null;
@@ -376,7 +393,7 @@ export function nodeToRecordAccess(
             for (let item of form.items) {
                 const options = getRecordMap(ttype, ctx);
                 if (!options) {
-                    err(ctx.errors, item, {
+                    err(ctx.results.errors, item, {
                         type: 'misc',
                         message: 'not a record',
                     });
@@ -385,13 +402,13 @@ export function nodeToRecordAccess(
                 if (options[item.text]) {
                     ttype = options[item.text].value;
                 } else {
-                    ensure(ctx.display, item.loc.idx, {}).autoComplete =
+                    ensure(ctx.results.display, item.loc.idx, {}).autoComplete =
                         Object.entries(options).map(
                             ([name, { value }]) =>
                                 ({
-                                    type: 'replace',
+                                    type: 'update',
                                     text: name,
-                                    node: {
+                                    update: {
                                         type: 'accessText',
                                         text: name,
                                     },
@@ -399,8 +416,8 @@ export function nodeToRecordAccess(
                                     ann: value,
                                 } satisfies AutoCompleteResult),
                         );
-                    ctx.display[item.loc.idx];
-                    err(ctx.errors, item, {
+                    ctx.results.display[item.loc.idx];
+                    err(ctx.results.errors, item, {
                         type: 'misc',
                         message: `no "${item.text}" attribute on record`,
                     });
@@ -412,7 +429,7 @@ export function nodeToRecordAccess(
         type: 'recordAccess',
         items: form.items.map((item) => {
             if (item.text === '') {
-                err(ctx.errors, item, {
+                err(ctx.results.errors, item, {
                     type: 'misc',
                     message: 'empty attribute',
                 });

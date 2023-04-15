@@ -4,8 +4,11 @@ import type { Error } from '../types/types';
 import { nodeForType } from './nodeForType';
 import { nodeToString } from './nodeToString';
 
-export const errorToString = (error: Error, ctx: Ctx): string => {
-    // const rctx = makeRCtx(ctx);
+export const errorToString = (
+    error: Error,
+    hashNames: Ctx['hashNames'],
+): string => {
+    // const rctx = makeRCtx(;
     switch (error.type) {
         case 'cannot apply local':
             return `Cannot apply local ${error.path.join('.')}`;
@@ -13,23 +16,23 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
             return `Enum mismatch at ${error.path.join('.')} - ('${
                 error.tag
             } ${error.one
-                .map((x) => nodeToString(nodeForType(x, ctx), ctx.hashNames))
+                .map((x) => nodeToString(nodeForType(x, hashNames), hashNames))
                 .join(', ')}) vs ('${error.tag} ${error.two
-                .map((x) => nodeToString(nodeForType(x, ctx), ctx.hashNames))
+                .map((x) => nodeToString(nodeForType(x, hashNames), hashNames))
                 .join(', ')}')`;
         case 'unresolved':
-            return `identifier not linked`;
+            return error.reason ?? `identifier not linked`;
         case 'unparsed':
-            return `Unparsed: ${nodeToString(error.form, ctx.hashNames)}`;
+            return `Unparsed: ${nodeToString(error.form, hashNames)}`;
         case 'misc':
             return error.message;
         case 'invalid type':
             return `Invalid type.\nExpected: ${nodeToString(
-                nodeForType(error.expected, ctx),
-                ctx.hashNames,
+                nodeForType(error.expected, hashNames),
+                hashNames,
             )}\nFound: ${nodeToString(
-                nodeForType(error.found, ctx),
-                ctx.hashNames,
+                nodeForType(error.found, hashNames),
+                hashNames,
             )}`;
     }
     return `Some error happened ${error.type} : ${JSON.stringify(

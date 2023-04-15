@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
-import { AutoCompleteReplace, Ctx, newCtx } from '../../src/to-ast/Ctx';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
 import { type ClipboardItem } from '../mods/clipboard';
@@ -13,13 +13,13 @@ import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { reduce } from './reduce';
-import { applyMods, getCtx } from './getCtx';
-import { applyInferMod, infer, InferMod } from '../../src/infer/infer';
+import { getCtx } from './getCtx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';
 import { Expr } from '../../src/types/ast';
 import { transformNode } from '../../src/types/transform-cst';
+import { Ctx } from '../../src/to-ast/library';
 
 const examples = {
     infer: '(+ 2)',
@@ -56,11 +56,12 @@ person.animals.dogs
 };
 
 export type UIState = {
+    // ui:{
     regs: RegMap;
     clipboard: ClipboardItem[][];
     ctx: Ctx;
     hover: Path[];
-    exprs: Expr[];
+    // }
 } & State;
 
 export type RegMap = {
@@ -95,17 +96,6 @@ export type Action =
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
 
-// export const maxSym = (map: Map) => {
-//     let max = 0;
-//     Object.keys(map).forEach((id) => {
-//         const node = map[+id];
-//         if (node.type === 'identifier' && node.hash?.startsWith(':')) {
-//             max = Math.max(max, +node.hash.slice(1));
-//         }
-//     });
-//     return max;
-// };
-
 export const ByHand = () => {
     const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
     const extra = Object.keys(localStorage).filter((k) =>
@@ -138,7 +128,7 @@ export const ByHand = () => {
             <button
                 onClick={() => {
                     const id = 'j3-ex-' + Math.random().toString(36).slice(2);
-                    saveState(id, parseByCharacter('"hello"', newCtx()));
+                    saveState(id, parseByCharacter('"hello"', null).map);
                     setWhich(id);
                 }}
             >
@@ -152,12 +142,12 @@ export const ByHand = () => {
                               examples[which as 'sink'].replace(/\s+/g, (f) =>
                                   f.includes('\n') ? '\n' : ' ',
                               ),
-                              newCtx(),
                               // lol turning on updateCtx slows things down a tonnn
+                              null,
                           )
                         : localStorage[which]
                         ? loadState(localStorage[which])
-                        : parseByCharacter('"hello"', newCtx())
+                        : parseByCharacter('"hello"', null)
                 }
                 saveKey={which.startsWith('j3-ex') ? which : undefined}
             />
@@ -165,8 +155,8 @@ export const ByHand = () => {
     );
 };
 
-export const saveState = (id: string, state: State) => {
-    localStorage[id] = JSON.stringify(state.map);
+export const saveState = (id: string, map: Map) => {
+    localStorage[id] = JSON.stringify(map);
 };
 
 export const loadState = (raw: string): State => {
@@ -218,9 +208,9 @@ export const Doc = ({
 
     useEffect(() => {
         if (saveKey) {
-            saveState(saveKey, state);
+            saveState(saveKey, state.map);
         }
-    }, [state]);
+    }, [state.map]);
 
     // @ts-ignore
     window.state = state;
@@ -231,17 +221,16 @@ export const Doc = ({
         if (state.at.length > 1 || state.at[0].end) return;
         const path = state.at[0].start;
         const last = path[path.length - 1];
-        const items = state.ctx.display[last.idx]?.autoComplete;
+        const items = state.ctx.results.display[last.idx]?.autoComplete;
         return items ? { path, items } : undefined;
     }, [state.map, state.at, state.ctx]);
 
     const start = state.at[0].start;
     const idx = start[start.length - 1].idx;
-    const node = state.map[idx];
-    const display = state.ctx.display[idx];
 
     return (
         <div
+            style={{ paddingBottom: 500 }}
             onMouseEnter={(evt) => {
                 dispatch({ type: 'hover', path: [] });
             }}
@@ -269,6 +258,7 @@ export const Doc = ({
                 debug={debug}
                 ctx={state.ctx}
             />
+            {/* {JSON.stringify(state.ctx.results.toplevel)} */}
             <Cursors state={state} />
             <Hover state={state} dispatch={dispatch} />
             {!state.menu?.dismissed && menu?.items.length ? (
@@ -283,13 +273,19 @@ export const Doc = ({
                             console.log(node);
                             (node as { values: Node[] }).values.forEach(
                                 (node) =>
-                                    console.log(nodeToExpr(node, state.ctx)),
+                                    console.log(
+                                        nodeToExpr(node, {
+                                            ...state.ctx,
+                                            local: { terms: [], types: [] },
+                                        }),
+                                    ),
                             );
                         }}
                     >
                         Log state and nodes
                     </button>
                     <br />
+                    HashNames: {JSON.stringify(state.ctx.results.hashNames)}
                     MENU: STATE MENU {JSON.stringify(state.menu)} AND THE
                     {JSON.stringify(menu)}
                 </div>

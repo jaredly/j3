@@ -2,7 +2,7 @@ import { Ctx, noloc } from '../to-ast/Ctx';
 import { Node, Type } from '../types/ast';
 import { asTuple, id, loc } from './nodeForExpr';
 
-export const nodeForType = (type: Type, ctx: Ctx): Node => {
+export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
     switch (type.type) {
         case 'none':
             return { type: 'identifier', text: '⍉', loc: type.form.loc };
@@ -49,11 +49,30 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                         type: 'identifier',
                         text: "'" + type.name,
                     },
-                    ...type.args.map((arg) => nodeForType(arg, ctx)),
+                    ...type.args.map((arg) => nodeForType(arg, hashNames)),
                 ],
             };
+        case 'string': {
+            return {
+                type: 'string',
+                first: {
+                    text: type.first.text,
+                    loc: type.first.form.loc,
+                    type: 'stringText',
+                },
+                templates: type.templates.map(({ type, suffix }) => ({
+                    expr: nodeForType(type, hashNames),
+                    suffix: {
+                        type: 'stringText',
+                        text: suffix.text,
+                        loc: suffix.form.loc,
+                    },
+                })),
+                loc: type.form.loc,
+            };
+        }
         case 'record':
-            const tuple = asTuple(type, ctx);
+            const tuple = asTuple(type);
             if (tuple) {
                 return {
                     loc: type.form.loc,
@@ -63,7 +82,9 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                             ? []
                             : [
                                   id(',', noloc),
-                                  ...tuple.map((t) => nodeForType(t, ctx)),
+                                  ...tuple.map((t) =>
+                                      nodeForType(t, hashNames),
+                                  ),
                               ],
                 };
             }
@@ -73,13 +94,13 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     ...type.spreads.map(
                         (spread): Node => ({
                             type: 'spread',
-                            contents: nodeForType(spread, ctx),
+                            contents: nodeForType(spread, hashNames),
                             loc: spread.form.loc,
                         }),
                     ),
                     ...type.entries.flatMap(({ name, value }) => [
                         id(name, noloc),
-                        nodeForType(value, ctx),
+                        nodeForType(value, hashNames),
                     ]),
                 ],
             });
@@ -93,24 +114,24 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                         type: 'array',
                         values: type.args.flatMap((arg): Node[] => {
                             map[arg.form.loc.idx] = arg.name;
-                            ctx.hashNames[arg.form.loc.idx] = arg.name;
+                            hashNames[arg.form.loc.idx] = arg.name;
                             const name = id(arg.name, noloc);
                             return [
                                 arg.bound
                                     ? {
                                           type: 'annot',
                                           target: name,
-                                          annot: nodeForType(arg.bound, ctx),
+                                          annot: nodeForType(
+                                              arg.bound,
+                                              hashNames,
+                                          ),
                                           loc: noloc,
                                       }
                                     : name,
                             ];
                         }),
                     }),
-                    nodeForType(type.body, {
-                        ...ctx,
-                        // reverseNames: { ...ctx.reverseNames, ...map },
-                    }),
+                    nodeForType(type.body, hashNames),
                 ],
             });
         }
@@ -121,9 +142,11 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
                     id('fn', noloc),
                     loc(noloc, {
                         type: 'array',
-                        values: type.args.map((arg) => nodeForType(arg, ctx)),
+                        values: type.args.map((arg) =>
+                            nodeForType(arg, hashNames),
+                        ),
                     }),
-                    nodeForType(type.body, ctx),
+                    nodeForType(type.body, hashNames),
                 ],
             });
         }
@@ -131,24 +154,30 @@ export const nodeForType = (type: Type, ctx: Ctx): Node => {
             // return type.form;
             return {
                 type: 'identifier',
-                text: JSON.stringify(type.form),
+                text: 'unresolved ' + JSON.stringify(type.form),
                 loc: type.form.loc,
             };
         case 'union':
             return loc(type.form.loc, {
                 type: 'array',
                 values: type.items
-                    .map((item) => nodeForType(item, ctx))
+                    .map((item) => nodeForType(item, hashNames))
                     .concat(type.open ? [id('...', noloc)] : []),
             });
         case 'apply':
             return loc(type.form.loc, {
                 type: 'list',
                 values: [
-                    nodeForType(type.target, ctx),
-                    ...type.args.map((arg) => nodeForType(arg, ctx)),
+                    nodeForType(type.target, hashNames),
+                    ...type.args.map((arg) => nodeForType(arg, hashNames)),
                 ],
             });
+        case 'toplevel':
+            return {
+                type: 'hash',
+                hash: type.hash,
+                loc: type.form.loc,
+            };
         case 'global':
             return {
                 type: 'hash',

@@ -1,19 +1,17 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { Ctx, nilt } from '../../src/to-ast/Ctx';
+import { nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../mods/path';
-import { cmpFullPath } from './isCoveredBySelection';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
 import { UIState, Action } from './ByHand';
 import { orderStartAndEnd } from '../../src/parse/parse';
-import { Expr } from '../../src/types/ast';
 import { nodeToString } from '../../src/to-cst/nodeToString';
-import { nodeForExpr } from '../../src/to-cst/nodeForExpr';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { getType } from '../../src/get-type/get-types-new';
+import { Ctx } from '../../src/to-ast/library';
 
 export function Root({
     state,
@@ -28,12 +26,16 @@ export function Root({
     debug: boolean;
     ctx: Ctx;
 }) {
-    const selections = state.at
-        .filter((s) => s.end)
-        .map(({ start, end }) => {
-            [start, end] = orderStartAndEnd(start, end!);
-            return { start, end };
-        });
+    const selections = React.useMemo(
+        () =>
+            state.at
+                .filter((s) => s.end)
+                .map(({ start, end }) => {
+                    [start, end] = orderStartAndEnd(start, end!);
+                    return { start, end };
+                }),
+        [state.at],
+    );
 
     const reg = useCallback(
         (
@@ -51,8 +53,8 @@ export function Root({
     );
 
     const [drag, setDrag] = useState(false);
-    const exprMap: { [idx: number]: Expr } = {};
-    state.exprs.forEach((expr) => (exprMap[expr.form.loc.idx] = expr));
+    // const exprMap: { [idx: number]: Expr } = {};
+    // state.exprs.forEach((expr) => (exprMap[expr.form.loc.idx] = expr));
 
     return (
         <div
@@ -65,15 +67,27 @@ export function Root({
             }}
             onMouseDown={(evt) => {
                 const sel = closestSelection(state.regs, {
-                    x: evt.clientX,
-                    y: evt.clientY,
+                    x: evt.clientX + window.scrollX,
+                    y: evt.clientY + window.scrollY,
                 });
                 if (sel) {
-                    dispatch({
-                        type: 'select',
-                        add: evt.altKey,
-                        at: [{ start: sel }],
-                    });
+                    if (evt.shiftKey && state.at.length) {
+                        const sels = state.at.slice();
+                        sels[sels.length - 1] = {
+                            ...sels[sels.length - 1],
+                            end: sel,
+                        };
+                        dispatch({
+                            type: 'select',
+                            at: sels,
+                        });
+                    } else {
+                        dispatch({
+                            type: 'select',
+                            add: evt.altKey,
+                            at: [{ start: sel }],
+                        });
+                    }
                 }
             }}
             onMouseMove={(evt) => {
@@ -81,8 +95,8 @@ export function Root({
                     return;
                 }
                 const sel = closestSelection(state.regs, {
-                    x: evt.clientX,
-                    y: evt.clientY,
+                    x: evt.clientX + window.scrollX,
+                    y: evt.clientY + window.scrollY,
                 });
                 if (sel) {
                     const at = state.at.slice();
@@ -102,27 +116,35 @@ export function Root({
                 }
             }}
         >
-            {tops.map((top, i) => (
-                <div key={top} style={{ marginBottom: 8 }}>
-                    <Render
-                        debug={debug}
-                        idx={top}
-                        map={state.map}
-                        reg={reg}
-                        display={ctx.display}
-                        hashNames={ctx.hashNames}
-                        errors={ctx.errors}
-                        dispatch={dispatch}
-                        selection={selections}
-                        path={[
-                            {
-                                idx: state.root,
-                                type: 'child',
-                                at: i,
-                            },
-                        ]}
-                    />
-                    {exprMap[top] ? (
+            {tops.map((top, i) => {
+                const got = state.ctx.results.toplevel[top];
+                const tt = got
+                    ? got.type === 'def'
+                        ? got.ann ?? nilt
+                        : got.type === 'deftype'
+                        ? got.value
+                        : getType(got, state.ctx)
+                    : null;
+                return (
+                    <div key={top} style={{ marginBottom: 8 }}>
+                        <Render
+                            debug={debug}
+                            idx={top}
+                            map={state.map}
+                            reg={reg}
+                            display={ctx.results.display}
+                            hashNames={ctx.results.hashNames}
+                            errors={ctx.results.errors}
+                            dispatch={dispatch}
+                            selection={selections}
+                            path={[
+                                {
+                                    idx: state.root,
+                                    type: 'child',
+                                    at: i,
+                                },
+                            ]}
+                        />
                         <div
                             style={{
                                 fontSize: '80%',
@@ -130,18 +152,19 @@ export function Root({
                                 marginTop: 4,
                             }}
                         >
-                            {nodeToString(
-                                nodeForType(
-                                    getType(exprMap[top], ctx) ?? nilt,
-                                    ctx,
-                                ),
-                                ctx.hashNames,
-                            )}
+                            {tt
+                                ? nodeToString(
+                                      nodeForType(tt, ctx.results.hashNames),
+                                      ctx.results.hashNames,
+                                  )
+                                : 'no type'}
                         </div>
-                    ) : null}
-                    {debug ? <div>{sexp(fromMCST(top, state.map))}</div> : null}
-                </div>
-            ))}
+                        {debug ? (
+                            <div>{sexp(fromMCST(top, state.map))}</div>
+                        ) : null}
+                    </div>
+                );
+            })}
         </div>
     );
 }

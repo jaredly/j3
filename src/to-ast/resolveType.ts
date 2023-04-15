@@ -3,11 +3,12 @@ import { Type } from '../types/ast';
 import { any, Ctx, none } from './Ctx';
 import { populateAutocompleteType } from './populateAutocomplete';
 import { ensure } from './nodeToExpr';
+import { CstCtx } from './library';
 
 export const resolveType = (
     text: string,
     hash: string | number | undefined,
-    ctx: Ctx,
+    ctx: CstCtx,
     form: Node,
 ): Type => {
     if (text === 'true' || text === 'false') {
@@ -26,7 +27,7 @@ export const resolveType = (
     if (hash == null) {
         // console.log('res type no hash', text);
         populateAutocompleteType(ctx, text, form);
-        ctx.display[form.loc.idx].style = { type: 'unresolved' };
+        ctx.results.display[form.loc.idx].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
             form,
@@ -37,42 +38,51 @@ export const resolveType = (
     if (typeof hash === 'string') {
         if (hash.startsWith(':builtin:')) {
             text = hash.slice(':builtin:'.length);
-            const builtin = ctx.global.builtins.types[text];
-            if (builtin) {
-                ensure(ctx.display, form.loc.idx, {}).style = {
+            const builtin = ctx.global.builtins[text];
+            if (builtin?.type === 'type') {
+                ensure(ctx.results.display, form.loc.idx, {}).style = {
                     type: 'id',
                     hash: text,
-                    text,
                 };
-                ctx.hashNames[form.loc.idx] = text;
+                ctx.results.hashNames[form.loc.idx] = text;
                 return { type: 'builtin', name: text, form };
             }
         }
 
-        const global = ctx.global.types[hash];
-        if (global) {
-            ensure(ctx.display, form.loc.idx, {}).style = {
+        const global = ctx.global.library.definitions[hash];
+        if (global?.type === 'type') {
+            ensure(ctx.results.display, form.loc.idx, {}).style = {
                 type: 'id',
                 hash,
-                text: ctx.global.reverseNames[hash],
-                ann: global,
+                ann: global.value,
             };
-            ctx.hashNames[form.loc.idx] = ctx.global.reverseNames[hash];
+            ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; //ctx.global.reverseNames[hash];
             return { type: 'global', hash, form };
         }
     }
 
     if (typeof hash === 'number') {
+        const top = ctx.results.toplevel[hash];
+        if (top?.type === 'deftype') {
+            ensure(ctx.results.display, form.loc.idx, {}).style = {
+                type: 'id',
+                hash,
+                // ann: top.ann ?? undefined,
+            };
+            console.log('its a hashnames', top.name);
+            ctx.results.hashNames[form.loc.idx] = top.name;
+            return { type: 'toplevel', hash, form };
+        }
+
         const sym = hash;
         const local = ctx.local.types.find((t) => t.sym === sym);
         if (local) {
-            ensure(ctx.display, form.loc.idx, {}).style = {
+            ensure(ctx.results.display, form.loc.idx, {}).style = {
                 type: 'id',
                 hash: local.sym,
-                text: local.name,
                 // ann: local.type,
             };
-            ctx.hashNames[form.loc.idx] = local.name;
+            ctx.results.hashNames[form.loc.idx] = local.name;
             return { type: 'local', sym: local.sym, form };
         }
     }

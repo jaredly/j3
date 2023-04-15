@@ -155,3 +155,12 @@ Options for getting the length of an array type
 Relatedly...
 can I infer the type args to `reduce` from the args?
 
+
+## map type?
+
+```clj
+{"hello" 2 "what" 10}
+SomeMap{"hello" 2 "yes" no}
+
+```
+

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
+import { AutoCompleteResult } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
@@ -7,6 +7,7 @@ import {
 } from '../mods/clipboard';
 import { Path } from '../mods/path';
 import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
+import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
     state,
@@ -61,7 +62,7 @@ export function HiddenInput({
                 const items = collectClipboard(
                     state.map,
                     state.at,
-                    ctx.hashNames,
+                    ctx.results.hashNames,
                 );
                 if (!items.length) {
                     return;
@@ -69,7 +70,7 @@ export function HiddenInput({
 
                 dispatch({ type: 'copy', items });
 
-                const text = clipboardText(items, ctx.hashNames);
+                const text = clipboardText(items, ctx.results.hashNames);
                 navigator.clipboard.write([
                     new ClipboardItem({
                         ['text/plain']: new Blob([text], {
@@ -145,7 +146,7 @@ export function HiddenInput({
                             console.warn(
                                 `selected a menu item that wasn't there`,
                             );
-                        } else if (selected.type === 'replace') {
+                        } else if (selected.type === 'update') {
                             dispatch({
                                 type: 'menu-select',
                                 path: menu.path,
