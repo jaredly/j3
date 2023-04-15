@@ -40,6 +40,7 @@ export const nodeToPattern = (
             return {
                 type: 'local',
                 sym: form.loc.idx,
+                name: form.text,
                 form,
             };
         }

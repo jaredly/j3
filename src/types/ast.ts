@@ -37,6 +37,7 @@ export type Number = {
 export type Pattern =
     | {
           type: 'local';
+          name: string;
           sym: number;
           form: Node;
       }
@@ -205,7 +206,13 @@ export type Type =
           form: Node;
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
-    | { type: 'fn'; name?: string; args: Type[]; body: Type; form: Node }
+    | {
+          type: 'fn';
+          name?: string;
+          args: { name?: string; type: Type; form: Node }[];
+          body: Type;
+          form: Node;
+      }
     | { type: 'tfn'; name?: string; args: TypeArg[]; body: Type; form: Node }
     | {
           type: 'union';

@@ -114,7 +114,27 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 }
                 const tvalues = filterComments(targs.values);
                 const parsed = tvalues.map((arg) => {
-                    return nodeToType(arg, ctx);
+                    if (arg.type === 'annot') {
+                        if (arg.target.type === 'identifier') {
+                            return {
+                                type: nodeToType(arg.annot, ctx),
+                                name: arg.target.text,
+                                form: arg,
+                            };
+                        } else {
+                            err(ctx.results.errors, arg.target, {
+                                type: 'misc',
+                                message: 'nope',
+                                form: arg.target,
+                                path: [],
+                            });
+                            return {
+                                type: nodeToType(arg.annot, ctx),
+                                form: arg,
+                            };
+                        }
+                    }
+                    return { type: nodeToType(arg, ctx), form: arg };
                 });
                 return {
                     type: 'fn',

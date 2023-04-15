@@ -252,7 +252,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 ) {
                     matchesType(
                         args[i],
-                        target.args[i],
+                        target.args[i].type,
                         ctx,
                         expr.args[i].form,
                         report,
@@ -276,9 +276,16 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return target.body;
         }
         case 'fn': {
-            const args: Type[] = [];
+            const args: { type: Type; name?: string; form: Node }[] = [];
             expr.args.forEach((arg) => {
-                args.push(arg.type);
+                args.push({
+                    name:
+                        arg.pattern.type === 'local'
+                            ? arg.pattern.name
+                            : undefined,
+                    type: arg.type,
+                    form: arg.type.form,
+                });
                 if (report) {
                     report.types[arg.type.form.loc.idx] = arg.type;
                     report.types[arg.pattern.form.loc.idx] = arg.type;

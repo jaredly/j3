@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Def, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, DefType, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -15,6 +15,10 @@ export type Visitor<Ctx> = {
     StringPost?: (node: String, ctx: Ctx) => null | String,
     recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | recordAccess | [recordAccess | null, Ctx],
     recordAccessPost?: (node: recordAccess, ctx: Ctx) => null | recordAccess,
+    DefType?: (node: DefType, ctx: Ctx) => null | false | DefType | [DefType | null, Ctx],
+    DefTypePost?: (node: DefType, ctx: Ctx) => null | DefType,
+    Def?: (node: Def, ctx: Ctx) => null | false | Def | [Def | null, Ctx],
+    DefPost?: (node: Def, ctx: Ctx) => null | Def,
     Expr?: (node: Expr, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost?: (node: Expr, ctx: Ctx) => null | Expr,
     Record?: (node: Record, ctx: Ctx) => null | false | Record | [Record | null, Ctx],
@@ -57,6 +61,10 @@ export type Visitor<Ctx> = {
     PatternPost_number?: (node: Number, ctx: Ctx) => null | Pattern,
     Pattern_bool?: (node: Bool, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
     PatternPost_bool?: (node: Bool, ctx: Ctx) => null | Pattern,
+    Expr_def?: (node: Def, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
+    ExprPost_def?: (node: Def, ctx: Ctx) => null | Expr,
+    Expr_deftype?: (node: DefType, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
+    ExprPost_deftype?: (node: DefType, ctx: Ctx) => null | Expr,
     Expr_string?: (node: String, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_string?: (node: String, ctx: Ctx) => null | Expr,
     Expr_recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
@@ -657,8 +665,18 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
                     let changed3 = false;
                     const arr2 = updatedNode$0specified.args.map((updatedNode$0node$args$item2) => {
                         
-                const result = transformType(updatedNode$0node$args$item2, visitor, ctx);
-                changed3 = changed3 || result !== updatedNode$0node$args$item2;
+            let result = updatedNode$0node$args$item2;
+            {
+                let changed4 = false;
+                
+                const result$type = transformType(updatedNode$0node$args$item2.type, visitor, ctx);
+                changed4 = changed4 || result$type !== updatedNode$0node$args$item2.type;
+                if (changed4) {
+                    result =  {...result, type: result$type};
+                    changed3 = true;
+                }
+            }
+            
                         return result
                     })
                     if (changed3) {
@@ -779,6 +797,98 @@ switch (updatedNode.type) {
         node = updatedNode;
         if (visitor.TypePost) {
             const transformed = visitor.TypePost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformDef = <Ctx>(node: Def, visitor: Visitor<Ctx>, ctx: Ctx): Def => {
+        if (!node) {
+            throw new Error('No Def provided');
+        }
+        
+        const transformed = visitor.Def ? visitor.Def(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        
+            let updatedNode = node;
+            {
+                let changed1 = false;
+                
+                const updatedNode$value = transformExpr(node.value, visitor, ctx);
+                changed1 = changed1 || updatedNode$value !== node.value;
+                if (changed1) {
+                    updatedNode =  {...updatedNode, value: updatedNode$value};
+                    changed0 = true;
+                }
+            }
+            
+        
+        node = updatedNode;
+        if (visitor.DefPost) {
+            const transformed = visitor.DefPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformDefType = <Ctx>(node: DefType, visitor: Visitor<Ctx>, ctx: Ctx): DefType => {
+        if (!node) {
+            throw new Error('No DefType provided');
+        }
+        
+        const transformed = visitor.DefType ? visitor.DefType(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        
+            let updatedNode = node;
+            {
+                let changed1 = false;
+                
+                const updatedNode$value = transformType(node.value, visitor, ctx);
+                changed1 = changed1 || updatedNode$value !== node.value;
+                if (changed1) {
+                    updatedNode =  {...updatedNode, value: updatedNode$value};
+                    changed0 = true;
+                }
+            }
+            
+        
+        node = updatedNode;
+        if (visitor.DefTypePost) {
+            const transformed = visitor.DefTypePost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }
@@ -1235,6 +1345,40 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
         let changed0 = false;
         
         switch (node.type) {
+            case 'def': {
+                            const transformed = visitor.Expr_def ? visitor.Expr_def(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
+            case 'deftype': {
+                            const transformed = visitor.Expr_deftype ? visitor.Expr_deftype(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
             case 'string': {
                             const transformed = visitor.Expr_string ? visitor.Expr_string(node, ctx) : null;
                             if (transformed != null) {
@@ -1295,44 +1439,16 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
             case 'blank': break;
 
             case 'def': {
-                    const updatedNode$0specified = node;
-                    let changed1 = false;
-                    
-            let updatedNode$0node = updatedNode$0specified;
-            {
-                let changed2 = false;
-                
-                const updatedNode$0node$value = transformExpr(updatedNode$0specified.value, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$value !== updatedNode$0specified.value;
-                if (changed2) {
-                    updatedNode$0node =  {...updatedNode$0node, value: updatedNode$0node$value};
-                    changed1 = true;
-                }
-            }
-            
-                    updatedNode = updatedNode$0node;
-                    break;
-                }
+                        updatedNode = transformDef(node, visitor, ctx);
+                        changed0 = changed0 || updatedNode !== node;
+                        break;
+                    }
 
             case 'deftype': {
-                    const updatedNode$0specified = node;
-                    let changed1 = false;
-                    
-            let updatedNode$0node = updatedNode$0specified;
-            {
-                let changed2 = false;
-                
-                const updatedNode$0node$value = transformType(updatedNode$0specified.value, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$value !== updatedNode$0specified.value;
-                if (changed2) {
-                    updatedNode$0node =  {...updatedNode$0node, value: updatedNode$0node$value};
-                    changed1 = true;
-                }
-            }
-            
-                    updatedNode = updatedNode$0node;
-                    break;
-                }
+                        updatedNode = transformDefType(node, visitor, ctx);
+                        changed0 = changed0 || updatedNode !== node;
+                        break;
+                    }
 
             case 'string': {
                         updatedNode = transformString(node, visitor, ctx);
@@ -1831,6 +1947,22 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
         }
 
 switch (updatedNode.type) {
+            case 'def': {
+                            const transformed = visitor.ExprPost_def ? visitor.ExprPost_def(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
+            case 'deftype': {
+                            const transformed = visitor.ExprPost_deftype ? visitor.ExprPost_deftype(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
             case 'string': {
                             const transformed = visitor.ExprPost_string ? visitor.ExprPost_string(updatedNode, ctx) : null;
                             if (transformed != null) {

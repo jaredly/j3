@@ -1,4 +1,25 @@
 
+# One of these days
+I want to make
+function types
+have argument names.
+I really do.
+
+but
+
+there are cases where they aren't known, right?
+if you destructure it out of the gate
+
+but in that case, we could do something like
+`(fn [(@as hello {what things})] things)`
+right?
+maybe a litte clumsy, idk
+
+anyway, we can maybe cross that bridge when we come to it.
+or just have those names be empty. Yeah that sounds fine.
+
+- [x] function types have argument names now!
+
 # Sandbox and stuff?
 
 ummmm namespacely

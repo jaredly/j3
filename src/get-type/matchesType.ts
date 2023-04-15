@@ -322,8 +322,8 @@ export const _matchesType = (
                 const exp = expected.args[i];
                 // TODO: I think this needs to be reversed?
                 const res = _matchOrExpand(
-                    can,
-                    exp,
+                    can.type,
+                    exp.type,
                     ctx,
                     path.concat([i.toString()]),
                 );

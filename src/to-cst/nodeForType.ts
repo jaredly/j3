@@ -143,7 +143,14 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                     loc(noloc, {
                         type: 'array',
                         values: type.args.map((arg) =>
-                            nodeForType(arg, hashNames),
+                            arg.name
+                                ? {
+                                      type: 'annot',
+                                      annot: nodeForType(arg.type, hashNames),
+                                      loc: arg.form.loc,
+                                      target: id(arg.name, arg.form.loc),
+                                  }
+                                : nodeForType(arg.type, hashNames),
                         ),
                     }),
                     nodeForType(type.body, hashNames),

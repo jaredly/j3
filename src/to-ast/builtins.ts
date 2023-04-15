@@ -87,7 +87,7 @@ export const builtinFn = (
 ) => {
     return addBuiltin(builtins, reverseNames, name, {
         type: 'fn',
-        args,
+        args: args.map((type) => ({ type, form: blank })),
         body,
         form: blank,
     });
@@ -182,23 +182,35 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
         type: 'fn',
         args: [
             {
-                type: 'apply',
-                target: { type: 'builtin', form: blank, name: 'array' },
+                type: {
+                    type: 'apply',
+                    target: { type: 'builtin', form: blank, name: 'array' },
+                    form: blank,
+                    args: [
+                        { type: 'local', form: blank, sym: targ1 },
+                        { type: 'local', form: blank, sym: targ3 },
+                    ],
+                },
                 form: blank,
-                args: [
-                    { type: 'local', form: blank, sym: targ1 },
-                    { type: 'local', form: blank, sym: targ3 },
-                ],
             },
-            { type: 'local', form: blank, sym: targ2 },
+            { type: { type: 'local', form: blank, sym: targ2 }, form: blank },
             {
-                type: 'fn',
+                type: {
+                    type: 'fn',
+                    form: blank,
+                    args: [
+                        {
+                            type: { type: 'local', form: blank, sym: targ1 },
+                            form: blank,
+                        },
+                        {
+                            type: { type: 'local', form: blank, sym: targ2 },
+                            form: blank,
+                        },
+                    ],
+                    body: { type: 'local', form: blank, sym: targ2 },
+                },
                 form: blank,
-                args: [
-                    { type: 'local', form: blank, sym: targ1 },
-                    { type: 'local', form: blank, sym: targ2 },
-                ],
-                body: { type: 'local', form: blank, sym: targ2 },
             },
         ],
         body: { type: 'local', form: blank, sym: targ2 },
@@ -247,7 +259,9 @@ addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
     args: [{ form: blankAt(darg), name: 'Value' }],
     body: {
         type: 'fn',
-        args: [{ type: 'local', sym: darg, form: blank }],
+        args: [
+            { type: { type: 'local', sym: darg, form: blank }, form: blank },
+        ],
         body: tstring,
         form: blank,
     },

@@ -121,7 +121,7 @@ export const infer = (ctx: Ctx, map: Map) => {
                                 if (!usages[narg.sym]) {
                                     usages[narg.sym] = [];
                                 }
-                                usages[narg.sym].push(arg);
+                                usages[narg.sym].push(arg.type);
                             }
                         }
                     });
@@ -167,7 +167,12 @@ export const infer = (ctx: Ctx, map: Map) => {
                                     if (
                                         args[i] &&
                                         arg &&
-                                        matchesType(args[i], arg, ctx, arg.form)
+                                        matchesType(
+                                            args[i],
+                                            arg.type,
+                                            ctx,
+                                            arg.form,
+                                        )
                                     ) {
                                         score += 1;
                                     }
