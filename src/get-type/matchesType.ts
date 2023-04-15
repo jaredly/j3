@@ -371,7 +371,20 @@ export const applyAndResolve = (
                   },
               };
     }
-    // TODO locals
+    if (type.type === 'toplevel') {
+        const defn = ctx.results.toplevel[type.hash];
+        return defn?.type === 'deftype'
+            ? defn.value
+            : {
+                  type: 'error',
+                  error: {
+                      type: 'misc',
+                      message: 'missing toplevel',
+                      form: type.form,
+                      path,
+                  },
+              };
+    }
     if (type.type === 'local') {
         return { type: 'local-bound' }; // todo track bounds
     }
