@@ -72,9 +72,9 @@ export type InferMod =
           node: Node;
       };
 
-export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
+export const infer = (ctx: Ctx, map: Map) => {
     const report: Report = { types: {}, errors: {} };
-    exprs.forEach((expr) => getType(expr, ctx, report));
+    Object.values(ctx.results.toplevel).forEach((k) => getType(k, ctx, report));
 
     const mods: { [idx: number]: InferMod } = {};
 
@@ -193,7 +193,9 @@ export const infer = (exprs: Expr[], ctx: Ctx, map: Map) => {
         },
     };
 
-    exprs.forEach((expr) => transformExpr(expr, visit, null));
+    Object.values(ctx.results.toplevel).forEach((k) =>
+        transformExpr(k, visit, null),
+    );
 
     const inferredTypes: { [sym: number]: Type } = {};
     Object.keys(usages).forEach((key) => {

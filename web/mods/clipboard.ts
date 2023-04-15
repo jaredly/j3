@@ -551,24 +551,21 @@ export function generateRawPasteUpdate(
         const root = fromMCST(tmp.root, tmp.map) as {
             values: Node[];
         };
-        const exprs = filterComments(root.values).map((node) => {
+        filterComments(root.values).forEach((node) => {
             const expr = nodeToExpr(node, tctx);
             let t = getType(expr, tctx, {
                 errors: tctx.results.errors,
                 types: {},
             });
             validateExpr(expr, tctx, tctx.results.errors);
-            if (t) {
-                tctx = addDef(expr, tctx) as CstCtx;
-            }
-            return expr;
+            tctx = addDef(expr, tctx) as CstCtx;
         });
 
         tmp = { ...tmp, map: { ...tmp.map } };
         applyMods(tctx, tmp.map);
 
         if (update?.autoComplete) {
-            const mods = infer(exprs, tctx, tmp.map);
+            const mods = infer(tctx, tmp.map);
             Object.keys(mods).forEach((id) => {
                 applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);
             });

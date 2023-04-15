@@ -41,11 +41,11 @@ export const getCtx = (map: Map, root: number) => {
             map = { ...map };
             applyMods(ctx, map);
         }
-        return { ctx, map, exprs };
+        return { ctx, map };
     } catch (err) {
         console.log('trying to get ctx', map);
         console.error(err);
-        return { ctx, map, exprs: [] };
+        return { ctx, map };
     }
 };
 

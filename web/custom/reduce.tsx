@@ -107,7 +107,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
             if (update.type === 'select' && !update.autoComplete) {
                 return state;
             }
-            let { ctx, map, exprs } = getCtx(state.map, state.root);
+            let { ctx, map } = getCtx(state.map, state.root);
             verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;
@@ -116,7 +116,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
                     if (i > 8) {
                         throw new Error(`why so manyy inference`);
                     }
-                    const mods = infer(exprs, ctx, state.map);
+                    const mods = infer(ctx, state.map);
                     const modded = Object.keys(mods);
                     if (!modded.length) {
                         break;
@@ -127,7 +127,7 @@ export const reduce = (state: UIState, action: Action): UIState => {
                         verifyLocs(state.map, 'apply infer mod');
                         console.log(state.map[+id]);
                     });
-                    ({ ctx, map, exprs } = getCtx(state.map, state.root));
+                    ({ ctx, map } = getCtx(state.map, state.root));
                     verifyLocs(state.map, 'get ctx');
                     state.map = map;
                     state.ctx = ctx;

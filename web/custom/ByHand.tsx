@@ -61,7 +61,6 @@ export type UIState = {
     clipboard: ClipboardItem[][];
     ctx: Ctx;
     hover: Path[];
-    exprs: Expr[];
     // }
 } & State;
 

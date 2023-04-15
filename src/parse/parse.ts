@@ -16,6 +16,7 @@ import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
 import { CompilationResults, CstCtx } from '../to-ast/library';
 import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
+import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
 import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
 
@@ -131,22 +132,21 @@ export const parseByCharacter = (
 
         if (ctx) {
             const root = fromMCST(state.root, state.map) as { values: Node[] };
-            const exprs =
-                !kind || kind === 'expr'
-                    ? filterComments(root.values).map((node) =>
-                          nodeToExpr(node, ctx),
-                      )
-                    : null;
+            if (!kind || kind === 'expr') {
+                filterComments(root.values).forEach((node) => {
+                    ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
+                });
+            }
             if (kind === 'type') {
                 // TODO: Allow deftype here pls
-                root.values.map((node) => nodeToType(node, ctx));
+                root.values.map((node) => nodeToType(node, ctx!));
             }
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map);
 
-            if (exprs && update?.autoComplete) {
+            if (!kind || (kind === 'expr' && update?.autoComplete)) {
                 // Now we do like inference, right?
-                const mods = infer(exprs, ctx, state.map);
+                const mods = infer(ctx, state.map);
                 Object.keys(mods).forEach((id) => {
                     applyInferMod(mods[+id], state.map, state.nidx, +id);
                 });
