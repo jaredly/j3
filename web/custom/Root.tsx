@@ -56,8 +56,8 @@ export function Root({
     );
 
     const [drag, setDrag] = useState(false);
-    const exprMap: { [idx: number]: Expr } = {};
-    state.exprs.forEach((expr) => (exprMap[expr.form.loc.idx] = expr));
+    // const exprMap: { [idx: number]: Expr } = {};
+    // state.exprs.forEach((expr) => (exprMap[expr.form.loc.idx] = expr));
 
     return (
         <div
@@ -119,46 +119,51 @@ export function Root({
                 }
             }}
         >
-            {tops.map((top, i) => (
-                <div key={top} style={{ marginBottom: 8 }}>
-                    <Render
-                        debug={debug}
-                        idx={top}
-                        map={state.map}
-                        reg={reg}
-                        display={ctx.results.display}
-                        hashNames={ctx.results.hashNames}
-                        errors={ctx.results.errors}
-                        dispatch={dispatch}
-                        selection={selections}
-                        path={[
-                            {
-                                idx: state.root,
-                                type: 'child',
-                                at: i,
-                            },
-                        ]}
-                    />
-                    {exprMap[top] ? (
-                        <div
-                            style={{
-                                fontSize: '80%',
-                                opacity: 0.3,
-                                marginTop: 4,
-                            }}
-                        >
-                            {nodeToString(
-                                nodeForType(
-                                    getType(exprMap[top], ctx) ?? nilt,
+            {tops.map((top, i) => {
+                const got = state.ctx.results.toplevel[top];
+                return (
+                    <div key={top} style={{ marginBottom: 8 }}>
+                        <Render
+                            debug={debug}
+                            idx={top}
+                            map={state.map}
+                            reg={reg}
+                            display={ctx.results.display}
+                            hashNames={ctx.results.hashNames}
+                            errors={ctx.results.errors}
+                            dispatch={dispatch}
+                            selection={selections}
+                            path={[
+                                {
+                                    idx: state.root,
+                                    type: 'child',
+                                    at: i,
+                                },
+                            ]}
+                        />
+                        {got?.type === 'def' ? (
+                            <div
+                                style={{
+                                    fontSize: '80%',
+                                    opacity: 0.3,
+                                    marginTop: 4,
+                                }}
+                            >
+                                {nodeToString(
+                                    nodeForType(
+                                        got.ann ?? nilt,
+                                        ctx.results.hashNames,
+                                    ),
                                     ctx.results.hashNames,
-                                ),
-                                ctx.results.hashNames,
-                            )}
-                        </div>
-                    ) : null}
-                    {debug ? <div>{sexp(fromMCST(top, state.map))}</div> : null}
-                </div>
-            ))}
+                                )}
+                            </div>
+                        ) : null}
+                        {debug ? (
+                            <div>{sexp(fromMCST(top, state.map))}</div>
+                        ) : null}
+                    </div>
+                );
+            })}
         </div>
     );
 }
