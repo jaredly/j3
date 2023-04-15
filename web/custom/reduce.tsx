@@ -1,31 +1,18 @@
+import { applyInferMod, infer } from '../../src/infer/infer';
 import { autoCompleteIfNeeded, splitGraphemes } from '../../src/parse/parse';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
+import { MNode, Map } from '../../src/types/mcst';
 import { paste } from '../mods/clipboard';
-import { verticalMove } from './verticalMove';
-import { UIState, Action, isRootPath, lidx } from './ByHand';
-import { applyMods, getCtx } from './getCtx';
-import { Path } from '../mods/path';
-import { AutoCompleteReplace, Ctx } from '../../src/to-ast/Ctx';
 import {
     State,
-    StateUpdate,
+    StateChange,
     applyUpdate,
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
-import { MNode, Map, fromMCST } from '../../src/types/mcst';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { Node } from '../../src/types/cst';
-import { Expr } from '../../src/types/ast';
-import { applyInferMod, infer } from '../../src/infer/infer';
-import { StateChange } from '../mods/getKeyUpdate';
-
-// export const reduce = (state: UIState, action: Action): UIState => {
-//     const newState = reduceInner(state, action);
-//     if (state.map !== newState.map) {
-//         const ctx = getCtx(newState.map, newState.root);
-//         return ctx ? { ...newState, ...ctx } : newState;
-//     }
-//     return newState;
-// };
+import { Path } from '../mods/path';
+import { Action, UIState, isRootPath } from './ByHand';
+import { getCtx } from './getCtx';
+import { verticalMove } from './verticalMove';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }

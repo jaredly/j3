@@ -21,6 +21,7 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
         results: {
             ...ctx.results,
             toplevel: {
+                ...ctx.results.toplevel,
                 [res.form.loc.idx]: res,
             },
         },
