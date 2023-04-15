@@ -158,7 +158,7 @@ export const specials: {
         return {
             type: 'deftype',
             name: name.text,
-            hash: doHash(vt),
+            // hash: doHash(vt),
             value: vt,
             form,
         };
@@ -172,7 +172,7 @@ export const specials: {
             return {
                 type: 'def',
                 name: '',
-                hash: '',
+                // hash: '',
                 value: nil,
                 form,
                 ann: void 0,
@@ -188,15 +188,15 @@ export const specials: {
             };
         }
         const value = specials.fn(form, rest, ctx);
-        const hash = doHash(value);
+        // const hash = doHash(value);
         // console.log('hash', hash);
         ctx.results.display[name.loc.idx] = {
-            style: { type: 'id', hash },
+            style: { type: 'id', hash: form.loc.idx },
         };
         return {
             type: 'def',
             name: name.text,
-            hash,
+            // hash,
             value,
             form,
             ann: getType(value, ctx),
@@ -211,7 +211,7 @@ export const specials: {
             return {
                 type: 'def',
                 name: '',
-                hash: '',
+                // hash: '',
                 value: nil,
                 form,
                 ann: void 0,
@@ -219,7 +219,7 @@ export const specials: {
         }
         const first = contents[0];
         const value = contents.length > 1 ? nodeToExpr(contents[1], ctx) : nil;
-        const hash = doHash(value);
+        // const hash = doHash(value);
         if (first.type !== 'identifier') {
             err(ctx.results.errors, form, {
                 type: 'misc',
@@ -228,18 +228,20 @@ export const specials: {
             return {
                 type: 'def',
                 name: '',
-                hash: '',
+                // hash: '',
                 value,
                 form,
                 ann: void 0,
             };
         }
         // console.log('def hash', first.text, hash);
-        ctx.results.display[first.loc.idx] = { style: { type: 'id', hash } };
+        ctx.results.display[first.loc.idx] = {
+            style: { type: 'id', hash: form.loc.idx },
+        };
         return {
             type: 'def',
             name: first.text,
-            hash,
+            // hash,
             value,
             form,
             ann: getType(value, ctx),

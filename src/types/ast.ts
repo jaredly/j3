@@ -71,7 +71,7 @@ export type recordAccess = {
 export type DefType = {
     type: 'deftype';
     name: string;
-    hash: string;
+    // hash: string;
     value: Type;
     form: Node;
 };
@@ -79,7 +79,7 @@ export type DefType = {
 export type Def = {
     type: 'def';
     name: string;
-    hash: string;
+    // hash: string;
     value: Expr;
     form: Node;
     ann: Type | void;
