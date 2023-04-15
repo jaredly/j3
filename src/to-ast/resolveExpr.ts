@@ -40,7 +40,7 @@ export const resolveExpr = (
                     hash,
                     ann: top.ann ?? undefined,
                 };
-                console.log('its a hashnames', top.name);
+                // console.log('its a hashnames', top.name);
                 ctx.results.hashNames[form.loc.idx] = top.name;
                 return { type: 'toplevel', hash, form };
             }

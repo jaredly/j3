@@ -63,6 +63,22 @@ export const _unifyTypes = (
         return une(path, one, two);
     }
 
+    if (one.type === 'toplevel') {
+        const oa = applyAndResolve(one, ctx, []);
+        if (oa.type === 'error' || oa.type === 'local-bound') {
+            return une(path, one, two);
+        }
+        one = oa;
+    }
+
+    if (two.type === 'toplevel') {
+        const ta = applyAndResolve(two, ctx, []);
+        if (ta.type === 'error' || ta.type === 'local-bound') {
+            return une(path, two, two);
+        }
+        two = ta;
+    }
+
     if (one.type === 'global') {
         const oa = applyAndResolve(one, ctx, []);
         if (oa.type === 'error' || oa.type === 'local-bound') {

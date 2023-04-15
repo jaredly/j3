@@ -113,13 +113,14 @@ export const reduce = (state: UIState, action: Action): UIState => {
             state.ctx = ctx;
             if (update.autoComplete) {
                 for (let i = 0; i < 10; i++) {
-                    if (i > 8) {
-                        throw new Error(`why so manyy inference`);
-                    }
                     const mods = infer(ctx, state.map);
                     const modded = Object.keys(mods);
                     if (!modded.length) {
                         break;
+                    }
+                    if (i > 8) {
+                        console.log(mods);
+                        throw new Error(`why so manyy inference`);
                     }
                     console.log('3️⃣ infer mods', mods);
                     modded.forEach((id) => {

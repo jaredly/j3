@@ -13,7 +13,7 @@ import { unifyTypes } from '../get-type/unifyTypes';
 import { AutoCompleteReplace, noloc } from '../to-ast/Ctx';
 import { nodeForType } from '../to-cst/nodeForType';
 import { Expr, Node, Pattern, Type } from '../types/ast';
-import { Map, MNode, toMCST } from '../types/mcst';
+import { fromMCST, Map, MNode, toMCST } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
 import { applyAutoUpdateToNode } from '../../web/custom/reduce';
@@ -241,16 +241,18 @@ export const infer = (ctx: Ctx, map: Map) => {
                         inferredTypes[+sym],
                         ctx.results.hashNames,
                     );
-                    // if (matchesType(inferredTypes[+sym], definition.current, ctx, []))
+                    const current = fromMCST(definition.idx, map);
                     if (
-                        !equal(
-                            { ...node, loc: noloc },
-                            { ...map[definition.idx], loc: noloc },
+                        !matchesType(
+                            inferredTypes[+sym],
+                            definition.current,
+                            ctx,
+                            definition.current.form,
                         )
                     ) {
                         // console.log('🎉 New Infer');
                         // console.log('-> ', node);
-                        // console.log('<- ', map[definition.idx]);
+                        // console.log('<- ', current);
                         mods[definition.idx] = { type: 'replace-full', node };
                     }
                 }
