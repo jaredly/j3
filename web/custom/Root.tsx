@@ -121,6 +121,13 @@ export function Root({
         >
             {tops.map((top, i) => {
                 const got = state.ctx.results.toplevel[top];
+                const tt = got
+                    ? got.type === 'def'
+                        ? got.ann ?? nilt
+                        : got.type === 'deftype'
+                        ? got.value
+                        : getType(got, state.ctx)
+                    : null;
                 return (
                     <div key={top} style={{ marginBottom: 8 }}>
                         <Render
@@ -141,23 +148,20 @@ export function Root({
                                 },
                             ]}
                         />
-                        {got?.type === 'def' ? (
-                            <div
-                                style={{
-                                    fontSize: '80%',
-                                    opacity: 0.3,
-                                    marginTop: 4,
-                                }}
-                            >
-                                {nodeToString(
-                                    nodeForType(
-                                        got.ann ?? nilt,
-                                        ctx.results.hashNames,
-                                    ),
-                                    ctx.results.hashNames,
-                                )}
-                            </div>
-                        ) : null}
+                        <div
+                            style={{
+                                fontSize: '80%',
+                                opacity: 0.3,
+                                marginTop: 4,
+                            }}
+                        >
+                            {tt
+                                ? nodeToString(
+                                      nodeForType(tt, ctx.results.hashNames),
+                                      ctx.results.hashNames,
+                                  )
+                                : 'no type'}
+                        </div>
                         {debug ? (
                             <div>{sexp(fromMCST(top, state.map))}</div>
                         ) : null}

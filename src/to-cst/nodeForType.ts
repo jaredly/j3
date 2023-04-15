@@ -154,7 +154,7 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
             // return type.form;
             return {
                 type: 'identifier',
-                text: JSON.stringify(type.form),
+                text: 'unresolved ' + JSON.stringify(type.form),
                 loc: type.form.loc,
             };
         case 'union':
