@@ -65,7 +65,6 @@ export const basicBuiltins: Global['builtins'] = {
 
 export const addBuiltin = (
     builtins: Global['builtins'],
-    reverseNames: { [key: string]: string },
     name: string,
     type: Type,
 ) => {
@@ -73,19 +72,17 @@ export const addBuiltin = (
         throw new Error(`Dupliocate hash?? ${name}`);
     }
     builtins.terms[name] = type;
-    reverseNames[name] = name;
     return name;
 };
 
 export const builtinFn = (
     builtins: Global['builtins'],
-    reverseNames: { [key: string]: string },
 
     name: string,
     args: Type[],
     body: Type,
 ) => {
-    return addBuiltin(builtins, reverseNames, name, {
+    return addBuiltin(builtins, name, {
         type: 'fn',
         args: args.map((type) => ({ type, form: blank })),
         body,
@@ -138,10 +135,9 @@ export const imageFileBase = extendRecord(fileBase, [
 export const imageFileLazy = extendRecord(imageFileBase, [
     { name: 'handle', value: thandle },
 ]);
-export const basicReverse: { [key: string]: string } = {};
 
 export const bfn = (name: string, args: Type[], body: Type) => {
-    return builtinFn(basicBuiltins, basicReverse, name, args, body);
+    return builtinFn(basicBuiltins, name, args, body);
 };
 
 // export const mathHashes: {
@@ -171,7 +167,7 @@ bfn('has-prefix?', [tstring, tstring], tbool);
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
 const targ3 = basicBuiltins.bidx--;
-addBuiltin(basicBuiltins, basicReverse, 'reduce', {
+addBuiltin(basicBuiltins, 'reduce', {
     type: 'tfn',
     args: [
         { form: blankAt(targ1), name: 'Input' },
@@ -224,7 +220,6 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
 // system?
 // bfn(
 //     basicBuiltins,
-//     basicReverse,
 //     'reduce',
 // )
 
@@ -251,10 +246,10 @@ bfn('sin', [tfloat], tfloat);
 bfn('dot', [vec2, vec2], tfloat);
 bfn('length', [vec2], tfloat);
 bfn('texture/[]', [btype('texture'), vec2], vec4);
-addBuiltin(basicBuiltins, basicReverse, 'PI', tfloat);
+addBuiltin(basicBuiltins, 'PI', tfloat);
 
 const darg = basicBuiltins.bidx--;
-addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
+addBuiltin(basicBuiltins, 'debugToString', {
     type: 'tfn',
     args: [{ form: blankAt(darg), name: 'Value' }],
     body: {

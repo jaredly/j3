@@ -1,22 +1,14 @@
 
-# One of these days
-I want to make
-function types
-have argument names.
-I really do.
 
-but
+- [ ] so, I don't yet have a way to turn a hash back into a name.
+  for that, I think I'll probably want to know what the sandbox's
+  namespace is, and any namespace aliases I have active.
+  and then select the name that's closest to this namespace
+  - but for that to be important, I need a way to add stuff
+    to the library.
 
-there are cases where they aren't known, right?
-if you destructure it out of the gate
 
-but in that case, we could do something like
-`(fn [(@as hello {what things})] things)`
-right?
-maybe a litte clumsy, idk
 
-anyway, we can maybe cross that bridge when we come to it.
-or just have those names be empty. Yeah that sounds fine.
 
 - [x] function types have argument names now!
 
