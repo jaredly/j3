@@ -172,6 +172,12 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                     ...type.args.map((arg) => nodeForType(arg, hashNames)),
                 ],
             });
+        case 'toplevel':
+            return {
+                type: 'hash',
+                hash: type.hash,
+                loc: type.form.loc,
+            };
         case 'global':
             return {
                 type: 'hash',

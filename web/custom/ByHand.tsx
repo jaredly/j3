@@ -285,6 +285,7 @@ export const Doc = ({
                         Log state and nodes
                     </button>
                     <br />
+                    HashNames: {JSON.stringify(state.ctx.results.hashNames)}
                     MENU: STATE MENU {JSON.stringify(state.menu)} AND THE
                     {JSON.stringify(menu)}
                 </div>

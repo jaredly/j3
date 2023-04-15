@@ -33,6 +33,17 @@ export const resolveExpr = (
         };
     } else {
         if (typeof hash === 'number') {
+            const top = ctx.results.toplevel[hash];
+            if (top?.type === 'def') {
+                ctx.results.display[form.loc.idx].style = {
+                    type: 'id',
+                    hash,
+                    ann: top.ann ?? undefined,
+                };
+                console.log('its a hashnames', top.name);
+                ctx.results.hashNames[form.loc.idx] = top.name;
+                return { type: 'toplevel', hash, form };
+            }
             const sym = hash;
             const local = ctx.local.terms.find((t) => t.sym === sym);
             if (local) {
@@ -69,16 +80,6 @@ export const resolveExpr = (
                     ann: global.ann,
                 };
                 ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
-                return { type: 'global', hash, form };
-            }
-            const top = ctx.results.toplevel[+hash];
-            if (top?.type === 'def') {
-                ctx.results.display[form.loc.idx].style = {
-                    type: 'id',
-                    hash,
-                    ann: top.ann ?? undefined,
-                };
-                ctx.results.hashNames[form.loc.idx] = top.name;
                 return { type: 'global', hash, form };
             }
             populateAutocomplete(ctx, text, form);
