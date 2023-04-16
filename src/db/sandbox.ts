@@ -107,20 +107,21 @@ export const addSandbox = async (
         updated_date: Date.now() / 1000,
         version: 0,
     };
-    await db.run('begin;');
-    await db.run(`insert into sandboxes values (?, ?, ?, ?, ?);`, [
-        meta.id,
-        meta.title,
-        meta.created_date,
-        meta.updated_date,
-        meta.version,
-    ]);
-    await createTable(db, sandboxNodesConfig(id));
-    await createTable(db, sandboxHistoryConfig(id));
-
     const map = emptyMap();
-    await persistMap(db, id, map);
-    await db.run('commit;');
+
+    await transact(db, async () => {
+        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?);`, [
+            meta.id,
+            meta.title,
+            meta.created_date,
+            meta.updated_date,
+            meta.version,
+        ]);
+        await createTable(db, sandboxNodesConfig(id));
+        await createTable(db, sandboxHistoryConfig(id));
+
+        await persistMap(db, id, map);
+    });
 
     return { meta, history: [], map, root: -1 };
 };
