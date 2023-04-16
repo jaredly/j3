@@ -7,7 +7,6 @@ export const getMemDb = (): Promise<Db> => {
         all(text, args) {
             const stmt = db.prepare(text);
             const res = stmt.all(...(args ?? [])) as any[];
-            console.log('all', res);
             return Promise.resolve(res);
         },
         run(text, args) {

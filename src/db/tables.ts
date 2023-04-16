@@ -16,6 +16,17 @@ export type TableConfig = {
     params: { name: string; config: string }[];
 };
 
+export const initialize = async (db: Db) => {
+    const names = (await db.all('SELECT name FROM sqlite_schema')).map(
+        (m) => m.name,
+    );
+    for (let config of tables) {
+        if (!names.includes(config.name)) {
+            await createTable(db, config);
+        }
+    }
+};
+
 export const createTable = async (db: Db, { name, params }: TableConfig) => {
     await db.run(
         `create table ${name} (${params
