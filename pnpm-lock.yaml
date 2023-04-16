@@ -16,6 +16,7 @@ specifiers:
   '@lexical/table': ^0.8.1
   '@lexical/utils': ^0.8.1
   '@types/babel__generator': ^7.6.4
+  '@types/better-sqlite3': ^7.6.4
   '@types/jest': ^29.2.5
   '@types/node': ^18.11.18
   '@types/object-hash': ^3.0.2
@@ -76,6 +77,7 @@ dependencies:
   wa-sqlite: github.com/rhashimoto/wa-sqlite/85a041c50cd3aba038f9a78f444f02922c456e29
 
 devDependencies:
+  '@types/better-sqlite3': 7.6.4
   peggy: 2.0.1
 
 packages:
@@ -1180,6 +1182,12 @@ packages:
       '@babel/types': 7.20.7
     dev: false
 
+  /@types/better-sqlite3/7.6.4:
+    resolution: {integrity: sha512-dzrRZCYPXIXfSR1/surNbJ/grU3scTaygS0OMzjlGf71i9sc2fGyHPXXiXmEvNIoE0cGwsanEFMVJxPXmco9Eg==}
+    dependencies:
+      '@types/node': 18.11.18
+    dev: true
+
   /@types/graceful-fs/4.1.6:
     resolution: {integrity: sha512-Sig0SNORX9fdW+bQuTEovKj3uHcUL6LQKbCrrqb1X7J6/ReAbhCXRAhc+SMejhLELFj2QcyuxmUooZ4bt5ReSw==}
     dependencies:
@@ -1211,7 +1219,6 @@ packages:
 
   /@types/node/18.11.18:
     resolution: {integrity: sha512-DHQpWGjyQKSHj3ebjFI/wRKcqQcdR+MoFBygntYOZytCqNfkd2ZC4ARDJ2DQqhjH5p85Nnd3jhUJIXrszFX/JA==}
-    dev: false
 
   /@types/object-hash/3.0.2:
     resolution: {integrity: sha512-tfyXl1JPCf2hzIDK29gO7qGqJjThKBzg/Cn3bA68R9NmWdOx+f7k5mm4to/n43BHspCwcoUC6FU4NpUoK/h9bQ==}

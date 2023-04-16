@@ -1,8 +1,15 @@
-import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs';
-import * as SQLite from 'wa-sqlite';
-import IDBBatchAtomicVFS from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
+import { Library, Sandbox } from '../to-ast/library';
+import { Map } from '../types/mcst';
 
-export type Db = { api: SQLiteAPI; id: number };
+export type Db_ = { api: SQLiteAPI; id: number };
+
+export type Db = {
+    run(text: string, args?: (number | string | null)[]): Promise<void>;
+    all(
+        text: string,
+        args?: (number | string | null)[],
+    ): Promise<{ [key: string]: number | string | null }[]>;
+};
 
 export type TableConfig = {
     name: string;
@@ -10,29 +17,81 @@ export type TableConfig = {
 };
 
 export const createTable = async (db: Db, { name, params }: TableConfig) => {
-    await db.api.exec(
-        db.id,
+    await db.run(
         `create table ${name} (${params
             .map(({ name, config }) => `${name} ${config}`)
             .join(',\n')})`,
     );
 };
 
+export type NamesRow = {
+    hash: string;
+    map: { [key: string]: string };
+    root_date?: number;
+};
+
+export const getNames = async (db: Db) => {
+    const roots: { hash: string; date: number }[] = [];
+    const names: Library['namespaces'] = {};
+    await db.all(`SELECT hash, map, root_date from names`).then((rows) => {
+        rows.forEach(({ hash, map: mapRaw, root_date }) => {
+            const map = JSON.parse(mapRaw as string);
+            if (root_date) {
+                roots.push({ hash: hash as string, date: root_date as number });
+            }
+            names[hash as string] = map;
+        });
+    });
+    return { names, roots };
+};
+
 export const namesConfig = {
     name: 'names',
     params: [
-        { name: 'id', config: 'text primary key' },
+        { name: 'hash', config: 'text primary key' },
         { name: 'map', config: 'text check(json_valid(map)) not null' },
         { name: 'root_date', config: 'integer' },
     ],
 };
 
+export const getDefinitions = async (db: Db) => {
+    const definitions: Library['definitions'] = {};
+    await db.all(`SELECT hash, value from definitions`).then((rows) => {
+        rows.forEach(({ hash, value }) => {
+            definitions[hash as string] = JSON.parse(value as string);
+        });
+    });
+    return definitions;
+};
+
 export const definitionsConfig = {
     name: 'definitions',
     params: [
-        { name: 'id', config: 'text primary key' },
+        { name: 'hash', config: 'text primary key' },
         { name: 'value', config: 'text check(json_valid(value)) not null' },
     ],
+};
+
+export const getSandboxes = async (db: Db) => {
+    const sandboxes: Sandbox['meta'][] = [];
+    await db
+        .all(
+            `SELECT id, title, created_date, updated_date, version from sandboxes`,
+        )
+        .then((rows) =>
+            rows.forEach(
+                ({ id, title, created_date, updated_date, version }) => {
+                    sandboxes.push({
+                        id: id as string,
+                        title: title as string,
+                        created_date: created_date as number,
+                        updated_date: updated_date as number,
+                        version: version as number,
+                    });
+                },
+            ),
+        );
+    return sandboxes;
 };
 
 export const sandboxesConfig = {
@@ -42,11 +101,69 @@ export const sandboxesConfig = {
         { name: 'title', config: 'text not null' },
         { name: 'created_date', config: 'integer not null' },
         { name: 'updated_date', config: 'integer not null' },
+        { name: 'version', config: 'integer not null' },
     ],
 };
 
+export const addSandbox = async (
+    db: Db,
+    id: string,
+    title: string,
+): Promise<Sandbox> => {
+    const meta: Sandbox['meta'] = {
+        id,
+        title,
+        created_date: Date.now() / 1000,
+        updated_date: Date.now() / 1000,
+        version: 0,
+    };
+    await db.run('begin;');
+    await db.run(`insert into sandboxes values (?, ?, ?, ?, ?);`, [
+        meta.id,
+        meta.title,
+        meta.created_date,
+        meta.updated_date,
+        meta.version,
+    ]);
+    await createTable(db, sandboxNodesConfig(id));
+    await createTable(db, sandboxHistoryConfig(id));
+    await db.run('commit;');
+    // ooh I should make a root node for the nodes table
+    return { meta, history: [], map: {}, root: -1 };
+};
+
+export const getSandbox = async (
+    db: Db,
+    meta: Sandbox['meta'],
+): Promise<Sandbox> => {
+    const map: Sandbox['map'] = {};
+    await db
+        .all(`SELECT idx, value from ${sandboxNodesTable(meta.id)}`)
+        .then((rows) =>
+            rows.forEach(({ idx, value }) => {
+                map[idx as number] = JSON.parse(value as string);
+            }),
+        );
+
+    const history: Sandbox['history'] = [];
+    await db
+        .all(`SELECT id, value from ${sandboxHistoryTable(meta.id)}`)
+        .then((rows) =>
+            rows.forEach(({ id, value }) => {
+                history.push({
+                    id: id as number,
+                    update: JSON.parse(value as string),
+                });
+            }),
+        );
+
+    return { meta, map, root: -1, history };
+};
+
+export const sandboxNodesTable = (id: string) => `sandbox_${id}_nodes`;
+
 export const sandboxNodesConfig = (id: string) => ({
-    name: `sandbox_${id}_nodes`,
+    name: sandboxNodesTable(id),
     params: [
         { name: 'idx', config: 'integer primary key' },
         {
@@ -56,31 +173,24 @@ export const sandboxNodesConfig = (id: string) => ({
     ],
 });
 
+export const sandboxHistoryTable = (id: string) => `sandbox_${id}_updates`;
+
 export const sandboxHistoryConfig = (id: string) => ({
-    name: `sandbox_${id}_updates`,
+    name: sandboxHistoryTable(id),
     params: [
-        { name: 'id', config: 'integer primary key autoupdate' },
+        { name: 'id', config: 'integer primary key autoincrement' },
         {
-            name: 'update',
+            name: 'value',
             config: 'text check(json_valid(value)) not null',
         },
     ],
 });
 
-async function hello() {
-    const module = await SQLiteESMFactory();
-    const sqlite3 = SQLite.Factory(module);
-    const vfs = new IDBBatchAtomicVFS({ idbDatabaseName: 'jerd-sqlite' });
-    await vfs.isReady;
-    sqlite3.vfs_register(vfs, true);
-    const dbid = await sqlite3.open_v2('myDB');
-    await sqlite3.exec(dbid, `SELECT 'Hello, world!'`, (row, columns) => {
-        console.log(row);
-    });
-    await sqlite3.close(dbid);
-}
-
-hello();
+export const tables: TableConfig[] = [
+    namesConfig,
+    definitionsConfig,
+    sandboxesConfig,
+];
 
 // import localforage from 'localforage';
 

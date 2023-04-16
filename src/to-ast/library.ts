@@ -3,6 +3,7 @@ import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
+import { StateUpdate } from '../../web/mods/getKeyUpdate';
 
 export type CompilationResults = {
     errors: Report['errors'];
@@ -89,7 +90,16 @@ export type Library = {
 };
 
 export type Sandbox = {
+    meta: {
+        id: string;
+        title: string;
+        created_date: number;
+        updated_date: number;
+        version: number;
+    };
+
     root: number;
     map: { [idx: number]: MNode };
+    history: { id: number; update: StateUpdate }[];
     // namespace: string[];
 };
