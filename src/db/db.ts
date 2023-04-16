@@ -44,8 +44,8 @@ export async function getIDB(): Promise<Db> {
         }
     };
     return {
-        run: (text, args) => {
-            return run(text, args).then(() => {});
+        async run(text, args) {
+            await run(text, args);
         },
         all: run,
     };

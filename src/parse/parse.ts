@@ -207,6 +207,20 @@ export function autoCompleteIfNeeded(
     return state;
 }
 
+export const emptyMap = (): Map => {
+    return {
+        [-1]: {
+            type: 'list',
+            values: [0],
+            loc: { idx: -1, start: 0, end: 0 },
+        },
+        [0]: {
+            type: 'blank',
+            loc: { idx: 0, start: 0, end: 0 },
+        },
+    };
+};
+
 function initialState() {
     const nidx = idxSource();
     const top = nidx();

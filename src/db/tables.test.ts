@@ -2,18 +2,12 @@
 
 import { Sandbox } from '../to-ast/library';
 import { getMemDb } from './node-db';
-import {
-    addSandbox,
-    createTable,
-    getSandboxes,
-    initialize,
-    tables,
-} from './tables';
+import { addSandbox, getSandboxes } from './sandbox';
+import { createTable, initialize } from './tables';
 
 const genId = () => Math.random().toString(36).slice(2);
 
 it('should be ok', async () => {
-    //
     const mem = await getMemDb();
     await initialize(mem);
     const { meta } = await addSandbox(mem, 'an_id', 'Some Sandbox');
