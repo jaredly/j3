@@ -1,5 +1,19 @@
 
 
+# DataBasery
+
+How about the 'file' node type?
+- while in a sandbox, it lives in the sandbox.
+  also not hash-addressed. you can change things
+  as you please
+  - also, it's in a sandbox_[id]_files table or sth,
+  - so when you delete the sandbox, trailing files
+    get deleted as well.
+- once out of the sandbox, it does be hash-addressed and stuff
+
+
+
+
 - [ ] so, I don't yet have a way to turn a hash back into a name.
   for that, I think I'll probably want to know what the sandbox's
   namespace is, and any namespace aliases I have active.

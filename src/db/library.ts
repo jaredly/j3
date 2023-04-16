@@ -51,3 +51,30 @@ export const definitionsConfig = {
         { name: 'value', config: 'text check(json_valid(value)) not null' },
     ],
 };
+
+/** Does not wrap in a transaction */
+export const addDefinitions = async (
+    db: Db,
+    definitions: Library['definitions'],
+) => {
+    for (let hash of Object.keys(definitions)) {
+        const value = JSON.stringify(definitions[hash]);
+        await db.run(`insert into definitions values (?, ?)`, [hash, value]);
+    }
+};
+
+/** Does not wrap in a transaction */
+export const addNamespaces = async (
+    db: Db,
+    namespaces: Library['namespaces'],
+    root?: { hash: string; date: number },
+) => {
+    for (let hash of Object.keys(namespaces)) {
+        const value = JSON.stringify(namespaces[hash]);
+        await db.run(`insert into names values (?, ?, ?)`, [
+            hash,
+            value,
+            hash === root?.hash ? root.date : null,
+        ]);
+    }
+};

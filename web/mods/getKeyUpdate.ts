@@ -93,11 +93,16 @@ export type Menu = {
     location: number;
 };
 
+export type Cursor = {
+    start: Path[];
+    end?: Path[];
+};
+
 export type State = {
     nidx: () => number;
     map: Map;
     root: number;
-    at: { start: Path[]; end?: Path[] }[];
+    at: Cursor[];
     menu?: { selection: number; dismissed?: boolean };
 };
 

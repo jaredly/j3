@@ -9,15 +9,14 @@ import {
     flatToTree,
     treeToHashedTree,
 } from './hash-tree';
-import { getDefinitions, getNames } from './library';
-import { getMemDb } from './node-db';
 import {
     addDefinitions,
     addNamespaces,
-    addSandbox,
-    getSandboxes,
-    transact,
-} from './sandbox';
+    getDefinitions,
+    getNames,
+} from './library';
+import { getMemDb } from './node-db';
+import { addSandbox, getSandboxes, transact } from './sandbox';
 import { createTable, initialize } from './tables';
 
 const genId = () => Math.random().toString(36).slice(2);
@@ -64,6 +63,7 @@ it('should add some names', async () => {
     await transact(mem, () => addNamespaces(mem, tree, rh));
     expect(await getNames(mem)).toEqual({ names: tree, roots: [rh] });
 
+    // and more names!
     const next: HashedTree = {};
     const nextRoot = addToHashedTree(
         next,
@@ -73,7 +73,6 @@ it('should add some names', async () => {
         makeHash,
         { root, tree },
     );
-
     const r2 = { hash: nextRoot, date: 2000 };
     await transact(mem, () => addNamespaces(mem, next, r2));
     expect(await getNames(mem)).toEqual({
