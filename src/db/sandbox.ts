@@ -89,10 +89,15 @@ export const addDefinitions = async (
 export const addNamespaces = async (
     db: Db,
     namespaces: Library['namespaces'],
+    root?: { hash: string; date: number },
 ) => {
     for (let hash of Object.keys(namespaces)) {
         const value = JSON.stringify(namespaces[hash]);
-        await db.run(`insert into names values (?, ?)`, [hash, value]);
+        await db.run(`insert into names values (?, ?, ?)`, [
+            hash,
+            value,
+            hash === root?.hash ? root.date : null,
+        ]);
     }
 };
 

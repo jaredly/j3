@@ -84,7 +84,12 @@ it('should be able to build up too', () => {
     let root = undefined as undefined | string;
     Object.keys(flat).forEach((key) => {
         const tree = flatToTree({ [key]: flat[key] });
-        root = addToHashedTree(hashed, tree, makeHash, root);
+        root = addToHashedTree(
+            hashed,
+            tree,
+            makeHash,
+            root ? { root, tree: hashed } : undefined,
+        );
     });
     expect(prune(hashed, root!)).toEqual(hashedTree);
 });

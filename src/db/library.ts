@@ -21,6 +21,7 @@ export const getNames = async (db: Db) => {
             names[hash as string] = map;
         });
     });
+    roots.sort((a, b) => b.date - a.date);
     return { names, roots };
 };
 

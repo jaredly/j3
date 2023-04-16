@@ -47,9 +47,9 @@ export const addToHashedTree = (
     tree: Tree,
     makeHash: MakeHash,
     // pass root to merge with a current root.
-    root?: string,
+    prev?: { root: string; tree: HashedTree },
 ): string => {
-    const childHashes: HashedTree[''] = root ? { ...hashedTree[root] } : {};
+    const childHashes: HashedTree[''] = prev ? { ...prev.tree[prev.root] } : {};
     Object.keys(tree.children)
         .sort()
         .forEach((child) => {
@@ -57,7 +57,9 @@ export const addToHashedTree = (
                 hashedTree,
                 tree.children[child],
                 makeHash,
-                root ? hashedTree[root][child] : undefined,
+                prev
+                    ? { root: prev.tree[prev.root][child], tree: prev.tree }
+                    : undefined,
             );
             childHashes[child] = hash;
         });
