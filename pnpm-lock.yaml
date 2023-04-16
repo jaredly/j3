@@ -36,6 +36,7 @@ specifiers:
   ts-jest: ^29.0.3
   typescript: ^4.9.4
   vite: ^4.0.4
+  wa-sqlite: github:rhashimoto/wa-sqlite#breaking-changes
 
 dependencies:
   '@babel/core': 7.20.12
@@ -72,6 +73,7 @@ dependencies:
   ts-jest: 29.0.3_v4vr7fvsidjxqrxyk4kqf62kne
   typescript: 4.9.4
   vite: 4.0.4_@types+node@18.11.18
+  wa-sqlite: github.com/rhashimoto/wa-sqlite/85a041c50cd3aba038f9a78f444f02922c456e29
 
 devDependencies:
   peggy: 2.0.1
@@ -3053,4 +3055,10 @@ packages:
   /yocto-queue/0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+    dev: false
+
+  github.com/rhashimoto/wa-sqlite/85a041c50cd3aba038f9a78f444f02922c456e29:
+    resolution: {tarball: https://codeload.github.com/rhashimoto/wa-sqlite/tar.gz/85a041c50cd3aba038f9a78f444f02922c456e29}
+    name: wa-sqlite
+    version: 0.8.9
     dev: false

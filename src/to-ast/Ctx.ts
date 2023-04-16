@@ -5,7 +5,7 @@ import { Layout, MNodeContents } from '../types/mcst';
 import { basicBuiltins } from './builtins';
 import { Builtins, CstCtx, Library } from './library';
 import objectHash from 'object-hash';
-import { addToTree, splitNamespaces } from './hash-tree';
+import { addToTree, splitNamespaces } from '../db/hash-tree';
 export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
 
 export type AutoCompleteReplace = {
@@ -112,28 +112,6 @@ export const makeBuiltinTree = () => {
 };
 
 const makeHash = (value: any) => objectHash(value);
-
-export const treeToNamespaces = (
-    tree: Tree,
-): { root: string; namespaces: Library['namespaces'] } => {
-    const ns: Library['namespaces'] = {};
-    const add = (tree: Tree): string => {
-        const childHashes: { [key: string]: string } = {};
-        Object.keys(tree.children)
-            .sort()
-            .forEach((child) => {
-                const hash = add(tree.children[child]);
-                childHashes[child] = hash;
-            });
-        if (tree.top) {
-            childHashes[''] = tree.top;
-        }
-        const hash = makeHash(childHashes);
-        ns[hash] = childHashes;
-        return hash;
-    };
-    return { root: add(tree), namespaces: ns };
-};
 
 export const newCtx = (): CstCtx => {
     const builtins: Builtins = {};

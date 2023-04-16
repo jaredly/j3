@@ -2,6 +2,7 @@ import { Report } from '../get-type/get-types-new';
 import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
+import { HashedTree } from '../db/hash-tree';
 
 export type CompilationResults = {
     errors: Report['errors'];
@@ -81,11 +82,7 @@ export type Library = {
     root: string;
     // Do I want like commit messages or something? hmmm
     history: { root: string; date: number }[];
-    namespaces: {
-        [hash: string]: {
-            [name: string]: string;
-        };
-    };
+    namespaces: HashedTree;
     definitions: {
         [hash: string]: LibTerm | LibType;
     };
