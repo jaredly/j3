@@ -1,17 +1,29 @@
 // lets go
 
-import { Sandbox } from '../to-ast/library';
+import { nilt } from '../to-ast/builtins';
+import { Library, Sandbox } from '../to-ast/library';
+import { getDefinitions } from './library';
 import { getMemDb } from './node-db';
-import { addSandbox, getSandboxes } from './sandbox';
+import { addDefinitions, addSandbox, getSandboxes, transact } from './sandbox';
 import { createTable, initialize } from './tables';
 
 const genId = () => Math.random().toString(36).slice(2);
 
-it('should be ok', async () => {
+it('should initialize and add a sandbox', async () => {
     const mem = await getMemDb();
     await initialize(mem);
     const { meta } = await addSandbox(mem, 'an_id', 'Some Sandbox');
     expect(await getSandboxes(mem)).toEqual([meta]);
+});
+
+it('should add some definitions', async () => {
+    const mem = await getMemDb();
+    await initialize(mem);
+    const defs: Library['definitions'] = {
+        'some-hash': { type: 'type', value: nilt, originalName: 'nil' },
+    };
+    await transact(mem, () => addDefinitions(mem, defs));
+    expect(await getDefinitions(mem)).toEqual(defs);
 });
 
 /*

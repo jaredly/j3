@@ -1,3 +1,4 @@
+import { UpdateMap } from '../../web/store';
 import { emptyMap } from '../parse/parse';
 import { Library, Sandbox } from '../to-ast/library';
 import { Map } from '../types/mcst';
@@ -36,6 +37,7 @@ export const sandboxesConfig = {
     ],
 };
 
+/** Does wrap in a transaction */
 export const addSandbox = async (
     db: Db,
     id: string,
@@ -60,15 +62,53 @@ export const addSandbox = async (
     await createTable(db, sandboxHistoryConfig(id));
 
     const map = emptyMap();
-    for (let key of Object.keys(map)) {
-        await db.run(`insert into ${sandboxNodesTable(id)} values (?, ?);`, [
-            +key,
-            JSON.stringify(map[+key]),
-        ]);
-    }
+    await persistMap(db, id, map);
     await db.run('commit;');
 
     return { meta, history: [], map, root: -1 };
+};
+
+export const transact = async (db: Db, fn: () => Promise<void>) => {
+    await db.run('begin;');
+    await fn();
+    await db.run('commit;');
+};
+
+/** Does not wrap in a transaction */
+export const addDefinitions = async (
+    db: Db,
+    definitions: Library['definitions'],
+) => {
+    for (let hash of Object.keys(definitions)) {
+        const value = JSON.stringify(definitions[hash]);
+        await db.run(`insert into definitions values (?, ?)`, [hash, value]);
+    }
+};
+
+/** Does not wrap in a transaction */
+export const addNamespaces = async (
+    db: Db,
+    namespaces: Library['namespaces'],
+) => {
+    for (let hash of Object.keys(namespaces)) {
+        const value = JSON.stringify(namespaces[hash]);
+        await db.run(`insert into names values (?, ?)`, [hash, value]);
+    }
+};
+
+/** Does not wrap in a transaction */
+export const persistMap = async (db: Db, id: string, map: UpdateMap) => {
+    for (let key of Object.keys(map)) {
+        if (map[+key]) {
+            const value = JSON.stringify(map[+key]);
+            await db.run(
+                `insert into ${sandboxNodesTable(
+                    id,
+                )} values (?, ?) on conflict do update set value=?`,
+                [+key, value, value],
+            );
+        }
+    }
 };
 
 export const getSandbox = async (

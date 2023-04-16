@@ -13,6 +13,7 @@ export async function getIDB(): Promise<Db> {
     await vfs.isReady;
     sqlite3.vfs_register(vfs, true);
     const dbid = await sqlite3.open_v2('ide-db');
+
     const run = async (text: string, args?: ok[]) => {
         if (args) {
             const str = sqlite3.str_new(dbid, text);
@@ -21,7 +22,6 @@ export async function getIDB(): Promise<Db> {
                 sqlite3.str_value(str),
             ))!;
             sqlite3.bind_collection(prepared.stmt, args);
-            await sqlite3.step(prepared.stmt);
 
             const rows: { [key: string]: ok }[] = [];
             let columns;
@@ -32,6 +32,7 @@ export async function getIDB(): Promise<Db> {
                 columns.forEach((col, i) => (row[col] = res[i]));
                 rows.push(row);
             }
+            await sqlite3.finalize(prepared.stmt);
             return rows;
         } else {
             const rows: { [key: string]: ok }[] = [];
