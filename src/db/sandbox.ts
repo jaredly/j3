@@ -120,7 +120,7 @@ export const addSandbox = async (
         await createTable(db, sandboxNodesConfig(id));
         await createTable(db, sandboxHistoryConfig(id));
 
-        await persistMap(db, id, map);
+        await addUpdateNodes(db, id, map);
     });
 
     return { meta, history: [], map, root: -1 };
@@ -133,7 +133,7 @@ export const transact = async (db: Db, fn: () => Promise<void>) => {
 };
 
 /** Does not wrap in a transaction */
-export const persistMap = async (db: Db, id: string, map: UpdateMap) => {
+export const addUpdateNodes = async (db: Db, id: string, map: UpdateMap) => {
     for (let key of Object.keys(map)) {
         if (map[+key]) {
             const value = JSON.stringify(map[+key]);
@@ -143,6 +143,26 @@ export const persistMap = async (db: Db, id: string, map: UpdateMap) => {
                 )} values (?, ?) on conflict do update set value=?`,
                 [+key, value, value],
             );
+        } else {
+            await db.run(`delete from ${sandboxNodesTable(id)} where idx=?`, [
+                +key,
+            ]);
         }
+    }
+};
+
+export const addUpdateHistoryItems = async (
+    db: Db,
+    id: string,
+    history: Sandbox['history'],
+) => {
+    for (let item of history) {
+        const value = JSON.stringify(item);
+        await db.run(
+            `insert into ${sandboxHistoryTable(
+                id,
+            )} values (?, ?) on conflict do update set item=?`,
+            [item.id, value, value],
+        );
     }
 };

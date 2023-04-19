@@ -11,7 +11,11 @@ How about the 'file' node type?
     get deleted as well.
 - once out of the sandbox, it does be hash-addressed and stuff
 
+Q: DOES the database contain ... the 'selection' state of the sandbox?
 
+Like, when /loading up/ the sandbox, does that include
+... the status of selections?
+I guess .. we could just load up the most recent history item, and see what it says, right?
 
 
 - [ ] so, I don't yet have a way to turn a hash back into a name.

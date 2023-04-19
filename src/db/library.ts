@@ -3,11 +3,32 @@ import { Map } from '../types/mcst';
 import { sandboxesConfig } from './sandbox';
 import { Db } from './tables';
 
+// Config
+
 export type NamesRow = {
     hash: string;
     map: { [key: string]: string };
     root_date?: number;
 };
+
+export const namesConfig = {
+    name: 'names',
+    params: [
+        { name: 'hash', config: 'text primary key' },
+        { name: 'map', config: 'text check(json_valid(map)) not null' },
+        { name: 'root_date', config: 'integer' },
+    ],
+};
+
+export const definitionsConfig = {
+    name: 'definitions',
+    params: [
+        { name: 'hash', config: 'text primary key' },
+        { name: 'value', config: 'text check(json_valid(value)) not null' },
+    ],
+};
+
+// Getters
 
 export const getNames = async (db: Db) => {
     const roots: { hash: string; date: number }[] = [];
@@ -25,15 +46,6 @@ export const getNames = async (db: Db) => {
     return { names, roots };
 };
 
-export const namesConfig = {
-    name: 'names',
-    params: [
-        { name: 'hash', config: 'text primary key' },
-        { name: 'map', config: 'text check(json_valid(map)) not null' },
-        { name: 'root_date', config: 'integer' },
-    ],
-};
-
 export const getDefinitions = async (db: Db) => {
     const definitions: Library['definitions'] = {};
     await db.all(`SELECT hash, value from definitions`).then((rows) => {
@@ -44,13 +56,7 @@ export const getDefinitions = async (db: Db) => {
     return definitions;
 };
 
-export const definitionsConfig = {
-    name: 'definitions',
-    params: [
-        { name: 'hash', config: 'text primary key' },
-        { name: 'value', config: 'text check(json_valid(value)) not null' },
-    ],
-};
+// Updaters
 
 /** Does not wrap in a transaction */
 export const addDefinitions = async (

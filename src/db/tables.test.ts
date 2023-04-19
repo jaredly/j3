@@ -17,25 +17,17 @@ import {
 } from './library';
 import { getMemDb } from './node-db';
 import { addSandbox, getSandboxes, transact } from './sandbox';
-import { createTable, initialize } from './tables';
+import { initialize } from './tables';
 
 const genId = () => Math.random().toString(36).slice(2);
 
-it('should initialize and add a sandbox', async () => {
-    const mem = await getMemDb();
-    await initialize(mem);
-    const { meta } = await addSandbox(mem, 'an_id', 'Some Sandbox');
-    expect(await getSandboxes(mem)).toEqual([meta]);
-});
-
-it('should add some definitions', async () => {
-    const mem = await getMemDb();
-    await initialize(mem);
-    const defs: Library['definitions'] = {
-        'some-hash': { type: 'type', value: nilt, originalName: 'nil' },
-    };
-    await transact(mem, () => addDefinitions(mem, defs));
-    expect(await getDefinitions(mem)).toEqual(defs);
+describe('sandboxes', () => {
+    it('should initialize and add a sandbox', async () => {
+        const mem = await getMemDb();
+        await initialize(mem);
+        const { meta } = await addSandbox(mem, 'an_id', 'Some Sandbox');
+        expect(await getSandboxes(mem)).toEqual([meta]);
+    });
 });
 
 const flat: Flat = {
@@ -55,29 +47,41 @@ const makeHash = (v: { [key: string]: string }) => {
         .join(';')}}`;
 };
 
-it('should add some names', async () => {
-    const mem = await getMemDb();
-    await initialize(mem);
-    const { root, tree } = treeToHashedTree(flatToTree(flat), makeHash);
-    const rh = { hash: root, date: 1000 };
-    await transact(mem, () => addNamespaces(mem, tree, rh));
-    expect(await getNames(mem)).toEqual({ names: tree, roots: [rh] });
+describe('library', () => {
+    it('should add some definitions', async () => {
+        const mem = await getMemDb();
+        await initialize(mem);
+        const defs: Library['definitions'] = {
+            'some-hash': { type: 'type', value: nilt, originalName: 'nil' },
+        };
+        await transact(mem, () => addDefinitions(mem, defs));
+        expect(await getDefinitions(mem)).toEqual(defs);
+    });
 
-    // and more names!
-    const next: HashedTree = {};
-    const nextRoot = addToHashedTree(
-        next,
-        flatToTree({
-            four: 'four-hash',
-        }),
-        makeHash,
-        { root, tree },
-    );
-    const r2 = { hash: nextRoot, date: 2000 };
-    await transact(mem, () => addNamespaces(mem, next, r2));
-    expect(await getNames(mem)).toEqual({
-        names: { ...tree, ...next },
-        roots: [r2, rh],
+    it('should add some names', async () => {
+        const mem = await getMemDb();
+        await initialize(mem);
+        const { root, tree } = treeToHashedTree(flatToTree(flat), makeHash);
+        const rh = { hash: root, date: 1000 };
+        await transact(mem, () => addNamespaces(mem, tree, rh));
+        expect(await getNames(mem)).toEqual({ names: tree, roots: [rh] });
+
+        // and more names!
+        const next: HashedTree = {};
+        const nextRoot = addToHashedTree(
+            next,
+            flatToTree({
+                four: 'four-hash',
+            }),
+            makeHash,
+            { root, tree },
+        );
+        const r2 = { hash: nextRoot, date: 2000 };
+        await transact(mem, () => addNamespaces(mem, next, r2));
+        expect(await getNames(mem)).toEqual({
+            names: { ...tree, ...next },
+            roots: [r2, rh],
+        });
     });
 });
 
