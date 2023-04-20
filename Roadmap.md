@@ -1,6 +1,18 @@
 
+# OK Vision for the nextliness
+
+wa-sqlite in the house
+There's a Library behind everything
+and multiple Sandboxes can be called up
+we can even do like an ephemeral sandbox if we want
+or those ~constant sandboxes, ya know
+
+
+
+
 # LOCS can just be IDXs
-no need for start/end, really.
+- [x] no need for start/end, really.
+  nice
 
 
 # DataBasery
@@ -12,6 +24,7 @@ How about the 'file' node type?
   - also, it's in a sandbox_[id]_files table or sth,
   - so when you delete the sandbox, trailing files
     get deleted as well.
+    - OR maybe it's just a normal node living its normal life?
 - once out of the sandbox, it does be hash-addressed and stuff
 
 Q: DOES the database contain ... the 'selection' state of the sandbox?

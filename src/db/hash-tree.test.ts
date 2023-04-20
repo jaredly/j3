@@ -4,6 +4,7 @@ import {
     Tree,
     addToHashedTree,
     flatToTree,
+    hashedToTree,
     prune,
     treeToHashedTree,
 } from './hash-tree';
@@ -69,14 +70,13 @@ const hashedTree: HashedTree = {
 // without recomputing a ton of things?
 // definitely seems like it ought to be doable.
 
-//k so that's one ns
-
 it('should turn a flat to a hash, and hash the tree', () => {
     expect(flatToTree(flat)).toEqual(tree);
     expect(treeToHashedTree(tree, makeHash)).toEqual({
         root,
         tree: hashedTree,
     });
+    expect(hashedToTree(root, hashedTree)).toEqual(tree);
 });
 
 it('should be able to build up too', () => {
@@ -89,7 +89,7 @@ it('should be able to build up too', () => {
             tree,
             makeHash,
             root ? { root, tree: hashed } : undefined,
-        );
+        )!;
     });
     expect(prune(hashed, root!)).toEqual(hashedTree);
 });

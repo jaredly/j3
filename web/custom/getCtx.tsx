@@ -1,7 +1,7 @@
 import { getType } from '../../src/get-type/get-types-new';
 import { validateExpr } from '../../src/get-type/validate';
-import { Ctx, newCtx } from '../../src/to-ast/Ctx';
-import { CstCtx } from '../../src/to-ast/library';
+import { Ctx, newCtx, newEnv } from '../../src/to-ast/Ctx';
+import { CstCtx, Env } from '../../src/to-ast/library';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { addDef } from '../../src/to-ast/to-ast';
 import { Expr } from '../../src/types/ast';
@@ -9,9 +9,9 @@ import { Node } from '../../src/types/cst';
 import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
 import { layout } from '../layout';
 
-export const getCtx = (map: Map, root: number) => {
+export const getCtx = (map: Map, root: number, global: Env = newEnv()) => {
     const tops = (map[root] as ListLikeContents).values;
-    let ctx = newCtx();
+    let ctx = newCtx(global);
     try {
         const rootNode = fromMCST(root, map) as { values: Node[] };
         const exprs: Expr[] = [];

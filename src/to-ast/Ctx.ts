@@ -3,7 +3,7 @@ import { Expr, NumberKind, TVar, Type } from '../types/ast';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
 import { basicBuiltins } from './builtins';
-import { Builtins, CstCtx, Library } from './library';
+import { Builtins, CstCtx, Env, Library } from './library';
 import objectHash from 'object-hash';
 import { addToTree, splitNamespaces } from '../db/hash-tree';
 export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
@@ -113,7 +113,32 @@ export const makeBuiltinTree = () => {
 
 const makeHash = (value: any) => objectHash(value);
 
-export const newCtx = (): CstCtx => {
+export const builtinTree = () => {
+    const tree: Tree = { children: {} };
+
+    Object.keys(basicBuiltins.terms)
+        .concat(Object.keys(basicBuiltins.types))
+        .forEach((name) => {
+            addToTree(tree, name, ':builtin:' + name);
+        });
+
+    return tree;
+};
+
+export const builtinMap = (): Builtins => {
+    const builtins: Builtins = {};
+
+    Object.keys(basicBuiltins.terms).forEach((name) => {
+        builtins[name] = { type: 'term', ann: basicBuiltins.terms[name] };
+    });
+    Object.keys(basicBuiltins.types).forEach((name) => {
+        builtins[name] = { type: 'type', args: basicBuiltins.types[name] };
+    });
+
+    return builtins;
+};
+
+export const newEnv = (): Env => {
     const builtins: Builtins = {};
     const ns: Library['namespaces'] = { '': {} };
     let aaa = 0;
@@ -146,15 +171,14 @@ export const newCtx = (): CstCtx => {
     });
 
     return {
-        global: {
-            builtins,
-            library: {
-                definitions: {},
-                history: [],
-                namespaces: ns,
-                root: '',
-            },
-        },
+        builtins,
+        library: { definitions: {}, history: [], namespaces: ns, root: '' },
+    };
+};
+
+export const newCtx = (global: Env = newEnv()): CstCtx => {
+    return {
+        global,
         local: emptyLocal,
         results: {
             localMap: { terms: {}, types: {} },

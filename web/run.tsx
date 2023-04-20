@@ -3,6 +3,8 @@ import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import ubahn from 'react-ubahn/runtime';
 import { ByHand } from './custom/ByHand';
+import { initialData } from './ide/initialData';
+import { IDE } from './ide/IDE';
 
 ubahn.disable();
 
@@ -50,10 +52,13 @@ class ErrorBoundary extends React.Component<
     }
 }
 
-root.render(
-    <React.StrictMode>
-        <ErrorBoundary>
-            <ByHand />
-        </ErrorBoundary>
-    </React.StrictMode>,
+initialData().then((initial) =>
+    root.render(
+        <React.StrictMode>
+            <ErrorBoundary>
+                <IDE initial={initial} />
+                {/* <ByHand /> */}
+            </ErrorBoundary>
+        </React.StrictMode>,
+    ),
 );

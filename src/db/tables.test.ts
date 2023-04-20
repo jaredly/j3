@@ -75,7 +75,7 @@ describe('library', () => {
             }),
             makeHash,
             { root, tree },
-        );
+        )!;
         const r2 = { hash: nextRoot, date: 2000 };
         await transact(mem, () => addNamespaces(mem, next, r2));
         expect(await getNames(mem)).toEqual({

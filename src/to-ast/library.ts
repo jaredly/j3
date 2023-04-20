@@ -83,7 +83,7 @@ export type LibType = {
 export type Library = {
     root: string;
     // Do I want like commit messages or something? hmmm
-    history: { root: string; date: number }[];
+    history: { hash: string; date: number }[];
     namespaces: HashedTree;
     definitions: {
         [hash: string]: LibTerm | LibType;

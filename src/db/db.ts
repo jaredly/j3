@@ -1,15 +1,18 @@
-import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs';
+import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import * as SQLite from 'wa-sqlite';
-import IDBBatchAtomicVFS from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
+import { IDBBatchAtomicVFS } from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
+// import {IndexedDbVFS} from 'wa-sqlite/src/examples/IndexedDbVFS.js'
 import MemoryAsyncVFS from 'wa-sqlite/src/examples/MemoryAsyncVFS.js';
 import { Db } from './tables';
 
 type ok = number | string | null;
 
 export async function getIDB(): Promise<Db> {
-    const module = await SQLiteESMFactory();
+    const module = await SQLiteESMFactory({
+        locateFile: (name: string) => name,
+    });
     const sqlite3 = SQLite.Factory(module);
-    const vfs = new IDBBatchAtomicVFS({ idbDatabaseName: 'jerd-sqlite' });
+    const vfs = new IDBBatchAtomicVFS('jerd-sqlite');
     await vfs.isReady;
     sqlite3.vfs_register(vfs, true);
     const dbid = await sqlite3.open_v2('ide-db');

@@ -48,8 +48,9 @@ export const addToHashedTree = (
     makeHash: MakeHash,
     // pass root to merge with a current root.
     prev?: { root: string; tree: HashedTree },
-): string => {
+): string | null => {
     const childHashes: HashedTree[''] = prev ? { ...prev.tree[prev.root] } : {};
+    let changed = false;
     Object.keys(tree.children)
         .sort()
         .forEach((child) => {
@@ -61,14 +62,36 @@ export const addToHashedTree = (
                     ? { root: prev.tree[prev.root][child], tree: prev.tree }
                     : undefined,
             );
-            childHashes[child] = hash;
+            if (hash && childHashes[child] !== hash) {
+                childHashes[child] = hash;
+                changed = true;
+            }
         });
-    if (tree.top) {
+    if (tree.top && childHashes[''] !== tree.top) {
+        changed = true;
         childHashes[''] = tree.top;
+    }
+    if (!changed) {
+        return null;
     }
     const hash = makeHash(childHashes);
     hashedTree[hash] = childHashes;
     return hash;
+};
+
+export const hashedToTree = (root: string, hashed: HashedTree): Tree => {
+    const traverse = (hash: string): Tree => {
+        const tree: Tree = { children: {} };
+        Object.keys(hashed[hash]).forEach((name) => {
+            if (name === '') {
+                tree.top = hashed[hash][name];
+            } else {
+                tree.children[name] = traverse(hashed[hash][name]);
+            }
+        });
+        return tree;
+    };
+    return traverse(root);
 };
 
 export const treeToHashedTree = (
@@ -77,7 +100,7 @@ export const treeToHashedTree = (
 ): { root: string; tree: HashedTree } => {
     const hashedTree: HashedTree = {};
     return {
-        root: addToHashedTree(hashedTree, tree, makeHash),
+        root: addToHashedTree(hashedTree, tree, makeHash)!,
         tree: hashedTree,
     };
 };
@@ -95,5 +118,3 @@ export const prune = (hashedTree: HashedTree, root: string) => {
     add(root);
     return pruned;
 };
-
-// export const add
