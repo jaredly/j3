@@ -730,11 +730,53 @@ export const maybeClearParentList = (
         if ('values' in gpnode && gpnode.values.length === 1) {
             return {
                 type: 'update',
-                map: { [gp.idx]: { ...gpnode, values: [] } },
+                map: {
+                    [gp.idx]: { ...gpnode, values: [] },
+                    ...clearAllChildren(gpnode.values, map),
+                },
                 selection: path
                     .slice(0, -1)
                     .concat({ idx: gp.idx, type: 'inside' }),
             };
         }
     }
+};
+
+export const clearAllChildren = (idxs: number[], map: Map) => {
+    const res: UpdateMap = {};
+
+    const clear = (idx: number) => {
+        res[idx] = null;
+        const node = map[idx];
+        switch (node.type) {
+            case 'array':
+            case 'list':
+            case 'record':
+                node.values.forEach(clear);
+                break;
+            case 'annot':
+                clear(node.annot);
+                clear(node.target);
+                break;
+            case 'recordAccess':
+                clear(node.target);
+                node.items.forEach(clear);
+                break;
+            case 'spread':
+                clear(node.contents);
+                break;
+            case 'string':
+                clear(node.first);
+                node.templates.forEach((t) => (clear(t.expr), clear(t.suffix)));
+                break;
+            case 'tapply':
+                clear(node.target);
+                node.values.forEach(clear);
+                break;
+        }
+    };
+
+    idxs.forEach(clear);
+
+    return res;
 };

@@ -371,6 +371,16 @@ describe('a test', () => {
         });
 });
 
+describe('delete', () => {
+    it('try to delete as well', () => {
+        const state = parseByCharacter(`(one (two three)^b^b`, null);
+        const idx = (state.map[-1] as ListLikeContents).values[0];
+        const back = nodeToString(fromMCST(idx, state.map), {});
+        expect(back).toBe('(one)');
+        expect(Object.keys(state.map)).toHaveLength(3);
+    });
+});
+
 const pathIdx = (path: Path[]) => path[path.length - 1].idx;
 
 function doABunchOfKeys({

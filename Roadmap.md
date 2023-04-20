@@ -1,4 +1,7 @@
 
+# LOCS can just be IDXs
+no need for start/end, really.
+
 
 # DataBasery
 

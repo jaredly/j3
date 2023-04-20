@@ -7,7 +7,7 @@ import {
     MNodeExtra,
 } from '../../src/types/mcst';
 import { UpdateMap } from '../store';
-import { NewThing, StateUpdate } from './getKeyUpdate';
+import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 
 export function replacePathWith(
@@ -21,7 +21,10 @@ export function replacePathWith(
     const update = replacePath(path[path.length - 1], newThing.idx, map);
     return {
         type: 'update',
-        map: { ...newThing.map, ...update },
+        map: {
+            ...newThing.map,
+            ...update,
+        },
         selection: path.concat(newThing.selection),
     };
 }
