@@ -62,7 +62,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     });
                     continue;
                 }
-                ctx.results.display[name.loc.idx] = {
+                ctx.results.display[name.loc] = {
                     style: { type: 'record-attr' },
                 };
                 entries.push({
@@ -86,7 +86,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
-                ctx.results.display[first.loc.idx] = { style: { type: 'tag' } };
+                ctx.results.display[first.loc] = { style: { type: 'tag' } };
                 return {
                     type: 'tag',
                     form,
@@ -114,7 +114,27 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 }
                 const tvalues = filterComments(targs.values);
                 const parsed = tvalues.map((arg) => {
-                    return nodeToType(arg, ctx);
+                    if (arg.type === 'annot') {
+                        if (arg.target.type === 'identifier') {
+                            return {
+                                type: nodeToType(arg.annot, ctx),
+                                name: arg.target.text,
+                                form: arg,
+                            };
+                        } else {
+                            err(ctx.results.errors, arg.target, {
+                                type: 'misc',
+                                message: 'nope',
+                                form: arg.target,
+                                path: [],
+                            });
+                            return {
+                                type: nodeToType(arg.annot, ctx),
+                                form: arg,
+                            };
+                        }
+                    }
+                    return { type: nodeToType(arg, ctx), form: arg };
                 });
                 return {
                     type: 'fn',
@@ -138,7 +158,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     // const type = nodeToType(arg, ctx)
                     return {
                         name: arg.type === 'identifier' ? arg.text : 'NOPE',
-                        sym: arg.loc.idx, // nextSym(ctx),
+                        sym: arg.loc, // nextSym(ctx),
                         form: arg,
                     };
                 });

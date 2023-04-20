@@ -190,8 +190,8 @@ export const specials: {
         const value = specials.fn(form, rest, ctx);
         // const hash = doHash(value);
         // console.log('hash', hash);
-        ctx.results.display[name.loc.idx] = {
-            style: { type: 'id', hash: form.loc.idx },
+        ctx.results.display[name.loc] = {
+            style: { type: 'id', hash: form.loc },
         };
         return {
             type: 'def',
@@ -235,8 +235,8 @@ export const specials: {
             };
         }
         // console.log('def hash', first.text, hash);
-        ctx.results.display[first.loc.idx] = {
-            style: { type: 'id', hash: form.loc.idx },
+        ctx.results.display[first.loc] = {
+            style: { type: 'id', hash: form.loc },
         };
         return {
             type: 'def',
@@ -296,7 +296,7 @@ export const specials: {
         if (!first || first.type !== 'array') {
             return { type: 'unresolved', form, reason: 'first not array' };
         }
-        ctx.results.display[first.loc.idx] = { style: { type: 'let-pairs' } };
+        ctx.results.display[first.loc] = { style: { type: 'let-pairs' } };
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         const values = filterComments(first.values);
         const allLocals: Local['terms'] = [];

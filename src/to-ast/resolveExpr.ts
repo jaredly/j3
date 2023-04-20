@@ -22,10 +22,10 @@ export const resolveExpr = (
     if (text.startsWith("'")) {
         return { type: 'tag', name: text, form };
     }
-    ctx.results.display[form.loc.idx] = {};
+    ctx.results.display[form.loc] = {};
     if (!hash) {
         populateAutocomplete(ctx, text, form);
-        ctx.results.display[form.loc.idx].style = { type: 'unresolved' };
+        ctx.results.display[form.loc].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
             form,
@@ -35,24 +35,24 @@ export const resolveExpr = (
         if (typeof hash === 'number') {
             const top = ctx.results.toplevel[hash];
             if (top?.type === 'def') {
-                ctx.results.display[form.loc.idx].style = {
+                ctx.results.display[form.loc].style = {
                     type: 'id',
                     hash,
                     ann: top.ann ?? undefined,
                 };
                 // console.log('its a hashnames', top.name);
-                ctx.results.hashNames[form.loc.idx] = top.name;
+                ctx.results.hashNames[form.loc] = top.name;
                 return { type: 'toplevel', hash, form };
             }
             const sym = hash;
             const local = ctx.local.terms.find((t) => t.sym === sym);
             if (local) {
-                ctx.results.display[form.loc.idx].style = {
+                ctx.results.display[form.loc].style = {
                     type: 'id',
                     hash: local.sym,
                     ann: local.type,
                 };
-                ctx.results.hashNames[form.loc.idx] = local.name;
+                ctx.results.hashNames[form.loc] = local.name;
                 return { type: 'local', sym: local.sym, form };
             }
             populateAutocomplete(ctx, text, form);
@@ -63,23 +63,23 @@ export const resolveExpr = (
                 const builtin = ctx.global.builtins[text];
                 if (builtin?.type === 'term') {
                     const last = text.split('/').slice(-1)[0];
-                    ctx.results.display[form.loc.idx].style = {
+                    ctx.results.display[form.loc].style = {
                         type: 'id',
                         hash,
                         ann: builtin.ann,
                     };
-                    ctx.results.hashNames[form.loc.idx] = last;
+                    ctx.results.hashNames[form.loc] = last;
                     return { type: 'builtin', name: text, form };
                 }
             }
             const global = ctx.global.library.definitions[hash];
             if (global?.type === 'term') {
-                ctx.results.display[form.loc.idx].style = {
+                ctx.results.display[form.loc].style = {
                     type: 'id',
                     hash,
                     ann: global.ann,
                 };
-                ctx.results.hashNames[form.loc.idx] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
+                ctx.results.hashNames[form.loc] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
             populateAutocomplete(ctx, text, form);

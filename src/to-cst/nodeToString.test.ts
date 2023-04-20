@@ -2,7 +2,7 @@ import { Loc, Node } from '../types/cst';
 import { nodeToString, showSourceMap, SourceMap } from './nodeToString';
 
 function loc(): Loc {
-    return { idx: loc.idx++, start: 0, end: 0 };
+    return loc.idx++;
 }
 loc.idx = 0;
 

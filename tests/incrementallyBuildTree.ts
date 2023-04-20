@@ -27,11 +27,7 @@ export const emptyHistoryItem = () => ({
 
 export const getRoot = (text: string) => {
     const tree = parse(text).map(preprocess);
-    const root = {
-        type: 'list',
-        values: tree,
-        loc: { idx: -1, start: 0, end: 0 },
-    } satisfies Node;
+    const root = { type: 'list', values: tree, loc: -1 } satisfies Node;
     const omap: Map = {};
     toMCST(root, omap);
     return { root, omap };

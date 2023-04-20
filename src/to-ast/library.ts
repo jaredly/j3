@@ -2,6 +2,9 @@ import { Report } from '../get-type/get-types-new';
 import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
+import { HashedTree } from '../db/hash-tree';
+import { Cursor, StateUpdate } from '../../web/mods/getKeyUpdate';
+import { UpdateMap } from '../../web/store';
 
 export type CompilationResults = {
     errors: Report['errors'];
@@ -81,18 +84,32 @@ export type Library = {
     root: string;
     // Do I want like commit messages or something? hmmm
     history: { root: string; date: number }[];
-    namespaces: {
-        [hash: string]: {
-            [name: string]: string;
-        };
-    };
+    namespaces: HashedTree;
     definitions: {
         [hash: string]: LibTerm | LibType;
     };
 };
 
+export type HistoryItem = {
+    id: number;
+    map: UpdateMap;
+    prev: UpdateMap;
+    at: Cursor[];
+    prevAt: Cursor[];
+    ts: number;
+};
+
 export type Sandbox = {
+    meta: {
+        id: string;
+        title: string;
+        created_date: number;
+        updated_date: number;
+        version: number;
+    };
+
     root: number;
     map: { [idx: number]: MNode };
+    history: HistoryItem[];
     // namespace: string[];
 };

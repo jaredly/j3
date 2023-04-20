@@ -160,7 +160,7 @@ export const RenderNNode = (
 
     const coverageLevel = isCoveredBySelection(props.selection, path, map);
 
-    const errors = props.errors[node.loc.idx];
+    const errors = props.errors[node.loc];
 
     const errorStyle = errors?.length
         ? {

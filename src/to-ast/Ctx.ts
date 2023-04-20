@@ -2,8 +2,10 @@ import { Loc, Node } from '../types/cst';
 import { Expr, NumberKind, TVar, Type } from '../types/ast';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
-import { basicBuiltins, basicReverse } from './builtins';
+import { basicBuiltins } from './builtins';
 import { Builtins, CstCtx, Library } from './library';
+import objectHash from 'object-hash';
+import { addToTree, splitNamespaces } from '../db/hash-tree';
 export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
 
 export type AutoCompleteReplace = {
@@ -88,21 +90,28 @@ export type NodeStyle =
       };
 
 export const emptyLocal: Local = { terms: [], types: [] };
-export const initialGlobal: Global = {
-    builtins: basicBuiltins,
-    terms: {},
-    names: {},
-    types: {},
-    typeNames: {},
-    reverseNames: { ...basicReverse },
+
+type Tree = {
+    top?: string;
+    children: {
+        [key: string]: Tree;
+    };
 };
 
-const splitNamespaces = (name: string) => {
-    if (name.endsWith('//')) {
-        return name.slice(0, -2).split('/').concat(['/']);
-    }
-    return name.split('/');
+export const makeBuiltinTree = () => {
+    const tree: Tree = { children: {} };
+
+    Object.keys(basicBuiltins.terms).forEach((name) => {
+        addToTree(tree, name, ':builtin:' + name);
+    });
+    Object.keys(basicBuiltins.types).forEach((name) => {
+        addToTree(tree, name, ':builtin:' + name);
+    });
+
+    return tree;
 };
+
+const makeHash = (value: any) => objectHash(value);
 
 export const newCtx = (): CstCtx => {
     const builtins: Builtins = {};

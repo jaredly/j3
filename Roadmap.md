@@ -1,4 +1,38 @@
 
+# LOCS can just be IDXs
+no need for start/end, really.
+
+
+# DataBasery
+
+How about the 'file' node type?
+- while in a sandbox, it lives in the sandbox.
+  also not hash-addressed. you can change things
+  as you please
+  - also, it's in a sandbox_[id]_files table or sth,
+  - so when you delete the sandbox, trailing files
+    get deleted as well.
+- once out of the sandbox, it does be hash-addressed and stuff
+
+Q: DOES the database contain ... the 'selection' state of the sandbox?
+
+Like, when /loading up/ the sandbox, does that include
+... the status of selections?
+I guess .. we could just load up the most recent history item, and see what it says, right?
+
+
+- [ ] so, I don't yet have a way to turn a hash back into a name.
+  for that, I think I'll probably want to know what the sandbox's
+  namespace is, and any namespace aliases I have active.
+  and then select the name that's closest to this namespace
+  - but for that to be important, I need a way to add stuff
+    to the library.
+
+
+
+
+- [x] function types have argument names now!
+
 # Sandbox and stuff?
 
 ummmm namespacely

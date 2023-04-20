@@ -54,7 +54,7 @@ export function Root({
 
     const [drag, setDrag] = useState(false);
     // const exprMap: { [idx: number]: Expr } = {};
-    // state.exprs.forEach((expr) => (exprMap[expr.form.loc.idx] = expr));
+    // state.exprs.forEach((expr) => (exprMap[expr.form.loc] = expr));
 
     return (
         <div

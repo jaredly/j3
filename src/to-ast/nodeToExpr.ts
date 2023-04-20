@@ -62,7 +62,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                             .startsWith(form.raw.slice(1).toLowerCase()),
                     );
                 }
-                ensure(ctx.results.display, form.loc.idx, {}).autoComplete =
+                ensure(ctx.results.display, form.loc, {}).autoComplete =
                     options;
             }
             return { type: 'unresolved', form };
@@ -191,7 +191,7 @@ export const maybeParseNumber = (
     ctx: CstCtx,
 ): null | Number => {
     if (form.text.match(/^[0-9]+u$/)) {
-        ensure(ctx.results.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc, {}).style = {
             type: 'number',
             kind: 'uint',
         };
@@ -204,7 +204,7 @@ export const maybeParseNumber = (
     }
     if (form.text.match(/^-?[0-9]+[if]?$/)) {
         const kind = form.text.endsWith('f') ? 'float' : 'int';
-        ensure(ctx.results.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc, {}).style = {
             type: 'number',
             kind,
         };
@@ -216,7 +216,7 @@ export const maybeParseNumber = (
         };
     }
     if (form.text.match(/^-?[0-9]+\.[0-9]*f?$/)) {
-        ensure(ctx.results.display, form.loc.idx, {}).style = {
+        ensure(ctx.results.display, form.loc, {}).style = {
             type: 'number',
             kind: 'float',
         };
@@ -300,8 +300,8 @@ export function nodeToRecord(
                     name: item.text,
                     value: nodeToExpr(item, ctx),
                 });
-                if (!ctx.results.display[item.loc.idx]?.style) {
-                    ensure(ctx.results.display, item.loc.idx, {}).style = {
+                if (!ctx.results.display[item.loc]?.style) {
+                    ensure(ctx.results.display, item.loc, {}).style = {
                         type: 'record-attr',
                     };
                 }
@@ -351,8 +351,8 @@ export function nodeToRecord(
             continue;
         }
 
-        if (!ctx.results.display[name.loc.idx]?.style) {
-            ensure(ctx.results.display, name.loc.idx, {}).style = {
+        if (!ctx.results.display[name.loc]?.style) {
+            ensure(ctx.results.display, name.loc, {}).style = {
                 type: 'record-attr',
             };
         }
@@ -402,7 +402,7 @@ export function nodeToRecordAccess(
                 if (options[item.text]) {
                     ttype = options[item.text].value;
                 } else {
-                    ensure(ctx.results.display, item.loc.idx, {}).autoComplete =
+                    ensure(ctx.results.display, item.loc, {}).autoComplete =
                         Object.entries(options).map(
                             ([name, { value }]) =>
                                 ({
@@ -416,7 +416,7 @@ export function nodeToRecordAccess(
                                     ann: value,
                                 } satisfies AutoCompleteResult),
                         );
-                    ctx.results.display[item.loc.idx];
+                    ctx.results.display[item.loc];
                     err(ctx.results.errors, item, {
                         type: 'misc',
                         message: `no "${item.text}" attribute on record`,

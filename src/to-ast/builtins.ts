@@ -18,7 +18,7 @@ export const noForm = (obj: any): any => {
     return obj;
 };
 
-export const noloc: Loc = { start: -1, end: -1, idx: -1 };
+export const noloc: Loc = -1;
 
 export const blank: Node = {
     type: 'blank',
@@ -27,7 +27,7 @@ export const blank: Node = {
 
 export const blankAt = (idx: number): Node => ({
     ...blank,
-    loc: { ...noloc, idx },
+    loc: idx,
 });
 
 export const btype = (v: string): Type => ({
@@ -65,7 +65,6 @@ export const basicBuiltins: Global['builtins'] = {
 
 export const addBuiltin = (
     builtins: Global['builtins'],
-    reverseNames: { [key: string]: string },
     name: string,
     type: Type,
 ) => {
@@ -73,21 +72,19 @@ export const addBuiltin = (
         throw new Error(`Dupliocate hash?? ${name}`);
     }
     builtins.terms[name] = type;
-    reverseNames[name] = name;
     return name;
 };
 
 export const builtinFn = (
     builtins: Global['builtins'],
-    reverseNames: { [key: string]: string },
 
     name: string,
     args: Type[],
     body: Type,
 ) => {
-    return addBuiltin(builtins, reverseNames, name, {
+    return addBuiltin(builtins, name, {
         type: 'fn',
-        args,
+        args: args.map((type) => ({ type, form: blank })),
         body,
         form: blank,
     });
@@ -138,10 +135,9 @@ export const imageFileBase = extendRecord(fileBase, [
 export const imageFileLazy = extendRecord(imageFileBase, [
     { name: 'handle', value: thandle },
 ]);
-export const basicReverse: { [key: string]: string } = {};
 
 export const bfn = (name: string, args: Type[], body: Type) => {
-    return builtinFn(basicBuiltins, basicReverse, name, args, body);
+    return builtinFn(basicBuiltins, name, args, body);
 };
 
 // export const mathHashes: {
@@ -171,7 +167,7 @@ bfn('has-prefix?', [tstring, tstring], tbool);
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
 const targ3 = basicBuiltins.bidx--;
-addBuiltin(basicBuiltins, basicReverse, 'reduce', {
+addBuiltin(basicBuiltins, 'reduce', {
     type: 'tfn',
     args: [
         { form: blankAt(targ1), name: 'Input' },
@@ -182,23 +178,35 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
         type: 'fn',
         args: [
             {
-                type: 'apply',
-                target: { type: 'builtin', form: blank, name: 'array' },
+                type: {
+                    type: 'apply',
+                    target: { type: 'builtin', form: blank, name: 'array' },
+                    form: blank,
+                    args: [
+                        { type: 'local', form: blank, sym: targ1 },
+                        { type: 'local', form: blank, sym: targ3 },
+                    ],
+                },
                 form: blank,
-                args: [
-                    { type: 'local', form: blank, sym: targ1 },
-                    { type: 'local', form: blank, sym: targ3 },
-                ],
             },
-            { type: 'local', form: blank, sym: targ2 },
+            { type: { type: 'local', form: blank, sym: targ2 }, form: blank },
             {
-                type: 'fn',
+                type: {
+                    type: 'fn',
+                    form: blank,
+                    args: [
+                        {
+                            type: { type: 'local', form: blank, sym: targ1 },
+                            form: blank,
+                        },
+                        {
+                            type: { type: 'local', form: blank, sym: targ2 },
+                            form: blank,
+                        },
+                    ],
+                    body: { type: 'local', form: blank, sym: targ2 },
+                },
                 form: blank,
-                args: [
-                    { type: 'local', form: blank, sym: targ1 },
-                    { type: 'local', form: blank, sym: targ2 },
-                ],
-                body: { type: 'local', form: blank, sym: targ2 },
             },
         ],
         body: { type: 'local', form: blank, sym: targ2 },
@@ -212,7 +220,6 @@ addBuiltin(basicBuiltins, basicReverse, 'reduce', {
 // system?
 // bfn(
 //     basicBuiltins,
-//     basicReverse,
 //     'reduce',
 // )
 
@@ -239,15 +246,17 @@ bfn('sin', [tfloat], tfloat);
 bfn('dot', [vec2, vec2], tfloat);
 bfn('length', [vec2], tfloat);
 bfn('texture/[]', [btype('texture'), vec2], vec4);
-addBuiltin(basicBuiltins, basicReverse, 'PI', tfloat);
+addBuiltin(basicBuiltins, 'PI', tfloat);
 
 const darg = basicBuiltins.bidx--;
-addBuiltin(basicBuiltins, basicReverse, 'debugToString', {
+addBuiltin(basicBuiltins, 'debugToString', {
     type: 'tfn',
     args: [{ form: blankAt(darg), name: 'Value' }],
     body: {
         type: 'fn',
-        args: [{ type: 'local', sym: darg, form: blank }],
+        args: [
+            { type: { type: 'local', sym: darg, form: blank }, form: blank },
+        ],
         body: tstring,
         form: blank,
     },

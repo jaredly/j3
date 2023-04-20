@@ -322,8 +322,8 @@ export const _matchesType = (
                 const exp = expected.args[i];
                 // TODO: I think this needs to be reversed?
                 const res = _matchOrExpand(
-                    can,
-                    exp,
+                    can.type,
+                    exp.type,
                     ctx,
                     path.concat([i.toString()]),
                 );
@@ -509,7 +509,7 @@ export const applyAndResolve = (
                     return { type: 'error', error: res };
                 }
             }
-            map[inner.args[i].form.loc.idx] = type.args[i];
+            map[inner.args[i].form.loc] = type.args[i];
         }
         return applyTypeVariables(inner.body, map);
     }

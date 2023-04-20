@@ -20,7 +20,7 @@ export const calculateLayout = (
         case 'hash': {
             return {
                 type: 'flat',
-                width: hashNames[node.loc.idx]?.length ?? 0,
+                width: hashNames[node.loc]?.length ?? 0,
                 pos,
             };
         }
@@ -63,7 +63,7 @@ export const calculateLayout = (
                     tightFirst: 0,
                     pos,
                     cw,
-                    pairs: display[node.loc.idx]?.style?.type === 'let-pairs',
+                    pairs: display[node.loc]?.style?.type === 'let-pairs',
                 };
             }
             return { type: 'flat', width: cw - pos, pos };

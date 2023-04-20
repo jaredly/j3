@@ -93,11 +93,16 @@ export type Menu = {
     location: number;
 };
 
+export type Cursor = {
+    start: Path[];
+    end?: Path[];
+};
+
 export type State = {
     nidx: () => number;
     map: Map;
     root: number;
-    at: { start: Path[]; end?: Path[] }[];
+    at: Cursor[];
     menu?: { selection: number; dismissed?: boolean };
 };
 
@@ -218,14 +223,14 @@ export const getKeyUpdate = (
         return handleBackspace(map, selection, hashNames);
     }
 
-    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
+    const textRaw = hashNames[node.loc] ?? idText(node) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
         if ('text' in node || node.type === 'hash') {
-            const text = hashNames[node.loc.idx] ?? idText(node) ?? '';
+            const text = hashNames[node.loc] ?? idText(node) ?? '';
             if (!isPathAtStart(text, flast)) {
                 const pos = pathPos(fullPath, text);
                 const next = fullPath.slice(0, -1).concat([
@@ -507,7 +512,7 @@ export const insertText = (
     const idx = flast.idx;
     // Ok, so now we're updating things
     const input = splitGraphemes(inputRaw);
-    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
+    const textRaw = hashNames[node.loc] ?? idText(node) ?? '';
     const pos = pathPos(fullPath, textRaw);
 
     if (
@@ -725,11 +730,53 @@ export const maybeClearParentList = (
         if ('values' in gpnode && gpnode.values.length === 1) {
             return {
                 type: 'update',
-                map: { [gp.idx]: { ...gpnode, values: [] } },
+                map: {
+                    [gp.idx]: { ...gpnode, values: [] },
+                    ...clearAllChildren(gpnode.values, map),
+                },
                 selection: path
                     .slice(0, -1)
                     .concat({ idx: gp.idx, type: 'inside' }),
             };
         }
     }
+};
+
+export const clearAllChildren = (idxs: number[], map: Map) => {
+    const res: UpdateMap = {};
+
+    const clear = (idx: number) => {
+        res[idx] = null;
+        const node = map[idx];
+        switch (node.type) {
+            case 'array':
+            case 'list':
+            case 'record':
+                node.values.forEach(clear);
+                break;
+            case 'annot':
+                clear(node.annot);
+                clear(node.target);
+                break;
+            case 'recordAccess':
+                clear(node.target);
+                node.items.forEach(clear);
+                break;
+            case 'spread':
+                clear(node.contents);
+                break;
+            case 'string':
+                clear(node.first);
+                node.templates.forEach((t) => (clear(t.expr), clear(t.suffix)));
+                break;
+            case 'tapply':
+                clear(node.target);
+                node.values.forEach(clear);
+                break;
+        }
+    };
+
+    idxs.forEach(clear);
+
+    return res;
 };

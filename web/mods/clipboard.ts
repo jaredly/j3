@@ -142,7 +142,7 @@ export const validatePath = (
                     return false;
                 }
                 const text = splitGraphemes(
-                    hashNames[node.loc.idx] ?? idText(node) ?? '',
+                    hashNames[node.loc] ?? idText(node) ?? '',
                 );
                 if (child.at < 0 || child.at > text.length) {
                     return false;
@@ -345,7 +345,7 @@ export const collectNodes = (
             const node = fromMCST(slast.idx, map);
             if ('text' in node || node.type === 'hash') {
                 const text = splitGraphemes(
-                    hashNames[node.loc.idx] ?? idText(node) ?? '',
+                    hashNames[node.loc] ?? idText(node) ?? '',
                 );
                 const sloc =
                     slast.type === 'subtext'
@@ -422,7 +422,7 @@ export const collectNodes = (
                             ? children[0]
                             : {
                                   type: 'blank' as const,
-                                  loc: { idx: -2, start: 0, end: 0 },
+                                  loc: -2,
                               };
                         const kids = children.slice(1) as (accessText &
                             NodeExtra)[];
@@ -459,7 +459,7 @@ export const collectNodes = (
                             children.unshift({
                                 type: 'stringText',
                                 text: '',
-                                loc: { idx: -2, start: 0, end: 0 },
+                                loc: -2,
                             });
                         }
                         const templates: {
@@ -476,11 +476,7 @@ export const collectNodes = (
                                         : {
                                               type: 'stringText',
                                               text: '',
-                                              loc: {
-                                                  idx: -2,
-                                                  start: 0,
-                                                  end: 0,
-                                              },
+                                              loc: -2,
                                           },
                             });
                         }
@@ -495,7 +491,7 @@ export const collectNodes = (
                         node = { ...(node as any), values: children };
                         break;
                 }
-                node = { ...node, loc: { idx: -2, start: 0, end: 0 } };
+                node = { ...node, loc: -2 };
                 if (waiting.length) {
                     waiting[waiting.length - 1].children.push(node);
                 } else {
@@ -520,7 +516,7 @@ export const collectNodes = (
 export const reLoc = (node: Node, nidx: () => number): Node => {
     return transformNode(node, {
         pre(node) {
-            return { ...node, loc: { ...node.loc, idx: nidx() } };
+            return { ...node, loc: nidx() };
         },
     });
 };

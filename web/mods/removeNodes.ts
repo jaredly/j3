@@ -21,12 +21,12 @@ export const removeNodes = (
         return;
     }
     const toRemove: { [idx: number]: boolean } = {};
-    // nodes.forEach((node) => (toRemove[node.loc.idx] = true));
+    // nodes.forEach((node) => (toRemove[node.loc] = true));
     nodes.forEach((node) =>
         transformNode(node, {
             pre(node, path) {
-                if (node.loc.idx !== -2) {
-                    toRemove[node.loc.idx] = true;
+                if (node.loc !== -2) {
+                    toRemove[node.loc] = true;
                 } else {
                     console.warn('Aaaaa');
                 }
@@ -40,20 +40,18 @@ export const removeNodes = (
     transformNode(fromMCST(ancestor, map), {
         pre(node, path) {
             if ('values' in node) {
-                let values = node.values.filter(
-                    (node) => !toRemove[node.loc.idx],
-                );
+                let values = node.values.filter((node) => !toRemove[node.loc]);
                 if (values.length < node.values.length) {
-                    update[node.loc.idx] = {
+                    update[node.loc] = {
                         ...(node as any),
-                        values: values.map((v) => v.loc.idx),
+                        values: values.map((v) => v.loc),
                     };
                 }
                 return;
             }
             // if (node.type === 'recordAccess') {
-            //     if (toRemove[node.target.loc.idx]) {
-            //         update[node.target.loc.idx] = {
+            //     if (toRemove[node.target.loc]) {
+            //         update[node.target.loc] = {
             //             type: 'blank',
             //             loc: node.target.loc,
             //         };
@@ -61,9 +59,9 @@ export const removeNodes = (
             // }
             // HM
             if (node.type === 'spread') {
-                if (toRemove[node.contents.loc.idx]) {
+                if (toRemove[node.contents.loc]) {
                     console.log('remove node contents', node);
-                    update[node.contents.loc.idx] = {
+                    update[node.contents.loc] = {
                         type: 'blank',
                         loc: node.contents.loc,
                     };
@@ -74,7 +72,7 @@ export const removeNodes = (
             }
             if (node.type === 'string') {
                 let first = node.first;
-                if (toRemove[first.loc.idx]) {
+                if (toRemove[first.loc]) {
                     first = { ...first, text: '' };
                 }
                 let templates: {
@@ -82,8 +80,8 @@ export const removeNodes = (
                     suffix: stringText & NodeExtra;
                 }[] = [];
                 node.templates.forEach(({ expr, suffix }) => {
-                    if (toRemove[expr.loc.idx]) {
-                        if (!toRemove[suffix.loc.idx]) {
+                    if (toRemove[expr.loc]) {
+                        if (!toRemove[suffix.loc]) {
                             if (templates.length) {
                                 templates[templates.length - 1].suffix.text +=
                                     suffix.text;
@@ -94,7 +92,7 @@ export const removeNodes = (
                                 };
                             }
                         }
-                    } else if (toRemove[suffix.loc.idx]) {
+                    } else if (toRemove[suffix.loc]) {
                         templates.push({
                             expr,
                             suffix: { ...suffix, text: '' },
@@ -104,17 +102,17 @@ export const removeNodes = (
                     }
                 });
                 if (first !== node.first) {
-                    update[first.loc.idx] = first;
+                    update[first.loc] = first;
                 }
                 if (templates.length !== node.templates.length) {
-                    update[node.loc.idx] = {
+                    update[node.loc] = {
                         ...node,
-                        first: first.loc.idx,
+                        first: first.loc,
                         templates: templates.map(({ expr, suffix }) => {
-                            update[suffix.loc.idx] = suffix;
+                            update[suffix.loc] = suffix;
                             return {
-                                expr: expr.loc.idx,
-                                suffix: suffix.loc.idx,
+                                expr: expr.loc,
+                                suffix: suffix.loc,
                             };
                         }),
                     };

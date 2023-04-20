@@ -9,10 +9,10 @@ const err = (
     type: Type | Expr | MatchError,
     error: Error,
 ) => {
-    if (!errors[type.form.loc.idx]) {
-        errors[type.form.loc.idx] = [];
+    if (!errors[type.form.loc]) {
+        errors[type.form.loc] = [];
     }
-    errors[type.form.loc.idx].push(error);
+    errors[type.form.loc].push(error);
 };
 
 export const validateExpr = (
@@ -193,7 +193,7 @@ export const validateType = (
         case 'tag':
             return type.args.forEach((arg) => validateType(arg, ctx, errors));
         case 'fn':
-            type.args.forEach((arg) => validateType(arg, ctx, errors));
+            type.args.forEach((arg) => validateType(arg.type, ctx, errors));
             return validateType(type.body, ctx, errors);
         case 'record':
             for (let entry of type.entries) {

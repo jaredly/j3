@@ -25,15 +25,15 @@ describe.skip('compile', () => {
         compile(store, ctx);
         const xi = xpath(store.map, store.root, ['0'])!;
         const yi = xpath(store.map, store.root, ['1'])!;
-        expect(ctx.results[xi.loc.idx].status).toEqual('success');
-        expect(ctx.results[yi.loc.idx].status).toEqual('success');
+        expect(ctx.results[xi.loc].status).toEqual('success');
+        expect(ctx.results[yi.loc].status).toEqual('success');
         const xHash = ctx.ctx.global.names['x'];
         const yHash = ctx.ctx.global.names['y'];
         expect(xHash).toHaveLength(1);
 
         // Act
         const map = {
-            [n10!.loc.idx]: { ...n10, raw: '30' },
+            [n10!.loc]: { ...n10, raw: '30' },
         };
         updateStore(store, { map });
         compile(store, ctx);
@@ -108,7 +108,7 @@ describe.skip('compile', () => {
         };
         updateStore(store, {
             map: {
-                [x10!.loc.idx]: {
+                [x10!.loc]: {
                     ...x10,
                     text: '30',
                 },

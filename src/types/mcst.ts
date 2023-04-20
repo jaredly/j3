@@ -134,7 +134,7 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
 export const fromMCST = (idx: number, map: Map): Node => {
     const node = map[idx];
     if (!node) {
-        return { type: 'blank', loc: { idx: -1, start: 0, end: 0 } };
+        return { type: 'blank', loc: -1 };
     }
     return {
         loc: node.loc,
@@ -188,19 +188,14 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
 };
 
 export const toMCST = (node: Node, map: UpdateMap): number => {
-    if (map[node.loc.idx]) {
-        console.error(
-            `Duplicate node in map??`,
-            node.loc.idx,
-            map[node.loc.idx],
-            node,
-        );
+    if (map[node.loc]) {
+        console.error(`Duplicate node in map??`, node.loc, map[node.loc], node);
     }
-    map[node.loc.idx] = {
+    map[node.loc] = {
         ...toMNode(node, map),
         loc: node.loc,
     };
-    return node.loc.idx;
+    return node.loc;
 };
 
 const tightFirsts: { [key: string]: number } = { fn: 2, def: 2, defn: 3 };

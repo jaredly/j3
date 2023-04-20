@@ -2,7 +2,11 @@ import { UpdateMap } from '../store';
 import { ListLikeContents, Map, MNodeExtra } from '../../src/types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
-import { StateChange, maybeClearParentList } from './getKeyUpdate';
+import {
+    StateChange,
+    clearAllChildren,
+    maybeClearParentList,
+} from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
 import {
     idText,
@@ -26,7 +30,7 @@ export function handleBackspace(
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {
-                const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
+                const fullText = hashNames[node.loc] ?? idText(node) ?? '';
                 const split = splitGraphemes(fullText);
                 const text = split
                     .slice(0, item.source.start)
@@ -125,7 +129,7 @@ export function handleBackspace(
                                   ? {
                                         type: 'identifier',
                                         text:
-                                            hashNames[target.loc.idx] ??
+                                            hashNames[target.loc] ??
                                             idText(target) + node.text,
                                         loc: target.loc,
                                     }
@@ -240,10 +244,21 @@ export function handleBackspace(
         node.type !== 'blank'
     ) {
         const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
-        return (
-            cleared ??
-            replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx))
-        );
+        if (cleared) {
+            return cleared;
+        }
+
+        const update = replacePathWith(
+            fullPath.slice(0, -1),
+            map,
+            newBlank(flast.idx),
+        )!;
+        update.map = {
+            ...clearAllChildren([flast.idx], map),
+            ...update.map,
+        };
+
+        return update;
     }
 
     if (node.type === 'blank') {
@@ -331,6 +346,7 @@ export function handleBackspace(
                     type: 'update',
                     map: {
                         [ppath.idx]: { ...parent, values: [] },
+                        [flast.idx]: null,
                     },
                     selection: fullPath.slice(0, -2).concat({
                         idx: ppath.idx,
@@ -354,7 +370,7 @@ export function handleBackspace(
             }
             return {
                 type: 'update',
-                map: { [ppath.idx]: { ...parent, values } },
+                map: { [ppath.idx]: { ...parent, values }, [flast.idx]: null },
                 selection: sel,
             };
         }
@@ -373,7 +389,7 @@ export function handleBackspace(
     }
 
     if (!atStart && ('text' in node || node.type === 'hash')) {
-        const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
+        const fullText = hashNames[node.loc] ?? idText(node) ?? '';
         const text = splitGraphemes(fullText);
         const atEnd =
             flast.type === 'end' ||

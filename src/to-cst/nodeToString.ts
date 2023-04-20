@@ -17,7 +17,7 @@ export const nodeToString = (
     const start = sm.cur;
     let body = nodeToString_(node, hashNames, sm);
     sm.cur = start + body.length;
-    sm.map[node.loc.idx] = { start, end: sm.cur };
+    sm.map[node.loc] = { start, end: sm.cur };
     return body;
 };
 
@@ -86,9 +86,9 @@ export const nodeToString_ = (
                     .slice(-1)[0];
             }
             return (
-                hashNames[node.loc.idx] ??
+                hashNames[node.loc] ??
                 (typeof node.hash === 'number' ? hashNames[node.hash] : null) ??
-                `<hashName not recorded ${node.loc.idx} ${node.hash}>`
+                `<hashName not recorded ${node.loc} ${node.hash}>`
             );
         }
         case 'comment':

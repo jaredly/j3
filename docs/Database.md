@@ -1,4 +1,56 @@
 
+# So the Editor Database, looks like
+
+- namespaces is a hashedtree
+  - hash -> {child-name => hash}
+  - oh and a given hash can be indicated as a root,
+    along with a timestamp, right?
+    when we import
+  - that will take care of root history
+- definitions 
+  - hash -> term or type
+
+- sandbox(es?)
+  - idx -> mnode
+  - history n stuffs?
+
+
+... so ...
+
+names, can be an append-only log
+as can definitions
+
+sandbox things are not, however.
+
+hrm maybe leveldb is the right call here? idk.
+I don't really need relationality.
+
+
+How much should I keep in memory?
+I can load up the info for a given sandbox.
+- but like, the definitions. They don't need to be loaded up,
+  right?
+  well .. yeah so I guess we would load up the sandbox's
+  namespace, right?
+  and when autocompleting, we'd load up anything that got shown?
+- eh, I mean for now we'll just load everything, of course.
+
+BUT in that case, can I just use localForage?
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### Prev thoughts
+
 - important distinctions -
 
 > erlang nodes have "mnesia" database built in. This is the same concept as javascript web env having 'localStorage', and isn't quite what I mean. But it does go part of the way. This is "the language *runtime* has a bundled database", which is nice. like userdefaults on iOS.
