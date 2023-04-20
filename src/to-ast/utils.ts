@@ -78,7 +78,7 @@ export type DecExpected = {
 //                 }
 //                 result.expected.push({
 //                     type: nodeToType(values[0], ctx),
-//                     idx: values[1].loc.idx,
+//                     idx: values[1].loc,
 //                 });
 //                 return values[1];
 //             }
@@ -90,7 +90,7 @@ export type DecExpected = {
 //             }
 //             result.errors.push({
 //                 message: values[0].first.text,
-//                 idx: values[1].loc.idx,
+//                 idx: values[1].loc,
 //             });
 //             return values[1];
 //         },

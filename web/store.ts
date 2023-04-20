@@ -152,14 +152,7 @@ export type Path = { idx: number; child: PathChild };
 
 export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
-    const root = toMCST(
-        {
-            type: 'list',
-            values: nodes,
-            loc: { idx: -1, start: 0, end: 0 },
-        },
-        map,
-    );
+    const root = toMCST({ type: 'list', values: nodes, loc: -1 }, map);
     return {
         version: 1,
         selection: { idx: root, loc: 'start' },

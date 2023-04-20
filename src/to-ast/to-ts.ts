@@ -173,7 +173,7 @@ export const stmtToTs = (
                             '=',
                             t.memberExpression(
                                 t.identifier('$terms'),
-                                t.stringLiteral(expr.form.loc.idx + ''),
+                                t.stringLiteral(expr.form.loc + ''),
                                 true,
                             ),
                             exprToTs(expr.value, ctx),
@@ -182,7 +182,7 @@ export const stmtToTs = (
                     t.returnStatement(
                         t.memberExpression(
                             t.identifier('$terms'),
-                            t.stringLiteral(expr.form.loc.idx + ''),
+                            t.stringLiteral(expr.form.loc + ''),
                             true,
                         ),
                     ),
@@ -190,7 +190,7 @@ export const stmtToTs = (
             }
             return t.variableDeclaration('const', [
                 t.variableDeclarator(
-                    t.identifier('h' + expr.form.loc.idx),
+                    t.identifier('h' + expr.form.loc),
                     exprToTs(expr.value, ctx),
                 ),
             ]);

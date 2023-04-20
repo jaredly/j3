@@ -13,8 +13,8 @@ export function verifyToplevels(
     store: Store,
 ) {
     root.values.forEach((top) => {
-        it('top ' + top.loc.idx, () => {
-            const result = ectx.results[top.loc.idx];
+        it('top ' + top.loc, () => {
+            const result = ectx.results[top.loc];
             if (result.status === 'errors') {
                 console.error(store.map);
                 console.log(
@@ -35,8 +35,8 @@ export function verifyExistingToplevels(
     ectx: EvalCtx,
 ) {
     root.values.forEach((top) => {
-        if (ectx.results[top.loc.idx]) {
-            expect(ectx.results[top.loc.idx].status).toEqual('success');
+        if (ectx.results[top.loc]) {
+            expect(ectx.results[top.loc].status).toEqual('success');
         }
     });
 }

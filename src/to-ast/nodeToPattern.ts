@@ -19,27 +19,27 @@ export const nodeToPattern = (
             let sym;
             // if (!form.hash) {
             //     sym = nextSym(ctx);
-            //     addMod(ctx, form.loc.idx, { type: 'hash', hash: `:${sym}` });
+            //     addMod(ctx, form.loc, { type: 'hash', hash: `:${sym}` });
             // } else {
             //     sym = +form.hash.slice(1);
             //     if (isNaN(sym)) {
             //         throw new Error(`non-number sym? ${form.hash}`);
             //     }
             // }
-            ctx.results.display[form.loc.idx] = {
+            ctx.results.display[form.loc] = {
                 style: {
                     type: 'id-decl',
-                    hash: form.loc.idx,
+                    hash: form.loc,
                 },
             };
             bindings.push({
                 name: form.text,
-                sym: form.loc.idx,
+                sym: form.loc,
                 type: t,
             });
             return {
                 type: 'local',
-                sym: form.loc.idx,
+                sym: form.loc,
                 name: form.text,
                 form,
             };
@@ -110,7 +110,7 @@ export const nodeToPattern = (
                     }
 
                     const namev = name.text;
-                    ctx.results.display[name.loc.idx] = {
+                    ctx.results.display[name.loc] = {
                         style: { type: 'record-attr' },
                     };
                     if (!prm[namev]) {
@@ -145,7 +145,7 @@ export const nodeToPattern = (
                         continue;
                     }
                     const namev = name.text;
-                    ctx.results.display[name.loc.idx] = {
+                    ctx.results.display[name.loc] = {
                         style: { type: 'record-attr' },
                     };
                     if (!prm[namev]) {
@@ -227,7 +227,7 @@ export const nodeToPattern = (
             }
             if (first.type === 'identifier' && first.text.startsWith("'")) {
                 const text = first.text.slice(1);
-                ctx.results.display[first.loc.idx] = { style: { type: 'tag' } };
+                ctx.results.display[first.loc] = { style: { type: 'tag' } };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
                     console.log('no t', t);
@@ -267,8 +267,8 @@ export const nodeToPattern = (
 };
 
 export const err = (errors: Report['errors'], form: Node, error: Error) => {
-    if (!errors[form.loc.idx]) {
-        errors[form.loc.idx] = [];
+    if (!errors[form.loc]) {
+        errors[form.loc] = [];
     }
-    errors[form.loc.idx].push(error);
+    errors[form.loc].push(error);
 };

@@ -1,10 +1,6 @@
 // What peggy gives me, and what the structured editor thinks about
 
-export type Loc = {
-    start: number;
-    end: number;
-    idx: number;
-};
+export type Loc = number;
 
 export type NodeList = { type: 'list'; values: Node[] };
 

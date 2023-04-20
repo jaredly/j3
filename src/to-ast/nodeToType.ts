@@ -62,7 +62,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     });
                     continue;
                 }
-                ctx.results.display[name.loc.idx] = {
+                ctx.results.display[name.loc] = {
                     style: { type: 'record-attr' },
                 };
                 entries.push({
@@ -86,7 +86,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
-                ctx.results.display[first.loc.idx] = { style: { type: 'tag' } };
+                ctx.results.display[first.loc] = { style: { type: 'tag' } };
                 return {
                     type: 'tag',
                     form,
@@ -158,7 +158,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     // const type = nodeToType(arg, ctx)
                     return {
                         name: arg.type === 'identifier' ? arg.text : 'NOPE',
-                        sym: arg.loc.idx, // nextSym(ctx),
+                        sym: arg.loc, // nextSym(ctx),
                         form: arg,
                     };
                 });

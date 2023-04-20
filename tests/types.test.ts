@@ -71,7 +71,7 @@ import { preprocess } from './preprocess';
 //                             )}, found ${nodeToString(
 //                                 nodeForType(err.found, ctx),
 //                                 ctx.hashNames,
-//                             )} at idx ${err.found.form.loc.idx}`,
+//                             )} at idx ${err.found.form.loc}`,
 //                         );
 //                         break;
 //                     default:

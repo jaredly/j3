@@ -113,8 +113,8 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                     loc(noloc, {
                         type: 'array',
                         values: type.args.flatMap((arg): Node[] => {
-                            map[arg.form.loc.idx] = arg.name;
-                            hashNames[arg.form.loc.idx] = arg.name;
+                            map[arg.form.loc] = arg.name;
+                            hashNames[arg.form.loc] = arg.name;
                             const name = id(arg.name, noloc);
                             return [
                                 arg.bound

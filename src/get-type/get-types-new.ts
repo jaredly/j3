@@ -33,17 +33,17 @@ export type Report = {
 };
 
 export const err = (report: Report, expr: Type | Expr, error: Error) => {
-    if (!report.errors[expr.form.loc.idx]) {
-        report.errors[expr.form.loc.idx] = [];
+    if (!report.errors[expr.form.loc]) {
+        report.errors[expr.form.loc] = [];
     }
-    report.errors[expr.form.loc.idx].push(error);
+    report.errors[expr.form.loc].push(error);
 };
 
 export const errf = (report: Report, form: Node, error: Error) => {
-    if (!report.errors[form.loc.idx]) {
-        report.errors[form.loc.idx] = [];
+    if (!report.errors[form.loc]) {
+        report.errors[form.loc] = [];
     }
-    report.errors[form.loc.idx].push(error);
+    report.errors[form.loc].push(error);
 };
 
 // So, IF we have a localized error, we will *not*
@@ -51,7 +51,7 @@ export const errf = (report: Report, form: Node, error: Error) => {
 export const getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
     const type = _getType(expr, ctx, report);
     if (type && report) {
-        report.types[expr.form.loc.idx] = type;
+        report.types[expr.form.loc] = type;
     }
     return type;
 };
@@ -165,7 +165,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                         return;
                     }
                 }
-                map[target.args[i].form.loc.idx] = expr.args[i];
+                map[target.args[i].form.loc] = expr.args[i];
             }
             return applyTypeVariables(target.body, map);
         }
@@ -216,7 +216,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     form: expr.form,
                 };
                 if (report) {
-                    report.types[expr.target.form.loc.idx] = res;
+                    report.types[expr.target.form.loc] = res;
                 }
                 return res;
             }
@@ -287,8 +287,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     form: arg.type.form,
                 });
                 if (report) {
-                    report.types[arg.type.form.loc.idx] = arg.type;
-                    report.types[arg.pattern.form.loc.idx] = arg.type;
+                    report.types[arg.type.form.loc] = arg.type;
+                    report.types[arg.pattern.form.loc] = arg.type;
                     getPatternTypes(arg.pattern, arg.type, report.types);
                 }
             });
@@ -296,7 +296,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 return;
             }
             if (expr.ret && report) {
-                report.types[expr.ret.form.loc.idx] = expr.ret;
+                report.types[expr.ret.form.loc] = expr.ret;
             }
             const body = expr.body.map((body) => getType(body, ctx, report));
             const last =
@@ -319,13 +319,13 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                     expr.value,
                     {
                         Type(node) {
-                            report.types[node.form.loc.idx] = node;
+                            report.types[node.form.loc] = node;
                             return null;
                         },
                     },
                     null,
                 );
-                report.types[expr.form.loc.idx] = expr.value;
+                report.types[expr.form.loc] = expr.value;
             }
             return expr.value;
         case 'array': {
@@ -578,17 +578,17 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
 export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {
     switch (pattern.type) {
         case 'bool':
-            report.types[pattern.form.loc.idx] = {
+            report.types[pattern.form.loc] = {
                 type: 'builtin',
                 name: 'bool',
                 form: pattern.form,
             };
             return;
         case 'number':
-            report.types[pattern.form.loc.idx] = pattern;
+            report.types[pattern.form.loc] = pattern;
             return;
         case 'local':
-            report.types[pattern.form.loc.idx] =
+            report.types[pattern.form.loc] =
                 ctx.results.localMap.terms[pattern.sym].type;
             return;
         case 'record':
@@ -618,7 +618,7 @@ export const getPatternTypes = (
                 });
             }
             pattern.entries.forEach((entry) => {
-                types[entry.form.loc.idx] = map[entry.name];
+                types[entry.form.loc] = map[entry.name];
             });
             return;
         }

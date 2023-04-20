@@ -30,7 +30,7 @@ export function handleBackspace(
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {
-                const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
+                const fullText = hashNames[node.loc] ?? idText(node) ?? '';
                 const split = splitGraphemes(fullText);
                 const text = split
                     .slice(0, item.source.start)
@@ -129,7 +129,7 @@ export function handleBackspace(
                                   ? {
                                         type: 'identifier',
                                         text:
-                                            hashNames[target.loc.idx] ??
+                                            hashNames[target.loc] ??
                                             idText(target) + node.text,
                                         loc: target.loc,
                                     }
@@ -389,7 +389,7 @@ export function handleBackspace(
     }
 
     if (!atStart && ('text' in node || node.type === 'hash')) {
-        const fullText = hashNames[node.loc.idx] ?? idText(node) ?? '';
+        const fullText = hashNames[node.loc] ?? idText(node) ?? '';
         const text = splitGraphemes(fullText);
         const atEnd =
             flast.type === 'end' ||

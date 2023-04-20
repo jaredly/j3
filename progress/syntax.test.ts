@@ -286,7 +286,7 @@ describe('a test', () => {
                 } = parseByCharacter(jerd, null, { debug: only });
                 const selection = at[0].start;
                 Object.keys(data).forEach((key) => {
-                    expect(data[+key].loc.idx).toEqual(+key);
+                    expect(data[+key].loc).toEqual(+key);
                 });
                 const idx = (data[-1] as ListLikeContents).values[0];
                 const sourceMap: SourceMap = { map: {}, cur: 0 };

@@ -15,7 +15,7 @@ export function populateAutocomplete(ctx: CstCtx, text: string, form: Node) {
         }))
         .filter(({ score }) => score.full)
         .sort((a, b) => compareScores(a.score, b.score));
-    ensure(ctx.results.display, form.loc.idx, {}).autoComplete = [
+    ensure(ctx.results.display, form.loc, {}).autoComplete = [
         ...withScores.map(
             ({ result }) =>
                 ({
@@ -56,7 +56,7 @@ export function populateAutocompleteType(
         }))
         .filter(({ score }) => score.full)
         .sort((a, b) => compareScores(a.score, b.score));
-    ensure(ctx.results.display, form.loc.idx, {}).autoComplete = [
+    ensure(ctx.results.display, form.loc, {}).autoComplete = [
         ...withScores.map(
             ({ result }) =>
                 ({

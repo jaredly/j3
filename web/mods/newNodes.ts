@@ -13,7 +13,7 @@ export const mergeNew = (first: NewThing, second: NewThing): NewThing => {
 export const newBlank = (idx: number): NewThing => {
     return {
         map: {
-            [idx]: { type: 'blank', loc: { idx, start: 0, end: 0 } },
+            [idx]: { type: 'blank', loc: idx },
         },
         idx,
         selection: [{ idx, type: 'start' }],
@@ -26,7 +26,7 @@ export const newSpread = (iid: number, last: Path[], idx: number): NewThing => {
             [idx]: {
                 type: 'spread',
                 contents: iid,
-                loc: { idx, start: 0, end: 0 },
+                loc: idx,
             },
         },
         idx,
@@ -46,12 +46,12 @@ export const newRecordAccess = (
                 type: 'recordAccess',
                 target: iid,
                 items: [aidx],
-                loc: { idx, start: 0, end: 0 },
+                loc: idx,
             },
             [aidx]: {
                 type: 'accessText',
                 text: text,
-                loc: { idx: aidx, start: 0, end: 0 },
+                loc: aidx,
             },
         },
         idx,
@@ -78,14 +78,14 @@ export const newTapply = (
                 type: 'tapply',
                 target: tid,
                 values: text ? [aidx] : [],
-                loc: { idx, start: 0, end: 0 },
+                loc: idx,
             },
             ...(text
                 ? {
                       [aidx]: {
                           type: 'identifier',
                           text,
-                          loc: { idx: aidx, start: 0, end: 0 },
+                          loc: aidx,
                       },
                   }
                 : {}),
@@ -106,7 +106,7 @@ export const newAccessText = (text: string[], idx: number): NewThing => {
             [idx]: {
                 type: 'accessText',
                 text: text.join(''),
-                loc: { idx, start: 0, end: 0 },
+                loc: idx,
             },
         },
         idx,
@@ -120,7 +120,7 @@ export const newId = (key: string[], idx: number): NewThing => {
             [idx]: {
                 type: 'identifier',
                 text: key.join(''),
-                loc: { idx, start: 0, end: 0 },
+                loc: idx,
             },
         },
         idx,
@@ -135,11 +135,11 @@ export const newString = (idx: number, nid: number): NewThing => {
                 type: 'string',
                 first: nid,
                 templates: [],
-                loc: { idx, start: 0, end: 0 },
+                loc: idx,
             },
             [nid]: {
                 type: 'stringText',
-                loc: { idx: nid, start: 0, end: 0 },
+                loc: nid,
                 text: '',
             },
         },
@@ -167,7 +167,7 @@ export function newAnnot(
                 type: 'annot',
                 target,
                 annot: child.idx,
-                loc: { start: 0, end: 0, idx },
+                loc: idx,
             },
         },
         idx,
@@ -186,7 +186,7 @@ export function newListLike(
             [idx]: {
                 type: kind,
                 values: child != null ? [child.idx] : [],
-                loc: { start: 0, end: 0, idx },
+                loc: idx,
             },
         },
         idx,

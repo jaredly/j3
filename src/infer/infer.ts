@@ -47,7 +47,7 @@ import { Ctx } from '../to-ast/library';
 //     const ok = (e: Expr) => {
 //         switch (e.type) {
 //             case 'apply': {
-//                 const fnt = report.types[e.target.form.loc.idx];
+//                 const fnt = report.types[e.target.form.loc];
 //                 if (fnt) {
 //                     // hm
 //                     // at one level a constraint is 'this matches this type'
@@ -92,17 +92,17 @@ export const infer = (ctx: Ctx, map: Map) => {
             if (node.type === 'fn') {
                 node.args.forEach((arg) => {
                     if (arg.pattern.type === 'local') {
-                        if (arg.type.form.loc.idx !== -1) {
+                        if (arg.type.form.loc !== -1) {
                             usages[arg.pattern.sym] = [arg.type];
                             syms[arg.pattern.sym] = {
                                 type: 'direct',
-                                idx: arg.type.form.loc.idx,
+                                idx: arg.type.form.loc,
                                 current: arg.type,
                             };
                         } else {
                             syms[arg.pattern.sym] = {
                                 type: 'direct',
-                                idx: arg.pattern.form.loc.idx,
+                                idx: arg.pattern.form.loc,
                             };
                         }
                     }
@@ -112,7 +112,7 @@ export const infer = (ctx: Ctx, map: Map) => {
                 if (node.target.type === 'local') {
                     // hmm I should do something here
                 }
-                const t = report.types[node.target.form.loc.idx];
+                const t = report.types[node.target.form.loc];
                 if (t && t.type === 'fn') {
                     t.args.forEach((arg, i) => {
                         if (i < node.args.length) {
@@ -135,16 +135,16 @@ export const infer = (ctx: Ctx, map: Map) => {
             //     if (!usages[sym]) {
             //         usages[sym] = [];
             //     }
-            //     usages[sym].push(report.types[node.form.loc.idx]);
+            //     usages[sym].push(report.types[node.form.loc]);
             // }
             // if (node.type === 'fn') {
             //     node.args.forEach(arg => {
-            //         locals[arg.pattern.form.loc.idx]
+            //         locals[arg.pattern.form.loc]
             //     })
             // }
             if (node.type === 'apply') {
                 const auto = ctx.results.display[
-                    node.target.form.loc.idx
+                    node.target.form.loc
                 ]?.autoComplete?.filter(
                     (t) => t.type === 'update' && t.exact,
                 ) as AutoCompleteReplace[] | undefined;
@@ -154,7 +154,7 @@ export const infer = (ctx: Ctx, map: Map) => {
                     auto?.length
                 ) {
                     const args = node.args.map(
-                        (arg) => report.types[arg.form.loc.idx],
+                        (arg) => report.types[arg.form.loc],
                     );
                     const scored = auto
                         .map((auto) => {
@@ -189,8 +189,8 @@ export const infer = (ctx: Ctx, map: Map) => {
                         best.score > 0 &&
                         (scored.length === 1 || scored[1].score < best.score)
                     ) {
-                        mods[node.target.form.loc.idx] = best.auto;
-                        report.types[node.form.loc.idx] = best.res!;
+                        mods[node.target.form.loc] = best.auto;
+                        report.types[node.form.loc] = best.res!;
                     }
                 }
             }
@@ -275,7 +275,7 @@ export const reidx = (node: Node, nidx: () => number, preserveTop = false) =>
     transformNode(node, {
         pre(child, path) {
             if (child === node && preserveTop) return child;
-            return { ...child, loc: { ...child.loc, idx: nidx() } };
+            return { ...child, loc: nidx() };
         },
     });
 
@@ -288,7 +288,7 @@ export function applyInferMod(
     if (mod.type === 'update') {
         map[id] = applyAutoUpdateToNode(map[id], mod);
     } else if (mod.type === 'replace-full') {
-        mod.node = { ...mod.node, loc: { ...mod.node.loc, idx: id } };
+        mod.node = { ...mod.node, loc: id };
         delete map[id];
         toMCST(reidx(mod.node, nidx, true), map);
     } else if (mod.type === 'wrap') {
@@ -302,13 +302,13 @@ export function applyInferMod(
         });
         map[id1] = {
             ...map[id],
-            loc: { ...map[id].loc, idx: id1 },
+            loc: id1,
         };
         map[id] = {
             type: 'annot',
             target: id1,
             annot: id2,
-            loc: { idx: id, start: 0, end: 0 },
+            loc: id,
         };
     } else {
         throw new Error('bad mod');

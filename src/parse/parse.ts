@@ -212,12 +212,9 @@ export const emptyMap = (): Map => {
         [-1]: {
             type: 'list',
             values: [0],
-            loc: { idx: -1, start: 0, end: 0 },
+            loc: -1,
         },
-        [0]: {
-            type: 'blank',
-            loc: { idx: 0, start: 0, end: 0 },
-        },
+        [0]: { type: 'blank', loc: 0 },
     };
 };
 
@@ -229,11 +226,11 @@ function initialState() {
         [-1]: {
             type: 'list',
             values: [top],
-            loc: { idx: -1, start: 0, end: 0 },
+            loc: -1,
         },
         [top]: {
             type: 'blank',
-            loc: { idx: 0, start: 0, end: 0 },
+            loc: 0,
         },
     };
 

@@ -223,14 +223,14 @@ export const getKeyUpdate = (
         return handleBackspace(map, selection, hashNames);
     }
 
-    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
+    const textRaw = hashNames[node.loc] ?? idText(node) ?? '';
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
         if ('text' in node || node.type === 'hash') {
-            const text = hashNames[node.loc.idx] ?? idText(node) ?? '';
+            const text = hashNames[node.loc] ?? idText(node) ?? '';
             if (!isPathAtStart(text, flast)) {
                 const pos = pathPos(fullPath, text);
                 const next = fullPath.slice(0, -1).concat([
@@ -512,7 +512,7 @@ export const insertText = (
     const idx = flast.idx;
     // Ok, so now we're updating things
     const input = splitGraphemes(inputRaw);
-    const textRaw = hashNames[node.loc.idx] ?? idText(node) ?? '';
+    const textRaw = hashNames[node.loc] ?? idText(node) ?? '';
     const pos = pathPos(fullPath, textRaw);
 
     if (

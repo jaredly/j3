@@ -18,7 +18,7 @@ export const noForm = (obj: any): any => {
     return obj;
 };
 
-export const noloc: Loc = { start: -1, end: -1, idx: -1 };
+export const noloc: Loc = -1;
 
 export const blank: Node = {
     type: 'blank',
@@ -27,7 +27,7 @@ export const blank: Node = {
 
 export const blankAt = (idx: number): Node => ({
     ...blank,
-    loc: { ...noloc, idx },
+    loc: idx,
 });
 
 export const btype = (v: string): Type => ({

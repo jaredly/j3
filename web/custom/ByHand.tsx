@@ -165,7 +165,7 @@ export const loadState = (raw: string): State => {
     let max = -1;
     transformNode(fromMCST(-1, map), {
         pre(node, path) {
-            max = Math.max(max, node.loc.idx);
+            max = Math.max(max, node.loc);
         },
     });
     max += 1;

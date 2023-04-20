@@ -78,21 +78,17 @@ function splitString(
     }
     const blank: MNode = {
         type: 'blank',
-        loc: {
-            idx: nidx(),
-            start: 0,
-            end: 0,
-        },
+        loc: nidx(),
     };
     const stringText: MNode = {
         type: 'stringText',
         text: suffix.join(''),
-        loc: { idx: nidx(), start: 0, end: 0 },
+        loc: nidx(),
     };
     const templates = string.templates.slice();
     templates.splice(last.at, 0, {
-        expr: blank.loc.idx,
-        suffix: stringText.loc.idx,
+        expr: blank.loc,
+        suffix: stringText.loc,
     });
     return {
         type: 'update',
@@ -101,8 +97,8 @@ function splitString(
                 ...node,
                 text: prefix.join(''),
             },
-            [stringText.loc.idx]: stringText,
-            [blank.loc.idx]: blank,
+            [stringText.loc]: stringText,
+            [blank.loc]: blank,
             [last.idx]: {
                 ...string,
                 templates,
@@ -115,7 +111,7 @@ function splitString(
                 at: last.at + 1,
             },
             {
-                idx: blank.loc.idx,
+                idx: blank.loc,
                 type: 'start',
             },
         ),

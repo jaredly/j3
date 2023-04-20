@@ -9,10 +9,10 @@ const err = (
     type: Type | Expr | MatchError,
     error: Error,
 ) => {
-    if (!errors[type.form.loc.idx]) {
-        errors[type.form.loc.idx] = [];
+    if (!errors[type.form.loc]) {
+        errors[type.form.loc] = [];
     }
-    errors[type.form.loc.idx].push(error);
+    errors[type.form.loc].push(error);
 };
 
 export const validateExpr = (

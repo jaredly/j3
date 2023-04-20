@@ -205,8 +205,8 @@ export function applyMenuItem(
 
 export const verifyLocs = (map: Map, message: string) => {
     Object.keys(map).forEach((k) => {
-        if (+k !== map[+k].loc.idx) {
-            console.log(+k, map[+k].loc.idx);
+        if (+k !== map[+k].loc) {
+            console.log(+k, map[+k].loc);
             // debugger;
             console.error(
                 new Error(`loc has the wrong loc! during ${message}`),

@@ -509,7 +509,7 @@ export const applyAndResolve = (
                     return { type: 'error', error: res };
                 }
             }
-            map[inner.args[i].form.loc.idx] = type.args[i];
+            map[inner.args[i].form.loc] = type.args[i];
         }
         return applyTypeVariables(inner.body, map);
     }

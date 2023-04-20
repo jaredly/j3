@@ -22,7 +22,7 @@ export const addDef = (res: Expr, ctx: Ctx): Ctx => {
             ...ctx.results,
             toplevel: {
                 ...ctx.results.toplevel,
-                [res.form.loc.idx]: res,
+                [res.form.loc]: res,
             },
         },
     };

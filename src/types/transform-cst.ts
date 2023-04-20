@@ -17,7 +17,7 @@ export const transformNode = (
         }
         node = res ?? node;
     }
-    const idx = node.loc.idx;
+    const idx = node.loc;
     switch (node.type) {
         case 'list':
         case 'record':
