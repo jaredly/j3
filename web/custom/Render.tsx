@@ -293,9 +293,9 @@ export const RenderNNode = (
                     if (nss.length) {
                         body = nss.map((n, i) =>
                             i === 0 ? (
-                                n
+                                <span key={i}>{n}</span>
                             ) : (
-                                <>
+                                <React.Fragment key={i}>
                                     <span
                                         style={{
                                             transform: 'scale(0.5)',
@@ -305,7 +305,7 @@ export const RenderNNode = (
                                         /
                                     </span>
                                     {n}
-                                </>
+                                </React.Fragment>
                             ),
                         );
                     }

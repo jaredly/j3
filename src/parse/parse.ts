@@ -19,7 +19,7 @@ import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
 import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
-import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
+import { fromMCST, Map, MNode } from '../types/mcst';
 
 export const idText = (node: MNode) => {
     switch (node.type) {

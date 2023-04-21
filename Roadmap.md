@@ -13,6 +13,12 @@ Alright, we're almost doing it?
 - [x] oh scroll within, for cursors, its broked
 
 
+- [ ] sandboxes should have a "my namespace" idea
+  the namespace where it ~lives
+  - [ ] the sidebar is split in two -- top is the sandbox's
+    local namespace, bottom is the global namespace
+
+- [ ] 
 
 
 
