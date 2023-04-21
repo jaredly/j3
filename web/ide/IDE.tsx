@@ -1,12 +1,9 @@
 // The main cheezy
 
-import React from 'react';
-import { useState } from 'react';
-import { Builtins, Env, Sandbox } from '../../src/to-ast/library';
-import { Library } from '../../src/to-ast/library';
-import { HashedTree } from '../../src/db/hash-tree';
+import React, { useReducer } from 'react';
+import { Env, Sandbox } from '../../src/to-ast/library';
 import { reduce } from '../custom/reduce';
-import { UIState, uiState, useMenu } from '../custom/ByHand';
+import { Action, UIState, uiState, useMenu } from '../custom/ByHand';
 import { HiddenInput } from '../custom/HiddenInput';
 import { ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
@@ -14,6 +11,10 @@ import { Cursors } from '../custom/Cursors';
 import { Root } from '../custom/Root';
 import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
+import { Namespaces } from './Namespaces';
+import { addSandbox, getSandbox } from '../../src/db/sandbox';
+import { Db } from '../../src/db/tables';
+import { selectEnd } from '../mods/navigate';
 
 // type SandboxState = {
 //     id: string;
@@ -46,182 +47,17 @@ import { Menu } from '../custom/Menu';
 //     };
 // };
 
-const buttonStyle = {
-    fontSize: '80%',
-    borderRadius: 4,
-    padding: '0px 4px',
-    display: 'inline-block',
-    backgroundColor: '#444',
-};
-
-export const Button = ({
-    top,
-    definitions,
-    builtins,
-}: {
-    top: string;
-    definitions: Library['definitions'];
-    builtins: Builtins;
-}) => {
-    if (!top) {
-        return null;
-    }
-    if (top.startsWith(':builtin:')) {
-        const hash = top.slice(':builtin:'.length);
-        return (
-            <span style={buttonStyle}>
-                {builtins[hash]?.type === 'type' ? 'T' : 'e'}
-            </span>
-        );
-    }
-    const defn = definitions[top];
-    if (defn.type === 'term') {
-        return <span style={buttonStyle}>e</span>;
-    }
-    if (defn.type === 'type') {
-        return <span style={buttonStyle}>T</span>;
-    }
-    return <span style={buttonStyle}>unknown</span>;
-};
-
-export const NSTree = ({
-    root,
-    name,
-    level,
-    builtins,
-    namespaces,
-    definitions,
-}: {
-    root: string;
-    name: string;
-    level: number;
-    builtins: Builtins;
-    namespaces: HashedTree;
-    definitions: Library['definitions'];
-}) => {
-    const [open, setOpen] = useState(false);
-    const canBeOpen = level === 0 || open;
-
-    const top = namespaces[root][''];
-    const keys = Object.keys(namespaces[root]).sort();
-
-    if (keys.length === 1 && keys[0] === '') {
-        return (
-            <div className="menu-hover" style={{ cursor: 'pointer' }}>
-                <span
-                    style={{
-                        width: '2em',
-                        display: 'inline-block',
-                        textAlign: 'right',
-                        marginRight: 4,
-                    }}
-                ></span>
-                <Button
-                    builtins={builtins}
-                    top={top}
-                    definitions={definitions}
-                />
-                <span style={{ display: 'inline-block', width: 4 }} />
-                {name}
-            </div>
-        );
-    }
-
-    return (
-        <div>
-            <div
-                onMouseDown={() => setOpen(!open)}
-                style={{ cursor: 'pointer' }}
-                className="menu-hover"
-            >
-                <span
-                    style={{
-                        width: '2em',
-                        display: 'inline-block',
-                        textAlign: 'right',
-                        marginRight: 4,
-                    }}
-                >
-                    {keys.length - (top ? 1 : 0)}
-                </span>
-                <Button
-                    builtins={builtins}
-                    top={top}
-                    definitions={definitions}
-                />
-                <span style={{ display: 'inline-block', width: 4 }} />
-                {name}/
-            </div>
-
-            {canBeOpen &&
-                keys
-                    .filter((k) => k !== '')
-                    .map((name) => {
-                        const hash = namespaces[root][name];
-                        return (
-                            <div key={name}>
-                                <div style={{ marginLeft: 20 }}>
-                                    <NSTree
-                                        root={hash}
-                                        name={name}
-                                        level={level + 1}
-                                        builtins={builtins}
-                                        namespaces={namespaces}
-                                        definitions={definitions}
-                                    />
-                                </div>
-                            </div>
-                        );
-                    })}
-        </div>
-    );
-};
-
-export const Namespaces = ({ env }: { env: Env }) => {
-    const root = env.library.root;
-    return (
-        <div
-            style={{
-                padding: 24,
-                height: '100vh',
-                overflow: 'auto',
-                display: 'flex',
-            }}
-        >
-            <div style={{ width: 300 }}>
-                <NSTree
-                    root={root}
-                    level={0}
-                    name={''}
-                    builtins={env.builtins}
-                    namespaces={env.library.namespaces}
-                    definitions={env.library.definitions}
-                />
-            </div>
-        </div>
-    );
-};
-
 export const SandboxView = ({
-    env,
-    sandbox,
+    // env,
+    // sandbox,
+    state,
+    dispatch,
 }: {
-    env: Env;
-    sandbox: Sandbox;
+    // env: Env;
+    // sandbox: Sandbox;
+    state: UIState;
+    dispatch: React.Dispatch<Action>;
 }) => {
-    const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        let idx =
-            Object.keys(sandbox.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
-        return uiState({
-            map: sandbox.map,
-            root: sandbox.root,
-            at: sandbox.history.length
-                ? sandbox.history[sandbox.history.length - 1].at
-                : [],
-            nidx: () => idx++,
-        });
-    });
-
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const tops = (state.map[state.root] as ListLikeContents).values;
     const menu = useMenu(state);
@@ -265,21 +101,179 @@ export const SandboxView = ({
     );
 };
 
+export function sandboxState(sandbox: Sandbox, env: Env): UIState {
+    let idx = Object.keys(sandbox.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
+    return {
+        map: sandbox.map,
+        root: sandbox.root,
+        at: sandbox.history.length
+            ? sandbox.history[sandbox.history.length - 1].at
+            : [
+                  {
+                      start:
+                          selectEnd(
+                              (sandbox.map[-1] as { values: number[] })
+                                  .values[0],
+                              [
+                                  {
+                                      idx: -1,
+                                      at: 0,
+                                      type: 'child',
+                                  },
+                              ],
+                              sandbox.map,
+                          ) ?? [],
+                  },
+              ],
+        nidx: () => idx++,
+        ctx: {
+            global: env,
+            results: {
+                display: {},
+                errors: {},
+                hashNames: {},
+                localMap: { terms: {}, types: {} },
+                mods: {},
+                toplevel: {},
+            },
+        },
+        clipboard: [],
+        hover: [],
+        regs: {},
+    };
+}
+
+type IDEState = {
+    sandboxes: Sandbox['meta'][];
+    current:
+        | {
+              type: 'sandbox';
+              id: string;
+              state: UIState;
+          }
+        | {
+              type: 'dashboard';
+              env: Env;
+          };
+};
+type IDEAction =
+    | Action
+    | {
+          type: 'new-sandbox';
+          meta: Sandbox['meta'];
+      }
+    | {
+          type: 'open-sandbox';
+          sandbox: Sandbox;
+      };
+const topReduce = (state: IDEState, action: IDEAction): IDEState => {
+    switch (action.type) {
+        case 'new-sandbox':
+            return state; // ignore
+        case 'open-sandbox': {
+            const meta = state.sandboxes.find(
+                (s) => s.id === action.sandbox.meta.id,
+            );
+            if (!meta) {
+                return state;
+            }
+            return {
+                sandboxes: state.sandboxes,
+                current: {
+                    type: 'sandbox',
+                    id: action.sandbox.meta.id,
+                    state: sandboxState(
+                        action.sandbox,
+                        state.current.type === 'dashboard'
+                            ? state.current.env
+                            : state.current.state.ctx.global,
+                    ),
+                },
+            };
+        }
+        default:
+            if (state.current.type === 'sandbox') {
+                return {
+                    ...state,
+                    current: {
+                        ...state.current,
+                        state: reduce(state.current.state, action),
+                    },
+                };
+            }
+    }
+    return state;
+};
+
 // We can expect to be wrapped in an error boundary
 export const IDE = ({
     initial,
 }: {
-    initial: { env: Env; sandboxes: Sandbox['meta'][] };
+    initial: { env: Env; sandboxes: Sandbox['meta'][]; db: Db };
 }) => {
+    const [state, dispatch] = useReducer(
+        topReduce,
+        null,
+        (): IDEState => ({
+            sandboxes: initial.sandboxes,
+            current: { type: 'dashboard', env: initial.env },
+        }),
+    );
     // const [state, dispatch] = useReducer(reduce, null, getInitialState);
     // We'll want ... like ... something ...
     // yeah typical dispatch / state / reduce / deal
     return (
-        <div>
+        <div
+            style={{
+                padding: 24,
+                height: '100vh',
+                overflow: 'auto',
+                display: 'flex',
+            }}
+        >
             <Namespaces env={initial.env} />
             {/** Here we do the magic. of .. having an editor.
-             * for sandboxes.
-             */}
+             * for sandboxes. */}
+            <div>
+                <div style={{}}>
+                    Sandboxes:
+                    {initial.sandboxes.map((k) => (
+                        <button
+                            key={k.id}
+                            onClick={() => {
+                                getSandbox(initial.db, k).then((sandbox) => {
+                                    dispatch({ type: 'open-sandbox', sandbox });
+                                });
+                            }}
+                        >
+                            {k.title}
+                        </button>
+                    ))}
+                    <button
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => {
+                            // ok
+                            addSandbox(
+                                initial.db,
+                                Math.random().toString(36).slice(2),
+                                'Untitled sandbox',
+                            ).then(() => {
+                                location.reload();
+                            });
+                        }}
+                    >
+                        +
+                    </button>
+                </div>
+                {state.current.type === 'sandbox' ? (
+                    <SandboxView
+                        state={state.current.state}
+                        dispatch={dispatch}
+                    />
+                ) : (
+                    'Dasnboard'
+                )}
+            </div>
         </div>
     );
 };

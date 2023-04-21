@@ -30,7 +30,7 @@ export const initialData = async () => {
     // hmm do I need a way to ~merge namespaces?
     // yeah I mean we can just turn the namespace back into a tree
     // and then add the tree?
-    return { env, sandboxes };
+    return { env, sandboxes, db };
 };
 
 async function loadBuiltins(

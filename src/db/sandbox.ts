@@ -82,7 +82,7 @@ export const getSandbox = async (
 
     const history: Sandbox['history'] = [];
     await db
-        .all(`SELECT id, value from ${sandboxHistoryTable(meta.id)}`)
+        .all(`SELECT id, item from ${sandboxHistoryTable(meta.id)}`)
         .then((rows) =>
             rows.forEach(({ item }) => {
                 history.push(JSON.parse(item as string));

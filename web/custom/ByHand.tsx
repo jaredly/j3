@@ -252,7 +252,6 @@ export const Doc = ({
                 debug={debug}
                 ctx={state.ctx}
             />
-            {/* {JSON.stringify(state.ctx.results.toplevel)} */}
             <Cursors state={state} />
             <Hover state={state} dispatch={dispatch} />
             {!state.menu?.dismissed && menu?.items.length ? (
