@@ -217,13 +217,7 @@ export const Doc = ({
 
     const tops = (state.map[state.root] as ListLikeContents).values;
 
-    const menu = useMemo(() => {
-        if (state.at.length > 1 || state.at[0].end) return;
-        const path = state.at[0].start;
-        const last = path[path.length - 1];
-        const items = state.ctx.results.display[last.idx]?.autoComplete;
-        return items ? { path, items } : undefined;
-    }, [state.map, state.at, state.ctx]);
+    const menu = useMenu(state);
 
     const start = state.at[0].start;
     const idx = start[start.length - 1].idx;
@@ -298,3 +292,13 @@ export const Doc = ({
 export const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].type !== 'child';
 };
+
+export function useMenu(state: UIState) {
+    return useMemo(() => {
+        if (state.at.length > 1 || state.at[0].end) return;
+        const path = state.at[0].start;
+        const last = path[path.length - 1];
+        const items = state.ctx.results.display[last.idx]?.autoComplete;
+        return items ? { path, items } : undefined;
+    }, [state.map, state.at, state.ctx]);
+}
