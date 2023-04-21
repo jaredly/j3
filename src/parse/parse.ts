@@ -192,7 +192,7 @@ function determineKey(text: string[], i: number, mods: Mods) {
     return { key, i };
 }
 
-export function autoCompleteIfNeeded(
+export function getAutoCompleteUpdate(
     state: State,
     display: CompilationResults['display'],
 ) {
@@ -200,8 +200,17 @@ export function autoCompleteIfNeeded(
     const exacts = display[idx]?.autoComplete?.filter(
         (s) => s.type === 'update' && s.exact,
     ) as AutoCompleteReplace[];
-    if (exacts?.length === 1) {
-        const update = applyMenuItem(state.at[0].start, exacts[0], state);
+    return exacts?.length === 1
+        ? applyMenuItem(state.at[0].start, exacts[0], state)
+        : null;
+}
+
+export function autoCompleteIfNeeded(
+    state: State,
+    display: CompilationResults['display'],
+) {
+    const update = getAutoCompleteUpdate(state, display);
+    if (update) {
         state = applyUpdate(state, 0, update);
     }
     return state;

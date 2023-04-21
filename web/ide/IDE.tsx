@@ -1,7 +1,7 @@
 // The main cheezy
 
 import React, { useReducer } from 'react';
-import { Env, Sandbox } from '../../src/to-ast/library';
+import { Env, Library, Sandbox } from '../../src/to-ast/library';
 import { reduce } from '../custom/reduce';
 import { Action, UIState, uiState, useMenu } from '../custom/ByHand';
 import { HiddenInput } from '../custom/HiddenInput';
@@ -15,6 +15,7 @@ import { Namespaces } from './Namespaces';
 import { addSandbox, getSandbox } from '../../src/db/sandbox';
 import { Db } from '../../src/db/tables';
 import { selectEnd } from '../mods/navigate';
+import { UpdateMap } from '../store';
 
 // type SandboxState = {
 //     id: string;
@@ -143,8 +144,28 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     };
 }
 
+type DBUpdate =
+    | {
+          type: 'sandbox-nodes';
+          map: UpdateMap;
+      }
+    | {
+          type: 'sandbox-history';
+          history: Sandbox['history'];
+      }
+    | {
+          type: 'names';
+          namespaces: Library['namespaces'];
+          root: { hash: string; date: number };
+      }
+    | {
+          type: 'definitions';
+          definitions: Library['definitions'];
+      };
+
 type IDEState = {
     sandboxes: Sandbox['meta'][];
+    updates: DBUpdate[];
     current:
         | {
               type: 'sandbox';
@@ -156,6 +177,7 @@ type IDEState = {
               env: Env;
           };
 };
+
 type IDEAction =
     | Action
     | {
@@ -166,10 +188,14 @@ type IDEAction =
           type: 'open-sandbox';
           sandbox: Sandbox;
       };
+
 const topReduce = (state: IDEState, action: IDEAction): IDEState => {
     switch (action.type) {
         case 'new-sandbox':
-            return state; // ignore
+            return {
+                ...state,
+                sandboxes: state.sandboxes.concat([action.meta]),
+            };
         case 'open-sandbox': {
             const meta = state.sandboxes.find(
                 (s) => s.id === action.sandbox.meta.id,
@@ -178,7 +204,7 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
                 return state;
             }
             return {
-                sandboxes: state.sandboxes,
+                ...state,
                 current: {
                     type: 'sandbox',
                     id: action.sandbox.meta.id,
@@ -215,13 +241,12 @@ export const IDE = ({
         topReduce,
         null,
         (): IDEState => ({
+            updates: [],
             sandboxes: initial.sandboxes,
             current: { type: 'dashboard', env: initial.env },
         }),
     );
-    // const [state, dispatch] = useReducer(reduce, null, getInitialState);
-    // We'll want ... like ... something ...
-    // yeah typical dispatch / state / reduce / deal
+
     return (
         <div
             style={{
@@ -240,6 +265,10 @@ export const IDE = ({
                     {initial.sandboxes.map((k) => (
                         <button
                             key={k.id}
+                            disabled={
+                                state.current.type === 'sandbox' &&
+                                state.current.id === k.id
+                            }
                             onClick={() => {
                                 getSandbox(initial.db, k).then((sandbox) => {
                                     dispatch({ type: 'open-sandbox', sandbox });
@@ -257,8 +286,11 @@ export const IDE = ({
                                 initial.db,
                                 Math.random().toString(36).slice(2),
                                 'Untitled sandbox',
-                            ).then(() => {
-                                location.reload();
+                            ).then((sandbox) => {
+                                dispatch({
+                                    type: 'new-sandbox',
+                                    meta: sandbox.meta,
+                                });
                             });
                         }}
                     >

@@ -1,11 +1,17 @@
 import { applyInferMod, infer } from '../../src/infer/infer';
-import { autoCompleteIfNeeded, splitGraphemes } from '../../src/parse/parse';
+import {
+    autoCompleteIfNeeded,
+    getAutoCompleteUpdate,
+    splitGraphemes,
+} from '../../src/parse/parse';
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { MNode, Map } from '../../src/types/mcst';
 import { paste } from '../mods/clipboard';
 import {
     State,
     StateChange,
+    StateSelect,
+    StateUpdate,
     applyUpdate,
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
@@ -75,8 +81,70 @@ const actionToUpdate = (
     }
 };
 
+export const updateWithAutocomplete = (
+    state: UIState,
+    update: StateUpdate | StateSelect,
+) => {
+    const prev = state.at[0];
+    // Here's where the real work happens.
+    if (update.autoComplete && !state.menu?.dismissed) {
+        const aupdate = getAutoCompleteUpdate(state, state.ctx.results.display);
+        if (aupdate) {
+            state = { ...state, ...applyUpdate(state, 0, aupdate) };
+        }
+        verifyLocs(state.map, 'autocomplete');
+    }
+    state = { ...state, ...applyUpdate(state, 0, update) };
+    verifyLocs(state.map, 'apply update');
+    if (update.type === 'select' && !update.autoComplete) {
+        return state;
+    }
+    let { ctx, map } = getCtx(state.map, state.root);
+    verifyLocs(state.map, 'get ctx');
+    state.map = map;
+    state.ctx = ctx;
+
+    if (update.autoComplete) {
+        for (let i = 0; i < 10; i++) {
+            const mods = infer(ctx, state.map);
+            const modded = Object.keys(mods);
+            if (!modded.length) {
+                break;
+            }
+            if (i > 8) {
+                console.log(mods);
+                throw new Error(`why so manyy inference`);
+            }
+            console.log('3️⃣ infer mods', mods);
+            modded.forEach((id) => {
+                applyInferMod(mods[+id], state.map, state.nidx, +id);
+                verifyLocs(state.map, 'apply infer mod');
+                console.log(state.map[+id]);
+            });
+            ({ ctx, map } = getCtx(state.map, state.root));
+            verifyLocs(state.map, 'get ctx');
+            state.map = map;
+            state.ctx = ctx;
+        }
+    }
+    if (
+        prev.start[prev.start.length - 1].idx !==
+        state.at[0].start[state.at[0].start.length - 1].idx
+    ) {
+        state.menu = undefined;
+    }
+    return state;
+};
+
 export const reduce = (state: UIState, action: Action): UIState => {
     const update = actionToUpdate(state, action);
+    return reduceUpdate(state, update);
+};
+
+export const reduceUpdate = (
+    state: UIState,
+    update: StateChange | UIStateChange,
+) => {
     if (!update) {
         return state;
     }
@@ -92,56 +160,8 @@ export const reduce = (state: UIState, action: Action): UIState => {
         case 'menu':
             return { ...state, menu: update.menu };
         case 'select':
-        case 'update': {
-            const prev = state.at[0];
-            // Here's where the real work happens.
-            if (update.autoComplete && !state.menu?.dismissed) {
-                state = {
-                    ...state,
-                    ...autoCompleteIfNeeded(state, state.ctx.results.display),
-                };
-                verifyLocs(state.map, 'autocomplete');
-            }
-            state = { ...state, ...applyUpdate(state, 0, update) };
-            verifyLocs(state.map, 'apply update');
-            if (update.type === 'select' && !update.autoComplete) {
-                return state;
-            }
-            let { ctx, map } = getCtx(state.map, state.root);
-            verifyLocs(state.map, 'get ctx');
-            state.map = map;
-            state.ctx = ctx;
-            if (update.autoComplete) {
-                for (let i = 0; i < 10; i++) {
-                    const mods = infer(ctx, state.map);
-                    const modded = Object.keys(mods);
-                    if (!modded.length) {
-                        break;
-                    }
-                    if (i > 8) {
-                        console.log(mods);
-                        throw new Error(`why so manyy inference`);
-                    }
-                    console.log('3️⃣ infer mods', mods);
-                    modded.forEach((id) => {
-                        applyInferMod(mods[+id], state.map, state.nidx, +id);
-                        verifyLocs(state.map, 'apply infer mod');
-                        console.log(state.map[+id]);
-                    });
-                    ({ ctx, map } = getCtx(state.map, state.root));
-                    verifyLocs(state.map, 'get ctx');
-                    state.map = map;
-                    state.ctx = ctx;
-                }
-            }
-            if (
-                prev.start[prev.start.length - 1].idx !==
-                state.at[0].start[state.at[0].start.length - 1].idx
-            ) {
-                state.menu = undefined;
-            }
-            return state;
-        }
+        case 'update':
+            return updateWithAutocomplete(state, update);
         default:
             let _: never = update;
             throw new Error('nope update');
