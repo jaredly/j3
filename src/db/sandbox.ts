@@ -94,6 +94,19 @@ export const getSandbox = async (
 
 // Updaters
 
+export const updateSandboxMeta = async (db: Db, meta: Sandbox['meta']) => {
+    await db.run(
+        `update sandboxes set title=?, created_date=?, updated_date=?, version=? where id=?;`,
+        [
+            meta.title,
+            meta.created_date,
+            meta.updated_date,
+            meta.version,
+            meta.id,
+        ],
+    );
+};
+
 /** Does wrap in a transaction */
 export const addSandbox = async (
     db: Db,
