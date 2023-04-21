@@ -109,28 +109,6 @@ export const IDE = ({
         }
     }, [state.current.type]);
 
-    // So werirrrrd that calling getSandbox here in a useEffect
-    // is causing wa-sqlite to die in a fire.
-    useEffect(() => {
-        if (location.hash) {
-            const id = location.hash.slice(1);
-            const meta = initial.sandboxes.find((s) => s.id === id);
-            if (meta) {
-                console.log(meta);
-                // setTimeout(() => {
-                // getSandbox(initial.db, meta).then(
-                //     (sandbox) => {
-                //         // dispatch({ type: 'open-sandbox', sandbox });
-                //     },
-                //     (err) => {
-                //         console.log('niope', err);
-                //     },
-                // );
-                // }, 2000);
-            }
-        }
-    }, []);
-
     usePersistStateChanges(initial.db, state);
 
     return (
