@@ -135,6 +135,7 @@ export const IDE = ({
                 <div style={{ flex: 1, overflow: 'auto' }}>
                     {state.current.type === 'sandbox' ? (
                         <SandboxView
+                            key={state.current.id}
                             state={state.current.state}
                             dispatch={dispatch}
                         />
@@ -196,6 +197,13 @@ function SandboxTabs({
                             state.current.type === 'sandbox' &&
                             state.current.id === k.id
                         }
+                        style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: 'white',
+                            cursor: 'pointer',
+                            margin: '0 4px',
+                        }}
                         onClick={() => {
                             console.log('getting', k);
                             getSandbox(db, k).then((sandbox) => {

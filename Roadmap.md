@@ -18,7 +18,8 @@ Alright, we're almost doing it?
   - [ ] the sidebar is split in two -- top is the sandbox's
     local namespace, bottom is the global namespace
 
-- [ ] 
+- [x] whyyy can't I switch sandboxes?
+  ah gotta key the sandbox
 
 
 

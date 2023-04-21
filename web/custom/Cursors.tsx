@@ -113,6 +113,7 @@ export const calcCursorPos = (
     const nodes = regs[idx];
     if (!nodes) {
         console.error('no nodes, sorry');
+        console.log(regs);
         return;
     }
     try {
