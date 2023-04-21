@@ -107,7 +107,7 @@ export const IDE = ({
         if (state.current.type === 'sandbox') {
             location.hash = '#' + state.current.id;
         }
-    }, [state.current.type]);
+    }, [state.current.type === 'sandbox' ? state.current.id : null]);
 
     usePersistStateChanges(initial.db, state);
 

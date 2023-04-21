@@ -4,8 +4,8 @@ import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
-import { calcOffset } from './calcOffset';
 import { RenderProps } from './types';
+import { splitNamespaces } from '../../src/db/hash-tree';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -284,6 +284,32 @@ export const RenderNNode = (
                 );
             } else {
                 body = nnode.text;
+                if (
+                    nnode.text.length > 1 &&
+                    (display[idx]?.style?.type === 'id' ||
+                        display[idx]?.style?.type === 'unresolved')
+                ) {
+                    const nss = splitNamespaces(nnode.text);
+                    if (nss.length) {
+                        body = nss.map((n, i) =>
+                            i === 0 ? (
+                                n
+                            ) : (
+                                <>
+                                    <span
+                                        style={{
+                                            transform: 'scale(0.5)',
+                                            display: 'inline-block',
+                                        }}
+                                    >
+                                        /
+                                    </span>
+                                    {n}
+                                </>
+                            ),
+                        );
+                    }
+                }
             }
             return (
                 <span
