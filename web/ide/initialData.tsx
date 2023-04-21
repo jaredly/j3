@@ -39,7 +39,7 @@ async function loadBuiltins(
     db: Db,
 ) {
     const map = builtinMap();
-    const tree = builtinTree();
+    const tree = { children: { builtin: builtinTree() } };
     const newHashes: HashedTree = {};
     const newRoot = addToHashedTree(
         newHashes,
@@ -48,11 +48,16 @@ async function loadBuiltins(
         roots.length ? { root: roots[0].hash, tree: names } : undefined,
     );
     if (newRoot) {
-        console.log('adding roots');
         const root = { hash: newRoot, date: Date.now() / 1000 };
         roots.unshift(root);
-        Object.assign(names, newHashes);
-        await transact(db, () => addNamespaces(db, newHashes, root));
+        const newOnes: HashedTree = {};
+        Object.keys(newHashes).forEach((hash) => {
+            if (!names[hash]) {
+                newOnes[hash] = names[hash] = newHashes[hash];
+            }
+        });
+        // console.log('adding roots', newHashes, newRoot, roots);
+        await transact(db, () => addNamespaces(db, newOnes, root));
     }
     return map;
 }

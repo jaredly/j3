@@ -1,8 +1,6 @@
-import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import * as SQLite from 'wa-sqlite';
+import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import { IDBBatchAtomicVFS } from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
-// import {IndexedDbVFS} from 'wa-sqlite/src/examples/IndexedDbVFS.js'
-import MemoryAsyncVFS from 'wa-sqlite/src/examples/MemoryAsyncVFS.js';
 import { Db } from './tables';
 
 type ok = number | string | null;

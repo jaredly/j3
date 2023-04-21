@@ -78,7 +78,7 @@ export const NSTree = ({
 export const Namespaces = ({ env }: { env: Env }) => {
     const root = env.library.root;
     return (
-        <div>
+        <div style={{ padding: 24, height: '100vh', overflow: 'auto' }}>
             <NSTree root={root} namespaces={env.library.namespaces} />
         </div>
     );
@@ -95,8 +95,10 @@ export const IDE = ({
     // yeah typical dispatch / state / reduce / deal
     return (
         <div>
-            Some IDE ide
             <Namespaces env={initial.env} />
+            {/** Here we do the magic. of .. having an editor.
+             * for sandboxes.
+             */}
         </div>
     );
 };

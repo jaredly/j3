@@ -46,7 +46,7 @@ export const basicBuiltins: Global['builtins'] = {
         bool: [],
         string: [],
         bytes: [],
-        'attachment-handle': [],
+        // 'attachment-handle': [],
         array: [
             { form: blankAt(-2), name: 'Value' },
             {
@@ -96,7 +96,7 @@ const tfloat = btype('float');
 const tbool = btype('bool');
 const tstring = btype('string');
 const tbytes = btype('bytes');
-const thandle = btype('attachment-handle');
+// const thandle = btype('attachment-handle');
 
 export const fileBase: Type = {
     type: 'record',
@@ -124,7 +124,7 @@ export const extendRecord = (
 });
 
 export const fileLazy = extendRecord(fileBase, [
-    { name: 'handle', value: thandle },
+    { name: 'data', value: tbytes },
 ]);
 
 export const imageFileBase = extendRecord(fileBase, [
@@ -133,7 +133,7 @@ export const imageFileBase = extendRecord(fileBase, [
 ]);
 
 export const imageFileLazy = extendRecord(imageFileBase, [
-    { name: 'handle', value: thandle },
+    { name: 'data', value: tbytes },
 ]);
 
 export const bfn = (name: string, args: Type[], body: Type) => {
@@ -157,17 +157,17 @@ export const bfn = (name: string, args: Type[], body: Type) => {
     bfn(`float/` + name, [tfloat, tfloat], tfloat);
 });
 
-bfn('||', [tbool, tbool], tbool);
-bfn('&&', [tbool, tbool], tbool);
-bfn('==', [tbool, tbool], tbool);
+bfn('bool/||', [tbool, tbool], tbool);
+bfn('bool/&&', [tbool, tbool], tbool);
+bfn('bool/==', [tbool, tbool], tbool);
 bfn('int/toString', [tint], tstring);
 bfn('bool/toString', [tbool], tstring);
-bfn('has-prefix?', [tstring, tstring], tbool);
+bfn('string/has-prefix?', [tstring, tstring], tbool);
 
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
 const targ3 = basicBuiltins.bidx--;
-addBuiltin(basicBuiltins, 'reduce', {
+addBuiltin(basicBuiltins, 'array/reduce', {
     type: 'tfn',
     args: [
         { form: blankAt(targ1), name: 'Input' },
@@ -241,15 +241,15 @@ const vec4 = record([
     { name: 'w', value: tfloat },
 ]);
 
-bfn('fract', [tfloat], tfloat);
-bfn('sin', [tfloat], tfloat);
-bfn('dot', [vec2, vec2], tfloat);
-bfn('length', [vec2], tfloat);
+bfn('float/fract', [tfloat], tfloat);
+bfn('float/sin', [tfloat], tfloat);
+bfn('vec2/dot', [vec2, vec2], tfloat);
+bfn('vec2/length', [vec2], tfloat);
 bfn('texture/[]', [btype('texture'), vec2], vec4);
-addBuiltin(basicBuiltins, 'PI', tfloat);
+addBuiltin(basicBuiltins, 'float/PI', tfloat);
 
 const darg = basicBuiltins.bidx--;
-addBuiltin(basicBuiltins, 'debugToString', {
+addBuiltin(basicBuiltins, 'debug/toString', {
     type: 'tfn',
     args: [{ form: blankAt(darg), name: 'Value' }],
     body: {

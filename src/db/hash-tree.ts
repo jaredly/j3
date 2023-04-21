@@ -58,7 +58,7 @@ export const addToHashedTree = (
                 hashedTree,
                 tree.children[child],
                 makeHash,
-                prev
+                prev && prev.tree[prev.root]
                     ? { root: prev.tree[prev.root][child], tree: prev.tree }
                     : undefined,
             );
