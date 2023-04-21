@@ -52,10 +52,9 @@ export const closestSelection = (
             if (!value) {
                 return;
             }
-            const box = subRect(
-                value.node.getBoundingClientRect(),
-                value.node.offsetParent!.getBoundingClientRect(),
-            );
+            const box = value.node.getBoundingClientRect(); //subRect( //,
+            // value.node.offsetParent!.getBoundingClientRect(),
+            // );
             const dy =
                 box.top <= pos.y && pos.y <= box.bottom
                     ? 0

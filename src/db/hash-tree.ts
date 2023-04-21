@@ -13,6 +13,14 @@ export type HashedTree = {
     [hash: string]: { [name: string]: string };
 };
 
+export const lastName = (name: string) => {
+    if (name.endsWith('//')) {
+        return '/';
+    }
+    const parts = name.split('/');
+    return parts[parts.length - 1];
+};
+
 export const splitNamespaces = (name: string) => {
     if (name.endsWith('//')) {
         return name.slice(0, -2).split('/').concat(['/']);

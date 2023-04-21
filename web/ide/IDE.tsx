@@ -1,6 +1,6 @@
 // The main cheezy
 
-import React, { useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { Env, Sandbox } from '../../src/to-ast/library';
 import { reduce } from '../custom/reduce';
 import { Action, UIState, uiState } from '../custom/ByHand';
@@ -81,16 +81,55 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
 export const IDE = ({
     initial,
 }: {
-    initial: { env: Env; sandboxes: Sandbox['meta'][]; db: Db };
+    initial: {
+        env: Env;
+        sandboxes: Sandbox['meta'][];
+        db: Db;
+        sandbox: Sandbox | null;
+    };
 }) => {
     const [state, dispatch] = useReducer(
         topReduce,
         null,
         (): IDEState => ({
             sandboxes: initial.sandboxes,
-            current: { type: 'dashboard', env: initial.env },
+            current: initial.sandbox
+                ? {
+                      type: 'sandbox',
+                      id: initial.sandbox.meta.id,
+                      state: sandboxState(initial.sandbox, initial.env),
+                  }
+                : { type: 'dashboard', env: initial.env },
         }),
     );
+
+    useEffect(() => {
+        if (state.current.type === 'sandbox') {
+            location.hash = '#' + state.current.id;
+        }
+    }, [state.current.type]);
+
+    // So werirrrrd that calling getSandbox here in a useEffect
+    // is causing wa-sqlite to die in a fire.
+    useEffect(() => {
+        if (location.hash) {
+            const id = location.hash.slice(1);
+            const meta = initial.sandboxes.find((s) => s.id === id);
+            if (meta) {
+                console.log(meta);
+                // setTimeout(() => {
+                // getSandbox(initial.db, meta).then(
+                //     (sandbox) => {
+                //         // dispatch({ type: 'open-sandbox', sandbox });
+                //     },
+                //     (err) => {
+                //         console.log('niope', err);
+                //     },
+                // );
+                // }, 2000);
+            }
+        }
+    }, []);
 
     usePersistStateChanges(initial.db, state);
 
@@ -140,7 +179,18 @@ function SandboxTabs({
     const [edit, setEdit] = useState(null as null | string);
 
     return (
-        <div style={{}}>
+        <div
+            style={{}}
+            onMouseMoveCapture={(evt) => {
+                evt.stopPropagation();
+            }}
+            onMouseDownCapture={(evt) => {
+                evt.stopPropagation();
+            }}
+            onClick={(evt) => {
+                evt.stopPropagation();
+            }}
+        >
             Sandboxes:
             {state.sandboxes.map((k) =>
                 state.current.type === 'sandbox' &&
@@ -167,6 +217,7 @@ function SandboxTabs({
                             state.current.id === k.id
                         }
                         onClick={() => {
+                            console.log('getting', k);
                             getSandbox(db, k).then((sandbox) => {
                                 dispatch({ type: 'open-sandbox', sandbox });
                             });

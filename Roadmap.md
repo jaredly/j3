@@ -1,11 +1,16 @@
 
 # OK Vision for the nextliness
 
-- [ ] UIState should have a history[]
-- [ ] then the IDE useEffect can just check for new history items
+- [x] UIState should have a history[]
+- [x] then the IDE useEffect can just check for new history items
   and apply their changes.
   That sounds great.
 
+
+Alright, we're almost doing it?
+
+- [x] the names for things ending in / isn't it
+- [x] oh scroll within, for cursors, its broked
 
 
 

@@ -1,4 +1,5 @@
 import { Path } from '../../web/mods/path';
+import { lastName } from '../db/hash-tree';
 import { Ctx } from '../to-ast/Ctx';
 import { Node } from '../types/cst';
 
@@ -80,10 +81,7 @@ export const nodeToString_ = (
                 typeof node.hash === 'string' &&
                 node.hash.startsWith(':builtin:')
             ) {
-                return node.hash
-                    .slice(':builtin:'.length)
-                    .split('/')
-                    .slice(-1)[0];
+                return lastName(node.hash.slice(':builtin:'.length));
             }
             return (
                 hashNames[node.loc] ??

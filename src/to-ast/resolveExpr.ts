@@ -4,6 +4,7 @@ import { any, nilt } from './Ctx';
 import { Result } from './to-ast';
 import { populateAutocomplete } from './populateAutocomplete';
 import { CstCtx, Ctx, Library } from './library';
+import { lastName } from '../db/hash-tree';
 
 // TODO cache this?
 
@@ -62,7 +63,7 @@ export const resolveExpr = (
                 text = hash.slice(':builtin:'.length);
                 const builtin = ctx.global.builtins[text];
                 if (builtin?.type === 'term') {
-                    const last = text.split('/').slice(-1)[0];
+                    const last = lastName(text);
                     ctx.results.display[form.loc].style = {
                         type: 'id',
                         hash,

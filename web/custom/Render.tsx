@@ -310,27 +310,7 @@ export const RenderNNode = (
                             ],
                         });
                     }}
-                    className="idlike"
-                    // onMouseDown={(evt) => {
-                    //     evt.stopPropagation();
-                    //     evt.preventDefault();
-                    //     dispatch({
-                    //         type: 'select',
-                    //         add: evt.altKey,
-                    //         at: [
-                    //             {
-                    //                 start: path.concat({
-                    //                     idx,
-                    //                     type: 'subtext',
-                    //                     at: calcOffset(
-                    //                         evt.currentTarget,
-                    //                         evt.clientX,
-                    //                     ),
-                    //                 }),
-                    //             },
-                    //         ],
-                    //     });
-                    // }}
+                    // className="idlike"
                 >
                     {body}
                 </span>

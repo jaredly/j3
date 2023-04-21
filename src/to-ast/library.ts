@@ -106,6 +106,9 @@ export type Sandbox = {
         created_date: number;
         updated_date: number;
         version: number;
+        settings: {
+            namespace: string[];
+        };
     };
 
     root: number;

@@ -52,7 +52,8 @@ class ErrorBoundary extends React.Component<
     }
 }
 
-initialData().then((initial) =>
+// setTimeout(() => {
+initialData(location.hash ? location.hash.slice(1) : null).then((initial) =>
     root.render(
         <React.StrictMode>
             <ErrorBoundary>
@@ -62,3 +63,4 @@ initialData().then((initial) =>
         </React.StrictMode>,
     ),
 );
+// }, 300);
