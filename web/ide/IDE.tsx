@@ -1,6 +1,6 @@
 // The main cheezy
 
-import { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 import { Builtins, Env } from '../../src/to-ast/library';
 import { HistoryItem } from '../../src/to-ast/library';
 import { Sandbox } from '../../src/to-ast/library';
@@ -35,6 +35,13 @@ import { HashedTree } from '../../src/db/hash-tree';
 
 type Action = [];
 
+const buttonStyle = {
+    fontSize: '80%',
+    borderRadius: 4,
+    padding: '0px 4px',
+    display: 'inline-block',
+    backgroundColor: '#444',
+};
 // export const reduce = (state: IDEState, action: Action): IDEState => {
 //     return state;
 // };
@@ -47,30 +54,122 @@ type Action = [];
 //     };
 // };
 
+export const Button = ({
+    top,
+    definitions,
+    builtins,
+}: {
+    top: string;
+    definitions: Library['definitions'];
+    builtins: Builtins;
+}) => {
+    if (!top) {
+        return null;
+    }
+    if (top.startsWith(':builtin:')) {
+        const hash = top.slice(':builtin:'.length);
+        return (
+            <span style={buttonStyle}>
+                {builtins[hash]?.type === 'type' ? 'T' : 'e'}
+            </span>
+        );
+    }
+    const defn = definitions[top];
+    if (defn.type === 'term') {
+        return <span style={buttonStyle}>e</span>;
+    }
+    if (defn.type === 'type') {
+        return <span style={buttonStyle}>T</span>;
+    }
+    return <span style={buttonStyle}>unknown</span>;
+};
+
 export const NSTree = ({
     root,
+    name,
+    level,
+    builtins,
     namespaces,
+    definitions,
 }: {
     root: string;
+    name: string;
+    level: number;
+    builtins: Builtins;
     namespaces: HashedTree;
+    definitions: Library['definitions'];
 }) => {
+    const [open, setOpen] = useState(false);
+    const canBeOpen = level === 0 || open;
+
+    const top = namespaces[root][''];
+    const keys = Object.keys(namespaces[root]).sort();
+
+    if (keys.length === 1 && keys[0] === '') {
+        return (
+            <div>
+                <span
+                    style={{
+                        width: '2em',
+                        display: 'inline-block',
+                        textAlign: 'right',
+                        marginRight: 4,
+                    }}
+                ></span>
+                <Button
+                    builtins={builtins}
+                    top={top}
+                    definitions={definitions}
+                />{' '}
+                {name}
+            </div>
+        );
+    }
+
     return (
         <div>
-            {Object.keys(namespaces[root])
-                .sort()
-                .map((name) =>
-                    name === '' ? null : (
-                        <div key={name}>
-                            {name}
-                            <div style={{ marginLeft: 20 }}>
-                                <NSTree
-                                    root={namespaces[root][name]}
-                                    namespaces={namespaces}
-                                />
+            <div
+                onMouseDown={() => setOpen(!open)}
+                style={{ cursor: 'pointer' }}
+            >
+                <span
+                    style={{
+                        width: '2em',
+                        display: 'inline-block',
+                        textAlign: 'right',
+                        marginRight: 4,
+                    }}
+                >
+                    {keys.length}
+                </span>
+                <Button
+                    builtins={builtins}
+                    top={top}
+                    definitions={definitions}
+                />{' '}
+                {name}/
+            </div>
+
+            {canBeOpen &&
+                keys
+                    .filter((k) => k !== '')
+                    .map((name) => {
+                        const hash = namespaces[root][name];
+                        return (
+                            <div key={name}>
+                                <div style={{ marginLeft: 20 }}>
+                                    <NSTree
+                                        root={hash}
+                                        name={name}
+                                        level={level + 1}
+                                        builtins={builtins}
+                                        namespaces={namespaces}
+                                        definitions={definitions}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    ),
-                )}
+                        );
+                    })}
         </div>
     );
 };
@@ -79,7 +178,14 @@ export const Namespaces = ({ env }: { env: Env }) => {
     const root = env.library.root;
     return (
         <div style={{ padding: 24, height: '100vh', overflow: 'auto' }}>
-            <NSTree root={root} namespaces={env.library.namespaces} />
+            <NSTree
+                root={root}
+                level={0}
+                name={''}
+                builtins={env.builtins}
+                namespaces={env.library.namespaces}
+                definitions={env.library.definitions}
+            />
         </div>
     );
 };
