@@ -1,7 +1,7 @@
 // The main cheezy
 
 import React, { useReducer } from 'react';
-import { Env, Library, Sandbox } from '../../src/to-ast/library';
+import { Env, Sandbox } from '../../src/to-ast/library';
 import { reduce } from '../custom/reduce';
 import { Action, UIState, uiState, useMenu } from '../custom/ByHand';
 import { HiddenInput } from '../custom/HiddenInput';
@@ -15,7 +15,7 @@ import { Namespaces } from './Namespaces';
 import { addSandbox, getSandbox } from '../../src/db/sandbox';
 import { Db } from '../../src/db/tables';
 import { selectEnd } from '../mods/navigate';
-import { UpdateMap } from '../store';
+import { usePersistStateChanges } from './usePersistStateChanges';
 
 // type SandboxState = {
 //     id: string;
@@ -107,6 +107,7 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     return {
         map: sandbox.map,
         root: sandbox.root,
+        history: sandbox.history,
         at: sandbox.history.length
             ? sandbox.history[sandbox.history.length - 1].at
             : [
@@ -144,28 +145,9 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     };
 }
 
-type DBUpdate =
-    | {
-          type: 'sandbox-nodes';
-          map: UpdateMap;
-      }
-    | {
-          type: 'sandbox-history';
-          history: Sandbox['history'];
-      }
-    | {
-          type: 'names';
-          namespaces: Library['namespaces'];
-          root: { hash: string; date: number };
-      }
-    | {
-          type: 'definitions';
-          definitions: Library['definitions'];
-      };
-
-type IDEState = {
+export type IDEState = {
     sandboxes: Sandbox['meta'][];
-    updates: DBUpdate[];
+    // updates: DBUpdate[];
     current:
         | {
               type: 'sandbox';
@@ -241,11 +223,13 @@ export const IDE = ({
         topReduce,
         null,
         (): IDEState => ({
-            updates: [],
+            // updates: [],
             sandboxes: initial.sandboxes,
             current: { type: 'dashboard', env: initial.env },
         }),
     );
+
+    usePersistStateChanges(initial.db, state);
 
     return (
         <div

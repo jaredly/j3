@@ -5,9 +5,21 @@ wa-sqlite in the house
 There's a Library behind everything
 and multiple Sandboxes can be called up
 we can even do like an ephemeral sandbox if we want
-or those ~constant sandboxes, ya know
+or those ~constant sandboxes, ya know.
 
+ok, so I've decided .. that I cannn just determine post-hoc
+what things got updated?
+eh
+I don't really love that though. so much waste.
+but
+cycles are cheap  Iguess.
 
+ANYWAY.
+So we do a [prevState -> nextState] delta
+and persist that.
+Yeah I guess I can live with that.
+
+History items, I can do some clever merging, if it's a simple change.
 
 
 # LOCS can just be IDXs

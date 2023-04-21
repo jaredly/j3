@@ -16,6 +16,7 @@ import {
     getKeyUpdate,
 } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';
+import { UpdateMap } from '../store';
 import { Action, UIState, isRootPath } from './ByHand';
 import { getCtx } from './getCtx';
 import { verticalMove } from './verticalMove';
@@ -138,7 +139,41 @@ export const updateWithAutocomplete = (
 
 export const reduce = (state: UIState, action: Action): UIState => {
     const update = actionToUpdate(state, action);
-    return reduceUpdate(state, update);
+    const next = reduceUpdate(state, update);
+    if (next.map !== state.map) {
+        const update: UpdateMap = {};
+        const prev: UpdateMap = {};
+        let changed = false;
+        Object.keys(next.map).forEach((k) => {
+            if (next.map[+k] !== state.map[+k]) {
+                changed = true;
+                update[+k] = next.map[+k];
+                prev[+k] = state.map[+k] || null;
+            }
+        });
+        Object.keys(state.map).forEach((k) => {
+            if (!next.map[+k]) {
+                changed = true;
+                update[+k] = null;
+                prev[+k] = state.map[+k];
+            }
+        });
+        if (changed) {
+            next.history = state.history.concat([
+                {
+                    at: next.at,
+                    prevAt: state.at,
+                    prev,
+                    map: update,
+                    id: state.history.length
+                        ? state.history[state.history.length - 1].id + 1
+                        : 0,
+                    ts: Date.now() / 1000,
+                },
+            ]);
+        }
+    }
+    return next;
 };
 
 export const reduceUpdate = (

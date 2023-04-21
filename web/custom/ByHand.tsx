@@ -19,7 +19,7 @@ import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';
 import { Expr } from '../../src/types/ast';
 import { transformNode } from '../../src/types/transform-cst';
-import { Ctx } from '../../src/to-ast/library';
+import { Ctx, HistoryItem } from '../../src/to-ast/library';
 
 const examples = {
     infer: '(+ 2)',
@@ -61,6 +61,7 @@ export type UIState = {
     clipboard: ClipboardItem[][];
     ctx: Ctx;
     hover: Path[];
+    history: HistoryItem[];
     // }
 } & State;
 
@@ -186,6 +187,7 @@ export const uiState = (state: State): UIState => {
         regs: {},
         clipboard: [],
         hover: [],
+        history: [],
         at: [{ start: at }],
         ...getCtx(state.map, -1),
     };
