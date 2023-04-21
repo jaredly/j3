@@ -53,8 +53,6 @@ export function Root({
     );
 
     const [drag, setDrag] = useState(false);
-    // const exprMap: { [idx: number]: Expr } = {};
-    // state.exprs.forEach((expr) => (exprMap[expr.form.loc] = expr));
 
     return (
         <div
@@ -77,10 +75,7 @@ export function Root({
                             ...sels[sels.length - 1],
                             end: sel,
                         };
-                        dispatch({
-                            type: 'select',
-                            at: sels,
-                        });
+                        dispatch({ type: 'select', at: sels });
                     } else {
                         dispatch({
                             type: 'select',
@@ -126,42 +121,55 @@ export function Root({
                         : getType(got, state.ctx)
                     : null;
                 return (
-                    <div key={top} style={{ marginBottom: 8 }}>
-                        <Render
-                            debug={debug}
-                            idx={top}
-                            map={state.map}
-                            reg={reg}
-                            display={ctx.results.display}
-                            hashNames={ctx.results.hashNames}
-                            errors={ctx.results.errors}
-                            dispatch={dispatch}
-                            selection={selections}
-                            path={[
-                                {
-                                    idx: state.root,
-                                    type: 'child',
-                                    at: i,
-                                },
-                            ]}
-                        />
+                    <div key={top} style={{ marginBottom: 8, display: 'flex' }}>
                         <div
                             style={{
-                                fontSize: '80%',
-                                opacity: 0.3,
-                                marginTop: 4,
+                                marginRight: 4,
+                                width: 20,
+                                // backgroundColor: 'red',
+                                height: 10,
                             }}
                         >
-                            {tt
-                                ? nodeToString(
-                                      nodeForType(tt, ctx.results.hashNames),
-                                      ctx.results.hashNames,
-                                  )
-                                : 'no type'}
+                            {got?.type === 'def' || got?.type === 'deftype'
+                                ? '<-'
+                                : ''}
                         </div>
-                        {debug ? (
-                            <div>{sexp(fromMCST(top, state.map))}</div>
-                        ) : null}
+                        <div>
+                            <Render
+                                debug={debug}
+                                idx={top}
+                                map={state.map}
+                                reg={reg}
+                                display={ctx.results.display}
+                                hashNames={ctx.results.hashNames}
+                                errors={ctx.results.errors}
+                                dispatch={dispatch}
+                                selection={selections}
+                                path={[
+                                    { idx: state.root, type: 'child', at: i },
+                                ]}
+                            />
+                            <div
+                                style={{
+                                    fontSize: '80%',
+                                    opacity: 0.3,
+                                    marginTop: 4,
+                                }}
+                            >
+                                {tt
+                                    ? nodeToString(
+                                          nodeForType(
+                                              tt,
+                                              ctx.results.hashNames,
+                                          ),
+                                          ctx.results.hashNames,
+                                      )
+                                    : 'no type'}
+                            </div>
+                            {debug ? (
+                                <div>{sexp(fromMCST(top, state.map))}</div>
+                            ) : null}
+                        </div>
                     </div>
                 );
             })}

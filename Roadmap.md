@@ -1,4 +1,19 @@
 
+# Left-Hand Whatsit
+
+- [ ] v|> collapse a thing!
+- [ ] maybe ... a three dots? that makes a contextmenu
+  - well so I do need a button to move something out to the library
+
+- [x] make a '<-' for def/deftype
+- [ ] on click, add it to definitions, add a name to namespace, and
+  also replace all of the usages of it with the new hash.
+
+# AutoComplete
+
+- [ ] it's not, great?
+  - [ ] distinguish between local & sandbox & global results
+
 # OK Vision for the nextliness
 
 - [x] UIState should have a history[]
