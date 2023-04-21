@@ -1,6 +1,16 @@
 
 # OK Vision for the nextliness
 
+- [ ] UIState should have a history[]
+- [ ] then the IDE useEffect can just check for new history items
+  and apply their changes.
+  That sounds great.
+
+
+
+
+
+
 wa-sqlite in the house
 There's a Library behind everything
 and multiple Sandboxes can be called up

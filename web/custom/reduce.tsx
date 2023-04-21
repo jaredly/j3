@@ -100,7 +100,7 @@ export const updateWithAutocomplete = (
     if (update.type === 'select' && !update.autoComplete) {
         return state;
     }
-    let { ctx, map } = getCtx(state.map, state.root);
+    let { ctx, map } = getCtx(state.map, state.root, state.ctx.global);
     verifyLocs(state.map, 'get ctx');
     state.map = map;
     state.ctx = ctx;
@@ -122,7 +122,7 @@ export const updateWithAutocomplete = (
                 verifyLocs(state.map, 'apply infer mod');
                 console.log(state.map[+id]);
             });
-            ({ ctx, map } = getCtx(state.map, state.root));
+            ({ ctx, map } = getCtx(state.map, state.root, state.ctx.global));
             verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;

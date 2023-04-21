@@ -106,6 +106,7 @@ export function collectDatabaseChanges(
     }
     return changes;
 }
+
 export function usePersistStateChanges(db: Db, state: IDEState) {
     const enqueueChanges = useMemo(() => {
         let allChanges: DBUpdate[] = [];
