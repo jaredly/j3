@@ -103,6 +103,8 @@ export const IDE = ({
         }),
     );
 
+    // window.state = state;
+
     useEffect(() => {
         if (state.current.type === 'sandbox') {
             location.hash = '#' + state.current.id;

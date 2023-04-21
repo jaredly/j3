@@ -14,7 +14,7 @@ export const resolveExpr = (
     ctx: CstCtx,
     form: Node,
 ): Expr => {
-    if (!text.length && !hash) {
+    if (!text.length && hash == null) {
         return { type: 'unresolved', form, reason: 'blank' };
     }
     if (text === 'true' || text === 'false') {
@@ -24,7 +24,7 @@ export const resolveExpr = (
         return { type: 'tag', name: text, form };
     }
     ctx.results.display[form.loc] = {};
-    if (!hash) {
+    if (hash == null) {
         populateAutocomplete(ctx, text, form);
         ctx.results.display[form.loc].style = { type: 'unresolved' };
         return {
@@ -41,7 +41,7 @@ export const resolveExpr = (
                     hash,
                     ann: top.ann ?? undefined,
                 };
-                // console.log('its a hashnames', top.name);
+                console.log('its a hashnames', form.loc, top.name);
                 ctx.results.hashNames[form.loc] = top.name;
                 return { type: 'toplevel', hash, form };
             }
