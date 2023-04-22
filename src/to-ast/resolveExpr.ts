@@ -42,7 +42,7 @@ export const resolveExpr = (
                     ann: top.ann ?? undefined,
                 };
                 // console.log('its a hashnames', form.loc, top.name);
-                ctx.results.hashNames[form.loc] = top.name;
+                ctx.results.hashNames[form.loc] = lastName(top.name);
                 return { type: 'toplevel', hash, form };
             }
             const sym = hash;
@@ -80,8 +80,9 @@ export const resolveExpr = (
                     hash,
                     ann: global.ann,
                 };
-                ctx.results.hashNames[form.loc] =
-                    ctx.results.globalNames[hash]?.[0]; // ctx.global.reverseNames[hash];
+                ctx.results.hashNames[form.loc] = lastName(
+                    ctx.results.globalNames[hash]?.[0],
+                ); // ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
             populateAutocomplete(ctx, text, form);

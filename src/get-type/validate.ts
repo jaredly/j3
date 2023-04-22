@@ -1,3 +1,4 @@
+import { validName } from '../../web/ide/IDE';
 import { Ctx } from '../to-ast/library';
 import type { Expr, Loc, Type } from '../types/ast';
 import type { Error, MatchError } from '../types/types';
@@ -26,8 +27,20 @@ export const validateExpr = (
             // return err(errors, expr, { type: 'unresolved', form: expr.form });
             return;
         case 'deftype':
+            if (!validName(expr.name)) {
+                err(errors, expr, {
+                    type: 'misc',
+                    message: 'invalid name',
+                });
+            }
             return validateType(expr.value, ctx, errors);
         case 'def':
+            if (!validName(expr.name)) {
+                err(errors, expr, {
+                    type: 'misc',
+                    message: 'invalid name',
+                });
+            }
             return validateExpr(expr.value, ctx, errors);
         case 'fn':
             for (let arg of expr.args) {

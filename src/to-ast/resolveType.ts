@@ -56,7 +56,8 @@ export const resolveType = (
                 hash,
                 ann: global.value,
             };
-            ctx.results.hashNames[form.loc] = 'STOPSHIP'; //ctx.global.reverseNames[hash];
+            ctx.results.hashNames[form.loc] =
+                ctx.results.globalNames[hash]?.[0]; // ctx.global.reverseNames[hash];
             return { type: 'global', hash, form };
         }
     }

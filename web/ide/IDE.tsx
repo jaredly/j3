@@ -184,6 +184,12 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
                     map,
                 )!;
 
+                const name = action.expr.name;
+                if (!validName(name)) {
+                    console.error('invalid name sry', name);
+                    return state;
+                }
+
                 const nnames = { ...sstate.ctx.global.library.namespaces };
                 const newRoot = addToHashedTree(
                     nnames,
@@ -396,6 +402,13 @@ function SandboxTabs({
                                 dispatch({ type: 'update-sandbox', meta });
                             });
                         }}
+                        style={
+                            {
+                                // background: 'red',
+                                // color: 'white',
+                                // border: 'none',
+                            }
+                        }
                     />
                 ) : (
                     <button
@@ -440,5 +453,15 @@ function SandboxTabs({
                 +
             </button>
         </div>
+    );
+}
+
+export function validName(name: string) {
+    return (
+        name.length > 0 &&
+        !name.includes('.') &&
+        !name.endsWith('///') &&
+        (name.endsWith('//') || !name.endsWith('/')) &&
+        !name.slice(0, -1).includes('//')
     );
 }

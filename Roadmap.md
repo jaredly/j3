@@ -1,4 +1,18 @@
 
+# More Solid Thinking
+about names, and reuse, and such.
+
+- if you have multiple terms with the same name in the sandbox,
+  it should be an error
+- if you have a sandbox that shadows the name of something in the library
+  and you have usages of the library thing elsewhere in the sandbox,
+  I should really flag that somehow.
+- drag & drop toplevels would be quite nice
+
+- I should really hurry up and get glsl output going
+  so I can make pretty things
+
+
 # Left-Hand Whatsit
 
 - [ ] v|> collapse a thing!
@@ -12,6 +26,8 @@
 
 - [ ] BUG: select all of a text, delete, and you
   have an identifier thats empty.
+
+- [ ] I really want fancy node select dealios
 
 # AutoComplete
 
