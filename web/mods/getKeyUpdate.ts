@@ -748,6 +748,9 @@ export const clearAllChildren = (idxs: number[], map: Map) => {
     const clear = (idx: number) => {
         res[idx] = null;
         const node = map[idx];
+        if (!node) {
+            debugger;
+        }
         switch (node.type) {
             case 'array':
             case 'list':

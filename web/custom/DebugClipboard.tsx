@@ -5,7 +5,7 @@ import {
     collectNodes,
 } from '../mods/clipboard';
 import { cmpFullPath } from './isCoveredBySelection';
-import { UIState } from './ByHand';
+import { UIState } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/library';
 

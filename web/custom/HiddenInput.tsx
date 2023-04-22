@@ -6,7 +6,8 @@ import {
     collectClipboard,
 } from '../mods/clipboard';
 import { Path } from '../mods/path';
-import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
+import { clipboardPrefix, clipboardSuffix } from './ByHand';
+import { UIState, Action } from './UIState';
 import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({

@@ -6,8 +6,12 @@
   - well so I do need a button to move something out to the library
 
 - [x] make a '<-' for def/deftype
-- [ ] on click, add it to definitions, add a name to namespace, and
+- [x] on click, add it to definitions, add a name to namespace, and
   also replace all of the usages of it with the new hash.
+- [ ] make an "x" to delete things from namespace
+
+- [ ] BUG: select all of a text, delete, and you
+  have an identifier thats empty.
 
 # AutoComplete
 

@@ -1,5 +1,5 @@
 import { calcOffset } from './calcOffset';
-import { UIState } from './ByHand';
+import { UIState } from './UIState';
 import { calcCursorPos, subRect } from './Cursors';
 import { Mods, StateSelect } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';

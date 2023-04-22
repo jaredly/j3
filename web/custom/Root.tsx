@@ -6,7 +6,7 @@ import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../mods/path';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
-import { UIState, Action } from './ByHand';
+import { UIState, Action } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
@@ -130,9 +130,27 @@ export function Root({
                                 height: 10,
                             }}
                         >
-                            {got?.type === 'def' || got?.type === 'deftype'
-                                ? '<-'
-                                : ''}
+                            {got?.type === 'def' || got?.type === 'deftype' ? (
+                                <div
+                                    onClick={() => {
+                                        // the click
+                                        const loc = got.form.loc;
+                                        // if (got.type === 'def') { }
+                                        dispatch({
+                                            type: 'yank',
+                                            expr: got,
+                                            loc,
+                                        });
+                                    }}
+                                    style={{
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    &lt;-
+                                </div>
+                            ) : (
+                                ''
+                            )}
                         </div>
                         <div>
                             <Render

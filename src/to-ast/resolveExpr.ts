@@ -80,7 +80,8 @@ export const resolveExpr = (
                     hash,
                     ann: global.ann,
                 };
-                ctx.results.hashNames[form.loc] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
+                ctx.results.hashNames[form.loc] =
+                    ctx.results.globalNames[hash]?.[0]; // ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
             populateAutocomplete(ctx, text, form);

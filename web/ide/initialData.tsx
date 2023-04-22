@@ -7,7 +7,7 @@ import { HashedTree, addToHashedTree } from '../../src/db/hash-tree';
 import * as blake from 'blakejs';
 import { Db, initialize } from '../../src/db/tables';
 
-const makeHash = (map: HashedTree['']): string =>
+export const makeHash = (map: unknown): string =>
     blake.blake2bHex(JSON.stringify(map));
 
 export const initialData = async (sandbox: string | null) => {

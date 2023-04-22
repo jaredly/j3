@@ -12,6 +12,7 @@ export type CompilationResults = {
         [idx: number]: Mod[];
     };
     hashNames: { [idx: number]: string };
+    globalNames: { [hash: string]: string[] };
     display: {
         [idx: number]: {
             style?: NodeStyle;

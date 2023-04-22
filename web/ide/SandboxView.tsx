@@ -1,6 +1,7 @@
 import React from 'react';
 import { Env, Sandbox } from '../../src/to-ast/library';
-import { Action, UIState, useMenu } from '../custom/ByHand';
+import { useMenu } from '../custom/ByHand';
+import { Action, UIState } from '../custom/UIState';
 import { HiddenInput } from '../custom/HiddenInput';
 import { ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';

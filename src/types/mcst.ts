@@ -23,12 +23,18 @@ export type Atom =
           text: string;
       }
     | { type: 'unparsed'; raw: string };
+
+export type MNodeList = {
+    type: 'list';
+    values: number[];
+};
+
 // `LikeThis
 // | { type: 'tag'; text: string }
 // | { type: 'number'; raw: string };
 
 export type ListLikeContents =
-    | { type: 'list'; values: number[] }
+    | MNodeList
     | { type: 'record'; values: number[] }
     | { type: 'array'; values: number[]; hash?: string };
 

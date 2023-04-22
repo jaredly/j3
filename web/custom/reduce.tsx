@@ -17,7 +17,8 @@ import {
 } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';
 import { UpdateMap } from '../store';
-import { Action, UIState, isRootPath } from './ByHand';
+import { isRootPath } from './ByHand';
+import { Action, UIState } from './UIState';
 import { getCtx } from './getCtx';
 import { verticalMove } from './verticalMove';
 
@@ -135,6 +136,14 @@ export const updateWithAutocomplete = (
         state.menu = undefined;
     }
     return state;
+};
+
+export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
+    const prev: UpdateMap = {};
+    Object.keys(update).forEach((k) => {
+        prev[+k] = map[+k] || null;
+    });
+    return prev;
 };
 
 export const reduce = (state: UIState, action: Action): UIState => {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { HistoryItem, Library, Sandbox } from '../../src/to-ast/library';
-import { UIState } from '../custom/ByHand';
+import { UIState } from '../custom/UIState';
 import {
     addUpdateHistoryItems,
     addUpdateNodes,
@@ -47,7 +47,7 @@ export const applyChanges = async (db: Db, changes: DBUpdate[]) => {
                     await addDefinitions(db, change.definitions);
                     break;
                 case 'names':
-                    await addNamespaces(db, change.namespaces);
+                    await addNamespaces(db, change.namespaces, change.root);
                     break;
             }
         }
@@ -61,13 +61,13 @@ export function collectDatabaseChanges(
 ) {
     const changes: DBUpdate[] = [];
     if (last.ctx.global.library !== next.ctx.global.library) {
-        console.log('library change');
+        // console.log('library change');
         const lg = last.ctx.global.library;
         const ng = next.ctx.global.library;
         if (lg.definitions !== ng.definitions) {
             const definitions: Library['definitions'] = {};
             Object.keys(ng.definitions).forEach((k) => {
-                if (ng.definitions[k] !== lg.definitions[k]) {
+                if (!lg.definitions[k]) {
                     definitions[k] = ng.definitions[k];
                 }
             });
@@ -75,8 +75,8 @@ export function collectDatabaseChanges(
         }
         if (lg.namespaces !== ng.namespaces) {
             const ns: HashedTree = {};
-            Object.keys(ng.definitions).forEach((k) => {
-                if (ng.namespaces[k] !== lg.namespaces[k]) {
+            Object.keys(ng.namespaces).forEach((k) => {
+                if (!lg.namespaces[k]) {
                     ns[k] = ng.namespaces[k];
                 }
             });
@@ -158,6 +158,10 @@ export function usePersistStateChanges(db: Db, state: IDEState) {
                 state.current.state,
                 state.current.id,
             );
+            if (!changes.length) {
+                return;
+            }
+            // console.log('got changes', changes);
             enqueueChanges(changes);
         }
     }, [state]);

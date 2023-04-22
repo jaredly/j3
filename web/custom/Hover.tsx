@@ -8,7 +8,7 @@ import { errorToString } from '../../src/to-cst/show-errors';
 import { fromMCST } from '../../src/types/mcst';
 import { State } from '../mods/getKeyUpdate';
 import { Path } from '../mods/path';
-import { Action, UIState } from './ByHand';
+import { Action, UIState } from './UIState';
 import { subRect } from './Cursors';
 
 const getRegNode = (idx: number, regs: UIState['regs']) => {

@@ -87,6 +87,32 @@ export const addToHashedTree = (
     return hash;
 };
 
+export const hashedToFlats = (
+    root: string,
+    hashed: HashedTree,
+): { [hash: string]: string[] } => {
+    const flat: { [hash: string]: string[] } = {};
+    const traverse = (hash: string, path: string[]) => {
+        const tree: Tree = { children: {} };
+        Object.keys(hashed[hash]).forEach((name) => {
+            if (name === '') {
+                const leaf = hashed[hash][name];
+                const full = path.join('/');
+                if (!flat[leaf]) {
+                    flat[leaf] = [full];
+                } else {
+                    flat[leaf].push(full);
+                }
+            } else {
+                traverse(hashed[hash][name], path.concat([name]));
+            }
+        });
+        return tree;
+    };
+    traverse(root, []);
+    return flat;
+};
+
 export const hashedToTree = (root: string, hashed: HashedTree): Tree => {
     const traverse = (hash: string): Tree => {
         const tree: Tree = { children: {} };
