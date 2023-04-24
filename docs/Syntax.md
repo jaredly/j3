@@ -182,6 +182,7 @@ true false
   ('Read () string)
   ('Write string ())
   'Message
+  ('Fail string)
 ] int)
 ; expands to
 (@loop [
@@ -189,11 +190,50 @@ true false
   ('Read () (fn [string] @recur))
   ('Write string (fn [()] @recur))
   ('Message () (fn [()] @recur))
+  ('Fail string ())
 ])
 ; i mean tbh now that I have loop/recur
 ; that @task macro isn't even all that magic anymore.
 ; nice nice nice.
 
+; butt the question is
+; can I change @loop/@recur to be ~normal macros?
+; idk if I can.
+; also like, validation is important
+
+
+; sooo what about Type variables?
+;
+; (tfn [T:task]
+;   (@task [T ('Hello number ())])
+;   )
+;
+;
+
+; hrmmm ok so a builtin type ...
+
+; so "task" here means ... 
+; an enum
+; of tags
+; with either 1 or 2 args
+; orrr I guess no args if you want
+; but ... welll ok so if there were a bunch
+; of args it technically wouldn't work
+; but am I really all that mad about it?
+; I think not.
+; ok so T can just be [..] and we're fine.
+
+; ah, but the story here is
+; we need to not expand the dealio yet
+; until the type variable is resolved
+
+; that is to say, the type macro shouldn't evaluate
+; until strictly necessary.
+; which, interestingly enough
+; is the same story for @loop.
+; hmm..
+;
+; 
 
 ; recursion!
 

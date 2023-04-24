@@ -55,6 +55,7 @@ export const validateExpr = (
             for (let arg of expr.args) {
                 if (arg.type) validateType(arg.type, ctx, errors);
             }
+            validateType(expr.ret, ctx, errors);
             expr.body.forEach((expr) => validateExpr(expr, ctx, errors));
             return;
         case 'apply':
@@ -176,6 +177,11 @@ export const validateType = (
                 form: type.form,
                 reason: type.reason,
             });
+        case 'loop':
+            return validateType(type.inner, ctx, errors);
+        case 'recur':
+            // TODO actually validate
+            return;
         case 'local':
             return ctx.results.localMap.types[type.sym] != null
                 ? null

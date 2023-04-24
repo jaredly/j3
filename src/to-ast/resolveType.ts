@@ -43,7 +43,7 @@ export const resolveType = (
         };
     }
     if (text.startsWith("'")) {
-        return { type: 'tag', name: text, args: [], form };
+        return { type: 'tag', name: text.slice(1), args: [], form };
     }
     // console.log('resolve typpe', text);
     if (hash == null && text === any.form.text) {

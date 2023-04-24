@@ -9,6 +9,7 @@ import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
 import { CstCtx } from './library';
+import { _matchOrExpand, matchesType } from '../get-type/matchesType';
 
 export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
     if (!ctx.mods[idx]) {
@@ -52,7 +53,9 @@ export const specials: {
             };
         }
         let argNode = contents[0];
+        let ret: Type | null = null;
         if (argNode.type === 'annot') {
+            ret = nodeToType(argNode.annot, ctx);
             argNode = argNode.target;
         }
         if (argNode.type === 'array') {
@@ -91,7 +94,7 @@ export const specials: {
                 },
             };
             const body = contents.slice(1);
-            let ret: Type = none;
+            // let ret: Type = none;
 
             // Hmmmmmm
             // do I need to lock down the `ret`?
@@ -103,26 +106,33 @@ export const specials: {
             // yeah sure, let's lock it down? I mean
             // what would that mean.
 
-            if (
-                body.length > 0 &&
-                body[0].type === 'identifier' &&
-                body[0].text.startsWith(':')
-            ) {
-                ret = nodeToType(
-                    {
-                        ...body[0],
-                        text: body[0].text.slice(1),
-                    },
-                    ctx,
-                );
-                body.shift();
-            }
+            // if (
+            //     body.length > 0 &&
+            //     body[0].type === 'identifier' &&
+            //     body[0].text.startsWith(':')
+            // ) {
+            //     ret = nodeToType(
+            //         {
+            //             ...body[0],
+            //             text: body[0].text.slice(1),
+            //         },
+            //         ctx,
+            //     );
+            //     body.shift();
+            // }
             const bodies = body.map((child) => nodeToExpr(child, ct2));
             if (bodies.length) {
                 const last = bodies[bodies.length - 1];
                 const t = getType(last, ctx);
                 if (t) {
-                    ret = t;
+                    if (ret) {
+                        const match = _matchOrExpand(t, ret, ctx, []);
+                        if (match !== true) {
+                            err(ctx.results.errors, form, match);
+                        }
+                    } else {
+                        ret = t;
+                    }
                 }
             }
             // parse fn args
@@ -130,7 +140,7 @@ export const specials: {
                 type: 'fn',
                 args,
                 body: bodies,
-                ret,
+                ret: ret ?? none,
                 form,
             };
         }

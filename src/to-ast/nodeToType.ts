@@ -95,6 +95,35 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 };
             }
 
+            if (first.type === 'identifier' && first.text === '@task') {
+                // (@task [] res)
+                // We'll require that things actually be expandable
+                // right?
+                // well, so there's trickyness around ...
+                // type variables. Right?
+                //
+                // (@task [('log string ()) ('read () string) ('fail string)])
+                // becomes
+                // (@loop [
+                // ('Return ())
+                // ('log string (fn [()] @recur))
+                // ('read () (fn [string] @recur))
+                // ('fail string ())
+                // ])
+                //
+                return {
+                    type: 'loop',
+                    form,
+                    inner: nodeToType(args[0], {
+                        ...ctx,
+                        local: {
+                            ...ctx.local,
+                            loopType: { sym: form.loc },
+                        },
+                    }),
+                };
+            }
+
             if (first.type === 'identifier' && first.text === '@loop') {
                 if (!args.length || args.length !== 1) {
                     err(ctx.results.errors, first, {

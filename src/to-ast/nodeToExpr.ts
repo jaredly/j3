@@ -168,6 +168,10 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                 name: form.name,
             };
         case 'annot':
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'unexpected annot',
+            });
             return nodeToExpr(form.target, ctx);
         case 'tapply':
             return {

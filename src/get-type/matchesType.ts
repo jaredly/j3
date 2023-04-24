@@ -35,6 +35,14 @@ export const inv = (
     path,
 });
 
+export const isLoopy = (t: Type): boolean => {
+    return (
+        t.type === 'loop' ||
+        t.type === 'recur' ||
+        (t.type === 'apply' && isLoopy(t.target))
+    );
+};
+
 export const _matchOrExpand = (
     candidate: Type,
     expected: Type,
@@ -45,8 +53,11 @@ export const _matchOrExpand = (
     if (first === true) {
         return true;
     }
-    const ca = applyAndResolve(candidate, ctx, path);
-    const ce = applyAndResolve(expected, ctx, path);
+    const isLoopRelated =
+        first.type === 'invalid type' &&
+        (isLoopy(first.expected) || isLoopy(first.found));
+    const ca = applyAndResolve(candidate, ctx, path, isLoopRelated);
+    const ce = applyAndResolve(expected, ctx, path, isLoopRelated);
     if (ca === candidate && ce === expected) {
         return first;
     }
@@ -75,6 +86,13 @@ export const _matchesType = (
         case 'recur':
             return expected.type === 'recur' || inv(candidate, expected, path);
         case 'loop':
+            // TODO:
+            // So ... we could get into the infinite propagation issue
+            // any time we have a looped type
+            // right? because I always blindly re-expand
+            // if we can.
+            // when instead, I should probably only expand if we get to
+            // a loop. Right?
             return expected.type === 'loop'
                 ? _matchOrExpand(
                       candidate.inner,
@@ -367,11 +385,12 @@ export const applyAndResolve = (
     type: Type,
     ctx: Ctx,
     path: string[],
+    expandLoops?: boolean,
 ):
     | Type
     | { type: 'error'; error: MatchError }
     | { type: 'local-bound'; bound?: Type } => {
-    if (type.type === 'loop') {
+    if (type.type === 'loop' && expandLoops) {
         return transformType(
             type.inner,
             {
@@ -431,6 +450,7 @@ export const applyAndResolve = (
             type.target,
             ctx,
             path.concat(['target']),
+            expandLoops,
         );
         if (inner.type === 'error') {
             return inner;

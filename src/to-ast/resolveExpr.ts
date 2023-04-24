@@ -21,7 +21,7 @@ export const resolveExpr = (
         return { type: 'bool', value: text === 'true', form };
     }
     if (text.startsWith("'")) {
-        return { type: 'tag', name: text, form };
+        return { type: 'tag', name: text.slice(1), form };
     }
     ctx.results.display[form.loc] = {};
     if (hash == null) {
