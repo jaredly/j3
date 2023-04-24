@@ -29,10 +29,12 @@ false bool
 'Nil (@loop ['Nil ('Cons int @recur)])
 ('Cons 1 'Nil) (@loop ['Nil ('Cons int @recur)])
 ('Cons 1 ('Cons 0 'Nil)) (@loop ['Nil ('Cons int @recur)])
+('Leaf 100) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
+('Node (array [('Leaf 1) ('Node (array []))])) ((@loop (tfn [T] [('Leaf T) ('Node (array (@recur T)))])) int)
 `;
 // (.x {x 1.}) 1.
-// ('Leaf 100) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
-// ('Node [('Leaf 1) ('Node [])]) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
+// Why doesn't this one work? 🤔
+// ('Node (array [])) ((tfn [T] (@loop [('Leaf T) ('Node (array @recur))])) int)
 // (tfn [X:{x float}] (fn [m:X.x] m))
 // (@loop (tfn [T] [('Leaf T) ('Node (array @recur))]))
 // treeeeeee gotta do some "type check checks" I think

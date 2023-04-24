@@ -68,6 +68,9 @@ export const _matchesType = (
     ctx: Ctx,
     path: string[],
 ): MatchError | true => {
+    if (path.length > 100) {
+        throw new Error(`Deep recursion? Path length over 100`);
+    }
     switch (candidate.type) {
         case 'record': {
             if (expected.type === 'record') {
@@ -357,6 +360,30 @@ export const applyAndResolve = (
     | Type
     | { type: 'error'; error: MatchError }
     | { type: 'local-bound'; bound?: Type } => {
+    if (type.type === 'loop') {
+        return transformType(
+            type.inner,
+            {
+                Type(node, ctx) {
+                    if (ctx.inside) {
+                        return false;
+                    }
+                    if (node.type === 'loop') {
+                        return false;
+                    }
+                    if (node.type === 'recur') {
+                        if (node.sym === type.form.loc) {
+                            return [type, { inside: true }];
+                        } else {
+                            console.log('BAD RECUR?');
+                        }
+                    }
+                    return null;
+                },
+            },
+            { inside: false },
+        );
+    }
     if (type.type === 'global') {
         const defn = ctx.global.library.definitions[type.hash];
         return defn?.type === 'type'
