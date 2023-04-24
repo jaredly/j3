@@ -1,4 +1,4 @@
-import {Term, Expr, Def, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, DefType, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, Def, DefType, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -579,6 +579,28 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
             case 'any': break;
 
             case 'none': break;
+
+            case 'recur': break;
+
+            case 'loop': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                const updatedNode$0node$inner = transformType(updatedNode$0specified.inner, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$inner !== updatedNode$0specified.inner;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, inner: updatedNode$0node$inner};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
 
             case 'builtin': break;
 
@@ -1437,6 +1459,32 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
             case 'builtin': break;
 
             case 'blank': break;
+
+            case 'recur': break;
+
+            case 'loop': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                const updatedNode$0node$inner = transformExpr(updatedNode$0specified.inner, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$inner !== updatedNode$0specified.inner;
+
+                
+                const updatedNode$0node$ann = transformType(updatedNode$0specified.ann, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$ann !== updatedNode$0specified.ann;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, inner: updatedNode$0node$inner, ann: updatedNode$0node$ann};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
 
             case 'def': {
                         updatedNode = transformDef(node, visitor, ctx);

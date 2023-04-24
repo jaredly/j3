@@ -37,7 +37,7 @@ export const btype = (v: string): Type => ({
 });
 
 export const basicBuiltins: Global['builtins'] = {
-    bidx: -3,
+    bidx: -6,
     types: {
         uint: [],
         texture: [],
@@ -58,6 +58,10 @@ export const basicBuiltins: Global['builtins'] = {
                     form: blank,
                 },
             },
+        ],
+        map: [
+            { form: blankAt(-4), name: 'Key' },
+            { form: blankAt(-5), name: 'Value' },
         ],
     },
     terms: {},
@@ -140,12 +144,6 @@ export const bfn = (name: string, args: Type[], body: Type) => {
     return builtinFn(basicBuiltins, name, args, body);
 };
 
-// export const mathHashes: {
-//     int: { [key: string]: string };
-//     uint: { [key: string]: string };
-//     float: { [key: string]: string };
-// } = { int: {}, float: {}, uint: {} };
-
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
     bfn(`int/` + name, [tint, tint], tbool);
     bfn(`uint/` + name, [tuint, tuint], tbool);
@@ -163,6 +161,8 @@ bfn('bool/==', [tbool, tbool], tbool);
 bfn('int/toString', [tint], tstring);
 bfn('bool/toString', [tbool], tstring);
 bfn('string/has-prefix?', [tstring, tstring], tbool);
+
+const tloc = (v: number): Type => ({ type: 'local', form: blank, sym: v });
 
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
@@ -182,35 +182,103 @@ addBuiltin(basicBuiltins, 'array/reduce', {
                     type: 'apply',
                     target: { type: 'builtin', form: blank, name: 'array' },
                     form: blank,
-                    args: [
-                        { type: 'local', form: blank, sym: targ1 },
-                        { type: 'local', form: blank, sym: targ3 },
-                    ],
+                    args: [tloc(targ1), tloc(targ3)],
                 },
                 form: blank,
             },
-            { type: { type: 'local', form: blank, sym: targ2 }, form: blank },
+            { type: tloc(targ2), form: blank },
             {
                 type: {
                     type: 'fn',
                     form: blank,
                     args: [
-                        {
-                            type: { type: 'local', form: blank, sym: targ1 },
-                            form: blank,
-                        },
-                        {
-                            type: { type: 'local', form: blank, sym: targ2 },
-                            form: blank,
-                        },
+                        { type: tloc(targ1), form: blank },
+                        { type: tloc(targ2), form: blank },
                     ],
-                    body: { type: 'local', form: blank, sym: targ2 },
+                    body: tloc(targ2),
                 },
                 form: blank,
             },
         ],
-        body: { type: 'local', form: blank, sym: targ2 },
+        body: tloc(targ2),
         form: blank,
+    },
+    form: blank,
+});
+
+const marg1 = basicBuiltins.bidx--;
+const marg2 = basicBuiltins.bidx--;
+
+const mapGet: Type = {
+    type: 'tfn',
+    args: [
+        { form: blankAt(marg1), name: 'Key' },
+        { form: blankAt(marg2), name: 'Value' },
+    ],
+    body: {
+        type: 'fn',
+        args: [
+            {
+                name: 'target',
+                form: blank,
+                type: {
+                    type: 'apply',
+                    target: { type: 'builtin', form: blank, name: 'map' },
+                    form: blank,
+                    args: [tloc(marg1), tloc(marg2)],
+                },
+            },
+            { type: tloc(marg1), form: blank, name: 'key' },
+        ],
+        body: tloc(marg2),
+        form: blank,
+    },
+    form: blank,
+};
+
+addBuiltin(basicBuiltins, 'map/get', mapGet);
+addBuiltin(basicBuiltins, 'map/[]', mapGet);
+
+const fparg1 = basicBuiltins.bidx--;
+const fparg2 = basicBuiltins.bidx--;
+
+addBuiltin(basicBuiltins, 'map/from-pairs', {
+    type: 'tfn',
+    args: [
+        { form: blankAt(fparg1), name: 'Key' },
+        { form: blankAt(fparg2), name: 'Value' },
+    ],
+    body: {
+        type: 'fn',
+        form: blank,
+        args: [
+            {
+                type: {
+                    type: 'apply',
+                    target: { type: 'builtin', form: blank, name: 'array' },
+                    form: blank,
+                    args: [
+                        {
+                            type: 'record',
+                            entries: [
+                                { name: '0', value: tloc(fparg1) },
+                                { name: '1', value: tloc(fparg2) },
+                            ],
+                            form: blank,
+                            open: false,
+                            spreads: [],
+                        },
+                    ],
+                },
+                form: blank,
+            },
+        ],
+        body: {
+            type: 'apply',
+            target: { type: 'builtin', form: blank, name: 'map' },
+            form: blank,
+            args: [tloc(fparg1), tloc(fparg2)],
+        },
     },
     form: blank,
 });
@@ -246,6 +314,7 @@ bfn('float/sin', [tfloat], tfloat);
 bfn('vec2/dot', [vec2, vec2], tfloat);
 bfn('vec2/length', [vec2], tfloat);
 bfn('texture/[]', [btype('texture'), vec2], vec4);
+
 addBuiltin(basicBuiltins, 'float/PI', tfloat);
 
 const darg = basicBuiltins.bidx--;

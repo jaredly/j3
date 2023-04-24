@@ -19,7 +19,7 @@ import { UpdateMap } from '../store';
 import { NodeExtra, NodeList } from '../../src/types/cst';
 import { MNodeList } from '../../src/types/mcst';
 import { applyUpdateMap, clearAllChildren } from '../mods/getKeyUpdate';
-import { validateExpr } from '../../src/get-type/validate';
+import { validName, validateExpr } from '../../src/get-type/validate';
 import { Error } from '../../src/types/types';
 import { getType } from '../../src/get-type/get-types-new';
 import { transformExpr } from '../../src/types/walk-ast';
@@ -453,15 +453,5 @@ function SandboxTabs({
                 +
             </button>
         </div>
-    );
-}
-
-export function validName(name: string) {
-    return (
-        name.length > 0 &&
-        !name.includes('.') &&
-        !name.endsWith('///') &&
-        (name.endsWith('//') || !name.endsWith('/')) &&
-        !name.slice(0, -1).includes('//')
     );
 }

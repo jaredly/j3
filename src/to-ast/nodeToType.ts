@@ -95,6 +95,32 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 };
             }
 
+            if (first.type === 'identifier' && first.text === '@loop') {
+                if (!args.length || args.length !== 1) {
+                    err(ctx.results.errors, first, {
+                        type: 'misc',
+                        message: '@loop requires exactly one argument',
+                        form,
+                    });
+                    return {
+                        type: 'unresolved',
+                        reason: 'bad @loop',
+                        form,
+                    };
+                }
+                return {
+                    type: 'loop',
+                    form,
+                    inner: nodeToType(args[0], {
+                        ...ctx,
+                        local: {
+                            ...ctx.local,
+                            loopType: { sym: form.loc },
+                        },
+                    }),
+                };
+            }
+
             if (first.type === 'identifier' && first.text === 'fn') {
                 const targs = args.shift()!;
                 if (!targs || targs.type !== 'array') {

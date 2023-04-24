@@ -155,12 +155,14 @@ Options for getting the length of an array type
 Relatedly...
 can I infer the type args to `reduce` from the args?
 
+Yeah so I think the least-weird least-special way would be
+```clj
+(.1 (@typeof [1 2 3])) -> 3u
+```
 
 ## map type?
 
 ```clj
 {"hello" 2 "what" 10}
 SomeMap{"hello" 2 "yes" no}
-
 ```
-

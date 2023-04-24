@@ -25,7 +25,18 @@ false bool
 ('hi 10) [('hi int)]
 ('hi 10) ((tfn [T] [('hi T)]) int)
 1. float
+{x 1.} {x float}
+'Nil (@loop ['Nil ('Cons int @recur)])
+('Cons 1 'Nil) (@loop ['Nil ('Cons int @recur)])
+('Cons 1 ('Cons 0 'Nil)) (@loop ['Nil ('Cons int @recur)])
 `;
+// (.x {x 1.}) 1.
+// ('Leaf 100) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
+// ('Node [('Leaf 1) ('Node [])]) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
+// (tfn [X:{x float}] (fn [m:X.x] m))
+// (@loop (tfn [T] [('Leaf T) ('Node (array @recur))]))
+// treeeeeee gotta do some "type check checks" I think
+//
 // "hi" "hi"
 // "hi" string
 // (lettype [vec2 {x float y float}] (array vec2 4)) : (array {x float y float})

@@ -564,6 +564,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 return imageFileLazy;
             }
             return fileLazy;
+        case 'loop':
+            return getType(expr.inner, ctx, report);
         case 'recur':
             throw new Error('Not recur yet');
         case 'type-fn':

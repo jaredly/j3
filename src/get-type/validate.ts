@@ -1,4 +1,3 @@
-import { validName } from '../../web/ide/IDE';
 import { Ctx } from '../to-ast/library';
 import type { Expr, Loc, Type } from '../types/ast';
 import type { Error, MatchError } from '../types/types';
@@ -15,6 +14,16 @@ const err = (
     }
     errors[type.form.loc].push(error);
 };
+
+export function validName(name: string) {
+    return (
+        name.length > 0 &&
+        !name.includes('.') &&
+        !name.endsWith('///') &&
+        (name.endsWith('//') || !name.endsWith('/')) &&
+        !name.slice(0, -1).includes('//')
+    );
+}
 
 export const validateExpr = (
     expr: Expr,
@@ -133,6 +142,9 @@ export const validateExpr = (
             return;
         case 'recur':
             return;
+        case 'loop':
+            validateType(expr.ann, ctx, errors);
+            return validateExpr(expr.inner, ctx, errors);
         case 'type-fn':
             validateExpr(expr.target, ctx, errors);
             return;

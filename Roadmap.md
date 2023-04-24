@@ -1,4 +1,93 @@
 
+# erhmm hm
+
+"hashName not recorded", why is
+ohhhhh wait
+it's that ...
+oh lol I fixed that at least
+
+
+# Ok, so the road to GLSL happiness
+goes through every human heart.
+wait.
+
+## @loop and @recur
+at least at the type level, gotta have it.
+
+so, I probably need like some tests n stuff
+
+
+- [-] I .. prolly ... need a special ... cst type? For @loop and @recur?
+  honestly
+  the cst doesn't really need to do much different, right?
+  ok yeah, so `@loop` and `@recur` get to be 'special's.
+  un le s s I want `@` to do macro things, and ...
+  eh I'll deal with that later.
+  - [x] ok no, so @loop and @recur don't need representation in the cst
+
+- [ ] BUT the AST needs it right?
+  yeah.
+
+Ok so anyway, let's do the `Type` side first.
+but
+
+- [ ] type .attribute gotta do it
+  then ... so we do some ~basic validation on the type
+
+FOR the expr dealo, inferring the type seeems like it could be
+very hard?
+I could just enforece that you have to annotate it manually.
+(@loop:ann something)
+
+so, this is a ~locals thing.
+at the moment, we're not allowing ... multipl-y different
+levels of recursion.
+although actuall you could do
+```clj
+(@loop (let [top @recur]
+  (@loop (top @recur))))
+```
+So that's totally fine. No need to complicate things.
+
+
+## [x] a `map` type
+
+Does it need to be arbitrarily keyed?
+I do want to be able to have `int` and `string` as keys.
+So sure, let's do arbitrary.
+
+anything fancy I should be doing?
+Also, can I cheat for string maps? and just use objects?
+on the other hand, do I care so much?
+let's not cheat for now.
+
+Ok, but anyways, I need a `map/[]`, right?
+```clj
+(defn map/[]
+  (tfn [T V]
+    (fn [target:(map T V) key:T] V)))
+```
+whichhh meannssss
+that `[]` needs to be able to ... be generic ...
+
+ok so how about, if a fn is trivially generic,
+I can just infer it.
+
+gotta do it for map/[] right? yeah ok that sounds good.
+
+ok yeah so, I did map/get and thats fine.
+
+- [x] map type
+- [x] map/from-pairs
+- [x] map/get
+
+I, kinda want, to be able to double up, type vs term
+`map` type and `map` constrcutor, ya know
+`vec2` type and `vec2` constructor.
+but
+eh I feel like the mental overhead is too much.
+
+
 # More Solid Thinking
 about names, and reuse, and such.
 
@@ -11,7 +100,13 @@ about names, and reuse, and such.
 
 - I should really hurry up and get glsl output going
   so I can make pretty things
+- also a dom output n stuff ...
 
+ok wait so
+like what do we do about platforms.
+I'm guessing a platform will have just like a library
+
+- [ ] click on a thing, bring it up to the deal
 
 # Left-Hand Whatsit
 

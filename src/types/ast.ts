@@ -94,6 +94,8 @@ export type Expr =
           form: Node;
       }
     | { type: 'blank'; form: Node }
+    | { type: 'recur'; form: Node; sym: number }
+    | { type: 'loop'; form: Node; inner: Expr; ann: Type }
     | Def
     | DefType
     | String
@@ -194,6 +196,8 @@ export type Type =
       }
     | { type: 'any'; form: Node }
     | { type: 'none'; form: Node }
+    | { type: 'recur'; form: Node; sym: number }
+    | { type: 'loop'; form: Node; inner: Type }
     | {
           type: 'builtin';
           name: string;

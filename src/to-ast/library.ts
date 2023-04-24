@@ -30,6 +30,8 @@ export type CompilationResults = {
 export type Local = {
     terms: { sym: number; name: string; type: Type }[];
     types: { sym: number; name: string; bound?: Type }[];
+    loop?: { sym: number; type: Type };
+    loopType?: { sym: number };
 };
 
 export type Ctx = {

@@ -14,6 +14,34 @@ export const resolveType = (
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
+    if (text.startsWith('@')) {
+        if (text === '@loop') {
+            return {
+                type: 'unresolved',
+                form,
+                reason: 'invalid use of @loop',
+            };
+        }
+        if (text === '@recur') {
+            if (ctx.local.loopType) {
+                return {
+                    type: 'recur',
+                    form,
+                    sym: ctx.local.loopType.sym,
+                };
+            }
+            return {
+                type: 'unresolved',
+                form,
+                reason: '@recur has no @loop in scope',
+            };
+        }
+        return {
+            type: 'unresolved',
+            form,
+            reason: 'unknown type macro',
+        };
+    }
     if (text.startsWith("'")) {
         return { type: 'tag', name: text, args: [], form };
     }

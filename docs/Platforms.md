@@ -1,4 +1,89 @@
 
+# More Platnform Specifics
+
+## GLSL Platform?
+
+types.jd
+```clj
+(deftype vec2 {x float y float})
+(deftype GLSLEnv {resolution vec2})
+(deftype RunIt
+  (@task [
+    ('Simple (fun [coord:vec2] vec4))
+   ())
+)
+```
+
+orrrr
+so what if
+it's not a glsl platform
+b/c glsl can't be a thing by itself.
+
+it's ...
+as web platform
+javascript, ya know
+and you give it like
+a `termLink` to the fn
+and the platform can unroll all of that
+from the library
+and recompile it into glsl?
+
+because otherwise we're left doing the madness
+that I had before, to
+manually peel away the insides of the record
+to get the initial state,
+and the main render
+and the backbuffer render
+
+it should be like
+```clj
+('run-glsl {
+  render (@quote drawToScreen)
+  buffer (@quote drawToBuffer)
+  stateT (@quote-t state)
+  initial {v 10}
+  step (fun [{v}:state] {v (+ v 1)})
+})
+```
+
+OR
+I could
+make a builtin macro
+that is `fn to glsl`?
+and
+hm
+the macro, 
+```clj
+(@glsl drawToScreen)
+```
+it would have to get called with ... an `env`
+that includes anything traversable from any hashes
+passed to it.
+right?
+ok so the be explicit, maybe I want
+```clj
+(@glsl drawToScreen @env)
+```
+?
+although that could get super tedious.
+how about
+```clj
+(defn glsl [args:(array Expr) env:Env]
+  ...)
+```
+?
+that doesn't sound terrible.
+it does mean you don't get validation .. on the macro use ..
+.. although I guess maybe you do?
+Alsooo I feel like macros could be super expensive (he he glsl)
+and maybe re-running on every keystroke is going to like cause
+massive issues?
+hrmmmm maybe I'll just require that you manually re-trigger them,
+and indicate somehow that a macro hasn't been triggered recently.
+
+
+
+
 # Thinking about platforms, in the IDE
 
 ## Data storage

@@ -157,6 +157,17 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                 ],
             });
         }
+        case 'loop':
+            return {
+                type: 'list',
+                loc: type.form.loc,
+                values: [
+                    id('@loop', type.form.loc),
+                    nodeForType(type.inner, hashNames),
+                ],
+            };
+        case 'recur':
+            return { type: 'identifier', text: '@recur', loc: type.form.loc };
         case 'unresolved':
             // return type.form;
             return {
