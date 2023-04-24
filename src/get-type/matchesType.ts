@@ -72,6 +72,17 @@ export const _matchesType = (
         throw new Error(`Deep recursion? Path length over 100`);
     }
     switch (candidate.type) {
+        case 'recur':
+            return expected.type === 'recur' || inv(candidate, expected, path);
+        case 'loop':
+            return expected.type === 'loop'
+                ? _matchOrExpand(
+                      candidate.inner,
+                      expected.inner,
+                      ctx,
+                      path.concat(['loop']),
+                  )
+                : inv(candidate, expected, path);
         case 'record': {
             if (expected.type === 'record') {
                 const map = recordMap(expected, ctx);

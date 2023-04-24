@@ -31,6 +31,7 @@ false bool
 ('Cons 1 ('Cons 0 'Nil)) (@loop ['Nil ('Cons int @recur)])
 ('Leaf 100) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
 ('Node (array [('Leaf 1) ('Node (array []))])) ((@loop (tfn [T] [('Leaf T) ('Node (array (@recur T)))])) int)
+(@loop ['Nil ('Cons int @recur)]) (@loop ['Nil ('Cons int @recur)])
 `;
 // (.x {x 1.}) 1.
 // Why doesn't this one work? 🤔
