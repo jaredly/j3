@@ -77,6 +77,14 @@ export const nodeToString_ = (
         case 'blank':
             return '';
         case 'hash': {
+            if (
+                hashNames &&
+                !hashNames[node.loc] &&
+                typeof node.hash === 'string' &&
+                node.hash.startsWith(':builtin:')
+            ) {
+                return node.hash.slice(':builtin:'.length);
+            }
             return !hashNames
                 ? '#' + node.hash
                 : hashNames[node.loc] ??

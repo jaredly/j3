@@ -13,7 +13,10 @@ export type HashedTree = {
     [hash: string]: { [name: string]: string };
 };
 
-export const lastName = (name: string) => {
+export const lastName = (name: string | null) => {
+    if (!name) {
+        return `no-hash`;
+    }
     if (name.endsWith('//')) {
         return '/';
     }

@@ -12,6 +12,20 @@
 
 - [ ] validatee @loop, the @recur has to be inside of a (fn).
 
+- [ ] hashNamesNonLoc
+  - I want my `hashNames` to not be "this .loc has X name"
+    - toplevel[hash] name
+    - local[sym] name
+    - builtin[name] name
+    - globalNames[hash] / last
+
+.. > so currently `hashNames[form.loc] = name`
+.. > are there things that will need differential rendering?
+.. > perhaps the /relative/path stuff? but let's not mess with that too much
+
+nodeToString -> globalNames maybe?
+that might be betterr
+
 
 ## More better test testing
 
