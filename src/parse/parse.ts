@@ -3,14 +3,9 @@ import { applyMods } from '../../web/custom/getCtx';
 import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
 import { applyMenuItem, autoCompleteUpdate } from '../../web/custom/reduce';
 import { layout } from '../../web/layout';
-import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
-import {
-    applyUpdate,
-    getKeyUpdate,
-    Mods,
-    State,
-} from '../../web/mods/getKeyUpdate';
-import { Path } from '../../web/mods/path';
+import { ClipboardItem, collectNodes, paste } from '../state/clipboard';
+import { applyUpdate, getKeyUpdate, Mods, State } from '../state/getKeyUpdate';
+import { Path } from '../state/path';
 import { lastName } from '../db/hash-tree';
 import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';

@@ -4,19 +4,19 @@ import {
     idText,
     orderStartAndEnd,
     splitGraphemes,
-} from '../../src/parse/parse';
-import { newCtx } from '../../src/to-ast/Ctx';
-import { nodeToString } from '../../src/to-cst/nodeToString';
-import { accessText, Node, NodeExtra, stringText } from '../../src/types/cst';
+} from '../parse/parse';
+import { newCtx } from '../to-ast/Ctx';
+import { nodeToString } from '../to-cst/nodeToString';
+import { accessText, Node, NodeExtra, stringText } from '../types/cst';
 import {
     fromMCST,
     ListLikeContents,
     Map,
     MNodeExtra,
     toMCST,
-} from '../../src/types/mcst';
-import { transformNode } from '../../src/types/transform-cst';
-import { cmpFullPath } from '../custom/isCoveredBySelection';
+} from '../types/mcst';
+import { transformNode } from '../types/transform-cst';
+import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
 import {
     applyUpdate,
     getKeyUpdate,
@@ -27,14 +27,14 @@ import {
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path } from './path';
-import { UpdateMap } from '../store';
-import { filterComments, nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { applyMods } from '../custom/getCtx';
-import { getType } from '../../src/get-type/get-types-new';
-import { validateExpr } from '../../src/get-type/validate';
-import { addDef } from '../../src/to-ast/to-ast';
-import { applyInferMod, infer } from '../../src/infer/infer';
-import { CstCtx, Ctx } from '../../src/to-ast/library';
+import { UpdateMap } from '../../web/store';
+import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
+import { applyMods } from '../../web/custom/getCtx';
+import { getType } from '../get-type/get-types-new';
+import { validateExpr } from '../get-type/validate';
+import { addDef } from '../to-ast/to-ast';
+import { applyInferMod, infer } from '../infer/infer';
+import { CstCtx, Ctx } from '../to-ast/library';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }

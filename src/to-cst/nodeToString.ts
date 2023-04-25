@@ -1,4 +1,4 @@
-import { Path } from '../../web/mods/path';
+import { Path } from '../state/path';
 import { lastName } from '../db/hash-tree';
 import { Ctx } from '../to-ast/Ctx';
 import { Node } from '../types/cst';

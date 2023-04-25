@@ -6,8 +6,8 @@ import {
     MCSpread,
     MCString,
     MNodeExtra,
-} from '../../src/types/mcst';
-import { UpdateMap } from '../store';
+} from '../types/mcst';
+import { UpdateMap } from '../../web/store';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 

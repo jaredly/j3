@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
-import { Path } from '../mods/path';
+import { Path } from '../../src/state/path';
 import { UIState, RegMap } from './UIState';
 import { selectWithin } from './calcOffset';
 

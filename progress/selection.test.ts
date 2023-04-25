@@ -2,9 +2,9 @@ import { parseByCharacter } from '../src/parse/parse';
 import { newCtx } from '../src/to-ast/Ctx';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
-import { clipboardText, collectNodes } from '../web/mods/clipboard';
-import { getKeyUpdate } from '../web/mods/getKeyUpdate';
-import { selectStart } from '../web/mods/navigate';
+import { clipboardText, collectNodes } from '../src/state/clipboard';
+import { getKeyUpdate } from '../src/state/getKeyUpdate';
+import { selectStart } from '../src/state/navigate';
 
 const data = `
 (abc def ghi)

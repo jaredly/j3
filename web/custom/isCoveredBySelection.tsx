@@ -1,7 +1,7 @@
 import { Map } from '../../src/types/mcst';
-import { CoverageLevel, selectionStatus } from '../mods/clipboard';
-import { State } from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
+import { CoverageLevel, selectionStatus } from '../../src/state/clipboard';
+import { State } from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
 
 export const isCoveredBySelection = (
     at: State['at'],

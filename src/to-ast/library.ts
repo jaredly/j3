@@ -3,7 +3,7 @@ import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
-import { Cursor, StateUpdate } from '../../web/mods/getKeyUpdate';
+import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../../web/store';
 
 export type CompilationResults = {

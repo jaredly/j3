@@ -6,8 +6,8 @@ import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { errorToString } from '../../src/to-cst/show-errors';
 import { fromMCST } from '../../src/types/mcst';
-import { State } from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
+import { State } from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
 import { Action, UIState } from './UIState';
 import { subRect } from './Cursors';
 

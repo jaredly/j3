@@ -1,8 +1,8 @@
-import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
-import { Ctx, NodeStyle } from '../../src/to-ast/Ctx';
-import { Type } from '../../src/types/ast';
-import { Map, MNode } from '../../src/types/mcst';
-import { UpdateMap } from '../store';
+import { idText, pathPos, splitGraphemes } from '../parse/parse';
+import { Ctx, NodeStyle } from '../to-ast/Ctx';
+import { Type } from '../types/ast';
+import { Map, MNode } from '../types/mcst';
+import { UpdateMap } from '../../web/store';
 import { ClipboardItem } from './clipboard';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';

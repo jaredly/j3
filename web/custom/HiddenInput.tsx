@@ -4,8 +4,8 @@ import {
     type ClipboardItem,
     clipboardText,
     collectClipboard,
-} from '../mods/clipboard';
-import { Path } from '../mods/path';
+} from '../../src/state/clipboard';
+import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { UIState, Action } from './UIState';
 import { Ctx } from '../../src/to-ast/library';

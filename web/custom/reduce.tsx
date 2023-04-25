@@ -6,7 +6,7 @@ import {
 } from '../../src/parse/parse';
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { MNode, Map } from '../../src/types/mcst';
-import { paste } from '../mods/clipboard';
+import { paste } from '../../src/state/clipboard';
 import {
     State,
     StateChange,
@@ -14,8 +14,8 @@ import {
     StateUpdate,
     applyUpdate,
     getKeyUpdate,
-} from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
+} from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
 import { UpdateMap } from '../store';
 import { isRootPath } from './ByHand';
 import { Action, UIState } from './UIState';

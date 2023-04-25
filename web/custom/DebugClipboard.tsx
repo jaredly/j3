@@ -3,7 +3,7 @@ import {
     type ClipboardItem,
     clipboardText,
     collectNodes,
-} from '../mods/clipboard';
+} from '../../src/state/clipboard';
 import { cmpFullPath } from './isCoveredBySelection';
 import { UIState } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';

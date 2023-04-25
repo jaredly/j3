@@ -1,4 +1,4 @@
-import { Path } from '../../web/mods/path';
+import { Path } from '../state/path';
 import { accessText, Identifier, Node, NodeExtra } from './cst';
 import { MNode } from './mcst';
 

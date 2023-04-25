@@ -1,6 +1,6 @@
 import { Ctx } from '../../src/to-ast/Ctx';
 import { Map } from '../../src/types/mcst';
-import { Path } from '../mods/path';
+import { Path } from '../../src/state/path';
 import { Action, UIState } from './UIState';
 
 export type Reg = (

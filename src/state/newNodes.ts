@@ -1,4 +1,4 @@
-import { splitGraphemes } from '../../src/parse/parse';
+import { splitGraphemes } from '../parse/parse';
 import { NewThing } from './getKeyUpdate';
 import { Path } from './path';
 

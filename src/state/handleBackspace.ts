@@ -1,5 +1,5 @@
-import { UpdateMap } from '../store';
-import { ListLikeContents, Map, MNodeExtra } from '../../src/types/mcst';
+import { UpdateMap } from '../../web/store';
+import { ListLikeContents, Map, MNodeExtra } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
 import {
@@ -8,16 +8,12 @@ import {
     maybeClearParentList,
 } from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
-import {
-    idText,
-    orderStartAndEnd,
-    splitGraphemes,
-} from '../../src/parse/parse';
-import { accessText, Identifier, stringText } from '../../src/types/cst';
+import { idText, orderStartAndEnd, splitGraphemes } from '../parse/parse';
+import { accessText, Identifier, stringText } from '../types/cst';
 import { collectNodes } from './clipboard';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { Ctx } from '../to-ast/Ctx';
 
 export function handleBackspace(
     map: Map,

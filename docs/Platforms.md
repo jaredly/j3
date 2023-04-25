@@ -81,6 +81,12 @@ massive issues?
 hrmmmm maybe I'll just require that you manually re-trigger them,
 and indicate somehow that a macro hasn't been triggered recently.
 
+Alsooo I need to decide how to represent macros in the CST.
+because.
+like which side are you on.
+
+
+
 
 
 

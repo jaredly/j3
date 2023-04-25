@@ -1,8 +1,8 @@
 import equal from 'fast-deep-equal';
-import { splitGraphemes } from '../../src/parse/parse';
-import { Map } from '../../src/types/mcst';
-import { getNodes } from '../overheat/getNestedNodes';
-import { ONode } from '../overheat/types';
+import { splitGraphemes } from '../parse/parse';
+import { Map } from '../types/mcst';
+import { getNodes } from './getNestedNodes';
+import { ONode } from './types';
 import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
 

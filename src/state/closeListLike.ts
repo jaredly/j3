@@ -1,5 +1,5 @@
-import { nodeToString } from '../../src/to-cst/nodeToString';
-import { fromMCST, Map } from '../../src/types/mcst';
+import { nodeToString } from '../to-cst/nodeToString';
+import { fromMCST, Map } from '../types/mcst';
 import { Path } from './path';
 
 export const closeListLike = (

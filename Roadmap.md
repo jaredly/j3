@@ -5,10 +5,24 @@
 - [x] getType for fns should collect all tasks dontchaknow
   - hm so, I think I'll blindly glom everything together that's in the body of the fn?
     are there any downsides to that?? I think it's the desired behavior.
-- [ ] oh tfn for expr's, gotta have it
+- [x] oh tfn for expr's, gotta have it
+  - [ ] switchhhhh really needs work
+  - [ ] honestly, I need to start doing comprehensive testing of the semantics and such
 - [ ] andddd let's do `@task` types for real
 
 - [ ] validatee @loop, the @recur has to be inside of a (fn).
+
+
+## More better test testing
+
+What are the ...sections of stuff?
+
+- "parsing", 
+
+ok but also, my tests shouldn't be touching web stuff.
+also, delete all of the ctx stuff? I mean maybe not quite,
+I might still want to reference some of it for the js evaluation stuff.
+
 
 # erhmm hm
 

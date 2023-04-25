@@ -1,7 +1,7 @@
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
-import { type ClipboardItem } from '../mods/clipboard';
-import { State, Mods } from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
+import { type ClipboardItem } from '../../src/state/clipboard';
+import { State, Mods } from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
 import { Def, DefType } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
 

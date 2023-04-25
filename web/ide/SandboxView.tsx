@@ -9,7 +9,7 @@ import { Cursors } from '../custom/Cursors';
 import { Root } from '../custom/Root';
 import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
-import { selectEnd } from '../mods/navigate';
+import { selectEnd } from '../../src/state/navigate';
 import { getCtx } from '../custom/getCtx';
 
 // type SandboxState = {

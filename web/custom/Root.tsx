@@ -3,7 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { sexp } from '../../progress/sexp';
 import { nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
-import { Path } from '../mods/path';
+import { Path } from '../../src/state/path';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
 import { UIState, Action } from './UIState';

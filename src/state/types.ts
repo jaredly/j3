@@ -1,6 +1,6 @@
 // The types
 
-import { Path } from '../store';
+import { Path } from '../../web/store';
 
 export type ONode =
     | { type: 'blinker'; loc: 'start' | 'end' | 'inside' }
