@@ -425,6 +425,12 @@ export const specials: {
                 });
             });
         }
+        if (nodes.length < 3) {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'if requires 3 elements',
+            });
+        }
         return {
             type: 'if',
             cond: cond ?? nil,

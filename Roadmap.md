@@ -12,7 +12,7 @@
 
 - [ ] validatee @loop, the @recur has to be inside of a (fn).
 
-- [ ] hashNamesNonLoc
+- [x] hashNamesNonLoc
   - I want my `hashNames` to not be "this .loc has X name"
     - toplevel[hash] name
     - local[sym] name
@@ -25,6 +25,7 @@
 
 nodeToString -> globalNames maybe?
 that might be betterr
+yeah ok I won't mess with non-loc for the moment.
 
 
 ## More better test testing

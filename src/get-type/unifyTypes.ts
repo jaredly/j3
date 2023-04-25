@@ -3,7 +3,7 @@ import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
-import { applyAndResolve } from './matchesType';
+import { applyAndResolve, expandEnumItems, unifyEnumArgs } from './matchesType';
 import { Ctx, Env } from '../to-ast/library';
 
 export const unifyTypes = (
@@ -111,6 +111,56 @@ export const _unifyTypes = (
               };
     }
 
+    if (
+        (one.type === 'tag' || one.type === 'union') &&
+        (two.type === 'tag' || two.type === 'union')
+    ) {
+        const onex = expandEnumItems(
+            one.type === 'tag' ? [one] : one.items,
+            ctx,
+            path,
+        );
+        const twox = expandEnumItems(
+            two.type === 'tag' ? [two] : two.items,
+            ctx,
+            path,
+        );
+        if (onex.type === 'error') {
+            return onex;
+        }
+        if (twox.type === 'error') {
+            return twox;
+        }
+        const result: { [key: string]: { args: Type[]; form: Node } } = {
+            ...twox.map,
+        };
+        for (let [k, v] of Object.entries(onex.map)) {
+            if (result[k]) {
+                const err = unifyEnumArgs(k, v.args, result, v.form, path, ctx);
+                if (err) {
+                    return { type: 'error', error: err };
+                }
+            } else {
+                result[k] = v;
+            }
+        }
+        return {
+            type: 'union',
+            open:
+                (one.type === 'union' && one.open) ||
+                (two.type === 'union' && two.open),
+            form: one.form,
+            items: Object.entries(result)
+                .sort((a, b) => cmp(a[0], b[0]))
+                .map(([k, v]) => ({
+                    type: 'tag',
+                    name: k,
+                    args: v.args,
+                    form: v.form,
+                })),
+        };
+    }
+
     if (one.type === 'string' && two.type === 'string') {
         if (one.first.text === two.first.text) {
             if (one.templates.length === two.templates.length) {
@@ -195,6 +245,8 @@ export const _unifyTypes = (
         } as any,
     };
 };
+
+export const cmp = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
 
 export const unifyMaps = (
     one: RecordMap,

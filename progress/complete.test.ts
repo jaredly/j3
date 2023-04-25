@@ -1,10 +1,13 @@
 // Now bringing in autocomplete and such
 
+import { getType } from '../src/get-type/get-types-new';
 import { getCtx } from '../src/getCtx';
 import { parseByCharacter } from '../src/parse/parse';
-import { newCtx } from '../src/to-ast/Ctx';
+import { Ctx, newCtx } from '../src/to-ast/Ctx';
+import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
+import { Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 
 const data = `
@@ -57,9 +60,43 @@ Found: string
 3: Invalid type.
 Expected: int
 Found: 1.2
+
+"what \${"is this"}"
+"what \${"is this"}"
+
+(let [x (tfn [t] (fn [a:t] a))] (x<int> 10))
+(let [x (tfn [t] (fn [a:#7] #11))] (#3<#:builtin:int> 10))
+-> #:builtin:int
+
+(if 1 2 3)
+(if 1 2 3)
+0: Invalid type.
+Expected: bool
+Found: 1
+
+(if true)
+(if true)
+0: if requires 3 elements
+
+(if true 2 3)
+(if true 2 3)
+-> #:builtin:int
+
+(if true 2 3.1)
+(if true 2 3.1)
+0: Unable to unify the following types:
+First type: 2
+Second type: 3.1
+
+(if true ('One 1) ('Two 1.2))
+(if true ('One 1) ('Two 1.2))
+-> [('One 1) ('Two 1.2)]
 `
     .trim()
     .split('\n\n');
+
+export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
+    nodeToString(nodeForType(type, hashNames), hashNames);
 
 describe('completion and such', () => {
     data.forEach((chunk, i) => {
@@ -68,6 +105,8 @@ describe('completion and such', () => {
             chunk = chunk.slice(3);
         }
         const [input, expected, ...errors] = chunk.split('\n');
+        let expectedType =
+            errors.length && errors[0].startsWith('->') ? errors.shift() : null;
         (only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
             const { map: data } = parseByCharacter(input, ctx);
@@ -93,6 +132,17 @@ describe('completion and such', () => {
                     )
                     .join('\n'),
             ).toEqual(errors.join('\n'));
+            if (expectedType) {
+                const got = getType(nctx.results.toplevel[idx], nctx);
+                expect(got).toBeTruthy();
+                expect(
+                    '-> ' +
+                        nodeToString(
+                            nodeForType(got!, nctx.results.hashNames),
+                            null,
+                        ),
+                ).toEqual(expectedType);
+            }
         });
     });
 });
