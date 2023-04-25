@@ -1,7 +1,5 @@
 // Now bringing in autocomplete and such
 
-import { getType } from '../src/get-type/get-types-new';
-import { validateExpr } from '../src/get-type/validate';
 import { getCtx } from '../src/getCtx';
 import { parseByCharacter } from '../src/parse/parse';
 import { newCtx } from '../src/to-ast/Ctx';
