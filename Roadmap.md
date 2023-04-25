@@ -17,7 +17,8 @@
 
 What are the ...sections of stuff?
 
-- "parsing", 
+- "parsing"
+- 'getCtx' and 'update'
 
 ok but also, my tests shouldn't be touching web stuff.
 also, delete all of the ctx stuff? I mean maybe not quite,

@@ -10,7 +10,7 @@ export type SourceMap = {
 
 export const nodeToString = (
     node: Node,
-    hashNames: Ctx['hashNames'],
+    hashNames: Ctx['hashNames'] | null,
     sm: SourceMap = { map: {}, cur: 0 },
     addBefore = 0,
 ): string => {
@@ -56,7 +56,7 @@ export const showSourceMap = (text: string, sm: SourceMap) => {
 
 export const nodeToString_ = (
     node: Node,
-    hashNames: Ctx['hashNames'],
+    hashNames: Ctx['hashNames'] | null,
     sm: SourceMap = { map: {}, cur: 0 },
 ): string => {
     switch (node.type) {
@@ -77,17 +77,13 @@ export const nodeToString_ = (
         case 'blank':
             return '';
         case 'hash': {
-            if (
-                typeof node.hash === 'string' &&
-                node.hash.startsWith(':builtin:')
-            ) {
-                return lastName(node.hash.slice(':builtin:'.length));
-            }
-            return (
-                hashNames[node.loc] ??
-                (typeof node.hash === 'number' ? hashNames[node.hash] : null) ??
-                `<hashName not recorded ${node.loc} ${node.hash}>`
-            );
+            return !hashNames
+                ? '#' + node.hash
+                : hashNames[node.loc] ??
+                      (typeof node.hash === 'number'
+                          ? hashNames[node.hash]
+                          : null) ??
+                      `<hashName not recorded ${node.loc} ${node.hash}>`;
         }
         case 'comment':
             return `$comment$`;

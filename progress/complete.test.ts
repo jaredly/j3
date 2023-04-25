@@ -7,40 +7,40 @@ import { fromMCST, ListLikeContents } from '../src/types/mcst';
 
 const data = `
 (fn [one:int] one)
-(fn [one:int] one)
+(fn [one:#:builtin:int] #3)
 
 (fn [one:int] on^n)
-(fn [one:int] one)
+(fn [one:#:builtin:int] #3)
 
 (fn [one:int] on^nm)
-(fn [one:int] onem)
+(fn [one:#:builtin:int] onem)
 
 (fn [o:int one:int] one)
-(fn [o:int one:int] one)
+(fn [o:#:builtin:int one:#:builtin:int] #6)
 
 (fn [one] (has-prefix? one "thing"))
-(fn [one:string] (has-prefix? one "thing"))
+(fn [one:#:builtin:string] (#:builtin:string/has-prefix? #8 "thing"))
 
 (fn [one:int] (has-prefix? one "thing"))
-(fn [one:int] (has-prefix? one "thing"))
+(fn [one:#:builtin:int] (#:builtin:string/has-prefix? #3 "thing"))
 
 (fn [one:"hi" two:(fn ["ho"] int)] (two one))
-(fn [one:string two:(fn ["ho"] int)] (two one))
+(fn [one:#:builtin:string two:(fn ["ho"] #:builtin:int)] (#7 #3))
 
 (fn [one:"hi" two:(fn ["hi"] int)] (two one))
-(fn [one:"hi" two:(fn ["hi"] int)] (two one))
+(fn [one:"hi" two:(fn ["hi"] #:builtin:int)] (#7 #3))
 
 (fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] int)] (two one))
-(fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] int)] (two one))
+(fn [one:"hi\${"ho"}" two:(fn ["hi\${"ho"}"] #:builtin:int)] (#10 #3))
 
 (+ 2 32)
-(+ 2 32)
+(#:builtin:int/+ 2 32)
 
 (fn [hello] (+ 2 hello))
-(fn [hello:int] (+ 2 hello))
+(fn [hello:#:builtin:int] (#:builtin:int/+ 2 #8))
 
 (fn [hello] (+ hello 2))
-(fn [hello:int] (+ hello 2))
+(fn [hello:#:builtin:int] (#:builtin:int/+ #8 2))
 `
     .trim()
     .split('\n\n');
@@ -56,9 +56,7 @@ describe('completion and such', () => {
             const ctx = newCtx();
             const { map: data } = parseByCharacter(input, ctx);
             const idx = (data[-1] as ListLikeContents).values[0];
-            expect(
-                nodeToString(fromMCST(idx, data), ctx.results.hashNames),
-            ).toEqual(expected);
+            expect(nodeToString(fromMCST(idx, data), null)).toEqual(expected);
         });
     });
 });

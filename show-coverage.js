@@ -9,22 +9,22 @@ ${Object.keys(data)
     .map(
         (fname) =>
             `
-            <div style="padding:3px">
-        <span style="font-size:50%">${fname.split('/').slice(-1)[0]}</span>
-        <div style="display:flex;flex-wrap:wrap">
+                <div style="width:0px;height:20px;background:white;position:relative">
+        <span style="font-size:50%;position:absolute;left:4px;top:2px;color:white;white-space:pre">${
+            fname.split('/').slice(-1)[0]
+        }</span></div>
             ${Object.keys(data[fname].statementMap)
                 .map(
                     (id) =>
                         `
-                <div style="width:3px;height:20px;background:${
+                <div style="width:3px;height:20px;margin-bottom:2px;background:${
                     data[fname].s[id] ? 'green' : 'red'
                 }">
                 </div>
                 `,
                 )
                 .join('\n')}
-        </div>
-        </div>
+                <div style="width:3px;height:20px;background:white"></div>
         `,
     )
     .join('\n')}
