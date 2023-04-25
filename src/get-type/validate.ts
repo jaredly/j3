@@ -217,6 +217,12 @@ export const validateType = (
                 type: 'misc',
                 message: 'This has the empty type',
             });
+        case 'string':
+            type.templates.forEach((t) => {
+                validateType(t.type, ctx, errors);
+                // TODO: very that t.type is string-like?
+            });
+            return;
         case 'task':
         // TODO: valid ate it
         case 'bool':

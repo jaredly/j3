@@ -83,6 +83,31 @@ export const _matchesType = (
         throw new Error(`Deep recursion? Path length over 100`);
     }
     switch (candidate.type) {
+        case 'string':
+            if (expected.type === 'builtin' && expected.name === 'string') {
+                return true;
+            }
+            if (expected.type === 'string') {
+                if (expected.templates.length === candidate.templates.length) {
+                    if (
+                        expected.first.text === candidate.first.text &&
+                        expected.templates.every(
+                            (ex, i) =>
+                                ex.suffix.text ===
+                                    candidate.templates[i].suffix.text &&
+                                _matchesType(
+                                    candidate.templates[i].type,
+                                    ex.type,
+                                    ctx,
+                                    path.concat([i + '']),
+                                ) === true,
+                        )
+                    ) {
+                        return true;
+                    }
+                }
+            }
+            return inv(candidate, expected, path);
         case 'recur':
             return expected.type === 'recur' || inv(candidate, expected, path);
         case 'loop':
