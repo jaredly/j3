@@ -4,7 +4,7 @@ import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
 import { Cursor, StateUpdate } from '../state/getKeyUpdate';
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from '../state/getKeyUpdate';
 
 export type CompilationResults = {
     errors: Report['errors'];

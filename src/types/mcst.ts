@@ -1,4 +1,4 @@
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from '../state/getKeyUpdate';
 import {
     accessText,
     Attachment,

@@ -1,4 +1,4 @@
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from '../state/getKeyUpdate';
 import { emptyMap } from '../parse/parse';
 import { Library, Sandbox } from '../to-ast/library';
 import { Map } from '../types/mcst';

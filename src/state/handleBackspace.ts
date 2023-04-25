@@ -1,9 +1,9 @@
-import { UpdateMap } from '../../web/store';
 import { ListLikeContents, Map, MNodeExtra } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
 import {
     StateChange,
+    UpdateMap,
     clearAllChildren,
     maybeClearParentList,
 } from './getKeyUpdate';

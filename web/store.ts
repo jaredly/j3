@@ -4,7 +4,8 @@ import { Ctx } from '../src/to-ast/Ctx';
 import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';
-import { layout } from './layout';
+import { layout } from '../src/layout';
+import { UpdateMap } from '../src/state/getKeyUpdate';
 
 export type Selection = {
     idx: number;
@@ -251,7 +252,6 @@ export const setSelection = (
     return old;
 };
 
-export type UpdateMap = { [key: string]: null | Map[0] };
 export type StoreUpdate = {
     map: UpdateMap;
     selection?: Store['selection'] | null;

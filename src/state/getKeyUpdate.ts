@@ -2,7 +2,6 @@ import { idText, pathPos, splitGraphemes } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
 import { Map, MNode } from '../types/mcst';
-import { UpdateMap } from '../../web/store';
 import { ClipboardItem } from './clipboard';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
@@ -105,6 +104,7 @@ export type State = {
     at: Cursor[];
     menu?: { selection: number; dismissed?: boolean };
 };
+export type UpdateMap = { [key: string]: null | Map[0] };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
     map = { ...map };

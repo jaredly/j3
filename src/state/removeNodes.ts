@@ -1,4 +1,4 @@
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from './getKeyUpdate';
 import { fromMCST, Map } from '../types/mcst';
 import { goLeft, selectStart } from './navigate';
 import { StateChange } from './getKeyUpdate';

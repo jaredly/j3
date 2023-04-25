@@ -1,5 +1,5 @@
-import { Ctx } from '../src/to-ast/Ctx';
-import { Layout, Map, MNode, MNodeContents } from '../src/types/mcst';
+import { Ctx } from './to-ast/Ctx';
+import { Layout, Map, MNode, MNodeContents } from './types/mcst';
 
 const maxWidth = 60;
 // const maxWidth = 100;

@@ -27,9 +27,9 @@ import {
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path } from './path';
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from './getKeyUpdate';
 import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
-import { applyMods } from '../../web/custom/getCtx';
+import { applyMods } from '../getCtx';
 import { getType } from '../get-type/get-types-new';
 import { validateExpr } from '../get-type/validate';
 import { addDef } from '../to-ast/to-ast';

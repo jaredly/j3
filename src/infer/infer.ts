@@ -16,8 +16,8 @@ import { Expr, Node, Pattern, Type } from '../types/ast';
 import { fromMCST, Map, MNode, toMCST } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import { transformExpr, Visitor } from '../types/walk-ast';
-import { applyAutoUpdateToNode } from '../../web/custom/reduce';
 import { Ctx } from '../to-ast/library';
+import { applyAutoUpdateToNode } from '../to-ast/autoComplete';
 
 // Question:
 // do I only do this for the tree that I'm

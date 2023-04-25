@@ -7,10 +7,10 @@ import {
     transact,
 } from '../../src/db/sandbox';
 import { Db } from '../../src/db/tables';
-import { UpdateMap } from '../store';
 import { HashedTree } from '../../src/db/hash-tree';
 import { addDefinitions, addNamespaces } from '../../src/db/library';
 import { IDEState } from './IDE';
+import { UpdateMap } from '../../src/state/getKeyUpdate';
 
 export type DBUpdate =
     | {

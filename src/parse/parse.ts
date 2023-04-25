@@ -1,8 +1,7 @@
 // hmm
-import { applyMods } from '../../web/custom/getCtx';
+import { applyMods } from '../getCtx';
 import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
-import { applyMenuItem, autoCompleteUpdate } from '../../web/custom/reduce';
-import { layout } from '../../web/layout';
+import { layout } from '../layout';
 import { ClipboardItem, collectNodes, paste } from '../state/clipboard';
 import { applyUpdate, getKeyUpdate, Mods, State } from '../state/getKeyUpdate';
 import { Path } from '../state/path';
@@ -15,6 +14,7 @@ import { nodeToType } from '../to-ast/nodeToType';
 import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
 import { fromMCST, Map, MNode } from '../types/mcst';
+import { applyMenuItem } from '../to-ast/autoComplete';
 
 export const idText = (node: MNode) => {
     switch (node.type) {

@@ -11,7 +11,7 @@ import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { reduce } from './reduce';
-import { getCtx } from './getCtx';
+import { getCtx } from '../../src/getCtx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';

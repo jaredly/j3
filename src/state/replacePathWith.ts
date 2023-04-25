@@ -7,7 +7,7 @@ import {
     MCString,
     MNodeExtra,
 } from '../types/mcst';
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from './getKeyUpdate';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 

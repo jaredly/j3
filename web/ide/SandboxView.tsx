@@ -10,7 +10,7 @@ import { Root } from '../custom/Root';
 import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { selectEnd } from '../../src/state/navigate';
-import { getCtx } from '../custom/getCtx';
+import { getCtx } from '../../src/getCtx';
 
 // type SandboxState = {
 //     id: string;

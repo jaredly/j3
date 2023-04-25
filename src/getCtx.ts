@@ -1,13 +1,13 @@
-import { getType } from '../../src/get-type/get-types-new';
-import { validateExpr } from '../../src/get-type/validate';
-import { Ctx, newCtx, newEnv } from '../../src/to-ast/Ctx';
-import { CstCtx, Env } from '../../src/to-ast/library';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { addDef } from '../../src/to-ast/to-ast';
-import { Expr } from '../../src/types/ast';
-import { Node } from '../../src/types/cst';
-import { fromMCST, ListLikeContents, Map } from '../../src/types/mcst';
-import { layout } from '../layout';
+import { getType } from './get-type/get-types-new';
+import { validateExpr } from './get-type/validate';
+import { Ctx, newCtx, newEnv } from './to-ast/Ctx';
+import { CstCtx, Env } from './to-ast/library';
+import { nodeToExpr } from './to-ast/nodeToExpr';
+import { addDef } from './to-ast/to-ast';
+import { Expr } from './types/ast';
+import { Node } from './types/cst';
+import { fromMCST, ListLikeContents, Map } from './types/mcst';
+import { layout } from './layout';
 
 export const getCtx = (map: Map, root: number, global: Env = newEnv()) => {
     const tops = (map[root] as ListLikeContents).values;
