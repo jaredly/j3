@@ -169,11 +169,13 @@ function determineKey(text: string[], i: number, mods: Mods) {
             C: 'Copy',
             V: 'Paste',
             n: 'Enter',
+            T: 'Tab',
+            t: 'Tab',
         }[text[i + 1]]!;
         if (!key) {
             throw new Error(`Unexpected ^${text[i + 1]}`);
         }
-        if (text[i + 1] === 'L' || text[i + 1] === 'R') {
+        if (text[i + 1] === 'L' || text[i + 1] === 'R' || text[i + 1] === 'T') {
             mods.shift = true;
         }
         i++;

@@ -262,6 +262,17 @@ id
 hello<friend>
 hello<friend>
 (tapply id id)
+
+(one two<three four> five)
+(list id (tapply id id id) id)
+
+(one two three^T
+(one two| three)
+(list id id id)
+
+(one two three^T^l^t
+(one two |three)
+(list id id id)
 `;
 // (@loop (fn [x] (if x (@recur false) 10)))
 

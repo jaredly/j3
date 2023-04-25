@@ -1,7 +1,7 @@
 import { Map, toMCST } from '../src/types/mcst';
 import { Identifier, Node } from '../src/types/cst';
 import { parse } from '../src/grammar';
-import { preprocess } from './preprocess';
+// import { preprocess } from './preprocess';
 import { Expr, Type } from '../src/types/ast';
 
 export type AutoCompleteChoices = {
@@ -25,13 +25,13 @@ export const emptyHistoryItem = () => ({
     ts: Date.now(),
 });
 
-export const getRoot = (text: string) => {
-    const tree = parse(text).map(preprocess);
-    const root = { type: 'list', values: tree, loc: -1 } satisfies Node;
-    const omap: Map = {};
-    toMCST(root, omap);
-    return { root, omap };
-};
+// export const getRoot = (text: string) => {
+//     const tree = parse(text).map(preprocess);
+//     const root = { type: 'list', values: tree, loc: -1 } satisfies Node;
+//     const omap: Map = {};
+//     toMCST(root, omap);
+//     return { root, omap };
+// };
 
 export type PosItem = {
     idx: number;
