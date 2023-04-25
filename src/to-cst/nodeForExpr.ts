@@ -24,7 +24,7 @@ export const id = (text: string, loc: Loc): Node => ({
 
 export const asTuple = (record: TRecord): Type[] | null => {
     const map: RecordMap = {};
-    if (record.spreads) {
+    if (record.spreads.length) {
         return null;
     }
     record.entries.forEach((entry) => {

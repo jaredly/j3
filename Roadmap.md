@@ -1,8 +1,11 @@
 
 ## Task
 
-- [x] getType
-- [ ] getType for fns should collect all tasks dontchaknow
+- [x] getType for ! and !?
+- [x] getType for fns should collect all tasks dontchaknow
+  - hm so, I think I'll blindly glom everything together that's in the body of the fn?
+    are there any downsides to that?? I think it's the desired behavior.
+- [ ] 
 
 # erhmm hm
 

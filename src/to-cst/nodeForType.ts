@@ -32,6 +32,16 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                         : '') +
                     (type.kind === 'uint' ? 'u' : ''),
             };
+        case 'task':
+            return {
+                type: 'list',
+                loc: type.form.loc,
+                values: [
+                    id('@task', type.form.loc),
+                    nodeForType(type.effects, hashNames),
+                    nodeForType(type.result, hashNames),
+                ],
+            };
         case 'tag':
             if (type.args.length === 0) {
                 return {
