@@ -16,7 +16,6 @@ import {
     toMCST,
 } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
-import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
 import {
     applyUpdate,
     getKeyUpdate,
@@ -26,7 +25,7 @@ import {
 } from './getKeyUpdate';
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
-import { Path } from './path';
+import { Path, cmpFullPath } from './path';
 import { UpdateMap } from './getKeyUpdate';
 import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { applyMods } from '../getCtx';

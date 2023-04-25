@@ -131,25 +131,7 @@ export type EvalCtx = {
     };
 };
 
-// Path Locations:
-// child (idx)
-// decorator (key) [tag or arg]
-
-export type PathChild =
-    | { type: 'child'; at: number }
-    | { type: 'subtext'; at: number }
-    | { type: 'expr' | 'text' | 'attribute'; at: number }
-    | { type: 'annot-target' | 'annot-annot' }
-    | { type: 'inside' | 'start' | 'end' }
-    | { type: 'record-target' | 'spread-contents' | 'tapply-target' };
-// | {
-//       type: 'decorator';
-//       key: string;
-//       at: number; // 0 for the key
-//   };
-
-export type Path = { idx: number; child: PathChild };
-// export type Child = { item: Path; idx?: number };
+export type { Path } from '../src/state/path';
 
 export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};

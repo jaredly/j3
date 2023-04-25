@@ -1,7 +1,7 @@
 import { idText } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Layout, MCString, MNode, MNodeExtra } from '../types/mcst';
-import { Path, PathChild } from '../../web/store';
+import { Path, PathChild } from './path';
 import { ONode } from './types';
 
 export const stringColor = '#ff9b00';

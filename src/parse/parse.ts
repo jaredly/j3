@@ -1,10 +1,9 @@
 // hmm
 import { applyMods } from '../getCtx';
-import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
 import { layout } from '../layout';
 import { ClipboardItem, collectNodes, paste } from '../state/clipboard';
 import { applyUpdate, getKeyUpdate, Mods, State } from '../state/getKeyUpdate';
-import { Path } from '../state/path';
+import { Path, cmpFullPath } from '../state/path';
 import { lastName } from '../db/hash-tree';
 import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
