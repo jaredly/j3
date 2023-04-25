@@ -15,7 +15,7 @@
 (defn log [text:string]:(@task Log ())
   (! 'Log text))
 (defn get-url [url:string]:(@task GetUrl httpResult)
-  (! 'GetUrl url (fn [x:httpResult] x)))
+  (! ('http/get url (fn [x:httpResult] ('Return x)))))
 
 ; turn a Result into a Task
 (defn require (tfn [ok err]

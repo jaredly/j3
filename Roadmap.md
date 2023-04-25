@@ -5,7 +5,8 @@
 - [x] getType for fns should collect all tasks dontchaknow
   - hm so, I think I'll blindly glom everything together that's in the body of the fn?
     are there any downsides to that?? I think it's the desired behavior.
-- [ ] 
+- [ ] oh tfn for expr's, gotta have it
+- [ ] andddd let's do `@task` types for real
 
 # erhmm hm
 

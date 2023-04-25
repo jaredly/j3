@@ -95,7 +95,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 };
             }
 
-            if (first.type === 'identifier' && first.text.startsWith('@')) {
+            if (first.type === 'identifier' && first.text === '@task') {
                 // (@task [] res)
                 // We'll require that things actually be expandable
                 // right?
@@ -112,15 +112,10 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 // ])
                 //
                 return {
-                    type: 'loop',
+                    type: 'task',
                     form,
-                    inner: nodeToType(args[0], {
-                        ...ctx,
-                        local: {
-                            ...ctx.local,
-                            loopType: { sym: form.loc },
-                        },
-                    }),
+                    effects: args.length ? nodeToType(args[0], ctx) : nilt,
+                    result: args.length > 1 ? nodeToType(args[1], ctx) : nilt,
                 };
             }
 

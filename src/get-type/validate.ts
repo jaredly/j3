@@ -215,6 +215,8 @@ export const validateType = (
                 type: 'misc',
                 message: 'This has the empty type',
             });
+        case 'task':
+        // TODO: valid ate it
         case 'bool':
         case 'number':
             return null;
