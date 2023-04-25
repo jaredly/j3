@@ -49,7 +49,7 @@ export type MNodeContents =
     // list-like
     | { type: 'comment'; text: string }
     | MCSpread
-    | { type: 'annot'; target: number; annot: number }
+    | MCAnnot
     | MCRecordAccess
     | { type: 'accessText'; text: string }
     | { type: 'tapply'; target: number; values: number[] }
@@ -63,6 +63,7 @@ export type MCString = {
     first: number;
     templates: { expr: number; suffix: number }[];
 };
+export type MCAnnot = { type: 'annot'; target: number; annot: number };
 export type MCRecordAccess = {
     type: 'recordAccess';
     target: number;

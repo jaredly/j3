@@ -94,6 +94,13 @@ export const _unifyTypes = (
         two = ta;
     }
 
+    if (one.type === 'none') {
+        return two;
+    }
+    if (two.type === 'none') {
+        return one;
+    }
+
     if (one.type === 'bool' && two.type === 'bool') {
         return one.value === two.value
             ? one

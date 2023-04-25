@@ -210,6 +210,40 @@ true false
 ;
 ;
 
+; So, it seems like I want this type-macro to be late-binding.
+; which is very different from my ideas around term-macros
+; which would execute immediately, in the editor, even.
+; the only way I could imagine a term macro binding "late"
+; would be, like, during monomorphization or something.
+; so you have type variables resolved.
+; which idk if it's worth buying that kind of complexity.
+;
+; Anyway, all this to say, that maybe "task" should be special,
+; in the same way that @loop and @recur are special.
+; And any type-macros that I do will be ... less special.
+; or at least I can cross that bridge when I come to it?
+
+; Ok, so task throwing syntax
+
+(! 'Log "folks")  -> (! ('Log "folks" (fn [x] x)))
+(! 'Read ())      -> (! ('Read () (fn [x] x)))
+(! 'Fail "hi" ()) -> (! ('Fail "hi" ()))
+(! something)     -> (! something)
+
+; eh, those all require a little too much inference
+; so as a backup
+
+(! 'Log "folks")  -> (! ('Log "folks" (fn [x:()] x)))
+(! 'Read () (fn [x:string] x))
+(! 'Fail "hi" ())
+
+; ok, so now we can be properly annotating stuff.
+; but here's the question: do we do the transform in nodeToExpr,
+; or at some other time?
+
+; let's try kicking the can a little bit, it seems like it would make
+; manipulation of things in the IDE easier.
+
 ; hrmmm ok so a builtin type ...
 
 ; so "task" here means ... 

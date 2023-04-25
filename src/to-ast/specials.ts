@@ -42,6 +42,30 @@ export const specials: {
             args: targs,
         };
     },
+    '!': (form, contents, ctx): Expr => {
+        // do a thing
+        // what thing?
+        // probably produce a 'effect'
+        // expr?
+        return {
+            type: 'task',
+            form,
+            inner: contents.length ? nodeToExpr(contents[0], ctx) : nil,
+            maybe: false,
+        };
+    },
+    '!?': (form, contents, ctx): Expr => {
+        // do a thing
+        // what thing?
+        // probably produce a 'effect'
+        // expr?
+        return {
+            type: 'task',
+            form,
+            inner: contents.length ? nodeToExpr(contents[0], ctx) : nil,
+            maybe: true,
+        };
+    },
     fn: (form, contents, ctx): Expr => {
         if (contents.length < 1) {
             return {

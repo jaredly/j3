@@ -96,6 +96,7 @@ export type Expr =
     | { type: 'blank'; form: Node }
     | { type: 'recur'; form: Node; sym: number }
     | { type: 'loop'; form: Node; inner: Expr; ann: Type }
+    | { type: 'task'; form: Node; inner: Expr; maybe: boolean }
     | Def
     | DefType
     | String
@@ -118,7 +119,6 @@ export type Expr =
           body: Expr[];
           form: Node;
       }
-    | { type: 'recur'; depth: number; form: Node }
     | {
           // so bangs are just "apply ! args"? Yeah I guess. Macro it up my folks.
           type: 'apply';
@@ -198,6 +198,7 @@ export type Type =
     | { type: 'none'; form: Node }
     | { type: 'recur'; form: Node; sym: number }
     | { type: 'loop'; form: Node; inner: Type }
+    | { type: 'task'; form: Node; effects: Type; result: Type }
     | {
           type: 'builtin';
           name: string;

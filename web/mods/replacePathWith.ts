@@ -1,6 +1,7 @@
 import {
     ListLikeContents,
     Map,
+    MCAnnot,
     MCRecordAccess,
     MCSpread,
     MCString,
@@ -62,6 +63,13 @@ export const replacePath = (
             update[parent.idx] = {
                 ...(pnode as MCSpread & MNodeExtra),
                 contents: newIdx,
+            };
+            break;
+        }
+        case 'annot-annot': {
+            update[parent.idx] = {
+                ...(pnode as MCAnnot & MNodeExtra),
+                annot: newIdx,
             };
             break;
         }

@@ -125,6 +125,9 @@ export const validateExpr = (
                 validateExpr(kase.body, ctx, errors);
             });
             return;
+        case 'task':
+            validateExpr(expr.inner, ctx, errors);
+            return;
         case 'if':
             validateExpr(expr.cond, ctx, errors);
             validateExpr(expr.yes, ctx, errors);

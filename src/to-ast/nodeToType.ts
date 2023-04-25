@@ -95,7 +95,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 };
             }
 
-            if (first.type === 'identifier' && first.text === '@task') {
+            if (first.type === 'identifier' && first.text.startsWith('@')) {
                 // (@task [] res)
                 // We'll require that things actually be expandable
                 // right?

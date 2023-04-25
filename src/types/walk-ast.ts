@@ -602,6 +602,30 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
                     break;
                 }
 
+            case 'task': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                const updatedNode$0node$effects = transformType(updatedNode$0specified.effects, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$effects !== updatedNode$0specified.effects;
+
+                
+                const updatedNode$0node$result = transformType(updatedNode$0specified.result, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$result !== updatedNode$0specified.result;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, effects: updatedNode$0node$effects, result: updatedNode$0node$result};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
+
             case 'builtin': break;
 
             case 'apply': {
@@ -1486,6 +1510,26 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                     break;
                 }
 
+            case 'task': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                const updatedNode$0node$inner = transformExpr(updatedNode$0specified.inner, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$inner !== updatedNode$0specified.inner;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, inner: updatedNode$0node$inner};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
+
             case 'def': {
                         updatedNode = transformDef(node, visitor, ctx);
                         changed0 = changed0 || updatedNode !== node;
@@ -1656,8 +1700,6 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                     updatedNode = updatedNode$0node;
                     break;
                 }
-
-            case 'recur': break;
 
             case 'apply': {
                     const updatedNode$0specified = node;

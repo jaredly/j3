@@ -1,4 +1,9 @@
 
+## Task
+
+- [x] getType
+- [ ] getType for fns should collect all tasks dontchaknow
+
 # erhmm hm
 
 "hashName not recorded", why is
