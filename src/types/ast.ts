@@ -119,6 +119,7 @@ export type Expr =
           body: Expr[];
           form: Node;
       }
+    | { type: 'tfn'; name?: string; args: TypeArg[]; body: Expr; form: Node }
     | {
           // so bangs are just "apply ! args"? Yeah I guess. Macro it up my folks.
           type: 'apply';

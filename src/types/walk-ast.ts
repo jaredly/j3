@@ -1701,6 +1701,43 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                     break;
                 }
 
+            case 'tfn': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                let updatedNode$0node$args = updatedNode$0specified.args;
+                {
+                    let changed3 = false;
+                    const arr2 = updatedNode$0specified.args.map((updatedNode$0node$args$item2) => {
+                        
+                const result = transformTypeArg(updatedNode$0node$args$item2, visitor, ctx);
+                changed3 = changed3 || result !== updatedNode$0node$args$item2;
+                        return result
+                    })
+                    if (changed3) {
+                        updatedNode$0node$args = arr2;
+                        changed2 = true;
+                    }
+                }
+                
+
+                
+                const updatedNode$0node$body = transformExpr(updatedNode$0specified.body, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$body !== updatedNode$0specified.body;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, args: updatedNode$0node$args, body: updatedNode$0node$body};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
+
             case 'apply': {
                     const updatedNode$0specified = node;
                     let changed1 = false;

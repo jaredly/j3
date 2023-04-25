@@ -146,6 +146,8 @@ export const validateExpr = (
             return;
         case 'recur':
             return;
+        case 'tfn':
+            return validateExpr(expr.body, ctx, errors);
         case 'loop':
             validateType(expr.ann, ctx, errors);
             return validateExpr(expr.inner, ctx, errors);

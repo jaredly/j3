@@ -286,6 +286,17 @@ const _getType = (
             }
             return target.body;
         }
+        case 'tfn': {
+            const body = getType(expr.body, ctx, report);
+            return body
+                ? {
+                      type: 'tfn',
+                      body,
+                      args: expr.args,
+                      form: expr.form,
+                  }
+                : void 0;
+        }
         case 'fn': {
             const args: { type: Type; name?: string; form: Node }[] = [];
             expr.args.forEach((arg) => {

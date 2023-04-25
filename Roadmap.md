@@ -8,6 +8,8 @@
 - [ ] oh tfn for expr's, gotta have it
 - [ ] andddd let's do `@task` types for real
 
+- [ ] validatee @loop, the @recur has to be inside of a (fn).
+
 # erhmm hm
 
 "hashName not recorded", why is

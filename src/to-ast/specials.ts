@@ -66,42 +66,47 @@ export const specials: {
             maybe: true,
         };
     },
-    // tfn: (form, contents, ctx): Expr => {
-    //     const targs = contents.shift()!;
-    //     if (!targs || targs.type !== 'array') {
-    //         return {
-    //             type: 'unresolved',
-    //             form,
-    //             reason: `tfn needs array as second item`,
-    //         };
-    //     }
-    //     const tvalues = filterComments(targs.values);
-    //     const parsed = tvalues.map((arg) => {
-    //         // const type = nodeToType(arg, ctx)
-    //         return {
-    //             name: arg.type === 'identifier' ? arg.text : 'NOPE',
-    //             sym: arg.loc, // nextSym(ctx),
-    //             form: arg,
-    //         };
-    //     });
-    //     parsed.forEach(
-    //         (targ) => (ctx.results.localMap.types[targ.sym] = targ),
-    //     );
-    //     return {
-    //         type: 'tfn',
-    //         args: parsed,
-    //         body: contents.length
-    //             ? nodeToExpr(contents[0], {
-    //                     ...ctx,
-    //                     local: {
-    //                         ...ctx.local,
-    //                         types: [...parsed, ...ctx.local.types],
-    //                     },
-    //                 })
-    //             : nilt,
-    //         form,
-    //     };
-    // },
+    tfn: (form, contents, ctx): Expr => {
+        const targs = contents.shift()!;
+        if (!targs || targs.type !== 'array') {
+            return {
+                type: 'unresolved',
+                form,
+                reason: `tfn needs array as second item`,
+            };
+        }
+        const tvalues = filterComments(targs.values);
+        const parsed = tvalues.map((arg) => {
+            return {
+                name: arg.type === 'identifier' ? arg.text : 'NOPE',
+                sym: arg.loc,
+                form: arg,
+            };
+        });
+        if (contents.length > 1) {
+            for (let i = 1; i < contents.length; i++) {
+                err(ctx.results.errors, contents[i], {
+                    type: 'misc',
+                    message: 'only one expr allowed in the body of a tfn',
+                });
+            }
+        }
+        parsed.forEach((targ) => (ctx.results.localMap.types[targ.sym] = targ));
+        return {
+            type: 'tfn',
+            args: parsed,
+            body: contents.length
+                ? nodeToExpr(contents[0], {
+                      ...ctx,
+                      local: {
+                          ...ctx.local,
+                          types: [...parsed, ...ctx.local.types],
+                      },
+                  })
+                : nilt,
+            form,
+        };
+    },
     fn: (form, contents, ctx): Expr => {
         if (contents.length < 1) {
             return {
