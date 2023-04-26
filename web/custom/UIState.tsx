@@ -20,6 +20,7 @@ export type RegMap = {
         start?: { node: HTMLSpanElement; path: Path[] } | null;
         end?: { node: HTMLSpanElement; path: Path[] } | null;
         inside?: { node: HTMLSpanElement; path: Path[] } | null;
+        outside?: { node: HTMLSpanElement; path: Path[] } | null;
     };
 };
 

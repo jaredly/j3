@@ -197,6 +197,7 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    ref={(node) => reg(node, idx, path, 'outside')}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
                     {nnode.children.map((nnode, i) => (

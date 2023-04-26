@@ -42,7 +42,7 @@ export function Root({
             node: HTMLSpanElement | null,
             idx: number,
             path: Path[],
-            loc?: 'start' | 'end' | 'inside',
+            loc?: 'start' | 'end' | 'inside' | 'outside',
         ) => {
             if (!state.regs[idx]) {
                 state.regs[idx] = {};

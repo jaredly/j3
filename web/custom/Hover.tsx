@@ -13,7 +13,7 @@ import { subRect } from './Cursors';
 
 const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
-    return got?.main?.node ?? got?.start?.node;
+    return got?.main?.node ?? got?.start?.node ?? got?.outside?.node;
 };
 
 export const Hover = ({
@@ -64,7 +64,6 @@ export const Hover = ({
     }
 
     const node = found != null ? getRegNode(found.idx, state.regs) : null;
-    if (!node || found == null) return null;
     // if (!node || found == null)
     //     return (
     //         <div>
@@ -75,6 +74,7 @@ export const Hover = ({
     //                 : null}
     //         </div>
     //     );
+    if (!node || found == null) return null;
 
     const box = subRect(
         node.getBoundingClientRect(),

@@ -49,7 +49,7 @@ export const closestSelection = (
     };
     Object.entries(regs).forEach(([key, nodes]) => {
         Object.entries(nodes).forEach(([which, value]) => {
-            if (!value) {
+            if (!value || which === 'outside') {
                 return;
             }
             const box = value.node.getBoundingClientRect(); //subRect( //,
