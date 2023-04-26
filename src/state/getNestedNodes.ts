@@ -129,14 +129,7 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '{', at: 'start' },
                     ...(layout?.type === 'multiline'
-                        ? [
-                              //   {
-                              //       type: 'punct',
-                              //       text: ' ',
-                              //       color: 'white',
-                              //   } satisfies NNode,
-                              recordPairs(node.values, layout),
-                          ]
+                        ? [recordPairs(node.values, layout)]
                         : withCommas(node.values)),
                     { type: 'brace', text: '}', at: 'end' },
                     { type: 'blinker', loc: 'end' },
@@ -149,7 +142,14 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '(', at: 'start' },
                     ...(layout?.type === 'multiline'
-                        ? [renderList(node, layout?.tightFirst) satisfies NNode]
+                        ? layout.pairs
+                            ? [recordPairs(node.values, layout) satisfies NNode]
+                            : [
+                                  renderList(
+                                      node,
+                                      layout?.tightFirst,
+                                  ) satisfies NNode,
+                              ]
                         : withCommas(node.values)),
                     { type: 'brace', text: ')', at: 'end' },
                     { type: 'blinker', loc: 'end' },

@@ -2,7 +2,7 @@ import { Node } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { any, Ctx, Local, Mod, nil, nilt, noForm, none } from './Ctx';
-import { nodeToType } from './nodeToType';
+import { nodeToType, parseTypeArgs } from './nodeToType';
 import { filterComments, nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
@@ -78,13 +78,7 @@ export const specials: {
             };
         }
         const tvalues = filterComments(targs.values);
-        const parsed = tvalues.map((arg) => {
-            return {
-                name: arg.type === 'identifier' ? arg.text : 'NOPE',
-                sym: arg.loc,
-                form: arg,
-            };
-        });
+        const parsed = parseTypeArgs(tvalues, ctx);
         if (contents.length > 1) {
             for (let i = 1; i < contents.length; i++) {
                 err(ctx.results.errors, contents[i], {
@@ -265,10 +259,9 @@ export const specials: {
             };
         }
         const value = specials.fn(form, rest, ctx);
-        // const hash = doHash(value);
-        // console.log('hash', hash);
+        const ann = getType(value, ctx) ?? undefined;
         ctx.results.display[name.loc] = {
-            style: { type: 'id', hash: form.loc },
+            style: { type: 'id', hash: form.loc, ann },
         };
         return {
             type: 'def',
@@ -276,7 +269,7 @@ export const specials: {
             // hash,
             value,
             form,
-            ann: getType(value, ctx),
+            ann,
         };
     },
     def: (form, contents, ctx): Expr => {
@@ -312,8 +305,9 @@ export const specials: {
             };
         }
         // console.log('def hash', first.text, hash);
+        const ann = getType(value, ctx) ?? undefined;
         ctx.results.display[first.loc] = {
-            style: { type: 'id', hash: form.loc },
+            style: { type: 'id', hash: form.loc, ann },
         };
         return {
             type: 'def',
@@ -321,7 +315,7 @@ export const specials: {
             // hash,
             value,
             form,
-            ann: getType(value, ctx),
+            ann,
         };
     },
     switch: (form, contents, ctx): Expr => {

@@ -190,7 +190,17 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                 type: 'array',
                 values: type.items
                     .map((item) => nodeForType(item, hashNames))
-                    .concat(type.open ? [id('...', noloc)] : []),
+                    .concat(
+                        type.open
+                            ? [
+                                  {
+                                      type: 'spread',
+                                      contents: { type: 'blank', loc: -1 },
+                                      loc: -1,
+                                  },
+                              ]
+                            : [],
+                    ),
             });
         case 'apply':
             return loc(type.form.loc, {

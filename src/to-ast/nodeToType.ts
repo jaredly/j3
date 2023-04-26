@@ -1,5 +1,5 @@
 import { Node } from '../types/cst';
-import { Type } from '../types/ast';
+import { TVar, Type, TypeArg } from '../types/ast';
 import { resolveType } from './resolveType';
 import { Ctx, any, nilt } from './Ctx';
 import { filterComments, maybeParseNumber } from './nodeToExpr';
@@ -30,15 +30,25 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 })),
                 form,
             };
-        case 'array':
+        case 'array': {
+            let open = false;
+            const items = filterComments(form.values)
+                .filter((t) => {
+                    if (t.type === 'spread' && t.contents.type === 'blank') {
+                        open = true;
+                        return false;
+                    }
+                    return true;
+                })
+                .map((value) => nodeToType(value, ctx));
+
             return {
                 type: 'union',
                 form,
-                open: false,
-                items: filterComments(form.values).map((value) =>
-                    nodeToType(value, ctx),
-                ),
+                open,
+                items,
             };
+        }
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; value: Type }[] = [];
@@ -204,17 +214,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     };
                 }
                 const tvalues = filterComments(targs.values);
-                const parsed = tvalues.map((arg) => {
-                    // const type = nodeToType(arg, ctx)
-                    return {
-                        name: arg.type === 'identifier' ? arg.text : 'NOPE',
-                        sym: arg.loc, // nextSym(ctx),
-                        form: arg,
-                    };
-                });
-                parsed.forEach(
-                    (targ) => (ctx.results.localMap.types[targ.sym] = targ),
-                );
+                const parsed = parseTypeArgs(tvalues, ctx);
                 return {
                     type: 'tfn',
                     args: parsed,
@@ -240,3 +240,41 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
     }
     throw new Error(`nodeToType can't handle ${form.type}`);
 };
+
+export function parseTypeArgs(tvalues: Node[], ctx: CstCtx) {
+    const parsed = tvalues
+        .map((arg) => {
+            if (arg.type === 'annot') {
+                if (arg.target.type !== 'identifier') {
+                    err(ctx.results.errors, arg, {
+                        type: 'misc',
+                        message: `tfn arg must be an identifier`,
+                    });
+                    return null;
+                }
+                return {
+                    name: arg.target.text,
+                    bound: nodeToType(arg.annot, ctx),
+                    sym: arg.loc,
+                    form: arg,
+                };
+            }
+            if (arg.type !== 'identifier') {
+                err(ctx.results.errors, arg, {
+                    type: 'misc',
+                    message: `tfn arg must be an identifier`,
+                });
+                return null;
+            }
+            return {
+                name: arg.text,
+                sym: arg.loc,
+                form: arg,
+            };
+        })
+        .filter(Boolean) as (TypeArg & { sym: number })[];
+    parsed.forEach(
+        (targ) => (ctx.results.localMap.types[targ.form.loc] = targ),
+    );
+    return parsed;
+}

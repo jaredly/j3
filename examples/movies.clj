@@ -33,12 +33,11 @@
 
 (deftype Movie {title string year int starring (array string)})
 
-(defn get-api-key []
-  (switch (! 'env/get "API_KEY")
-    ('Err 'Missing) ('Err 'ApiKeyMissing)
-    x x))
+(def api-get ('env/get "API_KEY" (fn [x:(Result string ['Missing ('OSError string)])] ('Return x))))
 
-(def fail (tfn [Err:[..]] (fn [err] ('Failure err ()))))
+(defn get-api-key [] (switch (! api-get) ('Err 'Missing) ('Err 'ApiKeyMissing) x x))
+
+(def fail (tfn [Err:[..]] (fn [err:Err] ('Failure err ()))))
 
 (defn movieFromLine [line:string idx:int]
   (switch (split line "!")

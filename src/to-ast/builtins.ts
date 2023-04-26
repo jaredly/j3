@@ -161,6 +161,12 @@ bfn('bool/==', [tbool, tbool], tbool);
 bfn('int/toString', [tint], tstring);
 bfn('bool/toString', [tbool], tstring);
 bfn('string/has-prefix?', [tstring, tstring], tbool);
+bfn('string/split', [tstring, tstring], {
+    type: 'apply',
+    target: { type: 'builtin', form: blank, name: 'array' },
+    form: blank,
+    args: [tstring],
+});
 
 const tloc = (v: number): Type => ({ type: 'local', form: blank, sym: v });
 

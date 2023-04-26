@@ -47,17 +47,17 @@ export const Hover = ({
                 found = {
                     idx: last,
                     text:
-                        (style.type === 'id' && style.ann
+                        style.type === 'id' && style.ann
                             ? nodeToString(
                                   nodeForType(
                                       style.ann,
                                       state.ctx.results.hashNames,
                                   ),
                                   state.ctx.results.hashNames,
-                              ) + '\n'
-                            : '') +
-                        ' ' +
-                        style.hash,
+                              )
+                            : '',
+                    // ' ' +
+                    // (style.hash + '').slice(0, 10),
                 };
             }
         }
