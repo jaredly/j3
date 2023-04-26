@@ -67,15 +67,6 @@ export const _matchOrExpand = (
     if (ce.type === 'error') {
         return ce.error;
     }
-    // if (ca.type === 'local-bound') {
-    //     ca = candidate;
-    // }
-    // if (ce.type === 'local-bound') {
-    //     ce = expected;
-    // }
-    // if (ca.type === 'local-bound' || ce.type === 'local-bound') {
-    //     return { type: 'cannot apply local', path, form: candidate.form };
-    // }
     return _matchesType(ca, ce, ctx, path);
 };
 
@@ -343,6 +334,9 @@ export const _matchesType = (
                     const one = cmap.map[key];
                     const two = map.map[key];
                     if (!two) {
+                        if (expected.open) {
+                            continue;
+                        }
                         return inv(
                             {
                                 type: 'tag',
@@ -592,6 +586,8 @@ export const applyAndResolve = (
         const map: { [key: number]: Type } = {};
         for (let i = 0; i < inner.args.length; i++) {
             if (inner.args[i].bound) {
+                console.error('the arg', type.args[i]);
+                console.error('the bound', inner.args[i].bound);
                 const res = _matchOrExpand(
                     type.args[i],
                     inner.args[i].bound!,

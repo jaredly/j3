@@ -7,6 +7,8 @@
 - [ ] um I want um some tests for subtractType?
 - [ ] also though, the `local-bound` thing needs some work
 
+- [x] '[..]'
+
 ## Task
 
 - [x] getType for ! and !?

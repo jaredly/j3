@@ -18,6 +18,14 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
         }
         case 'hash':
             return resolveType('', form.hash, ctx, form);
+        case 'recordAccess': {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'recordAccess, why are you doing this',
+                form,
+            });
+            return nilt;
+        }
         case 'blank':
             return nilt;
         case 'string':

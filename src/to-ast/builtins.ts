@@ -159,6 +159,15 @@ bfn('bool/||', [tbool, tbool], tbool);
 bfn('bool/&&', [tbool, tbool], tbool);
 bfn('bool/==', [tbool, tbool], tbool);
 bfn('int/toString', [tint], tstring);
+bfn('int/parse', [tstring], {
+    type: 'union',
+    form: blank,
+    open: false,
+    items: [
+        { type: 'tag', form: blank, name: 'Some', args: [tint] },
+        { type: 'tag', name: 'None', form: blank, args: [] },
+    ],
+});
 bfn('bool/toString', [tbool], tstring);
 bfn('string/has-prefix?', [tstring, tstring], tbool);
 bfn('string/split', [tstring, tstring], {

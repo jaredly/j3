@@ -107,6 +107,10 @@ Second type: 3.1
 (switch ('One 10) ('One x) x _ 20)
 (switch ('One 10) ('One x) #7 _ 20)
 -> #:builtin:int
+
+(let [x (tfn [Enum:[..]] (fn [x:Enum] x))] x<['one 'two]>)
+(let [x (tfn [Enum:[..]] (fn [x:#8] #17))] #3<['one 'two]>)
+-> (fn [x:['one 'two]] ['one 'two])
 `
     .trim()
     .split('\n\n');

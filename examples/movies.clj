@@ -39,11 +39,16 @@
 
 (def fail (tfn [Err:[..]] (fn [err:Err] ('Failure err ()))))
 
+(defn parseInt [text]:(@task [('Failure [('NotAnInt string)])] int)
+  (switch (int/parse text)
+    ('Some int) ('Return int (fn [x] x))
+    'None ('Failure ('NotAnInt text) ())))
+
 (defn movieFromLine [line:string idx:int]
   (switch (split line "!")
     [title year starring]
-      {title $
-       year (!? require (-> year parseInt (mapErr (fn [err] ('LineError idx line err)))))
+      {title title
+       year (!? (require (mapErr<int [('NotAnInt string)] [('LineError int string ('NotAnInt string))]> (parseInt year) (fn [err] ('LineError idx line err)))))
        starring (split starring ",")}
     _ (! fail ('LineError idx line 'InvalidLine))))
 

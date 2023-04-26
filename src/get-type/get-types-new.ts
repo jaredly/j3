@@ -165,6 +165,8 @@ const _getType = (
             const map: { [key: number]: Type } = {};
             for (let i = 0; i < expr.args.length; i++) {
                 if (target.args[i].bound) {
+                    // console.log('the arg', expr.args[i]);
+                    // console.log('the bound', target.args[i].bound);
                     const match = matchesType(
                         expr.args[i],
                         target.args[i].bound!,
