@@ -127,7 +127,7 @@ export const Render = React.memo(
                             lineHeight: '20px',
                         }}
                     >
-                        {node.hash}
+                        {(node.hash + '').slice(0, 10)}
                     </span>
                 ) : null}
             </span>

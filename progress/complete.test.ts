@@ -91,6 +91,26 @@ Second type: 3.1
 (if true ('One 1) ('Two 1.2))
 (if true ('One 1) ('Two 1.2))
 -> [('One 1) ('Two 1.2)]
+
+[1 2 3]
+[1 2 3]
+-> (#:builtin:array #:builtin:int 3u)
+
+(.hi {hi 10})
+(.hi {hi 10})
+-> 10
+
+(let [x {hi 10}] x.hi)
+(let [x {hi 10}] #3.hi)
+-> 10
+
+(if true {hi 10} {hi 20})
+(if true {hi 10} {hi 20})
+-> {hi #:builtin:int}
+
+(let [x (tfn [t] (fn [a:t] a))] (x 10))
+(let [x (tfn [t] (fn [a:#7] #11))] (#3 10))
+-> #:builtin:int
 `
     .trim()
     .split('\n\n');

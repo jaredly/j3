@@ -10,6 +10,8 @@ import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
 import { CstCtx } from './library';
 import { _matchOrExpand, matchesType } from '../get-type/matchesType';
+import { nodeToString } from '../to-cst/nodeToString';
+import { nodeForType } from '../to-cst/nodeForType';
 
 export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
     if (!ctx.mods[idx]) {
@@ -347,11 +349,8 @@ export const specials: {
                     : nil,
             });
             const subtracted = subtractType(typ, pt, ctx);
-            if (!subtracted) {
-                err(ctx.results.errors, cases[i], {
-                    type: 'misc',
-                    message: `unreachable case or something`,
-                });
+            if (subtracted.type === 'error') {
+                err(ctx.results.errors, cases[i], subtracted.error);
             } else {
                 typ = subtracted;
             }

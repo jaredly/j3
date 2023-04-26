@@ -53,6 +53,7 @@ export type Error =
           expected: number;
           received: number;
       }
+    | { type: 'case'; pattern: Type; target: Type; form: Node }
     | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }
     | { type: 'unresolved'; form: Node; reason?: string }

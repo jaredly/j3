@@ -1,4 +1,9 @@
 
+## Buncha tests for nodeToExpr stuff
+
+- [ ] (.a {a 10}) should be easy
+- [ ] auto type specialization if we can hack it
+
 ## Task
 
 - [x] getType for ! and !?

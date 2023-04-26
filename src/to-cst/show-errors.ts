@@ -26,6 +26,14 @@ export const errorToString = (
             return `Unparsed: ${nodeToString(error.form, hashNames)}`;
         case 'misc':
             return error.message;
+        case 'case':
+            return `unreachable case or something\nPattern type:${nodeToString(
+                nodeForType(error.pattern, hashNames),
+                hashNames,
+            )}\nAvailable type:${nodeToString(
+                nodeForType(error.target, hashNames),
+                hashNames,
+            )}`;
         case 'unification':
             return `Unable to unify the following types:\nFirst type: ${nodeToString(
                 nodeForType(error.one, hashNames),
