@@ -84,9 +84,7 @@ export const Menu = ({
                             onClick={onClick}
                             onMouseEnter={(evt) => setHover(i)}
                         >
-                            {item.type === 'update' &&
-                            item.ann &&
-                            item.ann.type !== 'error'
+                            {item.type === 'update' && item.ann
                                 ? nodeToString(
                                       nodeForType(
                                           item.ann,

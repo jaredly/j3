@@ -229,12 +229,12 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                 // `tvar${type.sym}`,
                 loc: type.form.loc,
             };
-        case 'error':
-            return {
-                type: 'identifier',
-                text: JSON.stringify(type),
-                loc: type.loc,
-            };
+        // case 'error':
+        //     return {
+        //         type: 'identifier',
+        //         text: JSON.stringify(type),
+        //         loc: type.loc,
+        //     };
     }
     throw new Error(`cannot nodeForType ${(type as any).type}`);
 };
