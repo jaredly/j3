@@ -46,7 +46,7 @@ export const subtractType = (
         const args = inner.args.map((arg, i) =>
             subtractType(outer.args[i], arg, ctx),
         );
-        if (args.some((arg) => arg === null)) {
+        if (args.some((arg) => arg.type === 'error')) {
             return { type: 'error', error: inv(inner, outer, []) };
         }
         if (args.every((arg) => arg!.type === 'none')) {
@@ -67,7 +67,7 @@ export const subtractType = (
                     : item,
             )
             .filter((item) => item?.type !== 'none');
-        if (items.some((item) => item === null)) {
+        if (items.some((item) => item.type === 'error')) {
             return { type: 'error', error: inv(inner, outer, []) };
         }
         if (!items.length) {

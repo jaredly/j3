@@ -18,16 +18,16 @@
   (! ('http/get url (fn [x:httpResult] ('Return x)))))
 
 ; turn a Result into a Task
-(defn require (tfn [ok err]
+(def require (tfn [ok err]
   (fn [value:(Result ok err)]:(@task [('Failure err)] ok)
     (switch value
       ('Ok ok) ('Return ok)
       ('Err err) ('Failure err ())))))
 
-(defn mapErr [value:(Result ok err) map:(fn [err] err2)]
+(def mapErr (tfn [ok err err2] (fn [value:(Result ok err) map:(fn [err] err2)]
   (switch value
-    'Ok 'Ok
-    ('Err err) ('Err (map err))))
+    ('Ok x) ('Ok x)
+    ('Err err) ('Err (map err))))))
 
 ;;;; domain code ;;;;
 

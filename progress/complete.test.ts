@@ -111,6 +111,10 @@ Second type: 3.1
 (let [x (tfn [t] (fn [a:t] a))] (x 10))
 (let [x (tfn [t] (fn [a:#7] #11))] (#3 10))
 -> #:builtin:int
+
+(switch ('One 10) ('One x) x _ 20)
+(switch ('One 10) ('One x) #7 _ 20)
+-> #:builtin:int
 `
     .trim()
     .split('\n\n');

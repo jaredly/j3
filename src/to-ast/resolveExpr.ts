@@ -217,20 +217,8 @@ export const allTypes = (ctx: CstCtx): Result[] => {
             ];
         },
     );
-    // const builtins = Object.entries(ctx.global.builtins)
-    //     .filter(([k, v]) => v.type === 'type')
-    //     .map(
-    //         ([name, tvars]) =>
-    //             ({
-    //                 type: 'builtin',
-    //                 name,
-    //                 hash: ':builtin:' + name,
-    //                 // TODO
-    //                 typ: any,
-    //             } satisfies Result),
-    //     );
+
     return [
-        // ...builtins,
         ...ctx.local.types.map(
             ({ name, sym, bound }) =>
                 ({

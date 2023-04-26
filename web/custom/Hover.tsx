@@ -26,6 +26,7 @@ export const Hover = ({
     let found: null | { idx: number; text: string } = null;
     for (let i = state.hover.length - 1; i >= 0; i--) {
         let idx = state.hover[i].idx;
+        if (idx === -1) continue;
         if (state.ctx.results.errors[idx]?.length) {
             found = {
                 idx,
@@ -63,7 +64,17 @@ export const Hover = ({
     }
 
     const node = found != null ? getRegNode(found.idx, state.regs) : null;
-    if (!node || found == null) return null;
+    // if (!node || found == null) return null;
+    if (!node || found == null)
+        return (
+            <div>
+                Hover {JSON.stringify(state.hover)} Node {!!node + ''} Found{' '}
+                {found ? found.idx + '' : 'no found'} um{' '}
+                {found
+                    ? Object.keys(state.regs[found.idx] ?? {}).join('')
+                    : null}
+            </div>
+        );
 
     const box = subRect(
         node.getBoundingClientRect(),

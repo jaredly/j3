@@ -56,8 +56,8 @@ export const _matchOrExpand = (
     const isLoopRelated =
         first.type === 'invalid type' &&
         (isLoopy(first.expected) || isLoopy(first.found));
-    const ca = applyAndResolve(candidate, ctx, path, isLoopRelated);
-    const ce = applyAndResolve(expected, ctx, path, isLoopRelated);
+    let ca = applyAndResolve(candidate, ctx, path, isLoopRelated);
+    let ce = applyAndResolve(expected, ctx, path, isLoopRelated);
     if (ca === candidate && ce === expected) {
         return first;
     }
@@ -67,9 +67,15 @@ export const _matchOrExpand = (
     if (ce.type === 'error') {
         return ce.error;
     }
-    if (ca.type === 'local-bound' || ce.type === 'local-bound') {
-        return { type: 'cannot apply local', path, form: candidate.form };
+    if (ca.type === 'local-bound') {
+        ca = candidate;
     }
+    if (ce.type === 'local-bound') {
+        ce = expected;
+    }
+    // if (ca.type === 'local-bound' || ce.type === 'local-bound') {
+    //     return { type: 'cannot apply local', path, form: candidate.form };
+    // }
     return _matchesType(ca, ce, ctx, path);
 };
 
@@ -106,6 +112,13 @@ export const _matchesType = (
                         return true;
                     }
                 }
+            }
+            return inv(candidate, expected, path);
+        case 'local':
+            if (expected.type === 'local') {
+                return expected.sym === candidate.sym
+                    ? true
+                    : inv(candidate, expected, path);
             }
             return inv(candidate, expected, path);
         case 'recur':
