@@ -64,17 +64,17 @@ export const Hover = ({
     }
 
     const node = found != null ? getRegNode(found.idx, state.regs) : null;
-    // if (!node || found == null) return null;
-    if (!node || found == null)
-        return (
-            <div>
-                Hover {JSON.stringify(state.hover)} Node {!!node + ''} Found{' '}
-                {found ? found.idx + '' : 'no found'} um{' '}
-                {found
-                    ? Object.keys(state.regs[found.idx] ?? {}).join('')
-                    : null}
-            </div>
-        );
+    if (!node || found == null) return null;
+    // if (!node || found == null)
+    //     return (
+    //         <div>
+    //             Hover {JSON.stringify(state.hover)} Node {!!node + ''} Found{' '}
+    //             {found ? found.idx + '' : 'no found'} um{' '}
+    //             {found
+    //                 ? Object.keys(state.regs[found.idx] ?? {}).join('')
+    //                 : null}
+    //         </div>
+    //     );
 
     const box = subRect(
         node.getBoundingClientRect(),

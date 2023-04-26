@@ -4,6 +4,9 @@
 - [ ] (.a {a 10}) should be easy
 - [ ] auto type specialization if we can hack it
 
+- [ ] um I want um some tests for subtractType?
+- [ ] also though, the `local-bound` thing needs some work
+
 ## Task
 
 - [x] getType for ! and !?

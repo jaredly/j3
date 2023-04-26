@@ -18,9 +18,9 @@ export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
         return null;
     }
     let res = applyAndResolve(type, ctx, []);
-    if (res.type === 'local-bound' && res.bound) {
-        res = res.bound;
-    }
+    // if (res.type === 'local-bound' && res.bound) {
+    //     res = res.bound;
+    // }
     if (res.type === 'record') {
         return recordMap(res, ctx);
     }

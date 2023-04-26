@@ -13,12 +13,12 @@ export const subtractType = (
     if (applied.type === 'error') {
         return applied;
     }
-    if (applied.type === 'local-bound') {
-        return {
-            type: 'error',
-            error: { type: 'cannot apply local', form: outerR.form, path: [] },
-        };
-    }
+    // if (applied.type === 'local-bound') {
+    //     return {
+    //         type: 'error',
+    //         error: { type: 'cannot apply local', form: outerR.form, path: [] },
+    //     };
+    // }
     const outer = applied;
     if (inner.type === 'any' || outer.type === 'none') {
         return { type: 'none', form: outer.form };

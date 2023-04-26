@@ -236,7 +236,7 @@ export const nodeToPattern = (
                 let args: Type[];
                 if (res.type === 'tag') {
                     if (res.name !== text) {
-                        console.log('mismatch', res, text);
+                        // console.log('mismatch', res, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = res.args;

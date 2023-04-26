@@ -464,17 +464,17 @@ const _getType = (
                                 ? errf(report, spread.form, res.error)
                                 : undefined;
                         }
-                        if (res.type === 'local-bound') {
-                            if (res.bound?.type !== 'record') {
-                                return report
-                                    ? errf(report, spread.form, {
-                                          type: 'not a record',
-                                          form: spread.form,
-                                      })
-                                    : undefined;
-                            }
-                            Object.assign(spreadMap, recordMap(res.bound, ctx));
-                        }
+                        // if (res.type === 'local-bound') {
+                        //     if (res.bound?.type !== 'record') {
+                        //         return report
+                        //             ? errf(report, spread.form, {
+                        //                   type: 'not a record',
+                        //                   form: spread.form,
+                        //               })
+                        //             : undefined;
+                        //     }
+                        //     Object.assign(spreadMap, recordMap(res.bound, ctx));
+                        // }
                         if (res.type !== 'record') {
                             return report
                                 ? errf(report, spread.form, {
@@ -541,18 +541,18 @@ const _getType = (
                             ? errf(report, expr.form, resolved.error)
                             : undefined;
                     }
-                    if (resolved.type === 'local-bound') {
-                        if (!resolved.bound) {
-                            return report
-                                ? errf(report, expr.form, {
-                                      type: 'misc',
-                                      message:
-                                          'local has no bound, cannot take attribute',
-                                  })
-                                : undefined;
-                        }
-                        resolved = resolved.bound;
-                    }
+                    // if (resolved.type === 'local-bound') {
+                    //     if (!resolved.bound) {
+                    //         return report
+                    //             ? errf(report, expr.form, {
+                    //                   type: 'misc',
+                    //                   message:
+                    //                       'local has no bound, cannot take attribute',
+                    //               })
+                    //             : undefined;
+                    //     }
+                    //     resolved = resolved.bound;
+                    // }
                     if (resolved.type !== 'record') {
                         return report
                             ? errf(report, expr.form, {

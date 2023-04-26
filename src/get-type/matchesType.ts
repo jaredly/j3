@@ -67,12 +67,12 @@ export const _matchOrExpand = (
     if (ce.type === 'error') {
         return ce.error;
     }
-    if (ca.type === 'local-bound') {
-        ca = candidate;
-    }
-    if (ce.type === 'local-bound') {
-        ce = expected;
-    }
+    // if (ca.type === 'local-bound') {
+    //     ca = candidate;
+    // }
+    // if (ce.type === 'local-bound') {
+    //     ce = expected;
+    // }
     // if (ca.type === 'local-bound' || ce.type === 'local-bound') {
     //     return { type: 'cannot apply local', path, form: candidate.form };
     // }
@@ -424,10 +424,7 @@ export const applyAndResolve = (
     ctx: Ctx,
     path: string[],
     expandLoops?: boolean,
-):
-    | Type
-    | { type: 'error'; error: MatchError }
-    | { type: 'local-bound'; bound?: Type } => {
+): Type | { type: 'error'; error: MatchError } => {
     if (type.type === 'loop' && expandLoops) {
         return transformType(
             type.inner,
@@ -480,9 +477,9 @@ export const applyAndResolve = (
                   },
               };
     }
-    if (type.type === 'local') {
-        return { type: 'local-bound' }; // todo track bounds
-    }
+    // if (type.type === 'local') {
+    //     return { type: 'local-bound' }; // todo track bounds
+    // }
     if (type.type === 'apply') {
         const inner = applyAndResolve(
             type.target,
@@ -493,7 +490,7 @@ export const applyAndResolve = (
         if (inner.type === 'error') {
             return inner;
         }
-        if (inner.type === 'local-bound') {
+        if (inner.type === 'local') {
             return {
                 type: 'error',
                 error: {

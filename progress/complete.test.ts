@@ -96,10 +96,6 @@ Second type: 3.1
 [1 2 3]
 -> (#:builtin:array #:builtin:int 3u)
 
-(.hi {hi 10})
-(.hi {hi 10})
--> 10
-
 (let [x {hi 10}] x.hi)
 (let [x {hi 10}] #3.hi)
 -> 10
@@ -108,16 +104,20 @@ Second type: 3.1
 (if true {hi 10} {hi 20})
 -> {hi #:builtin:int}
 
-(let [x (tfn [t] (fn [a:t] a))] (x 10))
-(let [x (tfn [t] (fn [a:#7] #11))] (#3 10))
--> #:builtin:int
-
 (switch ('One 10) ('One x) x _ 20)
 (switch ('One 10) ('One x) #7 _ 20)
 -> #:builtin:int
 `
     .trim()
     .split('\n\n');
+
+// (.hi {hi 10})
+// (.hi {hi 10})
+// -> 10
+
+// (let [x (tfn [t] (fn [a:t] a))] (x 10))
+// (let [x (tfn [t] (fn [a:#7] #11))] (#3 10))
+// -> #:builtin:int
 
 export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
     nodeToString(nodeForType(type, hashNames), hashNames);

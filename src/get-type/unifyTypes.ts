@@ -51,10 +51,10 @@ export const _unifyTypes = (
         }
         const oa = applyAndResolve(one, ctx, []);
         const ta = applyAndResolve(two, ctx, []);
-        if (oa.type === 'error' || oa.type === 'local-bound') {
+        if (oa.type === 'error') {
             return une(path, one, two);
         }
-        if (ta.type === 'error' || ta.type === 'local-bound') {
+        if (ta.type === 'error') {
             return une(path, one, two);
         }
         if (oa !== one || ta !== two) {
@@ -65,7 +65,7 @@ export const _unifyTypes = (
 
     if (one.type === 'toplevel') {
         const oa = applyAndResolve(one, ctx, []);
-        if (oa.type === 'error' || oa.type === 'local-bound') {
+        if (oa.type === 'error') {
             return une(path, one, two);
         }
         one = oa;
@@ -73,7 +73,7 @@ export const _unifyTypes = (
 
     if (two.type === 'toplevel') {
         const ta = applyAndResolve(two, ctx, []);
-        if (ta.type === 'error' || ta.type === 'local-bound') {
+        if (ta.type === 'error') {
             return une(path, two, two);
         }
         two = ta;
@@ -81,14 +81,14 @@ export const _unifyTypes = (
 
     if (one.type === 'global') {
         const oa = applyAndResolve(one, ctx, []);
-        if (oa.type === 'error' || oa.type === 'local-bound') {
+        if (oa.type === 'error') {
             return une(path, one, two);
         }
         one = oa;
     }
     if (two.type === 'global') {
         const ta = applyAndResolve(two, ctx, []);
-        if (ta.type === 'error' || ta.type === 'local-bound') {
+        if (ta.type === 'error') {
             return une(path, one, two);
         }
         two = ta;
