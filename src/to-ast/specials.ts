@@ -44,6 +44,22 @@ export const specials: {
             args: targs,
         };
     },
+    '->': (form, contents, ctx) => {
+        if (!contents.length) {
+            return nil;
+        }
+        let v = nodeToExpr(contents[0], ctx);
+        for (let i = 1; i < contents.length; i++) {
+            const exp = nodeToExpr(contents[i], ctx);
+            if (exp.type === 'apply') {
+                exp.args.unshift(v);
+                v = exp;
+            } else {
+                v = { type: 'apply', target: exp, args: [v], form: exp.form };
+            }
+        }
+        return v;
+    },
     '!': (form, contents, ctx): Expr => {
         // do a thing
         // what thing?

@@ -198,6 +198,7 @@ const tightFirsts: { [key: string]: number } = {
     let: 2,
     if: 2,
     '<>': 2,
+    '->': 2,
 };
 
 function howTight(item?: Map[0]) {

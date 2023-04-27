@@ -6,9 +6,15 @@
 
 - [ ] um I want um some tests for subtractType?
 - [ ] also though, the `local-bound` thing needs some work
-- [ ] switch array [and array]
+- [x] switch array [and array]
+
+- [x] BUG BUG When I'm ~unifying(?) task items, it's not working right.
+- [x] ok folks but I would like a `->` form please???
+- [ ] and `->>` why not
 
 - [x] '[..]'
+- [ ] OK NEXT UP Let's really infer fn type args.
+- [ ] and might as well make it so you can `(defn x<T>)` while we're at it, right?
 
 ## Task
 

@@ -176,6 +176,7 @@ bfn('string/split', [tstring, tstring], {
     form: blank,
     args: [tstring],
 });
+bfn('string/trim', [tstring], tstring);
 
 const tloc = (v: number): Type => ({ type: 'local', form: blank, sym: v });
 

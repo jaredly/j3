@@ -186,6 +186,9 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                 loc: type.form.loc,
             };
         case 'union':
+            if (type.items.length === 1) {
+                return nodeForType(type.items[0], hashNames);
+            }
             return loc(type.form.loc, {
                 type: 'array',
                 values: type.items

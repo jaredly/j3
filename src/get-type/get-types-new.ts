@@ -1,5 +1,5 @@
 import { blank, nilt } from '../to-ast/Ctx';
-import { any, fileLazy, imageFileLazy } from '../to-ast/builtins';
+import { any, fileLazy, imageFileLazy, none } from '../to-ast/builtins';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,
@@ -673,6 +673,25 @@ const _getType = (
                               message: `Can't !? on a task with a non-result return type`,
                           })
                         : void 0;
+                }
+                if (effects) {
+                    if (!effects['Failure']) {
+                        effects['Failure'] = { input: res.err, output: null };
+                    } else {
+                        const error = mergeInputOutput(
+                            effects,
+                            'Failure',
+                            res.err,
+                            null,
+                            ctx,
+                        );
+                        if (error) {
+                            if (report) {
+                                errf(report, res.err.form, error);
+                            }
+                            return;
+                        }
+                    }
                 }
                 return res.ok;
             }
