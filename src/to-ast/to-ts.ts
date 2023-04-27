@@ -14,6 +14,8 @@ export const patternToCheck = (
     ctx: Ctx,
 ): t.Expression | null => {
     switch (pattern.type) {
+        case 'array':
+            return t.identifier('what an array');
         case 'local':
             return null;
         case 'number':
@@ -113,6 +115,8 @@ export const patternToTs = (
     ctx: Ctx,
 ): t.Pattern | t.Identifier | null => {
     switch (pattern.type) {
+        case 'array':
+            return t.identifier(`what an array`);
         case 'local':
             return t.identifier(`s${pattern.sym}`);
         case 'number':
@@ -371,7 +375,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 );
                 if (binops.includes(name as '+') && expr.args.length === 2) {
                     return t.binaryExpression(
-                        name as typeof binops[0],
+                        name as (typeof binops)[0],
                         exprToTs(expr.args[0], ctx),
                         exprToTs(expr.args[1], ctx),
                     );
@@ -519,7 +523,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 return t.arrowFunctionExpression(
                     [t.identifier('x'), t.identifier('y')],
                     t.binaryExpression(
-                        name as typeof binops[0],
+                        name as (typeof binops)[0],
                         t.identifier('x'),
                         t.identifier('y'),
                     ),

@@ -1,5 +1,5 @@
 import { Node } from '../types/cst';
-import { Pattern, Type } from '../types/ast';
+import { LocalPattern, Pattern, Type } from '../types/ast';
 import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
 import { Report, recordMap } from '../get-type/get-types-new';
@@ -8,6 +8,18 @@ import { filterComments } from './nodeToExpr';
 import { addMod } from './specials';
 import { CstCtx } from './library';
 
+export const getArrayItemType = (t: Type) => {
+    if (
+        t.type === 'apply' &&
+        t.target.type === 'builtin' &&
+        t.target.name === 'array' &&
+        t.args.length > 0
+    ) {
+        return t.args[0];
+    }
+    return null;
+};
+
 export const nodeToPattern = (
     form: Node,
     t: Type,
@@ -15,6 +27,57 @@ export const nodeToPattern = (
     bindings: Local['terms'],
 ): Pattern => {
     switch (form.type) {
+        case 'array': {
+            let item = getArrayItemType(t);
+            if (!item) {
+                err(ctx.results.errors, form, {
+                    type: 'misc',
+                    message: 'array pattern, but not an array type',
+                });
+                item = nilt;
+            }
+            let left: Pattern[] = [];
+            let right: { spread?: LocalPattern; items: Pattern[] } | null =
+                null;
+            filterComments(form.values).forEach((node) => {
+                if (right) {
+                    right.items.push(nodeToPattern(node, item!, ctx, bindings));
+                } else {
+                    if (node.type === 'spread') {
+                        if (
+                            node.contents.type !== 'blank' &&
+                            node.contents.type !== 'identifier'
+                        ) {
+                            err(ctx.results.errors, node.contents, {
+                                type: 'misc',
+                                message:
+                                    'pattern spread must be blank or an identifier',
+                            });
+                        }
+                        right = {
+                            spread:
+                                node.contents.type === 'identifier'
+                                    ? (nodeToPattern(
+                                          node.contents,
+                                          t,
+                                          ctx,
+                                          bindings,
+                                      ) as LocalPattern)
+                                    : undefined,
+                            items: [],
+                        };
+                    } else {
+                        left.push(nodeToPattern(node, item!, ctx, bindings));
+                    }
+                }
+            });
+            return {
+                type: 'array',
+                left,
+                right,
+                form,
+            };
+        }
         case 'identifier': {
             let sym;
             // if (!form.hash) {

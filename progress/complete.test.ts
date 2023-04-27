@@ -111,6 +111,10 @@ Second type: 3.1
 (let [x (tfn [Enum:[..]] (fn [x:Enum] x))] x<['one 'two]>)
 (let [x (tfn [Enum:[..]] (fn [x:#8] #17))] #3<['one 'two]>)
 -> (fn [x:['one 'two]] ['one 'two])
+
+(fn [x:(array int)] (switch x [] 0 _ 3))
+(fn [x:(#:builtin:array #:builtin:int)] (switch #3 [] 0 _ 3))
+-> (fn [x:(array int)] int)
 `
     .trim()
     .split('\n\n');

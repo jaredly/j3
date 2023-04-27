@@ -34,15 +34,28 @@ export type Number = {
     kind: NumberKind;
     value: number;
 };
+
+export type LocalPattern = {
+    type: 'local';
+    name: string;
+    sym: number;
+    form: Node;
+};
+
 export type Pattern =
-    | {
-          type: 'local';
-          name: string;
-          sym: number;
-          form: Node;
-      }
+    | LocalPattern
     | Number
     | Bool
+    | {
+          type: 'array';
+          form: Node;
+          // items: (Pattern | {type: 'spread', binding?: LocalPattern, form: Node})[]
+          // [...one, two, three] // left[], right{one, [two, three]}
+          // [one, two, ...three] // [one, two], right{three}
+          // [one, ...two, three] // [one], right{two, [three]}
+          left: Pattern[];
+          right: null | { spread?: LocalPattern; items: Pattern[] };
+      }
     | {
           type: 'record';
           form: Node;

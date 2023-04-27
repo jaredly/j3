@@ -319,7 +319,7 @@ export const specials: {
         };
     },
     switch: (form, contents, ctx): Expr => {
-        if (contents.length < 2) {
+        if (contents.length < 1) {
             return { type: 'unresolved', form, reason: 'no enough args' };
         }
         const [valueNode, ...cases] = contents;
@@ -329,7 +329,7 @@ export const specials: {
         for (let i = 0; i < cases.length; i += 2) {
             const bindings: Local['terms'] = [];
             const pattern = nodeToPattern(cases[i], typ, ctx, bindings);
-            const pt = patternType(pattern);
+            const pt = patternType(pattern, ctx);
             pairs.push({
                 pattern: pattern,
                 body: cases[i + 1]

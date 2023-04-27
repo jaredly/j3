@@ -75,3 +75,28 @@
     ('Err ('LineError idx line err)) (! log "Error on line ${str idx}:\n${line}\n${debug err}")
     ('Err 'http) (! log "Http error")
     ('Err 'fs) (! log "Unable to write to disk")))
+
+;;;;;;;;;;;;
+
+(deftype httpResult (Result string ['Timeout 'Offline ('Other string)]))
+(def Result/ok )
+(deftype GetUrl ('http/get string httpResult))
+(deftype Log ('Log string ()))
+(deftype Env/get ('env/get string (Result string ['Missing ('OSError string)])))
+(defn log [text:string] (! ('Log text (fn [x:()] ('Return ())))))
+(defn tryit [text:string] (!? ('Help () (fn [x:(Result int string)] ('Return x)))))
+(defn get-url [url:string] (! ('http/get url (fn [x:httpResult] ('Return x)))))
+(def hello (tfn [T] (fn [x:T] x)))
+(hello<int> 10)
+(def require (tfn [ok err] (fn [value:(Result ok err)] (switch value ('Ok ok) ('Return ok) ('Err err) ('Failure err ())))))
+(def mapErr (tfn [ok err err2] (fn [value:(Result ok err) map:(fn [err] err2)] (switch value ('Err err) ('Err (map err)) x x))))
+(deftype Movie {title string year int starring (array string)})
+(def api-get ('env/get "API_KEY" (fn [x:(Result string ['Missing ('OSError string)])] ('Return x))))
+(defn get-api-key [] (switch (! api-get) ('Err 'Missing) ('Err 'ApiKeyMissing) x x))
+(def fail (tfn [Err:[..]] (fn [err:Err] ('Failure err ()))))
+fail<['hi 'ho]>
+(parse "10")
+(defn parseInt [text:string] (switch (parse text) ('Some int) ('Ok int) 'None ('Err ('NotAnInt text))))
+(defn yearToInt [year:string idx:int line:string] (mapErr<int [('NotAnInt string)] [('LineError int string ('NotAnInt string))]> (parseInt year) (fn [err:('NotAnInt string)] ('LineError idx line err))))
+(def pure (tfn [x] (fn [value:x] ('Return value))))
+(defn movieFromLine [line:string idx:int] (switch (split line "!") [title year starring] {title title year (!? (pure<(Result int ('LineError int string ('NotAnInt string)))> (yearToInt year idx line))) starring (split starring ",")} _ (! ('Failure ('LineError idx line 'InvalidLine) ()))))

@@ -111,6 +111,10 @@ export const _unifyTypes = (
               };
     }
 
+    if (one.type === 'any' && two.type === 'any') {
+        return one;
+    }
+
     if (
         (one.type === 'tag' || one.type === 'union') &&
         (two.type === 'tag' || two.type === 'union')

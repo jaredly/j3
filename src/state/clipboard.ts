@@ -311,7 +311,7 @@ export const clipboardText = (
                 ? item.text
                 : item.nodes
                       .map((node) => nodeToString(node, display))
-                      .join(' '),
+                      .join('\n'),
         )
         .join('\n');
 };

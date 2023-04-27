@@ -1,5 +1,5 @@
 import { blank, nilt } from '../to-ast/Ctx';
-import { any, fileLazy, imageFileLazy, none } from '../to-ast/builtins';
+import { any, fileLazy, imageFileLazy } from '../to-ast/builtins';
 import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
     applyAndResolve,
@@ -11,6 +11,7 @@ import type { Error, MatchError } from '../types/types';
 import { _unifyTypes, unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 import { Ctx, Env } from '../to-ast/library';
+import { asTaskType } from './asTaskType';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
 // TODO: do we want to error report here?
@@ -821,133 +822,6 @@ export const mergeTaskTypes = (
         return null;
     }
     return { effects: merged, result };
-};
-
-export const asTaskType = (
-    t: Type,
-    ctx: Ctx,
-    report: Report,
-): null | TaskType => {
-    let expanded: { [key: string]: { args: Type[]; form: Node } };
-    if (t.type === 'tag') {
-        expanded = { [t.name]: { args: t.args, form: t.form } };
-    } else if (t.type === 'union') {
-        let ex = expandEnumItems(t.items, ctx, []);
-        if (ex.type === 'error') {
-            errf(report, t.form, ex.error);
-            return null;
-        }
-        expanded = ex.map;
-    } else {
-        // TODO applyAndResolve
-        errf(report, t.form, {
-            type: 'misc',
-            message: 'Task type must be a union',
-            form: t.form,
-        });
-        return null;
-    }
-
-    // const effects: { [key: string]: { input: Type; output: Type | null } } = {};
-    // let result: Type | void = void 0;
-    // let errors: Error[] = [];
-
-    let tt: TaskType | null = null;
-
-    let failed = false;
-
-    Object.entries(expanded).forEach(([k, v]) => {
-        let ot: TaskType;
-        if (k === 'Return') {
-            if (v.args.length !== 1) {
-                errf(report, v.form, {
-                    type: 'misc',
-                    message: 'return must have 1 arg',
-                    form: v.form,
-                });
-                failed = true;
-                return;
-            }
-            ot = { effects: {}, result: v.args[0] };
-        } else {
-            if (v.args.length !== 2) {
-                errf(report, v.form, {
-                    type: 'misc',
-                    message: 'non-return task tags must have 2 args',
-                    form: v.form,
-                });
-                failed = true;
-                return;
-            }
-            const [input, output] = v.args;
-
-            if (output.type !== 'fn') {
-                errf(report, v.form, {
-                    type: 'misc',
-                    message: 'task arg 2 must be fn or nil',
-                    form: v.form,
-                });
-                failed = true;
-                return;
-            }
-            if (output.args.length !== 1) {
-                errf(report, v.form, {
-                    type: 'misc',
-                    message: 'task arg 2 must be fn with one argument',
-                    form: v.form,
-                });
-                failed = true;
-                return;
-            }
-
-            ot = {
-                effects: { [k]: { input, output: output.args[0].type } },
-                result: none,
-            };
-
-            // output.body is the @recur here??? Should we evaluate it too? Or do we run the risk of an infinite loop?
-            if (output.body.type !== 'recur') {
-                const body = asTaskType(output.body, ctx, report);
-                if (!body) {
-                    errf(report, v.form, {
-                        type: 'misc',
-                        message: 'task arg 2 fn response not taskable',
-                        form: v.form,
-                    });
-                    failed = true;
-                    return;
-                }
-                const merged = mergeTaskTypes(ot, body, ctx, report);
-                if (!merged) {
-                    errf(report, v.form, {
-                        type: 'misc',
-                        message: 'unable to merge task types from task arg 2',
-                        form: v.form,
-                    });
-                    failed = true;
-                    return;
-                }
-                ot = merged;
-            }
-        }
-
-        if (!tt) {
-            tt = ot;
-            return;
-        }
-
-        const merged = mergeTaskTypes(tt, ot, ctx, report);
-        if (!merged) {
-            failed = true;
-            return;
-        }
-        tt = merged;
-    });
-
-    if (failed) {
-        return null;
-    }
-    return tt;
 };
 
 export const isNilT = (t: Type) =>
