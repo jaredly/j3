@@ -187,6 +187,9 @@ export function Root({
                             {debug ? (
                                 <div>{sexp(fromMCST(top, state.map))}</div>
                             ) : null}
+                            {debug ? (
+                                <div>{JSON.stringify(state.at)}</div>
+                            ) : null}
                         </div>
                     </div>
                 );

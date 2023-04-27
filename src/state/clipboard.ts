@@ -304,6 +304,7 @@ export const paste = (
 export const clipboardText = (
     items: ClipboardItem[],
     display: Ctx['results']['hashNames'],
+    sep = '\n',
 ) => {
     return items
         .map((item) =>
@@ -311,9 +312,9 @@ export const clipboardText = (
                 ? item.text
                 : item.nodes
                       .map((node) => nodeToString(node, display))
-                      .join('\n'),
+                      .join(sep),
         )
-        .join('\n');
+        .join(sep);
 };
 
 export const collectClipboard = (

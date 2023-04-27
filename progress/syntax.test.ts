@@ -273,6 +273,10 @@ hello<friend>
 (one two three^T^l^t
 (one two |three)
 (list id id id)
+
+hello<hi>^b
+hello
+id
 `;
 // (@loop (fn [x] (if x (@recur false) 10)))
 

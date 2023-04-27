@@ -257,6 +257,21 @@ export function handleBackspace(
         return update;
     }
 
+    if (node.type === 'tapply' && flast.type === 'end') {
+        // fullPath[fullPath.length - 1],
+        // const update = replacePath(
+        //     ppath,
+        //     node.target,
+        //     map
+        // );
+        const sel = selectEnd(node.target, fullPath.slice(0, -1), map);
+        return replacePathWith(fullPath.slice(0, -1), map, {
+            idx: node.target,
+            map: {},
+            selection: sel ?? [],
+        });
+    }
+
     if (node.type === 'blank') {
         if (ppath.type === 'annot-annot' && parent.type === 'annot') {
             const update = replacePath(

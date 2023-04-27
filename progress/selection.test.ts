@@ -120,7 +120,7 @@ describe('a test', () => {
                 }
 
                 const collected = collectNodes(data, firstPath, secondPath, {});
-                const printed = clipboardText([collected], {});
+                const printed = clipboardText([collected], {}, ' ');
                 if (printed !== output) {
                     console.log(firstPath);
                     console.log(secondPath);
