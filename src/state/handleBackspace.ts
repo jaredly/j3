@@ -233,6 +233,15 @@ export function handleBackspace(
         }
     }
 
+    if (node.type === 'tapply' && flast.type === 'end') {
+        const sel = selectEnd(node.target, [], map);
+        return replacePathWith(fullPath.slice(0, -1), map, {
+            idx: node.target,
+            map: {},
+            selection: sel ?? [],
+        });
+    }
+
     if (
         flast.type === 'end' &&
         !('text' in node) &&
@@ -255,21 +264,6 @@ export function handleBackspace(
         };
 
         return update;
-    }
-
-    if (node.type === 'tapply' && flast.type === 'end') {
-        // fullPath[fullPath.length - 1],
-        // const update = replacePath(
-        //     ppath,
-        //     node.target,
-        //     map
-        // );
-        const sel = selectEnd(node.target, fullPath.slice(0, -1), map);
-        return replacePathWith(fullPath.slice(0, -1), map, {
-            idx: node.target,
-            map: {},
-            selection: sel ?? [],
-        });
     }
 
     if (node.type === 'blank') {
