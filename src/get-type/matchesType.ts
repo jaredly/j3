@@ -90,6 +90,12 @@ export const _matchesType = (
             return true;
         }
     }
+    if (candidate.type === 'none') {
+        return true;
+    }
+    if (expected.type === 'none') {
+        return inv(candidate, expected, path);
+    }
     switch (candidate.type) {
         case 'string':
             if (expected.type === 'builtin' && expected.name === 'string') {

@@ -43,19 +43,18 @@ export const Hover = ({
         const last = state.hover[state.hover.length - 1]?.idx;
         if (last != null) {
             const style = state.ctx.results.display[last]?.style;
-            if (style?.type === 'id' || style?.type === 'id-decl') {
+            if (
+                (style?.type === 'id' ||
+                    // style?.type === 'id-decl' ||
+                    style?.type === 'tag') &&
+                style.ann
+            ) {
                 found = {
                     idx: last,
-                    text:
-                        style.type === 'id' && style.ann
-                            ? nodeToString(
-                                  nodeForType(
-                                      style.ann,
-                                      state.ctx.results.hashNames,
-                                  ),
-                                  state.ctx.results.hashNames,
-                              )
-                            : '',
+                    text: nodeToString(
+                        nodeForType(style.ann, state.ctx.results.hashNames),
+                        state.ctx.results.hashNames,
+                    ),
                     // ' ' +
                     // (style.hash + '').slice(0, 10),
                 };

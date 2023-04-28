@@ -82,12 +82,12 @@ export type Local = {
 };
 
 export type NodeStyle =
-    | { type: 'tag' }
     | { type: 'record-attr' }
     | { type: 'let-pairs' }
     | { type: 'unresolved' }
     | { type: 'number'; kind: NumberKind }
     | { type: 'id-decl'; hash: string | number }
+    | { type: 'tag'; ann?: Type }
     | {
           type: 'id';
           hash: string | number;

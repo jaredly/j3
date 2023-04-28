@@ -15,6 +15,7 @@ import { transformType } from '../types/walk-ast';
 import { Ctx, Env } from '../to-ast/library';
 import { asTaskType } from './asTaskType';
 import { unifyManyTypes } from './patternType';
+import { ensure } from '../to-ast/nodeToExpr';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
 // TODO: do we want to error report here?
@@ -235,6 +236,10 @@ const _getType = (
                 if (report) {
                     report.types[expr.target.form.loc] = res;
                 }
+                ensure(ctx.results.display, expr.target.form.loc, {}).style = {
+                    type: 'tag',
+                    ann: res,
+                };
                 return res;
             }
             let target = getType(expr.target, ctx, report, effects);
