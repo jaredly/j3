@@ -1,9 +1,7 @@
 import { blank, nilt } from '../to-ast/Ctx';
 import { any, fileLazy, imageFileLazy, none } from '../to-ast/builtins';
-import { Expr, Node, Pattern, TRecord, TfnType, Type } from '../types/ast';
+import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
 import {
-    TypeArgs,
-    _matchesType,
     applyAndResolve,
     applyTypeVariables,
     expandEnumItems,
@@ -14,8 +12,8 @@ import { _unifyTypes, unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 import { Ctx, Env } from '../to-ast/library';
 import { asTaskType } from './asTaskType';
-import { unifyManyTypes } from './patternType';
 import { ensure } from '../to-ast/nodeToExpr';
+import { tryToInferTypeArgs } from './tryToInferTypeArgs';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
 // TODO: do we want to error report here?
@@ -869,48 +867,3 @@ export const isNilT = (t: Type) =>
     t.entries.length === 0 &&
     t.spreads.length === 0 &&
     !t.open;
-
-export const tryToInferTypeArgs = (
-    type: TfnType,
-    args: Type[],
-    ctx: Ctx,
-    report?: Report,
-): Type | void => {
-    if (type.body.type !== 'fn') {
-        return;
-    }
-    const bindings: TypeArgs = {};
-    type.args.forEach((arg) => {
-        bindings[arg.form.loc] = [];
-    });
-
-    for (let i = 0; i < args.length && i < type.body.args.length; i++) {
-        if (!_matchesType(args[i], type.body.args[i].type, ctx, [], bindings)) {
-            return;
-        }
-    }
-
-    const boundMap: { [sym: number]: Type } = {};
-    for (let i = 0; i < type.args.length; i++) {
-        const arg = type.args[i];
-        const bound = unifyManyTypes(bindings[arg.form.loc], ctx);
-
-        if (arg.bound) {
-            const match = matchesType(bound, arg.bound, ctx, arg.form, report);
-            if (!match) {
-                return;
-            }
-        }
-        boundMap[type.args[i].form.loc] = bound;
-    }
-
-    return applyTypeVariables(type.body, boundMap);
-};
-
-/*
-
-Sooo (Result ok err)
-- and like if you have ('Ok 100)
-
-err should be inferred as like empty, right?
-*/

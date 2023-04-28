@@ -1,10 +1,10 @@
 import { blank, nil, nilt } from '../to-ast/Ctx';
+import { Ctx, globalType } from '../to-ast/library';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
-import { errf, recordMap, Report } from './get-types-new';
 import { transformType } from '../types/walk-ast';
-import { unifyTypes, _unifyTypes } from './unifyTypes';
-import { CompilationResults, Env, Ctx, globalType } from '../to-ast/library';
+import { Report, errf, recordMap } from './get-types-new';
+import { _unifyTypes } from './unifyTypes';
 
 export type TypeArgs = { [idx: number]: Type[] };
 

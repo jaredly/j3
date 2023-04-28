@@ -153,22 +153,38 @@ Second type: 3.1
 (mapErr (parseInt "10"))
 -> [('Err #:builtin:float) ('Ok #:builtin:int)]
 
+(defn mapErr<ok> [value:((tfn [x] x) ok)] 10)
+(mapErr 10)
+-> 10
+
 (defn parseInt [text:string]
     (switch (int/parse text)
         ('Some int) ('Ok int)
         'None ('Err 1.0)))
 -> (fn [text:#:builtin:string] [('Err 1.) ('Ok #:builtin:int)])
 
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn parseInt [text:string]:(Result int 1.0)
+    (switch (int/parse text)
+        ('Some int) ('Ok int)
+        'None ('Err 1.0)))
+-> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
+
 `
     .trim()
     .split('\n\n');
 
+/*
+ */
+
+// erfff ok so ... multiple levels? Is that it?
+
 // (deftype Result<ok err> [('Ok ok) ('Err err)])
-// (defn parseInt [text:string]:(Result int 1.0)
-//     (switch (int/parse text)
-//         ('Some int) ('Ok int)
-//         'None ('Err 1.0)))
-// -> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
+// (defn parseInt [text:string]:[('Ok int) ('Err float))]
+//     ('Ok 10))
+// (defn mapErr<ok err> [value:(Result ok err)] 10)
+// (mapErr (parseInt "10"))
+// -> [('Err #:builtin:float) ('Ok #:builtin:int)]
 
 // (deftype Result<ok err> [('Ok ok) ('Err err)])
 // (defn parseInt [text:string]:(Result int float)
