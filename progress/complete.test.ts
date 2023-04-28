@@ -176,12 +176,17 @@ Second type: 3.1
             (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
 -> (fn [x:#:builtin:int] #:builtin:int)
 
+(fnrec [x:int]:int
+    (if (< x 1) 0
+        (+ (@recur (- 1 x)) (@recur (- 2 x)))))
+-> (fn [x:#:builtin:int] #:builtin:int)
+
+(fnrec [x:int]:int (@recur 10))
+-> (fn [x:#:builtin:int] #:builtin:int)
+
 `
     .trim()
     .split('\n\n');
-
-/*
- */
 
 // erfff ok so ... multiple levels? Is that it?
 

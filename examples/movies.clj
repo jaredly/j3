@@ -18,11 +18,10 @@
   (! ('http/get url (fn [x:httpResult] ('Return x)))))
 
 ; turn a Result into a Task
-(def require (tfn [ok err]
-  (fn [value:(Result ok err)]:(@task [('Failure err)] ok)
+(defn require<ok err> [value:(Result ok err)]:(@task [('Failure err)] ok)
     (switch value
       ('Ok ok) ('Return ok)
-      ('Err err) ('Failure err ())))))
+      ('Err err) ('Failure err ())))
 
 (def mapErr (tfn [ok err err2] (fn [value:(Result ok err) map:(fn [err] err2)]
   (switch value
@@ -48,7 +47,7 @@
   (switch (split line "!")
     [title year starring]
       {title title
-       year (!? (require (mapErr<int [('NotAnInt string)] [('LineError int string ('NotAnInt string))]> (parseInt year) (fn [err] ('LineError idx line err)))))
+       year (!? (require (mapErr (parseInt year) (fn [err] ('LineError idx line err)))))
        starring (split starring ",")}
     _ (! fail ('LineError idx line 'InvalidLine))))
 
@@ -59,6 +58,8 @@
                   coll (! (@recur rest fn))]
                 [res ..coll])
         _ []))
+
+(def fib (@loop (fn [x:int] (if (< x 1) 0 (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
 
 
 ;; let mapTask: <T, Effects: task, R>(values: Array<T>, fn: (v: T) => Task<Effects, R>) => Task<

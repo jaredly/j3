@@ -117,15 +117,13 @@ export const specials: {
             form,
         };
     },
-    fn: (form, contents, ctx): Expr => {
+    fnrec: (form, contents, ctx): Expr => {
         if (contents.length < 1) {
-            return {
-                type: 'fn',
-                args: [],
-                body: [],
-                ret: none,
-                form,
-            };
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'requires two arguments',
+            });
+            return { type: 'fn', args: [], body: [], ret: none, form };
         }
         let argNode = contents[0];
         let ret: Type | null = null;
@@ -133,86 +131,80 @@ export const specials: {
             ret = nodeToType(argNode.annot, ctx);
             argNode = argNode.target;
         }
-        if (argNode.type === 'array') {
-            let locals: Local['terms'] = [];
-            let args: { pattern: Pattern; type: Type }[] = parseArgs(
-                argNode,
-                ctx,
-                locals,
-            );
-
-            locals.forEach(
-                (loc) =>
-                    (ctx.results.localMap.terms[loc.sym] = {
-                        name: loc.name,
-                        type: loc.type,
-                    }),
-            );
-            const ct2: CstCtx = {
-                ...ctx,
-                local: {
-                    ...ctx.local,
-                    terms: [...locals, ...ctx.local.terms],
-                },
-            };
-            const body = contents.slice(1);
-            // let ret: Type = none;
-
-            // Hmmmmmm
-            // do I need to lock down the `ret`?
-            // 🤔
-            // how would that work.
-            // it starts with ... "nothing", right?
-            // which unifies with anything
-            // but is also illegal to actually return
-            // yeah sure, let's lock it down? I mean
-            // what would that mean.
-
-            // if (
-            //     body.length > 0 &&
-            //     body[0].type === 'identifier' &&
-            //     body[0].text.startsWith(':')
-            // ) {
-            //     ret = nodeToType(
-            //         {
-            //             ...body[0],
-            //             text: body[0].text.slice(1),
-            //         },
-            //         ctx,
-            //     );
-            //     body.shift();
-            // }
-            const bodies = body.map((child) => nodeToExpr(child, ct2));
-            if (bodies.length) {
-                const last = bodies[bodies.length - 1];
-                const t = getType(last, ctx);
-                if (t) {
-                    if (ret) {
-                        const match = _matchOrExpand(t, ret, ctx, []);
-                        if (match !== true) {
-                            err(ctx.results.errors, form, match);
-                        }
-                    } else {
-                        ret = t;
-                    }
-                }
-            }
-            // parse fn args
-            return {
-                type: 'fn',
-                args,
-                body: bodies,
-                ret: ret ?? none,
-                form,
-            };
+        if (argNode.type !== 'array' || contents.length < 1) {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'fn first item must be array',
+            });
+            return { type: 'fn', args: [], body: [nil], ret: none, form };
         }
-        return {
+        var { inner, args } = processArgs(argNode, ctx);
+        if (!ret) {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'fnrec requires return type annotation',
+            });
+            return { type: 'fn', args: [], body: [], ret: none, form };
+        }
+        if (contents.length < 2) {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'no fn body',
+            });
+            return { type: 'fn', args, body: [nil], ret: ret ?? none, form };
+        }
+        const ann: Type = {
             type: 'fn',
-            args: [],
-            body: contents.map((child) => nodeToExpr(child, ctx)),
-            ret: none,
+            args: args.map((arg) => ({
+                name:
+                    arg.pattern.type === 'local' ? arg.pattern.name : undefined,
+                type: arg.type,
+                form: arg.form,
+            })),
+            body: ret,
             form,
         };
+        return {
+            type: 'loop',
+            ann: ann,
+            form,
+            inner: finishFn(
+                contents,
+                {
+                    ...inner,
+                    local: {
+                        ...inner.local,
+                        loop: { sym: form.loc, type: ann },
+                    },
+                },
+                ret,
+                form,
+                args,
+            ),
+        };
+    },
+    fn: (form, contents, ctx): Expr => {
+        if (contents.length < 1) {
+            return { type: 'fn', args: [], body: [], ret: none, form };
+        }
+        let argNode = contents[0];
+        let ret: Type | null = null;
+        if (argNode.type === 'annot') {
+            ret = nodeToType(argNode.annot, ctx);
+            argNode = argNode.target;
+        }
+        if (argNode.type !== 'array' || contents.length < 1) {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'fn first item must be array',
+            });
+            return { type: 'fn', args: [], body: [nil], ret: none, form };
+        }
+        var { inner, args } = processArgs(argNode, ctx);
+        if (contents.length < 2) {
+            return { type: 'fn', args, body: [nil], ret: ret ?? none, form };
+        }
+        return finishFn(contents, inner, ret, form, args);
     },
     '@loop': (form, contents, ctx, firstLoc): Expr => {
         const [item, ...rest] = contents;
@@ -293,15 +285,7 @@ export const specials: {
                 type: 'misc',
                 message: 'defn needs a name and args and a body',
             });
-            return {
-                type: 'def',
-                name: '',
-                // hash: '',
-                value: nil,
-                form,
-                ann: void 0,
-            };
-            // return { type: 'unresolved', form, reason: 'no engouh args' };
+            return { type: 'def', name: '', value: nil, form, ann: void 0 };
         }
         const [name, ...rest] = contents;
         if (name.type === 'tapply' && name.target.type === 'identifier') {
@@ -309,24 +293,13 @@ export const specials: {
                 filterComments(name.values),
                 ctx,
             );
-            const value: Expr = {
-                type: 'tfn',
-                args,
-                form,
-                body: specials.fn(form, rest, inner, firstLoc),
-            };
+            const body = specials.fn(form, rest, inner, firstLoc);
+            const value: Expr = { type: 'tfn', args, form, body };
             const ann = getType(value, ctx) ?? undefined;
             ctx.results.display[name.loc] = {
                 style: { type: 'id', hash: form.loc, ann },
             };
-            return {
-                type: 'def',
-                name: name.target.text,
-                // hash,
-                value,
-                form,
-                ann,
-            };
+            return { type: 'def', name: name.target.text, value, form, ann };
         } else if (name.type !== 'identifier') {
             return {
                 type: 'unresolved',
@@ -339,14 +312,7 @@ export const specials: {
         ctx.results.display[name.loc] = {
             style: { type: 'id', hash: form.loc, ann },
         };
-        return {
-            type: 'def',
-            name: name.text,
-            // hash,
-            value,
-            form,
-            ann,
-        };
+        return { type: 'def', name: name.text, value, form, ann };
     },
     def: (form, contents, ctx): Expr => {
         if (!contents.length) {
@@ -520,6 +486,62 @@ export const specials: {
         };
     },
 };
+
+export function finishFn(
+    contents: Node[],
+    inner: CstCtx,
+    ret: Type | null,
+    form: Node,
+    args: { pattern: Pattern; type: Type; form: Node }[],
+): Expr {
+    const bodies = contents.slice(1).map((child) => nodeToExpr(child, inner));
+    if (bodies.length) {
+        const bodyRes = getType(bodies[bodies.length - 1], inner);
+        if (bodyRes) {
+            if (ret) {
+                const match = _matchOrExpand(bodyRes, ret, inner, []);
+                if (match !== true) {
+                    err(inner.results.errors, form, match);
+                }
+            } else {
+                ret = bodyRes;
+            }
+        }
+    }
+    return {
+        type: 'fn',
+        args,
+        body: bodies.length ? bodies : [nil],
+        ret: ret ?? none,
+        form,
+    };
+}
+
+function processArgs(
+    argNode: NodeArray & NodeExtra,
+    ctx: CstCtx,
+): {
+    inner: CstCtx;
+    args: { pattern: Pattern; type: Type; form: Node }[];
+} {
+    let locals: Local['terms'] = [];
+    let args = parseArgs(argNode, ctx, locals);
+    locals.forEach(
+        (loc) =>
+            (ctx.results.localMap.terms[loc.sym] = {
+                name: loc.name,
+                type: loc.type,
+            }),
+    );
+    const inner: CstCtx = {
+        ...ctx,
+        local: {
+            ...ctx.local,
+            terms: [...locals, ...ctx.local.terms],
+        },
+    };
+    return { inner, args };
+}
 
 function parseArgs(
     argNode: NodeArray & NodeExtra,
