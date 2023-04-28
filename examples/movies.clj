@@ -52,6 +52,30 @@
        starring (split starring ",")}
     _ (! fail ('LineError idx line 'InvalidLine))))
 
+(defnrec mapTask<T Effects:[..] R> [values:(array T), fn:(fn [v:T] (@task Effects R))]:(@task Effects (array R))
+    (switch values
+        [one ..rest]
+            (let [res (! (fn one))
+                  coll (! (@recur rest fn))]
+                [res ..coll])
+        _ []))
+
+
+;; let mapTask: <T, Effects: task, R>(values: Array<T>, fn: (v: T) => Task<Effects, R>) => Task<
+;;     Effects,
+;;     Array<R>,
+;; > = <T, Effects: task, R>(values: Array<T>, fn: (v: T) => Task<Effects, R>): Task<Effects, Array<R>> => {
+;;     switch values {
+;;         [one, ...rest] => {
+;;             let res = fn(one)!;
+;;             let coll = mapTask<T, Effects, R>(rest, fn)!;
+;;             [res, ...coll];
+;;         };
+;;         _ => [];
+;;     };
+;; }
+
+
 (defn getMovies [url:string]
   (let [response (!? 'GetUrl url)]
     (-> response
