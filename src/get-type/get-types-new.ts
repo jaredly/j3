@@ -635,7 +635,16 @@ const _getType = (
         case 'loop':
             return getType(expr.inner, ctx, report, effects);
         case 'recur':
-            throw new Error('Not recur yet');
+            return (
+                ctx.results.localMap.terms[expr.sym]?.type ??
+                (report
+                    ? err(report, expr, {
+                          type: 'misc',
+                          message: 'missing @loop type',
+                      })
+                    : void 0)
+            );
+        // throw new Error('Not recur yet');
         case 'type-fn':
             throw new Error('what the heck');
         case 'let-type':

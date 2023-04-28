@@ -170,6 +170,12 @@ Second type: 3.1
         'None ('Err 1.0)))
 -> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
 
+(def fib (@loop
+    (fn [x:int]:int
+        (if (< x 1) 0
+            (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
+-> (fn [x:#:builtin:int] #:builtin:int)
+
 `
     .trim()
     .split('\n\n');

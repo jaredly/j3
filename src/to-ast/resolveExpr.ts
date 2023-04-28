@@ -5,6 +5,7 @@ import { Result } from './to-ast';
 import { populateAutocomplete } from './populateAutocomplete';
 import { CstCtx, Ctx, Library } from './library';
 import { lastName } from '../db/hash-tree';
+import { ensure } from './nodeToExpr';
 
 // TODO cache this?
 
@@ -19,6 +20,17 @@ export const resolveExpr = (
     }
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
+    }
+    if (text === '@recur' && ctx.local.loop) {
+        ctx.results.localMap.terms[ctx.local.loop.sym] = {
+            name: 'loop',
+            type: ctx.local.loop.type,
+        };
+        ensure(ctx.results.display, form.loc, {}).style = {
+            type: 'tag',
+            ann: ctx.local.loop.type,
+        };
+        return { type: 'recur', form, sym: ctx.local.loop.sym };
     }
     if (text.startsWith("'")) {
         return { type: 'tag', name: text.slice(1), form };

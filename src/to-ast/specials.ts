@@ -1,9 +1,9 @@
-import { Node } from '../types/cst';
+import { Node, NodeArray, NodeExtra } from '../types/cst';
 import { Expr, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { any, Ctx, Local, Mod, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType, parseTypeArgs } from './nodeToType';
-import { filterComments, nodeToExpr } from './nodeToExpr';
+import { ensure, filterComments, nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
 import { getType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
@@ -24,7 +24,12 @@ export const addMod = (ctx: Ctx, idx: number, mod: Mod) => {
 const doHash = (x: Expr | Type) => JSON.stringify(noForm(x)); // objectHash
 
 export const specials: {
-    [key: string]: (form: Node, args: Node[], ctx: CstCtx) => Expr;
+    [key: string]: (
+        form: Node,
+        args: Node[],
+        ctx: CstCtx,
+        firstLoc: number,
+    ) => Expr;
 } = {
     '<>': (form, contents, ctx) => {
         if (contents.length < 2) {
@@ -130,24 +135,11 @@ export const specials: {
         }
         if (argNode.type === 'array') {
             let locals: Local['terms'] = [];
-            let args: { pattern: Pattern; type: Type }[] = filterComments(
-                argNode.values,
-            ).map((arg) => {
-                if (arg.type === 'annot') {
-                    let type = nodeToType(arg.annot, ctx);
-                    const pattern = nodeToPattern(
-                        arg.target,
-                        type,
-                        ctx,
-                        locals,
-                    );
-                    return { pattern, type };
-                } else {
-                    let type = any;
-                    const pattern = nodeToPattern(arg, type, ctx, locals);
-                    return { pattern, type };
-                }
-            });
+            let args: { pattern: Pattern; type: Type }[] = parseArgs(
+                argNode,
+                ctx,
+                locals,
+            );
 
             locals.forEach(
                 (loc) =>
@@ -222,6 +214,37 @@ export const specials: {
             form,
         };
     },
+    '@loop': (form, contents, ctx, firstLoc): Expr => {
+        const [item, ...rest] = contents;
+        let ann: Type = nilt;
+        if (item) {
+            ann = inferLoopType(item, ctx);
+        }
+        rest.forEach((node) => {
+            err(ctx.results.errors, node, {
+                type: 'misc',
+                message: 'extra args to @loop',
+            });
+        });
+        ensure(ctx.results.display, firstLoc, {}).style = {
+            type: 'tag',
+            ann,
+        };
+        return {
+            type: 'loop',
+            form,
+            ann,
+            inner: item
+                ? nodeToExpr(item, {
+                      ...ctx,
+                      local: {
+                          ...ctx.local,
+                          loop: { sym: form.loc, type: ann },
+                      },
+                  })
+                : nil,
+        };
+    },
     deftype: (form, contents, ctx): Expr => {
         if (contents.length !== 2) {
             return { type: 'unresolved', form, reason: 'need just 2 args' };
@@ -264,7 +287,7 @@ export const specials: {
             form,
         };
     },
-    defn: (form, contents, ctx): Expr => {
+    defn: (form, contents, ctx, firstLoc): Expr => {
         if (contents.length < 2) {
             err(ctx.results.errors, form, {
                 type: 'misc',
@@ -290,7 +313,7 @@ export const specials: {
                 type: 'tfn',
                 args,
                 form,
-                body: specials.fn(form, rest, inner),
+                body: specials.fn(form, rest, inner, firstLoc),
             };
             const ann = getType(value, ctx) ?? undefined;
             ctx.results.display[name.loc] = {
@@ -311,7 +334,7 @@ export const specials: {
                 form,
             };
         }
-        const value = specials.fn(form, rest, ctx);
+        const value = specials.fn(form, rest, ctx, firstLoc);
         const ann = getType(value, ctx) ?? undefined;
         ctx.results.display[name.loc] = {
             style: { type: 'id', hash: form.loc, ann },
@@ -498,6 +521,24 @@ export const specials: {
     },
 };
 
+function parseArgs(
+    argNode: NodeArray & NodeExtra,
+    ctx: CstCtx,
+    locals: { sym: number; name: string; type: Type }[],
+): { pattern: Pattern; type: Type; form: Node }[] {
+    return filterComments(argNode.values).map((arg) => {
+        if (arg.type === 'annot') {
+            let type = nodeToType(arg.annot, ctx);
+            const pattern = nodeToPattern(arg.target, type, ctx, locals);
+            return { pattern, type, form: arg };
+        } else {
+            let type = any;
+            const pattern = nodeToPattern(arg, type, ctx, locals);
+            return { pattern, type, form: arg };
+        }
+    });
+}
+
 export function processTypeArgs(tvalues: Node[], ctx: CstCtx) {
     const parsed = parseTypeArgs(tvalues, ctx);
     parsed.forEach((targ) => (ctx.results.localMap.types[targ.sym] = targ));
@@ -523,3 +564,35 @@ patternType ...
 subtractType ...
 
 */
+
+export const inferLoopType = (form: Node, ctx: CstCtx): Type => {
+    if (
+        form.type === 'list' &&
+        form.values.length >= 2 &&
+        form.values[0].type === 'identifier' &&
+        form.values[0].text === 'fn'
+    ) {
+        const args = form.values[1];
+        if (args.type === 'annot' && args.target.type === 'array') {
+            const argt = parseArgs(args.target, ctx, []);
+            return {
+                type: 'fn',
+                args: argt.map((arg) => ({
+                    name:
+                        arg.pattern.type === 'local'
+                            ? arg.pattern.name
+                            : undefined,
+                    form: arg.form,
+                    type: arg.type,
+                })),
+                body: nodeToType(args.annot, ctx),
+                form,
+            };
+        }
+    }
+    err(ctx.results.errors, form, {
+        type: 'misc',
+        message: 'unable to infer loop type.',
+    });
+    return any;
+};

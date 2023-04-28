@@ -92,7 +92,12 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             const first = values[0];
             if (first.type === 'identifier') {
                 if (Object.hasOwn(specials, first.text)) {
-                    return specials[first.text](form, values.slice(1), ctx);
+                    return specials[first.text](
+                        form,
+                        values.slice(1),
+                        ctx,
+                        first.loc,
+                    );
                 }
             }
             if (
@@ -108,7 +113,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                     type: 'tfn',
                     args,
                     form,
-                    body: specials.fn(form, values.slice(1), inner),
+                    body: specials.fn(form, values.slice(1), inner, first.loc),
                 };
             }
             if (first.type === 'array') {

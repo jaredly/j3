@@ -21,6 +21,8 @@
 
 - [ ] do I ever getType without `report`? Seems like I always want it.
 
+- [ ] (def fib (@loop (fn [x:int] (if (< x 1) 0 (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
+
 ## Task
 
 - [x] getType for ! and !?
