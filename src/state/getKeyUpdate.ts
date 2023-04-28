@@ -365,7 +365,12 @@ export const getKeyUpdate = (
         return newNodeAfter(fullPath, map, newBlank(nidx()), nidx);
     }
 
-    if (key === '<' && (node.type === 'identifier' || node.type === 'hash')) {
+    if (
+        key === '<' &&
+        (node.type === 'identifier' ||
+            node.type === 'hash' ||
+            (node.type === 'list' && flast.type === 'end'))
+    ) {
         const nat = newTapply(idx, '', nidx(), nidx());
         const up = replacePathWith(fullPath.slice(0, -1), map, nat);
         if (up) {

@@ -275,7 +275,7 @@ const _getType = (
                 if (report && args.length < target.args.length) {
                     err(report, expr, {
                         type: 'too few arguments',
-                        expected: target.args.length,
+                        expected: target,
                         received: args.length,
                         form: expr.form,
                     });

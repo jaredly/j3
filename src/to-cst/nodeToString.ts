@@ -91,7 +91,9 @@ export const nodeToString_ = (
                       (typeof node.hash === 'number'
                           ? hashNames[node.hash]
                           : null) ??
-                      `<hashName not recorded ${node.loc} ${node.hash}>`;
+                      `<hashName not recorded ${node.loc} ${(
+                          node.hash + ''
+                      ).slice(0, 10)}>`;
         }
         case 'comment':
             return `$comment$`;

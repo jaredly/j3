@@ -20,6 +20,11 @@ export const errorToString = (
                 .join(', ')}) vs ('${error.tag} ${error.two
                 .map((x) => nodeToString(nodeForType(x, hashNames), hashNames))
                 .join(', ')}')`;
+        case 'too few arguments':
+            return `Expected ${nodeToString(
+                nodeForType(error.expected, hashNames),
+                hashNames,
+            )}`;
         case 'unresolved':
             return error.reason ?? `identifier not linked`;
         case 'unparsed':

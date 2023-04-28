@@ -1,12 +1,12 @@
 import { Identifier, Node, NodeExtra, recordAccess } from '../types/cst';
 import { Expr, Number, Record, Type } from '../types/ast';
-import { specials } from './specials';
+import { processTypeArgs, specials } from './specials';
 import { resolveExpr } from './resolveExpr';
 import { AutoCompleteResult, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
 import { applyAndResolve } from '../get-type/matchesType';
-import { nodeToType } from './nodeToType';
+import { nodeToType, parseTypeArgs } from './nodeToType';
 import { populateAutocomplete } from './populateAutocomplete';
 import { CstCtx, Ctx } from './library';
 
@@ -94,6 +94,22 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                 if (Object.hasOwn(specials, first.text)) {
                     return specials[first.text](form, values.slice(1), ctx);
                 }
+            }
+            if (
+                first.type === 'tapply' &&
+                first.target.type === 'identifier' &&
+                first.target.text === 'fn'
+            ) {
+                const { args, inner } = processTypeArgs(
+                    filterComments(first.values),
+                    ctx,
+                );
+                return {
+                    type: 'tfn',
+                    args,
+                    form,
+                    body: specials.fn(form, values.slice(1), inner),
+                };
             }
             if (first.type === 'array') {
                 // ([a b c] hello)

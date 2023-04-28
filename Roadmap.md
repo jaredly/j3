@@ -15,6 +15,8 @@
 - [x] '[..]'
 - [ ] OK NEXT UP Let's really infer fn type args.
 - [ ] and might as well make it so you can `(defn x<T>)` while we're at it, right?
+- [x] (fn<x> [y:x] y) please
+- [ ] (defn<x> [y:x] y) please
 
 ## Task
 

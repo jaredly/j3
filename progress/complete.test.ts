@@ -112,12 +112,16 @@ Second type: 3.1
 (let [x (tfn [Enum:[..]] (fn [x:#8] #17))] #3<['one 'two]>)
 -> (fn [x:['one 'two]] ['one 'two])
 
-(fn [x:(array int)] (switch x [] 0 _ 3))
-(fn [x:(#:builtin:array #:builtin:int)] (switch #3 [] 0 _ 3))
--> (fn [x:(array int)] int)
+((fn<x> [y:x] y)<int> 100)
+((fn<x> [y:#5] #7)<#:builtin:int> 100)
+-> #:builtin:int
 `
     .trim()
     .split('\n\n');
+
+// (fn [x:(array int)] (switch x [] 0 _ 3))
+// (fn [x:(#:builtin:array #:builtin:int)] (switch #3 [] 0 _ 3))
+// -> (fn [x:(array int)] int)
 
 // (.hi {hi 10})
 // (.hi {hi 10})

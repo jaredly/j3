@@ -200,6 +200,18 @@ export type Shared =
     | { type: 'unresolved'; form: Node; reason?: string };
 
 export type TypeArg = { name: string; bound?: Type; form: Node };
+export type FnType = {
+    type: 'fn';
+    name?: string;
+    args: {
+        name?: string;
+        type: Type;
+        form: Node;
+    }[];
+    body: Type;
+    form: Node;
+};
+
 export type Type =
     | Shared
     | {
@@ -225,13 +237,7 @@ export type Type =
           form: Node;
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
-    | {
-          type: 'fn';
-          name?: string;
-          args: { name?: string; type: Type; form: Node }[];
-          body: Type;
-          form: Node;
-      }
+    | FnType
     | { type: 'tfn'; name?: string; args: TypeArg[]; body: Type; form: Node }
     | {
           type: 'union';

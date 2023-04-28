@@ -1,6 +1,6 @@
 // Yeah
 
-import { Type } from './ast';
+import { FnType, Type } from './ast';
 import { Loc, Node } from './cst';
 
 export type MatchError =
@@ -50,7 +50,7 @@ export type Error =
     | {
           type: 'too few arguments';
           form: Node;
-          expected: number;
+          expected: FnType;
           received: number;
       }
     | { type: 'case'; pattern: Type; target: Type; form: Node }

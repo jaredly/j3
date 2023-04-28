@@ -94,7 +94,8 @@ export const specials: {
             };
         }
         const tvalues = filterComments(targs.values);
-        const parsed = parseTypeArgs(tvalues, ctx);
+        const { args, inner } = processTypeArgs(tvalues, ctx);
+
         if (contents.length > 1) {
             for (let i = 1; i < contents.length; i++) {
                 err(ctx.results.errors, contents[i], {
@@ -103,19 +104,11 @@ export const specials: {
                 });
             }
         }
-        parsed.forEach((targ) => (ctx.results.localMap.types[targ.sym] = targ));
+
         return {
             type: 'tfn',
-            args: parsed,
-            body: contents.length
-                ? nodeToExpr(contents[0], {
-                      ...ctx,
-                      local: {
-                          ...ctx.local,
-                          types: [...parsed, ...ctx.local.types],
-                      },
-                  })
-                : nilt,
+            args,
+            body: contents.length ? nodeToExpr(contents[0], inner) : nilt,
             form,
         };
     },
@@ -237,7 +230,7 @@ export const specials: {
         if (name.type !== 'identifier') {
             return {
                 type: 'unresolved',
-                reason: 'cant defn not id ' + name.type,
+                reason: 'cant deftype not id ' + name.type,
                 form,
             };
         }
@@ -267,7 +260,30 @@ export const specials: {
             // return { type: 'unresolved', form, reason: 'no engouh args' };
         }
         const [name, ...rest] = contents;
-        if (name.type !== 'identifier') {
+        if (name.type === 'tapply' && name.target.type === 'identifier') {
+            const { args, inner } = processTypeArgs(
+                filterComments(name.values),
+                ctx,
+            );
+            const value: Expr = {
+                type: 'tfn',
+                args,
+                form,
+                body: specials.fn(form, rest, inner),
+            };
+            const ann = getType(value, ctx) ?? undefined;
+            ctx.results.display[name.loc] = {
+                style: { type: 'id', hash: form.loc, ann },
+            };
+            return {
+                type: 'def',
+                name: name.target.text,
+                // hash,
+                value,
+                form,
+                ann,
+            };
+        } else if (name.type !== 'identifier') {
             return {
                 type: 'unresolved',
                 reason: 'cant defn not id ' + name.type,
@@ -461,6 +477,20 @@ export const specials: {
     },
 };
 
+export function processTypeArgs(tvalues: Node[], ctx: CstCtx) {
+    const parsed = parseTypeArgs(tvalues, ctx);
+    parsed.forEach((targ) => (ctx.results.localMap.types[targ.sym] = targ));
+    return {
+        args: parsed,
+        inner: {
+            ...ctx,
+            local: {
+                ...ctx.local,
+                types: [...parsed, ...ctx.local.types],
+            },
+        },
+    };
+}
 /*
 
 so, maybe we need a type that's "anything"
