@@ -212,6 +212,14 @@ export type FnType = {
     form: Node;
 };
 
+export type TfnType = {
+    type: 'tfn';
+    name?: string;
+    args: TypeArg[];
+    body: Type;
+    form: Node;
+};
+
 export type Type =
     | Shared
     | {
@@ -238,7 +246,7 @@ export type Type =
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
     | FnType
-    | { type: 'tfn'; name?: string; args: TypeArg[]; body: Type; form: Node }
+    | TfnType
     | {
           type: 'union';
           items: Type[];

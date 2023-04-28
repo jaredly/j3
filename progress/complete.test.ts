@@ -115,6 +115,10 @@ Second type: 3.1
 ((fn<x> [y:x] y)<int> 100)
 ((fn<x> [y:#5] #7)<#:builtin:int> 100)
 -> #:builtin:int
+
+((fn<x> [y:x] y) 100)
+((fn<x> [y:#5] #7) 100)
+-> 100
 `
     .trim()
     .split('\n\n');

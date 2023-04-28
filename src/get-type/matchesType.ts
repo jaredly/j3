@@ -6,14 +6,17 @@ import { transformType } from '../types/walk-ast';
 import { unifyTypes, _unifyTypes } from './unifyTypes';
 import { CompilationResults, Env, Ctx, globalType } from '../to-ast/library';
 
+export type TypeArgs = { [idx: number]: Type[] };
+
 export const matchesType = (
     candidate: Type,
     expected: Type,
     ctx: Ctx,
     form: Node,
     report?: Report,
+    typeArgs?: TypeArgs,
 ): boolean => {
-    const result = _matchOrExpand(candidate, expected, ctx, []);
+    const result = _matchOrExpand(candidate, expected, ctx, [], typeArgs);
     if (result !== true) {
         if (report) {
             errf(report, form, result);
@@ -48,16 +51,17 @@ export const _matchOrExpand = (
     expected: Type,
     ctx: Ctx,
     path: string[],
+    typeArgs?: TypeArgs,
 ): MatchError | true => {
-    const first = _matchesType(candidate, expected, ctx, path);
+    const first = _matchesType(candidate, expected, ctx, path, typeArgs);
     if (first === true) {
         return true;
     }
     const isLoopRelated =
         first.type === 'invalid type' &&
         (isLoopy(first.expected) || isLoopy(first.found));
-    let ca = applyAndResolve(candidate, ctx, path, isLoopRelated);
-    let ce = applyAndResolve(expected, ctx, path, isLoopRelated);
+    let ca = applyAndResolve(candidate, ctx, path, isLoopRelated, typeArgs);
+    let ce = applyAndResolve(expected, ctx, path, isLoopRelated, typeArgs);
     if (ca === candidate && ce === expected) {
         return first;
     }
@@ -67,7 +71,7 @@ export const _matchOrExpand = (
     if (ce.type === 'error') {
         return ce.error;
     }
-    return _matchesType(ca, ce, ctx, path);
+    return _matchesType(ca, ce, ctx, path, typeArgs);
 };
 
 export const _matchesType = (
@@ -75,9 +79,16 @@ export const _matchesType = (
     expected: Type,
     ctx: Ctx,
     path: string[],
+    typeArgs?: TypeArgs,
 ): MatchError | true => {
     if (path.length > 100) {
         throw new Error(`Deep recursion? Path length over 100`);
+    }
+    if (expected.type === 'local' && typeArgs) {
+        if (typeArgs[expected.sym] != null) {
+            typeArgs[expected.sym].push(candidate);
+            return true;
+        }
     }
     switch (candidate.type) {
         case 'string':
@@ -97,6 +108,7 @@ export const _matchesType = (
                                     ex.type,
                                     ctx,
                                     path.concat([i + '']),
+                                    typeArgs,
                                 ) === true,
                         )
                     ) {
@@ -128,6 +140,7 @@ export const _matchesType = (
                       expected.inner,
                       ctx,
                       path.concat(['loop']),
+                      typeArgs,
                   )
                 : inv(candidate, expected, path);
         case 'record': {
@@ -141,6 +154,7 @@ export const _matchesType = (
                             entry.value,
                             ctx,
                             path,
+                            typeArgs,
                         );
                         if (result !== true) {
                             return result;
@@ -220,6 +234,7 @@ export const _matchesType = (
                     expected.target,
                     ctx,
                     path.concat('target'),
+                    typeArgs,
                 );
                 if (target !== true) {
                     return target;
@@ -241,6 +256,7 @@ export const _matchesType = (
                         exp,
                         ctx,
                         path.concat([i + '']),
+                        typeArgs,
                     );
                     if (res !== true) {
                         return res;
@@ -270,6 +286,7 @@ export const _matchesType = (
                         expected.args[i],
                         ctx,
                         path.concat([i.toString()]),
+                        typeArgs,
                     );
                     if (res !== true) {
                         return res;
@@ -296,6 +313,7 @@ export const _matchesType = (
                         args[i],
                         ctx,
                         path.concat([i.toString()]),
+                        typeArgs,
                     );
                     if (res !== true) {
                         return res;
@@ -313,6 +331,7 @@ export const _matchesType = (
                         expected,
                         ctx,
                         path.concat([i.toString()]),
+                        typeArgs,
                     );
                     if (res !== true) {
                         return res;
@@ -364,6 +383,7 @@ export const _matchesType = (
                             map.map[key].args[i],
                             ctx,
                             path.concat([key]),
+                            typeArgs,
                         );
                         if (res !== true) {
                             return res;
@@ -390,6 +410,7 @@ export const _matchesType = (
                     exp.type,
                     ctx,
                     path.concat([i.toString()]),
+                    typeArgs,
                 );
                 if (res !== true) {
                     return res;
@@ -400,6 +421,7 @@ export const _matchesType = (
                 expected.body,
                 ctx,
                 path.concat(['body']),
+                typeArgs,
             );
         }
     }
@@ -418,6 +440,7 @@ export const applyAndResolve = (
     ctx: Ctx,
     path: string[],
     expandLoops?: boolean,
+    typeArgs?: TypeArgs,
 ): Type | { type: 'error'; error: MatchError } => {
     if (type.type === 'loop' && expandLoops) {
         return transformType(
@@ -480,6 +503,7 @@ export const applyAndResolve = (
             ctx,
             path.concat(['target']),
             expandLoops,
+            typeArgs,
         );
         if (inner.type === 'error') {
             return inner;
@@ -543,6 +567,7 @@ export const applyAndResolve = (
                         arg.bound!,
                         ctx,
                         path.concat([i.toString()]),
+                        typeArgs,
                     );
                     if (res !== true) {
                         error = res;
@@ -593,6 +618,7 @@ export const applyAndResolve = (
                     inner.args[i].bound!,
                     ctx,
                     path.concat([i.toString()]),
+                    typeArgs,
                 );
                 if (res !== true) {
                     return { type: 'error', error: res };
