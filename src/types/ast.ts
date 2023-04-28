@@ -174,6 +174,7 @@ export type Expr =
           name: string;
       }
     | Record;
+
 export type Record = {
     type: 'record';
     entries: { name: string; value: Expr }[];
