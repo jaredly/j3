@@ -54,7 +54,7 @@ export const errorToString = (
             )}\nFound: ${nodeToString(
                 nodeForType(error.found, hashNames),
                 hashNames,
-            )}`;
+            )}${error.path.length ? '\nPath: ' + error.path.join(' -> ') : ''}`;
     }
     return `Some error happened ${error.type} : ${JSON.stringify(
         error,

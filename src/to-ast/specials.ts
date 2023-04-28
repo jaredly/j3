@@ -227,7 +227,28 @@ export const specials: {
             return { type: 'unresolved', form, reason: 'need just 2 args' };
         }
         const [name, value] = contents;
-        if (name.type !== 'identifier') {
+        if (name.type === 'tapply' && name.target.type === 'identifier') {
+            const { args, inner } = processTypeArgs(
+                filterComments(name.values),
+                ctx,
+            );
+            const res: Type = {
+                type: 'tfn',
+                args,
+                form,
+                body: nodeToType(value, inner),
+            };
+            // const ann = getType(res, ctx) ?? undefined;
+            // ctx.results.display[name.loc] = {
+            //     style: { type: 'id', hash: form.loc, ann },
+            // };
+            return {
+                type: 'deftype',
+                name: name.target.text,
+                value: res,
+                form,
+            };
+        } else if (name.type !== 'identifier') {
             return {
                 type: 'unresolved',
                 reason: 'cant deftype not id ' + name.type,

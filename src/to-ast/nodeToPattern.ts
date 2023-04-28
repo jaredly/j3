@@ -306,7 +306,7 @@ export const nodeToPattern = (
                 } else if (res.type === 'union') {
                     const map = expandEnumItems(res.items, ctx, []);
                     if (map.type === 'error' || !map.map[text]) {
-                        console.log('nomap', map, text);
+                        // console.log('nomap', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = map.map[text].args;
