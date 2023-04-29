@@ -191,8 +191,10 @@ const idName = (item?: Map[0]) =>
 
 const tightFirsts: { [key: string]: number } = {
     fn: 2,
+    fnrec: 2,
     def: 2,
     defn: 3,
+    defnrec: 3,
     deftype: 2,
     switch: 2,
     let: 2,

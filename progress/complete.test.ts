@@ -184,6 +184,15 @@ Second type: 3.1
 (fnrec [x:int]:int (@recur 10))
 -> (fn [x:#:builtin:int] #:builtin:int)
 
+(defnrec fib [x:int]:int
+    (if (< x 1) 0
+        (+ (@recur (- 1 x)) (@recur (- 2 x)))))
+-> (fn [x:#:builtin:int] #:builtin:int)
+
+(defnrec fib<T> [x:T flag:bool]:int
+    (if flag 10 (@recur<T> x true)))
+-> (fn<T> [x:#5 flag:#:builtin:bool] #:builtin:int)
+
 `
     .trim()
     .split('\n\n');

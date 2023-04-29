@@ -1,5 +1,5 @@
 import { Node, NodeArray, NodeExtra } from '../types/cst';
-import { Expr, Pattern, Type } from '../types/ast';
+import { Expr, FnType, Pattern, Type } from '../types/ast';
 import objectHash from 'object-hash';
 import { any, Ctx, Local, Mod, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType, parseTypeArgs } from './nodeToType';
@@ -118,41 +118,23 @@ export const specials: {
         };
     },
     fnrec: (form, contents, ctx): Expr => {
+        const fail = (message: string): Expr => {
+            err(ctx.results.errors, form, { type: 'misc', message });
+            return { type: 'unresolved', form };
+        };
         if (contents.length < 1) {
-            err(ctx.results.errors, form, {
-                type: 'misc',
-                message: 'requires two arguments',
-            });
-            return { type: 'fn', args: [], body: [], ret: none, form };
+            return fail('requires two arguments');
         }
         let argNode = contents[0];
-        let ret: Type | null = null;
-        if (argNode.type === 'annot') {
-            ret = nodeToType(argNode.annot, ctx);
-            argNode = argNode.target;
+        if (argNode.type === 'array') {
+            processArgs(argNode, ctx);
+            return fail('fnrec requires return type annotation');
         }
-        if (argNode.type !== 'array' || contents.length < 1) {
-            err(ctx.results.errors, form, {
-                type: 'misc',
-                message: 'fn first item must be array',
-            });
-            return { type: 'fn', args: [], body: [nil], ret: none, form };
+        if (argNode.type !== 'annot' || argNode.target.type !== 'array') {
+            return fail('fnrec first item must be annotated array');
         }
-        var { inner, args } = processArgs(argNode, ctx);
-        if (!ret) {
-            err(ctx.results.errors, form, {
-                type: 'misc',
-                message: 'fnrec requires return type annotation',
-            });
-            return { type: 'fn', args: [], body: [], ret: none, form };
-        }
-        if (contents.length < 2) {
-            err(ctx.results.errors, form, {
-                type: 'misc',
-                message: 'no fn body',
-            });
-            return { type: 'fn', args, body: [nil], ret: ret ?? none, form };
-        }
+        const ret = nodeToType(argNode.annot, ctx);
+        const { inner, args } = processArgs(argNode.target, ctx);
         const ann: Type = {
             type: 'fn',
             args: args.map((arg) => ({
@@ -164,23 +146,15 @@ export const specials: {
             body: ret,
             form,
         };
+        const inner2 = {
+            ...inner,
+            local: { ...inner.local, loop: { sym: form.loc, type: ann } },
+        };
         return {
             type: 'loop',
             ann: ann,
             form,
-            inner: finishFn(
-                contents,
-                {
-                    ...inner,
-                    local: {
-                        ...inner.local,
-                        loop: { sym: form.loc, type: ann },
-                    },
-                },
-                ret,
-                form,
-                args,
-            ),
+            inner: finishFn(contents, inner2, ret, form, args),
         };
     },
     fn: (form, contents, ctx): Expr => {
@@ -200,7 +174,7 @@ export const specials: {
             });
             return { type: 'fn', args: [], body: [nil], ret: none, form };
         }
-        var { inner, args } = processArgs(argNode, ctx);
+        const { inner, args } = processArgs(argNode, ctx);
         if (contents.length < 2) {
             return { type: 'fn', args, body: [nil], ret: ret ?? none, form };
         }
@@ -278,6 +252,89 @@ export const specials: {
             value: vt,
             form,
         };
+    },
+    defnrec: (form, contents, ctx, firstLoc): Expr => {
+        const f = (msg: string) => fail(ctx, form, msg);
+        if (contents.length < 2) {
+            return f('defn needs a name and args and a body');
+        }
+        const [name, ...rest] = contents;
+        if (name.type === 'tapply' && name.target.type === 'identifier') {
+            const { args: targs, inner } = processTypeArgs(
+                filterComments(name.values),
+                ctx,
+            );
+            const [argNode, ...body] = rest;
+            if (argNode.type === 'array') {
+                processArgs(argNode, inner);
+                return f('defnrec must have annotated return type');
+            }
+            if (argNode.type !== 'annot' || argNode.target.type !== 'array') {
+                return f('invalid form. must be annotated args');
+            }
+            const ret = nodeToType(argNode.annot, inner);
+            const { inner: inner2, args } = processArgs(argNode.target, inner);
+            const ann: Type = {
+                type: 'tfn',
+                args: targs,
+                form,
+                body: {
+                    type: 'fn',
+                    form,
+                    args: args.map((arg) => ({
+                        type: arg.type,
+                        form: arg.form,
+                        name:
+                            arg.pattern.type === 'local'
+                                ? arg.pattern.name
+                                : void 0,
+                    })),
+                    body: ret,
+                },
+            };
+            const value: Expr = {
+                type: 'loop',
+                ann,
+                inner: {
+                    type: 'tfn',
+                    args: targs,
+                    form,
+                    body: {
+                        type: 'fn',
+                        args,
+                        form,
+                        ret,
+                        body: bodyMatch(
+                            body.map((node) =>
+                                nodeToExpr(node, {
+                                    ...inner2,
+                                    local: {
+                                        ...inner2.local,
+                                        loop: { sym: form.loc, type: ann },
+                                    },
+                                }),
+                            ),
+                            ret,
+                            ctx,
+                        ),
+                    },
+                },
+                form,
+            };
+            return { type: 'def', name: name.target.text, value, form, ann };
+        } else if (name.type !== 'identifier') {
+            return {
+                type: 'unresolved',
+                reason: 'cant defn not id ' + name.type,
+                form,
+            };
+        }
+        const value = specials.fnrec(form, rest, ctx, firstLoc);
+        const ann = getType(value, ctx) ?? undefined;
+        ctx.results.display[name.loc] = {
+            style: { type: 'id', hash: form.loc, ann },
+        };
+        return { type: 'def', name: name.text, value, form, ann };
     },
     defn: (form, contents, ctx, firstLoc): Expr => {
         if (contents.length < 2) {
@@ -617,4 +674,29 @@ export const inferLoopType = (form: Node, ctx: CstCtx): Type => {
         message: 'unable to infer loop type.',
     });
     return any;
+};
+
+export const fail = (ctx: CstCtx, form: Node, message: string): Expr => {
+    err(ctx.results.errors, form, {
+        type: 'misc',
+        message: 'defn needs a name and args and a body',
+    });
+    return { type: 'unresolved', form };
+};
+
+const bodyMatch = (body: Expr[], ret: Type, ctx: CstCtx) => {
+    if (body.length) {
+        const bodyRes = getType(body[body.length - 1], ctx);
+        if (bodyRes) {
+            if (ret) {
+                const match = _matchOrExpand(bodyRes, ret, ctx, []);
+                if (match !== true) {
+                    err(ctx.results.errors, ret.form, match);
+                }
+            } else {
+                ret = bodyRes;
+            }
+        }
+    }
+    return body;
 };

@@ -36,7 +36,7 @@ const nodeColor = (type: MNode['type'], text?: string | null) => {
 
 const columnRecords = true;
 
-const specials = ['defn', 'def', 'deftype', 'fn', 'match'];
+const specials = ['defn', 'def', 'deftype', 'fn', 'match', 'defnrec', 'fnrec'];
 
 export const colors: {
     [key: string]: string;

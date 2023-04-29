@@ -151,7 +151,7 @@ const _getType = (
                 if (report) {
                     err(report, expr, {
                         type: 'misc',
-                        message: `not a tfn`,
+                        message: `not a tfn: ` + target.type,
                     });
                 }
                 return;
