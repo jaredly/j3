@@ -30,12 +30,23 @@ export const errorToString = (
         case 'unparsed':
             return `Unparsed: ${nodeToString(error.form, hashNames)}`;
         case 'misc':
-            return error.message;
+            return (
+                error.message +
+                (error.typ
+                    ? ' ' +
+                      nodeToString(nodeForType(error.typ, hashNames), hashNames)
+                    : '')
+            );
         case 'case':
             return `unreachable case or something\nPattern type:${nodeToString(
                 nodeForType(error.pattern, hashNames),
                 hashNames,
             )}\nAvailable type:${nodeToString(
+                nodeForType(error.target, hashNames),
+                hashNames,
+            )}`;
+        case 'not a task':
+            return `Not a task: ${nodeToString(
                 nodeForType(error.target, hashNames),
                 hashNames,
             )}`;

@@ -24,6 +24,7 @@
 - [x] (def fib (@loop (fn [x:int] (if (< x 1) 0 (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
 - [x] defnrec, fnrec
 - [ ] expr array spread
+- [ ] type bounds need to inherit
 
 ## Task
 

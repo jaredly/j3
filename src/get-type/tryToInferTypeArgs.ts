@@ -3,9 +3,9 @@ import {
     TypeArgs,
     _matchOrExpand,
     _matchesType,
-    applyTypeVariables,
     matchesType,
 } from './matchesType';
+import { applyTypeVariables } from './applyAndResolve';
 import { Ctx } from '../to-ast/library';
 import { unifyManyTypes } from './patternType';
 import { Report } from './get-types-new';

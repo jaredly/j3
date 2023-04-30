@@ -1,7 +1,7 @@
 import { Node } from '../types/cst';
 import { LocalPattern, Pattern, Type } from '../types/ast';
 import { Ctx, Local, nilt } from './Ctx';
-import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
+import { applyAndResolve, expandEnumItems } from '../get-type/applyAndResolve';
 import { Report, recordMap } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';

@@ -11,7 +11,7 @@ export type MatchError =
           found: Type;
           path: string[];
       }
-    | { type: 'misc'; path: string[]; message: string; form: Node }
+    | { type: 'misc'; path: string[]; message: string; form: Node; typ?: Type }
     | {
           type: 'unification';
           path: string[];
@@ -53,9 +53,10 @@ export type Error =
           expected: FnType;
           received: number;
       }
+    | { type: 'not a task'; target: Type; form: Node }
     | { type: 'case'; pattern: Type; target: Type; form: Node }
     | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }
     | { type: 'unresolved'; form: Node; reason?: string }
     | { type: 'unparsed'; form: Node }
-    | { type: 'misc'; message: string };
+    | { type: 'misc'; message: string; typ?: Type };

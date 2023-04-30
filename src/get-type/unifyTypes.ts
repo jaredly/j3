@@ -3,7 +3,11 @@ import { RecordMap, recordMap } from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
-import { applyAndResolve, expandEnumItems, unifyEnumArgs } from './matchesType';
+import {
+    applyAndResolve,
+    expandEnumItems,
+    unifyEnumArgs,
+} from './applyAndResolve';
 import { Ctx, Env } from '../to-ast/library';
 
 export const unifyTypes = (

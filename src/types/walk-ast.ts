@@ -1,4 +1,4 @@
-import {Term, Expr, Type, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, Def, DefType, String, Pattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
+import {Term, Expr, Type, FnType, TfnType, TypeArg, TRecord, Shared, Number, NumberKind, Bool, Identifier, Local, Def, DefType, String, Pattern, LocalPattern, recordAccess, AttachedFile, Record, TVar, Loc, NodeArray, Node, Attachment, RichText, spread, accessText, tapply, stringText, CString, NodeExtra} from './ast';
 
 export type Visitor<Ctx> = {
     Term?: (node: Term, ctx: Ctx) => null | false | Term | [Term | null, Ctx],
@@ -9,6 +9,8 @@ export type Visitor<Ctx> = {
     BoolPost?: (node: Bool, ctx: Ctx) => null | Bool,
     Number?: (node: Number, ctx: Ctx) => null | false | Number | [Number | null, Ctx],
     NumberPost?: (node: Number, ctx: Ctx) => null | Number,
+    LocalPattern?: (node: LocalPattern, ctx: Ctx) => null | false | LocalPattern | [LocalPattern | null, Ctx],
+    LocalPatternPost?: (node: LocalPattern, ctx: Ctx) => null | LocalPattern,
     Pattern?: (node: Pattern, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
     PatternPost?: (node: Pattern, ctx: Ctx) => null | Pattern,
     String?: (node: String, ctx: Ctx) => null | false | String | [String | null, Ctx],
@@ -25,12 +27,18 @@ export type Visitor<Ctx> = {
     RecordPost?: (node: Record, ctx: Ctx) => null | Record,
     TVar?: (node: TVar, ctx: Ctx) => null | false | TVar | [TVar | null, Ctx],
     TVarPost?: (node: TVar, ctx: Ctx) => null | TVar,
+    Local?: (node: Local, ctx: Ctx) => null | false | Local | [Local | null, Ctx],
+    LocalPost?: (node: Local, ctx: Ctx) => null | Local,
     Identifier?: (node: Identifier, ctx: Ctx) => null | false | Identifier | [Identifier | null, Ctx],
     IdentifierPost?: (node: Identifier, ctx: Ctx) => null | Identifier,
     Shared?: (node: Shared, ctx: Ctx) => null | false | Shared | [Shared | null, Ctx],
     SharedPost?: (node: Shared, ctx: Ctx) => null | Shared,
     TypeArg?: (node: TypeArg, ctx: Ctx) => null | false | TypeArg | [TypeArg | null, Ctx],
     TypeArgPost?: (node: TypeArg, ctx: Ctx) => null | TypeArg,
+    FnType?: (node: FnType, ctx: Ctx) => null | false | FnType | [FnType | null, Ctx],
+    FnTypePost?: (node: FnType, ctx: Ctx) => null | FnType,
+    TfnType?: (node: TfnType, ctx: Ctx) => null | false | TfnType | [TfnType | null, Ctx],
+    TfnTypePost?: (node: TfnType, ctx: Ctx) => null | TfnType,
     Type?: (node: Type, ctx: Ctx) => null | false | Type | [Type | null, Ctx],
     TypePost?: (node: Type, ctx: Ctx) => null | Type,
     TRecord?: (node: TRecord, ctx: Ctx) => null | false | TRecord | [TRecord | null, Ctx],
@@ -57,6 +65,8 @@ export type Visitor<Ctx> = {
     CStringPost?: (node: CString, ctx: Ctx) => null | CString,
     NodeExtra?: (node: NodeExtra, ctx: Ctx) => null | false | NodeExtra | [NodeExtra | null, Ctx],
     NodeExtraPost?: (node: NodeExtra, ctx: Ctx) => null | NodeExtra,
+    Pattern_local?: (node: LocalPattern, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
+    PatternPost_local?: (node: LocalPattern, ctx: Ctx) => null | Pattern,
     Pattern_number?: (node: Number, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
     PatternPost_number?: (node: Number, ctx: Ctx) => null | Pattern,
     Pattern_bool?: (node: Bool, ctx: Ctx) => null | false | Pattern | [Pattern | null, Ctx],
@@ -69,15 +79,96 @@ export type Visitor<Ctx> = {
     ExprPost_string?: (node: String, ctx: Ctx) => null | Expr,
     Expr_recordAccess?: (node: recordAccess, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_recordAccess?: (node: recordAccess, ctx: Ctx) => null | Expr,
+    Expr_spread?: (node: spread, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
+    ExprPost_spread?: (node: spread, ctx: Ctx) => null | Expr,
     Expr_record?: (node: Record, ctx: Ctx) => null | false | Expr | [Expr | null, Ctx],
     ExprPost_record?: (node: Record, ctx: Ctx) => null | Expr,
+    Identifier_local?: (node: Local, ctx: Ctx) => null | false | Identifier | [Identifier | null, Ctx],
+    IdentifierPost_local?: (node: Local, ctx: Ctx) => null | Identifier,
     Shared_number?: (node: Number, ctx: Ctx) => null | false | Shared | [Shared | null, Ctx],
     SharedPost_number?: (node: Number, ctx: Ctx) => null | Shared,
     Shared_bool?: (node: Bool, ctx: Ctx) => null | false | Shared | [Shared | null, Ctx],
     SharedPost_bool?: (node: Bool, ctx: Ctx) => null | Shared,
+    Type_fn?: (node: FnType, ctx: Ctx) => null | false | Type | [Type | null, Ctx],
+    TypePost_fn?: (node: FnType, ctx: Ctx) => null | Type,
+    Type_tfn?: (node: TfnType, ctx: Ctx) => null | false | Type | [Type | null, Ctx],
+    TypePost_tfn?: (node: TfnType, ctx: Ctx) => null | Type,
     Type_record?: (node: TRecord, ctx: Ctx) => null | false | Type | [Type | null, Ctx],
     TypePost_record?: (node: TRecord, ctx: Ctx) => null | Type
 }
+export const transformFnType = <Ctx>(node: FnType, visitor: Visitor<Ctx>, ctx: Ctx): FnType => {
+        if (!node) {
+            throw new Error('No FnType provided');
+        }
+        
+        const transformed = visitor.FnType ? visitor.FnType(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        
+            let updatedNode = node;
+            {
+                let changed1 = false;
+                
+                let updatedNode$args = node.args;
+                {
+                    let changed2 = false;
+                    const arr1 = node.args.map((updatedNode$args$item1) => {
+                        
+            let result = updatedNode$args$item1;
+            {
+                let changed3 = false;
+                
+                const result$type = transformType(updatedNode$args$item1.type, visitor, ctx);
+                changed3 = changed3 || result$type !== updatedNode$args$item1.type;
+                if (changed3) {
+                    result =  {...result, type: result$type};
+                    changed2 = true;
+                }
+            }
+            
+                        return result
+                    })
+                    if (changed2) {
+                        updatedNode$args = arr1;
+                        changed1 = true;
+                    }
+                }
+                
+
+                
+                const updatedNode$body = transformType(node.body, visitor, ctx);
+                changed1 = changed1 || updatedNode$body !== node.body;
+                if (changed1) {
+                    updatedNode =  {...updatedNode, args: updatedNode$args, body: updatedNode$body};
+                    changed0 = true;
+                }
+            }
+            
+        
+        node = updatedNode;
+        if (visitor.FnTypePost) {
+            const transformed = visitor.FnTypePost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformTypeArg = <Ctx>(node: TypeArg, visitor: Visitor<Ctx>, ctx: Ctx): TypeArg => {
         if (!node) {
             throw new Error('No TypeArg provided');
@@ -123,6 +214,69 @@ export const transformTypeArg = <Ctx>(node: TypeArg, visitor: Visitor<Ctx>, ctx:
         node = updatedNode;
         if (visitor.TypeArgPost) {
             const transformed = visitor.TypeArgPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
+export const transformTfnType = <Ctx>(node: TfnType, visitor: Visitor<Ctx>, ctx: Ctx): TfnType => {
+        if (!node) {
+            throw new Error('No TfnType provided');
+        }
+        
+        const transformed = visitor.TfnType ? visitor.TfnType(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        
+            let updatedNode = node;
+            {
+                let changed1 = false;
+                
+                let updatedNode$args = node.args;
+                {
+                    let changed2 = false;
+                    const arr1 = node.args.map((updatedNode$args$item1) => {
+                        
+                const result = transformTypeArg(updatedNode$args$item1, visitor, ctx);
+                changed2 = changed2 || result !== updatedNode$args$item1;
+                        return result
+                    })
+                    if (changed2) {
+                        updatedNode$args = arr1;
+                        changed1 = true;
+                    }
+                }
+                
+
+                
+                const updatedNode$body = transformType(node.body, visitor, ctx);
+                changed1 = changed1 || updatedNode$body !== node.body;
+                if (changed1) {
+                    updatedNode =  {...updatedNode, args: updatedNode$args, body: updatedNode$body};
+                    changed0 = true;
+                }
+            }
+            
+        
+        node = updatedNode;
+        if (visitor.TfnTypePost) {
+            const transformed = visitor.TfnTypePost(node, ctx);
             if (transformed != null) {
                 node = transformed;
             }
@@ -342,6 +496,40 @@ export const transformBool = <Ctx>(node: Bool, visitor: Visitor<Ctx>, ctx: Ctx):
         
     }
 
+export const transformLocal = <Ctx>(node: Local, visitor: Visitor<Ctx>, ctx: Ctx): Local => {
+        if (!node) {
+            throw new Error('No Local provided');
+        }
+        
+        const transformed = visitor.Local ? visitor.Local(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.LocalPost) {
+            const transformed = visitor.LocalPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformIdentifier = <Ctx>(node: Identifier, visitor: Visitor<Ctx>, ctx: Ctx): Identifier => {
         if (!node) {
             throw new Error('No Identifier provided');
@@ -512,6 +700,40 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
         let changed0 = false;
         
         switch (node.type) {
+            case 'fn': {
+                            const transformed = visitor.Type_fn ? visitor.Type_fn(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
+            case 'tfn': {
+                            const transformed = visitor.Type_tfn ? visitor.Type_tfn(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
             case 'record': {
                             const transformed = visitor.Type_record ? visitor.Type_record(node, ctx) : null;
                             if (transformed != null) {
@@ -699,88 +921,16 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
                 }
 
             case 'fn': {
-                    const updatedNode$0specified = node;
-                    let changed1 = false;
-                    
-            let updatedNode$0node = updatedNode$0specified;
-            {
-                let changed2 = false;
-                
-                let updatedNode$0node$args = updatedNode$0specified.args;
-                {
-                    let changed3 = false;
-                    const arr2 = updatedNode$0specified.args.map((updatedNode$0node$args$item2) => {
-                        
-            let result = updatedNode$0node$args$item2;
-            {
-                let changed4 = false;
-                
-                const result$type = transformType(updatedNode$0node$args$item2.type, visitor, ctx);
-                changed4 = changed4 || result$type !== updatedNode$0node$args$item2.type;
-                if (changed4) {
-                    result =  {...result, type: result$type};
-                    changed3 = true;
-                }
-            }
-            
-                        return result
-                    })
-                    if (changed3) {
-                        updatedNode$0node$args = arr2;
-                        changed2 = true;
+                        updatedNode = transformFnType(node, visitor, ctx);
+                        changed0 = changed0 || updatedNode !== node;
+                        break;
                     }
-                }
-                
-
-                
-                const updatedNode$0node$body = transformType(updatedNode$0specified.body, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$body !== updatedNode$0specified.body;
-                if (changed2) {
-                    updatedNode$0node =  {...updatedNode$0node, args: updatedNode$0node$args, body: updatedNode$0node$body};
-                    changed1 = true;
-                }
-            }
-            
-                    updatedNode = updatedNode$0node;
-                    break;
-                }
 
             case 'tfn': {
-                    const updatedNode$0specified = node;
-                    let changed1 = false;
-                    
-            let updatedNode$0node = updatedNode$0specified;
-            {
-                let changed2 = false;
-                
-                let updatedNode$0node$args = updatedNode$0specified.args;
-                {
-                    let changed3 = false;
-                    const arr2 = updatedNode$0specified.args.map((updatedNode$0node$args$item2) => {
-                        
-                const result = transformTypeArg(updatedNode$0node$args$item2, visitor, ctx);
-                changed3 = changed3 || result !== updatedNode$0node$args$item2;
-                        return result
-                    })
-                    if (changed3) {
-                        updatedNode$0node$args = arr2;
-                        changed2 = true;
+                        updatedNode = transformTfnType(node, visitor, ctx);
+                        changed0 = changed0 || updatedNode !== node;
+                        break;
                     }
-                }
-                
-
-                
-                const updatedNode$0node$body = transformType(updatedNode$0specified.body, visitor, ctx);
-                changed2 = changed2 || updatedNode$0node$body !== updatedNode$0specified.body;
-                if (changed2) {
-                    updatedNode$0node =  {...updatedNode$0node, args: updatedNode$0node$args, body: updatedNode$0node$body};
-                    changed1 = true;
-                }
-            }
-            
-                    updatedNode = updatedNode$0node;
-                    break;
-                }
 
             case 'union': {
                     const updatedNode$0specified = node;
@@ -831,6 +981,22 @@ export const transformType = <Ctx>(node: Type, visitor: Visitor<Ctx>, ctx: Ctx):
         }
 
 switch (updatedNode.type) {
+            case 'fn': {
+                            const transformed = visitor.TypePost_fn ? visitor.TypePost_fn(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
+            case 'tfn': {
+                            const transformed = visitor.TypePost_tfn ? visitor.TypePost_tfn(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
             case 'record': {
                             const transformed = visitor.TypePost_record ? visitor.TypePost_record(updatedNode, ctx) : null;
                             if (transformed != null) {
@@ -1012,6 +1178,40 @@ export const transformString = <Ctx>(node: String, visitor: Visitor<Ctx>, ctx: C
         
     }
 
+export const transformLocalPattern = <Ctx>(node: LocalPattern, visitor: Visitor<Ctx>, ctx: Ctx): LocalPattern => {
+        if (!node) {
+            throw new Error('No LocalPattern provided');
+        }
+        
+        const transformed = visitor.LocalPattern ? visitor.LocalPattern(node, ctx) : null;
+        if (transformed === false) {
+            return node;
+        }
+        if (transformed != null) {
+            if (Array.isArray(transformed)) {
+                ctx = transformed[1];
+                if (transformed[0] != null) {
+                    node = transformed[0];
+                }
+            } else {
+                node = transformed;
+            }
+        }
+        
+        let changed0 = false;
+        const updatedNode = node;
+        
+        node = updatedNode;
+        if (visitor.LocalPatternPost) {
+            const transformed = visitor.LocalPatternPost(node, ctx);
+            if (transformed != null) {
+                node = transformed;
+            }
+        }
+        return node;
+        
+    }
+
 export const transformPattern = <Ctx>(node: Pattern, visitor: Visitor<Ctx>, ctx: Ctx): Pattern => {
         if (!node) {
             throw new Error('No Pattern provided');
@@ -1035,6 +1235,23 @@ export const transformPattern = <Ctx>(node: Pattern, visitor: Visitor<Ctx>, ctx:
         let changed0 = false;
         
         switch (node.type) {
+            case 'local': {
+                            const transformed = visitor.Pattern_local ? visitor.Pattern_local(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
             case 'number': {
                             const transformed = visitor.Pattern_number ? visitor.Pattern_number(node, ctx) : null;
                             if (transformed != null) {
@@ -1073,7 +1290,11 @@ export const transformPattern = <Ctx>(node: Pattern, visitor: Visitor<Ctx>, ctx:
         let updatedNode = node;
 
         switch (node.type) {
-            case 'local': break;
+            case 'local': {
+                        updatedNode = transformLocalPattern(node, visitor, ctx);
+                        changed0 = changed0 || updatedNode !== node;
+                        break;
+                    }
 
             case 'number': {
                         updatedNode = transformNumber(node, visitor, ctx);
@@ -1086,6 +1307,84 @@ export const transformPattern = <Ctx>(node: Pattern, visitor: Visitor<Ctx>, ctx:
                         changed0 = changed0 || updatedNode !== node;
                         break;
                     }
+
+            case 'array': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                let updatedNode$0node$left = updatedNode$0specified.left;
+                {
+                    let changed3 = false;
+                    const arr2 = updatedNode$0specified.left.map((updatedNode$0node$left$item2) => {
+                        
+                const result = transformPattern(updatedNode$0node$left$item2, visitor, ctx);
+                changed3 = changed3 || result !== updatedNode$0node$left$item2;
+                        return result
+                    })
+                    if (changed3) {
+                        updatedNode$0node$left = arr2;
+                        changed2 = true;
+                    }
+                }
+                
+
+                
+        let updatedNode$0node$right = null;
+        const updatedNode$0node$right$current = updatedNode$0specified.right;
+        if (updatedNode$0node$right$current != null) {
+            
+            let updatedNode$0node$right$2$ = updatedNode$0node$right$current;
+            {
+                let changed3 = false;
+                
+        let updatedNode$0node$right$2$$spread = undefined;
+        const updatedNode$0node$right$2$$spread$current = updatedNode$0node$right$current.spread;
+        if (updatedNode$0node$right$2$$spread$current != null) {
+            
+                const updatedNode$0node$right$2$$spread$3$ = transformLocalPattern(updatedNode$0node$right$2$$spread$current, visitor, ctx);
+                changed3 = changed3 || updatedNode$0node$right$2$$spread$3$ !== updatedNode$0node$right$2$$spread$current;
+            updatedNode$0node$right$2$$spread = updatedNode$0node$right$2$$spread$3$;
+        }
+        
+
+                
+                let updatedNode$0node$right$2$$items = updatedNode$0node$right$current.items;
+                {
+                    let changed4 = false;
+                    const arr3 = updatedNode$0node$right$current.items.map((updatedNode$0node$right$2$$items$item3) => {
+                        
+                const result = transformPattern(updatedNode$0node$right$2$$items$item3, visitor, ctx);
+                changed4 = changed4 || result !== updatedNode$0node$right$2$$items$item3;
+                        return result
+                    })
+                    if (changed4) {
+                        updatedNode$0node$right$2$$items = arr3;
+                        changed3 = true;
+                    }
+                }
+                
+                if (changed3) {
+                    updatedNode$0node$right$2$ =  {...updatedNode$0node$right$2$, spread: updatedNode$0node$right$2$$spread, items: updatedNode$0node$right$2$$items};
+                    changed2 = true;
+                }
+            }
+            
+            updatedNode$0node$right = updatedNode$0node$right$2$;
+        }
+        
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, left: updatedNode$0node$left, right: updatedNode$0node$right};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
 
             case 'record': {
                     const updatedNode$0specified = node;
@@ -1167,6 +1466,14 @@ export const transformPattern = <Ctx>(node: Pattern, visitor: Visitor<Ctx>, ctx:
         }
 
 switch (updatedNode.type) {
+            case 'local': {
+                            const transformed = visitor.PatternPost_local ? visitor.PatternPost_local(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
             case 'number': {
                             const transformed = visitor.PatternPost_number ? visitor.PatternPost_number(updatedNode, ctx) : null;
                             if (transformed != null) {
@@ -1444,6 +1751,23 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
 
             case 'recordAccess': {
                             const transformed = visitor.Expr_recordAccess ? visitor.Expr_recordAccess(node, ctx) : null;
+                            if (transformed != null) {
+                                if (Array.isArray(transformed)) {
+                                    ctx = transformed[1];
+                                    if (transformed[0] != null) {
+                                        node = transformed[0];
+                                    }
+                                } else if (transformed == false) {
+                                    return node
+                                } else  {
+                                    node = transformed;
+                                }
+                            }
+                            break
+                        }
+
+            case 'spread': {
+                            const transformed = visitor.Expr_spread ? visitor.Expr_spread(node, ctx) : null;
                             if (transformed != null) {
                                 if (Array.isArray(transformed)) {
                                     ctx = transformed[1];
@@ -1808,6 +2132,26 @@ export const transformExpr = <Ctx>(node: Expr, visitor: Visitor<Ctx>, ctx: Ctx):
                     break;
                 }
 
+            case 'spread': {
+                    const updatedNode$0specified = node;
+                    let changed1 = false;
+                    
+            let updatedNode$0node = updatedNode$0specified;
+            {
+                let changed2 = false;
+                
+                const updatedNode$0node$contents = transformExpr(updatedNode$0specified.contents, visitor, ctx);
+                changed2 = changed2 || updatedNode$0node$contents !== updatedNode$0specified.contents;
+                if (changed2) {
+                    updatedNode$0node =  {...updatedNode$0node, contents: updatedNode$0node$contents};
+                    changed1 = true;
+                }
+            }
+            
+                    updatedNode = updatedNode$0node;
+                    break;
+                }
+
             case 'type-apply': {
                     const updatedNode$0specified = node;
                     let changed1 = false;
@@ -2100,6 +2444,14 @@ switch (updatedNode.type) {
 
             case 'recordAccess': {
                             const transformed = visitor.ExprPost_recordAccess ? visitor.ExprPost_recordAccess(updatedNode, ctx) : null;
+                            if (transformed != null) {
+                                updatedNode = transformed;
+                            }
+                            break
+                        }
+
+            case 'spread': {
+                            const transformed = visitor.ExprPost_spread ? visitor.ExprPost_spread(updatedNode, ctx) : null;
                             if (transformed != null) {
                                 updatedNode = transformed;
                             }

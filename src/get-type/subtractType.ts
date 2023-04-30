@@ -2,7 +2,8 @@ import { Ctx } from '../to-ast/Ctx';
 import { CstCtx } from '../to-ast/library';
 import { Type } from '../types/ast';
 import { Error } from '../types/types';
-import { applyAndResolve, inv } from './matchesType';
+import { inv } from './matchesType';
+import { applyAndResolve } from './applyAndResolve';
 
 export const subtractType = (
     outerR: Type,

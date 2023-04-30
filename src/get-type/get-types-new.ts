@@ -1,12 +1,12 @@
 import { blank, nilt } from '../to-ast/Ctx';
 import { any, fileLazy, imageFileLazy, none } from '../to-ast/builtins';
-import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
+import { Expr, Local, Node, Pattern, TRecord, Type } from '../types/ast';
+import { matchesType } from './matchesType';
 import {
     applyAndResolve,
     applyTypeVariables,
     expandEnumItems,
-    matchesType,
-} from './matchesType';
+} from './applyAndResolve';
 import type { Error, MatchError } from '../types/types';
 import { _unifyTypes, unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
@@ -72,6 +72,15 @@ const _getType = (
     effects?: TaskType['effects'],
 ): Type | void => {
     switch (expr.type) {
+        case 'spread': {
+            if (report) {
+                err(report, expr, {
+                    type: 'misc',
+                    message: 'unknown spread',
+                });
+            }
+            return nilt;
+        }
         case 'builtin': {
             const bin = ctx.global.builtins[expr.name];
             return bin?.type === 'term' ? bin.ann : void 0;
@@ -662,8 +671,9 @@ const _getType = (
             if (!taskType) {
                 return report
                     ? errf(report, expr.form, {
-                          type: 'misc',
-                          message: 'body of task throw not a valid task type',
+                          type: 'not a task',
+                          target: inner,
+                          form: expr.form,
                       })
                     : void 0;
             }
@@ -803,6 +813,7 @@ export const getPatternTypes = (
 
 export type TaskType = {
     effects: { [key: string]: { input: Type; output: Type | null } };
+    locals: Local[];
     result: Type;
 };
 
@@ -865,10 +876,17 @@ export const mergeTaskTypes = (
         }
     });
 
+    const locals: Local[] = [...one.locals];
+    two.locals.forEach((l) => {
+        if (!locals.some((loc) => loc.sym === l.sym)) {
+            locals.push(l);
+        }
+    });
+
     if (failed) {
         return null;
     }
-    return { effects: merged, result };
+    return { effects: merged, result, locals };
 };
 
 export const isNilT = (t: Type) =>

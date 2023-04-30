@@ -1,6 +1,6 @@
 import { none } from '../to-ast/builtins';
-import { Node, Type } from '../types/ast';
-import { expandEnumItems } from './matchesType';
+import { Local, Node, Type } from '../types/ast';
+import { expandEnumItems } from './applyAndResolve';
 import { Ctx } from '../to-ast/library';
 import {
     Report,
@@ -15,7 +15,29 @@ export const asTaskType = (
     ctx: Ctx,
     report: Report,
 ): null | TaskType => {
+    if (t.type === 'task') {
+        const inner = asTaskType(t.effects, ctx, report);
+        if (!inner) {
+            errf(report, t.form, {
+                type: 'misc',
+                message: 'cannot interpret task type',
+                typ: t.effects,
+            });
+            return null;
+        }
+        return mergeTaskTypes(
+            {
+                effects: {},
+                locals: [],
+                result: t.result,
+            },
+            inner,
+            ctx,
+            report,
+        );
+    }
     let expanded: { [key: string]: { args: Type[]; form: Node } };
+    let locals: Local[] = [];
     if (t.type === 'tag') {
         expanded = { [t.name]: { args: t.args, form: t.form } };
     } else if (t.type === 'union') {
@@ -25,10 +47,23 @@ export const asTaskType = (
             return null;
         }
         expanded = ex.map;
+    } else if (t.type === 'local') {
+        const bound = ctx.results.localMap.types[t.sym].bound;
+        if (bound?.type !== 'union') {
+            errf(report, t.form, {
+                type: 'misc',
+                message: 'local bound must be a union',
+                form: t.form,
+            });
+            return null;
+        }
+        locals.push(t);
+        expanded = {};
     } else {
         errf(report, t.form, {
             type: 'misc',
             message: 'Task type must be a union',
+            typ: t,
             form: t.form,
         });
         return null;
@@ -50,7 +85,7 @@ export const asTaskType = (
                 failed = true;
                 return;
             }
-            ot = { effects: {}, result: v.args[0] };
+            ot = { effects: {}, result: v.args[0], locals };
         } else {
             if (v.args.length !== 2) {
                 errf(report, v.form, {
@@ -67,6 +102,7 @@ export const asTaskType = (
                 ot = {
                     effects: { [k]: { input, output: null } },
                     result: none,
+                    locals,
                 };
             } else {
                 if (output.type !== 'fn') {
@@ -91,6 +127,7 @@ export const asTaskType = (
                 ot = {
                     effects: { [k]: { input, output: output.args[0].type } },
                     result: none,
+                    locals,
                 };
 
                 // output.body is the @recur here??? Should we evaluate it too? Or do we run the risk of an infinite loop?
@@ -136,6 +173,9 @@ export const asTaskType = (
 
     if (failed) {
         return null;
+    }
+    if (!tt && locals.length) {
+        return { effects: {}, locals, result: none };
     }
     return tt;
 };

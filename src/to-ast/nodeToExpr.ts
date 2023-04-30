@@ -5,7 +5,7 @@ import { resolveExpr } from './resolveExpr';
 import { AutoCompleteResult, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
-import { applyAndResolve } from '../get-type/matchesType';
+import { applyAndResolve } from '../get-type/applyAndResolve';
 import { nodeToType, parseTypeArgs } from './nodeToType';
 import { populateAutocomplete } from './populateAutocomplete';
 import { CstCtx, Ctx } from './library';
@@ -157,6 +157,14 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             return {
                 type: 'array',
                 values: values.map((child) => nodeToExpr(child, ctx)),
+                form,
+            };
+        }
+
+        case 'spread': {
+            return {
+                type: 'spread',
+                contents: nodeToExpr(form.contents, ctx),
                 form,
             };
         }

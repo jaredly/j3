@@ -2,7 +2,7 @@ import { Ctx } from '../to-ast/library';
 import type { Expr, Loc, Type } from '../types/ast';
 import type { Error, MatchError } from '../types/types';
 import type { Report } from './get-types-new';
-import { applyAndResolve, expandEnumItems } from './matchesType';
+import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 
 const err = (
     errors: Report['errors'],
@@ -148,6 +148,8 @@ export const validateExpr = (
             return;
         case 'tfn':
             return validateExpr(expr.body, ctx, errors);
+        case 'spread':
+            return validateExpr(expr.contents, ctx, errors);
         case 'loop':
             validateType(expr.ann, ctx, errors);
             return validateExpr(expr.inner, ctx, errors);

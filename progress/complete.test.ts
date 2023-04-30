@@ -193,8 +193,8 @@ Second type: 3.1
     (if flag 10 (@recur<T> x true)))
 -> (fn<T> [x:#5 flag:#:builtin:bool] #:builtin:int)
 
-(let [x (fn<X:int> [] 10) y (fn<X:int> [] (x<X>))] 10)
--> #:builtin:int
+(let [x (fn<X:int> [] 10) y (fn<X:int> [] (x<X>))] y)
+-> (fn<X:#:builtin:int> [] 10)
 `
     .trim()
     .split('\n\n');

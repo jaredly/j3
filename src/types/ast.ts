@@ -10,7 +10,7 @@ export type {
     NodeExtra,
     NodeArray,
     accessText,
-    spread,
+    // spread,
     RichText,
     Attachment,
     AttachedFile,
@@ -22,6 +22,12 @@ export type Term = {
 };
 
 export type NumberKind = 'int' | 'uint' | 'float';
+
+export type spread = {
+    type: 'spread';
+    contents: Expr;
+    form: Node;
+};
 
 export type Bool = {
     type: 'bool';
@@ -141,6 +147,7 @@ export type Expr =
           form: Node;
       }
     | { type: 'array'; values: Expr[]; form: Node }
+    | { type: 'spread'; contents: Expr; form: Node }
     | {
           type: 'type-apply';
           target: Expr;
@@ -189,10 +196,16 @@ export type TVar = {
     form: Node;
 };
 
+export type Local = {
+    type: 'local';
+    sym: number;
+    form: Node;
+};
+
 export type Identifier =
     | { type: 'global'; hash: string; form: Node }
     | { type: 'toplevel'; hash: number; form: Node }
-    | { type: 'local'; sym: number; form: Node };
+    | Local;
 
 export type Shared =
     | Identifier
