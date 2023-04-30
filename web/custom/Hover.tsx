@@ -44,7 +44,7 @@ export const Hover = ({
         const style = state.ctx.results.display[last]?.style;
         if (
             (style?.type === 'id' ||
-                // style?.type === 'id-decl' ||
+                style?.type === 'id-decl' ||
                 style?.type === 'tag') &&
             style.ann
         ) {

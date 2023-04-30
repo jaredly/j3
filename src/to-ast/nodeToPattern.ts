@@ -71,41 +71,14 @@ export const nodeToPattern = (
                     }
                 }
             });
-            return {
-                type: 'array',
-                left,
-                right,
-                form,
-            };
+            return { type: 'array', left, right, form };
         }
         case 'identifier': {
-            let sym;
-            // if (!form.hash) {
-            //     sym = nextSym(ctx);
-            //     addMod(ctx, form.loc, { type: 'hash', hash: `:${sym}` });
-            // } else {
-            //     sym = +form.hash.slice(1);
-            //     if (isNaN(sym)) {
-            //         throw new Error(`non-number sym? ${form.hash}`);
-            //     }
-            // }
             ctx.results.display[form.loc] = {
-                style: {
-                    type: 'id-decl',
-                    hash: form.loc,
-                },
+                style: { type: 'id-decl', hash: form.loc, ann: t },
             };
-            bindings.push({
-                name: form.text,
-                sym: form.loc,
-                type: t,
-            });
-            return {
-                type: 'local',
-                sym: form.loc,
-                name: form.text,
-                form,
-            };
+            bindings.push({ name: form.text, sym: form.loc, type: t });
+            return { type: 'local', sym: form.loc, name: form.text, form };
         }
         case 'record': {
             const values = filterComments(form.values);

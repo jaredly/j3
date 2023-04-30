@@ -86,13 +86,9 @@ export type NodeStyle =
     | { type: 'let-pairs' }
     | { type: 'unresolved' }
     | { type: 'number'; kind: NumberKind }
-    | { type: 'id-decl'; hash: string | number }
+    | { type: 'id-decl'; hash: string | number; ann?: Type }
     | { type: 'tag'; ann?: Type }
-    | {
-          type: 'id';
-          hash: string | number;
-          ann?: Type;
-      };
+    | { type: 'id'; hash: string | number; ann?: Type };
 
 export const emptyLocal: Local = { terms: [], types: [] };
 

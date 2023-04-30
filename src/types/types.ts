@@ -1,7 +1,7 @@
 // Yeah
 
 import { FnType, Type } from './ast';
-import { Loc, Node } from './cst';
+import { Node } from './cst';
 
 export type MatchError =
     | {

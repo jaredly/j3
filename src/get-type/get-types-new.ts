@@ -14,6 +14,7 @@ import { Ctx, Env } from '../to-ast/library';
 import { asTaskType } from './asTaskType';
 import { ensure } from '../to-ast/nodeToExpr';
 import { tryToInferTypeArgs } from './tryToInferTypeArgs';
+import { getArrayItemType } from '../to-ast/nodeToPattern';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
 // TODO: do we want to error report here?
@@ -409,6 +410,40 @@ const _getType = (
             // like, this is a type that unifies with everything.
             let failed = false;
             for (let value of expr.values) {
+                if (value.type === 'spread') {
+                    const st = getType(value.contents, ctx, report, effects);
+                    if (st) {
+                        const item = getArrayItemType(st);
+                        if (!item) {
+                            if (report) {
+                                err(report, expr, {
+                                    type: 'misc',
+                                    message: 'spread item must be array type',
+                                    typ: st,
+                                });
+                            }
+                            failed = true;
+                        } else {
+                            if (res) {
+                                res = unifyTypes(
+                                    res,
+                                    item,
+                                    ctx,
+                                    expr.form,
+                                    report,
+                                );
+                                if (!res) {
+                                    failed = true;
+                                }
+                            } else {
+                                res = item;
+                            }
+                        }
+                    } else {
+                        failed = true;
+                    }
+                    continue;
+                }
                 const type = getType(value, ctx, report, effects);
                 if (type) {
                     if (res) {
