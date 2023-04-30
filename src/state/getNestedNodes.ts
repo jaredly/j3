@@ -9,7 +9,11 @@ export const stringPunct = 'yellow';
 
 export type NNode =
     | { type: 'horiz' | 'vert' | 'inline'; children: NNode[] }
-    | { type: 'pairs'; children: ([NNode] | [NNode, NNode])[] }
+    | {
+          type: 'pairs';
+          firstLine: NNode[];
+          children: ([NNode] | [NNode, NNode])[];
+      }
     | { type: 'indent'; child: NNode }
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
@@ -27,7 +31,13 @@ export const unnestNodes = (node: NNode): ONode[] => {
         case 'inline':
             return node.children.flatMap(unnestNodes);
         case 'pairs':
-            return node.children.flatMap((nodes) => nodes.flatMap(unnestNodes));
+            return node.firstLine
+                .flatMap(unnestNodes)
+                .concat(
+                    node.children.flatMap((nodes) =>
+                        nodes.flatMap(unnestNodes),
+                    ),
+                );
         case 'indent':
             return unnestNodes(node.child);
         case 'punct':
@@ -406,8 +416,26 @@ const recordPairs = (nodes: number[], layout?: Layout): NNode => {
     if (!nodes.length) {
         return { type: 'blinker', loc: 'inside' };
     }
+    const firstLine: NNode[] = [];
     const pairs: ([NNode] | [NNode, NNode])[] = [];
     for (let i = 0; i < nodes.length; ) {
+        if (
+            layout?.type === 'multiline' &&
+            layout.tightFirst > 0 &&
+            i < layout.tightFirst
+        ) {
+            firstLine.push({
+                type: 'ref',
+                id: nodes[i],
+                path: { type: 'child', at: i },
+            });
+            if (i < layout.tightFirst - 1) {
+                firstLine.push({ type: 'punct', text: ' ', color: 'white' });
+            }
+
+            i++;
+            continue;
+        }
         // if this is a single-line thing, +=1, otherwise +=2
         if (i < nodes.length - 1) {
             pairs.push([
@@ -426,5 +454,5 @@ const recordPairs = (nodes: number[], layout?: Layout): NNode => {
             i += 1;
         }
     }
-    return { type: 'pairs', children: pairs };
+    return { type: 'pairs', firstLine, children: pairs };
 };

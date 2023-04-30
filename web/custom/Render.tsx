@@ -363,6 +363,8 @@ export const RenderNNode = (
                 />
             );
         case 'pairs':
+            const oneColor = 'transparent';
+            const twoColor = 'rgba(100,100,100,0.1)';
             if (!columnRecords) {
                 return (
                     <span
@@ -370,17 +372,33 @@ export const RenderNNode = (
                             display: 'flex',
                             flexWrap: 'nowrap',
                             flexDirection: 'column',
-                            gap: '0 8px',
+                            // gap: '0 8px',
                         }}
                         onMouseEnter={() => dispatch({ type: 'hover', path })}
                     >
+                        {nnode.firstLine.map((node, i) => (
+                            <RenderNNode {...props} nnode={node} key={i} />
+                        ))}
                         {nnode.children.map((pair, i) =>
                             pair.length === 1 ? (
-                                <div key={i} style={{ gridColumn: '1/2' }}>
+                                <div
+                                    key={i}
+                                    style={{
+                                        gridColumn: '1/2',
+                                        backgroundColor:
+                                            i % 2 == 0 ? oneColor : twoColor,
+                                    }}
+                                >
                                     <RenderNNode {...props} nnode={pair[0]} />
                                 </div>
                             ) : (
-                                <div style={{ display: 'flex' }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        backgroundColor:
+                                            i % 2 == 0 ? oneColor : twoColor,
+                                    }}
+                                >
                                     <span key={i + '-0'}>
                                         <RenderNNode
                                             {...props}
@@ -402,26 +420,67 @@ export const RenderNNode = (
             }
             return (
                 <span
-                    style={{ display: 'grid', gap: '0 8px' }}
+                    style={{
+                        display: 'grid',
+                        // gap: '0 8px'
+                    }}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
+                    {nnode.firstLine.length ? (
+                        <span
+                            style={{
+                                gridColumn: '1/3',
+                                paddingLeft: 4,
+                                // backgroundColor: 'red',
+                                display: 'flex',
+                            }}
+                        >
+                            {nnode.firstLine.map((node, i) => (
+                                <RenderNNode {...props} nnode={node} key={i} />
+                            ))}
+                        </span>
+                    ) : null}
                     {nnode.children.flatMap((pair, i) =>
                         pair.length === 1
                             ? [
-                                  <span key={i} style={{ gridColumn: '1/2' }}>
+                                  <span
+                                      key={i}
+                                      style={{
+                                          gridColumn: '1/3',
+                                          paddingLeft: 4,
+                                          backgroundColor:
+                                              i % 2 == 0 ? oneColor : twoColor,
+                                      }}
+                                  >
                                       <RenderNNode {...props} nnode={pair[0]} />
                                   </span>,
                               ]
                             : [
                                   <span
                                       key={i + '-0'}
-                                      style={{ gridColumn: '1' }}
+                                      style={{
+                                          gridColumn: '1',
+                                          paddingLeft: 4,
+                                          marginLeft: nnode.firstLine.length
+                                              ? 16
+                                              : 0,
+                                          //   display: 'flex',
+                                          //   flexDirection: 'column',
+                                          //   alignItems: 'flex-end',
+                                          backgroundColor:
+                                              i % 2 == 0 ? oneColor : twoColor,
+                                      }}
                                   >
                                       <RenderNNode {...props} nnode={pair[0]} />
                                   </span>,
                                   <span
                                       key={i + '-1'}
-                                      style={{ gridColumn: '2' }}
+                                      style={{
+                                          gridColumn: '2',
+                                          paddingLeft: 8,
+                                          backgroundColor:
+                                              i % 2 == 0 ? oneColor : twoColor,
+                                      }}
                                   >
                                       <RenderNNode {...props} nnode={pair[1]} />
                                   </span>,

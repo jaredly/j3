@@ -23,46 +23,45 @@ export const Hover = ({
     state: UIState;
     dispatch: React.Dispatch<Action>;
 }) => {
-    let found: null | { idx: number; text: string } = null;
+    let found: { idx: number; text: string }[] = [];
     for (let i = state.hover.length - 1; i >= 0; i--) {
         let idx = state.hover[i].idx;
         if (idx === -1) continue;
         if (state.ctx.results.errors[idx]?.length) {
-            found = {
+            found.push({
                 idx,
                 text: state.ctx.results.errors[idx]
                     .map((err) =>
                         errorToString(err, state.ctx.results.hashNames),
                     )
                     .join('\n'),
-            };
-            break;
+            });
         }
     }
-    if (found == null) {
-        const last = state.hover[state.hover.length - 1]?.idx;
-        if (last != null) {
-            const style = state.ctx.results.display[last]?.style;
-            if (
-                (style?.type === 'id' ||
-                    // style?.type === 'id-decl' ||
-                    style?.type === 'tag') &&
-                style.ann
-            ) {
-                found = {
-                    idx: last,
-                    text: nodeToString(
-                        nodeForType(style.ann, state.ctx.results.hashNames),
-                        state.ctx.results.hashNames,
-                    ),
-                    // ' ' +
-                    // (style.hash + '').slice(0, 10),
-                };
-            }
+    // if (found == null) {
+    const last = state.hover[state.hover.length - 1]?.idx;
+    if (last != null) {
+        const style = state.ctx.results.display[last]?.style;
+        if (
+            (style?.type === 'id' ||
+                // style?.type === 'id-decl' ||
+                style?.type === 'tag') &&
+            style.ann
+        ) {
+            found.push({
+                idx: last,
+                text: nodeToString(
+                    nodeForType(style.ann, state.ctx.results.hashNames),
+                    state.ctx.results.hashNames,
+                ),
+                // ' ' +
+                // (style.hash + '').slice(0, 10),
+            });
         }
     }
+    // }
 
-    const node = found != null ? getRegNode(found.idx, state.regs) : null;
+    const node = found.length ? getRegNode(found[0].idx, state.regs) : null;
     // if (!node || found == null)
     //     return (
     //         <div>
@@ -73,7 +72,7 @@ export const Hover = ({
     //                 : null}
     //         </div>
     //     );
-    if (!node || found == null) return null;
+    if (!node || !found.length) return null;
 
     const box = subRect(
         node.getBoundingClientRect(),
@@ -98,11 +97,13 @@ export const Hover = ({
                     backgroundColor: 'black',
                     color: '#777',
                     border: '1px solid #555',
-                    display: 'grid',
+                    display: 'block',
                     gridTemplateColumns: 'max-content max-content',
                 }}
             >
-                {found.text}
+                {found.map((f) => (
+                    <div>{f.text}</div>
+                ))}
             </div>
         </div>
     );

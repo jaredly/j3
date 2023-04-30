@@ -17,11 +17,13 @@
 - [ ] and might as well make it so you can `(defn x<T>)` while we're at it, right?
 - [x] (fn<x> [y:x] y) please
 - [x] (defn<x> [y:x] y) please
-- [ ] ((fn<x> [y:x] y) 10)
+- [x] ((fn<x> [y:x] y) 10)
 
 - [ ] do I ever getType without `report`? Seems like I always want it.
 
-- [ ] (def fib (@loop (fn [x:int] (if (< x 1) 0 (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
+- [x] (def fib (@loop (fn [x:int] (if (< x 1) 0 (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
+- [x] defnrec, fnrec
+- [ ] expr array spread
 
 ## Task
 
