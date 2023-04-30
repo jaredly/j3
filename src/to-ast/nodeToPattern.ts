@@ -8,14 +8,16 @@ import { filterComments } from './nodeToExpr';
 import { addMod } from './specials';
 import { CstCtx } from './library';
 
-export const getArrayItemType = (t: Type) => {
+export const getArrayItemType = (
+    t: Type,
+): { value: Type; size: null | Type } | null => {
     if (
         t.type === 'apply' &&
         t.target.type === 'builtin' &&
         t.target.name === 'array' &&
         t.args.length > 0
     ) {
-        return { value: t.args[0], size: t.args[1] };
+        return { value: t.args[0], size: t.args[1] ?? null };
     }
     return null;
 };

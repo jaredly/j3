@@ -49,6 +49,10 @@ export const _unifyTypes = (
         return one.name === two.name ? one : une(path, one, two);
     }
 
+    if (one.type === 'local' && two.type === 'local') {
+        return one.sym === two.sym ? one : une(path, one, two);
+    }
+
     if (one.type === 'global' && two.type === 'global') {
         if (one.hash === two.hash) {
             return one;

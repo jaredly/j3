@@ -428,6 +428,15 @@ export const specials: {
         for (let i = 0; i < cases.length; i += 2) {
             const bindings: Local['terms'] = [];
             const pattern = nodeToPattern(cases[i], typ, ctx, bindings);
+
+            bindings.forEach(
+                (loc) =>
+                    (ctx.results.localMap.terms[loc.sym] = {
+                        name: loc.name,
+                        type: loc.type,
+                    }),
+            );
+
             const pt = patternType(pattern, ctx);
             pairs.push({
                 pattern: pattern,
@@ -447,14 +456,6 @@ export const specials: {
             } else {
                 typ = subtracted;
             }
-
-            bindings.forEach(
-                (loc) =>
-                    (ctx.results.localMap.terms[loc.sym] = {
-                        name: loc.name,
-                        type: loc.type,
-                    }),
-            );
         }
         return { type: 'switch', target: value, cases: pairs, form };
     },
@@ -466,10 +467,14 @@ export const specials: {
         ctx.results.display[first.loc] = { style: { type: 'let-pairs' } };
         const bindings: { pattern: Pattern; value: Expr; type?: Type }[] = [];
         const values = filterComments(first.values);
-        const allLocals: Local['terms'] = [];
         for (let i = 0; i < values.length - 1; i += 2) {
             const value = nodeToExpr(values[i + 1], ctx);
-            const inferred = getType(value, ctx) ?? nilt;
+            const inf = getType(value, ctx, {
+                errors: ctx.results.errors,
+                types: {},
+            });
+            const inferred = inf ?? nilt;
+            console.log('inferred', inf);
             const locals: Local['terms'] = [];
             bindings.push({
                 pattern: nodeToPattern(values[i], inferred, ctx, locals),
@@ -483,7 +488,6 @@ export const specials: {
                         type: loc.type,
                     }),
             );
-            // allLocals.push(...locals);
             ctx = {
                 ...ctx,
                 local: {
@@ -492,13 +496,6 @@ export const specials: {
                 },
             };
         }
-        // const ct2: Ctx = {
-        //     ...ctx,
-        //     local: {
-        //         ...ctx.local,
-        //         terms: [...allLocals, ...ctx.local.terms],
-        //     },
-        // };
         return {
             type: 'let',
             bindings,

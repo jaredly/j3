@@ -138,9 +138,16 @@ const _getType = (
             return expr;
         case 'local':
             if (report && !ctx.results.localMap.terms[expr.sym]) {
+                debugger;
+                console.log(
+                    'nop',
+                    ctx.results.localMap,
+                    ctx.results.localMap.terms[expr.sym],
+                    expr.sym,
+                );
                 err(report, expr, {
                     type: 'misc',
-                    message: `local not found ${expr.sym}`,
+                    message: `local expr not found ${expr.sym}`,
                 });
             }
             return ctx.results.localMap.terms[expr.sym]?.type;
@@ -431,8 +438,8 @@ const _getType = (
                         } else {
                             if (
                                 count != null &&
-                                item.size.type === 'number' &&
-                                item.size.kind === 'uint'
+                                item.size?.type === 'number' &&
+                                item.size?.kind === 'uint'
                             ) {
                                 count += item.size.value;
                             } else {
@@ -787,6 +794,7 @@ const _getType = (
                 }
                 return res.ok;
             }
+            console.log('task', taskType);
             return taskType.result;
         }
     }
