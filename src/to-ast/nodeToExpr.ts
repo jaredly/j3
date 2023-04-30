@@ -156,7 +156,14 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             const values = filterComments(form.values);
             return {
                 type: 'array',
-                values: values.map((child) => nodeToExpr(child, ctx)),
+                values: values
+                    .map((child) =>
+                        child.type === 'spread' &&
+                        child.contents.type === 'blank'
+                            ? null
+                            : nodeToExpr(child, ctx),
+                    )
+                    .filter(Boolean) as Expr[],
                 form,
             };
         }

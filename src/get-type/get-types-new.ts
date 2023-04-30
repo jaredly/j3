@@ -409,8 +409,13 @@ const _getType = (
             // hmmmmm I should have a "ground" type ... for the empty array.
             // like, this is a type that unifies with everything.
             let failed = false;
+            let count: number | null = 0;
+
             for (let value of expr.values) {
                 if (value.type === 'spread') {
+                    if (value.contents.type === 'blank') {
+                        continue;
+                    }
                     const st = getType(value.contents, ctx, report, effects);
                     if (st) {
                         const item = getArrayItemType(st);
@@ -424,10 +429,19 @@ const _getType = (
                             }
                             failed = true;
                         } else {
+                            if (
+                                count != null &&
+                                item.size.type === 'number' &&
+                                item.size.kind === 'uint'
+                            ) {
+                                count += item.size.value;
+                            } else {
+                                count = null;
+                            }
                             if (res) {
                                 res = unifyTypes(
                                     res,
-                                    item,
+                                    item.value,
                                     ctx,
                                     expr.form,
                                     report,
@@ -436,13 +450,16 @@ const _getType = (
                                     failed = true;
                                 }
                             } else {
-                                res = item;
+                                res = item.value;
                             }
                         }
                     } else {
                         failed = true;
                     }
                     continue;
+                }
+                if (count != null) {
+                    count += 1;
                 }
                 const type = getType(value, ctx, report, effects);
                 if (type) {
@@ -466,12 +483,14 @@ const _getType = (
                 target: { type: 'builtin', name: 'array', form: expr.form },
                 args: [
                     res,
-                    {
-                        type: 'number',
-                        value: expr.values.length,
-                        form: expr.form,
-                        kind: 'uint',
-                    },
+                    count != null
+                        ? {
+                              type: 'number',
+                              value: count,
+                              form: expr.form,
+                              kind: 'uint',
+                          }
+                        : { type: 'builtin', name: 'uint', form: expr.form },
                 ],
                 form: expr.form,
             };

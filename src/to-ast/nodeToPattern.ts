@@ -15,7 +15,7 @@ export const getArrayItemType = (t: Type) => {
         t.target.name === 'array' &&
         t.args.length > 0
     ) {
-        return t.args[0];
+        return { value: t.args[0], size: t.args[1] };
     }
     return null;
 };
@@ -34,14 +34,16 @@ export const nodeToPattern = (
                     type: 'misc',
                     message: 'array pattern, but not an array type',
                 });
-                item = nilt;
+                item = { value: nilt, size: nilt };
             }
             let left: Pattern[] = [];
             let right: { spread?: LocalPattern; items: Pattern[] } | null =
                 null;
             filterComments(form.values).forEach((node) => {
                 if (right) {
-                    right.items.push(nodeToPattern(node, item!, ctx, bindings));
+                    right.items.push(
+                        nodeToPattern(node, item!.value, ctx, bindings),
+                    );
                 } else {
                     if (node.type === 'spread') {
                         if (
@@ -67,7 +69,9 @@ export const nodeToPattern = (
                             items: [],
                         };
                     } else {
-                        left.push(nodeToPattern(node, item!, ctx, bindings));
+                        left.push(
+                            nodeToPattern(node, item!.value, ctx, bindings),
+                        );
                     }
                 }
             });
