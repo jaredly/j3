@@ -51,7 +51,7 @@
        starring (split starring ",")}
     _ (! fail ('LineError idx line 'InvalidLine))))
 
-(defnrec mapTask<T Effects:[..] R> [values:(array T), fn:(fn [v:T] (@task Effects R))]:(@task Effects (array R))
+(defnrec mapTask<T Effects:[..] R> [values:(array T) fn:(fn [v:T] (@task Effects R))]:(@task Effects (array R))
     (switch values
         [one ..rest]
             (let [res (! (fn one))

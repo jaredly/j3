@@ -1,4 +1,7 @@
 
+- NEXT UP:
+  - expandEnumItems needs to hang on to locals.
+
 ## Buncha tests for nodeToExpr stuff
 
 - [ ] (.a {a 10}) should be easy

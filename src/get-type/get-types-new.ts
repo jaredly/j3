@@ -57,7 +57,7 @@ export const getType = (
     expr: Expr,
     ctx: Ctx,
     report?: Report,
-    effects?: TaskType['effects'],
+    effects?: TaskType,
 ): Type | void => {
     const type = _getType(expr, ctx, report, effects);
     if (type && report) {
@@ -70,7 +70,7 @@ const _getType = (
     expr: Expr,
     ctx: Ctx,
     report?: Report,
-    effects?: TaskType['effects'],
+    effects?: TaskType,
 ): Type | void => {
     switch (expr.type) {
         case 'spread': {
@@ -359,38 +359,23 @@ const _getType = (
             if (expr.ret && report) {
                 report.types[expr.ret.form.loc] = expr.ret;
             }
-            let myEffects: TaskType['effects'] = {};
+            let myEffects: TaskType = { effects: {}, locals: [], result: nilt };
             const body = expr.body.map((body) =>
                 getType(body, ctx, report, myEffects),
             );
             const last =
-                expr.ret ?? (body.length ? body[body.length - 1] : nilt);
+                expr.ret ??
+                maybeEffectsType(
+                    myEffects,
+                    body.length ? body[body.length - 1]! : nilt,
+                );
             if (!last) {
                 return;
             }
             return {
                 type: 'fn',
                 args,
-                body: Object.keys(myEffects).length
-                    ? {
-                          type: 'task',
-                          effects: {
-                              type: 'union',
-                              items: Object.entries(myEffects).map(
-                                  ([k, { input, output }]) => ({
-                                      type: 'tag',
-                                      name: k,
-                                      args: output ? [input, output] : [input],
-                                      form: input.form,
-                                  }),
-                              ),
-                              open: false,
-                              form: last.form,
-                          },
-                          result: last,
-                          form: last.form,
-                      }
-                    : last,
+                body: last,
                 form: expr.form,
             };
         }
@@ -740,12 +725,17 @@ const _getType = (
             }
             if (effects) {
                 let failed = false;
+                taskType.locals.forEach((local) => {
+                    if (!effects.locals.some((l) => l.sym === local.sym)) {
+                        effects.locals.push(local);
+                    }
+                });
                 Object.entries(taskType.effects).forEach(([k, v]) => {
-                    if (!effects[k]) {
-                        effects[k] = v;
+                    if (!effects.effects[k]) {
+                        effects.effects[k] = v;
                     } else {
                         const error = mergeInputOutput(
-                            effects,
+                            effects.effects,
                             k,
                             v.input,
                             v.output,
@@ -759,6 +749,7 @@ const _getType = (
                         }
                     }
                 });
+                console.log('tasking', effects, taskType);
                 if (failed) {
                     return;
                 }
@@ -774,11 +765,14 @@ const _getType = (
                         : void 0;
                 }
                 if (effects) {
-                    if (!effects['Failure']) {
-                        effects['Failure'] = { input: res.err, output: null };
+                    if (!effects.effects['Failure']) {
+                        effects.effects['Failure'] = {
+                            input: res.err,
+                            output: null,
+                        };
                     } else {
                         const error = mergeInputOutput(
-                            effects,
+                            effects.effects,
                             'Failure',
                             res.err,
                             null,
@@ -794,7 +788,7 @@ const _getType = (
                 }
                 return res.ok;
             }
-            console.log('task', taskType);
+            // console.log('task', taskType);
             return taskType.result;
         }
     }
@@ -956,3 +950,31 @@ export const isNilT = (t: Type) =>
     t.entries.length === 0 &&
     t.spreads.length === 0 &&
     !t.open;
+
+export function maybeEffectsType(myEffects: TaskType, last: Type): Type {
+    // AHG um so if we ! an empty effect,
+    // this won't catch it.
+    // console.log('maybe', last, myEffects);
+    return Object.keys(myEffects.effects).length || myEffects.locals.length
+        ? {
+              type: 'task',
+              effects: {
+                  type: 'union',
+                  items: Object.entries(myEffects.effects)
+                      .map(
+                          ([k, { input, output }]): Type => ({
+                              type: 'tag',
+                              name: k,
+                              args: output ? [input, output] : [input],
+                              form: input.form,
+                          }),
+                      )
+                      .concat(myEffects.locals),
+                  open: false,
+                  form: last.form,
+              },
+              result: last,
+              form: last.form,
+          }
+        : last;
+}

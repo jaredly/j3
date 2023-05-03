@@ -1,6 +1,6 @@
 import { any, nil, nilt } from '../to-ast/Ctx';
 import { Ctx, globalType } from '../to-ast/library';
-import { Node, Type } from '../types/ast';
+import { Local, Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
 import { transformType } from '../types/walk-ast';
 import { _unifyTypes } from './unifyTypes';
@@ -250,9 +250,14 @@ export const expandEnumItems = (
     ctx: Ctx,
     path: string[],
 ):
-    | { type: 'success'; map: { [key: string]: { args: Type[]; form: Node } } }
+    | {
+          type: 'success';
+          map: { [key: string]: { args: Type[]; form: Node } };
+          locals: Local[];
+      }
     | { type: 'error'; error: MatchError } => {
     const map: EnumMap = {};
+    const locals: Local[] = [];
     for (let i = 0; i < items.length; i++) {
         let item = items[i];
 
@@ -272,7 +277,8 @@ export const expandEnumItems = (
             item = defn.value;
         }
         if (item.type === 'local') {
-            throw new Error(`need something else to expand local types`);
+            // throw new Error(`need something else to expand local types`);
+            locals.push(item);
         }
 
         if (item.type === 'tag') {
@@ -313,7 +319,7 @@ export const expandEnumItems = (
             }
         }
     }
-    return { type: 'success', map };
+    return { type: 'success', map, locals };
 };
 
 export const unifyEnumArgs = (

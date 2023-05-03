@@ -49,6 +49,7 @@ export const _unifyTypes = (
         return one.name === two.name ? one : une(path, one, two);
     }
 
+    // TODO: If the bounds are unions and compatible
     if (one.type === 'local' && two.type === 'local') {
         return one.sym === two.sym ? one : une(path, one, two);
     }

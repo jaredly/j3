@@ -5,7 +5,7 @@ import { any, Ctx, Local, Mod, nil, nilt, noForm, none } from './Ctx';
 import { nodeToType, parseTypeArgs } from './nodeToType';
 import { ensure, filterComments, nodeToExpr } from './nodeToExpr';
 import { err, nodeToPattern } from './nodeToPattern';
-import { getType } from '../get-type/get-types-new';
+import { TaskType, getType, maybeEffectsType } from '../get-type/get-types-new';
 import { patternType } from '../get-type/patternType';
 import { subtractType } from '../get-type/subtractType';
 import { CstCtx } from './library';
@@ -474,7 +474,7 @@ export const specials: {
                 types: {},
             });
             const inferred = inf ?? nilt;
-            console.log('inferred', inf);
+            // console.log('inferred', inf);
             const locals: Local['terms'] = [];
             bindings.push({
                 pattern: nodeToPattern(values[i], inferred, ctx, locals),
@@ -550,9 +550,18 @@ export function finishFn(
 ): Expr {
     const bodies = contents.slice(1).map((child) => nodeToExpr(child, inner));
     if (bodies.length) {
-        const bodyRes = getType(bodies[bodies.length - 1], inner);
+        const effects: TaskType = { effects: {}, locals: [], result: nilt };
+        let bodyRes = getType(
+            bodies[bodies.length - 1],
+            inner,
+            undefined,
+            // { errors: inner.results.errors, types: {} },
+            effects,
+        );
         if (bodyRes) {
+            bodyRes = maybeEffectsType(effects, bodyRes);
             if (ret) {
+                // ret = maybeEffectsType(effects, ret);
                 const match = _matchOrExpand(bodyRes, ret, inner, []);
                 if (match !== true) {
                     err(inner.results.errors, form, match);
@@ -683,8 +692,16 @@ export const fail = (ctx: CstCtx, form: Node, message: string): Expr => {
 
 const bodyMatch = (body: Expr[], ret: Type, ctx: CstCtx) => {
     if (body.length) {
-        const bodyRes = getType(body[body.length - 1], ctx);
+        const effects: TaskType = { effects: {}, locals: [], result: nilt };
+        let bodyRes = getType(
+            body[body.length - 1],
+            ctx,
+            undefined,
+            // { errors: ctx.results.errors, types: {} },
+            effects,
+        );
         if (bodyRes) {
+            bodyRes = maybeEffectsType(effects, bodyRes);
             if (ret) {
                 const match = _matchOrExpand(bodyRes, ret, ctx, []);
                 if (match !== true) {
