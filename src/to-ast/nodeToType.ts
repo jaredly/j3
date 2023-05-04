@@ -61,10 +61,16 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
             const values = filterComments(form.values);
             const entries: { name: string; value: Type }[] = [];
             const spreads: Type[] = [];
+            let open = false;
 
             for (let i = 0; i < values.length; ) {
                 const name = values[i];
                 if (name.type === 'spread') {
+                    if (name.contents.type === 'blank') {
+                        i++;
+                        open = true;
+                        continue;
+                    }
                     spreads.push(nodeToType(name.contents, ctx));
                     i++;
                     continue;
@@ -88,13 +94,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     value: value ? nodeToType(value, ctx) : nilt,
                 });
             }
-            return {
-                type: 'record',
-                form,
-                entries,
-                spreads,
-                open: false,
-            };
+            return { type: 'record', form, entries, spreads, open };
         }
         case 'list': {
             if (!form.values.length) {

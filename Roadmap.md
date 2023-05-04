@@ -1,6 +1,12 @@
 
 - NEXT UP:
   - expandEnumItems needs to hang on to locals.
+    - ok I no longer understand
+- [ ] (.a {a 10})
+  - noww that we have autogenerics, this should be super good
+
+## Things .. that are brokened
+
 
 ## Buncha tests for nodeToExpr stuff
 

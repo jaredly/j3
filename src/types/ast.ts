@@ -84,7 +84,7 @@ export type String = {
 export type recordAccess = {
     type: 'recordAccess';
     target: Expr | null;
-    items: string[];
+    items: { text: string; loc: number }[];
     form: Node;
 };
 

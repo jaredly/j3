@@ -474,7 +474,7 @@ export function nodeToRecordAccess(
                     message: 'empty attribute',
                 });
             }
-            return item.text;
+            return { text: item.text, loc: item.loc };
         }),
         form,
         target,

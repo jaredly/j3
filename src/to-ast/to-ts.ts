@@ -323,10 +323,12 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             if (!expr.target) {
                 let res: t.Expression = t.identifier('arg');
                 for (let attr of expr.items) {
-                    const wrap = !isValidIdentifier(attr);
+                    const wrap = !isValidIdentifier(attr.text);
                     res = t.memberExpression(
                         res,
-                        wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                        wrap
+                            ? t.stringLiteral(attr.text)
+                            : t.identifier(attr.text),
                         wrap,
                     );
                 }
@@ -334,10 +336,10 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             }
             let res = exprToTs(expr.target, ctx);
             for (let attr of expr.items) {
-                const wrap = !isValidIdentifier(attr);
+                const wrap = !isValidIdentifier(attr.text);
                 res = t.memberExpression(
                     res,
-                    wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                    wrap ? t.stringLiteral(attr.text) : t.identifier(attr.text),
                     wrap,
                 );
             }

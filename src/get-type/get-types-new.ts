@@ -641,18 +641,67 @@ const _getType = (
                             : undefined;
                     }
                     const map = recordMap(resolved, ctx);
-                    if (!map[attr]) {
+                    if (!map[attr.text]) {
                         return report
                             ? errf(report, expr.form, {
                                   type: 'misc',
-                                  message: `record has no attribute ${attr}`,
+                                  message: `record has no attribute ${attr.text}`,
                               })
                             : undefined;
                     }
-                    inner = map[attr].value;
+                    inner = map[attr.text].value;
                 }
                 return inner;
             } else {
+                if (expr.items.length !== 1) {
+                    if (report) {
+                        errf(report, expr.form, {
+                            type: 'misc',
+                            message: 'too many attrs not good',
+                        });
+                    }
+                    return;
+                }
+                let [name] = expr.items;
+                // TODO STOPSHIP
+                return {
+                    type: 'tfn',
+                    args: [
+                        {
+                            form: { ...blank, loc: name.loc },
+                            name: name.text,
+                        },
+                    ],
+                    body: {
+                        type: 'fn',
+                        args: [
+                            {
+                                type: {
+                                    type: 'record',
+                                    entries: [
+                                        {
+                                            name: name.text,
+                                            value: {
+                                                type: 'local',
+                                                sym: name.loc,
+                                                form: blank,
+                                            },
+                                        },
+                                    ],
+                                    form: blank,
+                                    open: true,
+                                    spreads: [],
+                                },
+                                form: blank,
+                            },
+                        ],
+                        body: { type: 'local', sym: name.loc, form: blank },
+                        form: blank,
+                    },
+                    form: blank,
+                };
+                // let
+                // expr.items
                 // Ok so this is like very polymorphic, right?
                 // and what do I do with that.
                 // ok so
@@ -661,13 +710,13 @@ const _getType = (
                 // right? And then you call it with something
                 // and we can figure out what's going on, with
                 // some degree of reliability
-                if (report) {
-                    errf(report, expr.form, {
-                        type: 'misc',
-                        message: 'not yet impl',
-                    });
-                }
-                return;
+                // if (report) {
+                //     errf(report, expr.form, {
+                //         type: 'misc',
+                //         message: 'not yet impl',
+                //     });
+                // }
+                // return;
             }
         // TODO: This will probably be more complex?
         case 'rich-text':

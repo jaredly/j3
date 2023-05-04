@@ -195,6 +195,12 @@ Second type: 3.1
 
 (let [x (fn<X:int> [] 10) y (fn<X:int> [] (x<X>))] y)
 -> (fn<X:#:builtin:int> [] 10)
+
+(.a {a 10})
+-> 10
+
+(.a {a 10 b 20})
+-> 10
 `
     .trim()
     .split('\n\n');

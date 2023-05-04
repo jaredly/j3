@@ -112,6 +112,7 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                         id(name, noloc),
                         nodeForType(value, hashNames),
                     ]),
+                    ...(type.open ? [id('..', -1)] : []),
                 ],
             });
         case 'tfn': {
