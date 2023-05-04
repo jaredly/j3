@@ -201,6 +201,9 @@ Second type: 3.1
 
 (.a {a 10 b 20})
 -> 10
+
+(.a.b {a {b 10}})
+-> 10
 `
     .trim()
     .split('\n\n');

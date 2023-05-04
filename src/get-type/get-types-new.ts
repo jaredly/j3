@@ -653,70 +653,31 @@ const _getType = (
                 }
                 return inner;
             } else {
-                if (expr.items.length !== 1) {
-                    if (report) {
-                        errf(report, expr.form, {
-                            type: 'misc',
-                            message: 'too many attrs not good',
-                        });
-                    }
-                    return;
+                const last = expr.items[expr.items.length - 1];
+                let inner: Type = { type: 'local', sym: last.loc, form: blank };
+                for (let i = expr.items.length - 1; i >= 0; i--) {
+                    inner = {
+                        type: 'record',
+                        entries: [{ name: expr.items[i].text, value: inner }],
+                        form: blank,
+                        open: true,
+                        spreads: [],
+                    };
                 }
-                let [name] = expr.items;
-                // TODO STOPSHIP
+
                 return {
                     type: 'tfn',
                     args: [
-                        {
-                            form: { ...blank, loc: name.loc },
-                            name: name.text,
-                        },
+                        { form: { ...blank, loc: last.loc }, name: last.text },
                     ],
                     body: {
                         type: 'fn',
-                        args: [
-                            {
-                                type: {
-                                    type: 'record',
-                                    entries: [
-                                        {
-                                            name: name.text,
-                                            value: {
-                                                type: 'local',
-                                                sym: name.loc,
-                                                form: blank,
-                                            },
-                                        },
-                                    ],
-                                    form: blank,
-                                    open: true,
-                                    spreads: [],
-                                },
-                                form: blank,
-                            },
-                        ],
-                        body: { type: 'local', sym: name.loc, form: blank },
+                        args: [{ type: inner, form: blank }],
+                        body: { type: 'local', sym: last.loc, form: blank },
                         form: blank,
                     },
                     form: blank,
                 };
-                // let
-                // expr.items
-                // Ok so this is like very polymorphic, right?
-                // and what do I do with that.
-                // ok so
-                // .a.b.c is shorthand for...
-                // <V, T: {a {b {c V ...} ...} ...}>(m: T) => V
-                // right? And then you call it with something
-                // and we can figure out what's going on, with
-                // some degree of reliability
-                // if (report) {
-                //     errf(report, expr.form, {
-                //         type: 'misc',
-                //         message: 'not yet impl',
-                //     });
-                // }
-                // return;
             }
         // TODO: This will probably be more complex?
         case 'rich-text':
