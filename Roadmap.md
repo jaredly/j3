@@ -1,11 +1,19 @@
 
 - NEXT UP:
-  - expandEnumItems needs to hang on to locals.
-    - ok I no longer understand
-- [ ] (.a {a 10})
+  - [-] expandEnumItems needs to hang on to locals.
+    - ok I no longer understand?? maybe it's not needed?
+- [x] (.a {a 10})
   - noww that we have autogenerics, this should be super good
 
+- [ ] copy & paste looses local `loc`s and stuff
+
 ## Things .. that are brokened
+
+- [ ] asTaskType is being used ... both for
+  `(! ('Some thing))`
+  and
+  `(@task [('Some thing)] else)`
+  but these are very different things.
 
 
 ## Buncha tests for nodeToExpr stuff

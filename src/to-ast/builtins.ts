@@ -36,34 +36,36 @@ export const btype = (v: string): Type => ({
     name: v,
 });
 
+const builtinTypes: Global['builtins']['types'] = {
+    uint: [],
+    texture: [],
+    int: [],
+    float: [],
+    bool: [],
+    string: [],
+    bytes: [],
+    // 'attachment-handle': [],
+    array: [
+        { form: blankAt(-2), name: 'Value' },
+        {
+            form: blankAt(-3),
+            name: 'Length',
+            default_: {
+                type: 'builtin',
+                name: 'uint',
+                form: blank,
+            },
+        },
+    ],
+    map: [
+        { form: blankAt(-4), name: 'Key' },
+        { form: blankAt(-5), name: 'Value' },
+    ],
+};
+
 export const basicBuiltins: Global['builtins'] = {
     bidx: -6,
-    types: {
-        uint: [],
-        texture: [],
-        int: [],
-        float: [],
-        bool: [],
-        string: [],
-        bytes: [],
-        // 'attachment-handle': [],
-        array: [
-            { form: blankAt(-2), name: 'Value' },
-            {
-                form: blankAt(-3),
-                name: 'Length',
-                default_: {
-                    type: 'builtin',
-                    name: 'uint',
-                    form: blank,
-                },
-            },
-        ],
-        map: [
-            { form: blankAt(-4), name: 'Key' },
-            { form: blankAt(-5), name: 'Value' },
-        ],
-    },
+    types: builtinTypes,
     terms: {},
 };
 
@@ -225,6 +227,14 @@ addBuiltin(basicBuiltins, 'array/reduce', {
 const marg1 = basicBuiltins.bidx--;
 const marg2 = basicBuiltins.bidx--;
 
+const record = (entries: TRecord['entries']): TRecord => ({
+    type: 'record',
+    entries,
+    form: { type: 'blank', loc: noloc },
+    open: false,
+    spreads: [],
+});
+
 const mapGet: Type = {
     type: 'tfn',
     args: [
@@ -246,7 +256,15 @@ const mapGet: Type = {
             },
             { type: tloc(marg1), form: blank, name: 'key' },
         ],
-        body: tloc(marg2),
+        body: {
+            type: 'union',
+            form: blank,
+            open: false,
+            items: [
+                { type: 'tag', name: 'Some', args: [tloc(marg2)], form: blank },
+                { type: 'tag', name: 'None', args: [], form: blank },
+            ],
+        },
         form: blank,
     },
     form: blank,
@@ -307,13 +325,6 @@ addBuiltin(basicBuiltins, 'map/from-pairs', {
 //     'reduce',
 // )
 
-const record = (entries: TRecord['entries']): TRecord => ({
-    type: 'record',
-    entries,
-    form: { type: 'blank', loc: noloc },
-    open: false,
-    spreads: [],
-});
 const vec2 = record([
     { name: 'x', value: tfloat },
     { name: 'y', value: tfloat },
