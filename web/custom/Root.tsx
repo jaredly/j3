@@ -1,5 +1,5 @@
 import equal from 'fast-deep-equal';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
 import { nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
@@ -53,6 +53,8 @@ export function Root({
     );
 
     const [drag, setDrag] = useState(false);
+    const currentState = useRef(state);
+    currentState.current = state;
 
     useEffect(() => {
         if (!drag) {
@@ -62,6 +64,7 @@ export function Root({
             setDrag(false);
         };
         const move = (evt: MouseEvent) => {
+            const state = currentState.current;
             const sel = closestSelection(state.regs, {
                 x: evt.clientX + window.scrollX,
                 y: evt.clientY + window.scrollY,

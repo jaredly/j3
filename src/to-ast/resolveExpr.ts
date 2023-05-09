@@ -42,7 +42,7 @@ export const resolveExpr = (
         return {
             type: 'unresolved',
             form,
-            reason: `No hash specified`,
+            reason: `No hash specified:` + text,
         };
     } else {
         if (typeof hash === 'number') {

@@ -59,7 +59,7 @@ export const resolveType = (
         return {
             type: 'unresolved',
             form,
-            reason: 'no hash specified',
+            reason: 'no hash specified:' + text,
         };
     }
 

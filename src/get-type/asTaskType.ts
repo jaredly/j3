@@ -11,13 +11,102 @@ import {
 } from './get-types-new';
 import { Error } from '../types/types';
 
+// (@task some-type res)
+// ('Return 10)
+// ('Failure lolz)
+// ('Normal input output)
+export const expandTaskEffects = (
+    t: Type,
+    ctx: Ctx,
+): { type: 'error'; error: Error } | TaskType => {
+    switch (t.type) {
+        case 'tag': {
+            if (t.args.length === 1) {
+                if (t.name === 'Return') {
+                    return {
+                        type: 'task',
+                        locals: [],
+                        result: t.args[0],
+                        effects: {},
+                    };
+                } else {
+                    return {
+                        type: 'task',
+                        locals: [],
+                        result: none,
+                        effects: {
+                            [t.name]: { input: t.args[0], output: null },
+                        },
+                    };
+                }
+            }
+            if (t.args.length === 2) {
+                return {
+                    type: 'task',
+                    locals: [],
+                    result: none,
+                    effects: {
+                        [t.name]: { input: t.args[0], output: t.args[1] },
+                    },
+                };
+            }
+            return {
+                type: 'error',
+                error: {
+                    type: 'misc',
+                    message: `Task effect should have 1 or 2 arguments`,
+                    form: t.form,
+                    typ: t,
+                },
+            };
+        }
+        case 'union': {
+            let res = null;
+            for (let item of t.items) {
+                const ex = expandTaskEffects(item, ctx);
+                if (ex.type === 'error') {
+                    return ex;
+                }
+                if (res) {
+                    const merged = mergeTaskTypes(res, ex, ctx);
+                    if (merged.type === 'error') {
+                        return merged;
+                    }
+                    res = merged;
+                } else {
+                    res = ex;
+                }
+            }
+            return (
+                res ?? { type: 'task', effects: {}, locals: [], result: none }
+            );
+        }
+        case 'local':
+            return { type: 'task', effects: {}, locals: [t], result: none };
+        default:
+            return {
+                type: 'error',
+                error: {
+                    type: 'not a task',
+                    form: t.form,
+                    inner: {
+                        type: 'misc',
+                        message: `Type cannot be used as task effect`,
+                    },
+                    target: t,
+                },
+            };
+        // case ''
+    }
+};
+
 export const asTaskType = (
     t: Type,
     ctx: Ctx,
     // report: Report,
 ): { type: 'error'; error: Error } | TaskType => {
     if (t.type === 'task') {
-        const inner = asTaskType(t.effects, ctx);
+        const inner = expandTaskEffects(t.effects, ctx);
         if (inner.type === 'error') {
             return inner;
         }
@@ -74,6 +163,9 @@ export const asTaskType = (
     let failed: null | Error = null;
 
     Object.entries(expanded).forEach(([k, v]) => {
+        // TODO: Ok, so ... locals get added from (@task T ()) right?
+        // Let's ...
+
         if (failed) {
             return;
         }

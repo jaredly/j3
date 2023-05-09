@@ -31,9 +31,7 @@ export const Hover = ({
             found.push({
                 idx,
                 text: state.ctx.results.errors[idx]
-                    .map((err) =>
-                        errorToString(err, state.ctx.results.hashNames),
-                    )
+                    .map((err) => errorToString(err, state.ctx))
                     .join('\n'),
             });
         }

@@ -1,4 +1,6 @@
 
+... my indication of type errors needs to be much better
+
 - NEXT UP:
   - [-] expandEnumItems needs to hang on to locals.
     - ok I no longer understand?? maybe it's not needed?

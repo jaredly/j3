@@ -68,12 +68,9 @@ expect.extend({
                 )}\` did not match \`${typeToString(
                     expected,
                     ctx.results.hashNames,
-                )}\`. ${errorToString(
-                    result,
-                    ctx.results.hashNames,
-                )}\n${JSON.stringify(noForm(candidate))}\n${JSON.stringify(
-                    noForm(expected),
-                )}`,
+                )}\`. ${errorToString(result, ctx)}\n${JSON.stringify(
+                    noForm(candidate),
+                )}\n${JSON.stringify(noForm(expected))}`,
             pass: false,
         };
     },
