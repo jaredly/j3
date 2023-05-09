@@ -70,10 +70,20 @@ export const specials: {
         // what thing?
         // probably produce a 'effect'
         // expr?
+        const inner: Node | null =
+            contents.length > 1
+                ? {
+                      type: 'list',
+                      loc: -1,
+                      values: contents,
+                  }
+                : contents.length
+                ? contents[0]
+                : null;
         return {
             type: 'task',
             form,
-            inner: contents.length ? nodeToExpr(contents[0], ctx) : nil,
+            inner: inner ? nodeToExpr(inner, ctx) : nil,
             maybe: false,
         };
     },

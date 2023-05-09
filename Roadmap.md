@@ -1,4 +1,6 @@
 
+- [ ] I want auto-applied tfns to hover with types
+
 ... my indication of type errors needs to be much better
 
 - NEXT UP:

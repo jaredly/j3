@@ -89,15 +89,15 @@
 
 (defn task []
   (let [apiKey (!? get-api-key)
-        movies (!? get-movies "the-url${apiKey}")]
+        movies (!? getMovies "the-url${apiKey}")]
     (!? writeOutput movies)))
 
 (defn main []
-  (switch (! task)
+  (switch (! (task))
     'Ok (! log "Success! Wrote to output.json")
     ('Err 'ApiKeyMissing) (! log "You need env API_KEY")
     ('Err ('parseInt v)) (! log "Not an integer: ${v}")
-    ('Err ('LineError idx line err)) (! log "Error on line ${str idx}:\n${line}\n${debug err}")
+    ('Err ('LineError idx line err)) (! log "Error on line ${(str idx)}:\n${line}\n${(debug err)}")
     ('Err 'http) (! log "Http error")
     ('Err 'fs) (! log "Unable to write to disk")))
 

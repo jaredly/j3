@@ -22,7 +22,7 @@ const data = `
 (fn [one:int] on^nm)
 = (fn [one:#:builtin:int] onem)
 -1: This has the empty type
-6: No hash specified
+6: No hash specified:onem
 
 (fn [o:int one:int] one)
 = (fn [o:#:builtin:int one:#:builtin:int] #6)
@@ -226,24 +226,8 @@ Second type: 3.1
 (fn<T:[..]> []:(@task T ()) ('Return ()))
 -> (fn<T:[..]> [] (@task #5 ()))
 
-!!!(deftype Result<ok err> [('Ok ok) ('Err err)])
-(def mapErr (tfn [ok err err2] (fn [value:(Result ok err) map:(fn [err] err2)] (switch value ('Err err) ('Err (map err)) x x))))
-(deftype Movie {title string year int starring (array string)})
-(deftype httpResult (Result string ['Timeout 'Offline ('Other string)]))
-(defn parseInt [text:string]:(Result int ('NotAnInt string)) (switch (parse text) ('Some int) ('Ok int) 'None ('Err ('NotAnInt text))))
-(def pure (tfn [x] (fn [value:x] ('Return value))))
-(defn movieFromLine [line:string idx:int]:(@task ('Failure ('LineError int string ['InvalidLine ('NotAnInt string)])) Movie)
-    ('Failure ('LineError idx line 'InvalidLine) ()))
-(defnrec mapTask<T Effects:[..] R> [values:(array T) fnz:(fn [T] (@task Effects R))]:(@task Effects (array R)) (switch values [one ..rest] (let [res (! (fnz one)) coll (! (@recur<T Effects R> rest fnz))] [res ..coll]) _ []))
-(defn getMovies [url:string]
-    (let [response (!? ('GetUrl url (fn [x:httpResult] ('Return x))))
-          lines (-> response trim (split "\n"))]
-        (! (mapTask<string [('Failure ('LineError int string ['InvalidLine ('NotAnInt string)]))] Movie>
-                lines movieFromLine))))
-123: Not a task: (@task ('Failure ('LineError int string ['InvalidLine ('NotAnInt string)])) (array Movie)). Inner: non-return task tags must have 2 args
-285: Invalid type.
-Expected: (fn [string] (@task ('Failure ('LineError int string ['InvalidLine ('NotAnInt string)])) Movie))
-Found: (fn [line:string idx:int] (@task ('Failure ('LineError int string ['InvalidLine ('NotAnInt string)])) Movie))
+(fn [] (! 'Bad "hi" ()))
+-> (fn [] (@task ('Bad "hi") ⍉))
 `
     .trim()
     .split('\n\n');

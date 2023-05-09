@@ -359,6 +359,33 @@ addBuiltin(basicBuiltins, 'debug/toString', {
     form: blank,
 });
 
+const jarg = basicBuiltins.bidx--;
+addBuiltin(basicBuiltins, 'json/encode', {
+    type: 'tfn',
+    args: [{ form: blankAt(jarg), name: 'Value' }],
+    body: {
+        type: 'fn',
+        args: [
+            { type: { type: 'local', sym: jarg, form: blank }, form: blank },
+        ],
+        body: tstring,
+        form: blank,
+    },
+    form: blank,
+});
+const jdarg = basicBuiltins.bidx--;
+addBuiltin(basicBuiltins, 'json/decode', {
+    type: 'tfn',
+    args: [{ form: blankAt(jdarg), name: 'Value' }],
+    body: {
+        type: 'fn',
+        args: [{ type: tstring, form: blank }],
+        body: { type: 'local', sym: jdarg, form: blank },
+        form: blank,
+    },
+    form: blank,
+});
+
 export const nil: Expr = {
     type: 'record',
     entries: [],
