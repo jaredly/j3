@@ -116,23 +116,25 @@ const _getType = (
             }
             return;
         case 'string':
-            if (report) {
-                // Populate the map
-                expr.templates.forEach(({ expr }) => {
-                    const t = getType(expr, ctx, report, effects);
-                    if (t) {
-                        matchesType(
-                            t,
-                            { type: 'builtin', name: 'string', form: blank },
-                            ctx,
-                            expr.form,
-                            report,
-                        );
+            return {
+                type: 'string',
+                first: expr.first,
+                form: expr.form,
+                templates: expr.templates.map((tpl) => {
+                    const type = getType(tpl.expr, ctx, report, effects);
+                    if (!type) {
+                        return { suffix: tpl.suffix, type: nilt };
                     }
-                });
-            }
-            // TODO: support string constant report
-            return { type: 'builtin', name: 'string', form: expr.form };
+                    matchesType(
+                        type,
+                        { type: 'builtin', name: 'string', form: blank },
+                        ctx,
+                        expr.form,
+                        report,
+                    );
+                    return { suffix: tpl.suffix, type };
+                }),
+            };
         case 'number':
         case 'bool':
             return expr;
@@ -759,7 +761,7 @@ const _getType = (
                         }
                     }
                 });
-                console.log('tasking', effects, taskType);
+                // console.log('tasking', effects, taskType);
                 if (failed) {
                     return;
                 }

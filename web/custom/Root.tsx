@@ -1,5 +1,5 @@
 import equal from 'fast-deep-equal';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { sexp } from '../../progress/sexp';
 import { nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
@@ -54,6 +54,38 @@ export function Root({
 
     const [drag, setDrag] = useState(false);
 
+    useEffect(() => {
+        if (!drag) {
+            return;
+        }
+        const up = () => {
+            setDrag(false);
+        };
+        const move = (evt: MouseEvent) => {
+            const sel = closestSelection(state.regs, {
+                x: evt.clientX + window.scrollX,
+                y: evt.clientY + window.scrollY,
+            });
+            if (sel) {
+                const at = state.at.slice();
+                const idx = at.length - 1;
+                if (equal(sel, at[idx].start)) {
+                    at[idx] = { start: sel };
+                    dispatch({ type: 'select', at });
+                } else {
+                    at[idx] = { ...at[idx], end: sel };
+                    dispatch({ type: 'select', at });
+                }
+            }
+        };
+        document.addEventListener('mouseup', up, { capture: true });
+        document.addEventListener('mousemove', move);
+        return () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', up, { capture: true });
+        };
+    }, [drag]);
+
     return (
         <div
             style={{ cursor: 'text', padding: 16 }}
@@ -83,31 +115,6 @@ export function Root({
                             at: [{ start: sel }],
                         });
                     }
-                }
-            }}
-            onMouseMove={(evt) => {
-                if (!drag) {
-                    return;
-                }
-                const sel = closestSelection(state.regs, {
-                    x: evt.clientX + window.scrollX,
-                    y: evt.clientY + window.scrollY,
-                });
-                if (sel) {
-                    const at = state.at.slice();
-                    const idx = at.length - 1;
-                    if (equal(sel, at[idx].start)) {
-                        at[idx] = { start: sel };
-                        dispatch({ type: 'select', at });
-                    } else {
-                        at[idx] = { ...at[idx], end: sel };
-                        dispatch({ type: 'select', at });
-                    }
-                }
-            }}
-            onMouseUpCapture={(evt) => {
-                if (drag) {
-                    setDrag(false);
                 }
             }}
         >

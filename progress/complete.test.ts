@@ -204,6 +204,28 @@ Second type: 3.1
 
 (.a.b {a {b 10}})
 -> 10
+
+(defn return<T> [x:T] ('Return x))
+(fn [] (! ('Hello "hi" return<()>)))
+-> (fn [] (@task ('Hello "hi" ()) ()))
+
+(defn return<T> [x:T] ('Return x))
+(fn []:(@task ('Hello "hi" ()) ()) (! ('Hello "hi" return<()>)))
+-> (fn [] (@task ('Hello "hi" ()) ()))
+
+(fn []:(@task ('Bad "hi") ()) (! ('Bad "hi" ())))
+-> (fn [] (@task ('Bad "hi") ()))
+
+(fn [] (! ('Bad "hi" ())))
+-> (fn [] (@task ('Bad "hi") ⍉))
+
+(fn [] (! ('Bad "hi")))
+-1: This has the empty type
+3: Not a task: ('Bad "hi")
+5: non-return task tags must have 2 args
+
+(fn<T:[..]> []:(@task T ()) ('Return ()))
+-> (fn<T:[..]> [] (@task #5 ()))
 `
     .trim()
     .split('\n\n');

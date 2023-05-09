@@ -1,14 +1,9 @@
 // Some things
 
-import { Report } from '../src/get-type/get-types-new';
-import {
-    _matchOrExpand,
-    _matchesType,
-    matchesType,
-} from '../src/get-type/matchesType';
+import { _matchOrExpand } from '../src/get-type/matchesType';
 import { autoCompleteIfNeeded, parseByCharacter } from '../src/parse/parse';
 import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
-import { CompilationResults, CstCtx } from '../src/to-ast/library';
+import { CstCtx } from '../src/to-ast/library';
 import { nodeToType } from '../src/to-ast/nodeToType';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';

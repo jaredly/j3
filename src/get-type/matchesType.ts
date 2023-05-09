@@ -1,5 +1,7 @@
 import { blank } from '../to-ast/Ctx';
-import { Ctx } from '../to-ast/library';
+import { CompilationResults, Ctx } from '../to-ast/library';
+import { nodeForType } from '../to-cst/nodeForType';
+import { nodeToString } from '../to-cst/nodeToString';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
 import { applyAndResolve, expandEnumItems } from './applyAndResolve';
@@ -73,6 +75,11 @@ export const _matchOrExpand = (
     return _matchesType(ca, ce, ctx, path, typeArgs);
 };
 
+export const typeToString = (
+    type: Type,
+    hashNames: CompilationResults['hashNames'],
+) => nodeToString(nodeForType(type, hashNames), hashNames);
+
 export const _matchesType = (
     candidate: Type,
     expected: Type,
@@ -80,6 +87,11 @@ export const _matchesType = (
     path: string[],
     typeArgs?: TypeArgs,
 ): MatchError | true => {
+    // console.log(
+    //     `Matches`,
+    //     typeToString(candidate, ctx.results.hashNames),
+    //     typeToString(expected, ctx.results.hashNames),
+    // );
     if (path.length > 100) {
         throw new Error(`Deep recursion? Path length over 100`);
     }

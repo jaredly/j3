@@ -5,6 +5,8 @@ import { MatchError } from '../types/types';
 import { transformType } from '../types/walk-ast';
 import { _unifyTypes } from './unifyTypes';
 import { TypeArgs, _matchOrExpand } from './matchesType';
+import { asTaskType } from './asTaskType';
+import { expandTask } from './expandTask';
 
 export const applyAndResolve = (
     type: Type,
@@ -13,6 +15,12 @@ export const applyAndResolve = (
     expandLoops?: boolean,
     typeArgs?: TypeArgs,
 ): Type | { type: 'error'; error: MatchError } => {
+    if (type.type === 'task') {
+        const tt = asTaskType(type, ctx, { errors: {}, types: {} });
+        if (tt) {
+            return expandTask(tt, type.form);
+        }
+    }
     if (type.type === 'loop' && expandLoops) {
         return transformType(
             type.inner,

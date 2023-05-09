@@ -1,10 +1,5 @@
 import { TfnType, Type } from '../types/ast';
-import {
-    TypeArgs,
-    _matchOrExpand,
-    _matchesType,
-    matchesType,
-} from './matchesType';
+import { TypeArgs, _matchOrExpand, matchesType } from './matchesType';
 import { applyTypeVariables } from './applyAndResolve';
 import { Ctx } from '../to-ast/library';
 import { unifyManyTypes } from './patternType';
