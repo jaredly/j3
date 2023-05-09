@@ -292,6 +292,16 @@ export const specials: {
                     body: ret,
                 },
             };
+            const bodies = body.map((node) =>
+                nodeToExpr(node, {
+                    ...inner2,
+                    local: {
+                        ...inner2.local,
+                        loop: { sym: form.loc, type: ann },
+                    },
+                }),
+            );
+            const matched = bodyMatch(bodies, ctx, ret, ret.form);
             const value: Expr = {
                 type: 'loop',
                 ann,
@@ -303,20 +313,8 @@ export const specials: {
                         type: 'fn',
                         args,
                         form,
-                        ret,
-                        body: bodyMatch(
-                            body.map((node) =>
-                                nodeToExpr(node, {
-                                    ...inner2,
-                                    local: {
-                                        ...inner2.local,
-                                        loop: { sym: form.loc, type: ann },
-                                    },
-                                }),
-                            ),
-                            ret,
-                            ctx,
-                        ),
+                        ret: matched ?? nilt,
+                        body: bodies,
                     },
                 },
                 form,
@@ -541,45 +539,6 @@ export const specials: {
     },
 };
 
-export function finishFn(
-    contents: Node[],
-    inner: CstCtx,
-    ret: Type | null,
-    form: Node,
-    args: { pattern: Pattern; type: Type; form: Node }[],
-): Expr {
-    const bodies = contents.slice(1).map((child) => nodeToExpr(child, inner));
-    if (bodies.length) {
-        const effects: TaskType = { effects: {}, locals: [], result: nilt };
-        let bodyRes = getType(
-            bodies[bodies.length - 1],
-            inner,
-            undefined,
-            // { errors: inner.results.errors, types: {} },
-            effects,
-        );
-        if (bodyRes) {
-            bodyRes = maybeEffectsType(effects, bodyRes);
-            if (ret) {
-                // ret = maybeEffectsType(effects, ret);
-                const match = _matchOrExpand(bodyRes, ret, inner, []);
-                if (match !== true) {
-                    err(inner.results.errors, form, match);
-                }
-            } else {
-                ret = bodyRes;
-            }
-        }
-    }
-    return {
-        type: 'fn',
-        args,
-        body: bodies.length ? bodies : [nil],
-        ret: ret ?? none,
-        form,
-    };
-}
-
 function processArgs(
     argNode: NodeArray & NodeExtra,
     ctx: CstCtx,
@@ -690,27 +649,39 @@ export const fail = (ctx: CstCtx, form: Node, message: string): Expr => {
     return { type: 'unresolved', form };
 };
 
-const bodyMatch = (body: Expr[], ret: Type, ctx: CstCtx) => {
+export function finishFn(
+    contents: Node[],
+    inner: CstCtx,
+    ret: Type | null,
+    form: Node,
+    args: { pattern: Pattern; type: Type; form: Node }[],
+): Expr {
+    const bodies = contents.slice(1).map((child) => nodeToExpr(child, inner));
+    ret = bodyMatch(bodies, inner, ret, form);
+    return {
+        type: 'fn',
+        args,
+        body: bodies.length ? bodies : [nil],
+        ret: ret ?? none,
+        form,
+    };
+}
+
+function bodyMatch(body: Expr[], ctx: CstCtx, ret: Type | null, form: Node) {
     if (body.length) {
         const effects: TaskType = { effects: {}, locals: [], result: nilt };
-        let bodyRes = getType(
-            body[body.length - 1],
-            ctx,
-            undefined,
-            // { errors: ctx.results.errors, types: {} },
-            effects,
-        );
+        let bodyRes = getType(body[body.length - 1], ctx, undefined, effects);
         if (bodyRes) {
             bodyRes = maybeEffectsType(effects, bodyRes);
             if (ret) {
                 const match = _matchOrExpand(bodyRes, ret, ctx, []);
                 if (match !== true) {
-                    err(ctx.results.errors, ret.form, match);
+                    err(ctx.results.errors, form, match);
                 }
             } else {
                 ret = bodyRes;
             }
         }
     }
-    return body;
-};
+    return ret;
+}
