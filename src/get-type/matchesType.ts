@@ -168,7 +168,12 @@ export const _matchesType = (
                     ctx,
                     path.concat(['result']),
                 );
-                return retmatch;
+                if (retmatch !== true) {
+                    return retmatch;
+                }
+                // candidate.extra
+                // if (candidate.)
+                return true;
             }
             return inv(candidate, expected, path);
         }

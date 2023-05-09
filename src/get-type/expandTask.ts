@@ -36,7 +36,14 @@ export const expandTask = (task: TaskType, form: Node): Type => {
                         name: key,
                     }),
                 ),
-            ...task.locals,
+            ...task.locals.map(
+                (local): Type => ({
+                    type: 'task',
+                    effects: local,
+                    result: none,
+                    form: local.form,
+                }),
+            ),
             { type: 'tag', name: 'Return', form: blank, args: [task.result] },
         ],
     };
