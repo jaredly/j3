@@ -246,7 +246,7 @@ export type Type =
     | { type: 'none'; form: Node }
     | { type: 'recur'; form: Node; sym: number }
     | { type: 'loop'; form: Node; inner: Type }
-    | { type: 'task'; form: Node; effects: Type; result: Type }
+    | { type: 'task'; form: Node; effects: Type; result: Type; extra?: Type }
     | {
           type: 'builtin';
           name: string;

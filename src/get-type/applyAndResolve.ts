@@ -269,6 +269,21 @@ export const expandEnumItems = (
     for (let i = 0; i < items.length; i++) {
         let item = items[i];
 
+        if (item.type === 'toplevel') {
+            const defn = ctx.results.toplevel[item.hash];
+            if (defn.type !== 'deftype') {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'unknown toplevel',
+                        path,
+                        form: nil.form,
+                    },
+                };
+            }
+            item = defn.value;
+        }
         if (item.type === 'global') {
             const defn = globalType(ctx.global.library, item.hash);
             if (!defn) {

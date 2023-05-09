@@ -1,6 +1,6 @@
 import { none } from '../to-ast/builtins';
 import { Local, Node, Type } from '../types/ast';
-import { expandEnumItems } from './applyAndResolve';
+import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 import { Ctx } from '../to-ast/library';
 import {
     Report,
@@ -84,6 +84,12 @@ export const expandTaskEffects = (
         }
         case 'local':
             return { type: 'task', effects: {}, locals: [t], result: none };
+        case 'global': {
+            const app = applyAndResolve(t, ctx, []);
+            if (app !== t && app.type !== 'error') {
+                return expandTaskEffects(app, ctx);
+            }
+        }
         default:
             return {
                 type: 'error',

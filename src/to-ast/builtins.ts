@@ -373,6 +373,7 @@ addBuiltin(basicBuiltins, 'json/encode', {
     },
     form: blank,
 });
+
 const jdarg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'json/decode', {
     type: 'tfn',
@@ -381,6 +382,92 @@ addBuiltin(basicBuiltins, 'json/decode', {
         type: 'fn',
         args: [{ type: tstring, form: blank }],
         body: { type: 'local', sym: jdarg, form: blank },
+        form: blank,
+    },
+    form: blank,
+});
+
+const eno: Type = { type: 'union', open: true, form: blank, items: [] };
+
+const whEffects = basicBuiltins.bidx--;
+const whResult = basicBuiltins.bidx--;
+const whHandled = basicBuiltins.bidx--;
+const whFinal = basicBuiltins.bidx--;
+addBuiltin(basicBuiltins, 'task/withHandler', {
+    type: 'tfn',
+    args: [
+        { form: blankAt(whEffects), name: 'Effects', bound: eno },
+        { form: blankAt(whResult), name: 'Result' },
+        { form: blankAt(whHandled), name: 'Handled', bound: eno },
+        { form: blankAt(whFinal), name: 'Final' },
+    ],
+    body: {
+        type: 'fn',
+        args: [
+            {
+                name: 'task',
+                form: blank,
+                type: {
+                    type: 'task',
+                    effects: { type: 'local', sym: whEffects, form: blank },
+                    result: { type: 'local', sym: whResult, form: blank },
+                    extra: { type: 'local', sym: whHandled, form: blank },
+                    form: blank,
+                },
+            },
+            {
+                name: 'handler',
+                form: blank,
+                type: {
+                    type: 'fn',
+                    args: [
+                        {
+                            name: 'input',
+                            form: blank,
+                            type: {
+                                type: 'task',
+                                effects: {
+                                    type: 'union',
+                                    form: blank,
+                                    open: false,
+                                    items: [
+                                        {
+                                            type: 'local',
+                                            sym: whEffects,
+                                            form: blank,
+                                        },
+                                        {
+                                            type: 'local',
+                                            sym: whHandled,
+                                            form: blank,
+                                        },
+                                    ],
+                                },
+                                form: blank,
+                                result: {
+                                    type: 'local',
+                                    sym: whResult,
+                                    form: blank,
+                                },
+                            },
+                        },
+                    ],
+                    body: {
+                        type: 'task',
+                        form: blank,
+                        effects: { type: 'local', sym: whEffects, form: blank },
+                        result: { type: 'local', sym: whFinal, form: blank },
+                    },
+                    form: blank,
+                },
+            },
+        ],
+        body: {
+            type: 'task',
+            form: blank,
+            effects: { type: 'local', sym: whEffects, form: blank },
+            result: { type: 'local', sym: whFinal, form: blank },
+        },
         form: blank,
     },
     form: blank,
@@ -395,8 +482,8 @@ task/andThen
 task/withHandler
 (fn<Effects:[..] Result Handled:[..] Final>
     [task:(@task Effects Result Handled)
-     handler:(fn [input:(@task [Effects Handled] Result)] (@task Effects Result2))]
-    (@task Effects Result2))
+     handler:(fn [input:(@task [Effects Handled] Result)] (@task Effects Final))]
+    (@task Effects Final))
 
 
 (defnrec alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)

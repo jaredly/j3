@@ -54,7 +54,7 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 error.pattern,
             )}\nAvailable type:${nts(error.target)}`;
         case 'not a task':
-            return `Not a task: ${nts(error.target)}. Inner: ${errorToString(
+            return `Not a task: ${nts(error.target)}. --> ${errorToString(
                 error.inner,
                 ctx,
             )}`;
