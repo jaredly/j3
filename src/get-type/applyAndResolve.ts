@@ -16,8 +16,8 @@ export const applyAndResolve = (
     typeArgs?: TypeArgs,
 ): Type | { type: 'error'; error: MatchError } => {
     if (type.type === 'task') {
-        const tt = asTaskType(type, ctx, { errors: {}, types: {} });
-        if (tt) {
+        const tt = asTaskType(type, ctx);
+        if (tt.type === 'task') {
             return expandTask(tt, type.form);
         }
     }

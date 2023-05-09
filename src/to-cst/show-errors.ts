@@ -49,7 +49,7 @@ export const errorToString = (
             return `Not a task: ${nodeToString(
                 nodeForType(error.target, hashNames),
                 hashNames,
-            )}`;
+            )}. Inner: ${errorToString(error.inner, hashNames)}`;
         case 'unification':
             return `Unable to unify the following types:\nFirst type: ${nodeToString(
                 nodeForType(error.one, hashNames),

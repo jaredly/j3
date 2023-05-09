@@ -361,7 +361,12 @@ const _getType = (
             if (expr.ret && report) {
                 report.types[expr.ret.form.loc] = expr.ret;
             }
-            let myEffects: TaskType = { effects: {}, locals: [], result: nilt };
+            let myEffects: TaskType = {
+                type: 'task',
+                effects: {},
+                locals: [],
+                result: nilt,
+            };
             const body = expr.body.map((body) =>
                 getType(body, ctx, report, myEffects),
             );
@@ -724,14 +729,15 @@ const _getType = (
             const taskType = asTaskType(
                 inner,
                 ctx,
-                report ?? { errors: {}, types: {} },
+                // report ?? { errors: {}, types: {} },
             );
-            if (!taskType) {
+            if (taskType.type === 'error') {
                 return report
                     ? errf(report, expr.form, {
                           type: 'not a task',
                           target: inner,
                           form: expr.form,
+                          inner: taskType.error,
                       })
                     : void 0;
             }
@@ -880,6 +886,7 @@ export const getPatternTypes = (
 };
 
 export type TaskType = {
+    type: 'task';
     effects: { [key: string]: { input: Type; output: Type | null } };
     locals: Local[];
     result: Type;
@@ -922,25 +929,17 @@ export const mergeTaskTypes = (
     one: TaskType,
     two: TaskType,
     ctx: Ctx,
-    report: Report,
-): TaskType | null => {
-    const result = unifyTypes(
-        one.result,
-        two.result,
-        ctx,
-        one.result.form,
-        report,
-    );
-    if (!result) {
-        return null;
+): TaskType | { type: 'error'; error: Error } => {
+    const result = _unifyTypes(one.result, two.result, ctx, []);
+    if (result.type === 'error') {
+        return result;
     }
     const merged: TaskType['effects'] = { ...two.effects };
-    let failed = false;
+    let failed: null | Error = null;
     Object.entries(one.effects).forEach(([k, { input, output }]) => {
         const error = mergeInputOutput(merged, k, input, output, ctx);
         if (error) {
-            errf(report, input.form, error);
-            failed = true;
+            failed = error;
         }
     });
 
@@ -952,9 +951,9 @@ export const mergeTaskTypes = (
     });
 
     if (failed) {
-        return null;
+        return { type: 'error', error: failed };
     }
-    return { effects: merged, result, locals };
+    return { effects: merged, result, locals, type: 'task' };
 };
 
 export const isNilT = (t: Type) =>

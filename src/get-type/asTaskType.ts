@@ -9,31 +9,27 @@ import {
     isNilT,
     mergeTaskTypes,
 } from './get-types-new';
+import { Error } from '../types/types';
 
 export const asTaskType = (
     t: Type,
     ctx: Ctx,
-    report: Report,
-): null | TaskType => {
+    // report: Report,
+): { type: 'error'; error: Error } | TaskType => {
     if (t.type === 'task') {
-        const inner = asTaskType(t.effects, ctx, report);
-        if (!inner) {
-            errf(report, t.form, {
-                type: 'misc',
-                message: 'cannot interpret task type',
-                typ: t.effects,
-            });
-            return null;
+        const inner = asTaskType(t.effects, ctx);
+        if (inner.type === 'error') {
+            return inner;
         }
         return mergeTaskTypes(
             {
+                type: 'task',
                 effects: {},
                 locals: [],
                 result: t.result,
             },
             inner,
             ctx,
-            report,
         );
     }
     let expanded: { [key: string]: { args: Type[]; form: Node } };
@@ -43,88 +39,93 @@ export const asTaskType = (
     } else if (t.type === 'union') {
         let ex = expandEnumItems(t.items, ctx, []);
         if (ex.type === 'error') {
-            errf(report, t.form, ex.error);
-            return null;
+            // errf(report, t.form, ex.error);
+            return ex;
         }
         expanded = ex.map;
     } else if (t.type === 'local') {
         const bound = ctx.results.localMap.types[t.sym].bound;
         if (bound?.type !== 'union') {
-            errf(report, t.form, {
-                type: 'misc',
-                message: 'local bound must be a union',
-                form: t.form,
-            });
-            return null;
+            return {
+                type: 'error',
+                error: {
+                    type: 'misc',
+                    message: 'local bound must be a union',
+                    form: t.form,
+                },
+            };
         }
         locals.push(t);
         expanded = {};
     } else {
-        errf(report, t.form, {
-            type: 'misc',
-            message: 'Task type must be a union',
-            typ: t,
-            form: t.form,
-        });
-        return null;
+        return {
+            type: 'error',
+            error: {
+                type: 'misc',
+                message: 'Task type must be a union',
+                typ: t,
+                form: t.form,
+            },
+        };
     }
 
     let tt: TaskType | null = null;
 
-    let failed = false;
+    let failed: null | Error = null;
 
     Object.entries(expanded).forEach(([k, v]) => {
+        if (failed) {
+            return;
+        }
         let ot: TaskType;
         if (k === 'Return') {
             if (v.args.length !== 1) {
-                errf(report, v.form, {
+                failed = {
                     type: 'misc',
                     message: 'return must have 1 arg',
                     form: v.form,
-                });
-                failed = true;
+                };
                 return;
             }
-            ot = { effects: {}, result: v.args[0], locals };
+            ot = { effects: {}, result: v.args[0], locals, type: 'task' };
         } else {
             if (v.args.length !== 2) {
-                errf(report, v.form, {
+                failed = {
                     type: 'misc',
                     message: 'non-return task tags must have 2 args',
                     form: v.form,
-                });
-                failed = true;
+                };
                 return;
             }
             const [input, output] = v.args;
 
             if (isNilT(output)) {
                 ot = {
+                    type: 'task',
                     effects: { [k]: { input, output: null } },
                     result: none,
                     locals,
                 };
             } else {
                 if (output.type !== 'fn') {
-                    errf(report, v.form, {
+                    failed = {
                         type: 'misc',
                         message: 'task arg 2 must be fn or nil',
                         form: v.form,
-                    });
-                    failed = true;
+                    };
                     return;
                 }
                 if (output.args.length !== 1) {
-                    errf(report, v.form, {
+                    failed = {
                         type: 'misc',
                         message: 'task arg 2 must be fn with one argument',
                         form: v.form,
-                    });
-                    failed = true;
+                    };
                     return;
                 }
 
                 ot = {
+                    type: 'task',
                     effects: { [k]: { input, output: output.args[0].type } },
                     result: none,
                     locals,
@@ -132,25 +133,25 @@ export const asTaskType = (
 
                 // output.body is the @recur here??? Should we evaluate it too? Or do we run the risk of an infinite loop?
                 if (output.body.type !== 'recur') {
-                    const body = asTaskType(output.body, ctx, report);
-                    if (!body) {
-                        errf(report, v.form, {
-                            type: 'misc',
-                            message: 'task arg 2 fn response not taskable',
+                    const body = asTaskType(output.body, ctx);
+                    if (body.type === 'error') {
+                        failed = {
+                            type: 'not a task',
+                            inner: body.error,
+                            target: output.body,
+                            // message: 'task arg 2 fn response not taskable',
                             form: v.form,
-                        });
-                        failed = true;
+                        };
                         return;
                     }
-                    const merged = mergeTaskTypes(ot, body, ctx, report);
-                    if (!merged) {
-                        errf(report, v.form, {
+                    const merged = mergeTaskTypes(ot, body, ctx);
+                    if (merged.type === 'error') {
+                        failed = {
                             type: 'misc',
                             message:
                                 'unable to merge task types from task arg 2',
                             form: v.form,
-                        });
-                        failed = true;
+                        };
                         return;
                     }
                     ot = merged;
@@ -163,19 +164,22 @@ export const asTaskType = (
             return;
         }
 
-        const merged = mergeTaskTypes(tt, ot, ctx, report);
-        if (!merged) {
-            failed = true;
+        const merged = mergeTaskTypes(tt, ot, ctx);
+        if (merged.type === 'error') {
+            failed = merged.error;
             return;
         }
         tt = merged;
     });
 
     if (failed) {
-        return null;
+        return { type: 'error', error: failed };
     }
     if (!tt && locals.length) {
-        return { effects: {}, locals, result: none };
+        return { effects: {}, locals, result: none, type: 'task' };
+    }
+    if (!tt) {
+        return { type: 'error', error: { type: 'misc', message: 'nothing?' } };
     }
     return tt;
 };

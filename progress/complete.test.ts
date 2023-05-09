@@ -221,8 +221,7 @@ Second type: 3.1
 
 (fn [] (! ('Bad "hi")))
 -1: This has the empty type
-3: Not a task: ('Bad "hi")
-5: non-return task tags must have 2 args
+3: Not a task: ('Bad "hi"). Inner: non-return task tags must have 2 args
 
 (fn<T:[..]> []:(@task T ()) ('Return ()))
 -> (fn<T:[..]> [] (@task #5 ()))

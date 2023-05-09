@@ -53,7 +53,7 @@ export type Error =
           expected: FnType;
           received: number;
       }
-    | { type: 'not a task'; target: Type; form: Node }
+    | { type: 'not a task'; target: Type; form: Node; inner: Error }
     | { type: 'case'; pattern: Type; target: Type; form: Node }
     | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }

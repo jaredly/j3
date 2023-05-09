@@ -669,7 +669,12 @@ export function finishFn(
 
 function bodyMatch(body: Expr[], ctx: CstCtx, ret: Type | null, form: Node) {
     if (body.length) {
-        const effects: TaskType = { effects: {}, locals: [], result: nilt };
+        const effects: TaskType = {
+            effects: {},
+            locals: [],
+            result: nilt,
+            type: 'task',
+        };
         let bodyRes = getType(body[body.length - 1], ctx, undefined, effects);
         if (bodyRes) {
             bodyRes = maybeEffectsType(effects, bodyRes);
