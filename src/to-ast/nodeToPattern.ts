@@ -278,19 +278,16 @@ export const nodeToPattern = (
                 let args: Type[];
                 if (res.type === 'tag') {
                     if (res.name !== text) {
-                        // console.log('mismatch', res, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
                     const map = expandEnumItems(res.items, ctx, []);
                     if (map.type === 'error' || !map.map[text]) {
-                        // console.log('nomap', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = map.map[text].args;
                 } else {
-                    // console.log('badres', res);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
                 return {
@@ -303,9 +300,23 @@ export const nodeToPattern = (
                 };
             }
         }
+        case 'hash':
+        case 'comment':
+        case 'annot':
+        case 'string':
+        case 'stringText':
+        case 'recordAccess':
+        case 'accessText':
+        case 'spread':
+        case 'rich-text':
+        case 'attachment':
+        case 'tapply':
+        case 'blank':
+        case 'unparsed':
+            return { type: 'unresolved', form };
     }
+    let _: never = form;
     return { type: 'unresolved', form };
-    // throw new Error(`nodeToPattern can't handle ${form.type}`);
 };
 
 export const err = (errors: Report['errors'], form: Node, error: Error) => {
