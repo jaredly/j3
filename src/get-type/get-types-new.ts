@@ -738,6 +738,7 @@ const _getType = (
                           target: inner,
                           form: expr.form,
                           inner: taskType.error,
+                          path: [],
                       })
                     : void 0;
             }
@@ -929,7 +930,7 @@ export const mergeTaskTypes = (
     one: TaskType,
     two: TaskType,
     ctx: Ctx,
-): TaskType | { type: 'error'; error: Error } => {
+): TaskType | { type: 'error'; error: MatchError } => {
     const result = _unifyTypes(one.result, two.result, ctx, []);
     if (result.type === 'error') {
         return result;

@@ -20,7 +20,14 @@ export const matchesType = (
     const result = _matchOrExpand(candidate, expected, ctx, [], typeArgs);
     if (result !== true) {
         if (report) {
-            errf(report, form, result);
+            errf(report, form, {
+                type: 'invalid type',
+                form,
+                found: candidate,
+                expected,
+                path: [],
+                inner: result,
+            });
         }
         return false;
     }

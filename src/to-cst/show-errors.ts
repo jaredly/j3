@@ -18,7 +18,7 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
         if (n.type === 'task') {
             const tt = asTaskType(n, ctx);
             if (tt.type === 'task') {
-                return res + ' <expanded task> ' + nts(expandTask(tt, blank));
+                return res + '\n<expanded task>\n' + nts(expandTask(tt, blank));
             } else {
                 return (
                     res +
@@ -63,11 +63,16 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 error.one,
             )}\nSecond type: ${nts(error.two)}`;
         case 'invalid type':
-            return `Invalid type.\nExpected: ${nts(
-                error.expected,
-            )}\nFound: ${nts(error.found)}${
-                error.path.length ? '\nPath: ' + error.path.join(' -> ') : ''
-            }`;
+            return (
+                `Invalid type.\nExpected:\n${nts(
+                    error.expected,
+                )}\nFound:\n${nts(error.found)}${
+                    error.path.length
+                        ? '\nPath: ' + error.path.join(' -> ')
+                        : ''
+                }` +
+                (error.inner ? '\n\n' + errorToString(error.inner, ctx) : '')
+            );
     }
     return `Some error happened ${error.type} : ${JSON.stringify(
         error,

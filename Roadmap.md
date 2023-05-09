@@ -1,5 +1,28 @@
 
+# movies things
+
+Ok, so I want a way to take `(@task [T ('Failure X)] Y)`
+and turn it into `(@task T (Result Y X))`
+
+```clj
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task:(@task [Effects ('Failure Errors)])]:(
+  @task Effects (Result Value Errors))
+  (handle task
+
+
+  )
+
+)
+```
+
+
+
+##
+
+- [ ] I should make it so that, even if the switch type is empty,
+  I still supply locals
 - [ ] I want auto-applied tfns to hover with types
+- [ ] '!' and '!?' should be hoverable
 
 ... my indication of type errors needs to be much better
 

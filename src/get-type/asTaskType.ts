@@ -9,7 +9,7 @@ import {
     isNilT,
     mergeTaskTypes,
 } from './get-types-new';
-import { Error } from '../types/types';
+import { Error, MatchError } from '../types/types';
 
 // (@task some-type res)
 // ('Return 10)
@@ -18,7 +18,7 @@ import { Error } from '../types/types';
 export const expandTaskEffects = (
     t: Type,
     ctx: Ctx,
-): { type: 'error'; error: Error } | TaskType => {
+): { type: 'error'; error: MatchError } | TaskType => {
     switch (t.type) {
         case 'tag': {
             if (t.args.length === 1) {
@@ -57,6 +57,7 @@ export const expandTaskEffects = (
                     message: `Task effect should have 1 or 2 arguments`,
                     form: t.form,
                     typ: t,
+                    path: [],
                 },
             };
         }
@@ -94,6 +95,7 @@ export const expandTaskEffects = (
                         message: `Type cannot be used as task effect`,
                     },
                     target: t,
+                    path: [],
                 },
             };
         // case ''
@@ -104,7 +106,7 @@ export const asTaskType = (
     t: Type,
     ctx: Ctx,
     // report: Report,
-): { type: 'error'; error: Error } | TaskType => {
+): { type: 'error'; error: MatchError } | TaskType => {
     if (t.type === 'task') {
         const inner = expandTaskEffects(t.effects, ctx);
         if (inner.type === 'error') {
@@ -141,6 +143,7 @@ export const asTaskType = (
                     type: 'misc',
                     message: 'local bound must be a union',
                     form: t.form,
+                    path: [],
                 },
             };
         }
@@ -154,6 +157,7 @@ export const asTaskType = (
                 message: 'Task type must be a union',
                 typ: t,
                 form: t.form,
+                path: [],
             },
         };
     }
@@ -233,6 +237,7 @@ export const asTaskType = (
                             target: output.body,
                             // message: 'task arg 2 fn response not taskable',
                             form: v.form,
+                            path: [],
                         };
                         return;
                     }
@@ -271,7 +276,15 @@ export const asTaskType = (
         return { effects: {}, locals, result: none, type: 'task' };
     }
     if (!tt) {
-        return { type: 'error', error: { type: 'misc', message: 'nothing?' } };
+        return {
+            type: 'error',
+            error: {
+                type: 'misc',
+                message: 'nothing?',
+                path: [],
+                form: t.form,
+            },
+        };
     }
     return tt;
 };

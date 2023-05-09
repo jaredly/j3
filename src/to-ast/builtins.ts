@@ -386,6 +386,46 @@ addBuiltin(basicBuiltins, 'json/decode', {
     form: blank,
 });
 
+/*
+task/andThen
+(fn<firstEffects:[..] secondEffects:[..] firstResult secondResult>
+    [a:(@task firstEffects firstResult) b:(fn [res:firstResult] (@task secondEffects secondResult))]
+    (@task [firstEffects secondEffects] secondResult))
+
+task/withHandler
+(fn<Effects:[..] Result Handled:[..] Final>
+    [task:(@task Effects Result Handled)
+     handler:(fn [input:(@task [Effects Handled] Result)] (@task Effects Result2))]
+    (@task Effects Result2))
+
+
+(defnrec alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)
+    (switch task
+        ('Return result) ('Result result)
+        ('Read _ k) (@recur<Inner R> readResponse (k readResponse))
+        otherwise (withHandler<Inner R Read R>
+            otherwise
+            (fn [task:(@task [Inner Read] R)] (@recur<Inner R> readResponse task)))))
+
+(defn alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)
+    (
+        (fnrec [task:(@task [Read Inner] R)]
+            (switch task
+                ('Return result) ('Result result)
+                ('Read _ k) (@recur (k readResponse))
+                otherwise (withHandler<Inner R Read R>
+                    otherwise
+                    (fn [task:(@task [Inner Read] R)] (@recur task))))
+    ) task))
+
+(defn alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)
+    (handle task
+        ('Return result) ('Result result)
+        ('Read _ k) (@recur (k readResponse))))
+
+Ok but now .. I want ...
+*/
+
 export const nil: Expr = {
     type: 'record',
     entries: [],

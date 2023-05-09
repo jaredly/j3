@@ -99,8 +99,21 @@ export const Hover = ({
                     gridTemplateColumns: 'max-content max-content',
                 }}
             >
-                {found.map((f) => (
-                    <div>{f.text}</div>
+                {found.map((f, i) => (
+                    <div
+                        style={
+                            i > 0
+                                ? {
+                                      borderTop:
+                                          '1px solid rgba(200,200,200,0.4)',
+                                      marginTop: 4,
+                                      paddingTop: 4,
+                                  }
+                                : undefined
+                        }
+                    >
+                        {f.text}
+                    </div>
                 ))}
             </div>
         </div>

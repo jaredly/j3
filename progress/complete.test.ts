@@ -9,6 +9,7 @@ import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { splitCase } from './test-utils';
 
 const data = `
 (fn [one:int] one)
@@ -228,6 +229,9 @@ Second type: 3.1
 
 (fn [] (! 'Bad "hi" ()))
 -> (fn [] (@task ('Bad "hi") ⍉))
+
+!!!(fn [x:['Ten ('Four int)]] (switch x 'Ten 10 ('Four xy) xy))
+-> (fn [x:['Ten ('Four #:builtin:int)]] #:builtin:int)
 `
     .trim()
     .split('\n\n');
@@ -295,31 +299,6 @@ const splitIndented = (text: string) => {
         }
     });
     return chunks.map((chunk) => chunk.join('\n'));
-};
-
-const splitCase = (text: string) => {
-    const chunks = text.split('\n');
-    const code: string[] = [];
-    let expected: string | null = null;
-    let type: string | null = null;
-    let errors: string[] = [];
-    chunks.forEach((line) => {
-        if (line.startsWith('= ')) {
-            expected = line.slice(2);
-        } else if (line.startsWith('-> ')) {
-            type = line.slice(3);
-        } else if (errors.length || line.match(/^-?\d+: /)) {
-            errors.push(line);
-        } else {
-            code.push(line);
-        }
-    });
-    return {
-        input: code.join('\n'),
-        expected,
-        expectedType: type,
-        errors: errors.join('\n'),
-    };
 };
 
 describe('completion and such', () => {

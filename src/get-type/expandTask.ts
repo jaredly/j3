@@ -1,9 +1,10 @@
-import { blank } from '../to-ast/builtins';
+import { blank, nilt, none } from '../to-ast/builtins';
 import { Node, Type } from '../types/ast';
-import { TaskType } from './get-types-new';
+import { TaskType, maybeEffectsType } from './get-types-new';
 import { cmp } from './unifyTypes';
 
 export const expandTask = (task: TaskType, form: Node): Type => {
+    const inner = maybeEffectsType(task, task.result);
     return {
         type: 'union',
         open: false,
@@ -14,7 +15,23 @@ export const expandTask = (task: TaskType, form: Node): Type => {
                 .map(
                     ([key, v]): Type => ({
                         type: 'tag',
-                        args: v.output ? [v.input, v.output] : [v.input],
+                        args: v.output
+                            ? [
+                                  v.input,
+                                  {
+                                      type: 'fn',
+                                      args: [
+                                          {
+                                              name: 'value',
+                                              form: blank,
+                                              type: v.output,
+                                          },
+                                      ],
+                                      body: inner,
+                                      form: blank,
+                                  },
+                              ]
+                            : [v.input],
                         form: v.input.form,
                         name: key,
                     }),

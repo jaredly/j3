@@ -1,6 +1,6 @@
 // Some things
 
-import { _matchOrExpand } from '../src/get-type/matchesType';
+import { _matchOrExpand, typeToString } from '../src/get-type/matchesType';
 import { autoCompleteIfNeeded, parseByCharacter } from '../src/parse/parse';
 import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
 import { CstCtx } from '../src/to-ast/library';
@@ -46,9 +46,6 @@ declare global {
         }
     }
 }
-
-export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
-    nodeToString(nodeForType(type, hashNames), hashNames);
 
 expect.extend({
     toMatchType(candidate: Type, expected: Type, ctx: CstCtx) {

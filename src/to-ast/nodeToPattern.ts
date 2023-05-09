@@ -28,6 +28,7 @@ export const nodeToPattern = (
     ctx: CstCtx,
     bindings: Local['terms'],
 ): Pattern => {
+    console.log('aptterning', form);
     switch (form.type) {
         case 'array': {
             let item = getArrayItemType(t);
@@ -80,6 +81,15 @@ export const nodeToPattern = (
             return { type: 'array', left, right, form };
         }
         case 'identifier': {
+            if (form.text.startsWith("'")) {
+                return {
+                    type: 'tag',
+                    // TODO: maybe a null args?
+                    args: [],
+                    form,
+                    name: form.text.slice(1),
+                };
+            }
             ctx.results.display[form.loc] = {
                 style: { type: 'id-decl', hash: form.loc, ann: t },
             };
@@ -218,20 +228,12 @@ export const nodeToPattern = (
                     });
                 }
             }
-            return {
-                type: 'record',
-                entries,
-                form,
-            };
+            return { type: 'record', entries, form };
         }
         case 'list': {
             const values = filterComments(form.values);
             if (!values.length) {
-                return {
-                    type: 'record',
-                    form,
-                    entries: [],
-                };
+                return { type: 'record', form, entries: [] };
             }
             const [first, ...rest] = values;
             if (first.type === 'identifier' && first.text === ',') {
@@ -267,6 +269,7 @@ export const nodeToPattern = (
                     })),
                 };
             }
+            console.log('list here', first);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
                 const text = first.text.slice(1);
                 ctx.results.display[first.loc] = { style: { type: 'tag' } };
@@ -278,18 +281,22 @@ export const nodeToPattern = (
                 let args: Type[];
                 if (res.type === 'tag') {
                     if (res.name !== text) {
+                        console.log('no name idk', res.name, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
                     const map = expandEnumItems(res.items, ctx, []);
                     if (map.type === 'error' || !map.map[text]) {
+                        console.log('bad type forls', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = map.map[text].args;
                 } else {
+                    console.log('nothign else', res, t);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
+                console.log('patterns', rest);
                 return {
                     type: 'tag',
                     name: text,

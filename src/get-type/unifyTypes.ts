@@ -1,5 +1,10 @@
 import { nilt } from '../to-ast/Ctx';
-import { RecordMap, recordMap } from './get-types-new';
+import {
+    RecordMap,
+    maybeEffectsType,
+    mergeTaskTypes,
+    recordMap,
+} from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
@@ -9,6 +14,8 @@ import {
     unifyEnumArgs,
 } from './applyAndResolve';
 import { Ctx, Env } from '../to-ast/library';
+import { asTaskType } from './asTaskType';
+import { expandTask } from './expandTask';
 
 export const unifyTypes = (
     one: Type,
@@ -70,6 +77,38 @@ export const _unifyTypes = (
             return _unifyTypes(oa, ta, ctx, path);
         }
         return une(path, one, two);
+    }
+
+    if (one.type === 'task' && two.type === 'task') {
+        const ont = asTaskType(one, ctx);
+        if (ont.type === 'error') {
+            return ont;
+        }
+        const twt = asTaskType(two, ctx);
+        if (twt.type === 'error') {
+            return twt;
+        }
+        const merged = mergeTaskTypes(ont, twt, ctx);
+        if (merged.type === 'error') {
+            return merged;
+        }
+        return maybeEffectsType(merged, merged.result);
+    }
+
+    if (one.type === 'task') {
+        const ont = asTaskType(one, ctx);
+        if (ont.type === 'error') {
+            return ont;
+        }
+        one = expandTask(ont, one.form);
+    }
+
+    if (two.type === 'task') {
+        const twt = asTaskType(two, ctx);
+        if (twt.type === 'error') {
+            return twt;
+        }
+        two = expandTask(twt, two.form);
     }
 
     if (one.type === 'toplevel') {
