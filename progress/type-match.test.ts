@@ -2,16 +2,14 @@
 
 import { _matchOrExpand, typeToString } from '../src/get-type/matchesType';
 import { autoCompleteIfNeeded, parseByCharacter } from '../src/parse/parse';
-import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
+import { newCtx, noForm } from '../src/to-ast/Ctx';
 import { CstCtx } from '../src/to-ast/library';
 import { nodeToType } from '../src/to-ast/nodeToType';
-import { nodeForType } from '../src/to-cst/nodeForType';
-import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Type } from '../src/types/ast';
 import { ListLikeContents, fromMCST } from '../src/types/mcst';
 
-const whatsits = `
+const shouldMatch = `
 1 int
 1u uint
 true bool
@@ -30,6 +28,11 @@ false bool
 ('Return 10) (@task [] int)
 ('Hello 10 (fn [()] ('Return 10))) (@task [('Hello int ())] 10)
 `;
+
+const shouldNotMatch = `
+('Hello 10.0 (fn [()] ('Return 10))) (@task [('Hello int ())] 10)
+`;
+
 // (.x {x 1.}) 1.
 // Why doesn't this one work? 🤔
 // ('Node (array [])) ((tfn [T] (@loop [('Leaf T) ('Node (array @recur))])) int)
@@ -76,40 +79,45 @@ expect.extend({
 });
 
 const parseTypes = (
-    ctx: CstCtx,
     text: string,
-    track: { [idx: number]: [number, number] },
-): Type[] => {
+): { ctx: CstCtx; types: { raw: string; type: Type }[] } => {
+    const ctx = newCtx();
+    const track: { [idx: number]: [number, number] } = {};
     let state = parseByCharacter(text, ctx, { kind: 'type', track });
     state = autoCompleteIfNeeded(state, ctx.results.display);
-    return (state.map[-1] as ListLikeContents).values.map((idx) =>
-        nodeToType(fromMCST(idx, state.map), ctx),
-    );
+    return {
+        ctx,
+        types: (state.map[-1] as ListLikeContents).values.map((idx) => {
+            const loc = track[idx];
+            return {
+                raw: loc ? text.slice(loc[0], loc[1]) : '<no loc?>',
+                type: nodeToType(fromMCST(idx, state.map), ctx),
+            };
+        }),
+    };
 };
 
 describe('all the things', () => {
     it('should parse a type', () => {
-        expect(noForm(parseTypes(newCtx(), 'int', {})[0])).toEqual({
+        expect(noForm(parseTypes('int').types[0].type)).toEqual({
             type: 'builtin',
             name: 'int',
         });
     });
 
-    const ctx = newCtx();
-    const track: { [idx: number]: [number, number] } = {};
-    const raw = whatsits.trim().replace(/\n/g, ' ');
-    const types = parseTypes(ctx, raw, track);
+    const shouldRaw = shouldMatch.trim().replace(/\n/g, ' ');
+    const should = parseTypes(shouldRaw);
+
     it('should have parsed', () => {
-        expect(types.length).not.toEqual([]);
+        expect(should.types.length).not.toEqual([]);
     });
-    for (let i = 0; i < types.length; i += 2) {
-        const loc = track[types[i].form.loc];
-        it(
-            i + (loc ? ' <' + raw.slice(loc[0], loc[1]) + '>' : ' no loc idk'),
-            () => {
-                expect(types[i]).toMatchType(types[i + 1], ctx);
-            },
-        );
+    for (let i = 0; i < should.types.length; i += 2) {
+        it(i + ' ' + should.types[i].raw, () => {
+            expect(should.types[i].type).toMatchType(
+                should.types[i + 1].type,
+                should.ctx,
+            );
+        });
     }
 
     // it('checlk fail', () => {
