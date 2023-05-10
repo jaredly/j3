@@ -50,7 +50,14 @@ export const splitGraphemes = (text: string) => {
 export const parseByCharacter = (
     rawText: string,
     ctx: CstCtx | null,
-    { kind }: { kind?: 'type' | 'expr'; debug?: boolean } = {},
+    {
+        kind,
+        track,
+    }: {
+        kind?: 'type' | 'expr';
+        debug?: boolean;
+        track?: { [idx: number]: [number, number] };
+    } = {},
 ): State => {
     let state: State = initialState();
 
@@ -59,6 +66,18 @@ export const parseByCharacter = (
     let clipboard: ClipboardItem[] = [];
 
     for (let i = 0; i < text.length; i++) {
+        if (track) {
+            state.at[0].start.forEach(({ idx }) => {
+                if (!track[idx]) {
+                    track[idx] = [i, i];
+                }
+                // if (i > 0) {
+                //     track[idx][0] = Math.min(i - 1, track[idx][0]);
+                // }
+                track[idx][1] = Math.max(i, track[idx][1]);
+            });
+        }
+
         let mods: Mods = {};
         let key;
         ({ key, i } = determineKey(text, i, mods));

@@ -27,6 +27,8 @@ false bool
 ('Leaf 100) ((@loop (tfn [T] [('Leaf T) ('Node (array @recur))])) int)
 ('Node (array [('Leaf 1) ('Node (array []))])) ((@loop (tfn [T] [('Leaf T) ('Node (array (@recur T)))])) int)
 (@loop ['Nil ('Cons int @recur)]) (@loop ['Nil ('Cons int @recur)])
+('Return 10) (@task [] int)
+('Hello 10 (fn [()] ('Return 10))) (@task [('Hello int ())] 10)
 `;
 // (.x {x 1.}) 1.
 // Why doesn't this one work? 🤔
@@ -73,10 +75,12 @@ expect.extend({
     },
 });
 
-const parseTypes = (ctx: CstCtx, text: string): Type[] => {
-    let state = parseByCharacter(text, ctx, {
-        kind: 'type',
-    });
+const parseTypes = (
+    ctx: CstCtx,
+    text: string,
+    track: { [idx: number]: [number, number] },
+): Type[] => {
+    let state = parseByCharacter(text, ctx, { kind: 'type', track });
     state = autoCompleteIfNeeded(state, ctx.results.display);
     return (state.map[-1] as ListLikeContents).values.map((idx) =>
         nodeToType(fromMCST(idx, state.map), ctx),
@@ -85,21 +89,27 @@ const parseTypes = (ctx: CstCtx, text: string): Type[] => {
 
 describe('all the things', () => {
     it('should parse a type', () => {
-        expect(noForm(parseTypes(newCtx(), 'int')[0])).toEqual({
+        expect(noForm(parseTypes(newCtx(), 'int', {})[0])).toEqual({
             type: 'builtin',
             name: 'int',
         });
     });
 
     const ctx = newCtx();
-    const types = parseTypes(ctx, whatsits.trim().replace(/\n/g, ' '));
+    const track: { [idx: number]: [number, number] } = {};
+    const raw = whatsits.trim().replace(/\n/g, ' ');
+    const types = parseTypes(ctx, raw, track);
     it('should have parsed', () => {
         expect(types.length).not.toEqual([]);
     });
     for (let i = 0; i < types.length; i += 2) {
-        it(i + '', () => {
-            expect(types[i]).toMatchType(types[i + 1], ctx);
-        });
+        const loc = track[types[i].form.loc];
+        it(
+            i + (loc ? ' <' + raw.slice(loc[0], loc[1]) + '>' : ' no loc idk'),
+            () => {
+                expect(types[i]).toMatchType(types[i + 1], ctx);
+            },
+        );
     }
 
     // it('checlk fail', () => {

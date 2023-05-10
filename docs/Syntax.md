@@ -192,6 +192,28 @@ true false
   ('Message () (fn [()] @recur))
   ('Fail string ())
 ])
+; .... ??? does it work?
+; ok so it doesn't totally work, because of local type variables.
+
+(@task [
+  ('Read () string)
+  ('Fail string)
+  'Message
+  Local
+] int)
+
+(@task [('Read () string) ('Fail string) 'Message Local] int)
+
+[
+  ('Read () (fn [string] (@task [('Read () string) ('Fail string) 'Message Local] int)))
+  ('Fail string)
+  ('Message () (fn [()] (@task [('Read () string) ('Fail string) 'Message Local] int)))
+  ('Return int)
+  (@task Local int [('Read () string) ('Fail string) 'Message])
+]
+
+
+
 ; i mean tbh now that I have loop/recur
 ; that @task macro isn't even all that magic anymore.
 ; nice nice nice.

@@ -15,6 +15,33 @@ and turn it into `(@task T (Result Y X))`
 )
 ```
 
+- [ ] BUG urmmmm so I need a third argument to @task I think
+  - oh yeah, definitely
+
+  (@task
+    SharedEffects
+    Result
+    TopEffects
+    ReturnEffects)
+
+  [
+    ...TopEffects
+    ...SharedEffects
+    ('Tag input (fn [output] (@task [SharedEffects ReturnEffects] Result)))
+  ]
+
+  [... internal]
+  [without ...]
+
+  [Toplevel]
+  [ReturnLevel]
+  [Shared]?
+
+  `(@task Shared Return TopEffects ReturnEffects)`
+
+  `(@task Local Return [] SharedEffects)`
+
+
 
 
 ##
