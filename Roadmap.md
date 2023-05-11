@@ -21,11 +21,9 @@ and turn it into `(@task T (Result Y X))`
   (@task
     SharedEffects
     Result
-    TopEffects
     ReturnEffects)
 
   [
-    ...TopEffects
     ...SharedEffects
     ('Tag input (fn [output] (@task [SharedEffects ReturnEffects] Result)))
   ]
@@ -37,9 +35,13 @@ and turn it into `(@task T (Result Y X))`
   [ReturnLevel]
   [Shared]?
 
-  `(@task Shared Return TopEffects ReturnEffects)`
+  `(@task Shared Return ReturnEffects)`
 
   `(@task Local Return [] SharedEffects)`
+
+TODO do I need to be able to represent "extra top effects" as well?
+Like effects at the top level, that won't be in the return?
+I don't think so....
 
 
 

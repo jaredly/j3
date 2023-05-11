@@ -40,7 +40,10 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                     id('@task', type.form.loc),
                     nodeForType(type.effects, hashNames),
                     nodeForType(type.result, hashNames),
-                ],
+                    type.extraReturnEffects
+                        ? nodeForType(type.extraReturnEffects, hashNames)
+                        : null,
+                ].filter(Boolean) as Node[],
             };
         case 'tag':
             if (type.args.length === 0) {

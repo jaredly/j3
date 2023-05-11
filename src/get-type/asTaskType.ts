@@ -12,9 +12,10 @@ import {
 import { Error, MatchError } from '../types/types';
 
 // (@task some-type res)
-// ('Return 10)
-// ('Failure lolz)
-// ('Normal input output)
+// some-type might be one of:
+// - ('Return 10)
+// - ('Failure lolz)
+// - ('Normal input output)
 export const expandTaskEffects = (
     t: Type,
     ctx: Ctx,
@@ -124,6 +125,7 @@ export const asTaskType = (
                 effects: {},
                 locals: [],
                 result: t.result,
+                extraReturn: t.extraReturnEffects,
             },
             inner,
             ctx,

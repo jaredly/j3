@@ -134,6 +134,8 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     form,
                     effects: args.length ? nodeToType(args[0], ctx) : nilt,
                     result: args.length > 1 ? nodeToType(args[1], ctx) : nilt,
+                    extraReturnEffects:
+                        args.length > 2 ? nodeToType(args[2], ctx) : void 0,
                 };
             }
 

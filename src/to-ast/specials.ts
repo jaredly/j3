@@ -459,7 +459,7 @@ export const specials: {
                     : nil,
             });
             const subtracted = subtractType(typ, pt, ctx);
-            console.log('SUB', typ, pt, subtracted, pattern);
+            // console.log('SUB', typ, pt, subtracted, pattern);
             if (subtracted.type === 'error') {
                 err(ctx.results.errors, cases[i], subtracted.error);
             } else {

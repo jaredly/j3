@@ -51,6 +51,10 @@ const data = `
 -> [('Failure int) \
 ('Read () (fn [value:string] (@task [('Failure int) ('Read () string)] string))) \
 ('Return string)]
+
+(@task ('Read () string) string ('Write string ()))
+-> [('Read () (fn [value:string] (@task [('Read () string) ('Write string ())] string))) \
+('Return string)]
 `
     .trim()
     .split('\n\n');
@@ -82,10 +86,11 @@ describe('expandTask', () => {
                 ctx,
             );
 
-            const out = typeToString(
-                expandTask(at, t.form),
-                ctx.results.hashNames,
-            );
+            const ex = expandTask(at, t.form, ctx);
+            const out =
+                ex.type === 'error'
+                    ? errorToString(ex.error, ctx)
+                    : typeToString(ex, ctx.results.hashNames);
 
             if (expectedType) {
                 expect(out).toEqual(expectedType);

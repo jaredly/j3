@@ -100,7 +100,11 @@ export const _unifyTypes = (
         if (ont.type === 'error') {
             return ont;
         }
-        one = expandTask(ont, one.form);
+        const ex = expandTask(ont, one.form, ctx);
+        if (ex.type === 'error') {
+            return ex;
+        }
+        one = ex;
     }
 
     if (two.type === 'task') {
@@ -108,7 +112,11 @@ export const _unifyTypes = (
         if (twt.type === 'error') {
             return twt;
         }
-        two = expandTask(twt, two.form);
+        const ex = expandTask(twt, two.form, ctx);
+        if (ex.type === 'error') {
+            return ex;
+        }
+        two = ex;
     }
 
     if (one.type === 'toplevel') {

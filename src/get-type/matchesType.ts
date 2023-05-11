@@ -20,14 +20,22 @@ export const matchesType = (
     const result = _matchOrExpand(candidate, expected, ctx, [], typeArgs);
     if (result !== true) {
         if (report) {
-            errf(report, form, {
-                type: 'invalid type',
-                form,
-                found: candidate,
-                expected,
-                path: [],
-                inner: result,
-            });
+            let err = result;
+            if (
+                err.type !== 'invalid type' ||
+                err.found !== candidate ||
+                err.expected !== expected
+            ) {
+                err = {
+                    type: 'invalid type',
+                    form,
+                    found: candidate,
+                    expected,
+                    path: [],
+                    inner: err,
+                };
+            }
+            errf(report, form, err);
         }
         return false;
     }
@@ -253,7 +261,7 @@ export const _matchesType = (
         }
         case 'number': {
             if (expected.type === 'number') {
-                return candidate.type === expected.type &&
+                return candidate.kind === expected.kind &&
                     candidate.value === expected.value
                     ? true
                     : inv(candidate, expected, path);

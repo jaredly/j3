@@ -1,5 +1,8 @@
 // Some things
 
+import { asTaskType } from '../src/get-type/asTaskType';
+import { expandTask } from '../src/get-type/expandTask';
+import { TaskType } from '../src/get-type/get-types-new';
 import { _matchOrExpand, typeToString } from '../src/get-type/matchesType';
 import { autoCompleteIfNeeded, parseByCharacter } from '../src/parse/parse';
 import { newCtx, noForm } from '../src/to-ast/Ctx';
@@ -27,10 +30,19 @@ false bool
 (@loop ['Nil ('Cons int @recur)]) (@loop ['Nil ('Cons int @recur)])
 ('Return 10) (@task [] int)
 ('Hello 10 (fn [()] ('Return 10))) (@task [('Hello int ())] 10)
+('Hello 10 (fn [string] ('Return 10))) (@task [('Hello int string)] 10)
+('Hello 10 (fn [string] ('Hello 20 (fn [string] ('Return 10))))) (@task [('Hello int string)] 10)
+('Hello 10 (fn [string] (@task ('Hello int string) 10))) (@task [('Hello int string)] 10)
+('Hello 10 (fn [string] (@task ('Other string int) 10))) (@task ('Hello int string) 10 ('Other string int))
 `;
 
 const shouldNotMatch = `
-('Hello 10.0 (fn [()] ('Return 10))) (@task [('Hello int ())] 10)
+10. 10
+('Return 10.) (@task ('Hello int ()) int)
+('Hello 10. (fn [()] ('Return 10))) (@task [('Hello int ())] 10)
+('Hello 10 (fn [()] ('Return 10.))) (@task [('Hello int ())] 10)
+('Hello 10 (fn [string] ('Return 10))) (@task [('Hello int ())] 10)
+('Hello 10 (fn [string] ('Hello 20 (fn [string] ('Return 20))))) (@task [('Hello int string)] 10)
 `;
 
 // (.x {x 1.}) 1.
@@ -57,8 +69,30 @@ expect.extend({
         // const report: Report = {errors: {},types: {}}
         const result = _matchOrExpand(candidate, expected, ctx, []);
         if (result === true) {
+            const lines = [
+                `Type \`${typeToString(
+                    candidate,
+                    ctx.results.hashNames,
+                )}\` did match \`${typeToString(
+                    expected,
+                    ctx.results.hashNames,
+                )}\`.`,
+                expected.type === 'task'
+                    ? typeToString(
+                          expandTask(
+                              asTaskType(expected, ctx) as TaskType,
+                              expected.form,
+                              ctx,
+                          ) as Type,
+                          ctx.results.hashNames,
+                      )
+                    : '',
+                JSON.stringify(noForm(candidate)),
+                JSON.stringify(noForm(expected)),
+            ];
+
             return {
-                message: () => `matched`,
+                message: () => lines.join('\n'),
                 pass: true,
             };
         }
@@ -105,17 +139,28 @@ describe('all the things', () => {
         });
     });
 
-    const shouldRaw = shouldMatch.trim().replace(/\n/g, ' ');
-    const should = parseTypes(shouldRaw);
+    const should = parseTypes(shouldMatch.trim().replace(/\n/g, ' '));
+    const shouldNot = parseTypes(shouldNotMatch.trim().replace(/\n/g, ' '));
 
     it('should have parsed', () => {
         expect(should.types.length).not.toEqual([]);
+        expect(shouldNot.types.length).not.toEqual([]);
     });
+
     for (let i = 0; i < should.types.length; i += 2) {
         it(i + ' ' + should.types[i].raw, () => {
             expect(should.types[i].type).toMatchType(
                 should.types[i + 1].type,
                 should.ctx,
+            );
+        });
+    }
+
+    for (let i = 0; i < shouldNot.types.length; i += 2) {
+        it(i + ' ' + shouldNot.types[i].raw, () => {
+            expect(shouldNot.types[i].type).not.toMatchType(
+                shouldNot.types[i + 1].type,
+                shouldNot.ctx,
             );
         });
     }

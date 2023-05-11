@@ -411,7 +411,11 @@ addBuiltin(basicBuiltins, 'task/withHandler', {
                     type: 'task',
                     effects: { type: 'local', sym: whEffects, form: blank },
                     result: { type: 'local', sym: whResult, form: blank },
-                    extra: { type: 'local', sym: whHandled, form: blank },
+                    extraReturnEffects: {
+                        type: 'local',
+                        sym: whHandled,
+                        form: blank,
+                    },
                     form: blank,
                 },
             },

@@ -889,6 +889,7 @@ export const getPatternTypes = (
 export type TaskType = {
     type: 'task';
     effects: { [key: string]: { input: Type; output: Type | null } };
+    extraReturn?: Type;
     locals: Local[];
     result: Type;
 };
@@ -954,7 +955,21 @@ export const mergeTaskTypes = (
     if (failed) {
         return { type: 'error', error: failed };
     }
-    return { effects: merged, result, locals, type: 'task' };
+    return {
+        effects: merged,
+        result,
+        locals,
+        type: 'task',
+        extraReturn:
+            one.extraReturn && two.extraReturn
+                ? {
+                      type: 'union',
+                      items: [one.extraReturn, two.extraReturn],
+                      form: blank,
+                      open: false,
+                  }
+                : one.extraReturn ?? two.extraReturn,
+    };
 };
 
 export const isNilT = (t: Type) =>

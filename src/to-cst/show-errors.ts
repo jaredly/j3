@@ -18,7 +18,14 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
         if (n.type === 'task') {
             const tt = asTaskType(n, ctx);
             if (tt.type === 'task') {
-                return res + '\n<expanded task>\n' + nts(expandTask(tt, blank));
+                const ex = expandTask(tt, blank, ctx);
+                return (
+                    res +
+                    '\n<expanded task>\n' +
+                    (ex.type === 'error'
+                        ? errorToString(ex.error, ctx)
+                        : nts(ex))
+                );
             } else {
                 return (
                     res +

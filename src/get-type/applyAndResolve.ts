@@ -18,7 +18,7 @@ export const applyAndResolve = (
     if (type.type === 'task') {
         const tt = asTaskType(type, ctx);
         if (tt.type === 'task') {
-            return expandTask(tt, type.form);
+            return expandTask(tt, type.form, ctx);
         }
     }
     if (type.type === 'loop' && expandLoops) {

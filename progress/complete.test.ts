@@ -34,14 +34,18 @@ const data = `
 (fn [one:int] (has-prefix? one "thing"))
 = (fn [one:#:builtin:int] (#:builtin:string/has-prefix? #3 "thing"))
 8: Invalid type.
-Expected: string
-Found: int
+Expected:
+string
+Found:
+int
 
 (fn [one:"hi" two:(fn ["ho"] int)] (two one))
 = (fn [one:#:builtin:string two:(fn ["ho"] #:builtin:int)] (#7 #3))
 17: Invalid type.
-Expected: "ho"
-Found: string
+Expected:
+"ho"
+Found:
+string
 
 (fn [one:"hi" two:(fn ["hi"] int)] (two one))
 = (fn [one:"hi" two:(fn ["hi"] #:builtin:int)] (#7 #3))
@@ -61,8 +65,10 @@ Found: string
 (+ 2 1.2)
 = (#:builtin:int/+ 2 1.2)
 3: Invalid type.
-Expected: int
-Found: 1.2
+Expected:
+int
+Found:
+1.2
 
 "what \${"is this"}"
 = "what \${"is this"}"
@@ -73,8 +79,10 @@ Found: 1.2
 
 (if 1 2 3)
 0: Invalid type.
-Expected: bool
-Found: 1
+Expected:
+bool
+Found:
+1
 
 (if true)
 0: if requires 3 elements
@@ -222,7 +230,7 @@ Second type: 3.1
 
 (fn [] (! ('Bad "hi")))
 -1: This has the empty type
-3: Not a task: ('Bad "hi"). Inner: non-return task tags must have 2 args
+3: Not a task: ('Bad "hi"). --> non-return task tags must have 2 args
 
 (fn<T:[..]> []:(@task T ()) ('Return ()))
 -> (fn<T:[..]> [] (@task #5 ()))
@@ -230,8 +238,11 @@ Second type: 3.1
 (fn [] (! 'Bad "hi" ()))
 -> (fn [] (@task ('Bad "hi") ⍉))
 
-!!!(fn [x:['Ten ('Four int)]] (switch x 'Ten 10 ('Four xy) xy))
+(fn [x:['Ten ('Four int)]] (switch x 'Ten 10 ('Four xy) xy))
 -> (fn [x:['Ten ('Four #:builtin:int)]] #:builtin:int)
+
+(switch 10 5 false)
+-> false
 `
     .trim()
     .split('\n\n');

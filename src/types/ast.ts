@@ -234,6 +234,14 @@ export type TfnType = {
     form: Node;
 };
 
+export type TypeTask = {
+    type: 'task';
+    form: Node;
+    effects: Type;
+    result: Type;
+    extraReturnEffects?: Type;
+};
+
 export type Type =
     | Shared
     | {
@@ -246,7 +254,7 @@ export type Type =
     | { type: 'none'; form: Node }
     | { type: 'recur'; form: Node; sym: number }
     | { type: 'loop'; form: Node; inner: Type }
-    | { type: 'task'; form: Node; effects: Type; result: Type; extra?: Type }
+    | TypeTask
     | {
           type: 'builtin';
           name: string;

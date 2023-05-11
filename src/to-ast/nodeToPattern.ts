@@ -28,7 +28,7 @@ export const nodeToPattern = (
     ctx: CstCtx,
     bindings: Local['terms'],
 ): Pattern => {
-    console.log('aptterning', form);
+    // console.log('aptterning', form);
     switch (form.type) {
         case 'array': {
             let item = getArrayItemType(t);
@@ -269,34 +269,34 @@ export const nodeToPattern = (
                     })),
                 };
             }
-            console.log('list here', first);
+            // console.log('list here', first);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
                 const text = first.text.slice(1);
                 ctx.results.display[first.loc] = { style: { type: 'tag' } };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
-                    console.log('no t', t);
+                    // console.log('no t', t);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
                 let args: Type[];
                 if (res.type === 'tag') {
                     if (res.name !== text) {
-                        console.log('no name idk', res.name, text);
+                        // console.log('no name idk', res.name, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
                     const map = expandEnumItems(res.items, ctx, []);
                     if (map.type === 'error' || !map.map[text]) {
-                        console.log('bad type forls', map, text);
+                        // console.log('bad type forls', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = map.map[text].args;
                 } else {
-                    console.log('nothign else', res, t);
+                    // console.log('nothign else', res, t);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
-                console.log('patterns', rest);
+                // console.log('patterns', rest);
                 return {
                     type: 'tag',
                     name: text,
