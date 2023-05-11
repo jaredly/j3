@@ -66,9 +66,12 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 ctx,
             )}`;
         case 'unification':
-            return `Unable to unify the following types:\nFirst type: ${nts(
-                error.one,
-            )}\nSecond type: ${nts(error.two)}`;
+            return (
+                `Unable to unify the following types:\nFirst type: ${nts(
+                    error.one,
+                )}\nSecond type: ${nts(error.two)}` +
+                (error.message ? '\n--> ' + error.message : '')
+            );
         case 'invalid type':
             return (
                 `Invalid type.\nExpected:\n${nts(

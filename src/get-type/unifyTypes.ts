@@ -300,9 +300,14 @@ export const _unifyTypes = (
     return {
         type: 'error',
         error: {
-            type: 'misc',
-            message: `unifyTypes not yet handled ${one.type} vs ${two.type}`,
-        } as any,
+            type: 'unification',
+            // message: `unifyTypes not yet handled ${one.type} vs ${two.type}`,
+            one,
+            two,
+            form: one.form,
+            path,
+            message: `unifyTypes can't handle '${one.type}' vs '${two.type}' yet`,
+        },
     };
 };
 

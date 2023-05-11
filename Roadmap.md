@@ -1,4 +1,22 @@
 
+# yasss
+
+- [x] give @task a third type argument, "ExtraReturn"
+- [x] make it work I think?
+- [ ] make a `(handle x ...)`, that does `((fnrec [x:(typeof x)] (switch x ... otherwise (withHandler<{the effects not handled in ...} {x's return type} {the effects handled in ...} {x's return type}> otherwise @recur))) x)`
+  - seems doable?
+
+```clj
+
+(defn alwaysRead2<Inner:[..] R> [readResponse:string task:(@task [('Read () string) Inner] R)]:(@task Inner R)
+  ((fnrec [x:(@task [('Read () string) Inner] R)]:(@task Inner R)
+    (switch x
+      ('Return result) ('Return result)
+      ('Read _ k) (@recur (k readResponse))
+      otherwise (withHandler<Inner R Read R> otherwise @recur))
+   ) task))
+```
+
 # movies things
 
 Ok, so I want a way to take `(@task [T ('Failure X)] Y)`

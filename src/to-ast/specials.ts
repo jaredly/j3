@@ -174,6 +174,9 @@ export const specials: {
         let argNode = contents[0];
         let ret: Type | null = null;
         if (argNode.type === 'annot') {
+            if (!argNode.annot) {
+                debugger;
+            }
             ret = nodeToType(argNode.annot, ctx);
             argNode = argNode.target;
         }

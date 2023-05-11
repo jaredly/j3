@@ -97,10 +97,10 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
             return { type: 'record', form, entries, spreads, open };
         }
         case 'list': {
-            if (!form.values.length) {
+            const values = filterComments(form.values);
+            if (!values.length) {
                 return { ...nilt, form };
             }
-            const values = filterComments(form.values);
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
