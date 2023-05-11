@@ -466,6 +466,14 @@ export const specials: {
                 typ = subtracted;
             }
         }
+        if (typ.type !== 'none') {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'switch not exhaustive',
+                typ: typ,
+                form,
+            });
+        }
         return { type: 'switch', target: value, cases: pairs, form };
     },
     let: (form, contents, ctx): Expr => {

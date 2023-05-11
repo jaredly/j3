@@ -241,8 +241,9 @@ Second type: 3.1
 (fn [x:['Ten ('Four int)]] (switch x 'Ten 10 ('Four xy) xy))
 -> (fn [x:['Ten ('Four #:builtin:int)]] #:builtin:int)
 
-(switch 10 5 false)
--> false
+(fn [x:['Ten ('Four int)]] (switch x 'Ten 10))
+10: switch not exhaustive ('Four int)
+
 `
     .trim()
     .split('\n\n');
