@@ -428,7 +428,7 @@ export const specials: {
             ann,
         };
     },
-    switch: (form, contents, ctx): Expr => {
+    switch: (form, contents, ctx, firstLoc): Expr => {
         if (contents.length < 1) {
             return { type: 'unresolved', form, reason: 'no enough args' };
         }
@@ -469,7 +469,7 @@ export const specials: {
             }
         }
         if (typ.type !== 'none') {
-            err(ctx.results.errors, form, {
+            err(ctx.results.errors, firstLoc, {
                 type: 'misc',
                 message: 'switch not exhaustive',
                 typ: typ,

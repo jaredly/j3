@@ -4,15 +4,24 @@ import { applyTypeVariables } from './applyAndResolve';
 import { Ctx } from '../to-ast/library';
 import { unifyManyTypes } from './patternType';
 import { Report } from './get-types-new';
+import { MatchError } from '../types/types';
 
 export const tryToInferTypeArgs = (
     type: TfnType,
     args: Type[],
     ctx: Ctx,
     report?: Report,
-): Type | void => {
+): Type | { type: 'error'; error: MatchError } => {
     if (type.body.type !== 'fn') {
-        return;
+        return {
+            type: 'error',
+            error: {
+                type: 'misc',
+                message: 'not a fn inside',
+                form: type.form,
+                path: [],
+            },
+        };
     }
     // console.log('infer', type, args);
     const bindings: TypeArgs = {};
@@ -30,23 +39,38 @@ export const tryToInferTypeArgs = (
         );
         if (res !== true) {
             // console.log(res);
-            return;
+            return { type: 'error', error: res };
         }
     }
 
     const boundMap: { [sym: number]: Type } = {};
     for (let i = 0; i < type.args.length; i++) {
         const arg = type.args[i];
-        const bound = unifyManyTypes(bindings[arg.form.loc], ctx);
+        let bound = unifyManyTypes(bindings[arg.form.loc], ctx);
 
         if (arg.bound) {
-            const match = matchesType(bound, arg.bound, ctx, arg.form, report);
-            if (!match) {
-                return;
+            const match = _matchOrExpand(bound, arg.bound, ctx, []);
+            if (match !== true) {
+                return { type: 'error', error: match };
+            }
+            if (
+                bound.type === 'none' &&
+                arg.bound.type === 'union' &&
+                arg.bound.open &&
+                arg.bound.items.length === 0
+            ) {
+                bound = {
+                    type: 'union',
+                    items: [],
+                    open: false,
+                    form: arg.bound.form,
+                };
             }
         }
         boundMap[type.args[i].form.loc] = bound;
     }
+
+    // console.log('BOUN', boundMap);
 
     return applyTypeVariables(type.body, boundMap);
 };

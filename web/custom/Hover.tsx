@@ -89,7 +89,7 @@ export const Hover = ({
                     left: box.left,
                     pointerEvents: 'none',
                     padding: 8,
-                    maxHeight: 500,
+                    // maxHeight: 500,
                     overflow: 'auto',
                     zIndex: 1000,
                     backgroundColor: 'black',
@@ -101,6 +101,7 @@ export const Hover = ({
             >
                 {found.map((f, i) => (
                     <div
+                        key={i}
                         style={
                             i > 0
                                 ? {

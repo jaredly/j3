@@ -1,4 +1,4 @@
-import { Node } from '../types/cst';
+import { Loc, Node } from '../types/cst';
 import { LocalPattern, Pattern, Type } from '../types/ast';
 import { Ctx, Local, nilt } from './Ctx';
 import { applyAndResolve, expandEnumItems } from '../get-type/applyAndResolve';
@@ -326,9 +326,14 @@ export const nodeToPattern = (
     return { type: 'unresolved', form };
 };
 
-export const err = (errors: Report['errors'], form: Node, error: Error) => {
-    if (!errors[form.loc]) {
-        errors[form.loc] = [];
+export const err = (
+    errors: Report['errors'],
+    form: Node | Loc,
+    error: Error,
+) => {
+    const loc = typeof form === 'number' ? form : form.loc;
+    if (!errors[loc]) {
+        errors[loc] = [];
     }
-    errors[form.loc].push(error);
+    errors[loc].push(error);
 };

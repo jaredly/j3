@@ -108,6 +108,7 @@ export const _matchesType = (
     //     typeToString(expected, ctx.results.hashNames),
     // );
     if (path.length > 100) {
+        console.log(path);
         throw new Error(`Deep recursion? Path length over 100`);
     }
     if (expected.type === 'local' && typeArgs) {
@@ -359,6 +360,9 @@ export const _matchesType = (
                     return whats.error;
                 }
                 if (!whats.map[candidate.name]) {
+                    if (expected.open) {
+                        return true;
+                    }
                     // TODO: report that its missing
                     return inv(candidate, expected, path);
                 }

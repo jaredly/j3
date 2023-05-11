@@ -406,7 +406,11 @@ export const RenderNNode = (
                                         />
                                     </span>
                                     <span style={{ width: '0.5em' }} />
-                                    <span key={i + '-1'}>
+                                    <span
+                                        key={i + '-1'}
+                                        // style={{ position: 'relative' }}
+                                    >
+                                        {/* <Cross /> */}
                                         <RenderNNode
                                             {...props}
                                             nnode={pair[1]}
@@ -448,8 +452,8 @@ export const RenderNNode = (
                                       style={{
                                           gridColumn: '1/3',
                                           paddingLeft: 4,
-                                          backgroundColor:
-                                              i % 2 == 0 ? oneColor : twoColor,
+                                          //   backgroundColor:
+                                          //       i % 2 == 0 ? oneColor : twoColor,
                                       }}
                                   >
                                       <RenderNNode {...props} nnode={pair[0]} />
@@ -467,8 +471,8 @@ export const RenderNNode = (
                                           //   display: 'flex',
                                           //   flexDirection: 'column',
                                           //   alignItems: 'flex-end',
-                                          backgroundColor:
-                                              i % 2 == 0 ? oneColor : twoColor,
+                                          //   backgroundColor:
+                                          //       i % 2 == 0 ? oneColor : twoColor,
                                       }}
                                   >
                                       <RenderNNode {...props} nnode={pair[0]} />
@@ -478,10 +482,12 @@ export const RenderNNode = (
                                       style={{
                                           gridColumn: '2',
                                           paddingLeft: 8,
-                                          backgroundColor:
-                                              i % 2 == 0 ? oneColor : twoColor,
+                                          //   backgroundColor:
+                                          //       i % 2 == 0 ? oneColor : twoColor,
+                                          position: 'relative',
                                       }}
                                   >
+                                      {i > 0 ? <Cross /> : null}
                                       <RenderNNode {...props} nnode={pair[1]} />
                                   </span>,
                               ],
@@ -500,4 +506,37 @@ export const RenderNNode = (
     }
     let _: never = nnode;
     return <span>NOPE</span>;
+};
+
+const Cross = () => {
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 4,
+            }}
+        >
+            <div
+                style={{
+                    position: 'absolute',
+                    top: -3,
+                    left: -0.5,
+                    width: 1,
+                    height: 6,
+                    backgroundColor: '#333', //'white',
+                }}
+            />
+            <div
+                style={{
+                    position: 'absolute',
+                    top: -0.5,
+                    left: -4,
+                    width: 8,
+                    height: 1,
+                    backgroundColor: '#555', //'white',
+                }}
+            />
+        </div>
+    );
 };

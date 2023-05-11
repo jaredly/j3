@@ -268,14 +268,20 @@ const _getType = (
             }
             if (target.type === 'tfn') {
                 const inferred = tryToInferTypeArgs(target, args, ctx, report);
-                if (!inferred) {
+                if (inferred.type === 'error') {
                     if (report) {
-                        err(report, expr, {
-                            type: 'misc',
-                            message: 'unable to infer type arguments',
-                        });
+                        err(report, expr, inferred.error);
+                        // err(report, expr, {
+                        //     type: 'misc',
+                        //     message: 'unable to infer type arguments',
+                        //     typ: target,
+                        // });
                     }
                     return;
+                }
+                const disp = ctx.results.display[expr.target.form.loc];
+                if (disp?.style?.type === 'id') {
+                    disp.style.ann = inferred;
                 }
                 target = inferred;
             }
@@ -518,7 +524,13 @@ const _getType = (
                 if (!res) {
                     res = type;
                 } else {
-                    const un = unifyTypes(res, type, ctx, expr.form, report);
+                    const un = unifyTypes(
+                        res,
+                        type,
+                        ctx,
+                        getFirstForm(expr.form),
+                        report,
+                    );
                     if (!un) {
                         bad = true;
                         return;
@@ -813,6 +825,13 @@ const _getType = (
     }
     let _: never = expr;
     console.error('getType is sorry about', expr);
+};
+
+export const getFirstForm = (form: Node): Node => {
+    if (form.type === 'list' && form.values.length) {
+        return form.values[0];
+    }
+    return form;
 };
 
 export const asResult = (t: Type, ctx: Ctx) => {

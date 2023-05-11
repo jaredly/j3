@@ -242,7 +242,7 @@ Second type: 3.1
 -> (fn [x:['Ten ('Four #:builtin:int)]] #:builtin:int)
 
 (fn [x:['Ten ('Four int)]] (switch x 'Ten 10))
-10: switch not exhaustive ('Four int)
+11: switch not exhaustive ('Four int)
 
 `
     .trim()

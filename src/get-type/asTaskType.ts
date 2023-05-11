@@ -85,7 +85,8 @@ export const expandTaskEffects = (
         }
         case 'local':
             return { type: 'task', effects: {}, locals: [t], result: none };
-        case 'global': {
+        case 'global':
+        case 'toplevel': {
             const app = applyAndResolve(t, ctx, []);
             if (app !== t && app.type !== 'error') {
                 return expandTaskEffects(app, ctx);

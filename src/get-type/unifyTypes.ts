@@ -135,14 +135,14 @@ export const _unifyTypes = (
         two = ta;
     }
 
-    if (one.type === 'global') {
+    if (one.type === 'global' || one.type === 'apply') {
         const oa = applyAndResolve(one, ctx, []);
         if (oa.type === 'error') {
             return une(path, one, two);
         }
         one = oa;
     }
-    if (two.type === 'global') {
+    if (two.type === 'global' || two.type === 'apply') {
         const ta = applyAndResolve(two, ctx, []);
         if (ta.type === 'error') {
             return une(path, one, two);
@@ -301,12 +301,11 @@ export const _unifyTypes = (
         type: 'error',
         error: {
             type: 'unification',
-            // message: `unifyTypes not yet handled ${one.type} vs ${two.type}`,
+            message: `unifyTypes can't handle '${one.type}' vs '${two.type}' yet`,
             one,
             two,
             form: one.form,
             path,
-            message: `unifyTypes can't handle '${one.type}' vs '${two.type}' yet`,
         },
     };
 };
