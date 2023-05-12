@@ -46,6 +46,8 @@ Expected:
 "ho"
 Found:
 string
+-
+not handled matches "builtin_string"
 
 (fn [one:"hi" two:(fn ["hi"] int)] (two one))
 = (fn [one:"hi" two:(fn ["hi"] #:builtin:int)] (#7 #3))

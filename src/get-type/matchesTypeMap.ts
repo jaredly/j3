@@ -367,7 +367,13 @@ export const matchMap = {
     },
 
     apply_(can: T<'apply'>, exp: Type, mc: MC) {
-        const app = applyAndResolve(can, mc.ctx, mc.can.path);
+        const app = applyAndResolve(
+            can,
+            mc.ctx,
+            mc.can.path,
+            true,
+            mc.typeArgs,
+        );
         if (app.type === 'error') {
             return app.error;
         }
@@ -375,7 +381,13 @@ export const matchMap = {
     },
 
     _apply(can: Type, exp: T<'apply'>, mc: MC) {
-        const app = applyAndResolve(exp, mc.ctx, mc.can.path);
+        const app = applyAndResolve(
+            exp,
+            mc.ctx,
+            mc.can.path,
+            true,
+            mc.typeArgs,
+        );
         if (app.type === 'error') {
             return app.error;
         }
