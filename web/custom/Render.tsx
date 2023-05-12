@@ -484,10 +484,10 @@ export const RenderNNode = (
                                           paddingLeft: 8,
                                           //   backgroundColor:
                                           //       i % 2 == 0 ? oneColor : twoColor,
-                                          position: 'relative',
+                                          //   position: 'relative',
                                       }}
                                   >
-                                      {i > 0 ? <Cross /> : null}
+                                      {/* {i > 0 ? <Cross /> : null} */}
                                       <RenderNNode {...props} nnode={pair[1]} />
                                   </span>,
                               ],

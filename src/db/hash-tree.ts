@@ -35,7 +35,7 @@ export const addToTree = (tree: Tree, namespacedName: string, hash: string) => {
     let cn = tree;
     const parts = splitNamespaces(namespacedName);
     parts.forEach((n, i) => {
-        if (!cn.children[n]) {
+        if (!Object.hasOwn(cn.children, n)) {
             cn.children[n] = { children: {} };
         }
         cn = cn.children[n];

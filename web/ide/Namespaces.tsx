@@ -22,7 +22,8 @@ export const Button = ({
     builtins: Builtins;
 }) => {
     if (!top) {
-        return null;
+        // return null;
+        return <span style={buttonStyle}>&nbsp;</span>;
     }
     if (top.startsWith(':builtin:')) {
         const hash = top.slice(':builtin:'.length);
