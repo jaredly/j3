@@ -100,7 +100,7 @@ export const useMatchMap = (candidate: Type, expected: Type, mc: MC): R => {
     }
 
     if (res === null) {
-        console.error(`Not handled`, key);
+        // console.error(`Not handled`, key);
         return {
             type: 'misc',
             message: `not handled matches "${key}"`,
@@ -327,7 +327,7 @@ export const matchMap = {
     },
 
     string(can: T<'string'>, exp: T<'string'>, mc: MC): R {
-        if (can.first !== exp.first) {
+        if (can.first.text !== exp.first.text) {
             return inv(can, exp, mc.can.path.concat(['first']));
         }
         if (can.templates.length !== exp.templates.length) {
@@ -336,7 +336,7 @@ export const matchMap = {
         for (let i = 0; i < can.templates.length; i++) {
             const ct = can.templates[i];
             const et = exp.templates[i];
-            if (ct.suffix !== et.suffix) {
+            if (ct.suffix.text !== et.suffix.text) {
                 return inv(can, exp, mc.can.path.concat([`suffix_${i}`]));
             }
             const res = matchesTypeBetter(

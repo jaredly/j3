@@ -6,6 +6,7 @@ import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';
 import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 import { Report, errf, recordMap } from './get-types-new';
+import { matchesTypeBetter } from './matchesTypeMap';
 
 export type TypeArgs = { [idx: number]: Type[] };
 
@@ -69,6 +70,15 @@ export const _matchOrExpand = (
     path: string[],
     typeArgs?: TypeArgs,
 ): MatchError | true => {
+    if (true) {
+        return matchesTypeBetter(candidate, expected, {
+            ctx,
+            can: { path: [] },
+            exp: { path: [] },
+            typeArgs,
+        });
+    }
+
     const first = _matchesType(candidate, expected, ctx, path, typeArgs);
     if (first === true) {
         return true;
