@@ -1,4 +1,11 @@
 
+# I feel like matchesType is a little flimsy
+and obviously we're getting an infinite loop in the task dealio
+so what if we redo it?
+
+I want a map.
+
+
 # yasss
 
 - [x] give @task a third type argument, "ExtraReturn"
@@ -23,14 +30,14 @@ Ok, so I want a way to take `(@task [T ('Failure X)] Y)`
 and turn it into `(@task T (Result Y X))`
 
 ```clj
-(defn task/to-result<Effects:[..] Errors:[..] Value> [task:(@task [Effects ('Failure Errors)])]:(
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task:(@task [Effects ('Failure Errors)] Value)]:(
   @task Effects (Result Value Errors))
-  (handle task
-
-
-  )
-
-)
+  ((fnrec [task:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors))
+    (switch task
+      ('Failure error) ('Return ('Err error))
+      ('Return value) ('Return ('Ok value))
+      otherwise (withHandler<Effects Value Errors (Result Value Errors)> otherwise @recur))
+   ) task))
 ```
 
 - [ ] BUG urmmmm so I need a third argument to @task I think

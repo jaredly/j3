@@ -10,7 +10,7 @@ export const expandTask = (
     task: TaskType,
     form: Node,
     ctx: Ctx,
-): Type | { type: 'error'; error: MatchError } => {
+): Extract<Type, { type: 'union' }> | { type: 'error'; error: MatchError } => {
     let inner = maybeEffectsType(task, task.result) as TypeTask;
     if (task.extraReturn) {
         // const ex = expandTaskEffects(task.extraReturn, ctx);
