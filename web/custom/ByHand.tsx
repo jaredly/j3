@@ -1,25 +1,23 @@
 import React, { useEffect, useMemo } from 'react';
 import { parseByCharacter } from '../../src/parse/parse';
-import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
-import { type ClipboardItem } from '../mods/clipboard';
-import { applyUpdate, getKeyUpdate, State, Mods } from '../mods/getKeyUpdate';
-import { selectEnd } from '../mods/navigate';
-import { Path } from '../mods/path';
+import { applyUpdate, getKeyUpdate, State } from '../../src/state/getKeyUpdate';
+import { selectEnd } from '../../src/state/navigate';
+import { Path } from '../../src/state/path';
 import { Cursors } from './Cursors';
 import { Menu } from './Menu';
 import { DebugClipboard } from './DebugClipboard';
 import { HiddenInput } from './HiddenInput';
 import { Root } from './Root';
 import { reduce } from './reduce';
-import { getCtx } from './getCtx';
+import { getCtx } from '../../src/getCtx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { Node } from '../../src/types/cst';
 import { Hover } from './Hover';
 import { Expr } from '../../src/types/ast';
 import { transformNode } from '../../src/types/transform-cst';
-import { Ctx } from '../../src/to-ast/library';
+import { UIState } from './UIState';
 
 const examples = {
     infer: '(+ 2)',
@@ -54,44 +52,6 @@ person.animals.dogs
     "\n")))
 `.trim(),
 };
-
-export type UIState = {
-    // ui:{
-    regs: RegMap;
-    clipboard: ClipboardItem[][];
-    ctx: Ctx;
-    hover: Path[];
-    // }
-} & State;
-
-export type RegMap = {
-    [key: number]: {
-        main?: { node: HTMLSpanElement; path: Path[] } | null;
-        start?: { node: HTMLSpanElement; path: Path[] } | null;
-        end?: { node: HTMLSpanElement; path: Path[] } | null;
-        inside?: { node: HTMLSpanElement; path: Path[] } | null;
-    };
-};
-
-export type Action =
-    | { type: 'hover'; path: Path[] }
-    | {
-          type: 'select';
-          add?: boolean;
-          at: { start: Path[]; end?: Path[] }[];
-      }
-    | { type: 'copy'; items: ClipboardItem[] }
-    | { type: 'menu'; selection: number }
-    | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
-    | {
-          type: 'key';
-          key: string;
-          mods: Mods;
-      }
-    | {
-          type: 'paste';
-          items: ClipboardItem[];
-      };
 
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
@@ -186,6 +146,7 @@ export const uiState = (state: State): UIState => {
         regs: {},
         clipboard: [],
         hover: [],
+        history: [],
         at: [{ start: at }],
         ...getCtx(state.map, -1),
     };

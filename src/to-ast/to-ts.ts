@@ -14,6 +14,8 @@ export const patternToCheck = (
     ctx: Ctx,
 ): t.Expression | null => {
     switch (pattern.type) {
+        case 'array':
+            return t.identifier('what an array');
         case 'local':
             return null;
         case 'number':
@@ -113,6 +115,8 @@ export const patternToTs = (
     ctx: Ctx,
 ): t.Pattern | t.Identifier | null => {
     switch (pattern.type) {
+        case 'array':
+            return t.identifier(`what an array`);
         case 'local':
             return t.identifier(`s${pattern.sym}`);
         case 'number':
@@ -319,10 +323,12 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             if (!expr.target) {
                 let res: t.Expression = t.identifier('arg');
                 for (let attr of expr.items) {
-                    const wrap = !isValidIdentifier(attr);
+                    const wrap = !isValidIdentifier(attr.text);
                     res = t.memberExpression(
                         res,
-                        wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                        wrap
+                            ? t.stringLiteral(attr.text)
+                            : t.identifier(attr.text),
                         wrap,
                     );
                 }
@@ -330,10 +336,10 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
             }
             let res = exprToTs(expr.target, ctx);
             for (let attr of expr.items) {
-                const wrap = !isValidIdentifier(attr);
+                const wrap = !isValidIdentifier(attr.text);
                 res = t.memberExpression(
                     res,
-                    wrap ? t.stringLiteral(attr) : t.identifier(attr),
+                    wrap ? t.stringLiteral(attr.text) : t.identifier(attr.text),
                     wrap,
                 );
             }
@@ -371,7 +377,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 );
                 if (binops.includes(name as '+') && expr.args.length === 2) {
                     return t.binaryExpression(
-                        name as typeof binops[0],
+                        name as (typeof binops)[0],
                         exprToTs(expr.args[0], ctx),
                         exprToTs(expr.args[1], ctx),
                     );
@@ -519,7 +525,7 @@ export const exprToTs = (expr: Expr, ctx: Ctx): t.Expression => {
                 return t.arrowFunctionExpression(
                     [t.identifier('x'), t.identifier('y')],
                     t.binaryExpression(
-                        name as typeof binops[0],
+                        name as (typeof binops)[0],
                         t.identifier('x'),
                         t.identifier('y'),
                     ),

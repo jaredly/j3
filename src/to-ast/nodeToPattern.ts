@@ -1,12 +1,26 @@
-import { Node } from '../types/cst';
-import { Pattern, Type } from '../types/ast';
+import { Loc, Node } from '../types/cst';
+import { LocalPattern, Pattern, Type } from '../types/ast';
 import { Ctx, Local, nilt } from './Ctx';
-import { applyAndResolve, expandEnumItems } from '../get-type/matchesType';
+import { applyAndResolve, expandEnumItems } from '../get-type/applyAndResolve';
 import { Report, recordMap } from '../get-type/get-types-new';
 import type { Error } from '../types/types';
 import { filterComments } from './nodeToExpr';
 import { addMod } from './specials';
 import { CstCtx } from './library';
+
+export const getArrayItemType = (
+    t: Type,
+): { value: Type; size: null | Type } | null => {
+    if (
+        t.type === 'apply' &&
+        t.target.type === 'builtin' &&
+        t.target.name === 'array' &&
+        t.args.length > 0
+    ) {
+        return { value: t.args[0], size: t.args[1] ?? null };
+    }
+    return null;
+};
 
 export const nodeToPattern = (
     form: Node,
@@ -14,35 +28,73 @@ export const nodeToPattern = (
     ctx: CstCtx,
     bindings: Local['terms'],
 ): Pattern => {
+    // console.log('aptterning', form);
     switch (form.type) {
-        case 'identifier': {
-            let sym;
-            // if (!form.hash) {
-            //     sym = nextSym(ctx);
-            //     addMod(ctx, form.loc, { type: 'hash', hash: `:${sym}` });
-            // } else {
-            //     sym = +form.hash.slice(1);
-            //     if (isNaN(sym)) {
-            //         throw new Error(`non-number sym? ${form.hash}`);
-            //     }
-            // }
-            ctx.results.display[form.loc] = {
-                style: {
-                    type: 'id-decl',
-                    hash: form.loc,
-                },
-            };
-            bindings.push({
-                name: form.text,
-                sym: form.loc,
-                type: t,
+        case 'array': {
+            let item = getArrayItemType(t);
+            if (!item) {
+                err(ctx.results.errors, form, {
+                    type: 'misc',
+                    message: 'array pattern, but not an array type',
+                });
+                item = { value: nilt, size: nilt };
+            }
+            let left: Pattern[] = [];
+            let right: { spread?: LocalPattern; items: Pattern[] } | null =
+                null;
+            filterComments(form.values).forEach((node) => {
+                if (right) {
+                    right.items.push(
+                        nodeToPattern(node, item!.value, ctx, bindings),
+                    );
+                } else {
+                    if (node.type === 'spread') {
+                        if (
+                            node.contents.type !== 'blank' &&
+                            node.contents.type !== 'identifier'
+                        ) {
+                            err(ctx.results.errors, node.contents, {
+                                type: 'misc',
+                                message:
+                                    'pattern spread must be blank or an identifier',
+                            });
+                        }
+                        right = {
+                            spread:
+                                node.contents.type === 'identifier'
+                                    ? (nodeToPattern(
+                                          node.contents,
+                                          t,
+                                          ctx,
+                                          bindings,
+                                      ) as LocalPattern)
+                                    : undefined,
+                            items: [],
+                        };
+                    } else {
+                        left.push(
+                            nodeToPattern(node, item!.value, ctx, bindings),
+                        );
+                    }
+                }
             });
-            return {
-                type: 'local',
-                sym: form.loc,
-                name: form.text,
-                form,
+            return { type: 'array', left, right, form };
+        }
+        case 'identifier': {
+            if (form.text.startsWith("'")) {
+                return {
+                    type: 'tag',
+                    // TODO: maybe a null args?
+                    args: [],
+                    form,
+                    name: form.text.slice(1),
+                };
+            }
+            ctx.results.display[form.loc] = {
+                style: { type: 'id-decl', hash: form.loc, ann: t },
             };
+            bindings.push({ name: form.text, sym: form.loc, type: t });
+            return { type: 'local', sym: form.loc, name: form.text, form };
         }
         case 'record': {
             const values = filterComments(form.values);
@@ -176,20 +228,12 @@ export const nodeToPattern = (
                     });
                 }
             }
-            return {
-                type: 'record',
-                entries,
-                form,
-            };
+            return { type: 'record', entries, form };
         }
         case 'list': {
             const values = filterComments(form.values);
             if (!values.length) {
-                return {
-                    type: 'record',
-                    form,
-                    entries: [],
-                };
+                return { type: 'record', form, entries: [] };
             }
             const [first, ...rest] = values;
             if (first.type === 'identifier' && first.text === ',') {
@@ -225,32 +269,34 @@ export const nodeToPattern = (
                     })),
                 };
             }
+            // console.log('list here', first);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
                 const text = first.text.slice(1);
                 ctx.results.display[first.loc] = { style: { type: 'tag' } };
                 const res = applyAndResolve(t, ctx, []);
                 if (!res) {
-                    console.log('no t', t);
+                    // console.log('no t', t);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
                 let args: Type[];
                 if (res.type === 'tag') {
                     if (res.name !== text) {
-                        console.log('mismatch', res, text);
+                        // console.log('no name idk', res.name, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = res.args;
                 } else if (res.type === 'union') {
                     const map = expandEnumItems(res.items, ctx, []);
                     if (map.type === 'error' || !map.map[text]) {
-                        console.log('nomap', map, text);
+                        // console.log('bad type forls', map, text);
                         return { type: 'unresolved', form, reason: 'bad type' };
                     }
                     args = map.map[text].args;
                 } else {
-                    // console.log('badres', res);
+                    // console.log('nothign else', res, t);
                     return { type: 'unresolved', form, reason: 'bad type' };
                 }
+                // console.log('patterns', rest);
                 return {
                     type: 'tag',
                     name: text,
@@ -261,14 +307,33 @@ export const nodeToPattern = (
                 };
             }
         }
+        case 'hash':
+        case 'comment':
+        case 'annot':
+        case 'string':
+        case 'stringText':
+        case 'recordAccess':
+        case 'accessText':
+        case 'spread':
+        case 'rich-text':
+        case 'attachment':
+        case 'tapply':
+        case 'blank':
+        case 'unparsed':
+            return { type: 'unresolved', form };
     }
+    let _: never = form;
     return { type: 'unresolved', form };
-    // throw new Error(`nodeToPattern can't handle ${form.type}`);
 };
 
-export const err = (errors: Report['errors'], form: Node, error: Error) => {
-    if (!errors[form.loc]) {
-        errors[form.loc] = [];
+export const err = (
+    errors: Report['errors'],
+    form: Node | Loc,
+    error: Error,
+) => {
+    const loc = typeof form === 'number' ? form : form.loc;
+    if (!errors[loc]) {
+        errors[loc] = [];
     }
-    errors[form.loc].push(error);
+    errors[loc].push(error);
 };

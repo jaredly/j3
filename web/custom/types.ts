@@ -1,13 +1,13 @@
 import { Ctx } from '../../src/to-ast/Ctx';
 import { Map } from '../../src/types/mcst';
-import { Path } from '../mods/path';
-import { Action, UIState } from './ByHand';
+import { Path } from '../../src/state/path';
+import { Action, UIState } from './UIState';
 
 export type Reg = (
     node: HTMLSpanElement | null,
     idx: number,
     path: Path[],
-    loc?: 'start' | 'end' | 'inside',
+    loc?: 'start' | 'end' | 'inside' | 'outside',
 ) => void;
 
 export type RenderProps = {

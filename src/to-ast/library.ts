@@ -3,8 +3,8 @@ import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
-import { Cursor, StateUpdate } from '../../web/mods/getKeyUpdate';
-import { UpdateMap } from '../../web/store';
+import { Cursor, StateUpdate } from '../state/getKeyUpdate';
+import { UpdateMap } from '../state/getKeyUpdate';
 
 export type CompilationResults = {
     errors: Report['errors'];
@@ -12,6 +12,7 @@ export type CompilationResults = {
         [idx: number]: Mod[];
     };
     hashNames: { [idx: number]: string };
+    globalNames: { [hash: string]: string[] };
     display: {
         [idx: number]: {
             style?: NodeStyle;
@@ -29,6 +30,8 @@ export type CompilationResults = {
 export type Local = {
     terms: { sym: number; name: string; type: Type }[];
     types: { sym: number; name: string; bound?: Type }[];
+    loop?: { sym: number; type: Type };
+    loopType?: { sym: number };
 };
 
 export type Ctx = {
@@ -106,6 +109,9 @@ export type Sandbox = {
         created_date: number;
         updated_date: number;
         version: number;
+        settings: {
+            namespace: string[];
+        };
     };
 
     root: number;

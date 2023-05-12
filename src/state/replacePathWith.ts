@@ -1,12 +1,13 @@
 import {
     ListLikeContents,
     Map,
+    MCAnnot,
     MCRecordAccess,
     MCSpread,
     MCString,
     MNodeExtra,
-} from '../../src/types/mcst';
-import { UpdateMap } from '../store';
+} from '../types/mcst';
+import { UpdateMap } from './getKeyUpdate';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 
@@ -62,6 +63,13 @@ export const replacePath = (
             update[parent.idx] = {
                 ...(pnode as MCSpread & MNodeExtra),
                 contents: newIdx,
+            };
+            break;
+        }
+        case 'annot-annot': {
+            update[parent.idx] = {
+                ...(pnode as MCAnnot & MNodeExtra),
+                annot: newIdx,
             };
             break;
         }

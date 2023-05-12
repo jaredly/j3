@@ -1,8 +1,7 @@
-import { idText, pathPos, splitGraphemes } from '../../src/parse/parse';
-import { Ctx, NodeStyle } from '../../src/to-ast/Ctx';
-import { Type } from '../../src/types/ast';
-import { Map, MNode } from '../../src/types/mcst';
-import { UpdateMap } from '../store';
+import { idText, pathPos, splitGraphemes } from '../parse/parse';
+import { Ctx, NodeStyle } from '../to-ast/Ctx';
+import { Type } from '../types/ast';
+import { Map, MNode } from '../types/mcst';
 import { ClipboardItem } from './clipboard';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
@@ -105,6 +104,7 @@ export type State = {
     at: Cursor[];
     menu?: { selection: number; dismissed?: boolean };
 };
+export type UpdateMap = { [key: string]: null | Map[0] };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
     map = { ...map };
@@ -365,7 +365,12 @@ export const getKeyUpdate = (
         return newNodeAfter(fullPath, map, newBlank(nidx()), nidx);
     }
 
-    if (key === '<' && (node.type === 'identifier' || node.type === 'hash')) {
+    if (
+        key === '<' &&
+        (node.type === 'identifier' ||
+            node.type === 'hash' ||
+            (node.type === 'list' && flast.type === 'end'))
+    ) {
         const nat = newTapply(idx, '', nidx(), nidx());
         const up = replacePathWith(fullPath.slice(0, -1), map, nat);
         if (up) {
@@ -748,6 +753,9 @@ export const clearAllChildren = (idxs: number[], map: Map) => {
     const clear = (idx: number) => {
         res[idx] = null;
         const node = map[idx];
+        if (!node) {
+            debugger;
+        }
         switch (node.type) {
             case 'array':
             case 'list':

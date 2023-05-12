@@ -2,15 +2,15 @@ import { Env } from '../../src/to-ast/library';
 import { builtinMap, builtinTree } from '../../src/to-ast/Ctx';
 import { getIDB } from '../../src/db/db';
 import { addNamespaces, getDefinitions, getNames } from '../../src/db/library';
-import { getSandboxes, transact } from '../../src/db/sandbox';
+import { getSandbox, getSandboxes, transact } from '../../src/db/sandbox';
 import { HashedTree, addToHashedTree } from '../../src/db/hash-tree';
 import * as blake from 'blakejs';
 import { Db, initialize } from '../../src/db/tables';
 
-const makeHash = (map: HashedTree['']): string =>
+export const makeHash = (map: unknown): string =>
     blake.blake2bHex(JSON.stringify(map));
 
-export const initialData = async () => {
+export const initialData = async (sandbox: string | null) => {
     const db = await getIDB();
     await initialize(db);
     const { names, roots } = await getNames(db);
@@ -26,11 +26,17 @@ export const initialData = async () => {
             root: roots[0].hash,
         },
     };
+    const meta = sandbox ? sandboxes.find((s) => s.id === sandbox) : null;
     // add back in the builtins
     // hmm do I need a way to ~merge namespaces?
     // yeah I mean we can just turn the namespace back into a tree
     // and then add the tree?
-    return { env, sandboxes, db };
+    return {
+        env,
+        sandboxes,
+        db,
+        sandbox: meta ? await getSandbox(db, meta) : null,
+    };
 };
 
 async function loadBuiltins(

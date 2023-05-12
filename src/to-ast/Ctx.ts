@@ -5,7 +5,12 @@ import { Layout, MNodeContents } from '../types/mcst';
 import { basicBuiltins } from './builtins';
 import { Builtins, CstCtx, Env, Library } from './library';
 import objectHash from 'object-hash';
-import { addToTree, splitNamespaces } from '../db/hash-tree';
+import {
+    addToTree,
+    hashedToFlats,
+    hashedToTree,
+    splitNamespaces,
+} from '../db/hash-tree';
 export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
 
 export type AutoCompleteReplace = {
@@ -77,17 +82,13 @@ export type Local = {
 };
 
 export type NodeStyle =
-    | { type: 'tag' }
     | { type: 'record-attr' }
     | { type: 'let-pairs' }
     | { type: 'unresolved' }
     | { type: 'number'; kind: NumberKind }
-    | { type: 'id-decl'; hash: string | number }
-    | {
-          type: 'id';
-          hash: string | number;
-          ann?: Type;
-      };
+    | { type: 'id-decl'; hash: string | number; ann?: Type }
+    | { type: 'tag'; ann?: Type }
+    | { type: 'id'; hash: string | number; ann?: Type };
 
 export const emptyLocal: Local = { terms: [], types: [] };
 
@@ -176,6 +177,10 @@ export const newEnv = (): Env => {
     };
 };
 
+const getGlobalNames = (env: Env) => {
+    env.library.namespaces;
+};
+
 export const newCtx = (global: Env = newEnv()): CstCtx => {
     return {
         global,
@@ -183,6 +188,10 @@ export const newCtx = (global: Env = newEnv()): CstCtx => {
         results: {
             localMap: { terms: {}, types: {} },
             hashNames: {},
+            globalNames: hashedToFlats(
+                global.library.root,
+                global.library.namespaces,
+            ),
             errors: {},
             display: {},
             mods: {},

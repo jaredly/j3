@@ -1,9 +1,9 @@
-import { MNode, Map } from '../../src/types/mcst';
+import { MNode, Map } from '../types/mcst';
 import { modChildren } from './modChildren';
 import { newBlank } from './newNodes';
 import { NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
-import { Node } from '../../src/types/cst';
+import { Node } from '../types/cst';
 
 export const newNodeAfter = (
     path: Path[],

@@ -1,6 +1,6 @@
 // The types
 
-import { Path } from '../store';
+import { PathChild } from './path';
 
 export type ONode =
     | { type: 'blinker'; loc: 'start' | 'end' | 'inside' }
@@ -17,5 +17,5 @@ export type ONode =
     | {
           type: 'ref';
           id: number;
-          path: Path['child'];
+          path: PathChild;
       };

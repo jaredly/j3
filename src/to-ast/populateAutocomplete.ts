@@ -1,3 +1,4 @@
+import { lastName } from '../db/hash-tree';
 import { Node } from '../types/cst';
 import { AutoCompleteResult, Ctx } from './Ctx';
 import { compareScores, fuzzyScore } from './fuzzy';
@@ -20,7 +21,7 @@ export function populateAutocomplete(ctx: CstCtx, text: string, form: Node) {
             ({ result }) =>
                 ({
                     type: 'update',
-                    text: result.name.split('/').slice(-1)[0],
+                    text: lastName(result.name),
                     update: {
                         type: text === '[]' ? 'array-hash' : 'hash',
                         // Hmmm shouldn't have any locals, right?

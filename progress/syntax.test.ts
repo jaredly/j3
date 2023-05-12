@@ -9,10 +9,10 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { validatePath } from '../web/mods/clipboard';
-import { applyUpdate, getKeyUpdate, State } from '../web/mods/getKeyUpdate';
-import { selectEnd, selectStart } from '../web/mods/navigate';
-import { Path } from '../web/mods/path';
+import { validatePath } from '../src/state/clipboard';
+import { applyUpdate, getKeyUpdate, State } from '../src/state/getKeyUpdate';
+import { selectEnd, selectStart } from '../src/state/navigate';
+import { Path } from '../src/state/path';
 import { sexp } from './sexp';
 
 const data = `
@@ -262,6 +262,21 @@ id
 hello<friend>
 hello<friend>
 (tapply id id)
+
+(one two<three four> five)
+(list id (tapply id id id) id)
+
+(one two three^T
+(one two| three)
+(list id id id)
+
+(one two three^T^l^t
+(one two |three)
+(list id id id)
+
+hello<hi>^b
+hello
+id
 `;
 // (@loop (fn [x] (if x (@recur false) 10)))
 

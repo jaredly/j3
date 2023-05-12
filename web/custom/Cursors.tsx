@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
-import { Path } from '../mods/path';
-import { UIState, RegMap } from './ByHand';
+import { Path } from '../../src/state/path';
+import { UIState, RegMap } from './UIState';
 import { selectWithin } from './calcOffset';
 
 export const Cursors = ({ state }: { state: UIState }) => {
@@ -29,7 +29,7 @@ export const Cursors = ({ state }: { state: UIState }) => {
                 //     return;
                 // }
                 const res: any = [];
-                const box = calcCursorPos(at.start, state.regs);
+                const box = calcCursorPos(at.start, state.regs, true);
                 if (box) {
                     res.push({
                         x: box.left,
@@ -39,7 +39,7 @@ export const Cursors = ({ state }: { state: UIState }) => {
                     });
                 }
                 if (at.end) {
-                    const box2 = calcCursorPos(at.end, state.regs);
+                    const box2 = calcCursorPos(at.end, state.regs, true);
                     if (box2) {
                         res.push({
                             x: box2.left,
@@ -104,6 +104,7 @@ export const subRect = (
 export const calcCursorPos = (
     fullPath: Path[],
     regs: RegMap,
+    relative?: boolean,
 ): void | { left: number; top: number; height: number; color?: string } => {
     const last = fullPath[fullPath.length - 1];
     // const loc = pathPos(fullPath)
@@ -112,6 +113,7 @@ export const calcCursorPos = (
     const nodes = regs[idx];
     if (!nodes) {
         console.error('no nodes, sorry');
+        console.log(regs);
         return;
     }
     try {
@@ -121,10 +123,12 @@ export const calcCursorPos = (
             case 'inside':
                 const blinker = nodes[last.type];
                 if (blinker) {
-                    return subRect(
-                        blinker.node.getBoundingClientRect(),
-                        blinker.node.offsetParent!.getBoundingClientRect(),
-                    );
+                    return relative
+                        ? subRect(
+                              blinker.node.getBoundingClientRect(),
+                              blinker.node.offsetParent!.getBoundingClientRect(),
+                          )
+                        : blinker.node.getBoundingClientRect();
                 }
             case 'subtext':
                 if (nodes.main) {
@@ -172,11 +176,13 @@ export const calcCursorPos = (
                         return;
                     }
                     const color = getComputedStyle(nodes.main.node).color;
-                    return subRect(
-                        r.getBoundingClientRect(),
-                        nodes.main.node.offsetParent!.getBoundingClientRect(),
-                        color,
-                    );
+                    return relative
+                        ? subRect(
+                              r.getBoundingClientRect(),
+                              nodes.main.node.offsetParent!.getBoundingClientRect(),
+                              color,
+                          )
+                        : r.getBoundingClientRect();
                 } else {
                     console.error('no box', last, nodes);
                     return;

@@ -3,9 +3,8 @@ import {
     type ClipboardItem,
     clipboardText,
     collectNodes,
-} from '../mods/clipboard';
-import { cmpFullPath } from './isCoveredBySelection';
-import { UIState } from './ByHand';
+} from '../../src/state/clipboard';
+import { UIState } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/library';
 

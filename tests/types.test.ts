@@ -3,7 +3,7 @@ import { parse } from '../src/grammar';
 import { nodeToExpr } from '../src/to-ast/nodeToExpr';
 import { addDef } from '../src/to-ast/to-ast';
 import { Ctx, newCtx, noForm } from '../src/to-ast/Ctx';
-import { newEvalCtx } from '../web/store';
+// import { newEvalCtx } from '../web/store';
 import { DecExpected, getLine, idxLines } from '../src/to-ast/utils';
 
 import { fileURLToPath } from 'url';
@@ -13,7 +13,6 @@ import { getType, Report } from '../src/get-type/get-types-new';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { validateExpr } from '../src/get-type/validate';
-import { preprocess } from './preprocess';
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = dirname(__filename);
 

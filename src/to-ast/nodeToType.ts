@@ -1,5 +1,5 @@
 import { Node } from '../types/cst';
-import { Type } from '../types/ast';
+import { TVar, Type, TypeArg } from '../types/ast';
 import { resolveType } from './resolveType';
 import { Ctx, any, nilt } from './Ctx';
 import { filterComments, maybeParseNumber } from './nodeToExpr';
@@ -18,6 +18,14 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
         }
         case 'hash':
             return resolveType('', form.hash, ctx, form);
+        case 'recordAccess': {
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'recordAccess, why are you doing this',
+                form,
+            });
+            return nilt;
+        }
         case 'blank':
             return nilt;
         case 'string':
@@ -30,23 +38,39 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                 })),
                 form,
             };
-        case 'array':
+        case 'array': {
+            let open = false;
+            const items = filterComments(form.values)
+                .filter((t) => {
+                    if (t.type === 'spread' && t.contents.type === 'blank') {
+                        open = true;
+                        return false;
+                    }
+                    return true;
+                })
+                .map((value) => nodeToType(value, ctx));
+
             return {
                 type: 'union',
                 form,
-                open: false,
-                items: filterComments(form.values).map((value) =>
-                    nodeToType(value, ctx),
-                ),
+                open,
+                items,
             };
+        }
         case 'record': {
             const values = filterComments(form.values);
             const entries: { name: string; value: Type }[] = [];
             const spreads: Type[] = [];
+            let open = false;
 
             for (let i = 0; i < values.length; ) {
                 const name = values[i];
                 if (name.type === 'spread') {
+                    if (name.contents.type === 'blank') {
+                        i++;
+                        open = true;
+                        continue;
+                    }
                     spreads.push(nodeToType(name.contents, ctx));
                     i++;
                     continue;
@@ -70,19 +94,13 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     value: value ? nodeToType(value, ctx) : nilt,
                 });
             }
-            return {
-                type: 'record',
-                form,
-                entries,
-                spreads,
-                open: false,
-            };
+            return { type: 'record', form, entries, spreads, open };
         }
         case 'list': {
-            if (!form.values.length) {
+            const values = filterComments(form.values);
+            if (!values.length) {
                 return { ...nilt, form };
             }
-            const values = filterComments(form.values);
             const first = values[0];
             const args = values.slice(1);
             if (first.type === 'identifier' && first.text.startsWith("'")) {
@@ -92,6 +110,58 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     form,
                     name: first.text.slice(1),
                     args: args.map((arg) => nodeToType(arg, ctx)),
+                };
+            }
+
+            if (first.type === 'identifier' && first.text === '@task') {
+                // (@task [] res)
+                // We'll require that things actually be expandable
+                // right?
+                // well, so there's trickyness around ...
+                // type variables. Right?
+                //
+                // (@task [('log string ()) ('read () string) ('fail string)])
+                // becomes
+                // (@loop [
+                // ('Return ())
+                // ('log string (fn [()] @recur))
+                // ('read () (fn [string] @recur))
+                // ('fail string ())
+                // ])
+                //
+                return {
+                    type: 'task',
+                    form,
+                    effects: args.length ? nodeToType(args[0], ctx) : nilt,
+                    result: args.length > 1 ? nodeToType(args[1], ctx) : nilt,
+                    extraReturnEffects:
+                        args.length > 2 ? nodeToType(args[2], ctx) : void 0,
+                };
+            }
+
+            if (first.type === 'identifier' && first.text === '@loop') {
+                if (!args.length || args.length !== 1) {
+                    err(ctx.results.errors, first, {
+                        type: 'misc',
+                        message: '@loop requires exactly one argument',
+                        form,
+                    });
+                    return {
+                        type: 'unresolved',
+                        reason: 'bad @loop',
+                        form,
+                    };
+                }
+                return {
+                    type: 'loop',
+                    form,
+                    inner: nodeToType(args[0], {
+                        ...ctx,
+                        local: {
+                            ...ctx.local,
+                            loopType: { sym: form.loc },
+                        },
+                    }),
                 };
             }
 
@@ -154,17 +224,7 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
                     };
                 }
                 const tvalues = filterComments(targs.values);
-                const parsed = tvalues.map((arg) => {
-                    // const type = nodeToType(arg, ctx)
-                    return {
-                        name: arg.type === 'identifier' ? arg.text : 'NOPE',
-                        sym: arg.loc, // nextSym(ctx),
-                        form: arg,
-                    };
-                });
-                parsed.forEach(
-                    (targ) => (ctx.results.localMap.types[targ.sym] = targ),
-                );
+                const parsed = parseTypeArgs(tvalues, ctx);
                 return {
                     type: 'tfn',
                     args: parsed,
@@ -190,3 +250,41 @@ export const nodeToType = (form: Node, ctx: CstCtx): Type => {
     }
     throw new Error(`nodeToType can't handle ${form.type}`);
 };
+
+export function parseTypeArgs(tvalues: Node[], ctx: CstCtx) {
+    const parsed = tvalues
+        .map((arg) => {
+            if (arg.type === 'annot') {
+                if (arg.target.type !== 'identifier') {
+                    err(ctx.results.errors, arg, {
+                        type: 'misc',
+                        message: `tfn arg must be an identifier`,
+                    });
+                    return null;
+                }
+                return {
+                    name: arg.target.text,
+                    bound: nodeToType(arg.annot, ctx),
+                    sym: arg.loc,
+                    form: arg,
+                };
+            }
+            if (arg.type !== 'identifier') {
+                err(ctx.results.errors, arg, {
+                    type: 'misc',
+                    message: `tfn arg must be an identifier`,
+                });
+                return null;
+            }
+            return {
+                name: arg.text,
+                sym: arg.loc,
+                form: arg,
+            };
+        })
+        .filter(Boolean) as (TypeArg & { sym: number })[];
+    parsed.forEach(
+        (targ) => (ctx.results.localMap.types[targ.form.loc] = targ),
+    );
+    return parsed;
+}

@@ -13,6 +13,17 @@ export type HashedTree = {
     [hash: string]: { [name: string]: string };
 };
 
+export const lastName = (name: string | null) => {
+    if (!name) {
+        return `no-hash`;
+    }
+    if (name.endsWith('//')) {
+        return '/';
+    }
+    const parts = name.split('/');
+    return parts[parts.length - 1];
+};
+
 export const splitNamespaces = (name: string) => {
     if (name.endsWith('//')) {
         return name.slice(0, -2).split('/').concat(['/']);
@@ -77,6 +88,32 @@ export const addToHashedTree = (
     const hash = makeHash(childHashes);
     hashedTree[hash] = childHashes;
     return hash;
+};
+
+export const hashedToFlats = (
+    root: string,
+    hashed: HashedTree,
+): { [hash: string]: string[] } => {
+    const flat: { [hash: string]: string[] } = {};
+    const traverse = (hash: string, path: string[]) => {
+        const tree: Tree = { children: {} };
+        Object.keys(hashed[hash]).forEach((name) => {
+            if (name === '') {
+                const leaf = hashed[hash][name];
+                const full = path.join('/');
+                if (!flat[leaf]) {
+                    flat[leaf] = [full];
+                } else {
+                    flat[leaf].push(full);
+                }
+            } else {
+                traverse(hashed[hash][name], path.concat([name]));
+            }
+        });
+        return tree;
+    };
+    traverse(root, []);
+    return flat;
 };
 
 export const hashedToTree = (root: string, hashed: HashedTree): Tree => {

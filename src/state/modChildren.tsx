@@ -1,4 +1,4 @@
-import { MNodeContents } from '../../src/types/mcst';
+import { MNodeContents } from '../types/mcst';
 
 export const modChildren = (
     node: MNodeContents,

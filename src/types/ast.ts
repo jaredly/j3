@@ -10,7 +10,7 @@ export type {
     NodeExtra,
     NodeArray,
     accessText,
-    spread,
+    // spread,
     RichText,
     Attachment,
     AttachedFile,
@@ -23,6 +23,12 @@ export type Term = {
 
 export type NumberKind = 'int' | 'uint' | 'float';
 
+export type spread = {
+    type: 'spread';
+    contents: Expr;
+    form: Node;
+};
+
 export type Bool = {
     type: 'bool';
     value: boolean;
@@ -34,15 +40,28 @@ export type Number = {
     kind: NumberKind;
     value: number;
 };
+
+export type LocalPattern = {
+    type: 'local';
+    name: string;
+    sym: number;
+    form: Node;
+};
+
 export type Pattern =
-    | {
-          type: 'local';
-          name: string;
-          sym: number;
-          form: Node;
-      }
+    | LocalPattern
     | Number
     | Bool
+    | {
+          type: 'array';
+          form: Node;
+          // items: (Pattern | {type: 'spread', binding?: LocalPattern, form: Node})[]
+          // [...one, two, three] // left[], right{one, [two, three]}
+          // [one, two, ...three] // [one, two], right{three}
+          // [one, ...two, three] // [one], right{two, [three]}
+          left: Pattern[];
+          right: null | { spread?: LocalPattern; items: Pattern[] };
+      }
     | {
           type: 'record';
           form: Node;
@@ -65,7 +84,7 @@ export type String = {
 export type recordAccess = {
     type: 'recordAccess';
     target: Expr | null;
-    items: string[];
+    items: { text: string; loc: number }[];
     form: Node;
 };
 
@@ -94,6 +113,9 @@ export type Expr =
           form: Node;
       }
     | { type: 'blank'; form: Node }
+    | { type: 'recur'; form: Node; sym: number }
+    | { type: 'loop'; form: Node; inner: Expr; ann: Type }
+    | { type: 'task'; form: Node; inner: Expr; maybe: boolean }
     | Def
     | DefType
     | String
@@ -116,7 +138,7 @@ export type Expr =
           body: Expr[];
           form: Node;
       }
-    | { type: 'recur'; depth: number; form: Node }
+    | { type: 'tfn'; name?: string; args: TypeArg[]; body: Expr; form: Node }
     | {
           // so bangs are just "apply ! args"? Yeah I guess. Macro it up my folks.
           type: 'apply';
@@ -125,6 +147,7 @@ export type Expr =
           form: Node;
       }
     | { type: 'array'; values: Expr[]; form: Node }
+    | { type: 'spread'; contents: Expr; form: Node }
     | {
           type: 'type-apply';
           target: Expr;
@@ -158,6 +181,7 @@ export type Expr =
           name: string;
       }
     | Record;
+
 export type Record = {
     type: 'record';
     entries: { name: string; value: Expr }[];
@@ -172,10 +196,16 @@ export type TVar = {
     form: Node;
 };
 
+export type Local = {
+    type: 'local';
+    sym: number;
+    form: Node;
+};
+
 export type Identifier =
     | { type: 'global'; hash: string; form: Node }
     | { type: 'toplevel'; hash: number; form: Node }
-    | { type: 'local'; sym: number; form: Node };
+    | Local;
 
 export type Shared =
     | Identifier
@@ -184,6 +214,34 @@ export type Shared =
     | { type: 'unresolved'; form: Node; reason?: string };
 
 export type TypeArg = { name: string; bound?: Type; form: Node };
+export type FnType = {
+    type: 'fn';
+    name?: string;
+    args: {
+        name?: string;
+        type: Type;
+        form: Node;
+    }[];
+    body: Type;
+    form: Node;
+};
+
+export type TfnType = {
+    type: 'tfn';
+    name?: string;
+    args: TypeArg[];
+    body: Type;
+    form: Node;
+};
+
+export type TypeTask = {
+    type: 'task';
+    form: Node;
+    effects: Type;
+    result: Type;
+    extraReturnEffects?: Type;
+};
+
 export type Type =
     | Shared
     | {
@@ -194,6 +252,9 @@ export type Type =
       }
     | { type: 'any'; form: Node }
     | { type: 'none'; form: Node }
+    | { type: 'recur'; form: Node; sym: number }
+    | { type: 'loop'; form: Node; inner: Type }
+    | TypeTask
     | {
           type: 'builtin';
           name: string;
@@ -206,14 +267,8 @@ export type Type =
           form: Node;
       }
     | { type: 'tag'; name: string; args: Type[]; form: Node }
-    | {
-          type: 'fn';
-          name?: string;
-          args: { name?: string; type: Type; form: Node }[];
-          body: Type;
-          form: Node;
-      }
-    | { type: 'tfn'; name?: string; args: TypeArg[]; body: Type; form: Node }
+    | FnType
+    | TfnType
     | {
           type: 'union';
           items: Type[];

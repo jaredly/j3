@@ -1,12 +1,12 @@
 import { Identifier, Node, NodeExtra, recordAccess } from '../types/cst';
 import { Expr, Number, Record, Type } from '../types/ast';
-import { specials } from './specials';
+import { processTypeArgs, specials } from './specials';
 import { resolveExpr } from './resolveExpr';
 import { AutoCompleteResult, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
-import { applyAndResolve } from '../get-type/matchesType';
-import { nodeToType } from './nodeToType';
+import { applyAndResolve } from '../get-type/applyAndResolve';
+import { nodeToType, parseTypeArgs } from './nodeToType';
 import { populateAutocomplete } from './populateAutocomplete';
 import { CstCtx, Ctx } from './library';
 
@@ -18,9 +18,9 @@ export const getRecordMap = (type: Type | null, ctx: Ctx): RecordMap | null => {
         return null;
     }
     let res = applyAndResolve(type, ctx, []);
-    if (res.type === 'local-bound' && res.bound) {
-        res = res.bound;
-    }
+    // if (res.type === 'local-bound' && res.bound) {
+    //     res = res.bound;
+    // }
     if (res.type === 'record') {
         return recordMap(res, ctx);
     }
@@ -92,8 +92,29 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             const first = values[0];
             if (first.type === 'identifier') {
                 if (Object.hasOwn(specials, first.text)) {
-                    return specials[first.text](form, values.slice(1), ctx);
+                    return specials[first.text](
+                        form,
+                        values.slice(1),
+                        ctx,
+                        first.loc,
+                    );
                 }
+            }
+            if (
+                first.type === 'tapply' &&
+                first.target.type === 'identifier' &&
+                first.target.text === 'fn'
+            ) {
+                const { args, inner } = processTypeArgs(
+                    filterComments(first.values),
+                    ctx,
+                );
+                return {
+                    type: 'tfn',
+                    args,
+                    form,
+                    body: specials.fn(form, values.slice(1), inner, first.loc),
+                };
             }
             if (first.type === 'array') {
                 // ([a b c] hello)
@@ -135,7 +156,22 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             const values = filterComments(form.values);
             return {
                 type: 'array',
-                values: values.map((child) => nodeToExpr(child, ctx)),
+                values: values
+                    .map((child) =>
+                        child.type === 'spread' &&
+                        child.contents.type === 'blank'
+                            ? null
+                            : nodeToExpr(child, ctx),
+                    )
+                    .filter(Boolean) as Expr[],
+                form,
+            };
+        }
+
+        case 'spread': {
+            return {
+                type: 'spread',
+                contents: nodeToExpr(form.contents, ctx),
                 form,
             };
         }
@@ -168,6 +204,10 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                 name: form.name,
             };
         case 'annot':
+            err(ctx.results.errors, form, {
+                type: 'misc',
+                message: 'unexpected annot',
+            });
             return nodeToExpr(form.target, ctx);
         case 'tapply':
             return {
@@ -434,7 +474,7 @@ export function nodeToRecordAccess(
                     message: 'empty attribute',
                 });
             }
-            return item.text;
+            return { text: item.text, loc: item.loc };
         }),
         form,
         target,

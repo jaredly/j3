@@ -1,8 +1,8 @@
 import { calcOffset } from './calcOffset';
-import { UIState } from './ByHand';
+import { UIState } from './UIState';
 import { calcCursorPos, subRect } from './Cursors';
-import { Mods, StateSelect } from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
+import { Mods, StateSelect } from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
 
 export const verticalMove = (
     state: UIState,
@@ -49,13 +49,12 @@ export const closestSelection = (
     };
     Object.entries(regs).forEach(([key, nodes]) => {
         Object.entries(nodes).forEach(([which, value]) => {
-            if (!value) {
+            if (!value || which === 'outside') {
                 return;
             }
-            const box = subRect(
-                value.node.getBoundingClientRect(),
-                value.node.offsetParent!.getBoundingClientRect(),
-            );
+            const box = value.node.getBoundingClientRect(); //subRect( //,
+            // value.node.offsetParent!.getBoundingClientRect(),
+            // );
             const dy =
                 box.top <= pos.y && pos.y <= box.bottom
                     ? 0

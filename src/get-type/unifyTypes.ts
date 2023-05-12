@@ -1,10 +1,21 @@
 import { nilt } from '../to-ast/Ctx';
-import { RecordMap, recordMap } from './get-types-new';
+import {
+    RecordMap,
+    maybeEffectsType,
+    mergeTaskTypes,
+    recordMap,
+} from './get-types-new';
 import { Node, Type } from '../types/ast';
 import { Error, MatchError } from '../types/types';
 import { Report } from './get-types-new';
-import { applyAndResolve } from './matchesType';
+import {
+    applyAndResolve,
+    expandEnumItems,
+    unifyEnumArgs,
+} from './applyAndResolve';
 import { Ctx, Env } from '../to-ast/library';
+import { asTaskType } from './asTaskType';
+import { expandTask } from './expandTask';
 
 export const unifyTypes = (
     one: Type,
@@ -45,16 +56,21 @@ export const _unifyTypes = (
         return one.name === two.name ? one : une(path, one, two);
     }
 
+    // TODO: If the bounds are unions and compatible
+    if (one.type === 'local' && two.type === 'local') {
+        return one.sym === two.sym ? one : une(path, one, two);
+    }
+
     if (one.type === 'global' && two.type === 'global') {
         if (one.hash === two.hash) {
             return one;
         }
         const oa = applyAndResolve(one, ctx, []);
         const ta = applyAndResolve(two, ctx, []);
-        if (oa.type === 'error' || oa.type === 'local-bound') {
+        if (oa.type === 'error') {
             return une(path, one, two);
         }
-        if (ta.type === 'error' || ta.type === 'local-bound') {
+        if (ta.type === 'error') {
             return une(path, one, two);
         }
         if (oa !== one || ta !== two) {
@@ -63,9 +79,49 @@ export const _unifyTypes = (
         return une(path, one, two);
     }
 
+    if (one.type === 'task' && two.type === 'task') {
+        const ont = asTaskType(one, ctx);
+        if (ont.type === 'error') {
+            return ont;
+        }
+        const twt = asTaskType(two, ctx);
+        if (twt.type === 'error') {
+            return twt;
+        }
+        const merged = mergeTaskTypes(ont, twt, ctx);
+        if (merged.type === 'error') {
+            return merged;
+        }
+        return maybeEffectsType(merged, merged.result);
+    }
+
+    if (one.type === 'task') {
+        const ont = asTaskType(one, ctx);
+        if (ont.type === 'error') {
+            return ont;
+        }
+        const ex = expandTask(ont, one.form, ctx);
+        if (ex.type === 'error') {
+            return ex;
+        }
+        one = ex;
+    }
+
+    if (two.type === 'task') {
+        const twt = asTaskType(two, ctx);
+        if (twt.type === 'error') {
+            return twt;
+        }
+        const ex = expandTask(twt, two.form, ctx);
+        if (ex.type === 'error') {
+            return ex;
+        }
+        two = ex;
+    }
+
     if (one.type === 'toplevel') {
         const oa = applyAndResolve(one, ctx, []);
-        if (oa.type === 'error' || oa.type === 'local-bound') {
+        if (oa.type === 'error') {
             return une(path, one, two);
         }
         one = oa;
@@ -73,25 +129,32 @@ export const _unifyTypes = (
 
     if (two.type === 'toplevel') {
         const ta = applyAndResolve(two, ctx, []);
-        if (ta.type === 'error' || ta.type === 'local-bound') {
+        if (ta.type === 'error') {
             return une(path, two, two);
         }
         two = ta;
     }
 
-    if (one.type === 'global') {
+    if (one.type === 'global' || one.type === 'apply') {
         const oa = applyAndResolve(one, ctx, []);
-        if (oa.type === 'error' || oa.type === 'local-bound') {
+        if (oa.type === 'error') {
             return une(path, one, two);
         }
         one = oa;
     }
-    if (two.type === 'global') {
+    if (two.type === 'global' || two.type === 'apply') {
         const ta = applyAndResolve(two, ctx, []);
-        if (ta.type === 'error' || ta.type === 'local-bound') {
+        if (ta.type === 'error') {
             return une(path, one, two);
         }
         two = ta;
+    }
+
+    if (one.type === 'none') {
+        return two;
+    }
+    if (two.type === 'none') {
+        return one;
     }
 
     if (one.type === 'bool' && two.type === 'bool') {
@@ -102,6 +165,60 @@ export const _unifyTypes = (
                   name: 'bool',
                   form: one.form,
               };
+    }
+
+    if (one.type === 'any' && two.type === 'any') {
+        return one;
+    }
+
+    if (
+        (one.type === 'tag' || one.type === 'union') &&
+        (two.type === 'tag' || two.type === 'union')
+    ) {
+        const onex = expandEnumItems(
+            one.type === 'tag' ? [one] : one.items,
+            ctx,
+            path,
+        );
+        const twox = expandEnumItems(
+            two.type === 'tag' ? [two] : two.items,
+            ctx,
+            path,
+        );
+        if (onex.type === 'error') {
+            return onex;
+        }
+        if (twox.type === 'error') {
+            return twox;
+        }
+        const result: { [key: string]: { args: Type[]; form: Node } } = {
+            ...twox.map,
+        };
+        for (let [k, v] of Object.entries(onex.map)) {
+            if (result[k]) {
+                const err = unifyEnumArgs(k, v.args, result, v.form, path, ctx);
+                if (err) {
+                    return { type: 'error', error: err };
+                }
+            } else {
+                result[k] = v;
+            }
+        }
+        return {
+            type: 'union',
+            open:
+                (one.type === 'union' && one.open) ||
+                (two.type === 'union' && two.open),
+            form: one.form,
+            items: Object.entries(result)
+                .sort((a, b) => cmp(a[0], b[0]))
+                .map(([k, v]) => ({
+                    type: 'tag',
+                    name: k,
+                    args: v.args,
+                    form: v.form,
+                })),
+        };
     }
 
     if (one.type === 'string' && two.type === 'string') {
@@ -183,11 +300,17 @@ export const _unifyTypes = (
     return {
         type: 'error',
         error: {
-            type: 'misc',
-            message: `unifyTypes not yet handled ${one.type} vs ${two.type}`,
-        } as any,
+            type: 'unification',
+            message: `unifyTypes can't handle '${one.type}' vs '${two.type}' yet`,
+            one,
+            two,
+            form: one.form,
+            path,
+        },
     };
 };
+
+export const cmp = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
 
 export const unifyMaps = (
     one: RecordMap,

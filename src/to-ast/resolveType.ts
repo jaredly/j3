@@ -14,8 +14,36 @@ export const resolveType = (
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
+    if (text.startsWith('@')) {
+        if (text === '@loop') {
+            return {
+                type: 'unresolved',
+                form,
+                reason: 'invalid use of @loop',
+            };
+        }
+        if (text === '@recur') {
+            if (ctx.local.loopType) {
+                return {
+                    type: 'recur',
+                    form,
+                    sym: ctx.local.loopType.sym,
+                };
+            }
+            return {
+                type: 'unresolved',
+                form,
+                reason: '@recur has no @loop in scope',
+            };
+        }
+        return {
+            type: 'unresolved',
+            form,
+            reason: 'unknown type macro',
+        };
+    }
     if (text.startsWith("'")) {
-        return { type: 'tag', name: text, args: [], form };
+        return { type: 'tag', name: text.slice(1), args: [], form };
     }
     // console.log('resolve typpe', text);
     if (hash == null && text === any.form.text) {
@@ -31,7 +59,7 @@ export const resolveType = (
         return {
             type: 'unresolved',
             form,
-            reason: 'no hash specified',
+            reason: 'no hash specified:' + text,
         };
     }
 
@@ -56,7 +84,8 @@ export const resolveType = (
                 hash,
                 ann: global.value,
             };
-            ctx.results.hashNames[form.loc] = 'STOPSHIP'; //ctx.global.reverseNames[hash];
+            ctx.results.hashNames[form.loc] =
+                ctx.results.globalNames[hash]?.[0]; // ctx.global.reverseNames[hash];
             return { type: 'global', hash, form };
         }
     }

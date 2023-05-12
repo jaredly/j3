@@ -5,7 +5,7 @@ export const sexp = (node: Node): string => {
         case 'identifier':
             return 'id';
         case 'hash':
-            return node.hash + '';
+            return (node.hash + '').slice(0, 10);
         case 'list':
         case 'array':
         case 'record':

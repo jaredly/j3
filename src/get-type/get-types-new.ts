@@ -1,15 +1,20 @@
 import { blank, nilt } from '../to-ast/Ctx';
-import { fileLazy, imageFileLazy } from '../to-ast/builtins';
-import { Expr, Node, Pattern, TRecord, Type } from '../types/ast';
+import { any, fileLazy, imageFileLazy, none } from '../to-ast/builtins';
+import { Expr, Local, Node, Pattern, TRecord, Type } from '../types/ast';
+import { matchesType } from './matchesType';
 import {
     applyAndResolve,
     applyTypeVariables,
-    matchesType,
-} from './matchesType';
-import type { Error } from '../types/types';
-import { unifyTypes } from './unifyTypes';
+    expandEnumItems,
+} from './applyAndResolve';
+import type { Error, MatchError } from '../types/types';
+import { _unifyTypes, unifyTypes } from './unifyTypes';
 import { transformType } from '../types/walk-ast';
 import { Ctx, Env } from '../to-ast/library';
+import { asTaskType } from './asTaskType';
+import { ensure } from '../to-ast/nodeToExpr';
+import { tryToInferTypeArgs } from './tryToInferTypeArgs';
+import { getArrayItemType } from '../to-ast/nodeToPattern';
 
 export type RecordMap = { [key: string]: TRecord['entries'][0] };
 // TODO: do we want to error report here?
@@ -48,16 +53,35 @@ export const errf = (report: Report, form: Node, error: Error) => {
 
 // So, IF we have a localized error, we will *not*
 // propagate it up.
-export const getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
-    const type = _getType(expr, ctx, report);
+export const getType = (
+    expr: Expr,
+    ctx: Ctx,
+    report?: Report,
+    effects?: TaskType,
+): Type | void => {
+    const type = _getType(expr, ctx, report, effects);
     if (type && report) {
         report.types[expr.form.loc] = type;
     }
     return type;
 };
 
-const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
+const _getType = (
+    expr: Expr,
+    ctx: Ctx,
+    report?: Report,
+    effects?: TaskType,
+): Type | void => {
     switch (expr.type) {
+        case 'spread': {
+            if (report) {
+                err(report, expr, {
+                    type: 'misc',
+                    message: 'unknown spread',
+                });
+            }
+            return nilt;
+        }
         case 'builtin': {
             const bin = ctx.global.builtins[expr.name];
             return bin?.type === 'term' ? bin.ann : void 0;
@@ -92,31 +116,40 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             }
             return;
         case 'string':
-            if (report) {
-                // Populate the map
-                expr.templates.forEach(({ expr }) => {
-                    const t = getType(expr, ctx, report);
-                    if (t) {
-                        matchesType(
-                            t,
-                            { type: 'builtin', name: 'string', form: blank },
-                            ctx,
-                            expr.form,
-                            report,
-                        );
+            return {
+                type: 'string',
+                first: expr.first,
+                form: expr.form,
+                templates: expr.templates.map((tpl) => {
+                    const type = getType(tpl.expr, ctx, report, effects);
+                    if (!type) {
+                        return { suffix: tpl.suffix, type: nilt };
                     }
-                });
-            }
-            // TODO: support string constant report
-            return { type: 'builtin', name: 'string', form: expr.form };
+                    matchesType(
+                        type,
+                        { type: 'builtin', name: 'string', form: blank },
+                        ctx,
+                        expr.form,
+                        report,
+                    );
+                    return { suffix: tpl.suffix, type };
+                }),
+            };
         case 'number':
         case 'bool':
             return expr;
         case 'local':
             if (report && !ctx.results.localMap.terms[expr.sym]) {
+                debugger;
+                console.log(
+                    'nop',
+                    ctx.results.localMap,
+                    ctx.results.localMap.terms[expr.sym],
+                    expr.sym,
+                );
                 err(report, expr, {
                     type: 'misc',
-                    message: `local not found ${expr.sym}`,
+                    message: `local expr not found ${expr.sym}`,
                 });
             }
             return ctx.results.localMap.terms[expr.sym]?.type;
@@ -129,7 +162,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return defn?.type === 'def' ? defn.ann : void 0;
         }
         case 'type-apply': {
-            const target = getType(expr.target, ctx, report);
+            const target = getType(expr.target, ctx, report, effects);
             if (!target) {
                 return;
             }
@@ -137,7 +170,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 if (report) {
                     err(report, expr, {
                         type: 'misc',
-                        message: `not a tfn`,
+                        message: `not a tfn: ` + target.type,
                     });
                 }
                 return;
@@ -154,6 +187,8 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             const map: { [key: number]: Type } = {};
             for (let i = 0; i < expr.args.length; i++) {
                 if (target.args[i].bound) {
+                    // console.log('the arg', expr.args[i]);
+                    // console.log('the bound', target.args[i].bound);
                     const match = matchesType(
                         expr.args[i],
                         target.args[i].bound!,
@@ -170,9 +205,9 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             return applyTypeVariables(target.body, map);
         }
         case 'if': {
-            const cond = getType(expr.cond, ctx, report);
-            const yes = getType(expr.yes, ctx, report);
-            const no = getType(expr.no, ctx, report);
+            const cond = getType(expr.cond, ctx, report, effects);
+            const yes = getType(expr.yes, ctx, report, effects);
+            const no = getType(expr.no, ctx, report, effects);
             // Are there other places where,
             // the type isn't "unresolved", it's just "wrong"?
             // oh yeah definitely.
@@ -200,7 +235,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         case 'apply': {
             const args: Type[] = [];
             expr.args.forEach((arg) => {
-                const res = getType(arg, ctx, report);
+                const res = getType(arg, ctx, report, effects);
                 if (res) {
                     args.push(res);
                 }
@@ -218,14 +253,37 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 if (report) {
                     report.types[expr.target.form.loc] = res;
                 }
+                ensure(ctx.results.display, expr.target.form.loc, {}).style = {
+                    type: 'tag',
+                    ann: res,
+                };
                 return res;
             }
-            const target = getType(expr.target, ctx, report);
+            let target = getType(expr.target, ctx, report, effects);
             if (!target) {
                 return;
             }
             if (args.length < expr.args.length) {
                 return;
+            }
+            if (target.type === 'tfn') {
+                const inferred = tryToInferTypeArgs(target, args, ctx, report);
+                if (inferred.type === 'error') {
+                    if (report) {
+                        err(report, expr, inferred.error);
+                        // err(report, expr, {
+                        //     type: 'misc',
+                        //     message: 'unable to infer type arguments',
+                        //     typ: target,
+                        // });
+                    }
+                    return;
+                }
+                const disp = ctx.results.display[expr.target.form.loc];
+                if (disp?.style?.type === 'id') {
+                    disp.style.ann = inferred;
+                }
+                target = inferred;
             }
             if (target.type !== 'fn') {
                 if (report) {
@@ -261,7 +319,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 if (report && args.length < target.args.length) {
                     err(report, expr, {
                         type: 'too few arguments',
-                        expected: target.args.length,
+                        expected: target,
                         received: args.length,
                         form: expr.form,
                     });
@@ -274,6 +332,17 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 }
             }
             return target.body;
+        }
+        case 'tfn': {
+            const body = getType(expr.body, ctx, report);
+            return body
+                ? {
+                      type: 'tfn',
+                      body,
+                      args: expr.args,
+                      form: expr.form,
+                  }
+                : void 0;
         }
         case 'fn': {
             const args: { type: Type; name?: string; form: Node }[] = [];
@@ -298,9 +367,21 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             if (expr.ret && report) {
                 report.types[expr.ret.form.loc] = expr.ret;
             }
-            const body = expr.body.map((body) => getType(body, ctx, report));
+            let myEffects: TaskType = {
+                type: 'task',
+                effects: {},
+                locals: [],
+                result: nilt,
+            };
+            const body = expr.body.map((body) =>
+                getType(body, ctx, report, myEffects),
+            );
             const last =
-                expr.ret ?? (body.length ? body[body.length - 1] : nilt);
+                expr.ret ??
+                maybeEffectsType(
+                    myEffects,
+                    body.length ? body[body.length - 1]! : nilt,
+                );
             if (!last) {
                 return;
             }
@@ -312,7 +393,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             };
         }
         case 'def':
-            return getType(expr.value, ctx, report);
+            return getType(expr.value, ctx, report, effects);
         case 'deftype':
             if (report) {
                 transformType(
@@ -333,8 +414,59 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             // hmmmmm I should have a "ground" type ... for the empty array.
             // like, this is a type that unifies with everything.
             let failed = false;
+            let count: number | null = 0;
+
             for (let value of expr.values) {
-                const type = getType(value, ctx, report);
+                if (value.type === 'spread') {
+                    if (value.contents.type === 'blank') {
+                        continue;
+                    }
+                    const st = getType(value.contents, ctx, report, effects);
+                    if (st) {
+                        const item = getArrayItemType(st);
+                        if (!item) {
+                            if (report) {
+                                err(report, expr, {
+                                    type: 'misc',
+                                    message: 'spread item must be array type',
+                                    typ: st,
+                                });
+                            }
+                            failed = true;
+                        } else {
+                            if (
+                                count != null &&
+                                item.size?.type === 'number' &&
+                                item.size?.kind === 'uint'
+                            ) {
+                                count += item.size.value;
+                            } else {
+                                count = null;
+                            }
+                            if (res) {
+                                res = unifyTypes(
+                                    res,
+                                    item.value,
+                                    ctx,
+                                    expr.form,
+                                    report,
+                                );
+                                if (!res) {
+                                    failed = true;
+                                }
+                            } else {
+                                res = item.value;
+                            }
+                        }
+                    } else {
+                        failed = true;
+                    }
+                    continue;
+                }
+                if (count != null) {
+                    count += 1;
+                }
+                const type = getType(value, ctx, report, effects);
                 if (type) {
                     if (res) {
                         res = unifyTypes(res, type, ctx, expr.form, report);
@@ -356,39 +488,49 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 target: { type: 'builtin', name: 'array', form: expr.form },
                 args: [
                     res,
-                    {
-                        type: 'number',
-                        value: expr.values.length,
-                        form: expr.form,
-                        kind: 'uint',
-                    },
+                    count != null
+                        ? {
+                              type: 'number',
+                              value: count,
+                              form: expr.form,
+                              kind: 'uint',
+                          }
+                        : { type: 'builtin', name: 'uint', form: expr.form },
                 ],
                 form: expr.form,
             };
         }
         case 'let': {
             expr.bindings.forEach((binding) =>
-                getType(binding.value, ctx, report),
+                getType(binding.value, ctx, report, effects),
             );
-            const body = expr.body.map((body) => getType(body, ctx, report));
+            const body = expr.body.map((body) =>
+                getType(body, ctx, report, effects),
+            );
             return body[body.length - 1] ?? nilt;
         }
         case 'switch': {
-            getType(expr.target, ctx, report);
+            getType(expr.target, ctx, report, effects);
             let res: null | Type = null;
             let bad = false;
             expr.cases.forEach(({ pattern, body }) => {
                 if (report) {
                     walkPattern(pattern, ctx, report);
                 }
-                const type = getType(body, ctx, report);
+                const type = getType(body, ctx, report, effects);
                 if (!type) {
                     return;
                 }
                 if (!res) {
                     res = type;
                 } else {
-                    const un = unifyTypes(res, type, ctx, expr.form, report);
+                    const un = unifyTypes(
+                        res,
+                        type,
+                        ctx,
+                        getFirstForm(expr.form),
+                        report,
+                    );
                     if (!un) {
                         bad = true;
                         return;
@@ -406,7 +548,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             // console.log('a rec', expr);
             if (expr.spreads) {
                 for (let sprex of expr.spreads) {
-                    const spread = getType(sprex, ctx, report);
+                    const spread = getType(sprex, ctx, report, effects);
                     if (!spread) {
                         console.log('nope sorry');
                         return;
@@ -418,17 +560,17 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                                 ? errf(report, spread.form, res.error)
                                 : undefined;
                         }
-                        if (res.type === 'local-bound') {
-                            if (res.bound?.type !== 'record') {
-                                return report
-                                    ? errf(report, spread.form, {
-                                          type: 'not a record',
-                                          form: spread.form,
-                                      })
-                                    : undefined;
-                            }
-                            Object.assign(spreadMap, recordMap(res.bound, ctx));
-                        }
+                        // if (res.type === 'local-bound') {
+                        //     if (res.bound?.type !== 'record') {
+                        //         return report
+                        //             ? errf(report, spread.form, {
+                        //                   type: 'not a record',
+                        //                   form: spread.form,
+                        //               })
+                        //             : undefined;
+                        //     }
+                        //     Object.assign(spreadMap, recordMap(res.bound, ctx));
+                        // }
                         if (res.type !== 'record') {
                             return report
                                 ? errf(report, spread.form, {
@@ -446,7 +588,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
             const seen: { [key: string]: true } = {};
             const entries: { name: string; value: Type }[] = [];
             expr.entries.forEach((entry) => {
-                let type = getType(entry.value, ctx, report);
+                let type = getType(entry.value, ctx, report, effects);
                 if (type) {
                     seen[entry.name] = true;
                     const prev = spreadMap ? spreadMap[entry.name] : null;
@@ -486,7 +628,7 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
         }
         case 'recordAccess':
             if (expr.target) {
-                let inner = getType(expr.target, ctx, report);
+                let inner = getType(expr.target, ctx, report, effects);
                 if (!inner) return;
                 for (let attr of expr.items) {
                     let resolved = applyAndResolve(inner, ctx, []);
@@ -495,18 +637,18 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                             ? errf(report, expr.form, resolved.error)
                             : undefined;
                     }
-                    if (resolved.type === 'local-bound') {
-                        if (!resolved.bound) {
-                            return report
-                                ? errf(report, expr.form, {
-                                      type: 'misc',
-                                      message:
-                                          'local has no bound, cannot take attribute',
-                                  })
-                                : undefined;
-                        }
-                        resolved = resolved.bound;
-                    }
+                    // if (resolved.type === 'local-bound') {
+                    //     if (!resolved.bound) {
+                    //         return report
+                    //             ? errf(report, expr.form, {
+                    //                   type: 'misc',
+                    //                   message:
+                    //                       'local has no bound, cannot take attribute',
+                    //               })
+                    //             : undefined;
+                    //     }
+                    //     resolved = resolved.bound;
+                    // }
                     if (resolved.type !== 'record') {
                         return report
                             ? errf(report, expr.form, {
@@ -518,33 +660,43 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                             : undefined;
                     }
                     const map = recordMap(resolved, ctx);
-                    if (!map[attr]) {
+                    if (!map[attr.text]) {
                         return report
                             ? errf(report, expr.form, {
                                   type: 'misc',
-                                  message: `record has no attribute ${attr}`,
+                                  message: `record has no attribute ${attr.text}`,
                               })
                             : undefined;
                     }
-                    inner = map[attr].value;
+                    inner = map[attr.text].value;
                 }
                 return inner;
             } else {
-                // Ok so this is like very polymorphic, right?
-                // and what do I do with that.
-                // ok so
-                // .a.b.c is shorthand for...
-                // <V, T: {a {b {c V ...} ...} ...}>(m: T) => V
-                // right? And then you call it with something
-                // and we can figure out what's going on, with
-                // some degree of reliability
-                if (report) {
-                    errf(report, expr.form, {
-                        type: 'misc',
-                        message: 'not yet impl',
-                    });
+                const last = expr.items[expr.items.length - 1];
+                let inner: Type = { type: 'local', sym: last.loc, form: blank };
+                for (let i = expr.items.length - 1; i >= 0; i--) {
+                    inner = {
+                        type: 'record',
+                        entries: [{ name: expr.items[i].text, value: inner }],
+                        form: blank,
+                        open: true,
+                        spreads: [],
+                    };
                 }
-                return;
+
+                return {
+                    type: 'tfn',
+                    args: [
+                        { form: { ...blank, loc: last.loc }, name: last.text },
+                    ],
+                    body: {
+                        type: 'fn',
+                        args: [{ type: inner, form: blank }],
+                        body: { type: 'local', sym: last.loc, form: blank },
+                        form: blank,
+                    },
+                    form: blank,
+                };
             }
         // TODO: This will probably be more complex?
         case 'rich-text':
@@ -564,15 +716,143 @@ const _getType = (expr: Expr, ctx: Ctx, report?: Report): Type | void => {
                 return imageFileLazy;
             }
             return fileLazy;
+        case 'loop':
+            return getType(expr.inner, ctx, report, effects);
         case 'recur':
-            throw new Error('Not recur yet');
+            return (
+                ctx.results.localMap.terms[expr.sym]?.type ??
+                (report
+                    ? err(report, expr, {
+                          type: 'misc',
+                          message: 'missing @loop type',
+                      })
+                    : void 0)
+            );
+        // throw new Error('Not recur yet');
         case 'type-fn':
             throw new Error('what the heck');
         case 'let-type':
             throw new Error('ok');
+        case 'task': {
+            const inner = getType(expr.inner, ctx, report, effects);
+            if (!inner) {
+                return;
+            }
+            const taskType = asTaskType(
+                inner,
+                ctx,
+                // report ?? { errors: {}, types: {} },
+            );
+            if (taskType.type === 'error') {
+                return report
+                    ? errf(report, expr.form, {
+                          type: 'not a task',
+                          target: inner,
+                          form: expr.form,
+                          inner: taskType.error,
+                          path: [],
+                      })
+                    : void 0;
+            }
+            if (effects) {
+                let failed = false;
+                taskType.locals.forEach((local) => {
+                    if (!effects.locals.some((l) => l.sym === local.sym)) {
+                        effects.locals.push(local);
+                    }
+                });
+                Object.entries(taskType.effects).forEach(([k, v]) => {
+                    if (!effects.effects[k]) {
+                        effects.effects[k] = v;
+                    } else {
+                        const error = mergeInputOutput(
+                            effects.effects,
+                            k,
+                            v.input,
+                            v.output,
+                            ctx,
+                        );
+                        if (error) {
+                            if (report) {
+                                errf(report, v.input.form, error);
+                            }
+                            failed = true;
+                        }
+                    }
+                });
+                // console.log('tasking', effects, taskType);
+                if (failed) {
+                    return;
+                }
+            }
+            if (expr.maybe) {
+                const res = asResult(taskType.result, ctx);
+                if (!res) {
+                    return report
+                        ? errf(report, expr.form, {
+                              type: 'misc',
+                              message: `Can't !? on a task with a non-result return type`,
+                          })
+                        : void 0;
+                }
+                if (effects) {
+                    if (!effects.effects['Failure']) {
+                        effects.effects['Failure'] = {
+                            input: res.err,
+                            output: null,
+                        };
+                    } else {
+                        const error = mergeInputOutput(
+                            effects.effects,
+                            'Failure',
+                            res.err,
+                            null,
+                            ctx,
+                        );
+                        if (error) {
+                            if (report) {
+                                errf(report, res.err.form, error);
+                            }
+                            return;
+                        }
+                    }
+                }
+                return res.ok;
+            }
+            // console.log('task', taskType);
+            return taskType.result;
+        }
     }
     let _: never = expr;
     console.error('getType is sorry about', expr);
+};
+
+export const getFirstForm = (form: Node): Node => {
+    if (form.type === 'list' && form.values.length) {
+        return form.values[0];
+    }
+    return form;
+};
+
+export const asResult = (t: Type, ctx: Ctx) => {
+    const res = applyAndResolve(t, ctx, []);
+    if (res.type !== 'union' || res.open) {
+        return;
+    }
+    const enu = expandEnumItems(res.items, ctx, []);
+    if (enu.type === 'error') {
+        return;
+    }
+    if (Object.keys(enu.map).length !== 2) {
+        return;
+    }
+    if (!enu.map['Ok'] || !enu.map['Err']) {
+        return;
+    }
+    if (enu.map['Ok'].args.length !== 1 || enu.map['Err'].args.length !== 1) {
+        return;
+    }
+    return { ok: enu.map['Ok'].args[0], err: enu.map['Err'].args[0] };
 };
 
 export const walkPattern = (pattern: Pattern, ctx: Ctx, report: Report) => {
@@ -624,3 +904,123 @@ export const getPatternTypes = (
         }
     }
 };
+
+export type TaskType = {
+    type: 'task';
+    effects: { [key: string]: { input: Type; output: Type | null } };
+    extraReturn?: Type;
+    locals: Local[];
+    result: Type;
+};
+
+export const mergeInputOutput = (
+    merged: TaskType['effects'],
+    k: string,
+    input: Type,
+    output: Type | null,
+    ctx: Ctx,
+): Error | void => {
+    if (!merged[k]) {
+        merged[k] = { input, output };
+        return;
+    }
+    const inp = _unifyTypes(input, merged[k].input, ctx, []);
+    if (inp.type === 'error') {
+        return inp.error;
+    }
+    if ((!output && merged[k].output) || (output && !merged[k].output)) {
+        return {
+            type: 'misc',
+            message: `unable to agree on whether ${k} has a return value`,
+            form: input.form,
+        };
+    }
+    if (!output && !merged[k].output) {
+        merged[k] = { input: inp, output: null };
+        return;
+    }
+    const out = _unifyTypes(output!, merged[k].output!, ctx, []);
+    if (out.type === 'error') {
+        return out.error;
+    }
+    merged[k] = { input: inp, output: out };
+};
+
+export const mergeTaskTypes = (
+    one: TaskType,
+    two: TaskType,
+    ctx: Ctx,
+): TaskType | { type: 'error'; error: MatchError } => {
+    const result = _unifyTypes(one.result, two.result, ctx, []);
+    if (result.type === 'error') {
+        return result;
+    }
+    const merged: TaskType['effects'] = { ...two.effects };
+    let failed: null | Error = null;
+    Object.entries(one.effects).forEach(([k, { input, output }]) => {
+        const error = mergeInputOutput(merged, k, input, output, ctx);
+        if (error) {
+            failed = error;
+        }
+    });
+
+    const locals: Local[] = [...one.locals];
+    two.locals.forEach((l) => {
+        if (!locals.some((loc) => loc.sym === l.sym)) {
+            locals.push(l);
+        }
+    });
+
+    if (failed) {
+        return { type: 'error', error: failed };
+    }
+    return {
+        effects: merged,
+        result,
+        locals,
+        type: 'task',
+        extraReturn:
+            one.extraReturn && two.extraReturn
+                ? {
+                      type: 'union',
+                      items: [one.extraReturn, two.extraReturn],
+                      form: blank,
+                      open: false,
+                  }
+                : one.extraReturn ?? two.extraReturn,
+    };
+};
+
+export const isNilT = (t: Type) =>
+    t.type === 'record' &&
+    t.entries.length === 0 &&
+    t.spreads.length === 0 &&
+    !t.open;
+
+export function maybeEffectsType(myEffects: TaskType, last: Type): Type {
+    // AHG um so if we ! an empty effect,
+    // this won't catch it.
+    // console.log('maybe', last, myEffects);
+    return Object.keys(myEffects.effects).length || myEffects.locals.length
+        ? {
+              type: 'task',
+              effects: {
+                  type: 'union',
+                  items: Object.entries(myEffects.effects)
+                      .map(
+                          ([k, { input, output }]): Type => ({
+                              type: 'tag',
+                              name: k,
+                              args: output ? [input, output] : [input],
+                              form: input.form,
+                          }),
+                      )
+                      .concat(myEffects.locals),
+                  open: false,
+                  form: last.form,
+              },
+              result: last,
+              form: last.form,
+          }
+        : last;
+}

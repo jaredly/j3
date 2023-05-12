@@ -1,5 +1,5 @@
 import { Ctx, noloc } from '../to-ast/Ctx';
-import { Node, Type } from '../types/ast';
+import { FnType, Node, TfnType, Type } from '../types/ast';
 import { asTuple, id, loc } from './nodeForExpr';
 
 export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
@@ -31,6 +31,19 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                         ? '.'
                         : '') +
                     (type.kind === 'uint' ? 'u' : ''),
+            };
+        case 'task':
+            return {
+                type: 'list',
+                loc: type.form.loc,
+                values: [
+                    id('@task', type.form.loc),
+                    nodeForType(type.effects, hashNames),
+                    nodeForType(type.result, hashNames),
+                    type.extraReturnEffects
+                        ? nodeForType(type.extraReturnEffects, hashNames)
+                        : null,
+                ].filter(Boolean) as Node[],
             };
         case 'tag':
             if (type.args.length === 0) {
@@ -102,34 +115,38 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                         id(name, noloc),
                         nodeForType(value, hashNames),
                     ]),
+                    ...(type.open ? [id('..', -1)] : []),
                 ],
             });
         case 'tfn': {
             const map: { [key: number]: string } = {};
+            if (type.body.type === 'fn') {
+                return {
+                    type: 'list',
+                    loc: type.form.loc,
+                    values: [
+                        {
+                            type: 'tapply',
+                            target: id('fn', noloc),
+                            loc: type.form.loc,
+                            values: typeArgs(type.args, map, hashNames),
+                        },
+                        {
+                            type: 'array',
+                            values: fnArgs(type.body.args, hashNames),
+                            loc: -1,
+                        },
+                        nodeForType(type.body.body, hashNames),
+                    ],
+                };
+            }
             return loc(type.form.loc, {
                 type: 'list',
                 values: [
                     id('tfn', noloc),
                     loc(noloc, {
                         type: 'array',
-                        values: type.args.flatMap((arg): Node[] => {
-                            map[arg.form.loc] = arg.name;
-                            hashNames[arg.form.loc] = arg.name;
-                            const name = id(arg.name, noloc);
-                            return [
-                                arg.bound
-                                    ? {
-                                          type: 'annot',
-                                          target: name,
-                                          annot: nodeForType(
-                                              arg.bound,
-                                              hashNames,
-                                          ),
-                                          loc: noloc,
-                                      }
-                                    : name,
-                            ];
-                        }),
+                        values: typeArgs(type.args, map, hashNames),
                     }),
                     nodeForType(type.body, hashNames),
                 ],
@@ -142,21 +159,23 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                     id('fn', noloc),
                     loc(noloc, {
                         type: 'array',
-                        values: type.args.map((arg) =>
-                            arg.name
-                                ? {
-                                      type: 'annot',
-                                      annot: nodeForType(arg.type, hashNames),
-                                      loc: arg.form.loc,
-                                      target: id(arg.name, arg.form.loc),
-                                  }
-                                : nodeForType(arg.type, hashNames),
-                        ),
+                        values: fnArgs(type.args, hashNames),
                     }),
                     nodeForType(type.body, hashNames),
                 ],
             });
         }
+        case 'loop':
+            return {
+                type: 'list',
+                loc: type.form.loc,
+                values: [
+                    id('@loop', type.form.loc),
+                    nodeForType(type.inner, hashNames),
+                ],
+            };
+        case 'recur':
+            return { type: 'identifier', text: '@recur', loc: type.form.loc };
         case 'unresolved':
             // return type.form;
             return {
@@ -165,11 +184,24 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                 loc: type.form.loc,
             };
         case 'union':
+            if (type.items.length === 1) {
+                return nodeForType(type.items[0], hashNames);
+            }
             return loc(type.form.loc, {
                 type: 'array',
                 values: type.items
                     .map((item) => nodeForType(item, hashNames))
-                    .concat(type.open ? [id('...', noloc)] : []),
+                    .concat(
+                        type.open
+                            ? [
+                                  {
+                                      type: 'spread',
+                                      contents: { type: 'blank', loc: -1 },
+                                      loc: -1,
+                                  },
+                              ]
+                            : [],
+                    ),
             });
         case 'apply':
             return loc(type.form.loc, {
@@ -208,6 +240,48 @@ export const nodeForType = (type: Type, hashNames: Ctx['hashNames']): Node => {
                 // `tvar${type.sym}`,
                 loc: type.form.loc,
             };
+        // case 'error':
+        //     return {
+        //         type: 'identifier',
+        //         text: JSON.stringify(type),
+        //         loc: type.loc,
+        //     };
     }
     throw new Error(`cannot nodeForType ${(type as any).type}`);
 };
+
+function fnArgs(
+    args: FnType['args'],
+    hashNames: { [idx: number]: string },
+): Node[] {
+    return args.map((arg) =>
+        arg.name
+            ? {
+                  type: 'annot',
+                  annot: nodeForType(arg.type, hashNames),
+                  loc: arg.form.loc,
+                  target: id(arg.name, arg.form.loc),
+              }
+            : nodeForType(arg.type, hashNames),
+    );
+}
+
+function typeArgs(
+    args: TfnType['args'],
+    map: { [key: number]: string },
+    hashNames: { [idx: number]: string },
+): Node[] {
+    return args.map((arg): Node => {
+        map[arg.form.loc] = arg.name;
+        hashNames[arg.form.loc] = arg.name;
+        const name = id(arg.name, noloc);
+        return arg.bound
+            ? {
+                  type: 'annot',
+                  target: name,
+                  annot: nodeForType(arg.bound, hashNames),
+                  loc: noloc,
+              }
+            : name;
+    });
+}

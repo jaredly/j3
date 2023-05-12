@@ -1,12 +1,12 @@
-import { UpdateMap } from '../store';
-import { fromMCST, Map } from '../../src/types/mcst';
+import { UpdateMap } from './getKeyUpdate';
+import { fromMCST, Map } from '../types/mcst';
 import { goLeft, selectStart } from './navigate';
 import { StateChange } from './getKeyUpdate';
-import { Node, NodeExtra, stringText } from '../../src/types/cst';
+import { Node, NodeExtra, stringText } from '../types/cst';
 import { commonAncestor, validatePath } from './clipboard';
-import { transformNode } from '../../src/types/transform-cst';
+import { transformNode } from '../types/transform-cst';
 import { Path } from './path';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { Ctx } from '../to-ast/Ctx';
 
 export const removeNodes = (
     start: Path[],

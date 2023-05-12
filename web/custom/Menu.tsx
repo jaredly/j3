@@ -2,8 +2,8 @@ import React, { useLayoutEffect, useState } from 'react';
 import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
-import { Path } from '../mods/path';
-import { Action, UIState } from './ByHand';
+import { Path } from '../../src/state/path';
+import { Action, UIState } from './UIState';
 import { subRect } from './Cursors';
 
 export const Menu = ({

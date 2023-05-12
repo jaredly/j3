@@ -4,6 +4,8 @@ import { any, nilt } from './Ctx';
 import { Result } from './to-ast';
 import { populateAutocomplete } from './populateAutocomplete';
 import { CstCtx, Ctx, Library } from './library';
+import { lastName } from '../db/hash-tree';
+import { ensure } from './nodeToExpr';
 
 // TODO cache this?
 
@@ -13,23 +15,34 @@ export const resolveExpr = (
     ctx: CstCtx,
     form: Node,
 ): Expr => {
-    if (!text.length && !hash) {
+    if (!text.length && hash == null) {
         return { type: 'unresolved', form, reason: 'blank' };
     }
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
+    if (text === '@recur' && ctx.local.loop) {
+        ctx.results.localMap.terms[ctx.local.loop.sym] = {
+            name: 'loop',
+            type: ctx.local.loop.type,
+        };
+        ensure(ctx.results.display, form.loc, {}).style = {
+            type: 'tag',
+            ann: ctx.local.loop.type,
+        };
+        return { type: 'recur', form, sym: ctx.local.loop.sym };
+    }
     if (text.startsWith("'")) {
-        return { type: 'tag', name: text, form };
+        return { type: 'tag', name: text.slice(1), form };
     }
     ctx.results.display[form.loc] = {};
-    if (!hash) {
+    if (hash == null) {
         populateAutocomplete(ctx, text, form);
         ctx.results.display[form.loc].style = { type: 'unresolved' };
         return {
             type: 'unresolved',
             form,
-            reason: `No hash specified`,
+            reason: `No hash specified:` + text,
         };
     } else {
         if (typeof hash === 'number') {
@@ -40,8 +53,8 @@ export const resolveExpr = (
                     hash,
                     ann: top.ann ?? undefined,
                 };
-                // console.log('its a hashnames', top.name);
-                ctx.results.hashNames[form.loc] = top.name;
+                // console.log('its a hashnames', form.loc, top.name);
+                ctx.results.hashNames[form.loc] = lastName(top.name);
                 return { type: 'toplevel', hash, form };
             }
             const sym = hash;
@@ -62,7 +75,7 @@ export const resolveExpr = (
                 text = hash.slice(':builtin:'.length);
                 const builtin = ctx.global.builtins[text];
                 if (builtin?.type === 'term') {
-                    const last = text.split('/').slice(-1)[0];
+                    const last = lastName(text);
                     ctx.results.display[form.loc].style = {
                         type: 'id',
                         hash,
@@ -79,7 +92,9 @@ export const resolveExpr = (
                     hash,
                     ann: global.ann,
                 };
-                ctx.results.hashNames[form.loc] = 'STOPSHIP'; // ctx.global.reverseNames[hash];
+                ctx.results.hashNames[form.loc] = lastName(
+                    ctx.results.globalNames[hash]?.[0],
+                ); // ctx.global.reverseNames[hash];
                 return { type: 'global', hash, form };
             }
             populateAutocomplete(ctx, text, form);
@@ -214,20 +229,8 @@ export const allTypes = (ctx: CstCtx): Result[] => {
             ];
         },
     );
-    // const builtins = Object.entries(ctx.global.builtins)
-    //     .filter(([k, v]) => v.type === 'type')
-    //     .map(
-    //         ([name, tvars]) =>
-    //             ({
-    //                 type: 'builtin',
-    //                 name,
-    //                 hash: ':builtin:' + name,
-    //                 // TODO
-    //                 typ: any,
-    //             } satisfies Result),
-    //     );
+
     return [
-        // ...builtins,
         ...ctx.local.types.map(
             ({ name, sym, bound }) =>
                 ({

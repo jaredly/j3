@@ -1,43 +1,39 @@
 
-(type Read [(`Read () string)])
-(type Write [(`Write string ())])
+(deftype Read [('Read () string)])
+(deftype Write [('Write string ())])
 
-(defn print [x :string]
-	(`Write x (fn [()] (`Return ()))))
+(defn print [x:string]
+	('Write x (fn [()] ('Return ()))))
 
-(def read (`Read () (fn [v :string] (`Return v))))
+(def read ('Read () (fn [v:string] ('Return v))))
 
-(def alwaysRead (<> [Inner :task R]
-	(fn [readResponse :string task :(@Task [Read Inner] R)] :(@Task [Inner] R)
+(defn alwaysRead<Inner:[..] R>
+	[readResponse:string task:(@task [Read Inner] R)]:(@task [Inner] R)
 		(switch task
-		(`Return result) (`Return result)
-		(`Read _ k) ((>< alwaysRead Inner R) readResponse (k readResponse))
-		otherwise ((>< withHandler [Inner] R [Read] R) otherwise (fn [task] ((>< alwaysRead Inner R) readResponse task))))
-)))
+            ('Return result) ('Return result)
+            ('Read _ k) (alwaysRead<Inner R> readResponse (k readResponse))
+            otherwise (withHandler<[Inner] R [Read] R> otherwise
+                        (fn [task] (alwaysRead<Inner R> readResponse task)))))
 
-(def collect (<> [Inner :task] (fn [task :(@Task [Write Inner] ())] :(@Task Inner string)
+(defn collect<Inner:[..]> [task:(@task [Write Inner] ())]:(@task Inner string)
 	(switch task
-		(`Return ()) (`Return "end")
-		(`Write v k) (
-			(>< andThen Inner [] string string)
-			((>< collect Inner) (k ()))
-			(fn [res] (`Return "${v}\n${res}"))
-		)
-		otherwise ((>< withHandler Inner () Write string) otherwise (>< collect Inner))
-	)
-)))
+		('Return ()) ('Return "end")
+		('Write v k) (andThen<Inner [] string string>
+			(collect<Inner> (k ()))
+			(fn [res] ('Return "${v}\n${res}")))
+		otherwise (withHandler<Inner () Write string> otherwise collect<Inner>)))
 
 ; so can we say
-(collect <[]> something)
+(collect<[]> something)
 ; is the same as
-((>< collect []) something)
+(collect<[]> something)
 ; ?
 ; (answer) NO that's too much magic
 ; ok but really though, maybe I do want something like that?
-(collect (<> []) something)
+(collect<[]> something)
 ; andddd but how do we distinquish it ... from the other kind?
 ; like
-(<> collect []) ; needs to be a way to type-apply *without* applying it.
+collect<[]> ; needs to be a way to type-apply *without* applying it.
 ; maybe
 (collect (:<> []) something)
 ; ... I mean I guess....
@@ -71,37 +67,31 @@ ok I'll just do the normal thing. It's fine.
 "
 
 
-(let [(`Return v)
-	((>< collect [])
+(let [('Return v)
+	  (collect<[]>
 		(fn [()]
 			(! print "Hello")
-			(! print "World")
-		)
-	)]
-	(== v "Hello\nWorld\nend")
-)
+			(! print "World")))]
+	(== v "Hello\nWorld\nend"))
 
 (let [
-	(`Return v)
-	((>< collect [])
-		((>< alwaysRead [Write] ())
+	('Return v)
+	(collect<[]>
+		(alwaysRead<[Write] ()>
 			"hi"
-			((fn []
-				(print "${! read} and ${! read}")
-			))
-		)
-	)
+			(fn []
+				(print "${! read} and ${! read}"))))
 ] (== v "hi and hi\nend"))
 
 (*
 let reverse: (t: Task<Write, ()>) => Task<Write, ()> = (task: Task<Write, ()>) => switch task {
-    `Return(v) => `Return(v);
-    `Write(v, k) => (() => {
+    'Return(v) => 'Return(v);
+    'Write(v, k) => (() => {
         reverse(k(()))!;
         print(v)!;
     })();
 }
-let expect = <T: eq>(`Return(m): Task<[], T>, e: T) => m == e
+let expect = <T: eq>('Return(m): Task<[], T>, e: T) => m == e
 expect<string>(
     collect<[]>(reverse((() => {
         print("A")!;
@@ -110,8 +100,8 @@ expect<string>(
     })())),
     "C\nB\nA\nend",
 )
-type Decide = [`Decide((), bool)]
-let decide: Task<Decide, bool> = `Decide((), (b: bool) => `Return(b))
+type Decide = ['Decide((), bool)]
+let decide: Task<Decide, bool> = 'Decide((), (b: bool) => 'Return(b))
 let choose = <T>(x: T, y: T) => {
     if decide! {
         x;
@@ -120,8 +110,8 @@ let choose = <T>(x: T, y: T) => {
     };
 }
 let pickTrue: <T>(Task<Decide, T>) => T = <T>(task: Task<Decide, T>): T => switch task {
-    `Return(v) => v;
-    `Decide(_, k) => pickTrue<T>(k(true));
+    'Return(v) => v;
+    'Decide(_, k) => pickTrue<T>(k(true));
 }
 let chooseDiff = () => {
     let x1 = choose<int>(15, 30)!;
@@ -131,8 +121,8 @@ let chooseDiff = () => {
 pickTrue<int>(chooseDiff()) == 10
 let pickMax: (Task<Decide, int>) => int = (task: Task<Decide, int>): int => {
     switch task {
-        `Return(v) => v;
-        `Decide(_, k) => {
+        'Return(v) => v;
+        'Decide(_, k) => {
             let one = pickMax(k(true));
             let two = pickMax(k(false));
             if one > two {
@@ -144,8 +134,8 @@ let pickMax: (Task<Decide, int>) => int = (task: Task<Decide, int>): int => {
     };
 }
 pickMax(chooseDiff()) == 25
-type Fail = [`Fail((), [])]
-let fail = `Fail((), ())
+type Fail = ['Fail((), [])]
+let fail = 'Fail((), ())
 let chooseInt: (int, int) => Task<[Decide | Fail], int> = (m: int, n: int): Task<[Decide | Fail], int> => {
     if m > n {
         fail!;
@@ -173,13 +163,13 @@ let backtrack: <T>(Task<[Decide | Fail], T>, () => T) => T = <T>(
     orElse: () => T,
 ): T => {
     switch task {
-        `Decide(_, k) => {
+        'Decide(_, k) => {
             backtrack<T>(k(true), () => backtrack<T>(k(false), orElse));
         };
-        `Fail(_, _) => {
+        'Fail(_, _) => {
             orElse();
         };
-        `Return(x) => x;
+        'Return(x) => x;
     };
 }
 let backtrackPythag = (m: int, n: int) => backtrack<(int, int)>(pythagorean(m, n), () => (0, 0))

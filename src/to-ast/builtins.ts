@@ -36,30 +36,36 @@ export const btype = (v: string): Type => ({
     name: v,
 });
 
-export const basicBuiltins: Global['builtins'] = {
-    bidx: -3,
-    types: {
-        uint: [],
-        texture: [],
-        int: [],
-        float: [],
-        bool: [],
-        string: [],
-        bytes: [],
-        // 'attachment-handle': [],
-        array: [
-            { form: blankAt(-2), name: 'Value' },
-            {
-                form: blankAt(-3),
-                name: 'Length',
-                default_: {
-                    type: 'builtin',
-                    name: 'uint',
-                    form: blank,
-                },
+const builtinTypes: Global['builtins']['types'] = {
+    uint: [],
+    texture: [],
+    int: [],
+    float: [],
+    bool: [],
+    string: [],
+    bytes: [],
+    // 'attachment-handle': [],
+    array: [
+        { form: blankAt(-2), name: 'Value' },
+        {
+            form: blankAt(-3),
+            name: 'Length',
+            default_: {
+                type: 'builtin',
+                name: 'uint',
+                form: blank,
             },
-        ],
-    },
+        },
+    ],
+    map: [
+        { form: blankAt(-4), name: 'Key' },
+        { form: blankAt(-5), name: 'Value' },
+    ],
+};
+
+export const basicBuiltins: Global['builtins'] = {
+    bidx: -6,
+    types: builtinTypes,
     terms: {},
 };
 
@@ -140,12 +146,6 @@ export const bfn = (name: string, args: Type[], body: Type) => {
     return builtinFn(basicBuiltins, name, args, body);
 };
 
-// export const mathHashes: {
-//     int: { [key: string]: string };
-//     uint: { [key: string]: string };
-//     float: { [key: string]: string };
-// } = { int: {}, float: {}, uint: {} };
-
 ['<', '>', '<=', '>=', '==', '!='].map((name) => {
     bfn(`int/` + name, [tint, tint], tbool);
     bfn(`uint/` + name, [tuint, tuint], tbool);
@@ -161,8 +161,26 @@ bfn('bool/||', [tbool, tbool], tbool);
 bfn('bool/&&', [tbool, tbool], tbool);
 bfn('bool/==', [tbool, tbool], tbool);
 bfn('int/toString', [tint], tstring);
+bfn('int/parse', [tstring], {
+    type: 'union',
+    form: blank,
+    open: false,
+    items: [
+        { type: 'tag', form: blank, name: 'Some', args: [tint] },
+        { type: 'tag', name: 'None', form: blank, args: [] },
+    ],
+});
 bfn('bool/toString', [tbool], tstring);
 bfn('string/has-prefix?', [tstring, tstring], tbool);
+bfn('string/split', [tstring, tstring], {
+    type: 'apply',
+    target: { type: 'builtin', form: blank, name: 'array' },
+    form: blank,
+    args: [tstring],
+});
+bfn('string/trim', [tstring], tstring);
+
+const tloc = (v: number): Type => ({ type: 'local', form: blank, sym: v });
 
 const targ1 = basicBuiltins.bidx--;
 const targ2 = basicBuiltins.bidx--;
@@ -182,35 +200,119 @@ addBuiltin(basicBuiltins, 'array/reduce', {
                     type: 'apply',
                     target: { type: 'builtin', form: blank, name: 'array' },
                     form: blank,
-                    args: [
-                        { type: 'local', form: blank, sym: targ1 },
-                        { type: 'local', form: blank, sym: targ3 },
-                    ],
+                    args: [tloc(targ1), tloc(targ3)],
                 },
                 form: blank,
             },
-            { type: { type: 'local', form: blank, sym: targ2 }, form: blank },
+            { type: tloc(targ2), form: blank },
             {
                 type: {
                     type: 'fn',
                     form: blank,
                     args: [
-                        {
-                            type: { type: 'local', form: blank, sym: targ1 },
-                            form: blank,
-                        },
-                        {
-                            type: { type: 'local', form: blank, sym: targ2 },
-                            form: blank,
-                        },
+                        { type: tloc(targ1), form: blank },
+                        { type: tloc(targ2), form: blank },
                     ],
-                    body: { type: 'local', form: blank, sym: targ2 },
+                    body: tloc(targ2),
                 },
                 form: blank,
             },
         ],
-        body: { type: 'local', form: blank, sym: targ2 },
+        body: tloc(targ2),
         form: blank,
+    },
+    form: blank,
+});
+
+const marg1 = basicBuiltins.bidx--;
+const marg2 = basicBuiltins.bidx--;
+
+const record = (entries: TRecord['entries']): TRecord => ({
+    type: 'record',
+    entries,
+    form: { type: 'blank', loc: noloc },
+    open: false,
+    spreads: [],
+});
+
+const mapGet: Type = {
+    type: 'tfn',
+    args: [
+        { form: blankAt(marg1), name: 'Key' },
+        { form: blankAt(marg2), name: 'Value' },
+    ],
+    body: {
+        type: 'fn',
+        args: [
+            {
+                name: 'target',
+                form: blank,
+                type: {
+                    type: 'apply',
+                    target: { type: 'builtin', form: blank, name: 'map' },
+                    form: blank,
+                    args: [tloc(marg1), tloc(marg2)],
+                },
+            },
+            { type: tloc(marg1), form: blank, name: 'key' },
+        ],
+        body: {
+            type: 'union',
+            form: blank,
+            open: false,
+            items: [
+                { type: 'tag', name: 'Some', args: [tloc(marg2)], form: blank },
+                { type: 'tag', name: 'None', args: [], form: blank },
+            ],
+        },
+        form: blank,
+    },
+    form: blank,
+};
+
+addBuiltin(basicBuiltins, 'map/get', mapGet);
+addBuiltin(basicBuiltins, 'map/[]', mapGet);
+
+const fparg1 = basicBuiltins.bidx--;
+const fparg2 = basicBuiltins.bidx--;
+
+addBuiltin(basicBuiltins, 'map/from-pairs', {
+    type: 'tfn',
+    args: [
+        { form: blankAt(fparg1), name: 'Key' },
+        { form: blankAt(fparg2), name: 'Value' },
+    ],
+    body: {
+        type: 'fn',
+        form: blank,
+        args: [
+            {
+                type: {
+                    type: 'apply',
+                    target: { type: 'builtin', form: blank, name: 'array' },
+                    form: blank,
+                    args: [
+                        {
+                            type: 'record',
+                            entries: [
+                                { name: '0', value: tloc(fparg1) },
+                                { name: '1', value: tloc(fparg2) },
+                            ],
+                            form: blank,
+                            open: false,
+                            spreads: [],
+                        },
+                    ],
+                },
+                form: blank,
+            },
+        ],
+        body: {
+            type: 'apply',
+            target: { type: 'builtin', form: blank, name: 'map' },
+            form: blank,
+            args: [tloc(fparg1), tloc(fparg2)],
+        },
     },
     form: blank,
 });
@@ -223,13 +325,6 @@ addBuiltin(basicBuiltins, 'array/reduce', {
 //     'reduce',
 // )
 
-const record = (entries: TRecord['entries']): TRecord => ({
-    type: 'record',
-    entries,
-    form: { type: 'blank', loc: noloc },
-    open: false,
-    spreads: [],
-});
 const vec2 = record([
     { name: 'x', value: tfloat },
     { name: 'y', value: tfloat },
@@ -246,6 +341,7 @@ bfn('float/sin', [tfloat], tfloat);
 bfn('vec2/dot', [vec2, vec2], tfloat);
 bfn('vec2/length', [vec2], tfloat);
 bfn('texture/[]', [btype('texture'), vec2], vec4);
+
 addBuiltin(basicBuiltins, 'float/PI', tfloat);
 
 const darg = basicBuiltins.bidx--;
@@ -262,6 +358,164 @@ addBuiltin(basicBuiltins, 'debug/toString', {
     },
     form: blank,
 });
+
+const jarg = basicBuiltins.bidx--;
+addBuiltin(basicBuiltins, 'json/encode', {
+    type: 'tfn',
+    args: [{ form: blankAt(jarg), name: 'Value' }],
+    body: {
+        type: 'fn',
+        args: [
+            { type: { type: 'local', sym: jarg, form: blank }, form: blank },
+        ],
+        body: tstring,
+        form: blank,
+    },
+    form: blank,
+});
+
+const jdarg = basicBuiltins.bidx--;
+addBuiltin(basicBuiltins, 'json/decode', {
+    type: 'tfn',
+    args: [{ form: blankAt(jdarg), name: 'Value' }],
+    body: {
+        type: 'fn',
+        args: [{ type: tstring, form: blank }],
+        body: { type: 'local', sym: jdarg, form: blank },
+        form: blank,
+    },
+    form: blank,
+});
+
+const eno: Type = { type: 'union', open: true, form: blank, items: [] };
+
+const whEffects = basicBuiltins.bidx--;
+const whResult = basicBuiltins.bidx--;
+const whHandled = basicBuiltins.bidx--;
+const whFinal = basicBuiltins.bidx--;
+addBuiltin(basicBuiltins, 'task/withHandler', {
+    type: 'tfn',
+    args: [
+        { form: blankAt(whEffects), name: 'Effects', bound: eno },
+        { form: blankAt(whResult), name: 'Result' },
+        { form: blankAt(whHandled), name: 'Handled', bound: eno },
+        { form: blankAt(whFinal), name: 'Final' },
+    ],
+    body: {
+        type: 'fn',
+        args: [
+            {
+                name: 'task',
+                form: blank,
+                type: {
+                    type: 'task',
+                    effects: { type: 'local', sym: whEffects, form: blank },
+                    result: { type: 'local', sym: whResult, form: blank },
+                    extraReturnEffects: {
+                        type: 'local',
+                        sym: whHandled,
+                        form: blank,
+                    },
+                    form: blank,
+                },
+            },
+            {
+                name: 'handler',
+                form: blank,
+                type: {
+                    type: 'fn',
+                    args: [
+                        {
+                            name: 'input',
+                            form: blank,
+                            type: {
+                                type: 'task',
+                                effects: {
+                                    type: 'union',
+                                    form: blank,
+                                    open: false,
+                                    items: [
+                                        {
+                                            type: 'local',
+                                            sym: whEffects,
+                                            form: blank,
+                                        },
+                                        {
+                                            type: 'local',
+                                            sym: whHandled,
+                                            form: blank,
+                                        },
+                                    ],
+                                },
+                                form: blank,
+                                result: {
+                                    type: 'local',
+                                    sym: whResult,
+                                    form: blank,
+                                },
+                            },
+                        },
+                    ],
+                    body: {
+                        type: 'task',
+                        form: blank,
+                        effects: { type: 'local', sym: whEffects, form: blank },
+                        result: { type: 'local', sym: whFinal, form: blank },
+                    },
+                    form: blank,
+                },
+            },
+        ],
+        body: {
+            type: 'task',
+            form: blank,
+            effects: { type: 'local', sym: whEffects, form: blank },
+            result: { type: 'local', sym: whFinal, form: blank },
+        },
+        form: blank,
+    },
+    form: blank,
+});
+
+/*
+task/andThen
+(fn<firstEffects:[..] secondEffects:[..] firstResult secondResult>
+    [a:(@task firstEffects firstResult) b:(fn [res:firstResult] (@task secondEffects secondResult))]
+    (@task [firstEffects secondEffects] secondResult))
+
+task/withHandler
+(fn<Effects:[..] Result Handled:[..] Final>
+    [task:(@task Effects Result Handled)
+     handler:(fn [input:(@task [Effects Handled] Result)] (@task Effects Final))]
+    (@task Effects Final))
+
+
+(defnrec alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)
+    (switch task
+        ('Return result) ('Result result)
+        ('Read _ k) (@recur<Inner R> readResponse (k readResponse))
+        otherwise (withHandler<Inner R Read R>
+            otherwise
+            (fn [task:(@task [Inner Read] R)] (@recur<Inner R> readResponse task)))))
+
+(defn alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)
+    (
+        (fnrec [task:(@task [Read Inner] R)]
+            (switch task
+                ('Return result) ('Result result)
+                ('Read _ k) (@recur (k readResponse))
+                otherwise (withHandler<Inner R Read R>
+                    otherwise
+                    (fn [task:(@task [Inner Read] R)] (@recur task))))
+    ) task))
+
+(defn alwaysRead<Inner:[..] R> [readResponse:string task:(@task [Read Inner] R)]:(@task Inner R)
+    (handle task
+        ('Return result) ('Result result)
+        ('Read _ k) (@recur (k readResponse))))
+
+Ok but now .. I want ...
+*/
 
 export const nil: Expr = {
     type: 'record',

@@ -1,3 +1,17 @@
+# Namespace organization
+
+builtin/
+libs/
+apps/
+sandboxes/[id]/
+platforms/
+  glsl/
+  dom/
+  cli/
+  io/
+
+
+
 # The Sandbox and the Library
 
 Inspired in part by unison's `scatch` files, the jerd editor has a sandbox,

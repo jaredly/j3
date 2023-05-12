@@ -182,6 +182,7 @@ true false
   ('Read () string)
   ('Write string ())
   'Message
+  ('Fail string)
 ] int)
 ; expands to
 (@loop [
@@ -189,11 +190,106 @@ true false
   ('Read () (fn [string] @recur))
   ('Write string (fn [()] @recur))
   ('Message () (fn [()] @recur))
+  ('Fail string ())
 ])
+; .... ??? does it work?
+; ok so it doesn't totally work, because of local type variables.
+
+(@task [
+  ('Read () string)
+  ('Fail string)
+  'Message
+  Local
+] int)
+
+(@task [('Read () string) ('Fail string) 'Message Local] int)
+
+[
+  ('Read () (fn [string] (@task [('Read () string) ('Fail string) 'Message Local] int)))
+  ('Fail string)
+  ('Message () (fn [()] (@task [('Read () string) ('Fail string) 'Message Local] int)))
+  ('Return int)
+  (@task Local int [('Read () string) ('Fail string) 'Message])
+]
+
+
+
 ; i mean tbh now that I have loop/recur
 ; that @task macro isn't even all that magic anymore.
 ; nice nice nice.
 
+; butt the question is
+; can I change @loop/@recur to be ~normal macros?
+; idk if I can.
+; also like, validation is important
+
+
+; sooo what about Type variables?
+;
+; (tfn [T:task]
+;   (@task [T ('Hello number ())])
+;   )
+;
+;
+
+; So, it seems like I want this type-macro to be late-binding.
+; which is very different from my ideas around term-macros
+; which would execute immediately, in the editor, even.
+; the only way I could imagine a term macro binding "late"
+; would be, like, during monomorphization or something.
+; so you have type variables resolved.
+; which idk if it's worth buying that kind of complexity.
+;
+; Anyway, all this to say, that maybe "task" should be special,
+; in the same way that @loop and @recur are special.
+; And any type-macros that I do will be ... less special.
+; or at least I can cross that bridge when I come to it?
+
+; Ok, so task throwing syntax
+
+(! 'Log "folks")  -> (! ('Log "folks" (fn [x] x)))
+(! 'Read ())      -> (! ('Read () (fn [x] x)))
+(! 'Fail "hi" ()) -> (! ('Fail "hi" ()))
+(! something)     -> (! something)
+
+; eh, those all require a little too much inference
+; so as a backup
+
+(! 'Log "folks")  -> (! ('Log "folks" (fn [x:()] x)))
+(! 'Read () (fn [x:string] x))
+(! 'Fail "hi" ())
+
+; ok, so now we can be properly annotating stuff.
+; but here's the question: do we do the transform in nodeToExpr,
+; or at some other time?
+
+; let's try kicking the can a little bit, it seems like it would make
+; manipulation of things in the IDE easier.
+
+; hrmmm ok so a builtin type ...
+
+; so "task" here means ... 
+; an enum
+; of tags
+; with either 1 or 2 args
+; orrr I guess no args if you want
+; but ... welll ok so if there were a bunch
+; of args it technically wouldn't work
+; but am I really all that mad about it?
+; I think not.
+; ok so T can just be [..] and we're fine.
+
+; ah, but the story here is
+; we need to not expand the dealio yet
+; until the type variable is resolved
+
+; that is to say, the type macro shouldn't evaluate
+; until strictly necessary.
+; which, interestingly enough
+; is the same story for @loop.
+; hmm..
+;
+; 
 
 ; recursion!
 

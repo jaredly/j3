@@ -1,7 +1,7 @@
 // Yeah
 
-import { Type } from './ast';
-import { Loc, Node } from './cst';
+import { FnType, Type } from './ast';
+import { Node } from './cst';
 
 export type MatchError =
     | {
@@ -10,8 +10,9 @@ export type MatchError =
           expected: Type;
           found: Type;
           path: string[];
+          inner?: MatchError;
       }
-    | { type: 'misc'; path: string[]; message: string; form: Node }
+    | { type: 'misc'; path: string[]; message: string; form: Node; typ?: Type }
     | {
           type: 'unification';
           path: string[];
@@ -36,6 +37,13 @@ export type MatchError =
           path: string[];
       }
     | {
+          type: 'not a task';
+          target: Type;
+          form: Node;
+          inner: Error;
+          path: string[];
+      }
+    | {
           type: 'enum args mismatch';
           form: Node;
           one: Type[];
@@ -50,11 +58,12 @@ export type Error =
     | {
           type: 'too few arguments';
           form: Node;
-          expected: number;
+          expected: FnType;
           received: number;
       }
+    | { type: 'case'; pattern: Type; target: Type; form: Node }
     | { type: 'not a record'; form: Node }
     | { type: 'extra argument'; form: Node }
     | { type: 'unresolved'; form: Node; reason?: string }
     | { type: 'unparsed'; form: Node }
-    | { type: 'misc'; message: string };
+    | { type: 'misc'; message: string; typ?: Type };

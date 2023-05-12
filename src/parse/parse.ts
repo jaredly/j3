@@ -1,16 +1,10 @@
 // hmm
-import { applyMods } from '../../web/custom/getCtx';
-import { cmpFullPath } from '../../web/custom/isCoveredBySelection';
-import { applyMenuItem, autoCompleteUpdate } from '../../web/custom/reduce';
-import { layout } from '../../web/layout';
-import { ClipboardItem, collectNodes, paste } from '../../web/mods/clipboard';
-import {
-    applyUpdate,
-    getKeyUpdate,
-    Mods,
-    State,
-} from '../../web/mods/getKeyUpdate';
-import { Path } from '../../web/mods/path';
+import { applyMods } from '../getCtx';
+import { layout } from '../layout';
+import { ClipboardItem, collectNodes, paste } from '../state/clipboard';
+import { applyUpdate, getKeyUpdate, Mods, State } from '../state/getKeyUpdate';
+import { Path, cmpFullPath } from '../state/path';
+import { lastName } from '../db/hash-tree';
 import { applyInferMod, infer } from '../infer/infer';
 import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
 import { CompilationResults, CstCtx } from '../to-ast/library';
@@ -18,7 +12,8 @@ import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
 import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
-import { fromMCST, ListLikeContents, Map, MNode } from '../types/mcst';
+import { fromMCST, Map, MNode } from '../types/mcst';
+import { applyMenuItem } from '../to-ast/autoComplete';
 
 export const idText = (node: MNode) => {
     switch (node.type) {
@@ -40,10 +35,7 @@ export const idText = (node: MNode) => {
                 typeof node.hash === 'string' &&
                 node.hash.startsWith(':builtin:')
             ) {
-                return node.hash
-                    .slice(':builtin:'.length)
-                    .split('/')
-                    .slice(-1)[0];
+                return lastName(node.hash.slice(':builtin:'.length));
             }
             return '🚨';
     }
@@ -58,7 +50,14 @@ export const splitGraphemes = (text: string) => {
 export const parseByCharacter = (
     rawText: string,
     ctx: CstCtx | null,
-    { kind }: { kind?: 'type' | 'expr'; debug?: boolean } = {},
+    {
+        kind,
+        track,
+    }: {
+        kind?: 'type' | 'expr';
+        debug?: boolean;
+        track?: { [idx: number]: [number, number] };
+    } = {},
 ): State => {
     let state: State = initialState();
 
@@ -67,6 +66,18 @@ export const parseByCharacter = (
     let clipboard: ClipboardItem[] = [];
 
     for (let i = 0; i < text.length; i++) {
+        if (track) {
+            state.at[0].start.forEach(({ idx }) => {
+                if (!track[idx]) {
+                    track[idx] = [i, i];
+                }
+                // if (i > 0) {
+                //     track[idx][0] = Math.min(i - 1, track[idx][0]);
+                // }
+                track[idx][1] = Math.max(i, track[idx][1]);
+            });
+        }
+
         let mods: Mods = {};
         let key;
         ({ key, i } = determineKey(text, i, mods));
@@ -177,11 +188,13 @@ function determineKey(text: string[], i: number, mods: Mods) {
             C: 'Copy',
             V: 'Paste',
             n: 'Enter',
+            T: 'Tab',
+            t: 'Tab',
         }[text[i + 1]]!;
         if (!key) {
             throw new Error(`Unexpected ^${text[i + 1]}`);
         }
-        if (text[i + 1] === 'L' || text[i + 1] === 'R') {
+        if (text[i + 1] === 'L' || text[i + 1] === 'R' || text[i + 1] === 'T') {
             mods.shift = true;
         }
         i++;

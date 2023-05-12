@@ -1,7 +1,8 @@
 // So types for things I guess
 
+import { UpdateMap } from '../../src/state/getKeyUpdate';
 import { AutoCompleteResult } from '../../src/to-ast/Ctx';
-import { Selection, UpdateMap } from '../store';
+import { Selection } from '../store';
 
 /*
 CST

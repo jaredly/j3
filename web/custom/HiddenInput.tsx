@@ -4,9 +4,10 @@ import {
     type ClipboardItem,
     clipboardText,
     collectClipboard,
-} from '../mods/clipboard';
-import { Path } from '../mods/path';
-import { UIState, Action, clipboardPrefix, clipboardSuffix } from './ByHand';
+} from '../../src/state/clipboard';
+import { Path } from '../../src/state/path';
+import { clipboardPrefix, clipboardSuffix } from './ByHand';
+import { UIState, Action } from './UIState';
 import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
@@ -91,7 +92,8 @@ export function HiddenInput({
             onPaste={(evt) => {
                 evt.preventDefault();
                 const text = evt.clipboardData.getData('text/html');
-                if (text) {
+                // TODO: We should do rich copy/paste!
+                if (text && 1 < 0) {
                     const start = text.indexOf(clipboardPrefix);
                     const end = text.indexOf(clipboardSuffix);
                     if (start !== -1 && end !== -1) {

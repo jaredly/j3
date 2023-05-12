@@ -33,6 +33,10 @@ export const Button = ({
         );
     }
     const defn = definitions[top];
+    if (!defn) {
+        console.log('what', top, definitions);
+        return <span>No good</span>;
+    }
     if (defn.type === 'term') {
         return <span style={buttonStyle}>e</span>;
     }

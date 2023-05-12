@@ -1,4 +1,4 @@
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from '../state/getKeyUpdate';
 import { emptyMap } from '../parse/parse';
 import { Library, Sandbox } from '../to-ast/library';
 import { Map } from '../types/mcst';
@@ -14,6 +14,7 @@ export const sandboxesConfig = {
         { name: 'created_date', config: 'integer not null' },
         { name: 'updated_date', config: 'integer not null' },
         { name: 'version', config: 'integer not null' },
+        { name: 'settings', config: 'text' },
     ],
 };
 
@@ -49,17 +50,29 @@ export const getSandboxes = async (db: Db) => {
     const sandboxes: Sandbox['meta'][] = [];
     await db
         .all(
-            `SELECT id, title, created_date, updated_date, version from sandboxes`,
+            `SELECT id, title, created_date, updated_date, version, settings from sandboxes`,
         )
         .then((rows) =>
             rows.forEach(
-                ({ id, title, created_date, updated_date, version }) => {
+                ({
+                    id,
+                    title,
+                    created_date,
+                    updated_date,
+                    version,
+                    settings,
+                }) => {
                     sandboxes.push({
                         id: id as string,
                         title: title as string,
                         created_date: created_date as number,
                         updated_date: updated_date as number,
                         version: version as number,
+                        settings: settings
+                            ? JSON.parse(settings as string)
+                            : {
+                                  namespace: [],
+                              },
                     });
                 },
             ),
@@ -94,6 +107,20 @@ export const getSandbox = async (
 
 // Updaters
 
+export const updateSandboxMeta = async (db: Db, meta: Sandbox['meta']) => {
+    await db.run(
+        `update sandboxes set title=?, created_date=?, updated_date=?, version=?, settings=? where id=?;`,
+        [
+            meta.title,
+            meta.created_date,
+            meta.updated_date,
+            meta.version,
+            JSON.stringify(meta.settings),
+            meta.id,
+        ],
+    );
+};
+
 /** Does wrap in a transaction */
 export const addSandbox = async (
     db: Db,
@@ -106,16 +133,18 @@ export const addSandbox = async (
         created_date: Date.now() / 1000,
         updated_date: Date.now() / 1000,
         version: 0,
+        settings: { namespace: [] },
     };
     const map = emptyMap();
 
     await transact(db, async () => {
-        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?);`, [
+        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?, ?);`, [
             meta.id,
             meta.title,
             meta.created_date,
             meta.updated_date,
             meta.version,
+            JSON.stringify(meta.settings),
         ]);
         await createTable(db, sandboxNodesConfig(id));
         await createTable(db, sandboxHistoryConfig(id));

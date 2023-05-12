@@ -2,7 +2,7 @@ import { Ctx } from '../to-ast/library';
 import type { Expr, Loc, Type } from '../types/ast';
 import type { Error, MatchError } from '../types/types';
 import type { Report } from './get-types-new';
-import { applyAndResolve, expandEnumItems } from './matchesType';
+import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 
 const err = (
     errors: Report['errors'],
@@ -15,6 +15,16 @@ const err = (
     errors[type.form.loc].push(error);
 };
 
+export function validName(name: string) {
+    return (
+        name.length > 0 &&
+        !name.includes('.') &&
+        !name.endsWith('///') &&
+        (name.endsWith('//') || !name.endsWith('/')) &&
+        !name.slice(0, -1).includes('//')
+    );
+}
+
 export const validateExpr = (
     expr: Expr,
     ctx: Ctx,
@@ -26,13 +36,26 @@ export const validateExpr = (
             // return err(errors, expr, { type: 'unresolved', form: expr.form });
             return;
         case 'deftype':
+            if (!validName(expr.name)) {
+                err(errors, expr, {
+                    type: 'misc',
+                    message: 'invalid name',
+                });
+            }
             return validateType(expr.value, ctx, errors);
         case 'def':
+            if (!validName(expr.name)) {
+                err(errors, expr, {
+                    type: 'misc',
+                    message: 'invalid name',
+                });
+            }
             return validateExpr(expr.value, ctx, errors);
         case 'fn':
             for (let arg of expr.args) {
                 if (arg.type) validateType(arg.type, ctx, errors);
             }
+            validateType(expr.ret, ctx, errors);
             expr.body.forEach((expr) => validateExpr(expr, ctx, errors));
             return;
         case 'apply':
@@ -102,6 +125,9 @@ export const validateExpr = (
                 validateExpr(kase.body, ctx, errors);
             });
             return;
+        case 'task':
+            validateExpr(expr.inner, ctx, errors);
+            return;
         case 'if':
             validateExpr(expr.cond, ctx, errors);
             validateExpr(expr.yes, ctx, errors);
@@ -120,6 +146,13 @@ export const validateExpr = (
             return;
         case 'recur':
             return;
+        case 'tfn':
+            return validateExpr(expr.body, ctx, errors);
+        case 'spread':
+            return validateExpr(expr.contents, ctx, errors);
+        case 'loop':
+            validateType(expr.ann, ctx, errors);
+            return validateExpr(expr.inner, ctx, errors);
         case 'type-fn':
             validateExpr(expr.target, ctx, errors);
             return;
@@ -151,6 +184,11 @@ export const validateType = (
                 form: type.form,
                 reason: type.reason,
             });
+        case 'loop':
+            return validateType(type.inner, ctx, errors);
+        case 'recur':
+            // TODO actually validate
+            return;
         case 'local':
             return ctx.results.localMap.types[type.sym] != null
                 ? null
@@ -181,6 +219,14 @@ export const validateType = (
                 type: 'misc',
                 message: 'This has the empty type',
             });
+        case 'string':
+            type.templates.forEach((t) => {
+                validateType(t.type, ctx, errors);
+                // TODO: very that t.type is string-like?
+            });
+            return;
+        case 'task':
+        // TODO: valid ate it
         case 'bool':
         case 'number':
             return null;

@@ -6,14 +6,14 @@ import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { errorToString } from '../../src/to-cst/show-errors';
 import { fromMCST } from '../../src/types/mcst';
-import { State } from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
-import { Action, UIState } from './ByHand';
+import { State } from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
+import { Action, UIState } from './UIState';
 import { subRect } from './Cursors';
 
 const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
-    return got?.main?.node ?? got?.start?.node;
+    return got?.main?.node ?? got?.start?.node ?? got?.outside?.node;
 };
 
 export const Hover = ({
@@ -23,47 +23,54 @@ export const Hover = ({
     state: UIState;
     dispatch: React.Dispatch<Action>;
 }) => {
-    let found: null | { idx: number; text: string } = null;
+    let found: { idx: number; text: string }[] = [];
     for (let i = state.hover.length - 1; i >= 0; i--) {
         let idx = state.hover[i].idx;
+        if (idx === -1) continue;
         if (state.ctx.results.errors[idx]?.length) {
-            found = {
+            found.push({
                 idx,
                 text: state.ctx.results.errors[idx]
-                    .map((err) =>
-                        errorToString(err, state.ctx.results.hashNames),
-                    )
+                    .map((err) => errorToString(err, state.ctx))
                     .join('\n'),
-            };
-            break;
+            });
         }
     }
-    if (found == null) {
-        const last = state.hover[state.hover.length - 1]?.idx;
-        if (last != null) {
-            const style = state.ctx.results.display[last]?.style;
-            if (style?.type === 'id' || style?.type === 'id-decl') {
-                found = {
-                    idx: last,
-                    text:
-                        (style.type === 'id' && style.ann
-                            ? nodeToString(
-                                  nodeForType(
-                                      style.ann,
-                                      state.ctx.results.hashNames,
-                                  ),
-                                  state.ctx.results.hashNames,
-                              ) + '\n'
-                            : '') +
-                        ' ' +
-                        style.hash,
-                };
-            }
+    // if (found == null) {
+    const last = state.hover[state.hover.length - 1]?.idx;
+    if (last != null) {
+        const style = state.ctx.results.display[last]?.style;
+        if (
+            (style?.type === 'id' ||
+                style?.type === 'id-decl' ||
+                style?.type === 'tag') &&
+            style.ann
+        ) {
+            found.push({
+                idx: last,
+                text: nodeToString(
+                    nodeForType(style.ann, state.ctx.results.hashNames),
+                    state.ctx.results.hashNames,
+                ),
+                // ' ' +
+                // (style.hash + '').slice(0, 10),
+            });
         }
     }
+    // }
 
-    const node = found != null ? getRegNode(found.idx, state.regs) : null;
-    if (!node || found == null) return null;
+    const node = found.length ? getRegNode(found[0].idx, state.regs) : null;
+    // if (!node || found == null)
+    //     return (
+    //         <div>
+    //             Hover {JSON.stringify(state.hover)} Node {!!node + ''} Found{' '}
+    //             {found ? found.idx + '' : 'no found'} um{' '}
+    //             {found
+    //                 ? Object.keys(state.regs[found.idx] ?? {}).join('')
+    //                 : null}
+    //         </div>
+    //     );
+    if (!node || !found.length) return null;
 
     const box = subRect(
         node.getBoundingClientRect(),
@@ -82,17 +89,33 @@ export const Hover = ({
                     left: box.left,
                     pointerEvents: 'none',
                     padding: 8,
-                    maxHeight: 500,
+                    // maxHeight: 500,
                     overflow: 'auto',
                     zIndex: 1000,
                     backgroundColor: 'black',
                     color: '#777',
                     border: '1px solid #555',
-                    display: 'grid',
+                    display: 'block',
                     gridTemplateColumns: 'max-content max-content',
                 }}
             >
-                {found.text}
+                {found.map((f, i) => (
+                    <div
+                        key={i}
+                        style={
+                            i > 0
+                                ? {
+                                      borderTop:
+                                          '1px solid rgba(200,200,200,0.4)',
+                                      marginTop: 4,
+                                      paddingTop: 4,
+                                  }
+                                : undefined
+                        }
+                    >
+                        {f.text}
+                    </div>
+                ))}
             </div>
         </div>
     );

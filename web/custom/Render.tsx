@@ -2,10 +2,14 @@ import React from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { getNestedNodes, NNode, stringColor } from '../overheat/getNestedNodes';
+import {
+    getNestedNodes,
+    NNode,
+    stringColor,
+} from '../../src/state/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
-import { calcOffset } from './calcOffset';
 import { RenderProps } from './types';
+import { splitNamespaces } from '../../src/db/hash-tree';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -32,7 +36,7 @@ const nodeColor = (type: MNode['type'], text?: string | null) => {
 
 const columnRecords = true;
 
-const specials = ['defn', 'def', 'deftype', 'fn', 'match'];
+const specials = ['defn', 'def', 'deftype', 'fn', 'match', 'defnrec', 'fnrec'];
 
 export const colors: {
     [key: string]: string;
@@ -123,7 +127,7 @@ export const Render = React.memo(
                             lineHeight: '20px',
                         }}
                     >
-                        {node.hash}
+                        {(node.hash + '').slice(0, 10)}
                     </span>
                 ) : null}
             </span>
@@ -193,6 +197,7 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    ref={(node) => reg(node, idx, path, 'outside')}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
                     {nnode.children.map((nnode, i) => (
@@ -284,6 +289,32 @@ export const RenderNNode = (
                 );
             } else {
                 body = nnode.text;
+                if (
+                    nnode.text.length > 1 &&
+                    (display[idx]?.style?.type === 'id' ||
+                        display[idx]?.style?.type === 'unresolved')
+                ) {
+                    const nss = splitNamespaces(nnode.text);
+                    if (nss.length) {
+                        body = nss.map((n, i) =>
+                            i === 0 ? (
+                                <span key={i}>{n}</span>
+                            ) : (
+                                <React.Fragment key={i}>
+                                    <span
+                                        style={{
+                                            transform: 'scale(0.5)',
+                                            display: 'inline-block',
+                                        }}
+                                    >
+                                        /
+                                    </span>
+                                    {n}
+                                </React.Fragment>
+                            ),
+                        );
+                    }
+                }
             }
             return (
                 <span
@@ -310,27 +341,7 @@ export const RenderNNode = (
                             ],
                         });
                     }}
-                    className="idlike"
-                    // onMouseDown={(evt) => {
-                    //     evt.stopPropagation();
-                    //     evt.preventDefault();
-                    //     dispatch({
-                    //         type: 'select',
-                    //         add: evt.altKey,
-                    //         at: [
-                    //             {
-                    //                 start: path.concat({
-                    //                     idx,
-                    //                     type: 'subtext',
-                    //                     at: calcOffset(
-                    //                         evt.currentTarget,
-                    //                         evt.clientX,
-                    //                     ),
-                    //                 }),
-                    //             },
-                    //         ],
-                    //     });
-                    // }}
+                    // className="idlike"
                 >
                     {body}
                 </span>
@@ -352,6 +363,8 @@ export const RenderNNode = (
                 />
             );
         case 'pairs':
+            const oneColor = 'transparent';
+            const twoColor = 'rgba(100,100,100,0.1)';
             if (!columnRecords) {
                 return (
                     <span
@@ -359,17 +372,33 @@ export const RenderNNode = (
                             display: 'flex',
                             flexWrap: 'nowrap',
                             flexDirection: 'column',
-                            gap: '0 8px',
+                            // gap: '0 8px',
                         }}
                         onMouseEnter={() => dispatch({ type: 'hover', path })}
                     >
+                        {nnode.firstLine.map((node, i) => (
+                            <RenderNNode {...props} nnode={node} key={i} />
+                        ))}
                         {nnode.children.map((pair, i) =>
                             pair.length === 1 ? (
-                                <div key={i} style={{ gridColumn: '1/2' }}>
+                                <div
+                                    key={i}
+                                    style={{
+                                        gridColumn: '1/2',
+                                        backgroundColor:
+                                            i % 2 == 0 ? oneColor : twoColor,
+                                    }}
+                                >
                                     <RenderNNode {...props} nnode={pair[0]} />
                                 </div>
                             ) : (
-                                <div style={{ display: 'flex' }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        backgroundColor:
+                                            i % 2 == 0 ? oneColor : twoColor,
+                                    }}
+                                >
                                     <span key={i + '-0'}>
                                         <RenderNNode
                                             {...props}
@@ -377,7 +406,11 @@ export const RenderNNode = (
                                         />
                                     </span>
                                     <span style={{ width: '0.5em' }} />
-                                    <span key={i + '-1'}>
+                                    <span
+                                        key={i + '-1'}
+                                        // style={{ position: 'relative' }}
+                                    >
+                                        {/* <Cross /> */}
                                         <RenderNNode
                                             {...props}
                                             nnode={pair[1]}
@@ -391,27 +424,70 @@ export const RenderNNode = (
             }
             return (
                 <span
-                    style={{ display: 'grid', gap: '0 8px' }}
+                    style={{
+                        display: 'grid',
+                        // gap: '0 8px'
+                    }}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
+                    {nnode.firstLine.length ? (
+                        <span
+                            style={{
+                                gridColumn: '1/3',
+                                paddingLeft: 4,
+                                // backgroundColor: 'red',
+                                display: 'flex',
+                            }}
+                        >
+                            {nnode.firstLine.map((node, i) => (
+                                <RenderNNode {...props} nnode={node} key={i} />
+                            ))}
+                        </span>
+                    ) : null}
                     {nnode.children.flatMap((pair, i) =>
                         pair.length === 1
                             ? [
-                                  <span key={i} style={{ gridColumn: '1/2' }}>
+                                  <span
+                                      key={i}
+                                      style={{
+                                          gridColumn: '1/3',
+                                          paddingLeft: 4,
+                                          //   backgroundColor:
+                                          //       i % 2 == 0 ? oneColor : twoColor,
+                                      }}
+                                  >
                                       <RenderNNode {...props} nnode={pair[0]} />
                                   </span>,
                               ]
                             : [
                                   <span
                                       key={i + '-0'}
-                                      style={{ gridColumn: '1' }}
+                                      style={{
+                                          gridColumn: '1',
+                                          paddingLeft: 4,
+                                          marginLeft: nnode.firstLine.length
+                                              ? 16
+                                              : 0,
+                                          //   display: 'flex',
+                                          //   flexDirection: 'column',
+                                          //   alignItems: 'flex-end',
+                                          //   backgroundColor:
+                                          //       i % 2 == 0 ? oneColor : twoColor,
+                                      }}
                                   >
                                       <RenderNNode {...props} nnode={pair[0]} />
                                   </span>,
                                   <span
                                       key={i + '-1'}
-                                      style={{ gridColumn: '2' }}
+                                      style={{
+                                          gridColumn: '2',
+                                          paddingLeft: 8,
+                                          //   backgroundColor:
+                                          //       i % 2 == 0 ? oneColor : twoColor,
+                                          position: 'relative',
+                                      }}
                                   >
+                                      {i > 0 ? <Cross /> : null}
                                       <RenderNNode {...props} nnode={pair[1]} />
                                   </span>,
                               ],
@@ -430,4 +506,37 @@ export const RenderNNode = (
     }
     let _: never = nnode;
     return <span>NOPE</span>;
+};
+
+const Cross = () => {
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                top: 0,
+                left: 4,
+            }}
+        >
+            <div
+                style={{
+                    position: 'absolute',
+                    top: -3,
+                    left: -0.5,
+                    width: 1,
+                    height: 6,
+                    backgroundColor: '#333', //'white',
+                }}
+            />
+            <div
+                style={{
+                    position: 'absolute',
+                    top: -0.5,
+                    left: -4,
+                    width: 8,
+                    height: 1,
+                    backgroundColor: '#555', //'white',
+                }}
+            />
+        </div>
+    );
 };

@@ -6,19 +6,22 @@ import {
 } from '../../src/parse/parse';
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { MNode, Map } from '../../src/types/mcst';
-import { paste } from '../mods/clipboard';
+import { paste } from '../../src/state/clipboard';
 import {
     State,
     StateChange,
     StateSelect,
     StateUpdate,
+    UpdateMap,
     applyUpdate,
     getKeyUpdate,
-} from '../mods/getKeyUpdate';
-import { Path } from '../mods/path';
-import { Action, UIState, isRootPath } from './ByHand';
-import { getCtx } from './getCtx';
+} from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
+import { isRootPath } from './ByHand';
+import { Action, UIState } from './UIState';
+import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
+import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
@@ -99,7 +102,7 @@ export const updateWithAutocomplete = (
     if (update.type === 'select' && !update.autoComplete) {
         return state;
     }
-    let { ctx, map } = getCtx(state.map, state.root);
+    let { ctx, map } = getCtx(state.map, state.root, state.ctx.global);
     verifyLocs(state.map, 'get ctx');
     state.map = map;
     state.ctx = ctx;
@@ -121,7 +124,7 @@ export const updateWithAutocomplete = (
                 verifyLocs(state.map, 'apply infer mod');
                 console.log(state.map[+id]);
             });
-            ({ ctx, map } = getCtx(state.map, state.root));
+            ({ ctx, map } = getCtx(state.map, state.root, state.ctx.global));
             verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;
@@ -136,9 +139,51 @@ export const updateWithAutocomplete = (
     return state;
 };
 
+export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
+    const prev: UpdateMap = {};
+    Object.keys(update).forEach((k) => {
+        prev[+k] = map[+k] || null;
+    });
+    return prev;
+};
+
 export const reduce = (state: UIState, action: Action): UIState => {
     const update = actionToUpdate(state, action);
-    return reduceUpdate(state, update);
+    const next = reduceUpdate(state, update);
+    if (next.map !== state.map) {
+        const update: UpdateMap = {};
+        const prev: UpdateMap = {};
+        let changed = false;
+        Object.keys(next.map).forEach((k) => {
+            if (next.map[+k] !== state.map[+k]) {
+                changed = true;
+                update[+k] = next.map[+k];
+                prev[+k] = state.map[+k] || null;
+            }
+        });
+        Object.keys(state.map).forEach((k) => {
+            if (!next.map[+k]) {
+                changed = true;
+                update[+k] = null;
+                prev[+k] = state.map[+k];
+            }
+        });
+        if (changed) {
+            next.history = state.history.concat([
+                {
+                    at: next.at,
+                    prevAt: state.at,
+                    prev,
+                    map: update,
+                    id: state.history.length
+                        ? state.history[state.history.length - 1].id + 1
+                        : 0,
+                    ts: Date.now() / 1000,
+                },
+            ]);
+        }
+    }
+    return next;
 };
 
 export const reduceUpdate = (
@@ -166,71 +211,4 @@ export const reduceUpdate = (
             let _: never = update;
             throw new Error('nope update');
     }
-};
-
-export function autoCompleteUpdate(
-    idx: number,
-    map: Map,
-    path: Path[],
-    item: AutoCompleteReplace,
-): StateChange {
-    if (!map[idx]) {
-        console.log(idx, 'not in the map');
-        debugger;
-    }
-    const current = map[idx];
-    return {
-        type: 'update',
-        map: {
-            [idx]: applyAutoUpdateToNode(current, item),
-        },
-        selection: path.slice(0, -1).concat([
-            {
-                idx,
-                type: 'subtext',
-                at: splitGraphemes(item.text).length,
-            },
-        ]),
-        autoComplete: true,
-    };
-}
-
-export function applyAutoUpdateToNode(
-    current: MNode,
-    item: AutoCompleteReplace,
-): MNode {
-    return current.type === 'array' && item.update.type === 'array-hash'
-        ? { ...current, hash: item.update.hash }
-        : item.update.type === 'accessText'
-        ? {
-              loc: current.loc,
-              type: 'accessText',
-              text: item.update.text,
-          }
-        : {
-              loc: current.loc,
-              type: 'hash',
-              hash: item.update.hash,
-          };
-}
-
-export function applyMenuItem(
-    path: Path[],
-    item: AutoCompleteReplace,
-    state: State,
-): StateChange {
-    const idx = path[path.length - 1].idx;
-    return autoCompleteUpdate(idx, state.map, path, item);
-}
-
-export const verifyLocs = (map: Map, message: string) => {
-    Object.keys(map).forEach((k) => {
-        if (+k !== map[+k].loc) {
-            console.log(+k, map[+k].loc);
-            // debugger;
-            console.error(
-                new Error(`loc has the wrong loc! during ${message}`),
-            );
-        }
-    });
 };

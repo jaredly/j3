@@ -1,4 +1,5 @@
-import { Path } from '../../web/mods/path';
+import { Path } from '../state/path';
+import { lastName } from '../db/hash-tree';
 import { Ctx } from '../to-ast/Ctx';
 import { Node } from '../types/cst';
 
@@ -9,7 +10,7 @@ export type SourceMap = {
 
 export const nodeToString = (
     node: Node,
-    hashNames: Ctx['hashNames'],
+    hashNames: Ctx['hashNames'] | null,
     sm: SourceMap = { map: {}, cur: 0 },
     addBefore = 0,
 ): string => {
@@ -55,7 +56,7 @@ export const showSourceMap = (text: string, sm: SourceMap) => {
 
 export const nodeToString_ = (
     node: Node,
-    hashNames: Ctx['hashNames'],
+    hashNames: Ctx['hashNames'] | null,
     sm: SourceMap = { map: {}, cur: 0 },
 ): string => {
     switch (node.type) {
@@ -77,19 +78,22 @@ export const nodeToString_ = (
             return '';
         case 'hash': {
             if (
+                hashNames &&
+                !hashNames[node.loc] &&
                 typeof node.hash === 'string' &&
                 node.hash.startsWith(':builtin:')
             ) {
-                return node.hash
-                    .slice(':builtin:'.length)
-                    .split('/')
-                    .slice(-1)[0];
+                return node.hash.slice(':builtin:'.length);
             }
-            return (
-                hashNames[node.loc] ??
-                (typeof node.hash === 'number' ? hashNames[node.hash] : null) ??
-                `<hashName not recorded ${node.loc} ${node.hash}>`
-            );
+            return !hashNames
+                ? '#' + node.hash
+                : hashNames[node.loc] ??
+                      (typeof node.hash === 'number'
+                          ? hashNames[node.hash]
+                          : null) ??
+                      `<hashName not recorded ${node.loc} ${(
+                          node.hash + ''
+                      ).slice(0, 10)}>`;
         }
         case 'comment':
             return `$comment$`;

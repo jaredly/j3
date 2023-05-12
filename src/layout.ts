@@ -1,5 +1,5 @@
-import { Ctx } from '../src/to-ast/Ctx';
-import { Layout, Map, MNode, MNodeContents } from '../src/types/mcst';
+import { Ctx } from './to-ast/Ctx';
+import { Layout, Map, MNode, MNodeContents } from './types/mcst';
 
 const maxWidth = 60;
 // const maxWidth = 100;
@@ -81,7 +81,8 @@ export const calculateLayout = (
             if (
                 cw === false ||
                 cw > maxWidth ||
-                (firstName === 'let' && node.values.length > 2)
+                (firstName === 'let' && node.values.length > 2) ||
+                firstName === 'switch'
             ) {
                 return {
                     type: 'multiline',
@@ -190,13 +191,16 @@ const idName = (item?: Map[0]) =>
 
 const tightFirsts: { [key: string]: number } = {
     fn: 2,
+    fnrec: 2,
     def: 2,
     defn: 3,
+    defnrec: 3,
     deftype: 2,
     switch: 2,
     let: 2,
     if: 2,
     '<>': 2,
+    '->': 2,
 };
 
 function howTight(item?: Map[0]) {

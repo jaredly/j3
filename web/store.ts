@@ -4,7 +4,8 @@ import { Ctx } from '../src/to-ast/Ctx';
 import { Expr, Pattern, Type } from '../src/types/ast';
 import { Node } from '../src/types/cst';
 import { Map, MNode, toMCST } from '../src/types/mcst';
-import { layout } from './layout';
+import { layout } from '../src/layout';
+import { UpdateMap } from '../src/state/getKeyUpdate';
 
 export type Selection = {
     idx: number;
@@ -130,25 +131,7 @@ export type EvalCtx = {
     };
 };
 
-// Path Locations:
-// child (idx)
-// decorator (key) [tag or arg]
-
-export type PathChild =
-    | { type: 'child'; at: number }
-    | { type: 'subtext'; at: number }
-    | { type: 'expr' | 'text' | 'attribute'; at: number }
-    | { type: 'annot-target' | 'annot-annot' }
-    | { type: 'inside' | 'start' | 'end' }
-    | { type: 'record-target' | 'spread-contents' | 'tapply-target' };
-// | {
-//       type: 'decorator';
-//       key: string;
-//       at: number; // 0 for the key
-//   };
-
-export type Path = { idx: number; child: PathChild };
-// export type Child = { item: Path; idx?: number };
+export type { Path } from '../src/state/path';
 
 export const initialStore = (nodes: Node[]): Store => {
     const map: Map = {};
@@ -251,7 +234,6 @@ export const setSelection = (
     return old;
 };
 
-export type UpdateMap = { [key: string]: null | Map[0] };
 export type StoreUpdate = {
     map: UpdateMap;
     selection?: Store['selection'] | null;

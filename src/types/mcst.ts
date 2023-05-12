@@ -1,4 +1,4 @@
-import { UpdateMap } from '../../web/store';
+import { UpdateMap } from '../state/getKeyUpdate';
 import {
     accessText,
     Attachment,
@@ -23,12 +23,18 @@ export type Atom =
           text: string;
       }
     | { type: 'unparsed'; raw: string };
+
+export type MNodeList = {
+    type: 'list';
+    values: number[];
+};
+
 // `LikeThis
 // | { type: 'tag'; text: string }
 // | { type: 'number'; raw: string };
 
 export type ListLikeContents =
-    | { type: 'list'; values: number[] }
+    | MNodeList
     | { type: 'record'; values: number[] }
     | { type: 'array'; values: number[]; hash?: string };
 
@@ -43,7 +49,7 @@ export type MNodeContents =
     // list-like
     | { type: 'comment'; text: string }
     | MCSpread
-    | { type: 'annot'; target: number; annot: number }
+    | MCAnnot
     | MCRecordAccess
     | { type: 'accessText'; text: string }
     | { type: 'tapply'; target: number; values: number[] }
@@ -57,6 +63,7 @@ export type MCString = {
     first: number;
     templates: { expr: number; suffix: number }[];
 };
+export type MCAnnot = { type: 'annot'; target: number; annot: number };
 export type MCRecordAccess = {
     type: 'recordAccess';
     target: number;

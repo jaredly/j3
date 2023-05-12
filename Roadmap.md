@@ -1,13 +1,343 @@
 
+# I feel like matchesType is a little flimsy
+and obviously we're getting an infinite loop in the task dealio
+so what if we redo it?
+
+I want a map.
+
+
+# yasss
+
+- [x] give @task a third type argument, "ExtraReturn"
+- [x] make it work I think?
+- [ ] make a `(handle x ...)`, that does `((fnrec [x:(typeof x)] (switch x ... otherwise (withHandler<{the effects not handled in ...} {x's return type} {the effects handled in ...} {x's return type}> otherwise @recur))) x)`
+  - seems doable?
+
+```clj
+
+(defn alwaysRead2<Inner:[..] R> [readResponse:string task:(@task [('Read () string) Inner] R)]:(@task Inner R)
+  ((fnrec [x:(@task [('Read () string) Inner] R)]:(@task Inner R)
+    (switch x
+      ('Return result) ('Return result)
+      ('Read _ k) (@recur (k readResponse))
+      otherwise (withHandler<Inner R Read R> otherwise @recur))
+   ) task))
+```
+
+# movies things
+
+Ok, so I want a way to take `(@task [T ('Failure X)] Y)`
+and turn it into `(@task T (Result Y X))`
+
+```clj
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task:(@task [Effects ('Failure Errors)] Value)]:(
+  @task Effects (Result Value Errors))
+  ((fnrec [task:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors))
+    (switch task
+      ('Failure error) ('Return ('Err error))
+      ('Return value) ('Return ('Ok value))
+      otherwise (withHandler<Effects Value Errors (Result Value Errors)> otherwise @recur))
+   ) task))
+```
+
+- [ ] BUG urmmmm so I need a third argument to @task I think
+  - oh yeah, definitely
+
+  (@task
+    SharedEffects
+    Result
+    ReturnEffects)
+
+  [
+    ...SharedEffects
+    ('Tag input (fn [output] (@task [SharedEffects ReturnEffects] Result)))
+  ]
+
+  [... internal]
+  [without ...]
+
+  [Toplevel]
+  [ReturnLevel]
+  [Shared]?
+
+  `(@task Shared Return ReturnEffects)`
+
+  `(@task Local Return [] SharedEffects)`
+
+TODO do I need to be able to represent "extra top effects" as well?
+Like effects at the top level, that won't be in the return?
+I don't think so....
+
+
+
+
+##
+
+- [ ] I should make it so that, even if the switch type is empty,
+  I still supply locals
+- [ ] I want auto-applied tfns to hover with types
+- [ ] '!' and '!?' should be hoverable
+
+... my indication of type errors needs to be much better
+
+- NEXT UP:
+  - [-] expandEnumItems needs to hang on to locals.
+    - ok I no longer understand?? maybe it's not needed?
+- [x] (.a {a 10})
+  - noww that we have autogenerics, this should be super good
+
+- [ ] copy & paste looses local `loc`s and stuff
+
+## Things .. that are brokened
+
+- [ ] asTaskType is being used ... both for
+  `(! ('Some thing))`
+  and
+  `(@task [('Some thing)] else)`
+  but these are very different things.
+
+
+## Buncha tests for nodeToExpr stuff
+
+- [ ] (.a {a 10}) should be easy
+- [ ] auto type specialization if we can hack it
+
+- [ ] um I want um some tests for subtractType?
+- [ ] also though, the `local-bound` thing needs some work
+- [x] switch array [and array]
+
+- [x] BUG BUG When I'm ~unifying(?) task items, it's not working right.
+- [x] ok folks but I would like a `->` form please???
+- [ ] and `->>` why not
+
+- [x] '[..]'
+- [ ] OK NEXT UP Let's really infer fn type args.
+- [ ] and might as well make it so you can `(defn x<T>)` while we're at it, right?
+- [x] (fn<x> [y:x] y) please
+- [x] (defn<x> [y:x] y) please
+- [x] ((fn<x> [y:x] y) 10)
+
+- [ ] do I ever getType without `report`? Seems like I always want it.
+
+- [x] (def fib (@loop (fn [x:int] (if (< x 1) 0 (+ (@recur (- 1 x)) (@recur (- 2 x)))))))
+- [x] defnrec, fnrec
+- [ ] expr array spread
+- [ ] type bounds need to inherit
+
+## Task
+
+- [x] getType for ! and !?
+- [x] getType for fns should collect all tasks dontchaknow
+  - hm so, I think I'll blindly glom everything together that's in the body of the fn?
+    are there any downsides to that?? I think it's the desired behavior.
+- [x] oh tfn for expr's, gotta have it
+  - [ ] switchhhhh really needs work
+  - [ ] honestly, I need to start doing comprehensive testing of the semantics and such
+- [ ] andddd let's do `@task` types for real
+
+- [ ] validatee @loop, the @recur has to be inside of a (fn).
+
+- [x] hashNamesNonLoc
+  - I want my `hashNames` to not be "this .loc has X name"
+    - toplevel[hash] name
+    - local[sym] name
+    - builtin[name] name
+    - globalNames[hash] / last
+
+.. > so currently `hashNames[form.loc] = name`
+.. > are there things that will need differential rendering?
+.. > perhaps the /relative/path stuff? but let's not mess with that too much
+
+nodeToString -> globalNames maybe?
+that might be betterr
+yeah ok I won't mess with non-loc for the moment.
+
+
+## More better test testing
+
+What are the ...sections of stuff?
+
+- "parsing"
+- 'getCtx' and 'update'
+
+ok but also, my tests shouldn't be touching web stuff.
+also, delete all of the ctx stuff? I mean maybe not quite,
+I might still want to reference some of it for the js evaluation stuff.
+
+
+# erhmm hm
+
+"hashName not recorded", why is
+ohhhhh wait
+it's that ...
+oh lol I fixed that at least
+
+
+# Ok, so the road to GLSL happiness
+goes through every human heart.
+wait.
+
+## @loop and @recur
+at least at the type level, gotta have it.
+
+so, I probably need like some tests n stuff
+
+
+- [-] I .. prolly ... need a special ... cst type? For @loop and @recur?
+  honestly
+  the cst doesn't really need to do much different, right?
+  ok yeah, so `@loop` and `@recur` get to be 'special's.
+  un le s s I want `@` to do macro things, and ...
+  eh I'll deal with that later.
+  - [x] ok no, so @loop and @recur don't need representation in the cst
+
+- [ ] BUT the AST needs it right?
+  yeah.
+
+Ok so anyway, let's do the `Type` side first.
+but
+
+- [ ] type .attribute gotta do it
+  then ... so we do some ~basic validation on the type
+
+FOR the expr dealo, inferring the type seeems like it could be
+very hard?
+I could just enforece that you have to annotate it manually.
+(@loop:ann something)
+
+so, this is a ~locals thing.
+at the moment, we're not allowing ... multipl-y different
+levels of recursion.
+although actuall you could do
+```clj
+(@loop (let [top @recur]
+  (@loop (top @recur))))
+```
+So that's totally fine. No need to complicate things.
+
+
+## [x] a `map` type
+
+Does it need to be arbitrarily keyed?
+I do want to be able to have `int` and `string` as keys.
+So sure, let's do arbitrary.
+
+anything fancy I should be doing?
+Also, can I cheat for string maps? and just use objects?
+on the other hand, do I care so much?
+let's not cheat for now.
+
+Ok, but anyways, I need a `map/[]`, right?
+```clj
+(defn map/[]
+  (tfn [T V]
+    (fn [target:(map T V) key:T] V)))
+```
+whichhh meannssss
+that `[]` needs to be able to ... be generic ...
+
+ok so how about, if a fn is trivially generic,
+I can just infer it.
+
+gotta do it for map/[] right? yeah ok that sounds good.
+
+ok yeah so, I did map/get and thats fine.
+
+- [x] map type
+- [x] map/from-pairs
+- [x] map/get
+
+I, kinda want, to be able to double up, type vs term
+`map` type and `map` constrcutor, ya know
+`vec2` type and `vec2` constructor.
+but
+eh I feel like the mental overhead is too much.
+
+
+# More Solid Thinking
+about names, and reuse, and such.
+
+- if you have multiple terms with the same name in the sandbox,
+  it should be an error
+- if you have a sandbox that shadows the name of something in the library
+  and you have usages of the library thing elsewhere in the sandbox,
+  I should really flag that somehow.
+- drag & drop toplevels would be quite nice
+
+- I should really hurry up and get glsl output going
+  so I can make pretty things
+- also a dom output n stuff ...
+
+ok wait so
+like what do we do about platforms.
+I'm guessing a platform will have just like a library
+
+- [ ] click on a thing, bring it up to the deal
+
+# Left-Hand Whatsit
+
+- [ ] v|> collapse a thing!
+- [ ] maybe ... a three dots? that makes a contextmenu
+  - well so I do need a button to move something out to the library
+
+- [x] make a '<-' for def/deftype
+- [x] on click, add it to definitions, add a name to namespace, and
+  also replace all of the usages of it with the new hash.
+- [ ] make an "x" to delete things from namespace
+
+- [ ] BUG: select all of a text, delete, and you
+  have an identifier thats empty.
+
+- [ ] I really want fancy node select dealios
+
+# AutoComplete
+
+- [ ] it's not, great?
+  - [ ] distinguish between local & sandbox & global results
+
 # OK Vision for the nextliness
+
+- [x] UIState should have a history[]
+- [x] then the IDE useEffect can just check for new history items
+  and apply their changes.
+  That sounds great.
+
+
+Alright, we're almost doing it?
+
+- [x] the names for things ending in / isn't it
+- [x] oh scroll within, for cursors, its broked
+
+
+- [ ] sandboxes should have a "my namespace" idea
+  the namespace where it ~lives
+  - [ ] the sidebar is split in two -- top is the sandbox's
+    local namespace, bottom is the global namespace
+
+- [x] whyyy can't I switch sandboxes?
+  ah gotta key the sandbox
+
+
 
 wa-sqlite in the house
 There's a Library behind everything
 and multiple Sandboxes can be called up
 we can even do like an ephemeral sandbox if we want
-or those ~constant sandboxes, ya know
+or those ~constant sandboxes, ya know.
 
+ok, so I've decided .. that I cannn just determine post-hoc
+what things got updated?
+eh
+I don't really love that though. so much waste.
+but
+cycles are cheap  Iguess.
 
+ANYWAY.
+So we do a [prevState -> nextState] delta
+and persist that.
+Yeah I guess I can live with that.
+
+History items, I can do some clever merging, if it's a simple change.
 
 
 # LOCS can just be IDXs
