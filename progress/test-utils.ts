@@ -1,5 +1,5 @@
 export const splitCase = (text: string) => {
-    const chunks = text.split('\n');
+    const chunks = text.split('\n').filter((line) => !line.startsWith('; '));
     const code: string[] = [];
     let expected: string | null = null;
     let type: string | null = null;

@@ -269,11 +269,31 @@ not handled matches \"number_union\"
   ('Return ('Ok v)))
 -> (fn<Effects:[..] Errors:[..] Value> [task-top:(@task [#20 ('Failure #27)] #33) v:#33] (@task #20 (#0 #33 #27)))
 
-skip:(deftype Result<ok err> [('Ok ok) ('Err err)])
+(deftype Result<ok err> [('Ok ok) ('Err err)])
 (defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
   ('Return ('Ok v)))
+(to-result ('Hi () (fn [x:()] ('Return x))) ())
+-> (@task ('Hi () ()) (#0 () []))
+
+; TODO: So this one really should work! ugh.
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors)) ((fnrec [task:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors)) (switch task ('Failure error) ('Return ('Err error)) ('Return value) ('Return ('Ok value)) otherwise (withHandler<Effects Value ('Failure Errors) (Result Value Errors)> otherwise @recur)) ) task-top))
 (to-result ('Hi () (fn [x:()] ('Return x))))
--> 10
+-> (@task ('Hi () ()) (#0 ⍉ []))
+114: Invalid type.
+Expected:
+(@task [('Hi () ()) ('Failure [])] ⍉)
+<expanded task>
+[('Failure []) ('Hi () (fn [value:()] (@task [('Failure []) ('Hi () ())] ⍉))) ('Return ⍉)]
+Found:
+('Hi () (fn [x:()] ('Return ())))
+.
+Invalid type.
+Expected:
+⍉
+Found:
+()
+Path: Hi -> body -> Return
 
 (deftype Result<ok err> [('Ok ok) ('Err err)])
 (defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
@@ -288,10 +308,12 @@ skip:(deftype Result<ok err> [('Ok ok) ('Err err)])
 -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
 
 (fn<A B> [x:A y:B] (if true x y))
+-1: This has the empty type
 13: Unable to unify the following types:
 First type: A
 Second type: B
 
+; TODO this should be ~doable, right?
 (fn<A:[..]> [x:A]:[A 'Yes] (if true x 'Yes))
 19: Unable to unify the following types:
 First type: A
@@ -354,19 +376,6 @@ Second type: 'Yes
 
 export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
     nodeToString(nodeForType(type, hashNames), hashNames);
-
-const splitIndented = (text: string) => {
-    const lines = text.split('\n');
-    const chunks: string[][] = [];
-    lines.forEach((line) => {
-        if (line.startsWith(' ')) {
-            chunks[chunks.length - 1].push(line);
-        } else {
-            chunks.push([line]);
-        }
-    });
-    return chunks.map((chunk) => chunk.join('\n'));
-};
 
 describe('completion and such', () => {
     data.forEach((chunk, i) => {
