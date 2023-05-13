@@ -5,7 +5,7 @@ import { MatchError } from '../types/types';
 import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 import { asTaskType } from './asTaskType';
 import { expandTask } from './expandTask';
-import { recordMap } from './get-types-new';
+import { maybeEffectsType, recordMap } from './get-types-new';
 import { inv } from './matchesType';
 
 type T<K> = Extract<Type, { type: K }>;
@@ -466,6 +466,19 @@ export const matchMap = {
         if (cmap.type === 'error') {
             return cmap.error;
         }
+
+        for (let local of cmap.locals) {
+            if (!map.locals.find((f) => f.sym === local.sym)) {
+                return {
+                    type: 'misc',
+                    message: `local ${local.sym} not found in expected union`,
+                    typ: exp,
+                    form: local.form,
+                    path: mc.can.path,
+                };
+            }
+        }
+
         // All cmap items must match the corresponding map item
         for (let key of Object.keys(cmap.map)) {
             const one = cmap.map[key];
@@ -481,7 +494,28 @@ export const matchMap = {
                     }
                     continue;
                 }
-                // if (map.locals.find(m => m.form))
+
+                if (map.tasks.length) {
+                    // Ok so here ... we do ... something?
+                    // ok can we parse this tag as a task?
+                    const tt = asTaskType(
+                        {
+                            type: 'tag',
+                            name: key,
+                            args: one.args,
+                            form: one.form,
+                        },
+                        mc.ctx,
+                    );
+                    if (tt.type !== 'error') {
+                        const at = maybeEffectsType(tt, tt.result);
+                        const matches = matchesTypeBetter(at, map.tasks[0], mc);
+                        if (matches) {
+                            continue;
+                        }
+                    }
+                }
+
                 return {
                     type: 'tag not found in union',
                     path: mc.exp.path.concat(['key']),

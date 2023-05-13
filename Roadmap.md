@@ -10,6 +10,14 @@ OR you could instantiate it without a `Hi`.
 So if we're like, I wonder if T has a `Hi`, we kindof don't know if it does?
 
 
+soooo the inferred type for `(to-result (task))` is sooo much. and lots of duplciation.
+
+- [x] SO we need to have `expandEnumItems` also give me task declarations.
+- [x] now use it
+- [ ] hrm it's still not quite working, but idk
+
+- [ ] SO I think my `tfn` type might need .. a little more ... constraints to it?
+  like indicate if/how different type variables might interact and/or conflict
 
 # I feel like matchesType is a little flimsy
 and obviously we're getting an infinite loop in the task dealio

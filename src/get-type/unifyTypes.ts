@@ -212,12 +212,20 @@ export const _unifyTypes = (
             form: one.form,
             items: Object.entries(result)
                 .sort((a, b) => cmp(a[0], b[0]))
-                .map(([k, v]) => ({
-                    type: 'tag',
-                    name: k,
-                    args: v.args,
-                    form: v.form,
-                })),
+                .map(
+                    ([k, v]): Type => ({
+                        type: 'tag',
+                        name: k,
+                        args: v.args,
+                        form: v.form,
+                    }),
+                )
+                // TODO: Can we verify that these don't conflict?
+                .concat(onex.locals)
+                .concat(twox.locals)
+                // TODO: verifyyy that .... these tasks don't fight
+                .concat(onex.tasks)
+                .concat(twox.tasks),
         };
     }
 

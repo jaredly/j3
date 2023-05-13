@@ -286,6 +286,17 @@ skip:(deftype Result<ok err> [('Ok ok) ('Err err)])
   ('Return v))
 (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
 -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
+
+(fn<A B> [x:A y:B] (if true x y))
+13: Unable to unify the following types:
+First type: A
+Second type: B
+
+(fn<A:[..]> [x:A]:[A 'Yes] (if true x 'Yes))
+19: Unable to unify the following types:
+First type: A
+Second type: 'Yes
+--> unifyTypes can't handle 'local' vs 'tag' yet
 `
     .trim()
     .split('\n\n');

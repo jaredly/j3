@@ -843,7 +843,11 @@ export const asResult = (t: Type, ctx: Ctx) => {
     if (enu.type === 'error') {
         return;
     }
-    if (Object.keys(enu.map).length !== 2) {
+    if (
+        Object.keys(enu.map).length !== 2 ||
+        enu.locals.length ||
+        enu.tasks.length
+    ) {
         return;
     }
     if (!enu.map['Ok'] || !enu.map['Err']) {
