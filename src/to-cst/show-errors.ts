@@ -46,7 +46,9 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 .map(nts)
                 .join(', ')}')`;
         case 'too few arguments':
-            return `Expected ${nts(error.expected)}`;
+            return `Too few arguments? Received ${
+                error.received
+            }, expected ${nts(error.expected)}`;
         case 'unresolved':
             return error.reason ?? `identifier not linked`;
         case 'unparsed':
@@ -72,6 +74,10 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                 )}\nSecond type: ${nts(error.two)}` +
                 (error.message ? '\n--> ' + error.message : '')
             );
+        case 'tag not found in union':
+            return `Tag '${error.tag.name} not found in union: ${nts(
+                error.union,
+            )}.\nFull tag: ${nts(error.tag)}`;
         case 'invalid type':
             return (
                 `Invalid type.\nExpected:\n${nts(

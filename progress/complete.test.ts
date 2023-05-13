@@ -257,6 +257,35 @@ Found:
 10
 .
 not handled matches \"number_union\"
+
+(fn [x:(@task ('Hi () ()) int)] ((fn<T:[..]> [x:T] 10) x))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] 10)
+
+(fn [x:(@task ('Hi () ()) int)] ((fn<T:[..]> [x:T] 10) x))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] 10)
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+  ('Return ('Ok v)))
+-> (fn<Effects:[..] Errors:[..] Value> [task-top:(@task [#20 ('Failure #27)] #33) v:#33] (@task #20 (#0 #33 #27)))
+
+skip:(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+  ('Return ('Ok v)))
+(to-result ('Hi () (fn [x:()] ('Return x))))
+-> 10
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+  ('Return ('Ok v)))
+(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
+  ('Return v))
+(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
 `
     .trim()
     .split('\n\n');
@@ -334,11 +363,12 @@ describe('completion and such', () => {
         if (only) {
             chunk = chunk.slice(3);
         }
+        const skip = chunk.startsWith('skip:');
         const { input, expected, expectedType, errors } = splitCase(chunk);
         // const [input, expected, ...errors] = splitIndented(chunk);
         // let expectedType =
         //     errors.length && errors[0].startsWith('->') ? errors.shift() : null;
-        (only ? it.only : it)(`${i} ${input}`, () => {
+        (skip ? it.skip : only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
             const { map: data } = parseByCharacter(
                 input.replace(/\s+/g, ' '),

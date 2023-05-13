@@ -12,6 +12,13 @@ export type MatchError =
           path: string[];
           inner?: MatchError;
       }
+    | {
+          type: 'tag not found in union';
+          form: Node;
+          path: string[];
+          tag: Extract<Type, { type: 'tag' }>;
+          union: Extract<Type, { type: 'union' }>;
+      }
     | { type: 'misc'; path: string[]; message: string; form: Node; typ?: Type }
     | {
           type: 'unification';

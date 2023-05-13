@@ -53,6 +53,10 @@ export const inv = (
     found: candidate,
     form: blank,
     path,
+    // type: 'misc',
+    // path,
+    // form: blank,
+    // message: 'um here we are' + new Error().stack,
 });
 
 export const isLoopy = (t: Type): boolean => {

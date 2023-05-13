@@ -300,6 +300,40 @@ export const expandEnumItems = (
             item = defn.value;
         }
         if (item.type === 'local') {
+            const local = ctx.results.localMap.types[item.sym];
+            if (!local) {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'unknown local',
+                        path,
+                        form: item.form,
+                    },
+                };
+            }
+            if (!local.bound || local.bound.type !== 'union') {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'local type in a union must be bound a union',
+                        path,
+                        form: item.form,
+                    },
+                };
+            }
+            if (local.bound.items.length || !local.bound.open) {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'the only local we support atm is [..]',
+                        path,
+                        form: item.form,
+                    },
+                };
+            }
             // throw new Error(`need something else to expand local types`);
             locals.push(item);
         }

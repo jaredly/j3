@@ -1,4 +1,16 @@
 
+# Thinking about type bounds
+like
+
+`fn<T:[('Hi int) ..]>(x:T)`
+
+so, you could instantiate `T` with a `Hi` that would need to be a subset of `('Hi int)`.
+OR you could instantiate it without a `Hi`.
+
+So if we're like, I wonder if T has a `Hi`, we kindof don't know if it does?
+
+
+
 # I feel like matchesType is a little flimsy
 and obviously we're getting an infinite loop in the task dealio
 so what if we redo it?

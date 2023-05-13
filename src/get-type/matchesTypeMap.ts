@@ -28,6 +28,12 @@ export const matchesTypeBetter = (
     const res = useMatchMap(candidate, expected, mc);
     if (res === false) {
         return inv(candidate, expected, mc.can.path);
+        // return {
+        //     type: 'misc',
+        //     message: `um here we are`,
+        //     form: candidate.form,
+        //     path: [],
+        // };
     }
     return res;
 };
@@ -468,16 +474,26 @@ export const matchMap = {
                 if (exp.open) {
                     continue;
                 }
-                return inv(
-                    {
+                if (map.locals.length) {
+                    const loc = map.locals[0];
+                    if (mc.typeArgs?.[loc.sym] != null) {
+                        mc.typeArgs[loc.sym].push(can);
+                    }
+                    continue;
+                }
+                // if (map.locals.find(m => m.form))
+                return {
+                    type: 'tag not found in union',
+                    path: mc.exp.path.concat(['key']),
+                    form: one.form,
+                    tag: {
                         type: 'tag',
                         name: key,
                         args: one.args,
                         form: one.form,
                     },
-                    exp,
-                    mc.exp.path.concat([key]),
-                );
+                    union: exp,
+                };
             }
             if (one.args.length !== two.args.length) {
                 return {
