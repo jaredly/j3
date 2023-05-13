@@ -10,8 +10,8 @@ I want a map.
 - [x] figure out the wrong deailio
 
 - [ ] make like a bunch more tests, and maybe do it ... in a UI?
-  idk
-- [ ] unifyTypes should be also using a map, I should say
+  idk maybe code is fine
+- [ ] unifyTypes should be also using a map, I dare say
 
 
 # yasss

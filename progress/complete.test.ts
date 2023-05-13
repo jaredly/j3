@@ -46,7 +46,7 @@ Expected:
 "ho"
 Found:
 string
--
+.
 not handled matches "builtin_string"
 
 (fn [one:"hi" two:(fn ["hi"] int)] (two one))
@@ -246,9 +246,22 @@ Second type: 3.1
 (fn [x:['Ten ('Four int)]] (switch x 'Ten 10))
 11: switch not exhaustive ('Four int)
 
+((fn<T> [x:T] x) 10)
+-> 10
+
+((fn<T:[..]> [x:T] x) 10)
+0: Invalid type.
+Expected:
+[..]
+Found:
+10
+.
+not handled matches \"number_union\"
 `
     .trim()
     .split('\n\n');
+
+// ((tfn [X:[..]] X) 10)
 
 // erfff ok so ... multiple levels? Is that it?
 

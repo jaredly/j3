@@ -100,12 +100,18 @@ export const useMatchMap = (candidate: Type, expected: Type, mc: MC): R => {
     }
 
     if (res === null) {
-        // console.error(`Not handled`, key);
         return {
-            type: 'misc',
-            message: `not handled matches "${key}"`,
+            type: 'invalid type',
+            expected,
+            found: candidate,
             form: candidate.form,
             path: mc.can.path,
+            inner: {
+                type: 'misc',
+                message: `not handled matches "${key}"`,
+                form: candidate.form,
+                path: mc.can.path,
+            },
         };
     }
 

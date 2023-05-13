@@ -81,7 +81,7 @@ export const errorToString = (error: Error, ctx: Ctx): string => {
                         ? '\nPath: ' + error.path.join(' -> ')
                         : ''
                 }` +
-                (error.inner ? '\n-\n' + errorToString(error.inner, ctx) : '')
+                (error.inner ? '\n.\n' + errorToString(error.inner, ctx) : '')
             );
     }
     return `Some error happened ${error.type} : ${JSON.stringify(

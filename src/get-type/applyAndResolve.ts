@@ -205,8 +205,8 @@ export const applyAndResolve = (
         const map: { [key: number]: Type } = {};
         for (let i = 0; i < inner.args.length; i++) {
             if (inner.args[i].bound) {
-                console.error('the arg', type.args[i]);
-                console.error('the bound', inner.args[i].bound);
+                // console.error('the arg', type.args[i]);
+                // console.error('the bound', inner.args[i].bound);
                 const res = _matchOrExpand(
                     type.args[i],
                     inner.args[i].bound!,
