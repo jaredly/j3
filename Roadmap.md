@@ -76,7 +76,7 @@ What are the major usability hiccups?
 EDITOR NEEDS HELP
 - [ ] OK REALLY backspace at start of `(` neeeeeeeds to slop it
 - [ ] highlight a bunch and `(` neeedds to surround it if at all possible.
-- [ ] UNDO and REDO these are imperative.
+- [x] UNDO and REDO these are imperative.
 
 
 # Thinking about type bounds
