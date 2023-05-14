@@ -176,9 +176,14 @@ export const reduce = (state: UIState, action: Action): UIState => {
                 smap[+k] = v;
             }
         });
+
+        const { ctx } = getCtx(smap, state.root, state.ctx.global);
+
         return {
             ...state,
+            ctx,
             map: smap,
+            at: nitem.at,
             history: state.history.concat([nitem]),
         };
     }
