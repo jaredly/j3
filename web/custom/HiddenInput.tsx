@@ -119,6 +119,10 @@ export function HiddenInput({
                 }
             }}
             onKeyDown={(evt) => {
+                if (evt.key === 'z' && (evt.metaKey || evt.ctrlKey)) {
+                    return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
+                }
+
                 if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                     return;
                 }

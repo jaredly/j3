@@ -25,6 +25,8 @@ export type RegMap = {
 };
 
 export type Action =
+    | { type: 'undo' }
+    | { type: 'redo' }
     | { type: 'hover'; path: Path[] }
     | {
           type: 'select';

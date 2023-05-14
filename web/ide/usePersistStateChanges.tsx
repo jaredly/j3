@@ -12,6 +12,10 @@ import { addDefinitions, addNamespaces } from '../../src/db/library';
 import { IDEState } from './IDE';
 import { UpdateMap } from '../../src/state/getKeyUpdate';
 
+// so
+// like the sandbox meta
+// right?
+
 export type DBUpdate =
     | {
           type: 'sandbox-nodes';
@@ -93,6 +97,10 @@ export function collectDatabaseChanges(
         }
     }
     if (last.history !== next.history) {
+        // Possibilities:
+        // - we've done an `undo`
+        //
+
         const map: UpdateMap = {};
         const hist: HistoryItem[] = [];
         for (let i = 0; i < next.history.length; i++) {

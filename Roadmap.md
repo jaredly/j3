@@ -1,4 +1,84 @@
 
+# UNDO REDO
+
+So, I've got a db table of `sandbox nodes`
+and a db table of `history items`
+
+q: how do I maintain a "history tip"?
+a: historyItems could have a `didUndo`
+  - if you add a new history item, and there are `undone` items, we need to delete those
+  - right? seems fine
+  - altho, maybe do that locally, it's fine
+
+oprtions
+
+A B C D
+(undo)
+A B C D(undid)
+(undo)
+A B C(undid) D(undid)
+(E)
+A B E
+(undo)
+A B E(undid)
+(undo)
+A B(undid) E(undid)
+(redo)
+A B E(undid)
+
+Comparing previous & next history becomes quite a chore, I think.
+And determining what to undo and stuff.
+
+
+ALTERNATIVE, we do REVERT commits
+
+A B C D
+(undo)
+A B C D D'
+(undo)
+A B C D D' C'
+E
+A B C D D' C' E
+(undo)
+A B C D D' C' E E'
+(undo)
+A B C D D' C' E E' B'
+(redo)
+A B C D D' C' E E' B' B
+
+Advantage:
+- purely addative,
+- figuring out what's "new" in the next state's history list only requires checking the most recent item for updates. No possibility of previous items getting modified or being compeltely different.
+- item's index === its ID, which is nice
+Disadvantage:
+is maybe hard to work out?
+Advantage:
+you can unit test this into the ground
+
+
+
+# MOVIES is type checking?
+wow cool!
+so now
+what next
+do you know it
+
+erm
+it would be nice
+to get it executing, right?
+
+What are the major usability hiccups?
+- sandboxes need a namespace. I think maybe, their own default namespace?
+  - and you could like copy that namespace over to somewhere official if you want, idk
+
+- [ ] let's highlight unused stuff in the sandbox, that would be nice right?
+
+EDITOR NEEDS HELP
+- [ ] OK REALLY backspace at start of `(` neeeeeeeds to slop it
+- [ ] highlight a bunch and `(` neeedds to surround it if at all possible.
+- [ ] UNDO and REDO these are imperative.
+
+
 # Thinking about type bounds
 like
 
@@ -8,6 +88,9 @@ so, you could instantiate `T` with a `Hi` that would need to be a subset of `('H
 OR you could instantiate it without a `Hi`.
 
 So if we're like, I wonder if T has a `Hi`, we kindof don't know if it does?
+
+
+
 
 
 soooo the inferred type for `(to-result (task))` is sooo much. and lots of duplciation.

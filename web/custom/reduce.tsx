@@ -22,6 +22,8 @@ import { Action, UIState } from './UIState';
 import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
+import { redoItem, undoItem } from '../../src/to-ast/history';
+import { HistoryItem } from '../../src/to-ast/library';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
@@ -148,6 +150,38 @@ export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
 };
 
 export const reduce = (state: UIState, action: Action): UIState => {
+    if (action.type === 'undo' || action.type === 'redo') {
+        const undid =
+            action.type === 'undo'
+                ? undoItem(state.history)
+                : redoItem(state.history);
+        if (!undid) {
+            console.log(`nothing to ${action.type}!`);
+            return state;
+        }
+        const nitem: HistoryItem = {
+            id: state.history.length,
+            revert: undid.id,
+            prev: undid.map,
+            map: undid.prev,
+            at: undid.prevAt,
+            prevAt: undid.at,
+            ts: Date.now() / 1000,
+        };
+        const smap = { ...state.map };
+        Object.entries(nitem.map).forEach(([k, v]) => {
+            if (v == null) {
+                delete smap[+k];
+            } else {
+                smap[+k] = v;
+            }
+        });
+        return {
+            ...state,
+            map: smap,
+            history: state.history.concat([nitem]),
+        };
+    }
     const update = actionToUpdate(state, action);
     const next = reduceUpdate(state, update);
     if (next.map !== state.map) {
