@@ -1,7 +1,7 @@
 import { Identifier, Node, NodeExtra, recordAccess } from '../types/cst';
 import { Expr, Number, Record, Type } from '../types/ast';
 import { processTypeArgs, specials } from './specials';
-import { resolveExpr } from './resolveExpr';
+import { resolveExprHash, resolveExprText } from './resolveExpr';
 import { AutoCompleteResult, nil, nilt } from './Ctx';
 import { err } from './nodeToPattern';
 import { getType, RecordMap, recordMap } from '../get-type/get-types-new';
@@ -45,10 +45,10 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
         case 'identifier':
             return (
                 maybeParseNumber(form, ctx) ??
-                resolveExpr(form.text, undefined, ctx, form)
+                resolveExprText(form.text, ctx, form)
             );
         case 'hash':
-            return resolveExpr('', form.hash, ctx, form);
+            return resolveExprHash(form.hash, ctx, form);
         case 'record':
             return nodeToRecord(form, ctx);
 
@@ -129,7 +129,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
                     });
                 });
                 const target: Expr = first.hash
-                    ? resolveExpr('', first.hash, ctx, first)
+                    ? resolveExprHash(first.hash, ctx, first)
                     : { type: 'unresolved', form: first };
                 if (!first.hash) {
                     populateAutocomplete(ctx, '[]', first);

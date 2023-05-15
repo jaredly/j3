@@ -9,15 +9,11 @@ import { ensure } from './nodeToExpr';
 
 // TODO cache this?
 
-export const resolveExpr = (
+export const resolveExprText = (
     text: string,
-    hash: string | number | undefined,
     ctx: CstCtx,
     form: Node,
 ): Expr => {
-    if (!text.length && hash == null) {
-        return { type: 'unresolved', form, reason: 'blank' };
-    }
     if (text === 'true' || text === 'false') {
         return { type: 'bool', value: text === 'true', form };
     }
@@ -36,74 +32,77 @@ export const resolveExpr = (
         return { type: 'tag', name: text.slice(1), form };
     }
     ctx.results.display[form.loc] = {};
-    if (hash == null) {
-        populateAutocomplete(ctx, text, form);
-        ctx.results.display[form.loc].style = { type: 'unresolved' };
+    // if (hash == null) {
+    populateAutocomplete(ctx, text, form);
+    ctx.results.display[form.loc].style = { type: 'unresolved' };
+    return {
+        type: 'unresolved',
+        form,
+        reason: `No hash specified:` + text,
+    };
+};
+
+export const resolveExprHash = (
+    hash: string | number,
+    ctx: CstCtx,
+    form: Node,
+): Expr => {
+    if (typeof hash === 'number') {
+        const top = ctx.results.toplevel[hash];
+        if (top?.type === 'def') {
+            ctx.results.display[form.loc].style = {
+                type: 'id',
+                hash,
+                ann: top.ann ?? undefined,
+            };
+            // console.log('its a hashnames', form.loc, top.name);
+            ctx.results.hashNames[form.loc] = lastName(top.name);
+            return { type: 'toplevel', hash, form };
+        }
+        const sym = hash;
+        const local = ctx.local.terms.find((t) => t.sym === sym);
+        if (local) {
+            ctx.results.display[form.loc].style = {
+                type: 'id',
+                hash: local.sym,
+                ann: local.type,
+            };
+            ctx.results.hashNames[form.loc] = local.name;
+            return { type: 'local', sym: local.sym, form };
+        }
+        return { type: 'unresolved', form, reason: 'local missing' };
+    } else {
+        if (hash.startsWith(':builtin:')) {
+            const text = hash.slice(':builtin:'.length);
+            const builtin = ctx.global.builtins[text];
+            if (builtin?.type === 'term') {
+                const last = lastName(text);
+                ctx.results.display[form.loc].style = {
+                    type: 'id',
+                    hash,
+                    ann: builtin.ann,
+                };
+                ctx.results.hashNames[form.loc] = last;
+                return { type: 'builtin', name: text, form };
+            }
+        }
+        const global = ctx.global.library.definitions[hash];
+        if (global?.type === 'term') {
+            ctx.results.display[form.loc].style = {
+                type: 'id',
+                hash,
+                ann: global.ann,
+            };
+            ctx.results.hashNames[form.loc] = lastName(
+                ctx.results.globalNames[hash]?.[0],
+            ); // ctx.global.reverseNames[hash];
+            return { type: 'global', hash, form };
+        }
         return {
             type: 'unresolved',
             form,
-            reason: `No hash specified:` + text,
+            reason: 'global or builtin missing',
         };
-    } else {
-        if (typeof hash === 'number') {
-            const top = ctx.results.toplevel[hash];
-            if (top?.type === 'def') {
-                ctx.results.display[form.loc].style = {
-                    type: 'id',
-                    hash,
-                    ann: top.ann ?? undefined,
-                };
-                // console.log('its a hashnames', form.loc, top.name);
-                ctx.results.hashNames[form.loc] = lastName(top.name);
-                return { type: 'toplevel', hash, form };
-            }
-            const sym = hash;
-            const local = ctx.local.terms.find((t) => t.sym === sym);
-            if (local) {
-                ctx.results.display[form.loc].style = {
-                    type: 'id',
-                    hash: local.sym,
-                    ann: local.type,
-                };
-                ctx.results.hashNames[form.loc] = local.name;
-                return { type: 'local', sym: local.sym, form };
-            }
-            populateAutocomplete(ctx, text, form);
-            return { type: 'unresolved', form, reason: 'local missing' };
-        } else {
-            if (hash.startsWith(':builtin:')) {
-                text = hash.slice(':builtin:'.length);
-                const builtin = ctx.global.builtins[text];
-                if (builtin?.type === 'term') {
-                    const last = lastName(text);
-                    ctx.results.display[form.loc].style = {
-                        type: 'id',
-                        hash,
-                        ann: builtin.ann,
-                    };
-                    ctx.results.hashNames[form.loc] = last;
-                    return { type: 'builtin', name: text, form };
-                }
-            }
-            const global = ctx.global.library.definitions[hash];
-            if (global?.type === 'term') {
-                ctx.results.display[form.loc].style = {
-                    type: 'id',
-                    hash,
-                    ann: global.ann,
-                };
-                ctx.results.hashNames[form.loc] = lastName(
-                    ctx.results.globalNames[hash]?.[0],
-                ); // ctx.global.reverseNames[hash];
-                return { type: 'global', hash, form };
-            }
-            populateAutocomplete(ctx, text, form);
-            return {
-                type: 'unresolved',
-                form,
-                reason: 'global or builtin missing',
-            };
-        }
     }
 };
 

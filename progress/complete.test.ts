@@ -319,6 +319,9 @@ Second type: B
 First type: A
 Second type: 'Yes
 --> unifyTypes can't handle 'local' vs 'tag' yet
+
+(let [x 1] x ^b^T^b^b
+= (let x)
 `
     .trim()
     .split('\n\n');
