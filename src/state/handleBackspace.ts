@@ -1,4 +1,4 @@
-import { ListLikeContents, Map, MNodeExtra } from '../types/mcst';
+import { ListLikeContents, Map, MNode, MNodeExtra } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
 import {
@@ -14,6 +14,7 @@ import { collectNodes } from './clipboard';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../to-ast/Ctx';
+import { modChildren } from './modChildren';
 
 export function handleBackspace(
     map: Map,
@@ -93,6 +94,26 @@ export function handleBackspace(
 
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
+
+    if (
+        ppath.type === 'child' &&
+        ppath.at === 0 &&
+        atStart &&
+        'values' in parent
+    ) {
+        const gpath = fullPath[fullPath.length - 3];
+        if (gpath.type === 'child') {
+            const gparent = map[gpath.idx];
+            const changed = modChildren(gparent, (children) => {
+                children.splice(gpath.at, 1, ...parent.values);
+            }) as MNode;
+            return {
+                type: 'update',
+                map: { [gpath.idx]: changed, [ppath.idx]: null },
+                selection: [...fullPath.slice(0, -3), gpath, flast],
+            };
+        }
+    }
 
     if (node.type === 'accessText' && (atStart || node.text === '')) {
         if (parent.type !== 'recordAccess') {

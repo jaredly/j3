@@ -277,6 +277,10 @@ hello<friend>
 hello<hi>^b
 hello
 id
+
+(one two (a b^T^l^b))
+(one two a b)
+(list id id id id)
 `;
 // (@loop (fn [x] (if x (@recur false) 10)))
 

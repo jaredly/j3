@@ -1,4 +1,18 @@
 
+# PRESERVING Names that get lost
+
+For example:
+
+(let [x] x)
+and you unwrap the outer ()
+the final thing should still be called `x`, but it'll be an unbound identifier, instead of a hash.
+
+How to do that?
+- method 1: do post-hoc analysis, find things that are now unbound, and figure out what the names used to be,
+  and then update the map to change them to identifiers, instead of hashes.
+- method 2: keep around a map of things as they were .. and ... persist it somewhere I guess?
+
+
 # UNDO REDO
 
 So, I've got a db table of `sandbox nodes`
@@ -77,6 +91,11 @@ EDITOR NEEDS HELP
 - [ ] OK REALLY backspace at start of `(` neeeeeeeds to slop it
 - [ ] highlight a bunch and `(` neeedds to surround it if at all possible.
 - [x] UNDO and REDO these are imperative.
+
+- do .. I ... want to ... make it so that the contents of a string template can be lists without parens? honestly I think it would be less weird.
+  I guess a ~simpler stopgap would be to have "space" do an auto-wrap.
+
+
 
 
 # Thinking about type bounds
