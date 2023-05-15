@@ -185,12 +185,6 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
         case 'stringText':
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
-        case 'spread':
-            err(ctx.results.errors, form, {
-                type: 'misc',
-                message: 'dangling spread',
-            });
-            return { type: 'blank', form };
         case 'rich-text':
             return { type: 'rich-text', form, lexicalJSON: form.lexicalJSON };
         case 'attachment':

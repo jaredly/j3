@@ -47,6 +47,7 @@ export const resolveExprHash = (
     ctx: CstCtx,
     form: Node,
 ): Expr => {
+    ctx.results.display[form.loc] = {};
     if (typeof hash === 'number') {
         const top = ctx.results.toplevel[hash];
         if (top?.type === 'def') {
@@ -70,6 +71,7 @@ export const resolveExprHash = (
             ctx.results.hashNames[form.loc] = local.name;
             return { type: 'local', sym: local.sym, form };
         }
+        // ctx.results.mods
         return { type: 'unresolved', form, reason: 'local missing' };
     } else {
         if (hash.startsWith(':builtin:')) {

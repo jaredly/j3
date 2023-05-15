@@ -558,7 +558,7 @@ export function generateRawPasteUpdate(
         });
 
         tmp = { ...tmp, map: { ...tmp.map } };
-        applyMods(tctx, tmp.map);
+        applyMods(tctx, tmp.map, state.nidx);
 
         if (update?.autoComplete) {
             const mods = infer(tctx, tmp.map);

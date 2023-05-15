@@ -148,7 +148,7 @@ export const uiState = (state: State): UIState => {
         hover: [],
         history: [],
         at: [{ start: at }],
-        ...getCtx(state.map, -1),
+        ...getCtx(state.map, -1, state.nidx),
     };
 };
 

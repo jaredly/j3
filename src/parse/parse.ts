@@ -153,7 +153,7 @@ export const parseByCharacter = (
                 root.values.map((node) => nodeToType(node, ctx!));
             }
             state = { ...state, map: { ...state.map } };
-            applyMods(ctx, state.map);
+            applyMods(ctx, state.map, state.nidx);
 
             if (!kind || (kind === 'expr' && update?.autoComplete)) {
                 // Now we do like inference, right?

@@ -197,7 +197,7 @@ export const yankFromSandboxToLibrary = (
                         },
                     ]),
                     at: [{ start: nselect }],
-                    ctx: getCtx(map, -1, {
+                    ctx: getCtx(map, -1, sstate.nidx, {
                         ...sstate.ctx.global,
                         library,
                     }).ctx,

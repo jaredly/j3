@@ -1,7 +1,7 @@
 import { Report } from '../get-type/get-types-new';
 import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
-import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
+import { AutoCompleteReplace, AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
 import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
@@ -9,7 +9,7 @@ import { UpdateMap } from '../state/getKeyUpdate';
 export type CompilationResults = {
     errors: Report['errors'];
     mods: {
-        [idx: number]: Mod[];
+        [idx: number]: AutoCompleteReplace;
     };
     hashNames: { [idx: number]: string };
     globalNames: { [hash: string]: string[] };

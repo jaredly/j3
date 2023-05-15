@@ -72,7 +72,7 @@ export type InferMod =
           node: Node;
       };
 
-export const infer = (ctx: Ctx, map: Map) => {
+export const infer = (ctx: Ctx, map: Map): { [key: string]: InferMod } => {
     const report: Report = { types: {}, errors: {} };
     Object.values(ctx.results.toplevel).forEach((k) => getType(k, ctx, report));
 

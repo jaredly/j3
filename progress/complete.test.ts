@@ -393,7 +393,7 @@ describe('completion and such', () => {
         //     errors.length && errors[0].startsWith('->') ? errors.shift() : null;
         (skip ? it.skip : only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
-            const { map: data } = parseByCharacter(
+            const { map: data, nidx } = parseByCharacter(
                 input.replace(/\s+/g, ' '),
                 ctx,
             );
@@ -409,7 +409,7 @@ describe('completion and such', () => {
                     expected,
                 );
             }
-            const { ctx: nctx } = getCtx(data, -1, ctx.global);
+            const { ctx: nctx } = getCtx(data, -1, nidx, ctx.global);
             expect(
                 Object.keys(nctx.results.errors)
                     .sort((a, b) => +a - +b)

@@ -95,7 +95,7 @@ export const SandboxView = ({
 
 export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     let idx = Object.keys(sandbox.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
-    const { ctx, map } = getCtx(sandbox.map, -1, env);
+    const { ctx, map } = getCtx(sandbox.map, -1, () => idx++, env);
     if (map !== sandbox.map) {
         throw new Error(`map change on load?`);
     }
