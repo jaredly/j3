@@ -424,7 +424,8 @@ function doABunchOfKeys({
     check: (startPos: number, newPos: number) => boolean;
 }) {
     while (true) {
-        const curText = idText(state.map[pathIdx(state.at[0].start)]) ?? '';
+        const curText =
+            idText(state.map[pathIdx(state.at[0].start)], state.map) ?? '';
         const pos = pathPos(state.at[0].start, curText);
         if (only) {
             console.log(i, curText, pos, JSON.stringify(state));

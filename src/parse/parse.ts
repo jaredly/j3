@@ -15,7 +15,7 @@ import { Node } from '../types/cst';
 import { fromMCST, Map, MNode } from '../types/mcst';
 import { applyMenuItem } from '../to-ast/autoComplete';
 
-export const idText = (node: MNode) => {
+export const idText = (node: MNode, map: Map) => {
     switch (node.type) {
         case 'identifier':
         case 'comment':
@@ -36,6 +36,12 @@ export const idText = (node: MNode) => {
                 node.hash.startsWith(':builtin:')
             ) {
                 return lastName(node.hash.slice(':builtin:'.length));
+            }
+            if (typeof node.hash === 'number') {
+                const ref = map[node.hash];
+                if (ref?.type === 'identifier') {
+                    return ref.text;
+                }
             }
             return '🚨';
     }

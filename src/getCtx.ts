@@ -47,6 +47,13 @@ export const getCtx = (
             map = { ...map };
             applyMods(ctx, map, nidx);
         }
+
+        Object.entries(map).forEach(([k, node]) => {
+            if (node.type === 'identifier') {
+                ctx.results.hashNames[+k] = node.text;
+            }
+        });
+
         return { ctx, map };
     } catch (err) {
         console.log('trying to get ctx', map);

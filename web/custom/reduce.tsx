@@ -24,6 +24,7 @@ import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
 import { redoItem, undoItem } from '../../src/to-ast/history';
 import { HistoryItem } from '../../src/to-ast/library';
+import { transformNode } from '../../src/types/transform-cst';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
@@ -104,6 +105,10 @@ export const updateWithAutocomplete = (
     if (update.type === 'select' && !update.autoComplete) {
         return state;
     }
+
+    // Ok, do the thing now
+    // iff
+
     let { ctx, map } = getCtx(
         state.map,
         state.root,

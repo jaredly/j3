@@ -5,12 +5,11 @@ import { AutoCompleteReplace, AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
 import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
+import { InferMod } from '../infer/infer';
 
 export type CompilationResults = {
     errors: Report['errors'];
-    mods: {
-        [idx: number]: AutoCompleteReplace;
-    };
+    mods: { [idx: number]: InferMod };
     hashNames: { [idx: number]: string };
     globalNames: { [hash: string]: string[] };
     display: {

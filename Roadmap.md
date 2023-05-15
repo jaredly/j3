@@ -1,4 +1,19 @@
 
+# UM OK things
+
+- so certainly for one thing, I can
+  ... see if the whatsits are like
+  ... gone. and if they are, then that
+  is sad right
+
+- [ ] MAKE IT SO
+  that "names" for locals & toplevel references
+  are produced directly from the map, and not
+  dependent on `getCtx` nonsense.
+  BUT the question remains...
+  `hashNames`, does it make so that I need to like
+  make a hash of `{[loc: number]: string}`
+
 # PRESERVING Names that get lost
 
 For example:
