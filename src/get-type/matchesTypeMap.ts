@@ -219,6 +219,17 @@ export const matchMap = {
         );
     },
 
+    union_local(can: T<'union'>, exp: T<'local'>, mc: MC): R {
+        if (
+            can.items.length === 1 &&
+            !can.open &&
+            can.items[0].type === 'local'
+        ) {
+            return matchMap.local(can.items[0], exp, mc);
+        }
+        return matchMap._local(can, exp, mc);
+    },
+
     local_(can: T<'local'>, exp: Type, mc: MC): R {
         // Dunno bout this
         // if (mc.typeArgs?.[can.sym] != null) {
@@ -471,7 +482,7 @@ export const matchMap = {
             if (!map.locals.find((f) => f.sym === local.sym)) {
                 return {
                     type: 'misc',
-                    message: `local ${local.sym} not found in expected union`,
+                    message: `extra local ${local.sym}, not present in union`,
                     typ: exp,
                     form: local.form,
                     path: mc.can.path,
