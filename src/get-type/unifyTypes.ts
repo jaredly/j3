@@ -221,6 +221,8 @@ export const _unifyTypes = (
                     }),
                 )
                 // TODO: Can we verify that these don't conflict?
+                // idk I think my `tfn` type might need .. a little more ... constraints to it?
+                // like indicate if/how different type variables might interact and/or conflict
                 .concat(onex.locals)
                 .concat(twox.locals)
                 // TODO: verifyyy that .... these tasks don't fight

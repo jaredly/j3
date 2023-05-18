@@ -6,13 +6,19 @@
   ... gone. and if they are, then that
   is sad right
 
-- [ ] MAKE IT SO
+- [x] MAKE IT SO
   that "names" for locals & toplevel references
   are produced directly from the map, and not
   dependent on `getCtx` nonsense.
   BUT the question remains...
   `hashNames`, does it make so that I need to like
   make a hash of `{[loc: number]: string}`
+
+- [ ] ok so now, I want to ..
+  - hermmmm so `toplevel` hashes reference the `(define` instead of the ... id
+- [ ] toplevel hash should reference the `name`?
+  Maybe the `map` should come with a mapping between toplevel id to name id?
+- [ ] also, I want the sandbox to have a namespace that's its base
 
 # PRESERVING Names that get lost
 

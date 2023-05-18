@@ -56,7 +56,7 @@ export const resolveExprHash = (
                 hash,
                 ann: top.ann ?? undefined,
             };
-            // ctx.results.hashNames[form.loc] = lastName(top.name);
+            ctx.results.hashNames[form.loc] = lastName(top.name);
             return { type: 'toplevel', hash, form };
         }
         const sym = hash;
