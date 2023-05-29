@@ -242,6 +242,7 @@ export const applyTypeVariables = (
         map,
     );
 };
+
 export type EnumMap = {
     [key: string]: {
         args: Type[];

@@ -91,6 +91,9 @@ export const updateWithAutocomplete = (
     state: UIState,
     update: StateUpdate | StateSelect,
 ) => {
+    const prevCtx = state.ctx;
+    const prevMap = state.map;
+
     const prev = state.at[0];
     // Here's where the real work happens.
     if (update.autoComplete && !state.menu?.dismissed) {
@@ -118,6 +121,39 @@ export const updateWithAutocomplete = (
     verifyLocs(state.map, 'get ctx');
     state.map = map;
     state.ctx = ctx;
+
+    let fixedMissing = false;
+    const missing: Record<number, string> = {};
+    Object.entries(prevCtx.results.hashNames).forEach(([k, v]) => {
+        if (!ctx.results.hashNames[+k]) {
+            missing[+k] = v;
+            const node = map[+k];
+            const pnode = prevMap[+k];
+            if (
+                node?.type === 'hash' &&
+                pnode?.type === 'hash' &&
+                node.hash === pnode.hash
+            ) {
+                fixedMissing = true;
+                state.map[+k] = {
+                    type: 'identifier',
+                    loc: +k,
+                    text: v,
+                };
+            }
+        }
+    });
+    if (fixedMissing) {
+        let { ctx, map } = getCtx(
+            state.map,
+            state.root,
+            state.nidx,
+            state.ctx.global,
+        );
+        verifyLocs(state.map, 'get ctx');
+        state.map = map;
+        state.ctx = ctx;
+    }
 
     if (update.autoComplete) {
         for (let i = 0; i < 10; i++) {

@@ -1,4 +1,16 @@
 
+# [ ] '(' to surround selection )
+
+Gotta have it, pleeease
+
+# [ ] Start thinking about autofixers?
+
+Would this be like an autocomplete deal?
+And so maybe, with the error highlight, I can indicate whether
+there's autocomplete available?
+That could be quite nice.
+
+
 # UM OK things
 
 - so certainly for one thing, I can
@@ -20,7 +32,25 @@
   Maybe the `map` should come with a mapping between toplevel id to name id?
 - [ ] also, I want the sandbox to have a namespace that's its base
 
-# PRESERVING Names that get lost
+ALSO
+Ok yeah if you /delete/ a thing that used to be referenced, we need to update everything
+to be identifiers again.
+
+ALTERNATIVE
+
+I could say, that if you botch something so bad
+that its not in hashnames anymore
+for any reason,
+we revert all the whatsits.
+UNFORTUNATELY that's, annoying to do? Right?
+Like I guess I'd need to hang on to the previous ... hashNames ... which is fine right.
+
+Question: where do I make the switcheroo.
+
+- [x] Success! Now anything that used to have a hashName, but doesn't anymore, where the nodes
+  are still around, gets swapped for an `identifier` with the previous hashname. Very good.
+
+# [x] PRESERVING Names that get lost
 
 For example:
 
@@ -109,7 +139,7 @@ What are the major usability hiccups?
 - [ ] let's highlight unused stuff in the sandbox, that would be nice right?
 
 EDITOR NEEDS HELP
-- [ ] OK REALLY backspace at start of `(` neeeeeeeds to slop it
+- [x] OK REALLY backspace at start of `(` neeeeeeeds to slop it
 - [ ] highlight a bunch and `(` neeedds to surround it if at all possible.
 - [x] UNDO and REDO these are imperative.
 

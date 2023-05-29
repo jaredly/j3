@@ -56,6 +56,7 @@ export const resolveExprHash = (
                 hash,
                 ann: top.ann ?? undefined,
             };
+            // TODO: I want to ditch this too.
             ctx.results.hashNames[form.loc] = lastName(top.name);
             return { type: 'toplevel', hash, form };
         }
@@ -67,7 +68,6 @@ export const resolveExprHash = (
                 hash: local.sym,
                 ann: local.type,
             };
-            // ctx.results.hashNames[form.loc] = local.name;
             return { type: 'local', sym: local.sym, form };
         }
         ctx.results.display[form.loc].style = { type: 'unresolved' };
