@@ -96,17 +96,31 @@ export const getSandbox = async (
 
 // Updaters
 
-export const updateSandboxMeta = async (db: Db, meta: Sandbox['meta']) => {
+export const updateSandboxMeta = async (
+    db: Db,
+    id: string,
+    meta: Partial<Sandbox['meta']>,
+) => {
+    const keys = Object.keys(meta);
     await db.run(
-        `update sandboxes set title=?, created_date=?, updated_date=?, version=?, settings=? where id=?;`,
-        [
-            meta.title,
-            meta.created_date,
-            meta.updated_date,
-            meta.version,
-            JSON.stringify(meta.settings),
-            meta.id,
-        ],
+        `update sandboxes set ${keys
+            .map((k) => k + `=?`)
+            .join(', ')} where id=?;`,
+        keys
+            .map((k) =>
+                k === 'settings'
+                    ? JSON.stringify(meta[k])
+                    : (meta[k as 'id'] as string),
+            )
+            .concat([id]),
+        // [
+        //     meta.title,
+        //     meta.created_date,
+        //     meta.updated_date,
+        //     meta.version,
+        //     JSON.stringify(meta.settings),
+        //     meta.id,
+        // ],
     );
 };
 

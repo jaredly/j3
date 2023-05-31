@@ -9,7 +9,7 @@
 
 - [ ] Below the normal namespaces, we should have a listing of the "sandbox's namespace"
   - yeah that's a good way to do it.
-- [ ] allow changing the sandbox's meta namespace
+- [x] allow changing the sandbox's meta namespace
 - [ ] allow renaming / moving of a namespace
 
 Should I ... keep track ... of the library root ... for a given namespace?

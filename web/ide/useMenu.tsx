@@ -1,11 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { isParentOf } from './IDE';
 import { css } from '@linaria/core';
 
-export const useMenu = (
-    actions: { title: string; action: () => void }[],
-): [JSX.Element | null, () => void] => {
-    const [show, setShow] = useState(false);
+type Action = {
+    title: string;
+    action: () => void;
+};
+
+export const useMenu = <T,>(
+    actions: (v: T) => Action[],
+): [JSX.Element | null, (v: T | null) => void] => {
+    const [show, setShow] = useState(null as null | Action[]);
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (!show) return;
@@ -19,12 +24,13 @@ export const useMenu = (
             console.log('what no');
             evt.preventDefault();
             evt.stopPropagation();
-            setShow(false);
+            setShow(null);
         };
         document.addEventListener('mousedown', fn, { capture: true });
         return () =>
             document.removeEventListener('mousedown', fn, { capture: true });
     }, [show]);
+    console.log('usem', show);
     if (show) {
         return [
             <div
@@ -35,18 +41,22 @@ export const useMenu = (
                     top: '100%',
                     marginTop: 5,
                     backgroundColor: '#333',
-                    // padding: 5,
                     left: 0,
-                    // right: 0,
                     minWidth: '100%',
                 }}
+                onMouseDown={(evt) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                }}
             >
-                {actions.map((action, i) => (
+                {show.map((action, i) => (
                     <div
                         key={i}
                         style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                            setShow(false);
+                        onClick={(evt) => {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            setShow(null);
                             action.action();
                         }}
                         className={css`
@@ -61,8 +71,17 @@ export const useMenu = (
                     </div>
                 ))}
             </div>,
-            () => setShow(false),
+            (v: T | null) => {
+                console.log('ho');
+                setShow(v ? actions(v) : null);
+            },
         ];
     }
-    return [null, () => setShow(true)];
+    return [
+        null,
+        (v: T | null) => {
+            console.log('hi');
+            setShow(v ? actions(v) : null);
+        },
+    ];
 };

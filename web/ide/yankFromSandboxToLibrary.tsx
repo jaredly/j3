@@ -17,10 +17,12 @@ import { Def, DefType } from '../../src/types/ast';
 import { noForm } from '../../src/to-ast/builtins';
 import { getCtx } from '../../src/getCtx';
 import { IDEState } from './IDE';
+import { Sandbox } from '../../src/to-ast/library';
 
 export const yankFromSandboxToLibrary = (
     state: IDEState,
     action: { type: 'yank'; expr: DefType | Def; loc: number },
+    meta: Sandbox['meta'],
 ) => {
     if (state.current.type !== 'sandbox') {
         return state;
@@ -139,7 +141,9 @@ export const yankFromSandboxToLibrary = (
 
     const nnames = { ...sstate.ctx.global.library.namespaces };
 
-    const namespacedName = `sandbox/${state.current.id}/${action.expr.name}`;
+    const namespacedName = `${meta.settings.namespace.join('/')}/${
+        action.expr.name
+    }`;
 
     const newRoot = addToHashedTree(
         nnames,

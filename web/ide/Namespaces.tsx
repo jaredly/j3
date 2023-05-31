@@ -3,11 +3,8 @@ import { useState } from 'react';
 import { Builtins, Env } from '../../src/to-ast/library';
 import { Library } from '../../src/to-ast/library';
 import { HashedTree } from '../../src/db/hash-tree';
-import { IDEState } from './IDE';
-import { addToHashedTree } from '../../src/db/hash-tree';
-import { Tree } from '../../src/db/hash-tree';
-import { addToTree } from '../../src/db/hash-tree';
-import { makeHash } from './initialData';
+import { useMenu } from './useMenu';
+import { css } from '@linaria/core';
 
 const buttonStyle = {
     fontSize: '80%',
@@ -68,6 +65,10 @@ export const NSTree = ({
 }) => {
     const [open, setOpen] = useState(false);
     const canBeOpen = level === 0 || open;
+    const [menu, setMenu] = useMenu((value) => {
+        return [{ title: 'Hello', action: () => {} }];
+    });
+    // console.log(menu);
 
     if (!namespaces[root]) {
         return <div>Ok</div>;
@@ -78,7 +79,16 @@ export const NSTree = ({
 
     if (keys.length === 1 && keys[0] === '' && top !== '.') {
         return (
-            <div className="menu-hover" style={{ cursor: 'pointer' }}>
+            <div
+                className="menu-hover"
+                style={{ cursor: 'pointer', position: 'relative' }}
+                onContextMenu={(evt) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    console.log('ctx');
+                    setMenu(10);
+                }}
+            >
                 <span
                     style={{
                         width: '2em',
@@ -94,6 +104,7 @@ export const NSTree = ({
                 />
                 <span style={{ display: 'inline-block', width: 4 }} />
                 {name}
+                {menu}
             </div>
         );
     }
@@ -102,9 +113,24 @@ export const NSTree = ({
         <div>
             {level > 0 ? (
                 <div
-                    onMouseDown={() => setOpen(!open)}
-                    style={{ cursor: 'pointer' }}
-                    className="menu-hover"
+                    onMouseDown={(evt) => {
+                        if (evt.button === 0) {
+                            setOpen(!open);
+                        }
+                    }}
+                    style={{ cursor: 'pointer', position: 'relative' }}
+                    className={css`
+                        cursor: pointer;
+                        &:hover {
+                            background-color: #222;
+                        }
+                    `}
+                    onContextMenu={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        console.log('ctx');
+                        setMenu(10);
+                    }}
                 >
                     <span
                         style={{
@@ -122,7 +148,7 @@ export const NSTree = ({
                         definitions={definitions}
                     />
                     <span style={{ display: 'inline-block', width: 4 }} />
-                    {name}/
+                    {name}/{menu}
                 </div>
             ) : null}
 
@@ -151,21 +177,21 @@ export const NSTree = ({
     );
 };
 
-export const addSandboxesToNamespaces = (
-    library: Library,
-    sandboxes: IDEState['sandboxes'],
-) => {
-    const tree: Tree = { children: {} };
-    sandboxes.forEach((meta) => {
-        addToTree(tree, `sandbox/${meta.id}`, '.');
-    });
-    const namespaces: HashedTree = { ...library.namespaces };
-    const root = addToHashedTree(namespaces, tree, makeHash, {
-        root: library.root,
-        tree: library.namespaces,
-    })!;
-    return { root, namespaces };
-};
+// export const addSandboxesToNamespaces = (
+//     library: Library,
+//     sandboxes: IDEState['sandboxes'],
+// ) => {
+//     const tree: Tree = { children: {} };
+//     sandboxes.forEach((meta) => {
+//         addToTree(tree, `/${meta.id}`, '.');
+//     });
+//     const namespaces: HashedTree = { ...library.namespaces };
+//     const root = addToHashedTree(namespaces, tree, makeHash, {
+//         root: library.root,
+//         tree: library.namespaces,
+//     })!;
+//     return { root, namespaces };
+// };
 
 export const Namespaces = ({
     env,

@@ -119,7 +119,14 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
             };
         }
         case 'yank': {
-            return yankFromSandboxToLibrary(state, action);
+            if (state.current.type === 'sandbox') {
+                const id = state.current.id;
+                const meta = state.sandboxes.find((s) => s.id === id);
+                if (!meta) {
+                    return state;
+                }
+                return yankFromSandboxToLibrary(state, action, meta);
+            }
         }
         default:
             if (state.current.type === 'sandbox') {
@@ -244,6 +251,7 @@ export const IDE = ({
                 <div style={{ flex: 1, overflow: 'auto' }}>
                     {state.current.type === 'sandbox' ? (
                         <SandboxView
+                            db={initial.db}
                             key={state.current.id}
                             state={state.current.state}
                             meta={
@@ -293,7 +301,7 @@ const TabTitle = ({
     state: IDEState;
 }) => {
     const [edit, setEdit] = useState(null as null | string);
-    const [menu, toggleMenu] = useMenu([
+    const [menu, toggleMenu] = useMenu(() => [
         { title: 'Edit Title', action: () => setEdit(meta.title) },
         {
             title: 'Download as JSON',
@@ -344,15 +352,15 @@ const TabTitle = ({
                 <button
                     onClick={() => {
                         const newMeta = { ...meta, title: edit };
-                        db.transact(() => updateSandboxMeta(db, newMeta)).then(
-                            () => {
-                                setEdit(null);
-                                dispatch({
-                                    type: 'update-sandbox',
-                                    meta: newMeta,
-                                });
-                            },
-                        );
+                        db.transact(() =>
+                            updateSandboxMeta(db, meta.id, { title: edit }),
+                        ).then(() => {
+                            setEdit(null);
+                            dispatch({
+                                type: 'update-sandbox',
+                                meta: newMeta,
+                            });
+                        });
                     }}
                 >
                     Ok
@@ -375,7 +383,7 @@ const TabTitle = ({
         >
             {meta.title}
             <button
-                onMouseDown={() => toggleMenu()}
+                onMouseDown={() => toggleMenu(true)}
                 style={{
                     backgroundColor: 'transparent',
                     border: 'none',

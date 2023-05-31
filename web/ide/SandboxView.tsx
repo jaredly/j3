@@ -19,6 +19,8 @@ import {
 } from '../fonts/Icons';
 import { css } from '@linaria/core';
 import { IDEAction } from './IDE';
+import { updateSandboxMeta } from '../../src/db/sandbox';
+import { Db } from '../../src/db/tables';
 
 // type SandboxState = {
 //     id: string;
@@ -50,10 +52,12 @@ import { IDEAction } from './IDE';
 export const SandboxView = ({
     // env,
     // sandbox,
+    db,
     meta,
     state,
     dispatch,
 }: {
+    db: Db;
     // env: Env;
     // sandbox: Sandbox;
     meta: Sandbox['meta'];
@@ -81,21 +85,34 @@ export const SandboxView = ({
                             onChange={(evt) => setEditNS(evt.target.value)}
                             className={css`
                                 width: 200px;
+                                margin-right: 8px;
+                                font-size: inherit;
+                                font-family: inherit;
+                                background-color: transparent;
+                                color: inherit;
+                                border: 0.5px solid #444;
                             `}
                         />
                         <IconButton
                             onClick={() => {
-                                dispatch({
-                                    type: 'update-sandbox',
-                                    meta: {
-                                        ...meta,
-                                        settings: {
-                                            ...meta.settings,
-                                            namespace: editNS.split('/'),
-                                        },
+                                updateSandboxMeta(db, meta.id, {
+                                    settings: {
+                                        ...meta.settings,
+                                        namespace: editNS.split('/'),
                                     },
+                                }).then(() => {
+                                    dispatch({
+                                        type: 'update-sandbox',
+                                        meta: {
+                                            ...meta,
+                                            settings: {
+                                                ...meta.settings,
+                                                namespace: editNS.split('/'),
+                                            },
+                                        },
+                                    });
+                                    setEditNS(null);
                                 });
-                                setEditNS(null);
                             }}
                         >
                             <IconBxCheck />
@@ -111,6 +128,7 @@ export const SandboxView = ({
                 ) : (
                     <>
                         {meta.settings.namespace.join('/')}
+                        <span style={{ width: 8 }} />
                         <IconButton
                             onClick={() => {
                                 setEditNS(meta.settings.namespace.join('/'));
