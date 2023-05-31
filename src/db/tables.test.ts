@@ -16,7 +16,7 @@ import {
     getNames,
 } from './library';
 import { getMemDb } from './node-db';
-import { addSandbox, getSandboxes, transact } from './sandbox';
+import { addSandbox, getSandboxes } from './sandbox';
 import { initialize } from './tables';
 
 const genId = () => Math.random().toString(36).slice(2);
@@ -54,7 +54,7 @@ describe('library', () => {
         const defs: Library['definitions'] = {
             'some-hash': { type: 'type', value: nilt, originalName: 'nil' },
         };
-        await transact(mem, () => addDefinitions(mem, defs));
+        await mem.transact(() => addDefinitions(mem, defs));
         expect(await getDefinitions(mem)).toEqual(defs);
     });
 
@@ -63,7 +63,7 @@ describe('library', () => {
         await initialize(mem);
         const { root, tree } = treeToHashedTree(flatToTree(flat), makeHash);
         const rh = { hash: root, date: 1000 };
-        await transact(mem, () => addNamespaces(mem, tree, rh));
+        await mem.transact(() => addNamespaces(mem, tree, rh));
         expect(await getNames(mem)).toEqual({ names: tree, roots: [rh] });
 
         // and more names!
@@ -77,7 +77,7 @@ describe('library', () => {
             { root, tree },
         )!;
         const r2 = { hash: nextRoot, date: 2000 };
-        await transact(mem, () => addNamespaces(mem, next, r2));
+        await mem.transact(() => addNamespaces(mem, next, r2));
         expect(await getNames(mem)).toEqual({
             names: { ...tree, ...next },
             roots: [r2, rh],

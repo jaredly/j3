@@ -4,7 +4,6 @@ import { UIState } from '../custom/UIState';
 import {
     addUpdateHistoryItems,
     addUpdateNodes,
-    transact,
     updateSandboxUpdatedDate,
 } from '../../src/db/sandbox';
 import { Db } from '../../src/db/tables';
@@ -40,7 +39,7 @@ export type DBUpdate =
       };
 
 export const applyChanges = async (db: Db, changes: DBUpdate[]) => {
-    await transact(db, async () => {
+    await db.transact(async () => {
         for (let change of changes) {
             switch (change.type) {
                 case 'sandbox-updated':

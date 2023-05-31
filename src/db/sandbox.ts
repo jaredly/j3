@@ -158,7 +158,7 @@ export const addSandbox = async (
     };
     const map = emptyMap();
 
-    await transact(db, async () => {
+    await db.transact(async () => {
         await db.run(`insert into sandboxes values (?, ?, ?, ?, ?, ?);`, [
             meta.id,
             meta.title,
@@ -177,17 +177,11 @@ export const addSandbox = async (
 };
 
 export const deleteSandbox = async (db: Db, id: string) => {
-    await transact(db, async () => {
+    await db.transact(async () => {
         await db.run(`delete from sandboxes where id=?`, [id]);
         await dropTable(db, sandboxNodesTable(id));
         await dropTable(db, sandboxHistoryTable(id));
     });
-};
-
-export const transact = async (db: Db, fn: () => Promise<void>) => {
-    await db.run('begin;');
-    await fn();
-    await db.run('commit;');
 };
 
 /** Does not wrap in a transaction */

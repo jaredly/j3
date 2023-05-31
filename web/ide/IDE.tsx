@@ -10,7 +10,7 @@ import {
     addSandbox,
     deleteSandbox,
     getSandbox,
-    transact,
+    getSandboxes,
     updateSandboxMeta,
 } from '../../src/db/sandbox';
 import { Db, dropTable } from '../../src/db/tables';
@@ -39,9 +39,10 @@ export type IDEAction =
     | { type: 'update-sandbox'; meta: Sandbox['meta'] }
     | { type: 'delete-sandbox'; id: string }
     | { type: 'open-sandbox'; sandbox: Sandbox }
-    | { type: 'dashboard' };
+    | { type: 'dashboard'; sandboxes: Sandbox['meta'][] };
 
 const topReduce = (state: IDEState, action: IDEAction): IDEState => {
+    console.log(`Reducing`, action);
     switch (action.type) {
         case 'dashboard':
             return {
@@ -53,6 +54,7 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
                             ? state.current.state.ctx.global
                             : state.current.env,
                 },
+                sandboxes: action.sandboxes,
             };
         case 'update-sandbox':
             return {
@@ -277,7 +279,7 @@ const TabTitle = ({
                 <button
                     onClick={() => {
                         const newMeta = { ...meta, title: edit };
-                        transact(db, () => updateSandboxMeta(db, newMeta)).then(
+                        db.transact(() => updateSandboxMeta(db, newMeta)).then(
                             () => {
                                 setEdit(null);
                                 dispatch({
@@ -353,7 +355,11 @@ function SandboxTabs({
             }}
         >
             <div
-                onClick={() => dispatch({ type: 'dashboard' })}
+                onClick={() => {
+                    getSandboxes(db).then((sandboxes) =>
+                        dispatch({ type: 'dashboard', sandboxes }),
+                    );
+                }}
                 style={{ cursor: 'pointer', padding: 4, fontSize: 16 }}
             >
                 <IconHome />

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { isParentOf } from './IDE';
+import { css } from '@linaria/core';
 
 export const useMenu = (
     actions: { title: string; action: () => void }[],
@@ -34,7 +35,7 @@ export const useMenu = (
                     top: '100%',
                     marginTop: 5,
                     backgroundColor: '#333',
-                    padding: 5,
+                    // padding: 5,
                     left: 0,
                     // right: 0,
                     minWidth: '100%',
@@ -48,6 +49,13 @@ export const useMenu = (
                             setShow(false);
                             action.action();
                         }}
+                        className={css`
+                            cursor: pointer;
+                            padding: 8px 12px;
+                            &:hover {
+                                background-color: #444;
+                            }
+                        `}
                     >
                         {action.title}
                     </div>

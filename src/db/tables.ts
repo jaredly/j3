@@ -10,6 +10,7 @@ export type Db = {
         text: string,
         args?: (number | string | null)[],
     ): Promise<{ [key: string]: number | string | null }[]>;
+    transact<T>(fn: () => Promise<T>): Promise<T>;
 };
 
 export type TableConfig = {

@@ -2,7 +2,7 @@ import { Env } from '../../src/to-ast/library';
 import { builtinMap, builtinTree } from '../../src/to-ast/Ctx';
 import { getIDB } from '../../src/db/db';
 import { addNamespaces, getDefinitions, getNames } from '../../src/db/library';
-import { getSandbox, getSandboxes, transact } from '../../src/db/sandbox';
+import { getSandbox, getSandboxes } from '../../src/db/sandbox';
 import { HashedTree, addToHashedTree } from '../../src/db/hash-tree';
 import * as blake from 'blakejs';
 import { Db, initialize } from '../../src/db/tables';
@@ -63,7 +63,7 @@ async function loadBuiltins(
             }
         });
         // console.log('adding roots', newHashes, newRoot, roots);
-        await transact(db, () => addNamespaces(db, newOnes, root));
+        await db.transact(() => addNamespaces(db, newOnes, root));
     }
     return map;
 }

@@ -60,6 +60,7 @@ initialData(location.hash ? location.hash.slice(1) : null).then((initial) =>
                 <IDE initial={initial} />
                 {/* <ByHand /> */}
             </ErrorBoundary>
+            ,
         </React.StrictMode>,
     ),
 );
