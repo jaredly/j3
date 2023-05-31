@@ -1,6 +1,13 @@
 
-# [ ] Allow exporting a sandbox, as a little json file
-- [ ] tabs should have a little dropdown dealio, where you can edit, or like export thanks
+- [ ] Below the normal namespaces, we should have a listing of the "sandbox's namespace"
+  - yeah that's a good way to do it.
+- [ ] allow changing the sandbox's meta namespace
+- [ ] allow renaming / moving of a namespace
+
+# [x] Allow exporting a sandbox, as a little json file
+- [x] tabs should have a little dropdown dealio, where you can edit, or like export thanks
+- [ ] OH when downloading a sandbox, also download any depended-upon library definitions.
+- [ ] delete a sandbox, you can do it
 
 # [x] FIRST PRIORITY: Sanboxes have namespaces
 

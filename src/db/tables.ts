@@ -2,6 +2,7 @@ import { Library, Sandbox } from '../to-ast/library';
 import { Map } from '../types/mcst';
 import { definitionsConfig, namesConfig } from './library';
 import { sandboxesConfig } from './sandbox';
+import parseSqlite from 'sqlite-parser';
 
 export type Db = {
     run(text: string, args?: (number | string | null)[]): Promise<void>;
@@ -17,8 +18,11 @@ export type TableConfig = {
 };
 
 export const initialize = async (db: Db) => {
-    const names = (await db.all('SELECT name FROM sqlite_schema')).map(
-        (m) => m.name,
+    const existing = (
+        await db.all('SELECT name, sql FROM sqlite_schema')
+    ).reduce(
+        (map, row) => ((map[row.name as string] = row.sql), map),
+        {} as { [name: string]: string },
     );
     const tables: TableConfig[] = [
         namesConfig,
@@ -27,10 +31,16 @@ export const initialize = async (db: Db) => {
     ];
 
     for (let config of tables) {
-        if (!names.includes(config.name)) {
+        if (!existing[config.name]) {
             await createTable(db, config);
+        } else {
+            // config.
         }
     }
+};
+
+export const dropTable = async (db: Db, name: string) => {
+    await db.run(`drop table ${name}`);
 };
 
 export const createTable = async (db: Db, { name, params }: TableConfig) => {
@@ -40,3 +50,14 @@ export const createTable = async (db: Db, { name, params }: TableConfig) => {
             .join(',\n')})`,
     );
 };
+
+export const parseColumns = (
+    sql: string,
+): { name: string; datatype: { type: string } & any; constraints: any[] }[] =>
+    parseSqlite(sql).statement[0].definition.map(
+        ({ name, datatype, definition }: any) => ({
+            name,
+            datatype,
+            constraints: definition,
+        }),
+    );

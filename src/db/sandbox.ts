@@ -2,7 +2,7 @@ import { UpdateMap } from '../state/getKeyUpdate';
 import { emptyMap } from '../parse/parse';
 import { Library, Sandbox } from '../to-ast/library';
 import { Map } from '../types/mcst';
-import { Db, createTable } from './tables';
+import { Db, createTable, dropTable } from './tables';
 
 // Configs
 
@@ -15,6 +15,7 @@ export const sandboxesConfig = {
         { name: 'updated_date', config: 'integer not null' },
         { name: 'version', config: 'integer not null' },
         { name: 'settings', config: 'text' },
+        { name: 'deleted_date', config: 'integer' },
     ],
 };
 
@@ -162,6 +163,14 @@ export const addSandbox = async (
     });
 
     return { meta, history: [], map, root: -1 };
+};
+
+export const deleteSandbox = async (db: Db, id: string) => {
+    await transact(db, async () => {
+        await db.run(`delete from sandboxes where id=?`, [id]);
+        await dropTable(db, sandboxNodesTable(id));
+        await dropTable(db, sandboxHistoryTable(id));
+    });
 };
 
 export const transact = async (db: Db, fn: () => Promise<void>) => {

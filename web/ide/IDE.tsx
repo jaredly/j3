@@ -8,16 +8,18 @@ import { Action, UIState } from '../custom/UIState';
 import { Namespaces } from './Namespaces';
 import {
     addSandbox,
+    deleteSandbox,
     getSandbox,
     transact,
     updateSandboxMeta,
 } from '../../src/db/sandbox';
-import { Db } from '../../src/db/tables';
+import { Db, dropTable } from '../../src/db/tables';
 import { usePersistStateChanges } from './usePersistStateChanges';
 import { sandboxState, SandboxView } from './SandboxView';
 import { NodeList } from '../../src/types/cst';
 import { yankFromSandboxToLibrary } from './yankFromSandboxToLibrary';
 import { useMenu } from './useMenu';
+import { Dashboard } from './Dashboard';
 
 export type SelectedSandbox = {
     type: 'sandbox';
@@ -34,6 +36,7 @@ type IDEAction =
     | Action
     | { type: 'new-sandbox'; meta: Sandbox['meta'] }
     | { type: 'update-sandbox'; meta: Sandbox['meta'] }
+    | { type: 'delete-sandbox'; id: string }
     | { type: 'open-sandbox'; sandbox: Sandbox };
 
 const topReduce = (state: IDEState, action: IDEAction): IDEState => {
@@ -44,6 +47,19 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
                 sandboxes: state.sandboxes.map((s) =>
                     s.id === action.meta.id ? action.meta : s,
                 ),
+            };
+        case 'delete-sandbox':
+            return {
+                ...state,
+                sandboxes: state.sandboxes.filter((s) => s.id !== action.id),
+                current:
+                    state.current.type === 'sandbox' &&
+                    state.current.id === action.id
+                        ? {
+                              type: 'dashboard',
+                              env: state.current.state.ctx.global,
+                          }
+                        : state.current,
             };
         case 'new-sandbox':
             return {
@@ -164,7 +180,7 @@ export const IDE = ({
                             dispatch={dispatch}
                         />
                     ) : (
-                        'Dasnboard'
+                        <Dashboard db={initial.db} />
                     )}
                 </div>
             </div>
@@ -189,14 +205,47 @@ const TabTitle = ({
     meta,
     db,
     dispatch,
+    state,
 }: {
     meta: Sandbox['meta'];
     db: Db;
     dispatch: React.Dispatch<IDEAction>;
+    state: IDEState;
 }) => {
     const [edit, setEdit] = useState(null as null | string);
     const [menu, toggleMenu] = useMenu([
         { title: 'Edit Title', action: () => setEdit(meta.title) },
+        {
+            title: 'Download as JSON',
+            action() {
+                if (state.current.type !== 'sandbox') {
+                    return;
+                }
+                const { map, history, ctx } = state.current.state;
+                // const env =
+                // state.current.state.
+                const data = JSON.stringify({ meta, map, history }, null, 2);
+                const url = URL.createObjectURL(
+                    new Blob([data], { type: 'application/json' }),
+                );
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${meta.title} - ${meta.id}.json`;
+                a.click();
+            },
+        },
+        {
+            title: 'Delete Sandbox',
+            async action() {
+                if (state.current.type !== 'sandbox') {
+                    return;
+                }
+                if (confirm('Really delete sandbox?')) {
+                    await deleteSandbox(db, state.current.id);
+                    dispatch({ type: 'delete-sandbox', id: state.current.id });
+                }
+            },
+        },
     ]);
     if (edit != null) {
         return (
@@ -285,7 +334,13 @@ function SandboxTabs({
             {state.sandboxes.map((k) =>
                 state.current.type === 'sandbox' &&
                 state.current.id === k.id ? (
-                    <TabTitle key={k.id} meta={k} db={db} dispatch={dispatch} />
+                    <TabTitle
+                        key={k.id}
+                        meta={k}
+                        db={db}
+                        dispatch={dispatch}
+                        state={state}
+                    />
                 ) : (
                     <button
                         key={k.id}
@@ -304,7 +359,6 @@ function SandboxTabs({
                             whiteSpace: 'nowrap',
                         }}
                         onClick={() => {
-                            console.log('getting', k);
                             getSandbox(db, k).then((sandbox) => {
                                 dispatch({ type: 'open-sandbox', sandbox });
                             });
