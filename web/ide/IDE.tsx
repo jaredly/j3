@@ -23,6 +23,7 @@ import { yankFromSandboxToLibrary } from './yankFromSandboxToLibrary';
 import { useMenu } from './useMenu';
 import { Dashboard } from './Dashboard';
 import { IconHome } from '../fonts/Icons';
+import { findNameSpace } from '../../src/db/hash-tree';
 
 export type SelectedSandbox = {
     type: 'sandbox';
@@ -214,7 +215,17 @@ export const IDE = ({
                 display: 'flex',
             }}
         >
-            <Namespaces env={env} sandboxes={state.sandboxes} />
+            <div>
+                <Namespaces env={env} />
+                {state.current.type === 'sandbox' ? (
+                    <SbNs
+                        meta={state.sandboxes.find(
+                            (s) => s.id === state.current.id,
+                        )}
+                        env={env}
+                    />
+                ) : null}
+            </div>
             {/** Here we do the magic. of .. having an editor.
              * for sandboxes. */}
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -479,3 +490,33 @@ function SandboxTabs({
         </div>
     );
 }
+
+export const SbNs = ({
+    meta,
+    env,
+}: {
+    meta: Sandbox['meta'] | undefined;
+    env: Env;
+}) => {
+    if (!meta) {
+        return null;
+    }
+    return (
+        <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: '70%', marginBottom: 8 }}>
+                Sandbox Namespace:
+            </div>
+            <div style={{ marginBottom: 16 }}>
+                {meta.settings.namespace.join('/')}
+            </div>
+            <Namespaces
+                env={env}
+                root={findNameSpace(
+                    env.library.namespaces,
+                    env.library.root,
+                    meta.settings.namespace,
+                )}
+            />
+        </div>
+    );
+};

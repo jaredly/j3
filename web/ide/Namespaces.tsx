@@ -169,18 +169,19 @@ export const addSandboxesToNamespaces = (
 
 export const Namespaces = ({
     env,
-    sandboxes,
+    // sandboxes,
+    root,
 }: {
+    root?: string;
     env: Env;
-    sandboxes: IDEState['sandboxes'];
+    // sandboxes: IDEState['sandboxes'];
 }) => {
     const library = env.library; // addSandboxesToNamespaces(env.library, sandboxes);
 
-    const root = library.root; // env.library.root;
     return (
         <div style={{ width: 300, minWidth: 300 }}>
             <NSTree
-                root={root}
+                root={root ?? library.root}
                 level={0}
                 name={''}
                 // sandboxes={sandboxes}

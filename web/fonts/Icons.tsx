@@ -1,3 +1,4 @@
+import { css } from '@linaria/core';
 import * as React from 'react';
 
 // from https://reactsvgicons.com/search?q=home
@@ -29,3 +30,100 @@ export function IconBxsPencil(props: React.SVGProps<SVGSVGElement>) {
         </svg>
     );
 }
+
+export const useTouchClick = <T,>(fn: (arg: T) => void) => {
+    const valid = React.useRef(null as null | boolean);
+    return (arg: T) => ({
+        onTouchStart: (evt: React.TouchEvent) => {
+            if (valid.current === null) {
+                valid.current = true;
+            } else {
+                valid.current = false;
+            }
+        },
+        onTouchMove: (evt: React.TouchEvent) => {
+            valid.current = false;
+        },
+        onTouchEnd: (evt: React.TouchEvent) => {
+            evt.preventDefault(); // stop onclick from happening.
+            if (evt.touches.length > 0) {
+                return;
+            }
+            if (valid.current === true) {
+                fn(arg);
+            }
+            valid.current = null;
+        },
+    });
+};
+
+export const IconButton = ({
+    onClick,
+    onMouseOver,
+    onMouseOut,
+    hoverIcon,
+    children,
+    selected,
+    disabled,
+    color,
+    className,
+    size,
+}: {
+    onClick: () => void;
+    onMouseOver?: (evt: React.MouseEvent) => void;
+    onMouseOut?: (evt: React.MouseEvent) => void;
+    hoverIcon?: React.ReactNode;
+    children: React.ReactNode;
+    selected?: boolean;
+    disabled?: boolean;
+    color?: string;
+    className?: string;
+    size?: number;
+}) => {
+    const handlers = useTouchClick<void>((_) => onClick());
+    const [hover, setHover] = React.useState(false);
+    return (
+        <div
+            {...handlers(undefined)}
+            onMouseOver={(evt) => {
+                setHover(true);
+                if (onMouseOver) {
+                    onMouseOver(evt);
+                }
+            }}
+            onMouseOut={(evt) => {
+                setHover(false);
+                if (onMouseOut) {
+                    onMouseOut(evt);
+                }
+            }}
+            className={
+                css`
+                    display: inline-block;
+                    padding: 8px;
+                    cursor: ${disabled ? 'not-allowed' : 'pointer'};
+                    border: 1px solid #aaa;
+                    backgroundcolor: ${selected
+                        ? 'rgba(150,150,150,0.4)'
+                        : 'rgba(0,0,0,0.4)'};
+                    fontsize: ${size ?? 40}px;
+                    color: ${color ?? (selected ? 'black' : 'white')};
+                    opacity: ${disabled ? 0.5 : 1};
+                    lineheight: 0.5;
+                    :hover {
+                        backgroundcolor: rgba(50, 50, 50, 0.4);
+                        border: 1px solid #fff;
+                    }
+                ` +
+                ' ' +
+                (className ?? '')
+            }
+            onClick={(evt) => {
+                evt.stopPropagation();
+                onClick();
+            }}
+        >
+            {hover && hoverIcon ? hoverIcon : children}
+        </div>
+    );
+};

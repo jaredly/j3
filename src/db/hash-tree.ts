@@ -59,6 +59,17 @@ export const flatToTree = (flat: Flat): Tree => {
 
 export type MakeHash = (map: HashedTree['']) => string;
 
+export const findNameSpace = (
+    tree: HashedTree,
+    root: string,
+    ns: string[],
+): string => {
+    if (!ns.length) {
+        return root;
+    }
+    return findNameSpace(tree, tree[root][ns[0]], ns.slice(1));
+};
+
 export const addToHashedTree = (
     hashedTree: HashedTree,
     tree: Tree,

@@ -11,6 +11,7 @@ import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { selectEnd } from '../../src/state/navigate';
 import { getCtx } from '../../src/getCtx';
+import { IconBxsPencil } from '../fonts/Icons';
 
 // type SandboxState = {
 //     id: string;
@@ -65,6 +66,7 @@ export const SandboxView = ({
         >
             <div style={{ padding: 16 }}>
                 Namespace: {meta.settings.namespace.join('/')}
+                <IconBxsPencil />
             </div>
             <HiddenInput
                 ctx={state.ctx}
