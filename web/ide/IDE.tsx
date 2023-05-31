@@ -39,7 +39,7 @@ export type IDEAction =
     | Action
     | { type: 'new-sandbox'; sandbox: Sandbox }
     | { type: 'update-sandbox'; meta: Sandbox['meta'] }
-    | { type: 'delete-sandbox'; id: string }
+    | { type: 'delete-sandbox'; id: string; date: number }
     | { type: 'open-sandbox'; sandbox: Sandbox }
     | { type: 'dashboard'; sandboxes: Sandbox['meta'][] };
 
@@ -67,7 +67,11 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
         case 'delete-sandbox':
             return {
                 ...state,
-                sandboxes: state.sandboxes.filter((s) => s.id !== action.id),
+                sandboxes: state.sandboxes.map((s) =>
+                    s.id !== action.id
+                        ? s
+                        : { ...s, deleted_date: action.date },
+                ),
                 current:
                     state.current.type === 'sandbox' &&
                     state.current.id === action.id
@@ -300,12 +304,13 @@ const TabTitle = ({
                 }
                 if (confirm('Really delete sandbox?')) {
                     // await deleteSandbox(db, state.current.id);
-                    await setSandboxDeletedDate(
-                        db,
-                        state.current.id,
-                        Date.now() / 1000,
-                    );
-                    dispatch({ type: 'delete-sandbox', id: state.current.id });
+                    const date = Date.now() / 1000;
+                    await setSandboxDeletedDate(db, state.current.id, date);
+                    dispatch({
+                        type: 'delete-sandbox',
+                        id: state.current.id,
+                        date,
+                    });
                 }
             },
         },
