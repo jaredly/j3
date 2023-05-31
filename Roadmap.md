@@ -1,4 +1,6 @@
 
+- [ ] rename a thing
+
 - [ ] autocomplete
   one/two/three
   Need to autocomplete namespaces, and not show them as red underlined

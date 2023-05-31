@@ -220,7 +220,14 @@ export const IDE = ({
                 {state.current.type === 'sandbox' ? (
                     <SbNs
                         meta={state.sandboxes.find(
-                            (s) => s.id === state.current.id,
+                            (s) =>
+                                s.id ===
+                                (
+                                    state.current as Extract<
+                                        IDEState['current'],
+                                        { type: 'sandbox' }
+                                    >
+                                ).id,
                         )}
                         env={env}
                     />

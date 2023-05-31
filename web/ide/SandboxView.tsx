@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Env, Sandbox } from '../../src/to-ast/library';
 import { useMenu } from '../custom/ByHand';
 import { Action, UIState } from '../custom/UIState';
@@ -11,7 +11,14 @@ import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { selectEnd } from '../../src/state/navigate';
 import { getCtx } from '../../src/getCtx';
-import { IconBxsPencil } from '../fonts/Icons';
+import {
+    IconButton,
+    IconBxCheck,
+    IconBxsPencil,
+    IconCancel,
+} from '../fonts/Icons';
+import { css } from '@linaria/core';
+import { IDEAction } from './IDE';
 
 // type SandboxState = {
 //     id: string;
@@ -51,11 +58,12 @@ export const SandboxView = ({
     // sandbox: Sandbox;
     meta: Sandbox['meta'];
     state: UIState;
-    dispatch: React.Dispatch<Action>;
+    dispatch: React.Dispatch<IDEAction>;
 }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const tops = (state.map[state.root] as ListLikeContents).values;
     const menu = useMenu(state);
+    const [editNS, setEditNS] = useState(null as null | string);
 
     return (
         <div
@@ -64,9 +72,54 @@ export const SandboxView = ({
                 dispatch({ type: 'hover', path: [] });
             }}
         >
-            <div style={{ padding: 16 }}>
-                Namespace: {meta.settings.namespace.join('/')}
-                <IconBxsPencil />
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center' }}>
+                Namespace:{' '}
+                {editNS != null ? (
+                    <>
+                        <input
+                            value={editNS}
+                            onChange={(evt) => setEditNS(evt.target.value)}
+                            className={css`
+                                width: 200px;
+                            `}
+                        />
+                        <IconButton
+                            onClick={() => {
+                                dispatch({
+                                    type: 'update-sandbox',
+                                    meta: {
+                                        ...meta,
+                                        settings: {
+                                            ...meta.settings,
+                                            namespace: editNS.split('/'),
+                                        },
+                                    },
+                                });
+                                setEditNS(null);
+                            }}
+                        >
+                            <IconBxCheck />
+                        </IconButton>
+                        <IconButton
+                            onClick={() => {
+                                setEditNS(null);
+                            }}
+                        >
+                            <IconCancel />
+                        </IconButton>
+                    </>
+                ) : (
+                    <>
+                        {meta.settings.namespace.join('/')}
+                        <IconButton
+                            onClick={() => {
+                                setEditNS(meta.settings.namespace.join('/'));
+                            }}
+                        >
+                            <IconBxsPencil />
+                        </IconButton>
+                    </>
+                )}
             </div>
             <HiddenInput
                 ctx={state.ctx}
