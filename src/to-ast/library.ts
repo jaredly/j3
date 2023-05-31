@@ -111,11 +111,11 @@ export type Sandbox = {
         version: number;
         settings: {
             namespace: string[];
+            aliases: { from: string[]; to: string[] }[];
         };
     };
 
     root: number;
     map: { [idx: number]: MNode };
     history: HistoryItem[];
-    // namespace: string[];
 };

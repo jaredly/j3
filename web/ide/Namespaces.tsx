@@ -3,6 +3,11 @@ import { useState } from 'react';
 import { Builtins, Env } from '../../src/to-ast/library';
 import { Library } from '../../src/to-ast/library';
 import { HashedTree } from '../../src/db/hash-tree';
+import { IDEState } from './IDE';
+import { addToHashedTree } from '../../src/db/hash-tree';
+import { Tree } from '../../src/db/hash-tree';
+import { addToTree } from '../../src/db/hash-tree';
+import { makeHash } from './initialData';
 
 const buttonStyle = {
     fontSize: '80%',
@@ -21,8 +26,7 @@ export const Button = ({
     definitions: Library['definitions'];
     builtins: Builtins;
 }) => {
-    if (!top) {
-        // return null;
+    if (!top || top === '.') {
         return <span style={buttonStyle}>&nbsp;</span>;
     }
     if (top.startsWith(':builtin:')) {
@@ -65,10 +69,14 @@ export const NSTree = ({
     const [open, setOpen] = useState(false);
     const canBeOpen = level === 0 || open;
 
+    if (!namespaces[root]) {
+        return <div>Ok</div>;
+    }
+
     const top = namespaces[root][''];
     const keys = Object.keys(namespaces[root]).sort();
 
-    if (keys.length === 1 && keys[0] === '') {
+    if (keys.length === 1 && keys[0] === '' && top !== '.') {
         return (
             <div className="menu-hover" style={{ cursor: 'pointer' }}>
                 <span
@@ -131,6 +139,7 @@ export const NSTree = ({
                                         name={name}
                                         level={level + 1}
                                         builtins={builtins}
+                                        // sandboxes={sandboxes}
                                         namespaces={namespaces}
                                         definitions={definitions}
                                     />
@@ -142,16 +151,41 @@ export const NSTree = ({
     );
 };
 
-export const Namespaces = ({ env }: { env: Env }) => {
-    const root = env.library.root;
+export const addSandboxesToNamespaces = (
+    library: Library,
+    sandboxes: IDEState['sandboxes'],
+) => {
+    const tree: Tree = { children: {} };
+    sandboxes.forEach((meta) => {
+        addToTree(tree, `sandbox/${meta.id}`, '.');
+    });
+    const namespaces: HashedTree = { ...library.namespaces };
+    const root = addToHashedTree(namespaces, tree, makeHash, {
+        root: library.root,
+        tree: library.namespaces,
+    })!;
+    return { root, namespaces };
+};
+
+export const Namespaces = ({
+    env,
+    sandboxes,
+}: {
+    env: Env;
+    sandboxes: IDEState['sandboxes'];
+}) => {
+    const library = env.library; // addSandboxesToNamespaces(env.library, sandboxes);
+
+    const root = library.root; // env.library.root;
     return (
         <div style={{ width: 300 }}>
             <NSTree
                 root={root}
                 level={0}
                 name={''}
+                // sandboxes={sandboxes}
                 builtins={env.builtins}
-                namespaces={env.library.namespaces}
+                namespaces={library.namespaces}
                 definitions={env.library.definitions}
             />
         </div>

@@ -18,11 +18,15 @@ import { sandboxState, SandboxView } from './SandboxView';
 import { NodeList } from '../../src/types/cst';
 import { yankFromSandboxToLibrary } from './yankFromSandboxToLibrary';
 
+export type SelectedSandbox = {
+    type: 'sandbox';
+    id: string;
+    state: UIState;
+};
+
 export type IDEState = {
     sandboxes: Sandbox['meta'][];
-    current:
-        | { type: 'sandbox'; id: string; state: UIState }
-        | { type: 'dashboard'; env: Env };
+    current: SelectedSandbox | { type: 'dashboard'; env: Env };
 };
 
 type IDEAction =
@@ -135,7 +139,7 @@ export const IDE = ({
                 display: 'flex',
             }}
         >
-            <Namespaces env={env} />
+            <Namespaces env={env} sandboxes={state.sandboxes} />
             {/** Here we do the magic. of .. having an editor.
              * for sandboxes. */}
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -149,6 +153,13 @@ export const IDE = ({
                         <SandboxView
                             key={state.current.id}
                             state={state.current.state}
+                            meta={
+                                state.sandboxes.find(
+                                    (s) =>
+                                        s.id ===
+                                        (state.current as SelectedSandbox).id,
+                                )!
+                            }
                             dispatch={dispatch}
                         />
                     ) : (

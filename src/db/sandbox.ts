@@ -62,17 +62,26 @@ export const getSandboxes = async (db: Db) => {
                     version,
                     settings,
                 }) => {
+                    const pset: Sandbox['meta']['settings'] = settings
+                        ? {
+                              aliases: [],
+                              namespace: ['sandbox', id],
+                              ...JSON.parse(settings as string),
+                          }
+                        : {
+                              aliases: [],
+                              namespace: ['sandbox', id],
+                          };
+                    if (pset.namespace.length === 0) {
+                        pset.namespace = ['sandbox', id as string];
+                    }
                     sandboxes.push({
                         id: id as string,
                         title: title as string,
                         created_date: created_date as number,
                         updated_date: updated_date as number,
                         version: version as number,
-                        settings: settings
-                            ? JSON.parse(settings as string)
-                            : {
-                                  namespace: [],
-                              },
+                        settings: pset,
                     });
                 },
             ),
@@ -133,7 +142,7 @@ export const addSandbox = async (
         created_date: Date.now() / 1000,
         updated_date: Date.now() / 1000,
         version: 0,
-        settings: { namespace: [] },
+        settings: { namespace: ['sandbox', id], aliases: [] },
     };
     const map = emptyMap();
 

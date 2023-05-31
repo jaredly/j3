@@ -31,7 +31,11 @@ export const splitNamespaces = (name: string) => {
     return name.split('/');
 };
 
-export const addToTree = (tree: Tree, namespacedName: string, hash: string) => {
+export const addToTree = (
+    tree: Tree,
+    namespacedName: string,
+    hash: string | null,
+) => {
     let cn = tree;
     const parts = splitNamespaces(namespacedName);
     parts.forEach((n, i) => {
@@ -40,7 +44,9 @@ export const addToTree = (tree: Tree, namespacedName: string, hash: string) => {
         }
         cn = cn.children[n];
         if (i >= parts.length - 1) {
-            cn.top = hash;
+            if (hash != null) {
+                cn.top = hash;
+            }
         }
     });
 };

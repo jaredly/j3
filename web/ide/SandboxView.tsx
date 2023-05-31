@@ -42,11 +42,13 @@ import { getCtx } from '../../src/getCtx';
 export const SandboxView = ({
     // env,
     // sandbox,
+    meta,
     state,
     dispatch,
 }: {
     // env: Env;
     // sandbox: Sandbox;
+    meta: Sandbox['meta'];
     state: UIState;
     dispatch: React.Dispatch<Action>;
 }) => {
@@ -61,6 +63,10 @@ export const SandboxView = ({
                 dispatch({ type: 'hover', path: [] });
             }}
         >
+            <div>
+                Hello
+                {JSON.stringify(meta)}
+            </div>
             <HiddenInput
                 ctx={state.ctx}
                 state={state}

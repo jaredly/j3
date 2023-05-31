@@ -1,4 +1,8 @@
 
+# [ ] FIRST PRIORITY: Sanboxes have namespaces
+
+This has gotta go first, to make this really usable.
+
 # [ ] '(' to surround selection )
 
 Gotta have it, pleeease
@@ -9,6 +13,13 @@ Would this be like an autocomplete deal?
 And so maybe, with the error highlight, I can indicate whether
 there's autocomplete available?
 That could be quite nice.
+
+- [ ] autofix the 'not exaustive' by:
+  - option one, adding a `_` wildcard clause
+  - option two, enumerating all of the options, if there are unions at play
+  - hmm it could also be nice to allow you to select a `_`, and say "break this apart for me", ya know
+
+- [ ] I want to highlight matching braces again
 
 
 # UM OK things
