@@ -10,6 +10,7 @@ import {
     addSandbox,
     deleteSandbox,
     getSandbox,
+    getSandboxById,
     getSandboxes,
     updateSandboxMeta,
 } from '../../src/db/sandbox';
@@ -154,6 +155,26 @@ export const IDE = ({
         } else {
             location.hash = '';
         }
+        const fn = () => {
+            console.log('hash i guess', location.hash.slice(1));
+            if (location.hash.length) {
+                if (
+                    state.current.type !== 'sandbox' ||
+                    state.current.id !== location.hash.slice(1)
+                ) {
+                    getSandboxById(initial.db, location.hash.slice(1)).then(
+                        (sandbox) =>
+                            dispatch({ type: 'open-sandbox', sandbox }),
+                    );
+                }
+            } else if (state.current.type !== 'dashboard') {
+                getSandboxes(initial.db).then((sandboxes) =>
+                    dispatch({ type: 'dashboard', sandboxes }),
+                );
+            }
+        };
+        window.addEventListener('hashchange', fn);
+        return () => window.removeEventListener('hashchange', fn);
     }, [state.current.type === 'sandbox' ? state.current.id : null]);
 
     usePersistStateChanges(initial.db, state);

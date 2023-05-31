@@ -1,5 +1,7 @@
 import * as React from 'react';
 
+// from https://reactsvgicons.com/search?q=home
+
 export function IconHome(props: React.SVGProps<SVGSVGElement>) {
     return (
         <svg

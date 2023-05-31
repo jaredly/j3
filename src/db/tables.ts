@@ -21,10 +21,9 @@ export type TableConfig = {
 export const initialize = async (db: Db) => {
     const existing = (
         await db.all('SELECT name, sql FROM sqlite_schema')
-    ).reduce(
-        (map, row) => ((map[row.name as string] = row.sql), map),
-        {} as { [name: string]: string },
-    );
+    ).reduce((map, row) => ((map[row.name as string] = row.sql), map), {}) as {
+        [name: string]: string;
+    };
     const tables: TableConfig[] = [
         namesConfig,
         definitionsConfig,
@@ -35,7 +34,23 @@ export const initialize = async (db: Db) => {
         if (!existing[config.name]) {
             await createTable(db, config);
         } else {
-            // config.
+            const columns = parseColumns(existing[config.name]);
+            const extras: TableConfig['params'] = [];
+            if (columns.length < config.params.length) {
+                const extras = config.params.slice(columns.length);
+                console.log('extra', extras);
+                if (
+                    confirm(
+                        `Database upgrade needed; add missing columns to ${config.name}?`,
+                    )
+                ) {
+                    fail;
+                } else {
+                    throw new Error(
+                        `Failed to initialized; decided not to add missing columns`,
+                    );
+                }
+            }
         }
     }
 };
