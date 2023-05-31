@@ -7,7 +7,7 @@
 # [x] Allow exporting a sandbox, as a little json file
 - [x] tabs should have a little dropdown dealio, where you can edit, or like export thanks
 - [ ] OH when downloading a sandbox, also download any depended-upon library definitions.
-- [ ] delete a sandbox, you can do it
+- [ ] delete a sandbox, you can do it; hm to be much safer, let's have a "deleted" flag on a sandbox. And actually do cleanup later.
 
 # [x] FIRST PRIORITY: Sanboxes have namespaces
 

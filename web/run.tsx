@@ -53,15 +53,23 @@ class ErrorBoundary extends React.Component<
 }
 
 // setTimeout(() => {
-initialData(location.hash ? location.hash.slice(1) : null).then((initial) =>
-    root.render(
-        <React.StrictMode>
-            <ErrorBoundary>
-                <IDE initial={initial} />
-                {/* <ByHand /> */}
-            </ErrorBoundary>
-            ,
-        </React.StrictMode>,
-    ),
+initialData(location.hash ? location.hash.slice(1) : null).then(
+    (initial) =>
+        root.render(
+            <React.StrictMode>
+                <ErrorBoundary>
+                    <IDE initial={initial} />
+                    {/* <ByHand /> */}
+                </ErrorBoundary>
+                ,
+            </React.StrictMode>,
+        ),
+    (err) => {
+        root.render(
+            <div style={{ margin: 64 }}>
+                Failed to initialize. {err.message}
+            </div>,
+        );
+    },
 );
 // }, 300);

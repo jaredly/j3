@@ -43,7 +43,6 @@ export type IDEAction =
     | { type: 'dashboard'; sandboxes: Sandbox['meta'][] };
 
 const topReduce = (state: IDEState, action: IDEAction): IDEState => {
-    console.log(`Reducing`, action);
     switch (action.type) {
         case 'dashboard':
             return {
