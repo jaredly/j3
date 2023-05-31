@@ -163,7 +163,13 @@ export const IDE = ({
                 ) {
                     getSandboxById(initial.db, location.hash.slice(1)).then(
                         (sandbox) =>
-                            dispatch({ type: 'open-sandbox', sandbox }),
+                            sandbox
+                                ? dispatch({ type: 'open-sandbox', sandbox })
+                                : console.error(
+                                      `No sandbox with ID ${location.hash.slice(
+                                          1,
+                                      )}`,
+                                  ),
                     );
                 }
             } else if (state.current.type !== 'dashboard') {

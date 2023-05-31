@@ -51,7 +51,7 @@ export const getSandboxes = async (db: Db, just?: string) => {
     const sandboxes: Sandbox['meta'][] = [];
     await db
         .all(
-            `SELECT id, title, created_date, updated_date, version, settings from sandboxes`,
+            `SELECT id, title, created_date, updated_date, version, settings, deleted_date from sandboxes`,
         )
         .then((rows) => processSandboxRows(rows, sandboxes));
     return sandboxes;
@@ -61,11 +61,11 @@ export const getSandboxById = async (db: Db, id: string) => {
     const sandboxes: Sandbox['meta'][] = [];
     await db
         .all(
-            `SELECT id, title, created_date, updated_date, version, settings from sandboxes where id=?`,
+            `SELECT id, title, created_date, updated_date, version, settings, deleted_date from sandboxes where id=?`,
             [id],
         )
         .then((rows) => processSandboxRows(rows, sandboxes));
-    return getSandbox(db, sandboxes[0]);
+    return sandboxes.length ? getSandbox(db, sandboxes[0]) : null;
 };
 
 export const getSandbox = async (

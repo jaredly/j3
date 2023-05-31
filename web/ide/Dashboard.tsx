@@ -50,48 +50,50 @@ export const Dashboard = ({
                     </tr>
                 </thead>
                 <tbody style={{ background: '#111' }}>
-                    {sandboxes.map((sb) => (
-                        <tr
-                            key={sb.id}
-                            style={{
-                                background: '#111',
-                                padding: 16,
-                            }}
-                        >
-                            <td
+                    {sandboxes
+                        .sort((a, b) => b.updated_date - a.updated_date)
+                        .map((sb) => (
+                            <tr
+                                key={sb.id}
                                 style={{
-                                    padding: 8,
-                                    cursor: 'pointer',
+                                    background: '#111',
+                                    padding: 16,
                                 }}
-                                className={css`
-                                    color: teal;
-                                    &:hover {
-                                        text-decoration: underline;
-                                    }
-                                `}
-                                onClick={() =>
-                                    getSandbox(db, sb).then((sandbox) => {
-                                        dispatch({
-                                            type: 'open-sandbox',
-                                            sandbox,
-                                        });
-                                    })
-                                }
                             >
-                                {sb.title}
-                            </td>
-                            <td style={{ padding: '8px 16px' }}>
-                                {sb.settings.namespace.join('/')}
-                            </td>
-                            <td style={{ padding: '8px 16px' }}>
-                                {dayjs(sb.updated_date * 1000).fromNow()}
-                            </td>
-                            <td style={{ padding: '8px 16px' }}>{sb.id}</td>
-                            <td style={{ padding: '8px 16px' }}>
-                                {dayjs(sb.created_date * 1000).fromNow()}
-                            </td>
-                        </tr>
-                    ))}
+                                <td
+                                    style={{
+                                        padding: 8,
+                                        cursor: 'pointer',
+                                    }}
+                                    className={css`
+                                        color: teal;
+                                        &:hover {
+                                            text-decoration: underline;
+                                        }
+                                    `}
+                                    onClick={() =>
+                                        getSandbox(db, sb).then((sandbox) => {
+                                            dispatch({
+                                                type: 'open-sandbox',
+                                                sandbox,
+                                            });
+                                        })
+                                    }
+                                >
+                                    {sb.title}
+                                </td>
+                                <td style={{ padding: '8px 16px' }}>
+                                    {sb.settings.namespace.join('/')}
+                                </td>
+                                <td style={{ padding: '8px 16px' }}>
+                                    {dayjs(sb.updated_date * 1000).fromNow()}
+                                </td>
+                                <td style={{ padding: '8px 16px' }}>{sb.id}</td>
+                                <td style={{ padding: '8px 16px' }}>
+                                    {dayjs(sb.created_date * 1000).fromNow()}
+                                </td>
+                            </tr>
+                        ))}
                 </tbody>
             </table>
             <button onClick={() => setShow(!show)} style={{ marginTop: 16 }}>

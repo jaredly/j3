@@ -40,16 +40,21 @@ export const initialize = async (db: Db) => {
                 const extras = config.params.slice(columns.length);
                 console.log('extra', extras);
                 if (
-                    confirm(
+                    !confirm(
                         `Database upgrade needed; add missing columns to ${config.name}?`,
                     )
                 ) {
-                    fail;
-                } else {
                     throw new Error(
                         `Failed to initialized; decided not to add missing columns`,
                     );
                 }
+                await db.transact(async () => {
+                    for (let col of extras) {
+                        await db.run(
+                            `ALTER TABLE ${config.name} ADD COLUMN ${col.name} ${col.config}`,
+                        );
+                    }
+                });
             }
         }
     }
