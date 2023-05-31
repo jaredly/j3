@@ -46,12 +46,14 @@ export const Dashboard = ({
                         <th>Namespace</th>
                         <th>Updated</th>
                         <th>ID</th>
+                        <th>Node Count</th>
                         <th>Created</th>
                     </tr>
                 </thead>
                 <tbody style={{ background: '#111' }}>
                     {sandboxes
                         .sort((a, b) => b.updated_date - a.updated_date)
+                        .filter((s) => s.deleted_date == null)
                         .map((sb) => (
                             <tr
                                 key={sb.id}
@@ -89,6 +91,9 @@ export const Dashboard = ({
                                     {dayjs(sb.updated_date * 1000).fromNow()}
                                 </td>
                                 <td style={{ padding: '8px 16px' }}>{sb.id}</td>
+                                <td style={{ padding: '8px 16px' }}>
+                                    {sb.node_count}
+                                </td>
                                 <td style={{ padding: '8px 16px' }}>
                                     {dayjs(sb.created_date * 1000).fromNow()}
                                 </td>

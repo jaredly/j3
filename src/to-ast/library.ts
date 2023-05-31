@@ -113,6 +113,8 @@ export type Sandbox = {
             namespace: string[];
             aliases: { from: string[]; to: string[] }[];
         };
+        deleted_date: number | null;
+        node_count: number;
     };
 
     root: number;

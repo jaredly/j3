@@ -12,6 +12,7 @@ import {
     getSandbox,
     getSandboxById,
     getSandboxes,
+    setSandboxDeletedDate,
     updateSandboxMeta,
 } from '../../src/db/sandbox';
 import { Db, dropTable } from '../../src/db/tables';
@@ -36,7 +37,7 @@ export type IDEState = {
 
 export type IDEAction =
     | Action
-    | { type: 'new-sandbox'; meta: Sandbox['meta'] }
+    | { type: 'new-sandbox'; sandbox: Sandbox }
     | { type: 'update-sandbox'; meta: Sandbox['meta'] }
     | { type: 'delete-sandbox'; id: string }
     | { type: 'open-sandbox'; sandbox: Sandbox }
@@ -79,7 +80,17 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
         case 'new-sandbox':
             return {
                 ...state,
-                sandboxes: state.sandboxes.concat([action.meta]),
+                sandboxes: state.sandboxes.concat([action.sandbox.meta]),
+                current: {
+                    type: 'sandbox',
+                    id: action.sandbox.meta.id,
+                    state: sandboxState(
+                        action.sandbox,
+                        state.current.type === 'dashboard'
+                            ? state.current.env
+                            : state.current.state.ctx.global,
+                    ),
+                },
             };
         case 'open-sandbox': {
             const meta = state.sandboxes.find(
@@ -288,7 +299,12 @@ const TabTitle = ({
                     return;
                 }
                 if (confirm('Really delete sandbox?')) {
-                    await deleteSandbox(db, state.current.id);
+                    // await deleteSandbox(db, state.current.id);
+                    await setSandboxDeletedDate(
+                        db,
+                        state.current.id,
+                        Date.now() / 1000,
+                    );
                     dispatch({ type: 'delete-sandbox', id: state.current.id });
                 }
             },
@@ -366,7 +382,9 @@ function SandboxTabs({
                 display: 'flex',
                 flexDirection: 'row',
                 backgroundColor: '#222',
-                // padding: '8px',
+                padding: '4px',
+                borderRadius: 3,
+                alignItems: 'center',
                 // paddingBottom: 0,
                 fontSize: '.8em',
             }}
@@ -386,47 +404,59 @@ function SandboxTabs({
                         dispatch({ type: 'dashboard', sandboxes }),
                     );
                 }}
-                style={{ cursor: 'pointer', padding: 4, fontSize: 16 }}
+                style={{
+                    borderRadius: 3,
+                    cursor: 'pointer',
+                    padding: 4,
+                    fontSize: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    backgroundColor:
+                        state.current.type === 'dashboard' ? 'black' : 'unset',
+                }}
             >
                 <IconHome />
             </div>
-            {state.sandboxes.map((k) =>
-                state.current.type === 'sandbox' &&
-                state.current.id === k.id ? (
-                    <TabTitle
-                        key={k.id}
-                        meta={k}
-                        db={db}
-                        dispatch={dispatch}
-                        state={state}
-                    />
-                ) : (
-                    <button
-                        key={k.id}
-                        disabled={
-                            state.current.type === 'sandbox' &&
-                            state.current.id === k.id
-                        }
-                        style={{
-                            backgroundColor: 'transparent',
-                            border: 'none',
-                            color: 'white',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            fontFamily: 'inherit',
-                            fontSize: 'inherit',
-                            whiteSpace: 'nowrap',
-                        }}
-                        onClick={() => {
-                            getSandbox(db, k).then((sandbox) => {
-                                dispatch({ type: 'open-sandbox', sandbox });
-                            });
-                        }}
-                    >
-                        {k.title}
-                    </button>
-                ),
-            )}
+            {state.sandboxes
+                .sort((a, b) => a.created_date - b.created_date)
+                .filter((s) => s.deleted_date == null)
+                .map((k) =>
+                    state.current.type === 'sandbox' &&
+                    state.current.id === k.id ? (
+                        <TabTitle
+                            key={k.id}
+                            meta={k}
+                            db={db}
+                            dispatch={dispatch}
+                            state={state}
+                        />
+                    ) : (
+                        <button
+                            key={k.id}
+                            disabled={
+                                state.current.type === 'sandbox' &&
+                                state.current.id === k.id
+                            }
+                            style={{
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                                color: 'white',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                fontFamily: 'inherit',
+                                fontSize: 'inherit',
+                                whiteSpace: 'nowrap',
+                            }}
+                            onClick={() => {
+                                getSandbox(db, k).then((sandbox) => {
+                                    dispatch({ type: 'open-sandbox', sandbox });
+                                });
+                            }}
+                        >
+                            {k.title}
+                        </button>
+                    ),
+                )}
             <button
                 style={{ cursor: 'pointer' }}
                 onClick={() => {
@@ -435,10 +465,7 @@ function SandboxTabs({
                         Math.random().toString(36).slice(2),
                         'Untitled sandbox',
                     ).then((sandbox) => {
-                        dispatch({
-                            type: 'new-sandbox',
-                            meta: sandbox.meta,
-                        });
+                        dispatch({ type: 'new-sandbox', sandbox });
                     });
                 }}
             >

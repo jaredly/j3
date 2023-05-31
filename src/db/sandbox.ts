@@ -16,6 +16,7 @@ export const sandboxesConfig = {
         { name: 'version', config: 'integer not null' },
         { name: 'settings', config: 'text' },
         { name: 'deleted_date', config: 'integer' },
+        { name: 'node_count', config: 'integer' },
     ],
 };
 
@@ -51,17 +52,17 @@ export const getSandboxes = async (db: Db, just?: string) => {
     const sandboxes: Sandbox['meta'][] = [];
     await db
         .all(
-            `SELECT id, title, created_date, updated_date, version, settings, deleted_date from sandboxes`,
+            `SELECT id, title, created_date, updated_date, version, settings, deleted_date, node_count from sandboxes`,
         )
         .then((rows) => processSandboxRows(rows, sandboxes));
-    return sandboxes;
+    return sandboxes.sort((a, b) => a.created_date - b.created_date);
 };
 
 export const getSandboxById = async (db: Db, id: string) => {
     const sandboxes: Sandbox['meta'][] = [];
     await db
         .all(
-            `SELECT id, title, created_date, updated_date, version, settings, deleted_date from sandboxes where id=?`,
+            `SELECT id, title, created_date, updated_date, version, settings, deleted_date, node_count from sandboxes where id=?`,
             [id],
         )
         .then((rows) => processSandboxRows(rows, sandboxes));
@@ -109,15 +110,27 @@ export const updateSandboxMeta = async (db: Db, meta: Sandbox['meta']) => {
     );
 };
 
+export const setSandboxDeletedDate = async (
+    db: Db,
+    id: string,
+    deleted: number | null,
+) => {
+    await db.run(`update sandboxes set deleted_date=? where id=?;`, [
+        deleted,
+        id,
+    ]);
+};
+
 export const updateSandboxUpdatedDate = async (
     db: Db,
     id: string,
     updated: number,
+    node_count: number,
 ) => {
-    await db.run(`update sandboxes set updated_date=? where id=?;`, [
-        updated,
-        id,
-    ]);
+    await db.run(
+        `update sandboxes set updated_date=?, node_count=? where id=?;`,
+        [updated, node_count, id],
+    );
 };
 
 /** Does wrap in a transaction */
@@ -131,19 +144,22 @@ export const addSandbox = async (
         title,
         created_date: Date.now() / 1000,
         updated_date: Date.now() / 1000,
+        deleted_date: null,
         version: 0,
         settings: { namespace: ['sandbox', id], aliases: [] },
+        node_count: 0,
     };
     const map = emptyMap();
 
     await db.transact(async () => {
-        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?, ?);`, [
+        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?, ?, ?);`, [
             meta.id,
             meta.title,
             meta.created_date,
             meta.updated_date,
             meta.version,
             JSON.stringify(meta.settings),
+            meta.deleted_date,
         ]);
         await createTable(db, sandboxNodesConfig(id));
         await createTable(db, sandboxHistoryConfig(id));
@@ -199,20 +215,19 @@ export const addUpdateHistoryItems = async (
 
 function processSandboxRows(
     rows: { [key: string]: string | number | null }[],
-    sandboxes: {
-        id: string;
-        title: string;
-        created_date: number;
-        updated_date: number;
-        version: number;
-        settings: {
-            namespace: string[];
-            aliases: { from: string[]; to: string[] }[];
-        };
-    }[],
+    sandboxes: Sandbox['meta'][],
 ): void | PromiseLike<void> {
     return rows.forEach(
-        ({ id, title, created_date, updated_date, version, settings }) => {
+        ({
+            id,
+            title,
+            created_date,
+            updated_date,
+            version,
+            settings,
+            deleted_date,
+            node_count,
+        }) => {
             const pset: Sandbox['meta']['settings'] = settings
                 ? {
                       aliases: [],
@@ -231,8 +246,10 @@ function processSandboxRows(
                 title: title as string,
                 created_date: created_date as number,
                 updated_date: updated_date as number,
+                deleted_date: deleted_date as number | null,
                 version: version as number,
                 settings: pset,
+                node_count: (node_count as number) ?? 0,
             });
         },
     );

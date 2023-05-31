@@ -17,7 +17,12 @@ import { UpdateMap } from '../../src/state/getKeyUpdate';
 // right?
 
 export type DBUpdate =
-    | { type: 'sandbox-updated'; id: string; updated: number }
+    | {
+          type: 'sandbox-updated';
+          id: string;
+          updated: number;
+          node_count: number;
+      }
     | {
           type: 'sandbox-nodes';
           id: string;
@@ -47,6 +52,7 @@ export const applyChanges = async (db: Db, changes: DBUpdate[]) => {
                         db,
                         change.id,
                         change.updated,
+                        change.node_count,
                     );
                     break;
                 case 'sandbox-nodes':
@@ -123,6 +129,7 @@ export function collectDatabaseChanges(
             type: 'sandbox-updated',
             id,
             updated: Date.now() / 1000,
+            node_count: Object.keys(next.map).length,
         });
     }
     return changes;
