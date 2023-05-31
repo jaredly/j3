@@ -20,6 +20,7 @@ import { NodeList } from '../../src/types/cst';
 import { yankFromSandboxToLibrary } from './yankFromSandboxToLibrary';
 import { useMenu } from './useMenu';
 import { Dashboard } from './Dashboard';
+import { IconHome } from '../fonts/Icons';
 
 export type SelectedSandbox = {
     type: 'sandbox';
@@ -32,15 +33,27 @@ export type IDEState = {
     current: SelectedSandbox | { type: 'dashboard'; env: Env };
 };
 
-type IDEAction =
+export type IDEAction =
     | Action
     | { type: 'new-sandbox'; meta: Sandbox['meta'] }
     | { type: 'update-sandbox'; meta: Sandbox['meta'] }
     | { type: 'delete-sandbox'; id: string }
-    | { type: 'open-sandbox'; sandbox: Sandbox };
+    | { type: 'open-sandbox'; sandbox: Sandbox }
+    | { type: 'dashboard' };
 
 const topReduce = (state: IDEState, action: IDEAction): IDEState => {
     switch (action.type) {
+        case 'dashboard':
+            return {
+                ...state,
+                current: {
+                    type: 'dashboard',
+                    env:
+                        state.current.type === 'sandbox'
+                            ? state.current.state.ctx.global
+                            : state.current.env,
+                },
+            };
         case 'update-sandbox':
             return {
                 ...state,
@@ -136,6 +149,8 @@ export const IDE = ({
     useEffect(() => {
         if (state.current.type === 'sandbox') {
             location.hash = '#' + state.current.id;
+        } else {
+            location.hash = '';
         }
     }, [state.current.type === 'sandbox' ? state.current.id : null]);
 
@@ -180,7 +195,11 @@ export const IDE = ({
                             dispatch={dispatch}
                         />
                     ) : (
-                        <Dashboard db={initial.db} />
+                        <Dashboard
+                            db={initial.db}
+                            initial={state.sandboxes}
+                            dispatch={dispatch}
+                        />
                     )}
                 </div>
             </div>
@@ -283,6 +302,8 @@ const TabTitle = ({
                 padding: '4px 8px',
                 borderRadius: 3,
                 whiteSpace: 'nowrap',
+                display: 'flex',
+                alignItems: 'center',
             }}
         >
             {meta.title}
@@ -331,6 +352,12 @@ function SandboxTabs({
                 evt.stopPropagation();
             }}
         >
+            <div
+                onClick={() => dispatch({ type: 'dashboard' })}
+                style={{ cursor: 'pointer', padding: 4, fontSize: 16 }}
+            >
+                <IconHome />
+            </div>
             {state.sandboxes.map((k) =>
                 state.current.type === 'sandbox' &&
                 state.current.id === k.id ? (

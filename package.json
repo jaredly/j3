@@ -27,6 +27,7 @@
         "@vitejs/plugin-react": "^3.1.0",
         "blakejs": "^1.2.1",
         "buffer": "^6.0.3",
+        "dayjs": "^1.11.7",
         "esbuild": "^0.16.14",
         "fast-deep-equal": "^3.1.3",
         "generator": "link:@types/@babel/generator",

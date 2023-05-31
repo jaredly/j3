@@ -5,6 +5,7 @@ import {
     addUpdateHistoryItems,
     addUpdateNodes,
     transact,
+    updateSandboxUpdatedDate,
 } from '../../src/db/sandbox';
 import { Db } from '../../src/db/tables';
 import { HashedTree } from '../../src/db/hash-tree';
@@ -17,6 +18,7 @@ import { UpdateMap } from '../../src/state/getKeyUpdate';
 // right?
 
 export type DBUpdate =
+    | { type: 'sandbox-updated'; id: string; updated: number }
     | {
           type: 'sandbox-nodes';
           id: string;
@@ -41,6 +43,13 @@ export const applyChanges = async (db: Db, changes: DBUpdate[]) => {
     await transact(db, async () => {
         for (let change of changes) {
             switch (change.type) {
+                case 'sandbox-updated':
+                    await updateSandboxUpdatedDate(
+                        db,
+                        change.id,
+                        change.updated,
+                    );
+                    break;
                 case 'sandbox-nodes':
                     await addUpdateNodes(db, change.id, change.map);
                     break;
@@ -111,6 +120,11 @@ export function collectDatabaseChanges(
         }
         changes.push({ type: 'sandbox-nodes', map, id });
         changes.push({ type: 'sandbox-history', history: hist, id });
+        changes.push({
+            type: 'sandbox-updated',
+            id,
+            updated: Date.now() / 1000,
+        });
     }
     return changes;
 }
