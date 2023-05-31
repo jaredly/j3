@@ -63,9 +63,12 @@ export const findNameSpace = (
     tree: HashedTree,
     root: string,
     ns: string[],
-): string => {
+): string | null => {
     if (!ns.length) {
         return root;
+    }
+    if (!tree[root] || !tree[root][ns[0]]) {
+        return null;
     }
     return findNameSpace(tree, tree[root][ns[0]], ns.slice(1));
 };

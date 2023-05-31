@@ -1,8 +1,18 @@
 
+- [ ] autocomplete
+  one/two/three
+  Need to autocomplete namespaces, and not show them as red underlined
+
+- [ ] ok, so I want to render out ... namespace ... items
+
 - [ ] Below the normal namespaces, we should have a listing of the "sandbox's namespace"
   - yeah that's a good way to do it.
 - [ ] allow changing the sandbox's meta namespace
 - [ ] allow renaming / moving of a namespace
+
+Should I ... keep track ... of the library root ... for a given namespace?
+So like, if names get removed that you were counting on, there's a way to know what they were?
+Seems like that might be nice.
 
 # [x] Allow exporting a sandbox, as a little json file
 - [x] tabs should have a little dropdown dealio, where you can edit, or like export thanks

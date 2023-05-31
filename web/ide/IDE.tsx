@@ -501,6 +501,11 @@ export const SbNs = ({
     if (!meta) {
         return null;
     }
+    const root = findNameSpace(
+        env.library.namespaces,
+        env.library.root,
+        meta.settings.namespace,
+    );
     return (
         <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: '70%', marginBottom: 8 }}>
@@ -509,14 +514,7 @@ export const SbNs = ({
             <div style={{ marginBottom: 16 }}>
                 {meta.settings.namespace.join('/')}
             </div>
-            <Namespaces
-                env={env}
-                root={findNameSpace(
-                    env.library.namespaces,
-                    env.library.root,
-                    meta.settings.namespace,
-                )}
-            />
+            {root ? <Namespaces env={env} root={root} /> : 'Nothing here yet'}
         </div>
     );
 };
