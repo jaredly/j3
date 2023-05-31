@@ -143,6 +143,23 @@ export const updateWithAutocomplete = (
             }
         }
     });
+    Object.entries(state.map).forEach(([k, v]) => {
+        if (
+            v.type === 'hash' &&
+            typeof v.hash === 'number' &&
+            !state.map[v.hash]
+        ) {
+            const ref = prevMap[v.hash];
+            if (ref?.type === 'identifier') {
+                fixedMissing = true;
+                state.map[+k] = {
+                    type: 'identifier',
+                    loc: +k,
+                    text: ref.text,
+                };
+            }
+        }
+    });
     if (fixedMissing) {
         let { ctx, map } = getCtx(
             state.map,
