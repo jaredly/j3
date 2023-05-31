@@ -324,6 +324,7 @@ export const RenderNNode = (
                         ...textStyle(node, display[idx]),
                         ...selectStyle,
                         ...errorStyle,
+                        whiteSpace: 'pre',
                     }}
                     onMouseEnter={() =>
                         dispatch({

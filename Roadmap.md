@@ -1,5 +1,8 @@
 
-# [ ] FIRST PRIORITY: Sanboxes have namespaces
+# [ ] Allow exporting a sandbox, as a little json file
+- [ ] tabs should have a little dropdown dealio, where you can edit, or like export thanks
+
+# [x] FIRST PRIORITY: Sanboxes have namespaces
 
 This has gotta go first, to make this really usable.
 

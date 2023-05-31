@@ -178,7 +178,7 @@ export const Namespaces = ({
 
     const root = library.root; // env.library.root;
     return (
-        <div style={{ width: 300 }}>
+        <div style={{ width: 300, minWidth: 300 }}>
             <NSTree
                 root={root}
                 level={0}

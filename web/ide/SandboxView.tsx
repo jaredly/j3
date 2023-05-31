@@ -63,9 +63,8 @@ export const SandboxView = ({
                 dispatch({ type: 'hover', path: [] });
             }}
         >
-            <div>
-                Hello
-                {JSON.stringify(meta)}
+            <div style={{ padding: 16 }}>
+                Namespace: {meta.settings.namespace.join('/')}
             </div>
             <HiddenInput
                 ctx={state.ctx}

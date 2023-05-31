@@ -146,6 +146,8 @@ export const updateWithAutocomplete = (
     Object.entries(state.map).forEach(([k, v]) => {
         if (
             v.type === 'hash' &&
+            // TODO ok I don't super love that I'm overloading `local hash` with `toplevel hash`
+            // I kinda want to add a `kind` to hash, ya know?
             typeof v.hash === 'number' &&
             !state.map[v.hash]
         ) {

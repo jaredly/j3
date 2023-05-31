@@ -17,6 +17,7 @@ import { usePersistStateChanges } from './usePersistStateChanges';
 import { sandboxState, SandboxView } from './SandboxView';
 import { NodeList } from '../../src/types/cst';
 import { yankFromSandboxToLibrary } from './yankFromSandboxToLibrary';
+import { useMenu } from './useMenu';
 
 export type SelectedSandbox = {
     type: 'sandbox';
@@ -171,6 +172,87 @@ export const IDE = ({
     );
 };
 
+export const isParentOf = (parent: HTMLElement, child: HTMLElement) => {
+    if (child === parent) {
+        return true;
+    }
+    while (child.parentElement && child.parentElement !== document.body) {
+        child = child.parentElement;
+        if (child === parent) {
+            return true;
+        }
+    }
+    return false;
+};
+
+const TabTitle = ({
+    meta,
+    db,
+    dispatch,
+}: {
+    meta: Sandbox['meta'];
+    db: Db;
+    dispatch: React.Dispatch<IDEAction>;
+}) => {
+    const [edit, setEdit] = useState(null as null | string);
+    const [menu, toggleMenu] = useMenu([
+        { title: 'Edit Title', action: () => setEdit(meta.title) },
+    ]);
+    if (edit != null) {
+        return (
+            <div>
+                <input
+                    value={edit}
+                    onChange={(evt) => setEdit(evt.target.value)}
+                    style={{ width: 100 }}
+                />
+                <button
+                    onClick={() => {
+                        const newMeta = { ...meta, title: edit };
+                        transact(db, () => updateSandboxMeta(db, newMeta)).then(
+                            () => {
+                                setEdit(null);
+                                dispatch({
+                                    type: 'update-sandbox',
+                                    meta: newMeta,
+                                });
+                            },
+                        );
+                    }}
+                >
+                    Ok
+                </button>
+                <button onClick={() => setEdit(null)}>Cancel</button>
+            </div>
+        );
+    }
+    return (
+        <div
+            style={{
+                position: 'relative',
+                backgroundColor: '#000',
+                padding: '4px 8px',
+                borderRadius: 3,
+                whiteSpace: 'nowrap',
+            }}
+        >
+            {meta.title}
+            <button
+                onMouseDown={() => toggleMenu()}
+                style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                }}
+            >
+                v
+            </button>
+            {menu}
+        </div>
+    );
+};
+
 function SandboxTabs({
     db,
     state,
@@ -180,46 +262,30 @@ function SandboxTabs({
     state: IDEState;
     dispatch: React.Dispatch<IDEAction>;
 }) {
-    const [edit, setEdit] = useState(null as null | string);
-
     return (
         <div
-            style={{}}
+            style={{
+                display: 'flex',
+                flexDirection: 'row',
+                backgroundColor: '#222',
+                // padding: '8px',
+                // paddingBottom: 0,
+                fontSize: '.8em',
+            }}
             onMouseMoveCapture={(evt) => {
                 evt.stopPropagation();
             }}
-            onMouseDownCapture={(evt) => {
-                evt.stopPropagation();
-            }}
+            // onMouseDownCapture={(evt) => {
+            //     evt.stopPropagation();
+            // }}
             onClick={(evt) => {
                 evt.stopPropagation();
             }}
         >
-            Sandboxes:
             {state.sandboxes.map((k) =>
                 state.current.type === 'sandbox' &&
                 state.current.id === k.id ? (
-                    <input
-                        key={k.id}
-                        value={edit ?? k.title}
-                        onChange={(evt) => setEdit(evt.target.value)}
-                        onBlur={() => {
-                            //
-                            const meta = { ...k, title: edit ?? k.title };
-                            transact(db, () =>
-                                updateSandboxMeta(db, meta),
-                            ).then(() => {
-                                dispatch({ type: 'update-sandbox', meta });
-                            });
-                        }}
-                        style={
-                            {
-                                // background: 'red',
-                                // color: 'white',
-                                // border: 'none',
-                            }
-                        }
-                    />
+                    <TabTitle key={k.id} meta={k} db={db} dispatch={dispatch} />
                 ) : (
                     <button
                         key={k.id}
@@ -232,7 +298,10 @@ function SandboxTabs({
                             border: 'none',
                             color: 'white',
                             cursor: 'pointer',
-                            margin: '0 4px',
+                            padding: '4px 8px',
+                            fontFamily: 'inherit',
+                            fontSize: 'inherit',
+                            whiteSpace: 'nowrap',
                         }}
                         onClick={() => {
                             console.log('getting', k);
