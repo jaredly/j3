@@ -15,7 +15,7 @@ export const sandboxesConfig = {
         { name: 'updated_date', config: 'integer not null' },
         { name: 'version', config: 'integer not null' },
         { name: 'settings', config: 'text' },
-        { name: 'deleted_date', config: 'integer' },
+        // { name: 'deleted_date', config: 'integer' },
     ],
 };
 
