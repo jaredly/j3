@@ -32,6 +32,18 @@ export function handleBackspace(
                 const text = split
                     .slice(0, item.source.start)
                     .concat(split.slice(item.source.end));
+                if (!text.length) {
+                    return {
+                        type: 'update',
+                        map: {
+                            [item.source.idx]: { type: 'blank', loc: node.loc },
+                        },
+                        selection: selection.start.slice(0, -1).concat({
+                            idx: item.source.idx,
+                            type: 'end',
+                        }),
+                    };
+                }
                 return {
                     type: 'update',
                     map: {

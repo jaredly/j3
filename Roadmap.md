@@ -1,5 +1,13 @@
 
-- [ ] rename a thing
+- [x] deleting the whole of a node should delete it 
+- [x] rename a sandboxy
+- [ ] [library] on hover of a thing, show the thing in like a popover
+- [ ] on click of a thing, drop it on in to the dealio
+- [ ] `/` should I have `/` prefix be the way to get at root stuff?
+  as opposed to relative stuff?
+  or ... idk really
+  would need to disambiguate from the division operator. But that should be fine, right?
+  I already disambiguate the final division.
 
 - [ ] autocomplete
   one/two/three

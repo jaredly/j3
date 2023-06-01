@@ -93,7 +93,7 @@ export const yankFromSandboxToLibrary = (
         return state;
     }
 
-    console.log('reloced', action.expr, reloced);
+    // console.log('reloced', action.expr, reloced);
     const newHash = makeHash(noForm(reloced));
 
     // TODO if iti's the last one, replace with a blank
