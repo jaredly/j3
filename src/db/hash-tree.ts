@@ -82,6 +82,10 @@ export const mergeTrees = (tree: Tree, old: Tree | null): Tree => {
     return { top: tree.top ?? old.top, children };
 };
 
+/**
+ * TODO This is a pretty crude way of doing things, it unnecessarily rehashes everything.
+ * It could be a ton more efficient.
+ */
 export const hashedTreeRename = (
     tree: HashedTree,
     root: string,
