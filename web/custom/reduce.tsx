@@ -241,6 +241,7 @@ export const undoRedo = (state: UIState, kind: 'undo' | 'redo') => {
         at: undid.prevAt,
         prevAt: undid.at,
         ts: Date.now() / 1000,
+        libraryRoot: undid.libraryRoot,
     };
     const smap = { ...state.map };
     Object.entries(nitem.map).forEach(([k, v]) => {
@@ -319,6 +320,7 @@ const calcHistoryItem = (state: UIState, next: UIState): HistoryItem | null => {
             ? state.history[state.history.length - 1].id + 1
             : 0,
         ts: Date.now() / 1000,
+        libraryRoot: next.ctx.global.library.root,
     };
 };
 

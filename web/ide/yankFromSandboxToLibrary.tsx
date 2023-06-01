@@ -197,6 +197,7 @@ export const yankFromSandboxToLibrary = (
                 prevAt: state.at,
                 id: state.history[state.history.length - 1].id + 1,
                 ts: Date.now() / 1000,
+                libraryRoot: library.root,
             },
         ]),
         at: [{ start: nselect }],

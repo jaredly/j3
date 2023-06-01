@@ -100,6 +100,7 @@ export type HistoryItem = {
     prevAt: Cursor[];
     ts: number;
     revert?: number;
+    libraryRoot?: string;
 };
 
 export type Sandbox = {
