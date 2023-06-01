@@ -77,10 +77,15 @@ export const addNamespaces = async (
 ) => {
     for (let hash of Object.keys(namespaces)) {
         const value = JSON.stringify(namespaces[hash]);
-        await db.run(`insert into names values (?, ?, ?)`, [
-            hash,
-            value,
-            hash === root?.hash ? root.date : null,
-        ]);
+        await db.run(
+            `insert into names values (?, ?, ?) on conflict do update set map=?, root_date=?`,
+            [
+                hash,
+                value,
+                hash === root?.hash ? root.date : null,
+                value,
+                hash === root?.hash ? root.date : null,
+            ],
+        );
     }
 };

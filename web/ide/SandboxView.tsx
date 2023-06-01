@@ -67,7 +67,6 @@ export const SandboxView = ({
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const tops = (state.map[state.root] as ListLikeContents).values;
     const menu = useMenu(state);
-    const [editNS, setEditNS] = useState(null as null | string);
 
     return (
         <div
@@ -76,69 +75,6 @@ export const SandboxView = ({
                 dispatch({ type: 'hover', path: [] });
             }}
         >
-            <div style={{ padding: 16, display: 'flex', alignItems: 'center' }}>
-                Namespace:{' '}
-                {editNS != null ? (
-                    <>
-                        <input
-                            value={editNS}
-                            onChange={(evt) => setEditNS(evt.target.value)}
-                            className={css`
-                                width: 200px;
-                                margin-right: 8px;
-                                font-size: inherit;
-                                font-family: inherit;
-                                background-color: transparent;
-                                color: inherit;
-                                border: 0.5px solid #444;
-                            `}
-                        />
-                        <IconButton
-                            onClick={() => {
-                                updateSandboxMeta(db, meta.id, {
-                                    settings: {
-                                        ...meta.settings,
-                                        namespace: editNS.split('/'),
-                                    },
-                                }).then(() => {
-                                    dispatch({
-                                        type: 'update-sandbox',
-                                        meta: {
-                                            ...meta,
-                                            settings: {
-                                                ...meta.settings,
-                                                namespace: editNS.split('/'),
-                                            },
-                                        },
-                                    });
-                                    setEditNS(null);
-                                });
-                            }}
-                        >
-                            <IconBxCheck />
-                        </IconButton>
-                        <IconButton
-                            onClick={() => {
-                                setEditNS(null);
-                            }}
-                        >
-                            <IconCancel />
-                        </IconButton>
-                    </>
-                ) : (
-                    <>
-                        {meta.settings.namespace.join('/')}
-                        <span style={{ width: 8 }} />
-                        <IconButton
-                            onClick={() => {
-                                setEditNS(meta.settings.namespace.join('/'));
-                            }}
-                        >
-                            <IconBxsPencil />
-                        </IconButton>
-                    </>
-                )}
-            </div>
             <HiddenInput
                 ctx={state.ctx}
                 state={state}

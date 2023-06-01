@@ -22,8 +22,15 @@ import { NodeList } from '../../src/types/cst';
 import { yankFromSandboxToLibrary } from './yankFromSandboxToLibrary';
 import { useMenu } from './useMenu';
 import { Dashboard } from './Dashboard';
-import { IconHome } from '../fonts/Icons';
+import {
+    IconButton,
+    IconBxCheck,
+    IconBxsPencil,
+    IconCancel,
+    IconHome,
+} from '../fonts/Icons';
 import { findNameSpace } from '../../src/db/hash-tree';
+import { css } from '@linaria/core';
 
 export type SelectedSandbox = {
     type: 'sandbox';
@@ -221,6 +228,7 @@ export const IDE = ({
                 <Namespaces env={env} dispatch={dispatch} />
                 {state.current.type === 'sandbox' ? (
                     <SbNs
+                        db={initial.db}
                         dispatch={dispatch}
                         meta={state.sandboxes.find(
                             (s) =>
@@ -506,11 +514,15 @@ export const SbNs = ({
     meta,
     env,
     dispatch,
+    db,
 }: {
+    db: Db;
     meta: Sandbox['meta'] | undefined;
     env: Env;
-    dispatch: React.Dispatch<Action>;
+    dispatch: React.Dispatch<IDEAction>;
 }) => {
+    const [editNS, setEditNS] = useState(null as null | string);
+
     if (!meta) {
         return null;
     }
@@ -525,10 +537,79 @@ export const SbNs = ({
                 Sandbox Namespace:
             </div>
             <div style={{ marginBottom: 16 }}>
-                {meta.settings.namespace.join('/')}
+                {editNS != null ? (
+                    <>
+                        <input
+                            value={editNS}
+                            onChange={(evt) => setEditNS(evt.target.value)}
+                            className={css`
+                                width: 200px;
+                                margin-right: 8px;
+                                font-size: inherit;
+                                font-family: inherit;
+                                background-color: transparent;
+                                color: inherit;
+                                border: 0.5px solid #444;
+                            `}
+                        />
+                        <IconButton
+                            onClick={() => {
+                                updateSandboxMeta(db, meta.id, {
+                                    settings: {
+                                        ...meta.settings,
+                                        namespace: editNS.split('/'),
+                                    },
+                                }).then(() => {
+                                    dispatch({
+                                        type: 'update-sandbox',
+                                        meta: {
+                                            ...meta,
+                                            settings: {
+                                                ...meta.settings,
+                                                namespace: editNS.split('/'),
+                                            },
+                                        },
+                                    });
+                                    dispatch({
+                                        type: 'namespace-rename',
+                                        from: meta.settings.namespace,
+                                        to: editNS.split('/'),
+                                    });
+                                    setEditNS(null);
+                                });
+                            }}
+                        >
+                            <IconBxCheck />
+                        </IconButton>
+                        <IconButton
+                            onClick={() => {
+                                setEditNS(null);
+                            }}
+                        >
+                            <IconCancel />
+                        </IconButton>
+                    </>
+                ) : (
+                    <>
+                        {meta.settings.namespace.join('/')}
+                        <span style={{ width: 8 }} />
+                        <IconButton
+                            onClick={() => {
+                                setEditNS(meta.settings.namespace.join('/'));
+                            }}
+                        >
+                            <IconBxsPencil />
+                        </IconButton>
+                    </>
+                )}
             </div>
             {root ? (
-                <Namespaces env={env} root={root} dispatch={dispatch} />
+                <Namespaces
+                    path={meta.settings.namespace}
+                    env={env}
+                    root={root}
+                    dispatch={dispatch}
+                />
             ) : (
                 'Nothing here yet'
             )}

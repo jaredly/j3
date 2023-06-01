@@ -103,7 +103,12 @@ export const hashedTreeRename = (
     if (!base) {
         return null;
     }
-    const found = base.children[from[from.length - 1]];
+    const flast = from[from.length - 1];
+    const found = base.children[flast];
+    if (!found) {
+        console.log('what', flast, base, nest, from, to);
+        return null;
+    }
     delete base.children[from[from.length - 1]];
 
     let dest = nest;

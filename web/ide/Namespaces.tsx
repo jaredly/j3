@@ -57,7 +57,9 @@ export const NSTree = ({
     namespaces,
     definitions,
     dispatch,
+    isTop = false,
 }: {
+    isTop?: boolean;
     root: string;
     name: string;
     full: string[];
@@ -67,9 +69,9 @@ export const NSTree = ({
     dispatch: React.Dispatch<Action>;
 }) => {
     const [open, setOpen] = useState(false);
-    const canBeOpen = full.length === 0 || open;
+    const canBeOpen = isTop || open;
     const [menu, setMenu] = useMenu((value) => {
-        return full.length > 0
+        return !isTop
             ? [
                   {
                       title: 'Hello',
@@ -126,7 +128,7 @@ export const NSTree = ({
 
     return (
         <div>
-            {full.length > 0 ? (
+            {!isTop ? (
                 <div
                     onMouseDown={(evt) => {
                         if (evt.button === 0) {
@@ -176,7 +178,7 @@ export const NSTree = ({
                             <div key={name}>
                                 <div
                                     style={{
-                                        marginLeft: full.length > 0 ? 20 : 0,
+                                        marginLeft: !isTop ? 20 : 0,
                                     }}
                                 >
                                     <NSTree
@@ -215,27 +217,25 @@ export const NSTree = ({
 
 export const Namespaces = ({
     env,
-    // sandboxes,
     root,
     dispatch,
+    path = [],
 }: {
     root?: string;
     env: Env;
     dispatch: React.Dispatch<Action>;
-    // sandboxes: IDEState['sandboxes'];
+    path?: string[];
 }) => {
-    const library = env.library; // addSandboxesToNamespaces(env.library, sandboxes);
-
     return (
         <div style={{ width: 300, minWidth: 300 }}>
             <NSTree
-                root={root ?? library.root}
-                full={[]}
+                root={root ?? env.library.root}
+                full={path}
+                isTop
                 name={''}
                 dispatch={dispatch}
-                // sandboxes={sandboxes}
                 builtins={env.builtins}
-                namespaces={library.namespaces}
+                namespaces={env.library.namespaces}
                 definitions={env.library.definitions}
             />
         </div>
