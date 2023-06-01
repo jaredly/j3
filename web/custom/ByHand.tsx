@@ -1,21 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
-import { parseByCharacter } from '../../src/parse/parse';
-import { fromMCST, ListLikeContents, Map, toMCST } from '../../src/types/mcst';
-import { useLocalStorage } from '../Debug';
-import { applyUpdate, getKeyUpdate, State } from '../../src/state/getKeyUpdate';
+import { useMemo } from 'react';
+import { getCtx } from '../../src/getCtx';
+import { State } from '../../src/state/getKeyUpdate';
 import { selectEnd } from '../../src/state/navigate';
 import { Path } from '../../src/state/path';
-import { Cursors } from './Cursors';
-import { Menu } from './Menu';
-import { DebugClipboard } from './DebugClipboard';
-import { HiddenInput } from './HiddenInput';
-import { Root } from './Root';
-import { reduce } from './reduce';
-import { getCtx } from '../../src/getCtx';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
-import { Node } from '../../src/types/cst';
-import { Hover } from './Hover';
-import { Expr } from '../../src/types/ast';
+import { ListLikeContents, Map, fromMCST } from '../../src/types/mcst';
 import { transformNode } from '../../src/types/transform-cst';
 import { UIState } from './UIState';
 
@@ -56,65 +44,6 @@ person.animals.dogs
 export const lidx = (at: State['at']) =>
     at[0].start[at[0].start.length - 1].idx;
 
-export const ByHand = () => {
-    const [which, setWhich] = useLocalStorage('j3-example-which', () => 'sink');
-    const extra = Object.keys(localStorage).filter((k) =>
-        k.startsWith('j3-ex-'),
-    );
-    return (
-        <div>
-            {Object.keys(examples).map((k) => (
-                <button
-                    disabled={which === k}
-                    style={{
-                        margin: 8,
-                    }}
-                    key={k}
-                    onClick={() => setWhich(k)}
-                >
-                    {k}
-                </button>
-            ))}
-            {extra.map((ex) => (
-                <button
-                    key={ex}
-                    style={{ margin: 8 }}
-                    onClick={() => setWhich(ex)}
-                    disabled={which === ex}
-                >
-                    {ex}
-                </button>
-            ))}
-            <button
-                onClick={() => {
-                    const id = 'j3-ex-' + Math.random().toString(36).slice(2);
-                    saveState(id, parseByCharacter('"hello"', null).map);
-                    setWhich(id);
-                }}
-            >
-                +
-            </button>
-            <Doc
-                key={which}
-                initialState={
-                    examples[which as 'sink']
-                        ? parseByCharacter(
-                              examples[which as 'sink'].replace(/\s+/g, (f) =>
-                                  f.includes('\n') ? '\n' : ' ',
-                              ),
-                              // lol turning on updateCtx slows things down a tonnn
-                              null,
-                          )
-                        : localStorage[which]
-                        ? loadState(localStorage[which])
-                        : parseByCharacter('"hello"', null)
-                }
-                saveKey={which.startsWith('j3-ex') ? which : undefined}
-            />
-        </div>
-    );
-};
-
 export const saveState = (id: string, map: Map) => {
     localStorage[id] = JSON.stringify(map);
 };
@@ -154,100 +83,6 @@ export const uiState = (state: State): UIState => {
 
 export const clipboardPrefix = '<!--""" jerd-clipboard ';
 export const clipboardSuffix = ' """-->';
-
-export const Doc = ({
-    initialState,
-    saveKey,
-}: {
-    initialState: State;
-    saveKey?: string;
-}) => {
-    const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
-    const [state, dispatch] = React.useReducer(reduce, null, (): UIState => {
-        return uiState(initialState);
-    });
-
-    useEffect(() => {
-        if (saveKey) {
-            saveState(saveKey, state.map);
-        }
-    }, [state.map]);
-
-    // @ts-ignore
-    window.state = state;
-
-    const tops = (state.map[state.root] as ListLikeContents).values;
-
-    const menu = useMenu(state);
-
-    const start = state.at[0].start;
-    const idx = start[start.length - 1].idx;
-
-    return (
-        <div
-            style={{ paddingBottom: 500 }}
-            onMouseEnter={(evt) => {
-                dispatch({ type: 'hover', path: [] });
-            }}
-        >
-            <HiddenInput
-                ctx={state.ctx}
-                state={state}
-                dispatch={dispatch}
-                menu={!state.menu?.dismissed ? menu : undefined}
-            />
-            <button
-                onClick={() => setDebug(!debug)}
-                style={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                }}
-            >
-                {debug ? 'Debug on' : 'Debug off'}
-            </button>
-            <Root
-                state={state}
-                dispatch={dispatch}
-                tops={tops}
-                debug={debug}
-                ctx={state.ctx}
-            />
-            <Cursors state={state} />
-            <Hover state={state} dispatch={dispatch} />
-            {!state.menu?.dismissed && menu?.items.length ? (
-                <Menu state={state} menu={menu} dispatch={dispatch} />
-            ) : null}
-            {debug ? (
-                <div>
-                    <button
-                        onClick={() => {
-                            console.log(state);
-                            const node = fromMCST(-1, state.map);
-                            console.log(node);
-                            (node as { values: Node[] }).values.forEach(
-                                (node) =>
-                                    console.log(
-                                        nodeToExpr(node, {
-                                            ...state.ctx,
-                                            local: { terms: [], types: [] },
-                                        }),
-                                    ),
-                            );
-                        }}
-                    >
-                        Log state and nodes
-                    </button>
-                    <br />
-                    HashNames: {JSON.stringify(state.ctx.results.hashNames)}
-                    MENU: STATE MENU {JSON.stringify(state.menu)} AND THE
-                    {JSON.stringify(menu)}
-                </div>
-            ) : null}
-            <DebugClipboard state={state} debug={debug} ctx={state.ctx} />
-        </div>
-    );
-};
 
 export const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].type !== 'child';

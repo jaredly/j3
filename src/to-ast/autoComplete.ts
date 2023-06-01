@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../parse/parse';
-import { State, StateChange } from '../state/getKeyUpdate';
+import { State, StateChange, StateUpdate } from '../state/getKeyUpdate';
 import { Path } from '../state/path';
 import { MNode, Map } from '../types/mcst';
 import { AutoCompleteReplace } from './Ctx';
@@ -9,7 +9,7 @@ export function autoCompleteUpdate(
     map: Map,
     path: Path[],
     item: AutoCompleteReplace,
-): StateChange {
+): StateUpdate {
     if (!map[idx]) {
         console.log(idx, 'not in the map');
         debugger;

@@ -18,17 +18,18 @@ import { noForm } from '../../src/to-ast/builtins';
 import { getCtx } from '../../src/getCtx';
 import { IDEState } from './IDE';
 import { Sandbox } from '../../src/to-ast/library';
+import { UIState } from '../custom/UIState';
 
 export const yankFromSandboxToLibrary = (
-    state: IDEState,
+    state: UIState,
     action: { type: 'yank'; expr: DefType | Def; loc: number },
     meta: Sandbox['meta'],
 ) => {
-    if (state.current.type !== 'sandbox') {
-        return state;
-    }
-    const sstate = state.current.state;
-    const top = sstate.map[-1] as MNodeList & NodeExtra;
+    // if (state.current.type !== 'sandbox') {
+    //     return state;
+    // }
+    // const sstate = state.current.state;
+    const top = state.map[-1] as MNodeList & NodeExtra;
     const pos = top.values.indexOf(action.loc);
     if (pos === -1) {
         console.log('bad yank', top, action.loc);
@@ -37,8 +38,8 @@ export const yankFromSandboxToLibrary = (
 
     // Here, we do some validation as well.
     const errors: { [idx: number]: Error[] } = {};
-    validateExpr(action.expr, sstate.ctx, errors);
-    const ann = getType(action.expr, sstate.ctx, {
+    validateExpr(action.expr, state.ctx, errors);
+    const ann = getType(action.expr, state.ctx, {
         errors,
         types: {},
     });
@@ -100,7 +101,7 @@ export const yankFromSandboxToLibrary = (
     values.splice(pos, 1);
     const update: UpdateMap = {
         [top.loc]: { ...top, values },
-        ...clearAllChildren([action.loc], sstate.map),
+        ...clearAllChildren([action.loc], state.map),
     };
 
     if (values.length === 0) {
@@ -113,8 +114,8 @@ export const yankFromSandboxToLibrary = (
 
     // START HERE: add to library,
     // replace refefences
-    Object.keys(sstate.map).map((k) => {
-        const node = sstate.map[+k];
+    Object.keys(state.map).map((k) => {
+        const node = state.map[+k];
         if (node.type === 'hash' && node.hash === action.loc) {
             update[+k] = {
                 ...node,
@@ -123,9 +124,9 @@ export const yankFromSandboxToLibrary = (
         }
     });
 
-    const prev: UpdateMap = prevMap(sstate.map, update);
+    const prev: UpdateMap = prevMap(state.map, update);
 
-    const map = applyUpdateMap(sstate.map, update);
+    const map = applyUpdateMap(state.map, update);
     const ntop = pos < values.length ? values[pos] : values[0];
     const nselect = selectEnd(
         ntop,
@@ -139,7 +140,7 @@ export const yankFromSandboxToLibrary = (
         return state;
     }
 
-    const nnames = { ...sstate.ctx.global.library.namespaces };
+    const nnames = { ...state.ctx.global.library.namespaces };
 
     const namespacedName = `${meta.settings.namespace.join('/')}/${
         action.expr.name
@@ -153,12 +154,12 @@ export const yankFromSandboxToLibrary = (
         }),
         makeHash,
         {
-            root: sstate.ctx.global.library.root,
+            root: state.ctx.global.library.root,
             tree: nnames,
         },
     );
     const library = {
-        ...sstate.ctx.global.library,
+        ...state.ctx.global.library,
         namespaces: nnames,
     };
     if (newRoot) {
@@ -187,27 +188,21 @@ export const yankFromSandboxToLibrary = (
 
     return {
         ...state,
-        current: {
-            ...state.current,
-            state: {
-                ...sstate,
-                map,
-                history: sstate.history.concat([
-                    {
-                        map: update,
-                        prev,
-                        at: [{ start: nselect }],
-                        prevAt: sstate.at,
-                        id: sstate.history[sstate.history.length - 1].id + 1,
-                        ts: Date.now() / 1000,
-                    },
-                ]),
+        map,
+        history: state.history.concat([
+            {
+                map: update,
+                prev,
                 at: [{ start: nselect }],
-                ctx: getCtx(map, -1, sstate.nidx, {
-                    ...sstate.ctx.global,
-                    library,
-                }).ctx,
+                prevAt: state.at,
+                id: state.history[state.history.length - 1].id + 1,
+                ts: Date.now() / 1000,
             },
-        },
+        ]),
+        at: [{ start: nselect }],
+        ctx: getCtx(map, -1, state.nidx, {
+            ...state.ctx.global,
+            library,
+        }).ctx,
     };
 };

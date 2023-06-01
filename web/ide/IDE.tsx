@@ -118,23 +118,18 @@ const topReduce = (state: IDEState, action: IDEAction): IDEState => {
                 },
             };
         }
-        case 'yank': {
+        default:
             if (state.current.type === 'sandbox') {
                 const id = state.current.id;
                 const meta = state.sandboxes.find((s) => s.id === id);
                 if (!meta) {
                     return state;
                 }
-                return yankFromSandboxToLibrary(state, action, meta);
-            }
-        }
-        default:
-            if (state.current.type === 'sandbox') {
                 return {
                     ...state,
                     current: {
                         ...state.current,
-                        state: reduce(state.current.state, action),
+                        state: reduce(state.current.state, action, meta),
                     },
                 };
             }

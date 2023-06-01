@@ -1,12 +1,8 @@
 import './poly';
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import ubahn from 'react-ubahn/runtime';
-import { ByHand } from './custom/ByHand';
 import { initialData } from './ide/initialData';
 import { IDE } from './ide/IDE';
-
-ubahn.disable();
 
 declare global {
     var root: Root;

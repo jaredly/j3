@@ -18,13 +18,14 @@ import {
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { isRootPath } from './ByHand';
-import { Action, UIState } from './UIState';
+import { Action, UIState, UpdatableAction } from './UIState';
 import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
 import { redoItem, undoItem } from '../../src/to-ast/history';
-import { HistoryItem } from '../../src/to-ast/library';
+import { HistoryItem, Sandbox } from '../../src/to-ast/library';
 import { transformNode } from '../../src/types/transform-cst';
+import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
@@ -33,7 +34,7 @@ type UIStateChange =
 
 const actionToUpdate = (
     state: UIState,
-    action: Action,
+    action: UpdatableAction,
 ): StateChange | UIStateChange => {
     switch (action.type) {
         case 'hover':
@@ -85,6 +86,7 @@ const actionToUpdate = (
             return paste(state, state.ctx, action.items);
         }
     }
+    const _: never = action;
 };
 
 export const updateWithAutocomplete = (
@@ -219,80 +221,99 @@ export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
     return prev;
 };
 
-export const reduce = (state: UIState, action: Action): UIState => {
-    if (action.type === 'undo' || action.type === 'redo') {
-        const undid =
-            action.type === 'undo'
-                ? undoItem(state.history)
-                : redoItem(state.history);
-        if (!undid) {
-            console.log(`nothing to ${action.type}!`);
-            return state;
-        }
-        const nitem: HistoryItem = {
-            id: state.history.length,
-            revert: undid.id,
-            prev: undid.map,
-            map: undid.prev,
-            at: undid.prevAt,
-            prevAt: undid.at,
-            ts: Date.now() / 1000,
-        };
-        const smap = { ...state.map };
-        Object.entries(nitem.map).forEach(([k, v]) => {
-            if (v == null) {
-                delete smap[+k];
-            } else {
-                smap[+k] = v;
-            }
-        });
-
-        const { ctx } = getCtx(smap, state.root, state.nidx, state.ctx.global);
-
-        return {
-            ...state,
-            ctx,
-            map: smap,
-            at: nitem.at,
-            history: state.history.concat([nitem]),
-        };
+export const undoRedo = (state: UIState, kind: 'undo' | 'redo') => {
+    const undid =
+        kind === 'undo' ? undoItem(state.history) : redoItem(state.history);
+    if (!undid) {
+        console.log(`nothing to ${kind}!`);
+        return state;
     }
-    const update = actionToUpdate(state, action);
-    const next = reduceUpdate(state, update);
-    if (next.map !== state.map) {
-        const update: UpdateMap = {};
-        const prev: UpdateMap = {};
-        let changed = false;
-        Object.keys(next.map).forEach((k) => {
-            if (next.map[+k] !== state.map[+k]) {
-                changed = true;
-                update[+k] = next.map[+k];
-                prev[+k] = state.map[+k] || null;
-            }
-        });
-        Object.keys(state.map).forEach((k) => {
-            if (!next.map[+k]) {
-                changed = true;
-                update[+k] = null;
-                prev[+k] = state.map[+k];
-            }
-        });
-        if (changed) {
-            next.history = state.history.concat([
-                {
-                    at: next.at,
-                    prevAt: state.at,
-                    prev,
-                    map: update,
-                    id: state.history.length
-                        ? state.history[state.history.length - 1].id + 1
-                        : 0,
-                    ts: Date.now() / 1000,
-                },
-            ]);
+    const nitem: HistoryItem = {
+        id: state.history.length,
+        revert: undid.id,
+        prev: undid.map,
+        map: undid.prev,
+        at: undid.prevAt,
+        prevAt: undid.at,
+        ts: Date.now() / 1000,
+    };
+    const smap = { ...state.map };
+    Object.entries(nitem.map).forEach(([k, v]) => {
+        if (v == null) {
+            delete smap[+k];
+        } else {
+            smap[+k] = v;
         }
+    });
+
+    const { ctx } = getCtx(smap, state.root, state.nidx, state.ctx.global);
+
+    return {
+        ...state,
+        ctx,
+        map: smap,
+        at: nitem.at,
+        history: state.history.concat([nitem]),
+    };
+};
+
+export const reduce = (
+    state: UIState,
+    action: Action,
+    meta: Sandbox['meta'],
+): UIState => {
+    switch (action.type) {
+        case 'yank':
+            return yankFromSandboxToLibrary(state, action, meta);
+        case 'undo':
+        case 'redo': {
+            return undoRedo(state, action.type);
+        }
+        default:
+            const update = actionToUpdate(state, action);
+            const next = reduceUpdate(state, update);
+            const item = calcHistoryItem(state, next);
+            if (item) {
+                next.history = state.history.concat([item]);
+            }
+            return next;
     }
-    return next;
+};
+
+const calcHistoryItem = (state: UIState, next: UIState): HistoryItem | null => {
+    if (next.map === state.map) {
+        return null;
+    }
+    const update: UpdateMap = {};
+    const prev: UpdateMap = {};
+    let changed = false;
+    Object.keys(next.map).forEach((k) => {
+        if (next.map[+k] !== state.map[+k]) {
+            changed = true;
+            update[+k] = next.map[+k];
+            prev[+k] = state.map[+k] || null;
+        }
+    });
+    Object.keys(state.map).forEach((k) => {
+        if (!next.map[+k]) {
+            changed = true;
+            update[+k] = null;
+            prev[+k] = state.map[+k];
+        }
+    });
+    if (!changed) {
+        return null;
+    }
+    return {
+        at: next.at,
+        prevAt: state.at,
+        prev,
+        map: update,
+        id: state.history.length
+            ? state.history[state.history.length - 1].id + 1
+            : 0,
+        ts: Date.now() / 1000,
+    };
 };
 
 export const reduceUpdate = (
