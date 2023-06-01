@@ -50,4 +50,11 @@ export type UpdatableAction =
     | {
           type: 'paste';
           items: ClipboardItem[];
-      };
+      }
+    | DualAction;
+
+export type DualAction = {
+    type: 'namespace-rename';
+    from: string[];
+    to: string[];
+};

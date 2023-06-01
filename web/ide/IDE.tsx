@@ -218,9 +218,10 @@ export const IDE = ({
             }}
         >
             <div>
-                <Namespaces env={env} />
+                <Namespaces env={env} dispatch={dispatch} />
                 {state.current.type === 'sandbox' ? (
                     <SbNs
+                        dispatch={dispatch}
                         meta={state.sandboxes.find(
                             (s) =>
                                 s.id ===
@@ -504,9 +505,11 @@ function SandboxTabs({
 export const SbNs = ({
     meta,
     env,
+    dispatch,
 }: {
     meta: Sandbox['meta'] | undefined;
     env: Env;
+    dispatch: React.Dispatch<Action>;
 }) => {
     if (!meta) {
         return null;
@@ -524,7 +527,11 @@ export const SbNs = ({
             <div style={{ marginBottom: 16 }}>
                 {meta.settings.namespace.join('/')}
             </div>
-            {root ? <Namespaces env={env} root={root} /> : 'Nothing here yet'}
+            {root ? (
+                <Namespaces env={env} root={root} dispatch={dispatch} />
+            ) : (
+                'Nothing here yet'
+            )}
         </div>
     );
 };

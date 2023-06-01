@@ -5,6 +5,7 @@ import { Library } from '../../src/to-ast/library';
 import { HashedTree } from '../../src/db/hash-tree';
 import { useMenu } from './useMenu';
 import { css } from '@linaria/core';
+import { Action } from '../custom/UIState';
 
 const buttonStyle = {
     fontSize: '80%',
@@ -51,24 +52,38 @@ export const Button = ({
 export const NSTree = ({
     root,
     name,
-    level,
+    full,
     builtins,
     namespaces,
     definitions,
+    dispatch,
 }: {
     root: string;
     name: string;
-    level: number;
+    full: string[];
     builtins: Builtins;
     namespaces: HashedTree;
     definitions: Library['definitions'];
+    dispatch: React.Dispatch<Action>;
 }) => {
     const [open, setOpen] = useState(false);
-    const canBeOpen = level === 0 || open;
+    const canBeOpen = full.length === 0 || open;
     const [menu, setMenu] = useMenu((value) => {
-        return [{ title: 'Hello', action: () => {} }];
+        return full.length > 0
+            ? [
+                  {
+                      title: 'Hello',
+                      action: () => {
+                          dispatch({
+                              type: 'namespace-rename',
+                              from: full,
+                              to: prompt('New namespace name')!.split('/'),
+                          });
+                      },
+                  },
+              ]
+            : [];
     });
-    // console.log(menu);
 
     if (!namespaces[root]) {
         return <div>Ok</div>;
@@ -111,7 +126,7 @@ export const NSTree = ({
 
     return (
         <div>
-            {level > 0 ? (
+            {full.length > 0 ? (
                 <div
                     onMouseDown={(evt) => {
                         if (evt.button === 0) {
@@ -159,11 +174,16 @@ export const NSTree = ({
                         const hash = namespaces[root][name];
                         return (
                             <div key={name}>
-                                <div style={{ marginLeft: level > 0 ? 20 : 0 }}>
+                                <div
+                                    style={{
+                                        marginLeft: full.length > 0 ? 20 : 0,
+                                    }}
+                                >
                                     <NSTree
+                                        dispatch={dispatch}
                                         root={hash}
                                         name={name}
-                                        level={level + 1}
+                                        full={full.concat([name])}
                                         builtins={builtins}
                                         // sandboxes={sandboxes}
                                         namespaces={namespaces}
@@ -197,9 +217,11 @@ export const Namespaces = ({
     env,
     // sandboxes,
     root,
+    dispatch,
 }: {
     root?: string;
     env: Env;
+    dispatch: React.Dispatch<Action>;
     // sandboxes: IDEState['sandboxes'];
 }) => {
     const library = env.library; // addSandboxesToNamespaces(env.library, sandboxes);
@@ -208,8 +230,9 @@ export const Namespaces = ({
         <div style={{ width: 300, minWidth: 300 }}>
             <NSTree
                 root={root ?? library.root}
-                level={0}
+                full={[]}
                 name={''}
+                dispatch={dispatch}
                 // sandboxes={sandboxes}
                 builtins={env.builtins}
                 namespaces={library.namespaces}

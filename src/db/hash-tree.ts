@@ -73,6 +73,47 @@ export const findNameSpace = (
     return findNameSpace(tree, tree[root][ns[0]], ns.slice(1));
 };
 
+export const mergeTrees = (tree: Tree, old: Tree | null): Tree => {
+    if (!old) return tree;
+    const children: Tree['children'] = { ...old.children };
+    Object.keys(tree.children).forEach((key) => {
+        children[key] = mergeTrees(tree.children[key], children[key]);
+    });
+    return { top: tree.top ?? old.top, children };
+};
+
+export const hashedTreeRename = (
+    tree: HashedTree,
+    root: string,
+    from: string[],
+    to: string[],
+    makeHash: MakeHash,
+): null | { root: string; tree: HashedTree } => {
+    const nest = hashedToTree(root, tree);
+    let base = nest as null | Tree;
+    from.slice(0, -1).forEach((name) => {
+        if (base) {
+            base = base.children[name];
+        }
+    });
+    if (!base) {
+        return null;
+    }
+    const found = base.children[from[from.length - 1]];
+    delete base.children[from[from.length - 1]];
+
+    let dest = nest;
+    to.slice(0, -1).forEach((name) => {
+        if (!dest.children[name]) {
+            dest.children[name] = { children: {} };
+        }
+        dest = dest.children[name];
+    });
+    const last = to[to.length - 1];
+    dest.children[last] = mergeTrees(found, dest.children[last]);
+    return treeToHashedTree(nest, makeHash);
+};
+
 export const addToHashedTree = (
     hashedTree: HashedTree,
     tree: Tree,

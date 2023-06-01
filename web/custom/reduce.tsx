@@ -18,7 +18,7 @@ import {
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { isRootPath } from './ByHand';
-import { Action, UIState, UpdatableAction } from './UIState';
+import { Action, DualAction, UIState, UpdatableAction } from './UIState';
 import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
@@ -26,11 +26,14 @@ import { redoItem, undoItem } from '../../src/to-ast/history';
 import { HistoryItem, Sandbox } from '../../src/to-ast/library';
 import { transformNode } from '../../src/types/transform-cst';
 import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
+import { hashedToTree, hashedTreeRename } from '../../src/db/hash-tree';
+import { makeHash } from '../ide/initialData';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
     | { type: 'menu'; menu: State['menu'] }
-    | { type: 'full-select'; at: State['at'] };
+    | { type: 'full-select'; at: State['at'] }
+    | DualAction;
 
 const actionToUpdate = (
     state: UIState,
@@ -85,6 +88,8 @@ const actionToUpdate = (
         case 'paste': {
             return paste(state, state.ctx, action.items);
         }
+        case 'namespace-rename':
+            return action;
     }
     const _: never = action;
 };
@@ -264,6 +269,7 @@ export const reduce = (
 ): UIState => {
     switch (action.type) {
         case 'yank':
+            // This handles the `history` itself. so, ya know.
             return yankFromSandboxToLibrary(state, action, meta);
         case 'undo':
         case 'redo': {
@@ -319,7 +325,7 @@ const calcHistoryItem = (state: UIState, next: UIState): HistoryItem | null => {
 export const reduceUpdate = (
     state: UIState,
     update: StateChange | UIStateChange,
-) => {
+): UIState => {
     if (!update) {
         return state;
     }
@@ -337,8 +343,32 @@ export const reduceUpdate = (
         case 'select':
         case 'update':
             return updateWithAutocomplete(state, update);
+        case 'namespace-rename':
+            const library = { ...state.ctx.global.library };
+            const result = hashedTreeRename(
+                library.namespaces,
+                library.root,
+                update.from,
+                update.to,
+                makeHash,
+            );
+            if (!result) {
+                console.log(`"from" not found`);
+                return state;
+            }
+            library.root = result.root;
+            library.namespaces = result.tree;
+            library.history.unshift({
+                date: Date.now() / 1000,
+                hash: result.root,
+            });
+            return {
+                ...state,
+                ctx: { ...state.ctx, global: { ...state.ctx.global, library } },
+            };
+        // return state;
         default:
-            let _: never = update;
+            const _: never = update;
             throw new Error('nope update');
     }
 };

@@ -21,7 +21,6 @@ export const useMenu = <T,>(
             if (isParentOf(ref.current!, evt.target as HTMLElement)) {
                 return;
             }
-            console.log('what no');
             evt.preventDefault();
             evt.stopPropagation();
             setShow(null);
@@ -30,7 +29,6 @@ export const useMenu = <T,>(
         return () =>
             document.removeEventListener('mousedown', fn, { capture: true });
     }, [show]);
-    console.log('usem', show);
     if (show) {
         return [
             <div
@@ -72,7 +70,6 @@ export const useMenu = <T,>(
                 ))}
             </div>,
             (v: T | null) => {
-                console.log('ho');
                 setShow(v ? actions(v) : null);
             },
         ];
@@ -80,7 +77,6 @@ export const useMenu = <T,>(
     return [
         null,
         (v: T | null) => {
-            console.log('hi');
             setShow(v ? actions(v) : null);
         },
     ];
