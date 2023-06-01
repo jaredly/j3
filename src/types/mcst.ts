@@ -204,5 +204,3 @@ export const toMCST = (node: Node, map: UpdateMap): number => {
     };
     return node.loc;
 };
-
-const tightFirsts: { [key: string]: number } = { fn: 2, def: 2, defn: 3 };

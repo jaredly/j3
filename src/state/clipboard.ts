@@ -141,7 +141,7 @@ export const validatePath = (
                     return false;
                 }
                 const text = splitGraphemes(
-                    hashNames[node.loc] ?? idText(node) ?? '',
+                    hashNames[node.loc] ?? idText(node, map) ?? '',
                 );
                 if (child.at < 0 || child.at > text.length) {
                     return false;
@@ -345,7 +345,7 @@ export const collectNodes = (
             const node = fromMCST(slast.idx, map);
             if ('text' in node || node.type === 'hash') {
                 const text = splitGraphemes(
-                    hashNames[node.loc] ?? idText(node) ?? '',
+                    hashNames[node.loc] ?? idText(node, map) ?? '',
                 );
                 const sloc =
                     slast.type === 'subtext'
@@ -558,7 +558,7 @@ export function generateRawPasteUpdate(
         });
 
         tmp = { ...tmp, map: { ...tmp.map } };
-        applyMods(tctx, tmp.map);
+        applyMods(tctx, tmp.map, state.nidx);
 
         if (update?.autoComplete) {
             const mods = infer(tctx, tmp.map);

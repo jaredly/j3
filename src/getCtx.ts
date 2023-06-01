@@ -8,8 +8,14 @@ import { Expr } from './types/ast';
 import { Node } from './types/cst';
 import { fromMCST, ListLikeContents, Map } from './types/mcst';
 import { layout } from './layout';
+import { applyInferMod } from './infer/infer';
 
-export const getCtx = (map: Map, root: number, global: Env = newEnv()) => {
+export const getCtx = (
+    map: Map,
+    root: number,
+    nidx: () => number,
+    global: Env = newEnv(),
+) => {
     const tops = (map[root] as ListLikeContents).values;
     let ctx = newCtx(global);
     try {
@@ -39,8 +45,15 @@ export const getCtx = (map: Map, root: number, global: Env = newEnv()) => {
         if (mods.length) {
             console.log('2️⃣ mods', ctx.results.mods, map);
             map = { ...map };
-            applyMods(ctx, map);
+            applyMods(ctx, map, nidx);
         }
+
+        Object.entries(map).forEach(([k, node]) => {
+            if (node.type === 'identifier') {
+                ctx.results.hashNames[+k] = node.text;
+            }
+        });
+
         return { ctx, map };
     } catch (err) {
         console.log('trying to get ctx', map);
@@ -49,10 +62,8 @@ export const getCtx = (map: Map, root: number, global: Env = newEnv()) => {
     }
 };
 
-export function applyMods(ctx: CstCtx, map: Map) {
+export function applyMods(ctx: CstCtx, map: Map, nidx: () => number) {
     Object.keys(ctx.results.mods).forEach((key) => {
-        ctx.results.mods[+key].forEach((mod) => {
-            // UMMMM MAYBE
-        });
+        applyInferMod(ctx.results.mods[+key], map, nidx, +key);
     });
 }

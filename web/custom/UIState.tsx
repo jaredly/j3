@@ -25,6 +25,13 @@ export type RegMap = {
 };
 
 export type Action =
+    | { type: 'undo' }
+    | { type: 'redo' }
+    | { type: 'yank'; expr: DefType | Def; loc: number }
+    | UpdatableAction;
+
+/** Actions that can be turned into a StateChange | UIStatechange */
+export type UpdatableAction =
     | { type: 'hover'; path: Path[] }
     | {
           type: 'select';
@@ -35,7 +42,6 @@ export type Action =
     | { type: 'menu'; selection: number }
     | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
     // expr:def expr:deftype
-    | { type: 'yank'; expr: DefType | Def; loc: number }
     | {
           type: 'key';
           key: string;
@@ -44,4 +50,11 @@ export type Action =
     | {
           type: 'paste';
           items: ClipboardItem[];
-      };
+      }
+    | DualAction;
+
+export type DualAction = {
+    type: 'namespace-rename';
+    from: string[];
+    to: string[];
+};

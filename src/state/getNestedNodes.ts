@@ -1,6 +1,6 @@
 import { idText } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
-import { Layout, MCString, MNode, MNodeExtra } from '../types/mcst';
+import { Layout, MCString, MNode, MNodeExtra, Map } from '../types/mcst';
 import { Path, PathChild } from './path';
 import { ONode } from './types';
 
@@ -21,8 +21,8 @@ export type NNode =
     | { type: 'ref'; id: number; path: PathChild }
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
-export const getNodes = (node: MNode, text?: string) =>
-    unnestNodes(getNestedNodes(node, text));
+export const getNodes = (node: MNode, map: Map, text?: string) =>
+    unnestNodes(getNestedNodes(node, map, text));
 
 export const unnestNodes = (node: NNode): ONode[] => {
     switch (node.type) {
@@ -67,6 +67,7 @@ export const unnestNodes = (node: NNode): ONode[] => {
 
 export const getNestedNodes = (
     node: MNode,
+    map: Map,
     text?: string,
     layout?: Layout,
 ): NNode => {
@@ -233,7 +234,7 @@ export const getNestedNodes = (
         case 'hash':
             return {
                 type: 'text',
-                text: text ?? idText(node) ?? '🚨',
+                text: text ?? idText(node, map) ?? '🚨',
             };
         default:
             let _: never = node;

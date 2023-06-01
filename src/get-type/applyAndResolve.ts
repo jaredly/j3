@@ -1,6 +1,6 @@
 import { any, nil, nilt } from '../to-ast/Ctx';
 import { Ctx, globalType } from '../to-ast/library';
-import { Local, Node, Type } from '../types/ast';
+import { Local, Node, Type, TypeTask } from '../types/ast';
 import { MatchError } from '../types/types';
 import { transformType } from '../types/walk-ast';
 import { _unifyTypes } from './unifyTypes';
@@ -205,8 +205,8 @@ export const applyAndResolve = (
         const map: { [key: number]: Type } = {};
         for (let i = 0; i < inner.args.length; i++) {
             if (inner.args[i].bound) {
-                console.error('the arg', type.args[i]);
-                console.error('the bound', inner.args[i].bound);
+                // console.error('the arg', type.args[i]);
+                // console.error('the bound', inner.args[i].bound);
                 const res = _matchOrExpand(
                     type.args[i],
                     inner.args[i].bound!,
@@ -242,6 +242,7 @@ export const applyTypeVariables = (
         map,
     );
 };
+
 export type EnumMap = {
     [key: string]: {
         args: Type[];
@@ -262,10 +263,12 @@ export const expandEnumItems = (
           type: 'success';
           map: { [key: string]: { args: Type[]; form: Node } };
           locals: Local[];
+          tasks: TypeTask[];
       }
     | { type: 'error'; error: MatchError } => {
     const map: EnumMap = {};
     const locals: Local[] = [];
+    const tasks: TypeTask[] = [];
     for (let i = 0; i < items.length; i++) {
         let item = items[i];
 
@@ -299,12 +302,45 @@ export const expandEnumItems = (
             }
             item = defn.value;
         }
+
         if (item.type === 'local') {
+            const local = ctx.results.localMap.types[item.sym];
+            if (!local) {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'unknown local',
+                        path,
+                        form: item.form,
+                    },
+                };
+            }
+            if (!local.bound || local.bound.type !== 'union') {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'local type in a union must be bound a union',
+                        path,
+                        form: item.form,
+                    },
+                };
+            }
+            if (local.bound.items.length || !local.bound.open) {
+                return {
+                    type: 'error',
+                    error: {
+                        type: 'misc',
+                        message: 'the only local we support atm is [..]',
+                        path,
+                        form: item.form,
+                    },
+                };
+            }
             // throw new Error(`need something else to expand local types`);
             locals.push(item);
-        }
-
-        if (item.type === 'tag') {
+        } else if (item.type === 'tag') {
             if (map[item.name]) {
                 const err = unifyEnumArgs(
                     item.name,
@@ -320,8 +356,7 @@ export const expandEnumItems = (
             } else {
                 map[item.name] = { args: item.args, form: item.form };
             }
-        }
-        if (item.type === 'union') {
+        } else if (item.type === 'union') {
             const inner = expandEnumItems(
                 item.items,
                 ctx,
@@ -340,9 +375,33 @@ export const expandEnumItems = (
                     map[tag] = { args, form };
                 }
             }
+        } else if (item.type === 'task') {
+            const tt = asTaskType(item, ctx);
+            if (tt.type !== 'error') {
+                const ex = expandTask(tt, item.form, ctx);
+                if (ex.type !== 'error') {
+                    ex.items.forEach((item) => {
+                        if (item.type === 'task') {
+                            tasks.push(item);
+                        } else {
+                            items.push(item);
+                        }
+                    });
+                }
+            }
+        } else {
+            return {
+                type: 'error',
+                error: {
+                    type: 'misc',
+                    message: `cant expand this into an enum`,
+                    form: item.form,
+                    path,
+                },
+            };
         }
     }
-    return { type: 'success', map, locals };
+    return { type: 'success', map, locals, tasks };
 };
 
 export const unifyEnumArgs = (

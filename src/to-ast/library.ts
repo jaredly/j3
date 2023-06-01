@@ -1,16 +1,15 @@
 import { Report } from '../get-type/get-types-new';
 import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
-import { AutoCompleteResult, Mod, NodeStyle } from './Ctx';
+import { AutoCompleteReplace, AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
 import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
+import { InferMod } from '../infer/infer';
 
 export type CompilationResults = {
     errors: Report['errors'];
-    mods: {
-        [idx: number]: Mod[];
-    };
+    mods: { [idx: number]: InferMod };
     hashNames: { [idx: number]: string };
     globalNames: { [hash: string]: string[] };
     display: {
@@ -100,6 +99,7 @@ export type HistoryItem = {
     at: Cursor[];
     prevAt: Cursor[];
     ts: number;
+    revert?: number;
 };
 
 export type Sandbox = {
@@ -111,11 +111,13 @@ export type Sandbox = {
         version: number;
         settings: {
             namespace: string[];
+            aliases: { from: string[]; to: string[] }[];
         };
+        deleted_date: number | null;
+        node_count: number;
     };
 
     root: number;
     map: { [idx: number]: MNode };
     history: HistoryItem[];
-    // namespace: string[];
 };

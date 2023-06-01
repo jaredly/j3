@@ -18,19 +18,26 @@ import {
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { isRootPath } from './ByHand';
-import { Action, UIState } from './UIState';
+import { Action, DualAction, UIState, UpdatableAction } from './UIState';
 import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
+import { redoItem, undoItem } from '../../src/to-ast/history';
+import { HistoryItem, Sandbox } from '../../src/to-ast/library';
+import { transformNode } from '../../src/types/transform-cst';
+import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
+import { hashedToTree, hashedTreeRename } from '../../src/db/hash-tree';
+import { makeHash } from '../ide/initialData';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
     | { type: 'menu'; menu: State['menu'] }
-    | { type: 'full-select'; at: State['at'] };
+    | { type: 'full-select'; at: State['at'] }
+    | DualAction;
 
 const actionToUpdate = (
     state: UIState,
-    action: Action,
+    action: UpdatableAction,
 ): StateChange | UIStateChange => {
     switch (action.type) {
         case 'hover':
@@ -81,13 +88,19 @@ const actionToUpdate = (
         case 'paste': {
             return paste(state, state.ctx, action.items);
         }
+        case 'namespace-rename':
+            return action;
     }
+    const _: never = action;
 };
 
 export const updateWithAutocomplete = (
     state: UIState,
     update: StateUpdate | StateSelect,
 ) => {
+    const prevCtx = state.ctx;
+    const prevMap = state.map;
+
     const prev = state.at[0];
     // Here's where the real work happens.
     if (update.autoComplete && !state.menu?.dismissed) {
@@ -102,10 +115,71 @@ export const updateWithAutocomplete = (
     if (update.type === 'select' && !update.autoComplete) {
         return state;
     }
-    let { ctx, map } = getCtx(state.map, state.root, state.ctx.global);
+
+    // Ok, do the thing now
+    // iff
+
+    let { ctx, map } = getCtx(
+        state.map,
+        state.root,
+        state.nidx,
+        state.ctx.global,
+    );
     verifyLocs(state.map, 'get ctx');
     state.map = map;
     state.ctx = ctx;
+
+    let fixedMissing = false;
+    const missing: Record<number, string> = {};
+    Object.entries(prevCtx.results.hashNames).forEach(([k, v]) => {
+        if (!ctx.results.hashNames[+k]) {
+            missing[+k] = v;
+            const node = map[+k];
+            const pnode = prevMap[+k];
+            if (
+                node?.type === 'hash' &&
+                pnode?.type === 'hash' &&
+                node.hash === pnode.hash
+            ) {
+                fixedMissing = true;
+                state.map[+k] = {
+                    type: 'identifier',
+                    loc: +k,
+                    text: v,
+                };
+            }
+        }
+    });
+    Object.entries(state.map).forEach(([k, v]) => {
+        if (
+            v.type === 'hash' &&
+            // TODO ok I don't super love that I'm overloading `local hash` with `toplevel hash`
+            // I kinda want to add a `kind` to hash, ya know?
+            typeof v.hash === 'number' &&
+            !state.map[v.hash]
+        ) {
+            const ref = prevMap[v.hash];
+            if (ref?.type === 'identifier') {
+                fixedMissing = true;
+                state.map[+k] = {
+                    type: 'identifier',
+                    loc: +k,
+                    text: ref.text,
+                };
+            }
+        }
+    });
+    if (fixedMissing) {
+        let { ctx, map } = getCtx(
+            state.map,
+            state.root,
+            state.nidx,
+            state.ctx.global,
+        );
+        verifyLocs(state.map, 'get ctx');
+        state.map = map;
+        state.ctx = ctx;
+    }
 
     if (update.autoComplete) {
         for (let i = 0; i < 10; i++) {
@@ -124,7 +198,12 @@ export const updateWithAutocomplete = (
                 verifyLocs(state.map, 'apply infer mod');
                 console.log(state.map[+id]);
             });
-            ({ ctx, map } = getCtx(state.map, state.root, state.ctx.global));
+            ({ ctx, map } = getCtx(
+                state.map,
+                state.root,
+                state.nidx,
+                state.ctx.global,
+            ));
             verifyLocs(state.map, 'get ctx');
             state.map = map;
             state.ctx = ctx;
@@ -147,49 +226,106 @@ export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
     return prev;
 };
 
-export const reduce = (state: UIState, action: Action): UIState => {
-    const update = actionToUpdate(state, action);
-    const next = reduceUpdate(state, update);
-    if (next.map !== state.map) {
-        const update: UpdateMap = {};
-        const prev: UpdateMap = {};
-        let changed = false;
-        Object.keys(next.map).forEach((k) => {
-            if (next.map[+k] !== state.map[+k]) {
-                changed = true;
-                update[+k] = next.map[+k];
-                prev[+k] = state.map[+k] || null;
-            }
-        });
-        Object.keys(state.map).forEach((k) => {
-            if (!next.map[+k]) {
-                changed = true;
-                update[+k] = null;
-                prev[+k] = state.map[+k];
-            }
-        });
-        if (changed) {
-            next.history = state.history.concat([
-                {
-                    at: next.at,
-                    prevAt: state.at,
-                    prev,
-                    map: update,
-                    id: state.history.length
-                        ? state.history[state.history.length - 1].id + 1
-                        : 0,
-                    ts: Date.now() / 1000,
-                },
-            ]);
-        }
+export const undoRedo = (state: UIState, kind: 'undo' | 'redo') => {
+    const undid =
+        kind === 'undo' ? undoItem(state.history) : redoItem(state.history);
+    if (!undid) {
+        console.log(`nothing to ${kind}!`);
+        return state;
     }
-    return next;
+    const nitem: HistoryItem = {
+        id: state.history.length,
+        revert: undid.id,
+        prev: undid.map,
+        map: undid.prev,
+        at: undid.prevAt,
+        prevAt: undid.at,
+        ts: Date.now() / 1000,
+    };
+    const smap = { ...state.map };
+    Object.entries(nitem.map).forEach(([k, v]) => {
+        if (v == null) {
+            delete smap[+k];
+        } else {
+            smap[+k] = v;
+        }
+    });
+
+    const { ctx } = getCtx(smap, state.root, state.nidx, state.ctx.global);
+
+    return {
+        ...state,
+        ctx,
+        map: smap,
+        at: nitem.at,
+        history: state.history.concat([nitem]),
+    };
+};
+
+export const reduce = (
+    state: UIState,
+    action: Action,
+    meta: Sandbox['meta'],
+): UIState => {
+    switch (action.type) {
+        case 'yank':
+            // This handles the `history` itself. so, ya know.
+            return yankFromSandboxToLibrary(state, action, meta);
+        case 'undo':
+        case 'redo': {
+            return undoRedo(state, action.type);
+        }
+        default:
+            const update = actionToUpdate(state, action);
+            const next = reduceUpdate(state, update);
+            const item = calcHistoryItem(state, next);
+            if (item) {
+                next.history = state.history.concat([item]);
+            }
+            return next;
+    }
+};
+
+const calcHistoryItem = (state: UIState, next: UIState): HistoryItem | null => {
+    if (next.map === state.map) {
+        return null;
+    }
+    const update: UpdateMap = {};
+    const prev: UpdateMap = {};
+    let changed = false;
+    Object.keys(next.map).forEach((k) => {
+        if (next.map[+k] !== state.map[+k]) {
+            changed = true;
+            update[+k] = next.map[+k];
+            prev[+k] = state.map[+k] || null;
+        }
+    });
+    Object.keys(state.map).forEach((k) => {
+        if (!next.map[+k]) {
+            changed = true;
+            update[+k] = null;
+            prev[+k] = state.map[+k];
+        }
+    });
+    if (!changed) {
+        return null;
+    }
+    return {
+        at: next.at,
+        prevAt: state.at,
+        prev,
+        map: update,
+        id: state.history.length
+            ? state.history[state.history.length - 1].id + 1
+            : 0,
+        ts: Date.now() / 1000,
+    };
 };
 
 export const reduceUpdate = (
     state: UIState,
     update: StateChange | UIStateChange,
-) => {
+): UIState => {
     if (!update) {
         return state;
     }
@@ -207,8 +343,32 @@ export const reduceUpdate = (
         case 'select':
         case 'update':
             return updateWithAutocomplete(state, update);
+        case 'namespace-rename':
+            const library = { ...state.ctx.global.library };
+            const result = hashedTreeRename(
+                library.namespaces,
+                library.root,
+                update.from,
+                update.to,
+                makeHash,
+            );
+            if (!result) {
+                console.log(`"from" not found`);
+                return state;
+            }
+            library.root = result.root;
+            library.namespaces = result.tree;
+            library.history.unshift({
+                date: Date.now() / 1000,
+                hash: result.root,
+            });
+            return {
+                ...state,
+                ctx: { ...state.ctx, global: { ...state.ctx.global, library } },
+            };
+        // return state;
         default:
-            let _: never = update;
+            const _: never = update;
             throw new Error('nope update');
     }
 };

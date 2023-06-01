@@ -2,6 +2,7 @@ import * as SQLite from 'wa-sqlite';
 import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite-async.mjs';
 import { IDBBatchAtomicVFS } from 'wa-sqlite/src/examples/IDBBatchAtomicVFS.js';
 import { Db } from './tables';
+import { transactionQueue } from './transact';
 
 type ok = number | string | null;
 
@@ -15,7 +16,7 @@ export async function getIDB(): Promise<Db> {
     sqlite3.vfs_register(vfs, true);
     const dbid = await sqlite3.open_v2('ide-db');
 
-    const run = async (text: string, args?: ok[]) => {
+    const all = async (text: string, args?: ok[]) => {
         if (args) {
             const str = sqlite3.str_new(dbid, text);
             const prepared = (await sqlite3.prepare_v2(
@@ -45,12 +46,10 @@ export async function getIDB(): Promise<Db> {
             return rows;
         }
     };
-    return {
-        async run(text, args) {
-            await run(text, args);
-        },
-        all: run,
+    const run = async (text: string, args?: ok[]) => {
+        await all(text, args);
     };
+    return { run, all, transact: transactionQueue(run) };
 }
 
 // export async function getMemDb(): Promise<Db> {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Env, Sandbox } from '../../src/to-ast/library';
 import { useMenu } from '../custom/ByHand';
 import { Action, UIState } from '../custom/UIState';
@@ -11,6 +11,16 @@ import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { selectEnd } from '../../src/state/navigate';
 import { getCtx } from '../../src/getCtx';
+import {
+    IconButton,
+    IconBxCheck,
+    IconBxsPencil,
+    IconCancel,
+} from '../fonts/Icons';
+import { css } from '@linaria/core';
+import { IDEAction } from './IDE';
+import { updateSandboxMeta } from '../../src/db/sandbox';
+import { Db } from '../../src/db/tables';
 
 // type SandboxState = {
 //     id: string;
@@ -42,17 +52,22 @@ import { getCtx } from '../../src/getCtx';
 export const SandboxView = ({
     // env,
     // sandbox,
+    db,
+    meta,
     state,
     dispatch,
 }: {
+    db: Db;
     // env: Env;
     // sandbox: Sandbox;
+    meta: Sandbox['meta'];
     state: UIState;
-    dispatch: React.Dispatch<Action>;
+    dispatch: React.Dispatch<IDEAction>;
 }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const tops = (state.map[state.root] as ListLikeContents).values;
     const menu = useMenu(state);
+    const [editNS, setEditNS] = useState(null as null | string);
 
     return (
         <div
@@ -61,6 +76,69 @@ export const SandboxView = ({
                 dispatch({ type: 'hover', path: [] });
             }}
         >
+            <div style={{ padding: 16, display: 'flex', alignItems: 'center' }}>
+                Namespace:{' '}
+                {editNS != null ? (
+                    <>
+                        <input
+                            value={editNS}
+                            onChange={(evt) => setEditNS(evt.target.value)}
+                            className={css`
+                                width: 200px;
+                                margin-right: 8px;
+                                font-size: inherit;
+                                font-family: inherit;
+                                background-color: transparent;
+                                color: inherit;
+                                border: 0.5px solid #444;
+                            `}
+                        />
+                        <IconButton
+                            onClick={() => {
+                                updateSandboxMeta(db, meta.id, {
+                                    settings: {
+                                        ...meta.settings,
+                                        namespace: editNS.split('/'),
+                                    },
+                                }).then(() => {
+                                    dispatch({
+                                        type: 'update-sandbox',
+                                        meta: {
+                                            ...meta,
+                                            settings: {
+                                                ...meta.settings,
+                                                namespace: editNS.split('/'),
+                                            },
+                                        },
+                                    });
+                                    setEditNS(null);
+                                });
+                            }}
+                        >
+                            <IconBxCheck />
+                        </IconButton>
+                        <IconButton
+                            onClick={() => {
+                                setEditNS(null);
+                            }}
+                        >
+                            <IconCancel />
+                        </IconButton>
+                    </>
+                ) : (
+                    <>
+                        {meta.settings.namespace.join('/')}
+                        <span style={{ width: 8 }} />
+                        <IconButton
+                            onClick={() => {
+                                setEditNS(meta.settings.namespace.join('/'));
+                            }}
+                        >
+                            <IconBxsPencil />
+                        </IconButton>
+                    </>
+                )}
+            </div>
             <HiddenInput
                 ctx={state.ctx}
                 state={state}
@@ -95,7 +173,7 @@ export const SandboxView = ({
 
 export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     let idx = Object.keys(sandbox.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
-    const { ctx, map } = getCtx(sandbox.map, -1, env);
+    const { ctx, map } = getCtx(sandbox.map, -1, () => idx++, env);
     if (map !== sandbox.map) {
         throw new Error(`map change on load?`);
     }

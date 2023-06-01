@@ -62,7 +62,7 @@ export function populateAutocompleteType(
             ({ result }) =>
                 ({
                     type: 'update',
-                    text: result.name,
+                    text: lastName(result.name),
                     update: {
                         type: 'hash',
                         hash: result.hash,

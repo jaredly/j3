@@ -1,4 +1,4 @@
-import { ListLikeContents, Map, MNodeExtra } from '../types/mcst';
+import { ListLikeContents, Map, MNode, MNodeExtra } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
 import {
@@ -14,6 +14,7 @@ import { collectNodes } from './clipboard';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../to-ast/Ctx';
+import { modChildren } from './modChildren';
 
 export function handleBackspace(
     map: Map,
@@ -26,7 +27,7 @@ export function handleBackspace(
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {
-                const fullText = hashNames[node.loc] ?? idText(node) ?? '';
+                const fullText = hashNames[node.loc] ?? idText(node, map) ?? '';
                 const split = splitGraphemes(fullText);
                 const text = split
                     .slice(0, item.source.start)
@@ -94,6 +95,26 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
+    if (
+        ppath.type === 'child' &&
+        ppath.at === 0 &&
+        atStart &&
+        'values' in parent
+    ) {
+        const gpath = fullPath[fullPath.length - 3];
+        if (gpath.type === 'child') {
+            const gparent = map[gpath.idx];
+            const changed = modChildren(gparent, (children) => {
+                children.splice(gpath.at, 1, ...parent.values);
+            }) as MNode;
+            return {
+                type: 'update',
+                map: { [gpath.idx]: changed, [ppath.idx]: null },
+                selection: [...fullPath.slice(0, -3), gpath, flast],
+            };
+        }
+    }
+
     if (node.type === 'accessText' && (atStart || node.text === '')) {
         if (parent.type !== 'recordAccess') {
             throw new Error(
@@ -126,7 +147,7 @@ export function handleBackspace(
                                         type: 'identifier',
                                         text:
                                             hashNames[target.loc] ??
-                                            idText(target) + node.text,
+                                            idText(target, map) + node.text,
                                         loc: target.loc,
                                     }
                                   : {
@@ -394,7 +415,7 @@ export function handleBackspace(
     }
 
     if (!atStart && ('text' in node || node.type === 'hash')) {
-        const fullText = hashNames[node.loc] ?? idText(node) ?? '';
+        const fullText = hashNames[node.loc] ?? idText(node, map) ?? '';
         const text = splitGraphemes(fullText);
         const atEnd =
             flast.type === 'end' ||

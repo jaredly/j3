@@ -11,7 +11,7 @@ export const selectStart = (
     base: Path[],
     map: Map,
 ): null | Path[] => {
-    const pnodes = getNodes(map[idx]);
+    const pnodes = getNodes(map[idx], map);
     for (let pnode of pnodes) {
         const sel = pathSelForNode(pnode, idx, 'start', map);
         if (sel) {
@@ -26,7 +26,7 @@ export const selectEnd = (
     base: Path[],
     map: Map,
 ): null | Path[] => {
-    const pnodes = getNodes(map[idx]).reverse();
+    const pnodes = getNodes(map[idx], map).reverse();
     for (let pnode of pnodes) {
         const sel = pathSelForNode(pnode, idx, 'end', map);
         if (sel) {
@@ -46,7 +46,7 @@ export const pathChildEqual = (
 export const goLeft = (path: Path[], map: Map): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
-    const pnodes = getNodes(map[last.idx]);
+    const pnodes = getNodes(map[last.idx], map);
 
     let prev: Path[] | null = null;
     for (let pnode of pnodes) {
@@ -71,7 +71,7 @@ export const goRight = (
     if (!path.length) return;
     const last = path[path.length - 1];
 
-    const pnodes = getNodes(map[last.idx]).reverse();
+    const pnodes = getNodes(map[last.idx], map).reverse();
     let prev: Path[] | null = null;
     for (let pnode of pnodes) {
         const ps = pathSelForNode(pnode, last.idx, 'start', map);

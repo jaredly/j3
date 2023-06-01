@@ -1,20 +1,16 @@
 import { defineConfig } from 'vite';
+import linaria from '@linaria/vite';
 import react from '@vitejs/plugin-react';
-import ubahn from 'react-ubahn';
-
-// module.exports = {
-//     define: {
-//         'process.env': {},
-//     },
-// };
 
 export default defineConfig({
-    // plugins: [
-    //     react({
-    //         babel: {
-    //             plugins: [ubahn],
-    //         },
-    //     }),
-    // ],
     define: { 'process.env': {} },
+    plugins: [
+        react(),
+        linaria({
+            include: ['**/*.{ts,tsx}'],
+            babelOptions: {
+                presets: ['@babel/preset-typescript', '@babel/preset-react'],
+            },
+        }),
+    ],
 });

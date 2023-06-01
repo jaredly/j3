@@ -5,7 +5,7 @@ import { MatchError } from '../types/types';
 import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 import { asTaskType } from './asTaskType';
 import { expandTask } from './expandTask';
-import { recordMap } from './get-types-new';
+import { maybeEffectsType, recordMap } from './get-types-new';
 import { inv } from './matchesType';
 
 type T<K> = Extract<Type, { type: K }>;
@@ -28,6 +28,12 @@ export const matchesTypeBetter = (
     const res = useMatchMap(candidate, expected, mc);
     if (res === false) {
         return inv(candidate, expected, mc.can.path);
+        // return {
+        //     type: 'misc',
+        //     message: `um here we are`,
+        //     form: candidate.form,
+        //     path: [],
+        // };
     }
     return res;
 };
@@ -100,12 +106,18 @@ export const useMatchMap = (candidate: Type, expected: Type, mc: MC): R => {
     }
 
     if (res === null) {
-        // console.error(`Not handled`, key);
         return {
-            type: 'misc',
-            message: `not handled matches "${key}"`,
+            type: 'invalid type',
+            expected,
+            found: candidate,
             form: candidate.form,
             path: mc.can.path,
+            inner: {
+                type: 'misc',
+                message: `not handled matches "${key}"`,
+                form: candidate.form,
+                path: mc.can.path,
+            },
         };
     }
 
@@ -205,6 +217,17 @@ export const matchMap = {
             ref.value,
             expPath(mc, `resolve_${exp.hash}`),
         );
+    },
+
+    union_local(can: T<'union'>, exp: T<'local'>, mc: MC): R {
+        if (
+            can.items.length === 1 &&
+            !can.open &&
+            can.items[0].type === 'local'
+        ) {
+            return matchMap.local(can.items[0], exp, mc);
+        }
+        return matchMap._local(can, exp, mc);
     },
 
     local_(can: T<'local'>, exp: Type, mc: MC): R {
@@ -454,6 +477,19 @@ export const matchMap = {
         if (cmap.type === 'error') {
             return cmap.error;
         }
+
+        for (let local of cmap.locals) {
+            if (!map.locals.find((f) => f.sym === local.sym)) {
+                return {
+                    type: 'misc',
+                    message: `extra local ${local.sym}, not present in union`,
+                    typ: exp,
+                    form: local.form,
+                    path: mc.can.path,
+                };
+            }
+        }
+
         // All cmap items must match the corresponding map item
         for (let key of Object.keys(cmap.map)) {
             const one = cmap.map[key];
@@ -462,16 +498,47 @@ export const matchMap = {
                 if (exp.open) {
                     continue;
                 }
-                return inv(
-                    {
+                if (map.locals.length) {
+                    const loc = map.locals[0];
+                    if (mc.typeArgs?.[loc.sym] != null) {
+                        mc.typeArgs[loc.sym].push(can);
+                    }
+                    continue;
+                }
+
+                if (map.tasks.length) {
+                    // Ok so here ... we do ... something?
+                    // ok can we parse this tag as a task?
+                    const tt = asTaskType(
+                        {
+                            type: 'tag',
+                            name: key,
+                            args: one.args,
+                            form: one.form,
+                        },
+                        mc.ctx,
+                    );
+                    if (tt.type !== 'error') {
+                        const at = maybeEffectsType(tt, tt.result);
+                        const matches = matchesTypeBetter(at, map.tasks[0], mc);
+                        if (matches) {
+                            continue;
+                        }
+                    }
+                }
+
+                return {
+                    type: 'tag not found in union',
+                    path: mc.exp.path.concat(['key']),
+                    form: one.form,
+                    tag: {
                         type: 'tag',
                         name: key,
                         args: one.args,
                         form: one.form,
                     },
-                    exp,
-                    mc.exp.path.concat([key]),
-                );
+                    union: exp,
+                };
             }
             if (one.args.length !== two.args.length) {
                 return {

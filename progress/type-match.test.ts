@@ -34,6 +34,9 @@ false bool
 ('Hello 10 (fn [string] ('Hello 20 (fn [string] ('Return 10))))) (@task [('Hello int string)] 10)
 ('Hello 10 (fn [string] (@task ('Hello int string) 10))) (@task [('Hello int string)] 10)
 ('Hello 10 (fn [string] (@task ('Other string int) 10))) (@task ('Hello int string) 10 ('Other string int))
+(@task [] int) (@task [] int)
+(@task [] 10) (@task [] int)
+[('Hi 10) 'Ho] ((tfn [X:[..]] [X ('Ho)]) ('Hi 10))
 `;
 
 const shouldNotMatch = `
@@ -43,6 +46,8 @@ const shouldNotMatch = `
 ('Hello 10 (fn [()] ('Return 10.))) (@task [('Hello int ())] 10)
 ('Hello 10 (fn [string] ('Return 10))) (@task [('Hello int ())] 10)
 ('Hello 10 (fn [string] ('Hello 20 (fn [string] ('Return 20))))) (@task [('Hello int string)] 10)
+(@task [] int) (@task [] 10)
+10 ((tfn [X:[..]] X) 10)
 `;
 
 // (.x {x 1.}) 1.

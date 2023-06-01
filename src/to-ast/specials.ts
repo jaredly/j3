@@ -481,6 +481,7 @@ export const specials: {
     let: (form, contents, ctx): Expr => {
         const first = contents[0];
         if (!first || first.type !== 'array') {
+            contents.forEach((node) => nodeToExpr(node, ctx));
             return { type: 'unresolved', form, reason: 'first not array' };
         }
         ctx.results.display[first.loc] = { style: { type: 'let-pairs' } };

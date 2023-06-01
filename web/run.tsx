@@ -1,12 +1,8 @@
 import './poly';
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import ubahn from 'react-ubahn/runtime';
-import { ByHand } from './custom/ByHand';
 import { initialData } from './ide/initialData';
 import { IDE } from './ide/IDE';
-
-ubahn.disable();
 
 declare global {
     var root: Root;
@@ -52,15 +48,21 @@ class ErrorBoundary extends React.Component<
     }
 }
 
-// setTimeout(() => {
-initialData(location.hash ? location.hash.slice(1) : null).then((initial) =>
-    root.render(
-        <React.StrictMode>
-            <ErrorBoundary>
-                <IDE initial={initial} />
-                {/* <ByHand /> */}
-            </ErrorBoundary>
-        </React.StrictMode>,
-    ),
+initialData(location.hash ? location.hash.slice(1) : null).then(
+    (initial) =>
+        root.render(
+            <React.StrictMode>
+                <ErrorBoundary>
+                    <IDE initial={initial} />
+                </ErrorBoundary>
+                ,
+            </React.StrictMode>,
+        ),
+    (err) => {
+        root.render(
+            <div style={{ margin: 64 }}>
+                Failed to initialize. {err.message}
+            </div>,
+        );
+    },
 );
-// }, 300);

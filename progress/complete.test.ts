@@ -46,7 +46,7 @@ Expected:
 "ho"
 Found:
 string
--
+.
 not handled matches "builtin_string"
 
 (fn [one:"hi" two:(fn ["hi"] int)] (two one))
@@ -246,9 +246,87 @@ Second type: 3.1
 (fn [x:['Ten ('Four int)]] (switch x 'Ten 10))
 11: switch not exhaustive ('Four int)
 
+((fn<T> [x:T] x) 10)
+-> 10
+
+((fn<T:[..]> [x:T] x) 10)
+0: Invalid type.
+Expected:
+[..]
+Found:
+10
+.
+not handled matches \"number_union\"
+
+(fn [x:(@task ('Hi () ()) int)] ((fn<T:[..]> [x:T] 10) x))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] 10)
+
+(fn [x:(@task ('Hi () ()) int)] ((fn<T:[..]> [x:T] 10) x))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] 10)
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+  ('Return ('Ok v)))
+-> (fn<Effects:[..] Errors:[..] Value> [task-top:(@task [#20 ('Failure #27)] #33) v:#33] (@task #20 (#0 #33 #27)))
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+  ('Return ('Ok v)))
+(to-result ('Hi () (fn [x:()] ('Return x))) ())
+-> (@task ('Hi () ()) (#0 () []))
+
+; TODO: So this one really should work! ugh.
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors)) ((fnrec [task:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors)) (switch task ('Failure error) ('Return ('Err error)) ('Return value) ('Return ('Ok value)) otherwise (withHandler<Effects Value ('Failure Errors) (Result Value Errors)> otherwise @recur)) ) task-top))
+(to-result ('Hi () (fn [x:()] ('Return x))))
+-> (@task ('Hi () ()) (#0 ⍉ []))
+114: Invalid type.
+Expected:
+(@task [('Hi () ()) ('Failure [])] ⍉)
+<expanded task>
+[('Failure []) ('Hi () (fn [value:()] (@task [('Failure []) ('Hi () ())] ⍉))) ('Return ⍉)]
+Found:
+('Hi () (fn [x:()] ('Return ())))
+.
+Invalid type.
+Expected:
+⍉
+Found:
+()
+Path: Hi -> body -> Return
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+  ('Return ('Ok v)))
+(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
+
+(deftype Result<ok err> [('Ok ok) ('Err err)])
+(defn task/to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
+  ('Return v))
+(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+-> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
+
+(fn<A B> [x:A y:B] (if true x y))
+-1: This has the empty type
+13: Unable to unify the following types:
+First type: A
+Second type: B
+
+; TODO this should be ~doable, right?
+(fn<A:[..]> [x:A]:[A 'Yes] (if true x 'Yes))
+19: Unable to unify the following types:
+First type: A
+Second type: 'Yes
+--> unifyTypes can't handle 'local' vs 'tag' yet
+
+(let [x 1] x ^b^T^b^b
+= (let x)
 `
     .trim()
     .split('\n\n');
+
+// ((tfn [X:[..]] X) 10)
 
 // erfff ok so ... multiple levels? Is that it?
 
@@ -302,32 +380,20 @@ Second type: 3.1
 export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
     nodeToString(nodeForType(type, hashNames), hashNames);
 
-const splitIndented = (text: string) => {
-    const lines = text.split('\n');
-    const chunks: string[][] = [];
-    lines.forEach((line) => {
-        if (line.startsWith(' ')) {
-            chunks[chunks.length - 1].push(line);
-        } else {
-            chunks.push([line]);
-        }
-    });
-    return chunks.map((chunk) => chunk.join('\n'));
-};
-
 describe('completion and such', () => {
     data.forEach((chunk, i) => {
         const only = chunk.startsWith('!!!');
         if (only) {
             chunk = chunk.slice(3);
         }
+        const skip = chunk.startsWith('skip:');
         const { input, expected, expectedType, errors } = splitCase(chunk);
         // const [input, expected, ...errors] = splitIndented(chunk);
         // let expectedType =
         //     errors.length && errors[0].startsWith('->') ? errors.shift() : null;
-        (only ? it.only : it)(`${i} ${input}`, () => {
+        (skip ? it.skip : only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
-            const { map: data } = parseByCharacter(
+            const { map: data, nidx } = parseByCharacter(
                 input.replace(/\s+/g, ' '),
                 ctx,
             );
@@ -343,7 +409,7 @@ describe('completion and such', () => {
                     expected,
                 );
             }
-            const { ctx: nctx } = getCtx(data, -1, ctx.global);
+            const { ctx: nctx } = getCtx(data, -1, nidx, ctx.global);
             expect(
                 Object.keys(nctx.results.errors)
                     .sort((a, b) => +a - +b)

@@ -4,7 +4,7 @@ import { UIState } from '../custom/UIState';
 import {
     addUpdateHistoryItems,
     addUpdateNodes,
-    transact,
+    updateSandboxUpdatedDate,
 } from '../../src/db/sandbox';
 import { Db } from '../../src/db/tables';
 import { HashedTree } from '../../src/db/hash-tree';
@@ -12,7 +12,17 @@ import { addDefinitions, addNamespaces } from '../../src/db/library';
 import { IDEState } from './IDE';
 import { UpdateMap } from '../../src/state/getKeyUpdate';
 
+// so
+// like the sandbox meta
+// right?
+
 export type DBUpdate =
+    | {
+          type: 'sandbox-updated';
+          id: string;
+          updated: number;
+          node_count: number;
+      }
     | {
           type: 'sandbox-nodes';
           id: string;
@@ -34,9 +44,17 @@ export type DBUpdate =
       };
 
 export const applyChanges = async (db: Db, changes: DBUpdate[]) => {
-    await transact(db, async () => {
+    await db.transact(async () => {
         for (let change of changes) {
             switch (change.type) {
+                case 'sandbox-updated':
+                    await updateSandboxUpdatedDate(
+                        db,
+                        change.id,
+                        change.updated,
+                        change.node_count,
+                    );
+                    break;
                 case 'sandbox-nodes':
                     await addUpdateNodes(db, change.id, change.map);
                     break;
@@ -93,6 +111,10 @@ export function collectDatabaseChanges(
         }
     }
     if (last.history !== next.history) {
+        // Possibilities:
+        // - we've done an `undo`
+        //
+
         const map: UpdateMap = {};
         const hist: HistoryItem[] = [];
         for (let i = 0; i < next.history.length; i++) {
@@ -103,6 +125,12 @@ export function collectDatabaseChanges(
         }
         changes.push({ type: 'sandbox-nodes', map, id });
         changes.push({ type: 'sandbox-history', history: hist, id });
+        changes.push({
+            type: 'sandbox-updated',
+            id,
+            updated: Date.now() / 1000,
+            node_count: Object.keys(next.map).length,
+        });
     }
     return changes;
 }

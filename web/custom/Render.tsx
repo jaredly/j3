@@ -97,6 +97,7 @@ export const Render = React.memo(
         const { idx, map, display, hashNames, path } = props;
         const nnode = getNestedNodes(
             map[idx],
+            map,
             hashNames[idx],
             display[idx]?.layout,
         );
@@ -323,6 +324,7 @@ export const RenderNNode = (
                         ...textStyle(node, display[idx]),
                         ...selectStyle,
                         ...errorStyle,
+                        whiteSpace: 'pre',
                     }}
                     onMouseEnter={() =>
                         dispatch({

@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { Builtins, Env } from '../../src/to-ast/library';
 import { Library } from '../../src/to-ast/library';
 import { HashedTree } from '../../src/db/hash-tree';
+import { useMenu } from './useMenu';
+import { css } from '@linaria/core';
+import { Action } from '../custom/UIState';
 
 const buttonStyle = {
     fontSize: '80%',
@@ -21,8 +24,7 @@ export const Button = ({
     definitions: Library['definitions'];
     builtins: Builtins;
 }) => {
-    if (!top) {
-        // return null;
+    if (!top || top === '.') {
         return <span style={buttonStyle}>&nbsp;</span>;
     }
     if (top.startsWith(':builtin:')) {
@@ -50,27 +52,58 @@ export const Button = ({
 export const NSTree = ({
     root,
     name,
-    level,
+    full,
     builtins,
     namespaces,
     definitions,
+    dispatch,
 }: {
     root: string;
     name: string;
-    level: number;
+    full: string[];
     builtins: Builtins;
     namespaces: HashedTree;
     definitions: Library['definitions'];
+    dispatch: React.Dispatch<Action>;
 }) => {
     const [open, setOpen] = useState(false);
-    const canBeOpen = level === 0 || open;
+    const canBeOpen = full.length === 0 || open;
+    const [menu, setMenu] = useMenu((value) => {
+        return full.length > 0
+            ? [
+                  {
+                      title: 'Hello',
+                      action: () => {
+                          dispatch({
+                              type: 'namespace-rename',
+                              from: full,
+                              to: prompt('New namespace name')!.split('/'),
+                          });
+                      },
+                  },
+              ]
+            : [];
+    });
+
+    if (!namespaces[root]) {
+        return <div>Ok</div>;
+    }
 
     const top = namespaces[root][''];
     const keys = Object.keys(namespaces[root]).sort();
 
-    if (keys.length === 1 && keys[0] === '') {
+    if (keys.length === 1 && keys[0] === '' && top !== '.') {
         return (
-            <div className="menu-hover" style={{ cursor: 'pointer' }}>
+            <div
+                className="menu-hover"
+                style={{ cursor: 'pointer', position: 'relative' }}
+                onContextMenu={(evt) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    console.log('ctx');
+                    setMenu(10);
+                }}
+            >
                 <span
                     style={{
                         width: '2em',
@@ -86,17 +119,33 @@ export const NSTree = ({
                 />
                 <span style={{ display: 'inline-block', width: 4 }} />
                 {name}
+                {menu}
             </div>
         );
     }
 
     return (
         <div>
-            {level > 0 ? (
+            {full.length > 0 ? (
                 <div
-                    onMouseDown={() => setOpen(!open)}
-                    style={{ cursor: 'pointer' }}
-                    className="menu-hover"
+                    onMouseDown={(evt) => {
+                        if (evt.button === 0) {
+                            setOpen(!open);
+                        }
+                    }}
+                    style={{ cursor: 'pointer', position: 'relative' }}
+                    className={css`
+                        cursor: pointer;
+                        &:hover {
+                            background-color: #222;
+                        }
+                    `}
+                    onContextMenu={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        console.log('ctx');
+                        setMenu(10);
+                    }}
                 >
                     <span
                         style={{
@@ -114,7 +163,7 @@ export const NSTree = ({
                         definitions={definitions}
                     />
                     <span style={{ display: 'inline-block', width: 4 }} />
-                    {name}/
+                    {name}/{menu}
                 </div>
             ) : null}
 
@@ -125,12 +174,18 @@ export const NSTree = ({
                         const hash = namespaces[root][name];
                         return (
                             <div key={name}>
-                                <div style={{ marginLeft: level > 0 ? 20 : 0 }}>
+                                <div
+                                    style={{
+                                        marginLeft: full.length > 0 ? 20 : 0,
+                                    }}
+                                >
                                     <NSTree
+                                        dispatch={dispatch}
                                         root={hash}
                                         name={name}
-                                        level={level + 1}
+                                        full={full.concat([name])}
                                         builtins={builtins}
+                                        // sandboxes={sandboxes}
                                         namespaces={namespaces}
                                         definitions={definitions}
                                     />
@@ -142,16 +197,45 @@ export const NSTree = ({
     );
 };
 
-export const Namespaces = ({ env }: { env: Env }) => {
-    const root = env.library.root;
+// export const addSandboxesToNamespaces = (
+//     library: Library,
+//     sandboxes: IDEState['sandboxes'],
+// ) => {
+//     const tree: Tree = { children: {} };
+//     sandboxes.forEach((meta) => {
+//         addToTree(tree, `/${meta.id}`, '.');
+//     });
+//     const namespaces: HashedTree = { ...library.namespaces };
+//     const root = addToHashedTree(namespaces, tree, makeHash, {
+//         root: library.root,
+//         tree: library.namespaces,
+//     })!;
+//     return { root, namespaces };
+// };
+
+export const Namespaces = ({
+    env,
+    // sandboxes,
+    root,
+    dispatch,
+}: {
+    root?: string;
+    env: Env;
+    dispatch: React.Dispatch<Action>;
+    // sandboxes: IDEState['sandboxes'];
+}) => {
+    const library = env.library; // addSandboxesToNamespaces(env.library, sandboxes);
+
     return (
-        <div style={{ width: 300 }}>
+        <div style={{ width: 300, minWidth: 300 }}>
             <NSTree
-                root={root}
-                level={0}
+                root={root ?? library.root}
+                full={[]}
                 name={''}
+                dispatch={dispatch}
+                // sandboxes={sandboxes}
                 builtins={env.builtins}
-                namespaces={env.library.namespaces}
+                namespaces={library.namespaces}
                 definitions={env.library.definitions}
             />
         </div>

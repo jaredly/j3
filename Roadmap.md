@@ -1,4 +1,211 @@
 
+- [ ] rename a thing
+
+- [ ] autocomplete
+  one/two/three
+  Need to autocomplete namespaces, and not show them as red underlined
+
+- [ ] ok, so I want to render out ... namespace ... items
+
+- [ ] Below the normal namespaces, we should have a listing of the "sandbox's namespace"
+  - yeah that's a good way to do it.
+- [x] allow changing the sandbox's meta namespace
+- [ ] allow renaming / moving of a namespace
+
+Should I ... keep track ... of the library root ... for a given namespace?
+So like, if names get removed that you were counting on, there's a way to know what they were?
+Seems like that might be nice.
+
+# [x] Allow exporting a sandbox, as a little json file
+- [x] tabs should have a little dropdown dealio, where you can edit, or like export thanks
+- [ ] OH when downloading a sandbox, also download any depended-upon library definitions.
+- [x] delete a sandbox, you can do it; hm to be much safer, let's have a "deleted" flag on a sandbox. And actually do cleanup later.
+- [x] show deleted sandboxes on the dashboard if you want
+
+# [x] FIRST PRIORITY: Sanboxes have namespaces
+
+This has gotta go first, to make this really usable.
+
+# [ ] '(' to surround selection )
+
+Gotta have it, pleeease
+
+# [ ] Start thinking about autofixers?
+
+Would this be like an autocomplete deal?
+And so maybe, with the error highlight, I can indicate whether
+there's autocomplete available?
+That could be quite nice.
+
+- [ ] autofix the 'not exaustive' by:
+  - option one, adding a `_` wildcard clause
+  - option two, enumerating all of the options, if there are unions at play
+  - hmm it could also be nice to allow you to select a `_`, and say "break this apart for me", ya know
+
+- [ ] I want to highlight matching braces again
+
+
+# UM OK things
+
+- so certainly for one thing, I can
+  ... see if the whatsits are like
+  ... gone. and if they are, then that
+  is sad right
+
+- [x] MAKE IT SO
+  that "names" for locals & toplevel references
+  are produced directly from the map, and not
+  dependent on `getCtx` nonsense.
+  BUT the question remains...
+  `hashNames`, does it make so that I need to like
+  make a hash of `{[loc: number]: string}`
+
+- [ ] ok so now, I want to ..
+  - hermmmm so `toplevel` hashes reference the `(define` instead of the ... id
+- [ ] toplevel hash should reference the `name`?
+  Maybe the `map` should come with a mapping between toplevel id to name id?
+- [ ] also, I want the sandbox to have a namespace that's its base
+
+ALSO
+Ok yeah if you /delete/ a thing that used to be referenced, we need to update everything
+to be identifiers again.
+
+ALTERNATIVE
+
+I could say, that if you botch something so bad
+that its not in hashnames anymore
+for any reason,
+we revert all the whatsits.
+UNFORTUNATELY that's, annoying to do? Right?
+Like I guess I'd need to hang on to the previous ... hashNames ... which is fine right.
+
+Question: where do I make the switcheroo.
+
+- [x] Success! Now anything that used to have a hashName, but doesn't anymore, where the nodes
+  are still around, gets swapped for an `identifier` with the previous hashname. Very good.
+
+# [x] PRESERVING Names that get lost
+
+For example:
+
+(let [x] x)
+and you unwrap the outer ()
+the final thing should still be called `x`, but it'll be an unbound identifier, instead of a hash.
+
+How to do that?
+- method 1: do post-hoc analysis, find things that are now unbound, and figure out what the names used to be,
+  and then update the map to change them to identifiers, instead of hashes.
+- method 2: keep around a map of things as they were .. and ... persist it somewhere I guess?
+
+
+# UNDO REDO
+
+So, I've got a db table of `sandbox nodes`
+and a db table of `history items`
+
+q: how do I maintain a "history tip"?
+a: historyItems could have a `didUndo`
+  - if you add a new history item, and there are `undone` items, we need to delete those
+  - right? seems fine
+  - altho, maybe do that locally, it's fine
+
+oprtions
+
+A B C D
+(undo)
+A B C D(undid)
+(undo)
+A B C(undid) D(undid)
+(E)
+A B E
+(undo)
+A B E(undid)
+(undo)
+A B(undid) E(undid)
+(redo)
+A B E(undid)
+
+Comparing previous & next history becomes quite a chore, I think.
+And determining what to undo and stuff.
+
+
+ALTERNATIVE, we do REVERT commits
+
+A B C D
+(undo)
+A B C D D'
+(undo)
+A B C D D' C'
+E
+A B C D D' C' E
+(undo)
+A B C D D' C' E E'
+(undo)
+A B C D D' C' E E' B'
+(redo)
+A B C D D' C' E E' B' B
+
+Advantage:
+- purely addative,
+- figuring out what's "new" in the next state's history list only requires checking the most recent item for updates. No possibility of previous items getting modified or being compeltely different.
+- item's index === its ID, which is nice
+Disadvantage:
+is maybe hard to work out?
+Advantage:
+you can unit test this into the ground
+
+
+
+# MOVIES is type checking?
+wow cool!
+so now
+what next
+do you know it
+
+erm
+it would be nice
+to get it executing, right?
+
+What are the major usability hiccups?
+- sandboxes need a namespace. I think maybe, their own default namespace?
+  - and you could like copy that namespace over to somewhere official if you want, idk
+
+- [ ] let's highlight unused stuff in the sandbox, that would be nice right?
+
+EDITOR NEEDS HELP
+- [x] OK REALLY backspace at start of `(` neeeeeeeds to slop it
+- [ ] highlight a bunch and `(` neeedds to surround it if at all possible.
+- [x] UNDO and REDO these are imperative.
+
+- do .. I ... want to ... make it so that the contents of a string template can be lists without parens? honestly I think it would be less weird.
+  I guess a ~simpler stopgap would be to have "space" do an auto-wrap.
+
+
+
+
+# Thinking about type bounds
+like
+
+`fn<T:[('Hi int) ..]>(x:T)`
+
+so, you could instantiate `T` with a `Hi` that would need to be a subset of `('Hi int)`.
+OR you could instantiate it without a `Hi`.
+
+So if we're like, I wonder if T has a `Hi`, we kindof don't know if it does?
+
+
+
+
+
+soooo the inferred type for `(to-result (task))` is sooo much. and lots of duplciation.
+
+- [x] SO we need to have `expandEnumItems` also give me task declarations.
+- [x] now use it
+- [ ] hrm it's still not quite working, but idk
+
+- [ ] SO I think my `tfn` type might need .. a little more ... constraints to it?
+  like indicate if/how different type variables might interact and/or conflict
+
 # I feel like matchesType is a little flimsy
 and obviously we're getting an infinite loop in the task dealio
 so what if we redo it?
@@ -10,8 +217,8 @@ I want a map.
 - [x] figure out the wrong deailio
 
 - [ ] make like a bunch more tests, and maybe do it ... in a UI?
-  idk
-- [ ] unifyTypes should be also using a map, I should say
+  idk maybe code is fine
+- [ ] unifyTypes should be also using a map, I dare say
 
 
 # yasss
