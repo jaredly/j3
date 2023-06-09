@@ -90,6 +90,7 @@ export const yankInner = (
 
     if (Object.keys(errors).length) {
         console.error('trying to yank something with errors');
+        console.log(errors);
         return null;
     }
     if (!ann) {

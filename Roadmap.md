@@ -2,8 +2,9 @@
 # TESTS FOR YANKING
 
 - because my dealio obvs isn't working all the time
-- [ ] in complete.test, maybe just yank everything? and verify that everything still works?
+- [x] in complete.test, maybe just yank everything? and verify that everything still works?
   - so, start with a fresh library each time
+- [ ] now fix the yanks that don't work
 
 
 # Context-sensitive refactors

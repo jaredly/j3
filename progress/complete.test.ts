@@ -1,6 +1,7 @@
 // Now bringing in autocomplete and such
 
 import { getType } from '../src/get-type/get-types-new';
+import { validateExpr } from '../src/get-type/validate';
 import { getCtx } from '../src/getCtx';
 import { parseByCharacter } from '../src/parse/parse';
 import { applyUpdateMap } from '../src/state/getKeyUpdate';
@@ -10,6 +11,7 @@ import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Def, DefType, Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { Error } from '../src/types/types';
 import { relocify } from '../web/ide/relocify';
 import { yankInner } from '../web/ide/yankFromSandboxToLibrary';
 import { splitCase } from './test-utils';
@@ -385,6 +387,11 @@ Second type: 'Yes
 // (let [x (tfn [t] (fn [a:#7] #11))] (#3 10))
 // -> #:builtin:int
 
+const dedup = (arr: string[]) => {
+    const seen: { [key: string]: boolean } = {};
+    return arr.filter((k) => !seen[k] && (seen[k] = true));
+};
+
 export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
     nodeToString(nodeForType(type, hashNames), hashNames);
 
@@ -405,22 +412,37 @@ describe('completion and such', () => {
                 input.replace(/\s+/g, ' '),
                 ctx,
             );
-            const idx = (data[-1] as ListLikeContents).values.slice(-1)[0];
+            const tops = (data[-1] as ListLikeContents).values;
+            const idx = tops[tops.length - 1];
 
             if (expected) {
                 expect(nodeToString(fromMCST(idx, data), null)).toEqual(
                     expected,
                 );
             }
+
             const { ctx: nctx } = getCtx(data, -1, nidx, ctx.global);
+
+            // // const errors: { [idx: number]: Error[] } = {};
+            // tops.forEach((idx) => {
+            //     const expr = nctx.results.toplevel[idx];
+            //     validateExpr(expr, nctx, nctx.results.errors);
+            //     getType(expr, nctx, {
+            //         errors: nctx.results.errors,
+            //         types: {},
+            //     });
+            // });
+
             expect(
                 Object.keys(nctx.results.errors)
                     .sort((a, b) => +a - +b)
                     .map(
                         (k) =>
-                            `${k}: ${nctx.results.errors[+k]
-                                .map((e) => errorToString(e, nctx))
-                                .join('; ')}`,
+                            `${k}: ${dedup(
+                                nctx.results.errors[+k].map((e) =>
+                                    errorToString(e, nctx),
+                                ),
+                            ).join('; ')}`,
                     )
                     .join('\n'),
             ).toEqual(errors);
@@ -466,6 +488,20 @@ describe('completion and such', () => {
                         ...ctx.global,
                         library: result!.library,
                     }).ctx;
+
+                    const errors: { [idx: number]: Error[] } = {};
+                    (data[-1] as ListLikeContents).values.forEach((idx) => {
+                        const expr = ctx.results.toplevel[idx];
+                        if (expr) {
+                            validateExpr(expr, ctx, errors);
+                            getType(expr, ctx, {
+                                errors: errors,
+                                types: {},
+                            });
+                        }
+                    });
+                    expect(errors).toEqual({});
+
                     if (tops.length === 1) {
                         break;
                     }
