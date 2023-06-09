@@ -1,4 +1,11 @@
 
+# TESTS FOR YANKING
+
+- because my dealio obvs isn't working all the time
+- [ ] in complete.test, maybe just yank everything? and verify that everything still works?
+  - so, start with a fresh library each time
+
+
 # Context-sensitive refactors
 
 - [ ] `(tfn [...] (fn` -> `(fn<...>` and back

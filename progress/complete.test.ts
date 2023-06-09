@@ -9,6 +9,7 @@ import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { relocify } from '../web/ide/yankFromSandboxToLibrary';
 import { splitCase } from './test-utils';
 
 const data = `
@@ -126,7 +127,7 @@ Second type: 3.1
 = ((fn<x> [y:#5] #7) 100)
 -> 100
 
-(defn hello<x y> [z:[('Ok x) ('Err y)]] z)
+!!!(defn hello<x y> [z:[('Ok x) ('Err y)]] z)
 (hello ('Ok 10))
 = (#0 ('Ok 10))
 -> [('Ok 10) ('Err ⍉)]
@@ -400,11 +401,6 @@ describe('completion and such', () => {
             );
             const idx = (data[-1] as ListLikeContents).values.slice(-1)[0];
 
-            // ctx.results.
-            // Object.entries(ctx.results.toplevel).forEach(([k, v]) => {
-            //     getType(v, ctx, { errors: ctx.results.errors, types: {} });
-            //     validateExpr(v, ctx, ctx.results.errors);
-            // });
             if (expected) {
                 expect(nodeToString(fromMCST(idx, data), null)).toEqual(
                     expected,
@@ -432,6 +428,14 @@ describe('completion and such', () => {
                     ),
                 ).toEqual(expectedType);
             }
+
+            // if (!errors) {
+            //     const tops = (data[-1] as ListLikeContents).values
+            //     for (let idx of tops) {
+            //         const rel = relocify(nctx.results.toplevel[idx]);
+            //         expect(rel).toBeTruthy();
+            //     }
+            // }
         });
     });
 });
