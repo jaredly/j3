@@ -166,7 +166,7 @@ export const addSandbox = async (
     const map = emptyMap();
 
     await db.transact(async () => {
-        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?, ?, ?);`, [
+        await db.run(`insert into sandboxes values (?, ?, ?, ?, ?, ?, ?, ?);`, [
             meta.id,
             meta.title,
             meta.created_date,
@@ -174,6 +174,7 @@ export const addSandbox = async (
             meta.version,
             JSON.stringify(meta.settings),
             meta.deleted_date,
+            meta.node_count,
         ]);
         await createTable(db, sandboxNodesConfig(id));
         await createTable(db, sandboxHistoryConfig(id));
