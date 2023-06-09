@@ -439,14 +439,17 @@ describe('completion and such', () => {
                 let ctx = nctx;
                 while (true) {
                     const tops = (data[-1] as ListLikeContents).values;
+                    const expected: any = {};
+                    tops.forEach((idx) => (expected[idx] = expect.anything()));
+                    expect(ctx.results.toplevel).toMatchObject(expected);
                     const first = tops.find(
                         (idx) =>
-                            ctx.results.toplevel[idx].type === 'def' ||
-                            ctx.results.toplevel[idx].type === 'deftype',
+                            ctx.results.toplevel[idx]?.type === 'def' ||
+                            ctx.results.toplevel[idx]?.type === 'deftype',
                     );
                     if (first == null) {
-                        console.log('No top left', tops);
-                        console.log(ctx.results.toplevel);
+                        // console.log('No top left', tops);
+                        // console.log(ctx.results.toplevel);
                         break;
                     }
 
@@ -463,6 +466,9 @@ describe('completion and such', () => {
                         ...ctx.global,
                         library: result!.library,
                     }).ctx;
+                    if (tops.length === 1) {
+                        break;
+                    }
                 }
             }
         });

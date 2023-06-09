@@ -158,7 +158,7 @@ export const parseByCharacter = (
             // This is where the `ctx` gets updated
             if (!kind || kind === 'expr') {
                 filterComments(root.values).forEach((node) => {
-                    ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
+                    ctx!.results.toplevel[node.loc] = nodeToExpr(node, ctx!);
                 });
             }
             if (kind === 'type') {
@@ -184,7 +184,7 @@ export const parseByCharacter = (
             );
             if (fixed) {
                 filterComments(root.values).forEach((node) => {
-                    ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
+                    ctx!.results.toplevel[node.loc] = nodeToExpr(node, ctx!);
                 });
             }
         }
