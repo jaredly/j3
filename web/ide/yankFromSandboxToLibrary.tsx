@@ -26,7 +26,12 @@ export const yankFromSandboxToLibrary = (
     action: { type: 'yank'; expr: DefType | Def; loc: number },
     meta: Sandbox['meta'],
 ) => {
-    const result = yankInner(state.map, state.ctx, action, meta);
+    const result = yankInner(
+        state.map,
+        state.ctx,
+        action,
+        meta.settings.namespace.join('/'),
+    );
     if (!result) {
         return state;
     }
@@ -61,24 +66,24 @@ export const yankFromSandboxToLibrary = (
 export const yankInner = (
     map: Map,
     ctx: Ctx,
-    action: { type: 'yank'; expr: DefType | Def; loc: number },
-    meta: Sandbox['meta'],
+    item: { expr: DefType | Def; loc: number },
+    prefix: string,
 ) => {
     // if (state.current.type !== 'sandbox') {
     //     return state;
     // }
     // const sstate = state.current.state;
     const top = map[-1] as MNodeList & NodeExtra;
-    const pos = top.values.indexOf(action.loc);
+    const pos = top.values.indexOf(item.loc);
     if (pos === -1) {
-        console.log('bad yank', top, action.loc);
+        console.log('bad yank', top, item.loc);
         return null;
     }
 
     // Here, we do some validation as well.
     const errors: { [idx: number]: Error[] } = {};
-    validateExpr(action.expr, ctx, errors);
-    const ann = getType(action.expr, ctx, {
+    validateExpr(item.expr, ctx, errors);
+    const ann = getType(item.expr, ctx, {
         errors,
         types: {},
     });
@@ -92,7 +97,7 @@ export const yankInner = (
         return null;
     }
 
-    const reloced = relocify(action.expr) as Def | DefType;
+    const reloced = relocify(item.expr) as Def | DefType;
 
     if (!reloced) {
         return null;
@@ -106,14 +111,14 @@ export const yankInner = (
     values.splice(pos, 1);
     const update: UpdateMap = {
         [top.loc]: { ...top, values },
-        ...clearAllChildren([action.loc], map),
+        ...clearAllChildren([item.loc], map),
     };
 
     if (values.length === 0) {
-        values.push(action.loc);
-        update[action.loc] = {
+        values.push(item.loc);
+        update[item.loc] = {
             type: 'blank',
-            loc: action.loc,
+            loc: item.loc,
         };
     }
 
@@ -121,7 +126,7 @@ export const yankInner = (
     // replace refefences
     Object.keys(map).map((k) => {
         const node = map[+k];
-        if (node.type === 'hash' && node.hash === action.loc) {
+        if (node.type === 'hash' && node.hash === item.loc) {
             update[+k] = {
                 ...node,
                 hash: newHash,
@@ -137,7 +142,7 @@ export const yankInner = (
     //     map2,
     // )!;
 
-    const name = action.expr.name;
+    const name = item.expr.name;
     if (!validName(name)) {
         console.error('invalid name sry', name);
         return null;
@@ -145,9 +150,7 @@ export const yankInner = (
 
     const nnames = { ...ctx.global.library.namespaces };
 
-    const namespacedName = `${meta.settings.namespace.join('/')}/${
-        action.expr.name
-    }`;
+    const namespacedName = `${prefix}/${item.expr.name}`;
 
     const newRoot = addToHashedTree(
         nnames,

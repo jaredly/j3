@@ -3,13 +3,15 @@
 import { getType } from '../src/get-type/get-types-new';
 import { getCtx } from '../src/getCtx';
 import { parseByCharacter } from '../src/parse/parse';
+import { applyUpdateMap } from '../src/state/getKeyUpdate';
 import { Ctx, newCtx } from '../src/to-ast/Ctx';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
-import { Type } from '../src/types/ast';
+import { Def, DefType, Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
 import { relocify } from '../web/ide/relocify';
+import { yankInner } from '../web/ide/yankFromSandboxToLibrary';
 import { splitCase } from './test-utils';
 
 const data = `
@@ -127,7 +129,7 @@ Second type: 3.1
 = ((fn<x> [y:#5] #7) 100)
 -> 100
 
-!!!(defn hello<x y> [z:[('Ok x) ('Err y)]] z)
+(defn hello<x y> [z:[('Ok x) ('Err y)]] z)
 (hello ('Ok 10))
 = (#0 ('Ok 10))
 -> [('Ok 10) ('Err ⍉)]
@@ -324,9 +326,13 @@ Second type: 'Yes
 (let [x 1] x ^b^T^b^b
 = (let x)
 0: first not array
+
 `
     .trim()
     .split('\n\n');
+
+// (defnrec mapTask<T Effects:[..] R> [values:(array T) fnz:(fn [T uint] (@task Effects R)) at:uint]:(@task Effects (array R)) (switch values [one ..rest] (let [res (! (fnz one at)) coll (! (@recur<T Effects R> rest fnz (+ at 1u)))] [res ..coll]) _ []))
+// -> (fn<T Effects:[..] R> [values:(#:builtin:array #5) fnz:(fn [#5 #:builtin:uint] (@task #7 #13)) at:#:builtin:uint] (@task #7 (#:builtin:array #13)))
 
 // ((tfn [X:[..]] X) 10)
 
@@ -395,7 +401,7 @@ describe('completion and such', () => {
         //     errors.length && errors[0].startsWith('->') ? errors.shift() : null;
         (skip ? it.skip : only ? it.only : it)(`${i} ${input}`, () => {
             const ctx = newCtx();
-            const { map: data, nidx } = parseByCharacter(
+            let { map: data, nidx } = parseByCharacter(
                 input.replace(/\s+/g, ' '),
                 ctx,
             );
@@ -429,13 +435,36 @@ describe('completion and such', () => {
                 ).toEqual(expectedType);
             }
 
-            // if (!errors) {
-            //     const tops = (data[-1] as ListLikeContents).values
-            //     for (let idx of tops) {
-            //         const rel = relocify(nctx.results.toplevel[idx]);
-            //         expect(rel).toBeTruthy();
-            //     }
-            // }
+            if (!errors) {
+                let ctx = nctx;
+                while (true) {
+                    const tops = (data[-1] as ListLikeContents).values;
+                    const first = tops.find(
+                        (idx) =>
+                            ctx.results.toplevel[idx].type === 'def' ||
+                            ctx.results.toplevel[idx].type === 'deftype',
+                    );
+                    if (first == null) {
+                        console.log('No top left', tops);
+                        console.log(ctx.results.toplevel);
+                        break;
+                    }
+
+                    const expr = ctx.results.toplevel[first] as Def | DefType;
+                    const result = yankInner(
+                        data,
+                        nctx,
+                        { expr, loc: first },
+                        'complete',
+                    );
+                    expect(result).toBeTruthy();
+                    data = applyUpdateMap(data, result!.update);
+                    ctx = getCtx(data, -1, nidx, {
+                        ...ctx.global,
+                        library: result!.library,
+                    }).ctx;
+                }
+            }
         });
     });
 });
