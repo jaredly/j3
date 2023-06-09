@@ -213,7 +213,7 @@ export type Shared =
     | Bool
     | { type: 'unresolved'; form: Node; reason?: string };
 
-export type TypeArg = { name: string; bound?: Type; form: Node };
+export type TypeArg = { name: string; bound?: Type; form: Node; sym: number };
 export type FnType = {
     type: 'fn';
     name?: string;

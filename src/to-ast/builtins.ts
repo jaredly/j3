@@ -188,9 +188,14 @@ const targ3 = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'array/reduce', {
     type: 'tfn',
     args: [
-        { form: blankAt(targ1), name: 'Input' },
-        { form: blankAt(targ2), name: 'Output' },
-        { form: blankAt(targ3), name: 'ArrayLen', bound: btype('uint') },
+        { form: blankAt(targ1), name: 'Input', sym: targ1 },
+        { form: blankAt(targ2), name: 'Output', sym: targ2 },
+        {
+            form: blankAt(targ3),
+            name: 'ArrayLen',
+            bound: btype('uint'),
+            sym: targ3,
+        },
     ],
     body: {
         type: 'fn',
@@ -238,8 +243,8 @@ const record = (entries: TRecord['entries']): TRecord => ({
 const mapGet: Type = {
     type: 'tfn',
     args: [
-        { form: blankAt(marg1), name: 'Key' },
-        { form: blankAt(marg2), name: 'Value' },
+        { form: blankAt(marg1), name: 'Key', sym: marg1 },
+        { form: blankAt(marg2), name: 'Value', sym: marg2 },
     ],
     body: {
         type: 'fn',
@@ -279,8 +284,8 @@ const fparg2 = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'map/from-pairs', {
     type: 'tfn',
     args: [
-        { form: blankAt(fparg1), name: 'Key' },
-        { form: blankAt(fparg2), name: 'Value' },
+        { form: blankAt(fparg1), name: 'Key', sym: fparg1 },
+        { form: blankAt(fparg2), name: 'Value', sym: fparg2 },
     ],
     body: {
         type: 'fn',
@@ -347,7 +352,7 @@ addBuiltin(basicBuiltins, 'float/PI', tfloat);
 const darg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'debug/toString', {
     type: 'tfn',
-    args: [{ form: blankAt(darg), name: 'Value' }],
+    args: [{ form: blankAt(darg), name: 'Value', sym: darg }],
     body: {
         type: 'fn',
         args: [
@@ -362,7 +367,7 @@ addBuiltin(basicBuiltins, 'debug/toString', {
 const jarg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'json/encode', {
     type: 'tfn',
-    args: [{ form: blankAt(jarg), name: 'Value' }],
+    args: [{ form: blankAt(jarg), name: 'Value', sym: jarg }],
     body: {
         type: 'fn',
         args: [
@@ -377,7 +382,7 @@ addBuiltin(basicBuiltins, 'json/encode', {
 const jdarg = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'json/decode', {
     type: 'tfn',
-    args: [{ form: blankAt(jdarg), name: 'Value' }],
+    args: [{ form: blankAt(jdarg), name: 'Value', sym: jdarg }],
     body: {
         type: 'fn',
         args: [{ type: tstring, form: blank }],
@@ -396,10 +401,20 @@ const whFinal = basicBuiltins.bidx--;
 addBuiltin(basicBuiltins, 'task/withHandler', {
     type: 'tfn',
     args: [
-        { form: blankAt(whEffects), name: 'Effects', bound: eno },
-        { form: blankAt(whResult), name: 'Result' },
-        { form: blankAt(whHandled), name: 'Handled', bound: eno },
-        { form: blankAt(whFinal), name: 'Final' },
+        {
+            form: blankAt(whEffects),
+            name: 'Effects',
+            bound: eno,
+            sym: whEffects,
+        },
+        { form: blankAt(whResult), name: 'Result', sym: whResult },
+        {
+            form: blankAt(whHandled),
+            name: 'Handled',
+            bound: eno,
+            sym: whHandled,
+        },
+        { form: blankAt(whFinal), name: 'Final', sym: whFinal },
     ],
     body: {
         type: 'fn',

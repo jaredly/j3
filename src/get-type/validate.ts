@@ -213,7 +213,10 @@ export const validateType = (
         case 'builtin':
             return ctx.global.builtins[type.name]?.type === 'type'
                 ? null
-                : type.form.loc;
+                : err(errors, type, {
+                      type: 'misc',
+                      message: 'unknown builtin ' + type.name,
+                  });
         case 'none':
             return err(errors, type, {
                 type: 'misc',

@@ -26,7 +26,7 @@ export const tryToInferTypeArgs = (
     // console.log('infer', type, args);
     const bindings: TypeArgs = {};
     type.args.forEach((arg) => {
-        bindings[arg.form.loc] = [];
+        bindings[arg.sym] = [];
     });
 
     for (let i = 0; i < args.length && i < type.body.args.length; i++) {
@@ -46,7 +46,7 @@ export const tryToInferTypeArgs = (
     const boundMap: { [sym: number]: Type } = {};
     for (let i = 0; i < type.args.length; i++) {
         const arg = type.args[i];
-        let bound = unifyManyTypes(bindings[arg.form.loc], ctx);
+        let bound = unifyManyTypes(bindings[arg.sym], ctx);
 
         if (arg.bound) {
             const match = _matchOrExpand(bound, arg.bound, ctx, []);
@@ -67,10 +67,8 @@ export const tryToInferTypeArgs = (
                 };
             }
         }
-        boundMap[type.args[i].form.loc] = bound;
+        boundMap[type.args[i].sym] = bound;
     }
-
-    // console.log('BOUN', boundMap);
 
     return applyTypeVariables(type.body, boundMap);
 };

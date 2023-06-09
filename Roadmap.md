@@ -1,4 +1,14 @@
 
+# Context-sensitive refactors
+
+- [ ] `(tfn [...] (fn` -> `(fn<...>` and back
+- [ ] `(def x (fn` -> `(defn x` and back
+- [ ] `(def x (@loop (fn` -> `(defnrec x`
+
+# Some stuff
+
+- [ ] trying to get `yank` to cover all the bases.
+  I should probably write some tests??
 - [x] deleting the whole of a node should delete it 
 - [x] rename a sandboxy
 - [ ] [library] on hover of a thing, show the thing in like a popover

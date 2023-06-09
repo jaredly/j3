@@ -687,7 +687,11 @@ const _getType = (
                 return {
                     type: 'tfn',
                     args: [
-                        { form: { ...blank, loc: last.loc }, name: last.text },
+                        {
+                            form: { ...blank, loc: last.loc },
+                            name: last.text,
+                            sym: last.loc,
+                        },
                     ],
                     body: {
                         type: 'fn',

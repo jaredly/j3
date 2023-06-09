@@ -23,7 +23,7 @@ import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
 import { redoItem, undoItem } from '../../src/to-ast/history';
-import { HistoryItem, Sandbox } from '../../src/to-ast/library';
+import { CstCtx, Ctx, HistoryItem, Sandbox } from '../../src/to-ast/library';
 import { transformNode } from '../../src/types/transform-cst';
 import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
 import { hashedToTree, hashedTreeRename } from '../../src/db/hash-tree';
@@ -129,46 +129,8 @@ export const updateWithAutocomplete = (
     state.map = map;
     state.ctx = ctx;
 
-    let fixedMissing = false;
-    const missing: Record<number, string> = {};
-    Object.entries(prevCtx.results.hashNames).forEach(([k, v]) => {
-        if (!ctx.results.hashNames[+k]) {
-            missing[+k] = v;
-            const node = map[+k];
-            const pnode = prevMap[+k];
-            if (
-                node?.type === 'hash' &&
-                pnode?.type === 'hash' &&
-                node.hash === pnode.hash
-            ) {
-                fixedMissing = true;
-                state.map[+k] = {
-                    type: 'identifier',
-                    loc: +k,
-                    text: v,
-                };
-            }
-        }
-    });
-    Object.entries(state.map).forEach(([k, v]) => {
-        if (
-            v.type === 'hash' &&
-            // TODO ok I don't super love that I'm overloading `local hash` with `toplevel hash`
-            // I kinda want to add a `kind` to hash, ya know?
-            typeof v.hash === 'number' &&
-            !state.map[v.hash]
-        ) {
-            const ref = prevMap[v.hash];
-            if (ref?.type === 'identifier') {
-                fixedMissing = true;
-                state.map[+k] = {
-                    type: 'identifier',
-                    loc: +k,
-                    text: ref.text,
-                };
-            }
-        }
-    });
+    const fixedMissing = fixMissingReferences(prevCtx, ctx, map, prevMap);
+
     if (fixedMissing) {
         let { ctx, map } = getCtx(
             state.map,
@@ -374,3 +336,52 @@ export const reduceUpdate = (
             throw new Error('nope update');
     }
 };
+
+export function fixMissingReferences(
+    prevCtx: Ctx,
+    ctx: CstCtx,
+    map: Map,
+    prevMap: Map,
+) {
+    let fixedMissing = false;
+    const missing: Record<number, string> = {};
+    Object.entries(prevCtx.results.hashNames).forEach(([k, v]) => {
+        if (!ctx.results.hashNames[+k]) {
+            missing[+k] = v;
+            const node = map[+k];
+            const pnode = prevMap[+k];
+            if (
+                node?.type === 'hash' &&
+                pnode?.type === 'hash' &&
+                node.hash === pnode.hash
+            ) {
+                fixedMissing = true;
+                map[+k] = {
+                    type: 'identifier',
+                    loc: +k,
+                    text: v,
+                };
+            }
+        }
+    });
+    Object.entries(map).forEach(([k, v]) => {
+        if (
+            v.type === 'hash' &&
+            // TODO ok I don't super love that I'm overloading `local hash` with `toplevel hash`
+            // I kinda want to add a `kind` to hash, ya know?
+            typeof v.hash === 'number' &&
+            !map[v.hash]
+        ) {
+            const ref = prevMap[v.hash];
+            if (ref?.type === 'identifier') {
+                fixedMissing = true;
+                map[+k] = {
+                    type: 'identifier',
+                    loc: +k,
+                    text: ref.text,
+                };
+            }
+        }
+    });
+    return fixedMissing;
+}

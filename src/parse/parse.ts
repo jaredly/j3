@@ -14,6 +14,7 @@ import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
 import { fromMCST, Map, MNode } from '../types/mcst';
 import { applyMenuItem } from '../to-ast/autoComplete';
+import { fixMissingReferences } from '../../web/custom/reduce';
 
 export const idText = (node: MNode, map: Map) => {
     switch (node.type) {
@@ -141,6 +142,8 @@ export const parseByCharacter = (
             mods,
         );
 
+        const prevMap = state.map;
+
         if (ctx && update?.autoComplete) {
             state = autoCompleteIfNeeded(state, ctx.results.display);
         }
@@ -149,6 +152,10 @@ export const parseByCharacter = (
 
         if (ctx) {
             const root = fromMCST(state.root, state.map) as { values: Node[] };
+
+            const prevCtx = ctx;
+
+            // This is where the `ctx` gets updated
             if (!kind || kind === 'expr') {
                 filterComments(root.values).forEach((node) => {
                     ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
@@ -161,11 +168,23 @@ export const parseByCharacter = (
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map, state.nidx);
 
-            if (!kind || (kind === 'expr' && update?.autoComplete)) {
+            if ((!kind || kind === 'expr') && update?.autoComplete) {
                 // Now we do like inference, right?
                 const mods = infer(ctx, state.map);
                 Object.keys(mods).forEach((id) => {
                     applyInferMod(mods[+id], state.map, state.nidx, +id);
+                });
+            }
+
+            const fixed = fixMissingReferences(
+                prevCtx,
+                ctx,
+                state.map,
+                prevMap,
+            );
+            if (fixed) {
+                filterComments(root.values).forEach((node) => {
+                    ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
                 });
             }
         }

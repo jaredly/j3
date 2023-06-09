@@ -190,6 +190,7 @@ const idName = (item?: Map[0]) =>
     item?.type === 'identifier' ? item.text : null;
 
 const tightFirsts: { [key: string]: number } = {
+    tfn: 2,
     fn: 2,
     fnrec: 2,
     def: 2,

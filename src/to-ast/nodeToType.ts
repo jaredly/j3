@@ -282,9 +282,7 @@ export function parseTypeArgs(tvalues: Node[], ctx: CstCtx) {
                 form: arg,
             };
         })
-        .filter(Boolean) as (TypeArg & { sym: number })[];
-    parsed.forEach(
-        (targ) => (ctx.results.localMap.types[targ.form.loc] = targ),
-    );
+        .filter(Boolean) as TypeArg[];
+    parsed.forEach((targ) => (ctx.results.localMap.types[targ.sym] = targ));
     return parsed;
 }

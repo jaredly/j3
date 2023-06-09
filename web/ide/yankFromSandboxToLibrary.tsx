@@ -63,19 +63,64 @@ export const yankFromSandboxToLibrary = (
             Loc() {
                 return 0;
             },
-            Expr(node, ctx) {
-                if (node.type === 'toplevel') {
-                    console.error(`depends on a toplevel cant do it`);
-                    bad = true;
-                }
+            Type(node, ctx) {
                 if (node.type === 'local') {
                     if (!locMap[node.sym]) {
-                        console.error('no locmap for the local sym');
+                        console.error(
+                            'no locmap for the local sym type',
+                            node.sym,
+                            node,
+                        );
                         bad = true;
                     }
                     return { ...node, sym: locMap[node.sym] };
                 }
                 return null;
+            },
+            Expr(node, ctx) {
+                if (node.type === 'loop') {
+                    locMap[node.form.loc] = lloc++;
+                    return {
+                        ...node,
+                        form: { ...node.form, loc: locMap[node.form.loc] },
+                    };
+                }
+                if (node.type === 'tfn') {
+                    const args = node.args.map((arg) => {
+                        locMap[arg.form.loc] = lloc++;
+                        return {
+                            ...arg,
+                            form: { ...arg.form, loc: locMap[arg.form.loc] },
+                        };
+                    });
+                    return { ...node, args };
+                }
+                if (node.type === 'toplevel') {
+                    console.error(`depends on a toplevel cant do it`);
+                    bad = true;
+                }
+                if (node.type === 'local' || node.type === 'recur') {
+                    if (!locMap[node.sym]) {
+                        console.error(
+                            'no locmap for the local sym',
+                            node.sym,
+                            node,
+                        );
+                        bad = true;
+                    }
+                    return { ...node, sym: locMap[node.sym] };
+                }
+                return null;
+            },
+            Type_tfn(node, ctx) {
+                const args = node.args.map((arg) => {
+                    locMap[arg.form.loc] = lloc++;
+                    return {
+                        ...arg,
+                        form: { ...arg.form, loc: locMap[arg.form.loc] },
+                    };
+                });
+                return { ...node, args };
             },
             Pattern(node, ctx) {
                 if (node.type === 'local') {
@@ -90,6 +135,9 @@ export const yankFromSandboxToLibrary = (
 
     if (bad) {
         console.error('bad reloc');
+        console.log(action.expr);
+        console.log(locMap);
+        console.log(reloced);
         return state;
     }
 
