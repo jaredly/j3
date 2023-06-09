@@ -9,17 +9,17 @@ import {
 import { validName, validateExpr } from '../../src/get-type/validate';
 import { Error } from '../../src/types/types';
 import { getType } from '../../src/get-type/get-types-new';
-import { transformExpr } from '../../src/types/walk-ast';
 import { makeHash } from './makeHash';
 import { selectEnd } from '../../src/state/navigate';
 import { addToHashedTree, flatToTree } from '../../src/db/hash-tree';
-import { Def, DefType, Expr } from '../../src/types/ast';
+import { Def, DefType } from '../../src/types/ast';
 import { noForm } from '../../src/to-ast/builtins';
 import { getCtx } from '../../src/getCtx';
 import { IDEState } from './IDE';
 import { Ctx, Sandbox } from '../../src/to-ast/library';
 import { UIState } from '../custom/UIState';
 import { Path } from '../store';
+import { relocify } from './relocify';
 
 export const yankFromSandboxToLibrary = (
     state: UIState,
@@ -196,95 +196,3 @@ export const yankInner = (
         library,
     };
 };
-
-export function relocify(expr: Expr) {
-    let bad = false;
-
-    let lloc = 1;
-    let locMap: { [old: number]: number } = {};
-    const reloced = transformExpr(
-        expr,
-        {
-            Loc() {
-                return 0;
-            },
-            Type(node, ctx) {
-                if (node.type === 'local') {
-                    if (!locMap[node.sym]) {
-                        console.error(
-                            'no locmap for the local sym type',
-                            node.sym,
-                            node,
-                        );
-                        bad = true;
-                    }
-                    return { ...node, sym: locMap[node.sym] };
-                }
-                return null;
-            },
-            Expr(node, ctx) {
-                if (node.type === 'loop') {
-                    locMap[node.form.loc] = lloc++;
-                    return {
-                        ...node,
-                        form: { ...node.form, loc: locMap[node.form.loc] },
-                    };
-                }
-                if (node.type === 'tfn') {
-                    const args = node.args.map((arg) => {
-                        locMap[arg.form.loc] = lloc++;
-                        return {
-                            ...arg,
-                            form: { ...arg.form, loc: locMap[arg.form.loc] },
-                        };
-                    });
-                    return { ...node, args };
-                }
-                if (node.type === 'toplevel') {
-                    console.error(`depends on a toplevel cant do it`);
-                    bad = true;
-                }
-                if (node.type === 'local' || node.type === 'recur') {
-                    if (!locMap[node.sym]) {
-                        console.error(
-                            'no locmap for the local sym',
-                            node.sym,
-                            node,
-                        );
-                        bad = true;
-                    }
-                    return { ...node, sym: locMap[node.sym] };
-                }
-                return null;
-            },
-            Type_tfn(node, ctx) {
-                const args = node.args.map((arg) => {
-                    locMap[arg.form.loc] = lloc++;
-                    return {
-                        ...arg,
-                        form: { ...arg.form, loc: locMap[arg.form.loc] },
-                    };
-                });
-                return { ...node, args };
-            },
-            Pattern(node, ctx) {
-                if (node.type === 'local') {
-                    locMap[node.sym] = lloc++;
-                    return { ...node, sym: locMap[node.sym] };
-                }
-                return null;
-            },
-        },
-        null,
-    );
-
-    if (bad) {
-        console.error('bad reloc');
-        console.log(expr);
-        console.log(locMap);
-        console.log(reloced);
-        return null;
-    }
-
-    return reloced;
-}

@@ -9,7 +9,7 @@ import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
 import { Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { relocify } from '../web/ide/yankFromSandboxToLibrary';
+import { relocify } from '../web/ide/relocify';
 import { splitCase } from './test-utils';
 
 const data = `
