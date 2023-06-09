@@ -396,7 +396,10 @@ export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
     nodeToString(nodeForType(type, hashNames), hashNames);
 
 describe('completion and such', () => {
+    let line = 0;
     data.forEach((chunk, i) => {
+        const fname = `progress/complete.test.ts:${line + 20}`;
+        line += chunk.split('\n').length + 1;
         const only = chunk.startsWith('!!!');
         if (only) {
             chunk = chunk.slice(3);
@@ -406,7 +409,7 @@ describe('completion and such', () => {
         // const [input, expected, ...errors] = splitIndented(chunk);
         // let expectedType =
         //     errors.length && errors[0].startsWith('->') ? errors.shift() : null;
-        (skip ? it.skip : only ? it.only : it)(`${i} ${input}`, () => {
+        (skip ? it.skip : only ? it.only : it)(`${fname} ${i} ${input}`, () => {
             const ctx = newCtx();
             let { map: data, nidx } = parseByCharacter(
                 input.replace(/\s+/g, ' '),
