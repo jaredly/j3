@@ -27,7 +27,7 @@ import { CstCtx, Ctx, HistoryItem, Sandbox } from '../../src/to-ast/library';
 import { transformNode } from '../../src/types/transform-cst';
 import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
 import { hashedToTree, hashedTreeRename } from '../../src/db/hash-tree';
-import { makeHash } from '../ide/initialData';
+import { makeHash } from '../ide/makeHash';
 
 type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }

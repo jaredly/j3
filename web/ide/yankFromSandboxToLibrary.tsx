@@ -10,7 +10,7 @@ import { validName, validateExpr } from '../../src/get-type/validate';
 import { Error } from '../../src/types/types';
 import { getType } from '../../src/get-type/get-types-new';
 import { transformExpr } from '../../src/types/walk-ast';
-import { makeHash } from './initialData';
+import { makeHash } from './makeHash';
 import { selectEnd } from '../../src/state/navigate';
 import { addToHashedTree, flatToTree } from '../../src/db/hash-tree';
 import { Def, DefType } from '../../src/types/ast';

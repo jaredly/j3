@@ -4,11 +4,8 @@ import { getIDB } from '../../src/db/db';
 import { addNamespaces, getDefinitions, getNames } from '../../src/db/library';
 import { getSandbox, getSandboxes } from '../../src/db/sandbox';
 import { HashedTree, addToHashedTree } from '../../src/db/hash-tree';
-import * as blake from 'blakejs';
 import { Db, initialize } from '../../src/db/tables';
-
-export const makeHash = (map: unknown): string =>
-    blake.blake2bHex(JSON.stringify(map));
+import { makeHash } from './makeHash';
 
 export const initialData = async (sandbox: string | null) => {
     const db = await getIDB();

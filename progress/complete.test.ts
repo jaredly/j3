@@ -322,6 +322,7 @@ Second type: 'Yes
 
 (let [x 1] x ^b^T^b^b
 = (let x)
+0: first not array
 `
     .trim()
     .split('\n\n');
