@@ -310,7 +310,8 @@ export const expandEnumItems = (
                     type: 'error',
                     error: {
                         type: 'misc',
-                        message: 'unknown local',
+                        message:
+                            'unknown local while expanding enums: ' + item.sym,
                         path,
                         form: item.form,
                     },

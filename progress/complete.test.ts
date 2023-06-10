@@ -306,8 +306,18 @@ Path: Hi -> body -> Return
 (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
 -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
 
+!!!(defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
+  ('Return v))
+(fn [x:(@task ('Hi () ()) 10)] (to-result x 10))
+-> (fn [x:(@task ('Hi () ()) 10)] (@task ('Hi () ()) 10))
+
+(defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
+  ('Return v))
+(fn [x:('Return 10)] (to-result x 10))
+-> (fn [x:(@task ('Hi () ()) 10)] (@task ('Hi () ()) 10))
+
 (deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn task/to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
+(defn to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
   ('Return v))
 (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
 -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))

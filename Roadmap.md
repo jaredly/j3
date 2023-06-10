@@ -6,6 +6,14 @@
   - so, start with a fresh library each time
 - [ ] now fix the yanks that don't work
 
+hrmmmmmmmmm so
+expandEnumItems ; I've got a `local type`, but ...
+it's from a ~global item, so the local type isn't mapped.
+I would ... want to ... like poison "local" types from global
+items, because I shouldn't be able to reference them, right?
+
+What's a simple test for it?
+
 
 # Context-sensitive refactors
 
