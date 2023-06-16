@@ -306,6 +306,7 @@ export const expandEnumItems = (
         if (item.type === 'local') {
             const local = ctx.results.localMap.types[item.sym];
             if (!local) {
+                debugger;
                 return {
                     type: 'error',
                     error: {

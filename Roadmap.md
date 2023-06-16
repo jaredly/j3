@@ -1,4 +1,7 @@
 
+# WebGL Stuff
+https://github.com/oframe/ogl
+
 # TESTS FOR YANKING
 
 - because my dealio obvs isn't working all the time
@@ -13,6 +16,19 @@ I would ... want to ... like poison "local" types from global
 items, because I shouldn't be able to reference them, right?
 
 What's a simple test for it?
+
+
+
+
+Ok, so `tryToInferTypeArgs` is trying to access localMap
+but this map isn't local.
+so
+how do we deal with that.
+
+
+
+
+
 
 
 # Context-sensitive refactors
