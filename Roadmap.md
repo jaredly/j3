@@ -1,4 +1,66 @@
 
+# Macros and such
+
+So, unison just released a feature, "structured find & replace"
+
+```
+incrementAndEtaReduce x f =
+  @rewrite
+    term x + 1 ==> Nat.increment x
+    term (arg -> f arg) ==> f
+
+eitherToOptional e a =
+  @rewrite
+    term Left e ==> None
+    term Right a ==> Some a
+    case Left e ==> None
+    case Right a ==> Some a
+    signature e a . Either e a ==> Optional a
+```
+
+So that's kinda cool, but I'd rather have
+a little less magic
+
+```clj
+(defn incRule [sym]
+  (let [x (sym "x") y (sym "y")]
+    {find `(+ `x 1)
+    replace `(Nat.increment `x)}))
+; ok, so how to stay pure
+; right
+; like ... maybe I just use .. a special syntax idk
+; ok so passing in a `sym` function is maybe the way?
+```
+
+hrmm
+so, the "we need a way to bind stuff" is definitely
+a question.
+I guess I could use an effect as well.
+
+```clj
+(defn incRule []
+  (let [x (! sym "x")
+        y (! sym "y")]
+    {find `(+ `x 1)
+    replace `(Nat.increment `x)}))
+```
+
+And then ... we just need a "sym" AST node.
+and then we're good? I think?
+
+I can have a `rewrite` function that takes
+a `AST` and an `array (fn [] (@task [('Sym string AST)] {find AST replace AST})` and then rewrites??
+
+So, I'll want to import the AST whatsits ...
+... and like think about libraries and sandboxes some more
+
+What can I think of as a good little macro example?
+
+
+
+
+
+
 # WebGL Stuff
 https://github.com/oframe/ogl
 
@@ -41,7 +103,7 @@ how do we deal with that.
 
 - [ ] trying to get `yank` to cover all the bases.
   I should probably write some tests??
-- [x] deleting the whole of a node should delete it 
+- [x] deleting the whole of a node should delete it
 - [x] rename a sandboxy
 - [ ] [library] on hover of a thing, show the thing in like a popover
 - [ ] on click of a thing, drop it on in to the dealio
@@ -653,7 +715,7 @@ https://twitter.com/jaredforsyth/status/1538179622004834307
 
 - So the `state` ... needs a library, that's been prepopulated with builtins, and also it needs builtins, and a sandbox.
 
-WAAIT 
+WAAIT
 ok
 so
 my ctx
@@ -708,7 +770,7 @@ ALSO local (`let`s) can't do namespaces. off-limits folks.
 
 - [x] Decide what data structure is holding my builtins
 - [ ] make a code to prepopulate the library with builtins
-- [ ] 
+- [ ]
 
 ok so the library keeps good track of namespaces, which I like.
 
@@ -760,7 +822,7 @@ yeah actually any fanciness in namespaces is all for nought, because they are ju
 MEANING
 I need a different kind of definition? That is a "something fun"?
 naw
-I think I'll justtttt 
+I think I'll justtttt
 yeah actually.
 So the "sugar" part of things
 would happen in auto-creating `(def one onetwo.one)` if you want.
@@ -912,7 +974,7 @@ in contrast to the sandbox that you're working in.
   I want to change `Ctx` to have that nameLookup on it.
   - alsooo when pasting, we need to de-hashify locals
     if they're no longer in scope
-  - 
+  -
 
 - [ ] BUG (backspace on a '.' when the target is a hash, doesn't select correctly, because it doesn't know how "long" the text of the hashed is.)
 
@@ -1565,7 +1627,7 @@ ALSO let's do normal mode.
 - [ ] but RECURSION is a big deal too. and maybe the firster deal
 
 - [ ] I kindof want tests
-  - [ ] 
+  - [ ]
 
 ## SO TESTS
 
@@ -1729,7 +1791,7 @@ keyboards:
 
 - [ ] and, dot.things
   - so for this, you can have .one.two or one.two.three
-  - 
+  -
 
 - [ ] I should autocomplete 'def/defn/deftype'
 
@@ -1739,7 +1801,7 @@ keyboards:
 # Very next stuff
 
 - [x] adding an argument (space?) to a function that's not resolved, should resolve it?
-  - So, this is like ... "when you space off of a thing, that you have just modified probably(??)", it might 
+  - So, this is like ... "when you space off of a thing, that you have just modified probably(??)", it might
     - like (== 1)
     - is it right when it gets parsed as a 1? And like, if you then change it to a `1.`, does it re-evaluate the whole thing?
     I guess that could be fine.
@@ -1958,7 +2020,7 @@ although that doesn't sound terrible 🤔
 
 - [ ] flag duplicate identifiers?
 - [ ] update the annotation to match the pattern
-  - [ ] 
+  - [ ]
 - [x] auto-add :1 sym hashes to patterny things
 
 - [ ] oooops ok so localMap is only valid for the given toplevel
@@ -2011,7 +2073,7 @@ although that doesn't sound terrible 🤔
 - [ ] autocomplete shouldn't know about things /below/ the current sandboxy whatsit.
   I think this means that in the sandbox, I have to make a new sub-ctx each time.
 - [ ] write tests that feed some code character-by-character to my editor stack, to make sure things work ok
-- [ ] write tests that create a tree node-by-node, 
+- [ ] write tests that create a tree node-by-node,
 
 - [x] OK time for layout to not be in .map
 - [x] now that we're locking down hashes, need
@@ -2380,7 +2442,7 @@ what other thing can hide? probably macros? or like watchers?
 - [x] move the web UI over to the new type checking and valdiation
 
 - [x] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
-  - 
+  -
 
 
 - [x] hmmmmmm I think this is a listener issue?
