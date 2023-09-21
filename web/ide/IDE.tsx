@@ -351,7 +351,20 @@ const TabTitle = ({
                 <input
                     value={edit}
                     onChange={(evt) => setEdit(evt.target.value)}
-                    style={{ width: 100 }}
+                    style={{
+                        width: 200,
+                        color: 'inherit',
+                        fontFamily: 'inherit',
+                        position: 'relative',
+                        backgroundColor: '#000',
+                        padding: '4px 8px',
+                        borderRadius: 3,
+                        border: 'none',
+                        fontWeight: 'inherit',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
                 />
                 <button
                     onClick={() => {

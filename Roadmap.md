@@ -1,4 +1,12 @@
 
+# Ok so a roadmap
+
+- [ ] so, in the sandbox ... you can skip the prefix, right?
+- [ ] oooh ok, so when you're editiing something, I want everything from the same
+  namespace to be in a box together. That's a great solution.
+
+
+
 # Macros and such
 
 So, unison just released a feature, "structured find & replace"
