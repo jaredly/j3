@@ -1,53 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Db } from '../../src/db/tables';
+import { getCtx } from '../../src/getCtx';
+import { selectEnd } from '../../src/state/navigate';
 import { Env, Sandbox } from '../../src/to-ast/library';
-import { useMenu } from '../custom/ByHand';
-import { Action, UIState } from '../custom/UIState';
-import { HiddenInput } from '../custom/HiddenInput';
 import { ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
+import { useMenu } from '../custom/ByHand';
 import { Cursors } from '../custom/Cursors';
-import { Root } from '../custom/Root';
+import { HiddenInput } from '../custom/HiddenInput';
 import { Hover } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
-import { selectEnd } from '../../src/state/navigate';
-import { getCtx } from '../../src/getCtx';
-import {
-    IconButton,
-    IconBxCheck,
-    IconBxsPencil,
-    IconCancel,
-} from '../fonts/Icons';
-import { css } from '@linaria/core';
+import { Root } from '../custom/Root';
+import { UIState } from '../custom/UIState';
 import { IDEAction } from './IDE';
-import { updateSandboxMeta } from '../../src/db/sandbox';
-import { Db } from '../../src/db/tables';
-
-// type SandboxState = {
-//     id: string;
-//     history: HistoryItem;
-//     regs: RegMap;
-//     hover: Path[];
-//     latestResults: CompilationResults;
-// } & State;
-// const st : UIState = {}
-// type IDEState = {
-//     builtins: Builtins;
-//     library: Library;
-//     sandboxes: { [id: string]: Sandbox['meta'] };
-//     // One active sandbox at a time is fine
-//     sandbox?: SandboxState;
-//     clipboard: ClipboardItem[][];
-// };
-// export const reduce = (state: IDEState, action: Action): IDEState => {
-//     return state;
-// };
-// const getInitialState = (v: null): IDEState => {
-//     return {
-//         ...newEnv(),
-//         sandboxes: {},
-//         clipboard: [],
-//     };
-// };
 
 export const SandboxView = ({
     // env,

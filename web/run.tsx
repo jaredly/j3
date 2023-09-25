@@ -55,7 +55,6 @@ initialData(location.hash ? location.hash.slice(1) : null).then(
                 <ErrorBoundary>
                     <IDE initial={initial} />
                 </ErrorBoundary>
-                ,
             </React.StrictMode>,
         ),
     (err) => {

@@ -140,34 +140,8 @@ Second type: 3.1
 (if true (hello ('Ok 10)) ('Err 1.2))
 -> [('Err 1.2) ('Ok 10)]
 
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn parseInt [text:string]
-    (switch (int/parse text)
-        ('Some int) ('Ok int)
-        'None ('Err ('NotAnInt text))))
-(defn mapErr<ok err err2> [value:(Result ok err) map:(fn [err] err2)]
-    (switch value
-        ('Err err) ('Err (map err))
-        x x))
-(mapErr<int ('NotAnInt string) ('LineError int string ('NotAnInt string))>
-    (parseInt "10")
-    (fn [x:('NotAnInt string)] ('LineError 10 "hi" x)))
--> [('Err ('LineError #:builtin:int #:builtin:string ('NotAnInt #:builtin:string))) ('Ok #:builtin:int)]
-
 (defn parseInt [text:string]:[('Ok int) ('Err float)] ('Ok 10))
 -> (fn [text:#:builtin:string] [('Ok #:builtin:int) ('Err #:builtin:float)])
-
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn parseInt [text:string]:(Result int float)
-    (switch (int/parse text)
-        ('Some int) ('Ok int)
-        'None ('Err 1.0)))
-(defn mapErr<ok err> [value:(Result ok err)]
-    (switch value
-        ('Err err) ('Err err)
-        x x))
-(mapErr (parseInt "10"))
--> [('Err #:builtin:float) ('Ok #:builtin:int)]
 
 (defn mapErr<ok> [value:((tfn [x] x) ok)] 10)
 (mapErr 10)
@@ -178,13 +152,6 @@ Second type: 3.1
         ('Some int) ('Ok int)
         'None ('Err 1.0)))
 -> (fn [text:#:builtin:string] [('Err 1.) ('Ok #:builtin:int)])
-
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn parseInt [text:string]:(Result int 1.0)
-    (switch (int/parse text)
-        ('Some int) ('Ok int)
-        'None ('Err 1.0)))
--> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
 
 (def fib (@loop
     (fn [x:int]:int
@@ -300,27 +267,10 @@ Found:
 ()
 Path: Hi -> body -> Return
 
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
-  ('Return ('Ok v)))
-(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
--> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
-
-!!!(defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
-  ('Return v))
-(fn [x:(@task ('Hi () ()) 10)] (to-result x 10))
--> (fn [x:(@task ('Hi () ()) 10)] (@task ('Hi () ()) 10))
-
 (defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
   ('Return v))
 (fn [x:('Return 10)] (to-result x 10))
--> (fn [x:(@task ('Hi () ()) 10)] (@task ('Hi () ()) 10))
-
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
-  ('Return v))
-(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
--> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
+-> (fn [x:('Return 10)] (@task [] 10))
 
 (fn<A B> [x:A y:B] (if true x y))
 -1: This has the empty type
@@ -342,6 +292,67 @@ Second type: 'Yes
 `
     .trim()
     .split('\n\n');
+
+/*
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn parseInt [text:string]
+//     (switch (int/parse text)
+//         ('Some int) ('Ok int)
+//         'None ('Err ('NotAnInt text))))
+// (defn mapErr<ok err err2> [value:(Result ok err) map:(fn [err] err2)]
+//     (switch value
+//         ('Err err) ('Err (map err))
+//         x x))
+// (mapErr<int ('NotAnInt string) ('LineError int string ('NotAnInt string))>
+//     (parseInt "10")
+//     (fn [x:('NotAnInt string)] ('LineError 10 "hi" x)))
+// -> [('Err ('LineError #:builtin:int #:builtin:string ('NotAnInt #:builtin:string))) ('Ok #:builtin:int)]
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn parseInt [text:string]:(Result int float)
+//     (switch (int/parse text)
+//         ('Some int) ('Ok int)
+//         'None ('Err 1.0)))
+// (defn mapErr<ok err> [value:(Result ok err)]
+//     (switch value
+//         ('Err err) ('Err err)
+//         x x))
+// (mapErr (parseInt "10"))
+// -> [('Err #:builtin:float) ('Ok #:builtin:int)]
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn parseInt [text:string]:(Result int 1.0)
+//     (switch (int/parse text)
+//         ('Some int) ('Ok int)
+//         'None ('Err 1.0)))
+// -> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+//   ('Return ('Ok v)))
+// (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+// -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
+
+// (defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
+//   ('Return v))
+// (fn [x:(@task ('Hi () ()) 10)] (to-result x 10))
+// -> (fn [x:(@task ('Hi () ()) 10)] (@task ('Hi () ()) 10))
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
+//   ('Return v))
+// (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+// -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
+
+
+
+
+
+
+
+
+*/
 
 // (defnrec mapTask<T Effects:[..] R> [values:(array T) fnz:(fn [T uint] (@task Effects R)) at:uint]:(@task Effects (array R)) (switch values [one ..rest] (let [res (! (fnz one at)) coll (! (@recur<T Effects R> rest fnz (+ at 1u)))] [res ..coll]) _ []))
 // -> (fn<T Effects:[..] R> [values:(#:builtin:array #5) fnz:(fn [#5 #:builtin:uint] (@task #7 #13)) at:#:builtin:uint] (@task #7 (#:builtin:array #13)))

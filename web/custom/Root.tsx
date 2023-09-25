@@ -136,25 +136,20 @@ export function Root({
                             style={{
                                 marginRight: 4,
                                 width: 20,
-                                // backgroundColor: 'red',
                                 height: 10,
                             }}
                         >
                             {got?.type === 'def' || got?.type === 'deftype' ? (
                                 <div
                                     onClick={() => {
-                                        // the click
                                         const loc = got.form.loc;
-                                        // if (got.type === 'def') { }
                                         dispatch({
                                             type: 'yank',
                                             expr: got,
                                             loc,
                                         });
                                     }}
-                                    style={{
-                                        cursor: 'pointer',
-                                    }}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     &lt;-
                                 </div>

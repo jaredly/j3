@@ -1,61 +1,21 @@
 
 
-## Literal
-1 1u 1.0 1i
-"hi" #x0cbc
+---
 
-(can I have a super-number type? like it seems like a way about it)
-
-## Collection
-(array v l)
-(map k v)
-{record}
-
-## Union
-'Ok ('Ok v)
-['A 'B]
-[- ['A 'B] 'A] => ['B]
-
-## Generics
-(tfn [x:t] t)
-(a t)
-([a b] t) => [(a t) (b t)]
-({a b} t) => {a (b t)}
-
-## Specials
-(fn [a:t b:t] t)
-(@loop @recur)
-
-## Literal Math
-(+ 1 uint)
-(- 2 uint)
-
-
---------------------------------------
-
-So, also I'm wondering about algorithm W.
-Can I first ignore multiple dispatch?
-and like assume everytihng is perfectly specified
-
-ok yeah, let's just implement algorithm w
-and then see how hard it us to add the other nicities that I want
-
-does that sound like it would work? lol
-
--------------------------------------
-
-I also, think I want to, actually get typescript generation working,
-so I can have some interesting demos of the language features,
-dontchaknow.
-
-I mean it would be good to get more settled on language semantics and such.
-Don't want to build too many things to have to rebuild them.
+Random naming ideas:
+- choux
+  - ooh it's actually free on npm? wow
+- flora (although floralang is like some film director?)
+- mala (bad in latin, spanish)
+- mori (memento mori)
 
 
 
 
 
---------
+
+------------------------------------
+
 
 
 I'm back to the conundrum
