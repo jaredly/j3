@@ -8,7 +8,7 @@ import { sandboxState } from './SandboxView';
 import { HiddenInput } from '../custom/HiddenInput';
 import { useMenu } from '../custom/ByHand';
 import { Cursors } from '../custom/Cursors';
-import { UIStateChange, calcHistoryItem } from '../custom/reduce';
+import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import {
     State,
     StateChange,
@@ -93,12 +93,10 @@ export const Test = ({ env }: { env: Env }) => {
 };
 
 export const reduce = (state: NUIState, action: Action): NUIState => {
-    // ignoreeeeee
-    if (
-        action.type === 'undo' ||
-        action.type === 'redo' ||
-        action.type === 'yank'
-    ) {
+    if (action.type === 'undo' || action.type === 'redo') {
+        return undoRedo(state, action.type);
+    }
+    if (action.type === 'yank') {
         return state;
     }
     const update = actionToUpdate(state, action);

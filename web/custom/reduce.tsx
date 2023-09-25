@@ -194,7 +194,7 @@ export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
     return prev;
 };
 
-export const undoRedo = (state: UIState, kind: 'undo' | 'redo') => {
+export const undoRedo = (state: NUIState, kind: 'undo' | 'redo') => {
     const undid =
         kind === 'undo' ? undoItem(state.history) : redoItem(state.history);
     if (!undid) {
@@ -220,11 +220,8 @@ export const undoRedo = (state: UIState, kind: 'undo' | 'redo') => {
         }
     });
 
-    const { ctx } = getCtx(smap, state.root, state.nidx, state.ctx.global);
-
     return {
         ...state,
-        ctx,
         map: smap,
         at: nitem.at,
         history: state.history.concat([nitem]),
@@ -242,7 +239,14 @@ export const reduce = (
             return yankFromSandboxToLibrary(state, action, meta);
         case 'undo':
         case 'redo': {
-            return undoRedo(state, action.type);
+            const next = undoRedo(state, action.type);
+            const { ctx } = getCtx(
+                next.map,
+                state.root,
+                state.nidx,
+                state.ctx.global,
+            );
+            return { ...next, ctx };
         }
         default:
             const update = actionToUpdate(state, action);

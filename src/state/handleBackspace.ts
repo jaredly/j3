@@ -114,7 +114,7 @@ export function handleBackspace(
         'values' in parent
     ) {
         const gpath = fullPath[fullPath.length - 3];
-        if (gpath.type === 'child') {
+        if (gpath?.type === 'child') {
             const gparent = map[gpath.idx];
             const changed = modChildren(gparent, (children) => {
                 children.splice(gpath.at, 1, ...parent.values);
