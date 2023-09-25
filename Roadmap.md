@@ -1,9 +1,372 @@
 
+
+## Literal
+1 1u 1.0 1i
+"hi" #x0cbc
+
+(can I have a super-number type? like it seems like a way about it)
+
+## Collection
+(array v l)
+(map k v)
+{record}
+
+## Union
+'Ok ('Ok v)
+['A 'B]
+[- ['A 'B] 'A] => ['B]
+
+## Generics
+(tfn [x:t] t)
+(a t)
+([a b] t) => [(a t) (b t)]
+({a b} t) => {a (b t)}
+
+## Specials
+(fn [a:t b:t] t)
+(@loop @recur)
+
+## Literal Math
+(+ 1 uint)
+(- 2 uint)
+
+
+--------------------------------------
+
+So, also I'm wondering about algorithm W.
+Can I first ignore multiple dispatch?
+and like assume everytihng is perfectly specified
+
+ok yeah, let's just implement algorithm w
+and then see how hard it us to add the other nicities that I want
+
+does that sound like it would work? lol
+
+-------------------------------------
+
+I also, think I want to, actually get typescript generation working,
+so I can have some interesting demos of the language features,
+dontchaknow.
+
+I mean it would be good to get more settled on language semantics and such.
+Don't want to build too many things to have to rebuild them.
+
+
+
+
+
+--------
+
+
+I'm back to the conundrum
+of
+how to make my task thing
+work better
+idk
+like
+can it be less of a magic
+e.g. representable through macros
+or something.
+
+```clj
+(hi 10)
+(#hi 10)
+; what
+
+(@task ('log string ()) ())
+->
+(@loop [('Return ()) ('log string (fn [()] @recur))])
+
+(@task [('is-available string (Result bool ['UnableToCheck]))
+        ('log string ())
+        ('Failure [('InvalidLine string)
+                  ('NameIsTaken string)
+                  ('NotAnInt string)
+                  ('NotABool string)])]
+  Person)
+
+(@loop [('is-available string (fn [(Result bool ['UnableToCheck])] @recur))
+        ('log string (fn [()] @recur))
+        ('Failure [('InvalidLine string)
+                  ('NameIsTaken string)
+                  ('NotAnInt string)
+                  ('NotABool string)] ())
+        ('Return Person)])
+
+; BUT once expanded into @loop/@recor, merging is more complicated,
+; or rather merging doesn't merge the @recur's.
+
+(@loop [('Return ()) ('log string (fn [()] @recur))])
+
+(@loop ((tfn [t] [('Return ()) ('log string (fn [()] t))]) @recur))
+(@loop [('Return ()) ('log string (fn [()] @recur))])
+
+(@loop [
+  ((tfn [t] [('is-available string (fn [(Result bool ['UnableToCheck])] t))]) @recur)
+  ((tfn [t] [('log string (fn [()] t))]) @recur)
+])
+
+; SOOO WHAT does this do for us?
+; I think it allows us to treat things as more opaque, right?
+; Like I don't have to reach in there and fiddle with a @recur
+; I'm just adding things.
+; SOOOO is there a function (or macro I guess tbh)
+; that would take
+
+[
+  (tfn [t] [('is-available string (fn [(Result bool ['UnableToCheck])] t))])
+  (tfn [t] [('log string (fn [()] t))])
+]
+
+; and produce
+
+(@loop [
+  ((tfn [t] [('is-available string (fn [(Result bool ['UnableToCheck])] t))]) @recur)
+  ((tfn [t] [('log string (fn [()] t))]) @recur)
+])
+
+; ?
+; Importantly, I hope,
+; one of the items could be a type variable,
+; and it like would be fine.
+; that is to say
+; (Effects @recur)
+; assssslongggg as I have `kinds` though.
+; because Effects would need to be of kindd * -> [..] amiright.
+; although honestly could I do a bound that is a tfunction type?
+; ???
+; seems like a possibility, right?
+
+(defn task/to-result<Effects:[..] Errors:[..] Value> [
+    task-top:(@task [Effects ('Failure Errors)] Value)
+]:(@task Effects (Result Value Errors))
+
+  ((fnrec [task:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors))
+    (switch task
+      ('Failure error) ('Return ('Err error))
+      ('Return value) ('Return ('Ok value))
+      otherwise (withHandler<Effects Value
+                    ('Failure Errors) (Result Value Errors)> otherwise @recur)))
+task-top))
+
+; ok so under the new system:
+
+(defn task/to-result<Effects:(tfn [t:[..]] [..])
+                     Errors:(tfn [t:[..]] [..]) Value> [
+    task-top:(@task [Effects ('Failure Errors)] Value)
+]:(@task Effects (Result Value Errors)))
+
+; honestly I'd probably define a type like
+
+(deftype taskArg (tfn [t:[..]] [..]))
+
+; adnddd is there a way to make the other thing easier as well?
+
+(deftype task-single
+  (tfn [??? input output]
+    (tfn [t:[..]] [(??? input (fn [output] t))])))
+
+; lol ok this is where we just want a macro, right?
+; although do we really need it? Perhaps. When we're
+; specifying an arg for to-result maybe?
+; although, bear in mind that the argument
+; for to-result is currently (and ideally)
+; inferred. From the type of the first argument.
+; soooo we still need a way of un-wrapping the effect,
+; right?
+;
+; Anyway, the unwrapping ... would need to handle the loop/recur, right?
+;
+;
+; So, one issue with that...
+; is that I would be allowing a tfn as an item of a union
+; which isn't a tag or union. hmm.
+
+
+(task-single 'log string ())
+
+(defmacro task [arg1 arg2]
+  `(@loop )
+)
+
+(@loop ((tfn [t] [('Return ()) ('log string (fn [()] t))]) @recur))
+
+```
+
+
+
+------------------
+
+So, how were things broken up again?
+
+I had this editor dealio, that is working
+with a mostly-lisp representation.
+Anddddd then I have a ... parser? From the lispy
+into a TAST or somethign?
+
+CST = lispydeal
+AST = typed, real talk
+
+and I have functions to convert a given dealio
+from CST to AST and back
+
+honestly I wonder if I could simplify the CST
+to be like
+- parened left='[' right=']'
+
+and it's like
+how hard is this anyway
+anyways
+um
+
+
+
+---------------
+
+1u +1 1.1
+"ø ${10}" #x01abcd
+
+int/uint/float
+bool/string/bytes
+
+(array Value L=uint)
+(map Key Value)
+
+texture (? maybe just in glsl world? idk)
+
+
+
+uint is the type
+0...
+int is the type
+...
+float is the type
+...f
+
+(range [Inf (Int int)] [Inf (Int int)])
+(urange uint [Inf (UInt uint)])
+(frange [Inf (Float float)] [Inf (Float float)])
+
+--> you know, having these `range` `frange` and `urange` types
+could work out ok. I'd just need to set up
+rules for how they are subtypes of int / uint / float
+b/c it would be far weirder for a random record type
+to be a subtype of int.
+
+anyway, so type syntax of
+0..1 would be kinda nice
+lol also runtime syntax letsbehonest
+
+[q: do we mess with having unions of ints and ranges and stuff? hrmmm. no. not at the moment at least]
+
+
+
+Literal Types
+- identifier
+- number
+- bool
+- string
+
+- builtin "name"
+  - int/uint/float/bool/string/bytes/any/none
+
+- (t t t)           // apply
+- (T t t)           // tag
+- [t t t t ...]     // union
+- (@loop @recur)    // recursion
+- (@task t t)       // task...
+- (fn [a:t b:t] t)  // fn
+- (tfn [a b:t] t)   // tfn
+- {name t nother t} // record
+
+~math types~
+- a + b
+- a - b
+
+
+(so, I want a system where I know, as well as I can,
+the type of the thing expected under the cursor)
+
+
+
+
+
+
+
+
+
+
+
+
+
+- apply T ...T
+- tag "name" ...T
+- union ...T ?open
+- task T T
+- fn ...name:T Body
+- tfn ...name:?T Body
+
+
+
+
+
+
+## Things I could cut out
+
+- bool could be [True False]
+
+
+
+
+
+
+
+
+
+
+
+
 # Ok so a roadmap
 
 - [ ] so, in the sandbox ... you can skip the prefix, right?
 - [ ] oooh ok, so when you're editiing something, I want everything from the same
   namespace to be in a box together. That's a great solution.
+- [ ] a sandbox can have namespace shortcuts (aliases)
+  -> and those aliases can be taken into account
+
+So, my architecture at the moment is really geared toward maybe too much caching.
+Would I build it differently if I knew from the start that I didn't really need (or want)
+to cache within a given sandbox...
+
+
+Things I think about:
+
+- algebraic types are cool
+- is there a way to desugar
+  and resugar
+in such a way?
+that type inference is simpler?
+easier?
+idk.
+
+Also, my effects system requires a cheat.
+it requires a type macro that can't be expressed
+in the type system itself
+even accounting for loop/recur types.
+
+isss there a way to ... expand ... everything out ...
+such that type inference is trivial?
+
+
+
+
+
+
+
+
+---
+
+Hmm what am I doing with this?
 
 
 
