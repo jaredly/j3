@@ -1,6 +1,6 @@
-import React, { useReducer, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import { emptyMap } from '../../src/parse/parse';
-import { Env, HistoryItem, Sandbox } from '../../src/to-ast/library';
+import { Ctx, Env, HistoryItem, Sandbox } from '../../src/to-ast/library';
 import { ListLikeContents } from '../../src/types/mcst';
 import { Root } from '../custom/Root';
 import { Action, NUIState, UIState, UpdatableAction } from '../custom/UIState';
@@ -18,6 +18,8 @@ import {
 } from '../../src/state/getKeyUpdate';
 import { verticalMove } from '../custom/verticalMove';
 import { redoItem, undoItem } from '../../src/to-ast/history';
+import { layout } from '../../src/layout';
+import { Hover, calc } from '../custom/Hover';
 
 const meta: Sandbox['meta'] = {
     id: 'id',
@@ -30,9 +32,13 @@ const meta: Sandbox['meta'] = {
     node_count: 0,
 };
 
+const k = `test-infer-w`;
+
 export const Test = ({ env }: { env: Env }) => {
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => {
-        const map = emptyMap();
+        const saved = localStorage.getItem(k);
+        const map = saved ? JSON.parse(saved) : emptyMap();
+
         let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
         return {
             map,
@@ -47,7 +53,34 @@ export const Test = ({ env }: { env: Env }) => {
     });
     const [debug, setDebug] = useState(true);
 
+    useEffect(() => {
+        if (state.at.length) {
+            localStorage.setItem(k, JSON.stringify(state.map));
+        }
+    }, [state]);
+
     const tops = (state.map[state.root] as ListLikeContents).values;
+
+    const results = useMemo(() => {
+        const results: Ctx['results'] = {
+            display: {},
+            errors: {},
+            globalNames: {},
+            hashNames: {},
+            localMap: {
+                terms: {},
+                types: {},
+            },
+            mods: {},
+            toplevel: {},
+        };
+
+        tops.forEach((top) => {
+            layout(top, 0, state.map, results.display, results.hashNames, true);
+        });
+
+        return results;
+    }, [state.map]);
 
     return (
         <div>
@@ -63,18 +96,7 @@ export const Test = ({ env }: { env: Env }) => {
                 tops={tops}
                 debug={false}
                 showTop={() => null}
-                results={{
-                    display: {},
-                    errors: {},
-                    globalNames: {},
-                    hashNames: {},
-                    localMap: {
-                        terms: {},
-                        types: {},
-                    },
-                    mods: {},
-                    toplevel: {},
-                }}
+                results={results}
             />
             <button
                 onClick={() => setDebug(!debug)}
@@ -86,8 +108,14 @@ export const Test = ({ env }: { env: Env }) => {
             >
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
+            <Hover
+                state={state}
+                dispatch={dispatch}
+                calc={() => calc(state, results, (err) => 'lol an error')}
+            />
             <Cursors at={state.at} regs={state.regs} />
             Here we are
+            {JSON.stringify(state.hover)}
         </div>
     );
 };
@@ -146,10 +174,10 @@ export const reduceUpdate = (
 const actionToUpdate = (
     state: NUIState,
     action: UpdatableAction,
-): StateChange | void => {
+): StateChange | UIStateChange | void => {
     switch (action.type) {
-        // case 'hover':
-        //     return { type: 'ui', hover: action.path };
+        case 'hover':
+            return { type: 'ui', hover: action.path };
         case 'menu':
             return { type: 'menu', menu: { selection: action.selection } };
         // case 'menu-select': {

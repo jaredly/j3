@@ -1,6 +1,5 @@
 import React, { useLayoutEffect, useState } from 'react';
 import { getType } from '../../src/get-type/get-types-new';
-import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
@@ -8,38 +7,37 @@ import { errorToString } from '../../src/to-cst/show-errors';
 import { fromMCST } from '../../src/types/mcst';
 import { State } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
-import { Action, UIState } from './UIState';
+import { Action, NUIState, UIState } from './UIState';
 import { subRect } from './Cursors';
+import { Ctx } from '../../src/to-ast/library';
+import type { Error } from '../../src/types/types';
 
 const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
     return got?.main?.node ?? got?.start?.node ?? got?.outside?.node;
 };
 
-export const Hover = ({
-    state,
-    dispatch,
-}: {
-    state: UIState;
-    dispatch: React.Dispatch<Action>;
-}) => {
+export const calc = (
+    state: NUIState,
+    results: Ctx['results'],
+    errorToString: (err: Error) => void,
+) => {
     let found: { idx: number; text: string }[] = [];
     for (let i = state.hover.length - 1; i >= 0; i--) {
         let idx = state.hover[i].idx;
         if (idx === -1) continue;
-        if (state.ctx.results.errors[idx]?.length) {
+        if (results.errors[idx]?.length) {
             found.push({
                 idx,
-                text: state.ctx.results.errors[idx]
-                    .map((err) => errorToString(err, state.ctx))
+                text: results.errors[idx]
+                    .map((err) => errorToString(err))
                     .join('\n'),
             });
         }
     }
-    // if (found == null) {
     const last = state.hover[state.hover.length - 1]?.idx;
     if (last != null) {
-        const style = state.ctx.results.display[last]?.style;
+        const style = results.display[last]?.style;
         if (
             (style?.type === 'id' ||
                 style?.type === 'id-decl' ||
@@ -49,15 +47,26 @@ export const Hover = ({
             found.push({
                 idx: last,
                 text: nodeToString(
-                    nodeForType(style.ann, state.ctx.results.hashNames),
-                    state.ctx.results.hashNames,
+                    nodeForType(style.ann, results.hashNames),
+                    results.hashNames,
                 ),
-                // ' ' +
-                // (style.hash + '').slice(0, 10),
             });
         }
     }
-    // }
+
+    return found;
+};
+
+export const Hover = ({
+    state,
+    dispatch,
+    calc,
+}: {
+    state: NUIState;
+    dispatch: React.Dispatch<Action>;
+    calc: () => { idx: number; text: string }[];
+}) => {
+    const found = calc();
 
     const node = found.length ? getRegNode(found[0].idx, state.regs) : null;
     // if (!node || found == null)

@@ -8,7 +8,7 @@ import { useLocalStorage } from '../Debug';
 import { useMenu } from '../custom/ByHand';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
-import { Hover } from '../custom/Hover';
+import { Hover, calc } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { Root } from '../custom/Root';
 import { UIState } from '../custom/UIState';
@@ -17,6 +17,7 @@ import { nilt } from '../../src/to-ast/builtins';
 import { getType } from '../../src/get-type/get-types-new';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
+import { errorToString } from '../../src/to-cst/show-errors';
 
 export const SandboxView = ({
     state,
@@ -77,7 +78,15 @@ export const SandboxView = ({
                 }}
             />
             <Cursors at={state.at} regs={state.regs} />
-            <Hover state={state} dispatch={dispatch} />
+            <Hover
+                state={state}
+                dispatch={dispatch}
+                calc={() =>
+                    calc(state, state.ctx.results, (err) =>
+                        errorToString(err, state.ctx),
+                    )
+                }
+            />
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
