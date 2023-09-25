@@ -162,6 +162,9 @@ const actionToUpdate = (
         //         clipboard: [action.items, ...state.clipboard],
         //     };
         case 'key':
+            if (!state.at.length) {
+                return;
+            }
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
                 return verticalMove(
                     { ...state, menu: undefined },
