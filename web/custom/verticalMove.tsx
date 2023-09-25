@@ -1,11 +1,11 @@
 import { calcOffset } from './calcOffset';
-import { UIState } from './UIState';
+import { NUIState, UIState } from './UIState';
 import { calcCursorPos, subRect } from './Cursors';
 import { Mods, StateSelect } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 
 export const verticalMove = (
-    state: UIState,
+    state: NUIState,
     up: boolean,
     mods: Mods,
 ): StateSelect | void => {

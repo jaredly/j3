@@ -44,6 +44,7 @@ export type StateSelect = {
 export type StateChange =
     | StateUpdate
     | StateSelect
+    | { type: 'full-select'; at: State['at']; autoComplete?: boolean }
     | void
     | {
           type: 'menu';
@@ -153,6 +154,9 @@ export const applyUpdate = (
         };
     } else if (update.type === 'menu') {
         return { ...state, menu: update.menu };
+    }
+    if (update.type === 'full-select') {
+        return { ...state, at: update.at };
     }
     let _: never = update;
     throw new Error(`unexpected update`);

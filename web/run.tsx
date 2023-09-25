@@ -3,6 +3,7 @@ import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { initialData } from './ide/initialData';
 import { IDE } from './ide/IDE';
+import { Test } from './ide/Test';
 
 declare global {
     var root: Root;
@@ -53,7 +54,8 @@ initialData(location.hash ? location.hash.slice(1) : null).then(
         root.render(
             <React.StrictMode>
                 <ErrorBoundary>
-                    <IDE initial={initial} />
+                    {/* <IDE initial={initial} /> */}
+                    <Test env={initial.env} />
                 </ErrorBoundary>
             </React.StrictMode>,
         ),

@@ -5,14 +5,14 @@ import { Path } from '../../src/state/path';
 import { Def, DefType } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
 
-export type UIState = {
-    // ui:{
+export type NUIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
-    ctx: Ctx;
     hover: Path[];
     history: HistoryItem[];
 } & State;
+
+export type UIState = { ctx: Ctx } & NUIState;
 
 export type RegMap = {
     [key: number]: {

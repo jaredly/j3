@@ -7,19 +7,19 @@ import {
 } from '../../src/state/clipboard';
 import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
-import { UIState, Action } from './UIState';
+import { UIState, Action, NUIState } from './UIState';
 import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
     state,
     dispatch,
     menu,
-    ctx,
+    hashNames,
 }: {
-    state: UIState;
+    state: NUIState;
     dispatch: React.Dispatch<Action>;
     menu?: { path: Path[]; items: AutoCompleteResult[] };
-    ctx: Ctx;
+    hashNames: { [hash: string]: string };
 }) {
     useEffect(() => {
         if (document.activeElement !== hiddenInput.current) {
@@ -60,18 +60,14 @@ export function HiddenInput({
             }}
             onCopy={(evt) => {
                 evt.preventDefault();
-                const items = collectClipboard(
-                    state.map,
-                    state.at,
-                    ctx.results.hashNames,
-                );
+                const items = collectClipboard(state.map, state.at, hashNames);
                 if (!items.length) {
                     return;
                 }
 
                 dispatch({ type: 'copy', items });
 
-                const text = clipboardText(items, ctx.results.hashNames);
+                const text = clipboardText(items, hashNames);
                 navigator.clipboard.write([
                     new ClipboardItem({
                         ['text/plain']: new Blob([text], {

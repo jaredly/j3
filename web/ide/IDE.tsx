@@ -51,7 +51,7 @@ export type IDEAction =
     | { type: 'open-sandbox'; sandbox: Sandbox }
     | { type: 'dashboard'; sandboxes: Sandbox['meta'][] };
 
-const topReduce = (state: IDEState, action: IDEAction): IDEState => {
+export const topReduce = (state: IDEState, action: IDEAction): IDEState => {
     switch (action.type) {
         case 'dashboard':
             return {
@@ -255,16 +255,8 @@ export const IDE = ({
                 <div style={{ flex: 1, overflow: 'auto' }}>
                     {state.current.type === 'sandbox' ? (
                         <SandboxView
-                            db={initial.db}
                             key={state.current.id}
                             state={state.current.state}
-                            meta={
-                                state.sandboxes.find(
-                                    (s) =>
-                                        s.id ===
-                                        (state.current as SelectedSandbox).id,
-                                )!
-                            }
                             dispatch={dispatch}
                         />
                     ) : (

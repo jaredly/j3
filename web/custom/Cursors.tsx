@@ -3,8 +3,15 @@ import { splitGraphemes } from '../../src/parse/parse';
 import { Path } from '../../src/state/path';
 import { UIState, RegMap } from './UIState';
 import { selectWithin } from './calcOffset';
+import { State } from '../../src/state/getKeyUpdate';
 
-export const Cursors = ({ state }: { state: UIState }) => {
+export const Cursors = ({
+    at,
+    regs,
+}: {
+    at: State['at'];
+    regs: UIState['regs'];
+}) => {
     const [blink, setBlink] = useState(false);
 
     const [cursorPos, setCursorPos] = useState(
@@ -24,12 +31,12 @@ export const Cursors = ({ state }: { state: UIState }) => {
             tid.current = null;
         }, 500);
         setCursorPos(
-            state.at.flatMap((at) => {
+            at.flatMap((at) => {
                 // if (at.end) {
                 //     return;
                 // }
                 const res: any = [];
-                const box = calcCursorPos(at.start, state.regs, true);
+                const box = calcCursorPos(at.start, regs, true);
                 if (box) {
                     res.push({
                         x: box.left,
@@ -39,7 +46,7 @@ export const Cursors = ({ state }: { state: UIState }) => {
                     });
                 }
                 if (at.end) {
-                    const box2 = calcCursorPos(at.end, state.regs, true);
+                    const box2 = calcCursorPos(at.end, regs, true);
                     if (box2) {
                         res.push({
                             x: box2.left,
@@ -52,7 +59,7 @@ export const Cursors = ({ state }: { state: UIState }) => {
                 return res;
             }),
         );
-    }, [state.at]);
+    }, [at]);
 
     return (
         <div>

@@ -18,7 +18,13 @@ import {
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { isRootPath } from './ByHand';
-import { Action, DualAction, UIState, UpdatableAction } from './UIState';
+import {
+    Action,
+    DualAction,
+    NUIState,
+    UIState,
+    UpdatableAction,
+} from './UIState';
 import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
 import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
@@ -29,7 +35,7 @@ import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
 import { hashedToTree, hashedTreeRename } from '../../src/db/hash-tree';
 import { makeHash } from '../ide/makeHash';
 
-type UIStateChange =
+export type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
     | { type: 'menu'; menu: State['menu'] }
     | { type: 'full-select'; at: State['at'] }
@@ -241,7 +247,11 @@ export const reduce = (
         default:
             const update = actionToUpdate(state, action);
             const next = reduceUpdate(state, update);
-            const item = calcHistoryItem(state, next);
+            const item = calcHistoryItem(
+                state,
+                next,
+                next.ctx.global.library.root,
+            );
             if (item) {
                 next.history = state.history.concat([item]);
             }
@@ -249,7 +259,11 @@ export const reduce = (
     }
 };
 
-const calcHistoryItem = (state: UIState, next: UIState): HistoryItem | null => {
+export const calcHistoryItem = (
+    state: NUIState,
+    next: NUIState,
+    libraryRoot: string,
+): HistoryItem | null => {
     if (next.map === state.map) {
         return null;
     }
@@ -282,7 +296,7 @@ const calcHistoryItem = (state: UIState, next: UIState): HistoryItem | null => {
             ? state.history[state.history.length - 1].id + 1
             : 0,
         ts: Date.now() / 1000,
-        libraryRoot: next.ctx.global.library.root,
+        libraryRoot,
     };
 };
 

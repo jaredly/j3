@@ -6,7 +6,7 @@ import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../../src/state/path';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
-import { UIState, Action } from './UIState';
+import { UIState, Action, NUIState } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
@@ -18,13 +18,17 @@ export function Root({
     dispatch,
     tops,
     debug,
-    ctx,
+    // ctx,
+    showTop,
+    results,
 }: {
-    state: UIState;
+    state: NUIState;
     dispatch: React.Dispatch<Action>;
     tops: number[];
     debug: boolean;
-    ctx: Ctx;
+    // ctx: Ctx;
+    showTop: (top: number) => React.ReactNode;
+    results: Ctx['results'];
 }) {
     const selections = React.useMemo(
         () =>
@@ -122,14 +126,8 @@ export function Root({
             }}
         >
             {tops.map((top, i) => {
-                const got = state.ctx.results.toplevel[top];
-                const tt = got
-                    ? got.type === 'def'
-                        ? got.ann ?? nilt
-                        : got.type === 'deftype'
-                        ? got.value
-                        : getType(got, state.ctx)
-                    : null;
+                const got = results.toplevel[top];
+                const tt = showTop(top);
                 return (
                     <div key={top} style={{ marginBottom: 8, display: 'flex' }}>
                         <div
@@ -163,9 +161,9 @@ export function Root({
                                 idx={top}
                                 map={state.map}
                                 reg={reg}
-                                display={ctx.results.display}
-                                hashNames={ctx.results.hashNames}
-                                errors={ctx.results.errors}
+                                display={results.display}
+                                hashNames={results.hashNames}
+                                errors={results.errors}
                                 dispatch={dispatch}
                                 selection={selections}
                                 path={[
@@ -179,15 +177,7 @@ export function Root({
                                     marginTop: 4,
                                 }}
                             >
-                                {tt
-                                    ? nodeToString(
-                                          nodeForType(
-                                              tt,
-                                              ctx.results.hashNames,
-                                          ),
-                                          ctx.results.hashNames,
-                                      )
-                                    : 'no type'}
+                                {tt}
                             </div>
                             {debug ? (
                                 <div>{sexp(fromMCST(top, state.map))}</div>

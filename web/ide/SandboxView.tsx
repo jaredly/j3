@@ -13,19 +13,15 @@ import { Menu } from '../custom/Menu';
 import { Root } from '../custom/Root';
 import { UIState } from '../custom/UIState';
 import { IDEAction } from './IDE';
+import { nilt } from '../../src/to-ast/builtins';
+import { getType } from '../../src/get-type/get-types-new';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { nodeForType } from '../../src/to-cst/nodeForType';
 
 export const SandboxView = ({
-    // env,
-    // sandbox,
-    db,
-    meta,
     state,
     dispatch,
 }: {
-    db: Db;
-    // env: Env;
-    // sandbox: Sandbox;
-    meta: Sandbox['meta'];
     state: UIState;
     dispatch: React.Dispatch<IDEAction>;
 }) => {
@@ -41,7 +37,7 @@ export const SandboxView = ({
             }}
         >
             <HiddenInput
-                ctx={state.ctx}
+                hashNames={state.ctx.results.hashNames}
                 state={state}
                 dispatch={dispatch}
                 menu={!state.menu?.dismissed ? menu : undefined}
@@ -61,9 +57,26 @@ export const SandboxView = ({
                 dispatch={dispatch}
                 tops={tops}
                 debug={debug}
-                ctx={state.ctx}
+                results={state.ctx.results}
+                showTop={(top) => {
+                    const got = state.ctx.results.toplevel[top];
+                    const tt = got
+                        ? got.type === 'def'
+                            ? got.ann ?? nilt
+                            : got.type === 'deftype'
+                            ? got.value
+                            : getType(got, state.ctx)
+                        : null;
+                    if (tt) {
+                        return nodeToString(
+                            nodeForType(tt, state.ctx.results.hashNames),
+                            state.ctx.results.hashNames,
+                        );
+                    }
+                    return 'no type';
+                }}
             />
-            <Cursors state={state} />
+            <Cursors at={state.at} regs={state.regs} />
             <Hover state={state} dispatch={dispatch} />
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
