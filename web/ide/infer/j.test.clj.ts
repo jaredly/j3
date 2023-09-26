@@ -1,5 +1,6 @@
 export default `
 1
+-> number
 
 "hi"
 -> string
@@ -16,6 +17,8 @@ x different arg numbers
 (fn [x] (+ 2 x))
 -> (fn [number] number)
 
+; polymorphic let
 (let [id (fn [x] x)]
     ((fn [a b] a) (id 2) (id "hi")))
+-> number
 `;

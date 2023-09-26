@@ -10,29 +10,32 @@ import raw from './j.test.clj';
 
 export const loadChunks = (text: string) => {
     let line = 1;
-    return text.split('\n\n').map((item, i) => {
-        let type: string | null = null;
-        let errors: string[] = [];
-        const lines = item.split('\n');
-        let title = null as null | string;
-        if (lines[0].startsWith(';')) {
-            title = lines.shift()!;
-        }
-        const code = lines
-            .filter((line) => {
-                if (line.startsWith('->')) {
-                    type = line.slice(2).trim();
-                } else if (line.startsWith('x ')) {
-                    errors.push(line.slice(2).trim());
-                } else {
-                    return true;
-                }
-            })
-            .join('\n');
-        let l = line;
-        line += lines.length + 1;
-        return { code, line: l, type, errors, title };
-    });
+    return text
+        .trim()
+        .split('\n\n')
+        .map((item, i) => {
+            let type: string | null = null;
+            let errors: string[] = [];
+            const lines = item.split('\n');
+            let title = null as null | string;
+            if (lines[0].startsWith(';')) {
+                title = lines.shift()!.slice(1).trim();
+            }
+            const code = lines
+                .filter((line) => {
+                    if (line.startsWith('->')) {
+                        type = line.slice(2).trim();
+                    } else if (line.startsWith('x ')) {
+                        errors.push(line.slice(2).trim());
+                    } else {
+                        return true;
+                    }
+                })
+                .join('\n');
+            let l = line;
+            line += lines.length + 1;
+            return { code, line: l, type, errors, title };
+        });
 };
 
 const FILE = join(__dirname, 'j.test.clj.ts');
@@ -47,13 +50,15 @@ export type Chunk = {
 };
 
 export const runChunk = (code: string) => {
-    const { map } = parseByCharacter(code, null);
+    const { map } = parseByCharacter(code.replaceAll(/\n\s*/g, ' '), null);
     const idx = (map[-1] as ListLikeContents).values[0];
     const node = fromMCST(idx, map);
     const parseErrors = {};
     const expr = parse(node, parseErrors);
     if (!expr) {
-        return { errors: Object.values(parseErrors) };
+        console.log(parseErrors);
+        console.log(code);
+        return { errors: ['unable to parse', ...Object.values(parseErrors)] };
     }
     const typs = {};
     try {
@@ -67,11 +72,14 @@ export const runChunk = (code: string) => {
 
 export const remakeFixture = (chunks: Chunk[]) => {
     return (
-        'export default `' +
+        'export default `\n' +
         chunks
             .map((chunk) => {
                 const res = runChunk(chunk.code);
                 const lines = [chunk.code];
+                if (chunk.title) {
+                    lines.unshift('; ' + chunk.title);
+                }
                 if (res.type) {
                     lines.push('-> ' + typToString(res.type));
                 }
@@ -79,7 +87,7 @@ export const remakeFixture = (chunks: Chunk[]) => {
                 return lines.join('\n');
             })
             .join('\n\n') +
-        '`;\n'
+        '\n`;\n'
     );
 };
 
@@ -89,4 +97,4 @@ if (name.endsWith('/j.fixture.ts')) {
     writeFileSync(FILE, remakeFixture(chunks));
 }
 
-console.log('done', process.argv);
+// console.log('done', process.argv);

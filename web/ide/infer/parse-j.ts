@@ -92,4 +92,5 @@ export const parse = (
                 : undefined;
         }
     }
+    errors[node.loc] = `unhandled node type ${node.type}`;
 };
