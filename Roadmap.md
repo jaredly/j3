@@ -1,9 +1,19 @@
 
+# Algorithm J : The Explanation
+
+So I should go through algorithm j
+and ... make a description for it?
+lol or like an interactive explanation?
+that would catch on like anything. ppl would love it.
+
+
 # Branch: infer-more
 So, we want a test dealio,
 where we don't actually have `Ctx` at all, right?
 This'll need a new UIState, I think.
 
+
+- [ ] get us the hovers pls
 
 
 

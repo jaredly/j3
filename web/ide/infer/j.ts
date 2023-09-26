@@ -2,13 +2,27 @@
 // nice.
 
 export type expr =
-    | { type: 'number'; value: number }
-    | { type: 'identifier'; id: string }
-    | { type: 'lambda'; names: string[]; expr: expr }
-    | { type: 'fncall'; fn: expr; args: expr[] }
-    | { type: 'let'; name: string; init: expr; body: expr };
+    | { type: 'number'; value: number; loc: number }
+    | { type: 'string'; value: string; loc: number }
+    | { type: 'bool'; value: boolean; loc: number }
+    | { type: 'identifier'; id: string; loc: number }
+    | {
+          type: 'lambda';
+          names: { name: string; loc: number }[];
+          expr: expr;
+          loc: number;
+      }
+    | { type: 'fncall'; fn: expr; args: expr[]; loc: number }
+    | {
+          type: 'let';
+          name: string;
+          nameloc: number;
+          init: expr;
+          body: expr;
+          loc: number;
+      };
 export type typ =
-    | { type: 'number' }
+    | { type: 'lit'; name: string }
     | { type: 'var'; var: typevar }
     | { type: 'fn'; args: typ[]; ret: typ };
 export type typevar =
@@ -24,15 +38,15 @@ let newvar = () => {
     current_typevar++;
     return current_typevar;
 };
-let newvar_t = (): typ => ({
+let newvar_t = (): Extract<typ, { type: 'var' }> => ({
     type: 'var',
     var: { type: 'unbound', var: newvar(), level: current_level },
 });
 
 export const typToString = (t: typ): string => {
     switch (t.type) {
-        case 'number':
-            return 'number';
+        case 'lit':
+            return t.name;
         case 'fn':
             return `(fn [${t.args.map(typToString).join(' ')}] ${typToString(
                 t.ret,
@@ -46,8 +60,6 @@ export const typToString = (t: typ): string => {
 };
 
 // SMap / HashableInt / ITbl
-
-type Tbl = { [id: number]: typ };
 
 let tvequal = (t1: typevar, t2: typevar) => {
     if (t1.type === 'unbound') {
@@ -66,17 +78,21 @@ let equal = (t1: typ, t2: typ): boolean => {
                 t1.args.every((arg, i) => equal(arg, t2.args[i])) &&
                 equal(t1.ret, t2.ret)
             );
-        case 'number':
-            return t2.type === 'number';
+        case 'lit':
+            return t2.type === 'lit' && t1.name === t2.name;
         case 'var':
             return t2.type === 'var' && tvequal(t1.var, t2.var);
     }
 };
 
+type Tbl = { [id: number]: Extract<typ, { type: 'var' }> };
 let inst = ({ typevars, typ }: polytype): typ => {
+    // Ok I'm pretty sure this is overkill
+    // That is, we just need to say for each var in typevars,
+    // change the varname (and level I guess idk) to a new one
     let replace_tvs = (tbl: Tbl, typ: typ): typ => {
         switch (typ.type) {
-            case 'number':
+            case 'lit':
                 return typ;
             case 'var': {
                 if (typ.var.type === 'bound') {
@@ -101,7 +117,7 @@ let inst = ({ typevars, typ }: polytype): typ => {
 
 let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
     switch (typ.type) {
-        case 'number':
+        case 'lit':
             return false;
         case 'var': {
             if (typ.var.type === 'bound') {
@@ -121,7 +137,10 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
 };
 
 export let unify = (t1: typ, t2: typ) => {
-    if (t1.type === 'number' && t2.type === 'number') {
+    if (t1.type === 'lit' && t2.type === 'lit') {
+        if (t1.name !== t2.name) {
+            throw new Error(`cannot unify ${t1.name} and ${t2.name}`);
+        }
         return;
     }
     if (t1.type === 'var' && t1.var.type === 'bound') {
@@ -164,7 +183,7 @@ export let unify = (t1: typ, t2: typ) => {
 let generalize = (t: typ): polytype => {
     let find_all_tvs = (typ: typ): number[] => {
         switch (typ.type) {
-            case 'number':
+            case 'lit':
                 return [];
             case 'var':
                 if (typ.var.type === 'bound') {
@@ -191,46 +210,63 @@ let generalize = (t: typ): polytype => {
 let dont_generalize = (typ: typ): polytype => ({ typevars: [], typ });
 
 export type Env = { [name: string]: polytype };
-let _infer = (env: Env, expr: expr): typ => {
+export type Results = { [loc: number]: typ };
+const track = (expr: expr, results: Results, typ: typ) => {
+    results[expr.loc] = typ;
+    return typ;
+};
+let _infer = (env: Env, expr: expr, results: Results): typ => {
     switch (expr.type) {
+        case 'bool':
+            return track(expr, results, { type: 'lit', name: 'bool' });
+        case 'string':
+            return track(expr, results, { type: 'lit', name: 'string' });
         case 'number':
-            return { type: 'number' };
+            return track(expr, results, { type: 'lit', name: 'number' });
         case 'identifier': {
             let s = env[expr.id];
             if (!s) {
                 throw new Error(`undefined ${expr.id}`);
             }
-            return inst(s);
+            return track(expr, results, inst(s));
         }
         case 'fncall': {
-            let t0 = _infer(env, expr.fn);
-            let t1 = expr.args.map((arg) => _infer(env, arg));
+            let t0 = _infer(env, expr.fn, results);
+            let t1 = expr.args.map((arg) => _infer(env, arg, results));
             let t_ = newvar_t();
             unify(t0, { type: 'fn', args: t1, ret: t_ });
-            return t_;
+            return track(expr, results, t_);
         }
         case 'lambda': {
             let env_: Env = { ...env }; //, [expr.name]: dont_generalize(t) };
 
             let args = expr.names.map((name) => {
                 const t = newvar_t();
-                env_[name] = dont_generalize(t);
+                env_[name.name] = dont_generalize(t);
                 return t;
             });
-            let ret = _infer(env_, expr.expr);
-            return { type: 'fn', args, ret };
+            let ret = _infer(env_, expr.expr, results);
+            return track(expr, results, { type: 'fn', args, ret });
         }
         case 'let': {
             enter_level();
-            let t = _infer(env, expr.init);
+            let t = (results[expr.nameloc] = _infer(env, expr.init, results));
             exit_level();
-            return _infer({ ...env, [expr.name]: generalize(t) }, expr.body);
+            return track(
+                expr,
+                results,
+                _infer(
+                    { ...env, [expr.name]: generalize(t) },
+                    expr.body,
+                    results,
+                ),
+            );
         }
     }
 };
 
-export let infer = (env: Env, expr: expr): typ => {
+export let infer = (env: Env, expr: expr, results: Results): typ => {
     current_level = 1;
     current_typevar = 0;
-    return _infer(env, expr);
+    return _infer(env, expr, results);
 };

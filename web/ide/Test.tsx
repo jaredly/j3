@@ -7,7 +7,7 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../src/state/getKeyUpdate';
-import { Ctx, Env, Sandbox } from '../../src/to-ast/library';
+import { Ctx, Env } from '../../src/to-ast/library';
 import { ListLikeContents, fromMCST } from '../../src/types/mcst';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
@@ -16,24 +16,13 @@ import { Root } from '../custom/Root';
 import { Action, NUIState, UpdatableAction } from '../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
+import { Env as JEnv, infer, polytype, typ, typToString } from './infer/j';
 import { parse } from './infer/parse-j';
-import { infer, typToString, Env as JEnv, typ, polytype } from './infer/j';
-
-const meta: Sandbox['meta'] = {
-    id: 'id',
-    title: 'Title',
-    created_date: Date.now() / 1000,
-    updated_date: Date.now() / 1000,
-    deleted_date: null,
-    version: 0,
-    settings: { namespace: ['sandbox', 'id'], aliases: [] },
-    node_count: 0,
-};
 
 const k = `test-infer-w`;
 
 const fn = (args: typ[], ret: typ): typ => ({ type: 'fn', args, ret });
-const num: typ = { type: 'number' };
+const num: typ = { type: 'lit', name: 'number' };
 const pt = (typ: typ): polytype => ({ typevars: [], typ });
 
 const builtins: JEnv = {
@@ -70,7 +59,10 @@ export const Test = ({ env }: { env: Env }) => {
     const tops = (state.map[state.root] as ListLikeContents).values;
 
     const results = useMemo(() => {
-        const results: Ctx['results'] & { tops: { [key: number]: string } } = {
+        const results: Ctx['results'] & {
+            tops: { [key: number]: string };
+            typs: { [loc: number]: typ };
+        } = {
             display: {},
             errors: {},
             globalNames: {},
@@ -82,6 +74,7 @@ export const Test = ({ env }: { env: Env }) => {
             mods: {},
             toplevel: {},
             tops: {},
+            typs: {},
         };
 
         tops.forEach((top) => {
@@ -90,12 +83,12 @@ export const Test = ({ env }: { env: Env }) => {
             const expr = parse(node, errors);
             if (expr) {
                 try {
-                    const typ = infer(builtins, expr);
+                    const typ = infer(builtins, expr, results.typs);
                     console.log(typ);
                     results.tops[top] = typToString(typ);
                 } catch (err) {
                     console.log('no typ sorry');
-                    results.tops[top] = 'no typ sorry' + (err as Error).message;
+                    results.tops[top] = 'Type Error: ' + (err as Error).message;
                 }
             } else {
                 results.tops[top] = 'not parse';
@@ -136,7 +129,16 @@ export const Test = ({ env }: { env: Env }) => {
             <Hover
                 state={state}
                 dispatch={dispatch}
-                calc={() => calc(state, results, (err) => 'lol an error')}
+                calc={() => {
+                    const last = state.hover[state.hover.length - 1]?.idx;
+                    if (last) {
+                        const typ = results.typs[last];
+                        if (typ) {
+                            return [{ idx: last, text: typToString(typ) }];
+                        }
+                    }
+                    return [];
+                }}
             />
             <Cursors at={state.at} regs={state.regs} />
             Here we are

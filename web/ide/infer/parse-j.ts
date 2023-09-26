@@ -9,13 +9,19 @@ export const parse = (
         case 'identifier': {
             const num = +node.text;
             if (!isNaN(num)) {
-                return { type: 'number', value: num };
+                return { type: 'number', value: num, loc: node.loc };
             }
             if (node.text === 'true' || node.text === 'false') {
-                return { type: 'number', value: 0 };
+                return {
+                    type: 'bool',
+                    value: node.text === 'true',
+                    loc: node.loc,
+                };
             }
-            return { type: 'identifier', id: node.text };
+            return { type: 'identifier', id: node.text, loc: node.loc };
         }
+        case 'string':
+            return { type: 'string', value: node.first.text, loc: node.loc };
         case 'list': {
             if (
                 node.values.length === 3 &&
@@ -28,12 +34,13 @@ export const parse = (
                 if (body == null) return;
                 return {
                     type: 'lambda',
-                    names: node.values[1].values.map(
-                        (m) =>
-                            (m as Extract<typeof m, { type: 'identifier' }>)
-                                .text,
-                    ),
+                    names: node.values[1].values.map((m) => ({
+                        name: (m as Extract<typeof m, { type: 'identifier' }>)
+                            .text,
+                        loc: m.loc,
+                    })),
                     expr: body,
+                    loc: node.loc,
                 };
             }
 
@@ -50,7 +57,14 @@ export const parse = (
                 const body = parse(node.values[2], errors);
 
                 return init && body
-                    ? { type: 'let', name, init, body }
+                    ? {
+                          type: 'let',
+                          name,
+                          init,
+                          body,
+                          loc: node.loc,
+                          nameloc: node.values[1].values[0].loc,
+                      }
                     : undefined;
             }
 
@@ -60,6 +74,7 @@ export const parse = (
                       type: 'fncall',
                       fn: values[0]!,
                       args: values.slice(1) as expr[],
+                      loc: node.loc,
                   }
                 : undefined;
         }
