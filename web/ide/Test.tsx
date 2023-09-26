@@ -1,25 +1,23 @@
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import { layout } from '../../src/layout';
 import { emptyMap } from '../../src/parse/parse';
-import { Ctx, Env, HistoryItem, Sandbox } from '../../src/to-ast/library';
-import { ListLikeContents } from '../../src/types/mcst';
-import { Root } from '../custom/Root';
-import { Action, NUIState, UIState, UpdatableAction } from '../custom/UIState';
-import { sandboxState } from './SandboxView';
-import { HiddenInput } from '../custom/HiddenInput';
-import { useMenu } from '../custom/ByHand';
-import { Cursors } from '../custom/Cursors';
-import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import {
-    State,
     StateChange,
     applyUpdate,
     getKeyUpdate,
     isRootPath,
 } from '../../src/state/getKeyUpdate';
-import { verticalMove } from '../custom/verticalMove';
-import { redoItem, undoItem } from '../../src/to-ast/history';
-import { layout } from '../../src/layout';
+import { Ctx, Env, Sandbox } from '../../src/to-ast/library';
+import { ListLikeContents, fromMCST } from '../../src/types/mcst';
+import { Cursors } from '../custom/Cursors';
+import { HiddenInput } from '../custom/HiddenInput';
 import { Hover, calc } from '../custom/Hover';
+import { Root } from '../custom/Root';
+import { Action, NUIState, UpdatableAction } from '../custom/UIState';
+import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
+import { verticalMove } from '../custom/verticalMove';
+import { parse } from './infer/parse-j';
+import { infer } from './infer/j';
 
 const meta: Sandbox['meta'] = {
     id: 'id',
@@ -62,7 +60,7 @@ export const Test = ({ env }: { env: Env }) => {
     const tops = (state.map[state.root] as ListLikeContents).values;
 
     const results = useMemo(() => {
-        const results: Ctx['results'] = {
+        const results: Ctx['results'] & { tops: { [key: number]: string } } = {
             display: {},
             errors: {},
             globalNames: {},
@@ -73,9 +71,40 @@ export const Test = ({ env }: { env: Env }) => {
             },
             mods: {},
             toplevel: {},
+            tops: {},
         };
 
         tops.forEach((top) => {
+            const node = fromMCST(top, state.map);
+            const errors = {};
+            const expr = parse(node, errors);
+            if (expr) {
+                try {
+                    const typ = infer(
+                        {
+                            '*': {
+                                typevars: [],
+                                typ: {
+                                    type: 'fn',
+                                    arg: { type: 'unit' },
+                                    ret: {
+                                        type: 'fn',
+                                        arg: { type: 'unit' },
+                                        ret: { type: 'unit' },
+                                    },
+                                },
+                            },
+                        },
+                        expr,
+                    );
+                    console.log(typ);
+                    results.tops[top] = JSON.stringify(typ);
+                } catch (err) {
+                    console.log('no typ sorry');
+                    results.tops[top] = 'no typ sorry';
+                }
+            }
+
             layout(top, 0, state.map, results.display, results.hashNames, true);
         });
 
@@ -95,7 +124,7 @@ export const Test = ({ env }: { env: Env }) => {
                 dispatch={dispatch}
                 tops={tops}
                 debug={false}
-                showTop={() => null}
+                showTop={(top) => results.tops[top]}
                 results={results}
             />
             <button
