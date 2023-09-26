@@ -1,7 +1,8 @@
 {
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.4",
-        "peggy": "^2.0.1"
+        "peggy": "^2.0.1",
+        "vitest": "^0.34.5"
     },
     "dependencies": {
         "@babel/core": "^7.20.12",

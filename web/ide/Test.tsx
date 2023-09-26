@@ -16,20 +16,11 @@ import { Root } from '../custom/Root';
 import { Action, NUIState, UpdatableAction } from '../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
-import { Env as JEnv, infer, polytype, typ, typToString } from './infer/j';
+import { infer, typ, typToString } from './infer/j';
 import { parse } from './infer/parse-j';
+import { builtins } from './infer/j-builtins';
 
 const k = `test-infer-w`;
-
-const fn = (args: typ[], ret: typ): typ => ({ type: 'fn', args, ret });
-const num: typ = { type: 'lit', name: 'number' };
-const pt = (typ: typ): polytype => ({ typevars: [], typ });
-
-const builtins: JEnv = {
-    '+': pt(fn([num, num], num)),
-    '*': pt(fn([num, num], num)),
-    sqrt: pt(fn([num], num)),
-};
 
 export const Test = ({ env }: { env: Env }) => {
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => {

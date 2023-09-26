@@ -13,7 +13,20 @@ where we don't actually have `Ctx` at all, right?
 This'll need a new UIState, I think.
 
 
-- [ ] get us the hovers pls
+- [x] get us the hovers pls
+- [ ] make some tests for alg-j
+  - catching errors
+  - testing features
+- [ ] then see how many of the features that I want I can add
+  - [ ] array literals
+  - [ ] record types & literals
+  - [ ] enumsssss is there anything fancy there? unification is a little more interesting maybe?
+  - [ ] how do all of these things interact with non-explicit type variables?
+    - maybe it would be like a linter thing, once you've written the stuff, and it's like
+      "this vbl is free, do you want to make an explicit dealio for it?"
+  - [ ] can I haz type variable bounds?
+- [ ] like, for looping n stuff it'd have to have explicit types I think
+  - so, would need @loop:t? maybe? would be nice to not need it...
 
 
 
