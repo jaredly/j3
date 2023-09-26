@@ -60,4 +60,25 @@ x cannot unify number and string
 
 (let [x 10] {x x})
 -> {x number}
+
+.hello
+-> (fn [{hello v1:1}] v1:1)
+
+(.hello {hello 10})
+-> number
+
+(.what {hello 10})
+-> v2:1
+
+(.hello {hello 10 folks 4})
+-> number
+
+(fn [x] (.hello x))
+-> (fn [{hello v3:1}] v3:1)
+
+(fn [x] (+ 2 (.hello x)))
+-> (fn [{hello number}] number)
+
+(fn [x] (+ (.one x) (.two x)))
+-> (fn [{one number}] number)
 `;

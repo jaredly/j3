@@ -1,4 +1,35 @@
 
+# HM(X)
+https://www.cs.tufts.edu/~nr/cs257/archive/martin-odersky/hmx.pdf
+
+ok I kinda want to try hm(x).
+
+# Structural Subtyping - Simonet
+https://people.csail.mit.edu/kostas/papers/subtyping6.pdf
+https://www.normalesup.org/~simonet/research/index.html
+https://www.normalesup.org/~simonet/publis/simonet-aplas03.pdf
+https://www.normalesup.org/~simonet/soft/dalton/index.html
+
+
+# Let's try this
+https://www.cambridge.org/core/services/aop-cambridge-core/content/view/S0956796800000113
+
+# Wand? With polymorphic let?
+https://www.cs.uwyo.edu/~jlc/papers/CIE_2008.pdf
+https://github.com/Javyre/wand-plus/blob/master/src/wand-plus.lisp
+https://github.com/mrandri19/Wand87-A-Simple-Algorithm-and-Proof-for-Type-Inference/blob/master/inference.ml
+
+# cubiml
+https://github.com/Storyyeller/cubiml-demo
+https://www.cs.tufts.edu/~nr/cs257/archive/stephen-dolan/thesis.pdf
+
+# Other things
+https://www.cl.cam.ac.uk/teaching/1415/L28/type-inference.pdf
+
+# Coercive structural subtyping??
+https://www21.in.tum.de/~traytel/papers/aplas11-coercions/coercions.pdf
+hmm this is interesting. adding coersions so you can then use normal HM.
+
 # Algorithm J : The Explanation
 
 So I should go through algorithm j
@@ -6,6 +37,11 @@ and ... make a description for it?
 lol or like an interactive explanation?
 that would catch on like anything. ppl would love it.
 
+--> Ok, so algo j is super nice and sweet, buuuut it doesn't do subtyping.
+Q: Can I coerce it into making subtyping work?
+A: I should probably understand it better before I try that.
+
+b/c I want records, and enums, and both of those want structural subtyping.
 
 # Branch: infer-more
 So, we want a test dealio,

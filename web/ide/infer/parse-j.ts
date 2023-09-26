@@ -18,15 +18,24 @@ export const parse = (
                     loc: node.loc,
                 };
             }
-            if (node.text.startsWith('.')) {
+            // if (node.text.startsWith('.')) {
+            //     return {
+            //         type: 'accessor',
+            //         id: node.text.slice(1),
+            //         loc: node.loc,
+            //     };
+            // }
+            return { type: 'identifier', id: node.text, loc: node.loc };
+        }
+        case 'recordAccess':
+            if (node.target.type === 'blank') {
                 return {
                     type: 'accessor',
-                    id: node.text.slice(1),
+                    id: node.items[0].text,
                     loc: node.loc,
                 };
             }
-            return { type: 'identifier', id: node.text, loc: node.loc };
-        }
+            return;
         case 'string':
             return { type: 'string', value: node.first.text, loc: node.loc };
         case 'record': {
