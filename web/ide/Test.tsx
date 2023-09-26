@@ -17,7 +17,7 @@ import { Action, NUIState, UpdatableAction } from '../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
 import { parse } from './infer/parse-j';
-import { infer } from './infer/j';
+import { infer, typToString, Env as JEnv, typ, polytype } from './infer/j';
 
 const meta: Sandbox['meta'] = {
     id: 'id',
@@ -31,6 +31,16 @@ const meta: Sandbox['meta'] = {
 };
 
 const k = `test-infer-w`;
+
+const fn = (args: typ[], ret: typ): typ => ({ type: 'fn', args, ret });
+const num: typ = { type: 'number' };
+const pt = (typ: typ): polytype => ({ typevars: [], typ });
+
+const builtins: JEnv = {
+    '+': pt(fn([num, num], num)),
+    '*': pt(fn([num, num], num)),
+    sqrt: pt(fn([num], num)),
+};
 
 export const Test = ({ env }: { env: Env }) => {
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => {
@@ -80,29 +90,15 @@ export const Test = ({ env }: { env: Env }) => {
             const expr = parse(node, errors);
             if (expr) {
                 try {
-                    const typ = infer(
-                        {
-                            '*': {
-                                typevars: [],
-                                typ: {
-                                    type: 'fn',
-                                    arg: { type: 'unit' },
-                                    ret: {
-                                        type: 'fn',
-                                        arg: { type: 'unit' },
-                                        ret: { type: 'unit' },
-                                    },
-                                },
-                            },
-                        },
-                        expr,
-                    );
+                    const typ = infer(builtins, expr);
                     console.log(typ);
-                    results.tops[top] = JSON.stringify(typ);
+                    results.tops[top] = typToString(typ);
                 } catch (err) {
                     console.log('no typ sorry');
-                    results.tops[top] = 'no typ sorry';
+                    results.tops[top] = 'no typ sorry' + (err as Error).message;
                 }
+            } else {
+                results.tops[top] = 'not parse';
             }
 
             layout(top, 0, state.map, results.display, results.hashNames, true);

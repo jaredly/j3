@@ -9,10 +9,10 @@ export const parse = (
         case 'identifier': {
             const num = +node.text;
             if (!isNaN(num)) {
-                return { type: 'unit' };
+                return { type: 'number', value: num };
             }
             if (node.text === 'true' || node.text === 'false') {
-                return { type: 'unit' };
+                return { type: 'number', value: 0 };
             }
             return { type: 'identifier', id: node.text };
         }
@@ -22,22 +22,19 @@ export const parse = (
                 node.values[0].type === 'identifier' &&
                 node.values[0].text === 'fn' &&
                 node.values[1].type === 'array' &&
-                node.values[1].values.length === 1 &&
-                node.values[1].values[0].type === 'identifier'
+                node.values[1].values.every((n) => n.type === 'identifier')
             ) {
                 const body = parse(node.values[2], errors);
                 if (body == null) return;
                 return {
                     type: 'lambda',
-                    name: node.values[1].values[0].text,
+                    names: node.values[1].values.map(
+                        (m) =>
+                            (m as Extract<typeof m, { type: 'identifier' }>)
+                                .text,
+                    ),
                     expr: body,
                 };
-            }
-
-            if (node.values.length === 2) {
-                const fn = parse(node.values[0], errors);
-                const arg = parse(node.values[1], errors);
-                return fn && arg ? { type: 'fncall', arg, fn } : undefined;
             }
 
             if (
@@ -56,6 +53,15 @@ export const parse = (
                     ? { type: 'let', name, init, body }
                     : undefined;
             }
+
+            const values = node.values.map((v) => parse(v, errors));
+            return values.every(Boolean)
+                ? {
+                      type: 'fncall',
+                      fn: values[0]!,
+                      args: values.slice(1) as expr[],
+                  }
+                : undefined;
         }
     }
 };
