@@ -20,7 +20,8 @@ export type expr =
           init: expr;
           body: expr;
           loc: number;
-      };
+      }
+    | { type: 'if'; cond: expr; yes: expr; no: expr; loc: number };
 export type typ =
     | { type: 'lit'; name: string }
     | { type: 'var'; var: typevar }
@@ -238,7 +239,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             return track(expr, results, t_);
         }
         case 'lambda': {
-            let env_: Env = { ...env }; //, [expr.name]: dont_generalize(t) };
+            let env_: Env = { ...env };
 
             let args = expr.names.map((name) => {
                 const t = newvar_t();
@@ -261,6 +262,14 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
                     results,
                 ),
             );
+        }
+        case 'if': {
+            const cond = _infer(env, expr.cond, results);
+            unify(cond, { type: 'lit', name: 'bool' });
+            const yes = _infer(env, expr.yes, results);
+            const no = _infer(env, expr.no, results);
+            unify(yes, no);
+            return track(expr, results, yes);
         }
     }
 };
