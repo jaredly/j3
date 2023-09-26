@@ -8,10 +8,22 @@ export type term =
     | { type: 'let'; name: string; init: term; body: term; loc: number }
     | { type: 'const'; value: t_const; loc: number };
 
+export type typ = ty;
 type ty =
     | { type: 'const'; name: string }
     | { type: 'var'; var: var_ }
     | { type: 'app'; fn: ty; arg: ty };
+
+export const typToString = (t: ty): string => {
+    switch (t.type) {
+        case 'const':
+            return t.name;
+        case 'var':
+            return 'a-var-idk';
+        case 'app':
+            return `(${typToString(t.fn)} ${typToString(t.arg)})`;
+    }
+};
 
 type ref<T> = { current: T };
 type Union_link<a> =
@@ -91,7 +103,7 @@ let t_int: ty = { type: 'const', name: 'int' };
 let t_bool: ty = { type: 'const', name: 'bool' };
 let tvar = (x: var_): ty => ({ type: 'var', var: x });
 
-let infer = (term: term, ty: ty): constr => {
+let _infer = (term: term, ty: ty): constr => {
     switch (term.type) {
         case 'const':
             if (term.value.type === 'int') {
@@ -104,7 +116,7 @@ let infer = (term: term, ty: ty): constr => {
         case 'abs': {
             const x1 = fresh_ty_var();
             const x2 = fresh_ty_var();
-            const constr_body = infer(term.body, { type: 'var', var: x2 });
+            const constr_body = _infer(term.body, { type: 'var', var: x2 });
             return {
                 type: 'exists',
                 vbls: [x1, x2],
@@ -137,10 +149,10 @@ let infer = (term: term, ty: ty): constr => {
                 {
                     type: 'forall',
                     vbls: [x],
-                    constr: infer(term.init, { type: 'var', var: x }),
+                    constr: _infer(term.init, { type: 'var', var: x }),
                     ty: { type: 'var', var: x },
                 },
-                infer(term.body, ty),
+                _infer(term.body, ty),
             );
         }
         case 'app': {
@@ -150,12 +162,19 @@ let infer = (term: term, ty: ty): constr => {
                 vbls: [x2],
                 constr: {
                     type: 'and',
-                    left: infer(term.fn, function_type(tvar(x2), ty)),
-                    right: infer(term.arg, tvar(x2)),
+                    left: _infer(term.fn, function_type(tvar(x2), ty)),
+                    right: _infer(term.arg, tvar(x2)),
                 },
             };
         }
     }
+};
+
+export let infer = (builtins: any, expr: term, typs: any): ty => {
+    const x = fresh_ty_var();
+    const constr = _infer(expr, tvar(x));
+    console.log(x, constr);
+    return { type: 'const', name: 'lol' };
 };
 
 export let infer_prog = (p: [string, term][]) => {
@@ -167,7 +186,7 @@ export let infer_prog = (p: [string, term][]) => {
             {
                 type: 'forall',
                 vbls: [x],
-                constr: infer(term, tvar(x)),
+                constr: _infer(term, tvar(x)),
                 ty: tvar(x),
             },
             acc,
