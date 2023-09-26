@@ -54,4 +54,10 @@ x cannot unify number and string
     (let [y x]
         10))
 -> number
+
+{x 1}
+-> {x number}
+
+(let [x 10] {x x})
+-> {x number}
 `;

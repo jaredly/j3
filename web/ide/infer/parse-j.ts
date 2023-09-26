@@ -18,10 +18,41 @@ export const parse = (
                     loc: node.loc,
                 };
             }
+            if (node.text.startsWith('.')) {
+                return {
+                    type: 'accessor',
+                    id: node.text.slice(1),
+                    loc: node.loc,
+                };
+            }
             return { type: 'identifier', id: node.text, loc: node.loc };
         }
         case 'string':
             return { type: 'string', value: node.first.text, loc: node.loc };
+        case 'record': {
+            const items: { name: string; value: expr; loc: number }[] = [];
+            for (let i = 0; i < node.values.length; i += 2) {
+                const name = node.values[i];
+                const value = node.values[i + 1];
+                if (name.type !== 'identifier') {
+                    errors[name.loc] = `record key must be an identifier`;
+                    return;
+                }
+                if (!value) {
+                    errors[name.loc] = `record key has no value`;
+                    return;
+                }
+                const v = parse(value, errors);
+                if (!v) return;
+                items.push({ name: name.text, value: v, loc: name.loc });
+            }
+
+            return {
+                type: 'record',
+                items,
+                loc: node.loc,
+            };
+        }
         case 'list': {
             if (
                 node.values.length === 3 &&

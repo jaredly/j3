@@ -14,9 +14,9 @@ This'll need a new UIState, I think.
 
 
 - [x] get us the hovers pls
-- [ ] make some tests for alg-j
-  - catching errors
-  - testing features
+- [x] make some tests for alg-j
+  - [x] catching errors
+  - [x] testing features
 - [ ] then see how many of the features that I want I can add
   - [ ] array literals
   - [ ] record types & literals

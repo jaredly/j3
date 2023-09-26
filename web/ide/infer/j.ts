@@ -6,6 +6,7 @@ export type expr =
     | { type: 'string'; value: string; loc: number }
     | { type: 'bool'; value: boolean; loc: number }
     | { type: 'identifier'; id: string; loc: number }
+    | { type: 'accessor'; id: string; loc: number }
     | {
           type: 'lambda';
           names: { name: string; loc: number }[];
@@ -13,6 +14,11 @@ export type expr =
           loc: number;
       }
     | { type: 'fncall'; fn: expr; args: expr[]; loc: number }
+    | {
+          type: 'record';
+          items: { name: string; loc: number; value: expr }[];
+          loc: number;
+      }
     | {
           type: 'let';
           name: string;
@@ -25,6 +31,7 @@ export type expr =
 export type typ =
     | { type: 'lit'; name: string }
     | { type: 'var'; var: typevar }
+    | { type: 'record'; items: { name: string; value: typ }[] }
     | { type: 'fn'; args: typ[]; ret: typ };
 export type typevar =
     | { type: 'bound'; typ: typ }
@@ -48,6 +55,10 @@ export const typToString = (t: typ): string => {
     switch (t.type) {
         case 'lit':
             return t.name;
+        case 'record':
+            return `{${t.items
+                .map((r) => `${r.name} ${typToString(r.value)}`)
+                .join(' ')}}`;
         case 'fn':
             return `(fn [${t.args.map(typToString).join(' ')}] ${typToString(
                 t.ret,
@@ -79,6 +90,18 @@ let equal = (t1: typ, t2: typ): boolean => {
                 t1.args.every((arg, i) => equal(arg, t2.args[i])) &&
                 equal(t1.ret, t2.ret)
             );
+        case 'record': {
+            if (t2.type !== 'record' || t2.items.length !== t1.items.length)
+                return false;
+            const map: { [key: string]: typ } = {};
+            t2.items.forEach((item) => {
+                map[item.name] = item.value;
+            });
+
+            return t1.items.every(
+                (r) => map[r.name] && equal(map[r.name], r.value),
+            );
+        }
         case 'lit':
             return t2.type === 'lit' && t1.name === t2.name;
         case 'var':
@@ -95,6 +118,15 @@ let inst = ({ typevars, typ }: polytype): typ => {
         switch (typ.type) {
             case 'lit':
                 return typ;
+            case 'record': {
+                return {
+                    ...typ,
+                    items: typ.items.map((r) => ({
+                        ...r,
+                        value: replace_tvs(tbl, r.value),
+                    })),
+                };
+            }
             case 'var': {
                 if (typ.var.type === 'bound') {
                     return replace_tvs(tbl, typ.var.typ);
@@ -120,6 +152,8 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
     switch (typ.type) {
         case 'lit':
             return false;
+        case 'record':
+            return typ.items.some((row) => occurs(a_id, a_level, row.value));
         case 'var': {
             if (typ.var.type === 'bound') {
                 return occurs(a_id, a_level, typ.var.typ);
@@ -186,6 +220,8 @@ let generalize = (t: typ): polytype => {
         switch (typ.type) {
             case 'lit':
                 return [];
+            case 'record':
+                return typ.items.flatMap((row) => find_all_tvs(row.value));
             case 'var':
                 if (typ.var.type === 'bound') {
                     return find_all_tvs(typ.var.typ);
@@ -224,6 +260,25 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             return track(expr, results, { type: 'lit', name: 'string' });
         case 'number':
             return track(expr, results, { type: 'lit', name: 'number' });
+        case 'accessor': {
+            let t_ = newvar_t();
+
+            return track(expr, results, {
+                type: 'fn',
+                args: [
+                    { type: 'record', items: [{ name: expr.id, value: t_ }] },
+                ],
+                ret: t_,
+            });
+        }
+        case 'record':
+            return track(expr, results, {
+                type: 'record',
+                items: expr.items.map((row) => ({
+                    name: row.name,
+                    value: _infer(env, row.value, results),
+                })),
+            });
         case 'identifier': {
             let s = env[expr.id];
             if (!s) {
