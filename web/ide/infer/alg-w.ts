@@ -1,137 +1,10 @@
 // The algo
 // based on https://jeremymikkola.com/posts/2018_03_25_understanding_algorithm_w.html
 // and https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.lhs
+// https://www.cl.cam.ac.uk/teaching/1415/L28/type-inference.pdf
 
-import { Node } from '../../src/types/cst';
-
-type Literal =
-    | { type: 'number'; value: number }
-    | {
-          type: 'bool';
-          value: boolean;
-      };
-
-type Exp =
-    | {
-          type: 'var';
-          name: string;
-          loc: number;
-      }
-    | {
-          type: 'lit';
-          value: Literal;
-          loc: number;
-      }
-    | {
-          type: 'app';
-          fn: Exp;
-          arg: Exp;
-          loc: number;
-      }
-    | {
-          type: 'fn';
-          name: string;
-          body: Exp;
-          loc: number;
-      }
-    | {
-          type: 'let';
-          name: string;
-          init: Exp;
-          body: Exp;
-          loc: number;
-      };
-
-type Type =
-    | {
-          type: 'concrete';
-          name: 'number' | 'bool';
-      }
-    | {
-          type: 'var';
-          name: string;
-      }
-    | {
-          type: 'fn';
-          arg: Type;
-          body: Type;
-      };
-
-export const parse = (
-    node: Node,
-    errors: { [key: number]: string },
-): Exp | undefined => {
-    switch (node.type) {
-        case 'identifier': {
-            const num = +node.text;
-            if (!isNaN(num)) {
-                return {
-                    type: 'lit',
-                    value: { type: 'number', value: num },
-                    loc: node.loc,
-                };
-            }
-            if (node.text === 'true' || node.text === 'false') {
-                return {
-                    type: 'lit',
-                    value: { type: 'bool', value: node.text === 'true' },
-                    loc: node.loc,
-                };
-            }
-            return { type: 'var', name: node.text, loc: node.loc };
-        }
-        case 'list': {
-            if (
-                node.values.length === 3 &&
-                node.values[0].type === 'identifier' &&
-                node.values[0].text === 'fn' &&
-                node.values[1].type === 'array' &&
-                node.values[1].values.length === 1 &&
-                node.values[1].values[0].type === 'identifier'
-            ) {
-                const body = parse(node.values[2], errors);
-                if (body == null) return;
-                return {
-                    type: 'fn',
-                    name: node.values[1].values[0].text,
-                    loc: node.loc,
-                    body,
-                };
-            }
-
-            if (node.values.length === 2) {
-                const fn = parse(node.values[0], errors);
-                const arg = parse(node.values[1], errors);
-                return fn && arg
-                    ? { type: 'app', fn, arg, loc: node.loc }
-                    : undefined;
-            }
-
-            if (
-                node.values.length === 3 &&
-                node.values[0].type === 'identifier' &&
-                node.values[0].text === 'let' &&
-                node.values[1].type === 'array' &&
-                node.values[1].values.length === 2 &&
-                node.values[1].values[0].type === 'identifier'
-            ) {
-                const name = node.values[1].values[0].text;
-                const init = parse(node.values[1].values[1], errors);
-                const body = parse(node.values[2], errors);
-
-                return init && body
-                    ? {
-                          type: 'let',
-                          body,
-                          init,
-                          name,
-                          loc: node.loc,
-                      }
-                    : undefined;
-            }
-        }
-    }
-};
+import { Node } from '../../../src/types/cst';
+import { Type } from './types';
 
 type Scheme = {
     vbls: string[];
@@ -155,11 +28,11 @@ const apply = (subst: Subst, t: Type): Type => {
 
 const newTV = (env: Env) => `v${env.counter.num++}`;
 
-export const unify = (one: Type, two: Type): Subst => {
+export const w_unify = (one: Type, two: Type): Subst => {
     return emptySubst;
 };
 
-export const infer = (
+export const w_infer = (
     expr: Node,
     env: Env,
 ): {
@@ -201,7 +74,7 @@ export const infer = (
                         },
                     },
                 };
-                const inner = infer(expr.values[2], cenv);
+                const inner = w_infer(expr.values[2], cenv);
                 const argType = apply(inner.subst, at);
                 return {
                     type: {
@@ -218,10 +91,10 @@ export const infer = (
                 const arg = expr.values[1];
 
                 const returnType: Type = { type: 'var', name: newTV(env) };
-                const { type: type1, subst: sub1 } = infer(fn, env);
+                const { type: type1, subst: sub1 } = w_infer(fn, env);
                 const env1: Env = applyEnv(env, sub1);
 
-                const { subst: sub2, type: type2 } = infer(arg, env1);
+                const { subst: sub2, type: type2 } = w_infer(arg, env1);
                 const type1_sub = apply(sub2, type1);
 
                 const type3: Type = {
@@ -229,7 +102,7 @@ export const infer = (
                     arg: type2,
                     body: returnType,
                 };
-                const sub3: Subst = unify(type1_sub, type3);
+                const sub3: Subst = w_unify(type1_sub, type3);
                 const sub = { ...sub1, ...sub2, ...sub3 };
                 const res = apply(sub3, returnType);
                 return { type: res, subst: sub };
@@ -247,7 +120,7 @@ export const infer = (
                 const init = expr.values[1].values[1];
                 const body = expr.values[2];
 
-                const { subst: sub1, type: type1 } = infer(init, env);
+                const { subst: sub1, type: type1 } = w_infer(init, env);
                 const e2 = applyEnv(env, sub1);
                 const e3: Env = {
                     ...env,
@@ -260,7 +133,7 @@ export const infer = (
                     },
                 };
                 const e4 = applyEnv(e3, sub1);
-                const { subst: sub2, type: type2 } = infer(body, e4);
+                const { subst: sub2, type: type2 } = w_infer(body, e4);
 
                 return { type: type2, subst: { ...sub1, ...sub2 } };
             }
