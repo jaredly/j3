@@ -9,7 +9,7 @@ export default `
 -> number
 
 (+ 1)
-x different arg numbers
+-> (fn [number] number)
 
 (+ 1 (* 2 3))
 -> number
@@ -36,13 +36,13 @@ x cannot unify number and string
 -> number
 
 (fn [x y] (if true x y))
--> (fn [v2:1 v2:1] v2:1)
+-> (fn [v3 v3] v3)
 
 (fn [x] (if true x 2))
 -> (fn [number] number)
 
 (fn [x y] (if true x 2))
--> (fn [number v2:1] number)
+-> (fn [number v3] number)
 
 (let [id (fn [x] x)]
     (if true
