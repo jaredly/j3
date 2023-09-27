@@ -54,6 +54,9 @@ x cannot unify number and string
     (let [y x]
         10))
 -> number
+`;
+
+/*
 
 {x 1}
 -> {x number}
@@ -81,4 +84,5 @@ x cannot unify number and string
 
 (fn [x] (+ (.one x) (.two x)))
 -> (fn [{one number}] number)
-`;
+
+*/

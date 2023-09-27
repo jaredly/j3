@@ -18,6 +18,32 @@ export type ty =
     | { type: 'var'; var: var_ }
     | { type: 'app'; fn: ty; arg: ty };
 
+export const unwrapVar = (t: ty) => {
+    if (t.type === 'var') {
+        return Union_find(t.var).structure ?? t;
+    }
+    return t;
+};
+
+export const unrollFn = (t: ty): null | { args: ty[]; body: ty } => {
+    t = unwrapVar(t);
+    if (
+        t.type === 'app' &&
+        t.fn.type === 'app' &&
+        t.fn.fn.type === 'const' &&
+        t.fn.fn.name === '->'
+    ) {
+        const args = [t.fn.arg];
+        const body = unrollFn(t.arg);
+        if (body) {
+            args.push(...body.args);
+            return { args, body: body.body };
+        }
+        return { args, body: t.arg };
+    }
+    return null;
+};
+
 export const typToString = (t: ty): string => {
     switch (t.type) {
         case 'const':
@@ -27,25 +53,11 @@ export const typToString = (t: ty): string => {
             return s.structure ? typToString(s.structure) : s.name;
         // return 'a-var-idk';
         case 'app':
-            if (
-                t.fn.type === 'app' &&
-                t.fn.fn.type === 'const' &&
-                t.fn.fn.name === '->'
-            ) {
-                let args = [t.fn.arg];
-                let body = t.arg;
-                while (
-                    body.type === 'app' &&
-                    body.fn.type === 'app' &&
-                    body.fn.fn.type === 'const' &&
-                    body.fn.fn.name === '->'
-                ) {
-                    args.push(body.fn.arg);
-                    body = body.arg;
-                }
-                return `(fn [${args
+            const fn = unrollFn(t);
+            if (fn) {
+                return `(fn [${fn.args
                     .map((arg) => typToString(arg))
-                    .join(' ')}] ${typToString(body)})`;
+                    .join(' ')}] ${typToString(fn.body)})`;
             }
             return `(${typToString(t.fn)} ${typToString(t.arg)})`;
     }
