@@ -1,7 +1,8 @@
 import { Union_find, chop, run } from './hmx-solve';
 
 export type t_const =
-    | { type: 'int'; value: number }
+    | { type: 'number'; value: number }
+    | { type: 'string'; value: string }
     | { type: 'bool'; value: boolean };
 export type term =
     | { type: 'var'; name: string; loc: number }
@@ -110,18 +111,18 @@ export let fresh_ty_var = (): var_ => {
     });
 };
 
-export let t_int: ty = { type: 'const', name: 'int' };
+export let t_int: ty = { type: 'const', name: 'number' };
 export let t_bool: ty = { type: 'const', name: 'bool' };
 export let tvar = (x: var_): ty => ({ type: 'var', var: x });
 
 let _infer = (term: term, ty: ty): constr => {
     switch (term.type) {
         case 'const':
-            if (term.value.type === 'int') {
-                return { type: 'app', name: is_subtype, types: [t_int, ty] };
-            } else {
-                return { type: 'app', name: is_subtype, types: [t_bool, ty] };
-            }
+            return {
+                type: 'app',
+                name: is_subtype,
+                types: [{ type: 'const', name: term.value.type }, ty],
+            };
         case 'var':
             return { type: 'instance', name: term.name, ty };
         case 'abs': {

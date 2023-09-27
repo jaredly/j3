@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { Chunk, chunks, runChunk } from './j.fixture';
-import { typToString } from './j';
+// import { typToString } from './j';
+import { typToString } from './hmx';
 
 export const testChunk = ({ type, errors, code, line, title }: Chunk) => {
     test(`j.test.clj:${line} - ${

@@ -1,10 +1,14 @@
 // import { test, expect } from 'vitest';
 import { parseByCharacter } from '../../../src/parse/parse';
 import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
-import { parse } from './parse-j';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { infer, typToString } from './j';
+
+import { parse } from './parse-hmx';
+import { infer, typToString } from './hmx';
+
+// import { parse } from './parse-j';
+// import { infer, typToString } from './j';
 import { builtins } from './j-builtins';
 import raw from './j.test.clj';
 

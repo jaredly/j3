@@ -13,7 +13,7 @@ export const parse = (
                     type: 'const',
                     loc: node.loc,
                     value: {
-                        type: 'int',
+                        type: 'number',
                         value: num,
                     },
                 };
@@ -27,6 +27,12 @@ export const parse = (
             }
             return { type: 'var', name: node.text, loc: node.loc };
         }
+        case 'string':
+            return {
+                type: 'const',
+                loc: node.loc,
+                value: { type: 'string', value: node.first.text },
+            };
         case 'list': {
             if (
                 node.values.length === 3 &&
