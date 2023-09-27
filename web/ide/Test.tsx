@@ -18,9 +18,9 @@ import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
 // import { infer, typ, typToString } from './infer/j';
 // import { parse } from './infer/parse-j';
-import { infer, typ, typToString } from './infer/hmx';
-import { parse } from './infer/parse-hmx';
-import { builtins } from './infer/j-builtins';
+import { infer, typ, typToString, parse, builtins } from './infer/hmx';
+// import { parse } from './infer/parse-hmx';
+// import { builtins } from './infer/j-builtins';
 
 const k = `test-infer-w`;
 

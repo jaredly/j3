@@ -82,6 +82,19 @@ export const parse = (
                     : undefined;
             }
 
+            if (
+                node.values.length === 4 &&
+                node.values[0].type === 'identifier' &&
+                node.values[0].text === 'if'
+            ) {
+                const cond = parse(node.values[1], errors);
+                const yes = parse(node.values[2], errors);
+                const no = parse(node.values[3], errors);
+                return cond && yes && no
+                    ? { type: 'if', cond, yes, no, loc: node.loc }
+                    : undefined;
+            }
+
             const values = node.values.map((v) => parse(v, errors));
             if (!values.every(Boolean)) {
                 return;

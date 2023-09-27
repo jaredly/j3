@@ -9,6 +9,7 @@ export type term =
     | { type: 'app'; fn: term; arg: term; loc: number }
     | { type: 'abs'; name: string; body: term; loc: number }
     | { type: 'let'; name: string; init: term; body: term; loc: number }
+    | { type: 'if'; cond: term; yes: term; no: term; loc: number }
     | { type: 'const'; value: t_const; loc: number };
 
 export type typ = ty;
@@ -31,7 +32,20 @@ export const typToString = (t: ty): string => {
                 t.fn.fn.type === 'const' &&
                 t.fn.fn.name === '->'
             ) {
-                return `(fn [${typToString(t.fn.arg)}] ${typToString(t.arg)})`;
+                let args = [t.fn.arg];
+                let body = t.arg;
+                while (
+                    body.type === 'app' &&
+                    body.fn.type === 'app' &&
+                    body.fn.fn.type === 'const' &&
+                    body.fn.fn.name === '->'
+                ) {
+                    args.push(body.fn.arg);
+                    body = body.arg;
+                }
+                return `(fn [${args
+                    .map((arg) => typToString(arg))
+                    .join(' ')}] ${typToString(body)})`;
             }
             return `(${typToString(t.fn)} ${typToString(t.arg)})`;
     }
@@ -102,7 +116,7 @@ export let Union_fresh = <T>(desc: T): Union_point<T> =>
 
 let next = 0;
 export let fresh_ty_var = (): var_ => {
-    let name = `a${next}`;
+    let name = `v${next}`;
     next++;
     return Union_fresh({
         structure: null,
@@ -123,6 +137,31 @@ let _infer = (term: term, ty: ty): constr => {
                 name: is_subtype,
                 types: [{ type: 'const', name: term.value.type }, ty],
             };
+        case 'if': {
+            // const res = fresh_ty_var();
+            // return {
+            //     type: 'exists',
+            //     vbls: [res],
+            //     constr: {
+            //         type: 'and',
+            //         left: _infer(term.cond, t_bool),
+            //         right: {
+            //             type: 'and',
+            //             left: _infer(term.yes, { type: 'var', var: res }),
+            //             right: _infer(term.no, { type: 'var', var: res }),
+            //         },
+            //     },
+            // };
+            return {
+                type: 'and',
+                left: _infer(term.cond, t_bool),
+                right: {
+                    type: 'and',
+                    left: _infer(term.yes, ty),
+                    right: _infer(term.no, ty),
+                },
+            };
+        }
         case 'var':
             return { type: 'instance', name: term.name, ty };
         case 'abs': {
