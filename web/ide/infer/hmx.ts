@@ -247,20 +247,36 @@ let _infer = (term: term, ty: ty): constr => {
             const vbls = term.items.map((row) => fresh_ty_var());
 
             const constrs: constr[] = [
-                {
+                // {
+                //     type: 'app',
+                //     name: is_subtype,
+                //     types: [
+                //         {
+                //             type: 'record',
+                //             items: term.items.map((row, i) => ({
+                //                 name: row.name,
+                //                 value: { type: 'var', var: vbls[i] },
+                //             })),
+                //         },
+                //         ty,
+                //     ],
+                // },
+                ...term.items.map((row, i) => ({
                     type: 'app',
                     name: is_subtype,
                     types: [
                         {
                             type: 'record',
-                            items: term.items.map((row, i) => ({
-                                name: row.name,
-                                value: { type: 'var', var: vbls[i] },
-                            })),
+                            items: [
+                                {
+                                    name: row.name,
+                                    value: { type: 'var', var: vbls[i] },
+                                },
+                            ],
                         },
                         ty,
                     ],
-                },
+                })),
                 ...term.items.map(
                     (row, i): constr =>
                         _infer(row.value, { type: 'var', var: vbls[i] }),

@@ -1,8 +1,48 @@
 
+# "Essence of ML Type Inference"
+
+https://pauillac.inria.fr/~fpottier/publis/emlti-final.pdf
+http://cristal.inria.fr/attapl/ - download here
+docs https://yrg.gitlab.io/homepage/static/public/mini/
+
+https://www.cs.tufts.edu/comp/150FP/archive/francois-pottier/hmx.pdf
+
+
+# Applicative something?
+https://gallium.inria.fr/~fpottier/slides/fpottier-2014-09-icfp.pdf
+
+https://gitlab.inria.fr/fpottier/inferno/-/tree/master/
+https://dl.acm.org/doi/10.1145/2628136.2628145
+
+
+# Check out the PL Zoo
+https://plzoo.andrej.com/
+
+
+# Ki Yung Ahn
+
+https://github.com/kyagrd/mininax/tree/master
+
+hmmmm what about prolog as the inference engine?
+https://kyagrd.github.io/tiper/
+
+
+
+# Parametric subtyping
+
+https://bitbucket.org/structural-types/polyte/src/master/src/
+https://arxiv.org/pdf/2307.13661.pdf
+
 # HM(X)
 https://www.cs.tufts.edu/~nr/cs257/archive/martin-odersky/hmx.pdf
 
 ok I kinda want to try hm(x).
+update, did try it, at least porting https://github.com/naominitel/hmx/tree/master
+which is great
+nowwww I want to try to add subtyping, but that will require
+me understanding the actual paper I think.
+b/c the paper proposes SHM(X) which should support
+subtyping. Right?
 
 # Structural Subtyping - Simonet
 https://people.csail.mit.edu/kostas/papers/subtyping6.pdf
@@ -15,6 +55,7 @@ https://www.normalesup.org/~simonet/soft/dalton/index.html
 https://www.cambridge.org/core/services/aop-cambridge-core/content/view/S0956796800000113
 
 # Wand? With polymorphic let?
+<!-- eh, if it cant do subtypes I'm not really interested -->
 https://www.cs.uwyo.edu/~jlc/papers/CIE_2008.pdf
 https://github.com/Javyre/wand-plus/blob/master/src/wand-plus.lisp
 https://github.com/mrandri19/Wand87-A-Simple-Algorithm-and-Proof-for-Type-Inference/blob/master/inference.ml

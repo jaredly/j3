@@ -70,29 +70,15 @@ x cannot unify number and string
 (.what {hello 10})
 x cant unify, what is missing in the second record
 
-(.hello {hello 10 folks 4})
--> number
-
 (fn [x] (.hello x))
 -> (fn [{hello v4}] v4)
 
 (fn [x] (+ 2 (.hello x)))
 -> (fn [{hello number}] number)
 
+(.hello {hello 10 folks 4})
+-> number
+
 (fn [x] (+ (.one x) (.two x)))
 -> (fn [{one number two number}] number)
 `;
-
-/*
-
-
-
-
--> v2:1
-
--> number
-
-
-
-
-*/
