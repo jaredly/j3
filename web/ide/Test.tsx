@@ -77,7 +77,7 @@ export const Test = ({ env }: { env: Env }) => {
             if (expr) {
                 try {
                     const typ = infer(builtins, expr, results.typs);
-                    console.log(typ);
+                    // console.log(typ);
                     results.tops[top] = typToString(typ);
                 } catch (err) {
                     console.log('no typ sorry');

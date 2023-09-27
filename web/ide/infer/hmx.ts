@@ -1,4 +1,6 @@
-type t_const =
+import { Union_find, chop, run } from './hmx-solve';
+
+export type t_const =
     | { type: 'int'; value: number }
     | { type: 'bool'; value: boolean };
 export type term =
@@ -9,7 +11,7 @@ export type term =
     | { type: 'const'; value: t_const; loc: number };
 
 export type typ = ty;
-type ty =
+export type ty =
     | { type: 'const'; name: string }
     | { type: 'var'; var: var_ }
     | { type: 'app'; fn: ty; arg: ty };
@@ -19,27 +21,36 @@ export const typToString = (t: ty): string => {
         case 'const':
             return t.name;
         case 'var':
-            return 'a-var-idk';
+            const s = Union_find(t.var);
+            return s.structure ? typToString(s.structure) : s.name;
+        // return 'a-var-idk';
         case 'app':
+            if (
+                t.fn.type === 'app' &&
+                t.fn.fn.type === 'const' &&
+                t.fn.fn.name === '->'
+            ) {
+                return `(fn [${typToString(t.fn.arg)}] ${typToString(t.arg)})`;
+            }
             return `(${typToString(t.fn)} ${typToString(t.arg)})`;
     }
 };
 
-type ref<T> = { current: T };
-type Union_link<a> =
+export type ref<T> = { current: T };
+export type Union_link<a> =
     | { type: 'info'; weight: number; descriptor: a }
     | { type: 'link'; point: Union_point<a> };
-type Union_point<a> = ref<Union_link<a>>;
+export type Union_point<a> = ref<Union_link<a>>;
 
-type var_ = Union_point<var_descr>;
-type var_descr = { structure: ty | null; rank: number; name: string };
+export type var_ = Union_point<var_descr>;
+export type var_descr = { structure: ty | null; rank: number; name: string };
 
-let app = (fn: ty, arg: ty): ty => ({ type: 'app', fn, arg });
-let arrow: ty = { type: 'const', name: '->' };
-let function_type = (t1: ty, t2: ty) => app(app(arrow, t1), t2);
+export let app = (fn: ty, arg: ty): ty => ({ type: 'app', fn, arg });
+export let arrow: ty = { type: 'const', name: '->' };
+export let function_type = (t1: ty, t2: ty) => app(app(arrow, t1), t2);
 
-type ty_sch = { type: 'forall'; vbls: var_[]; constr: constr; ty: ty };
-type constr =
+export type ty_sch = { type: 'forall'; vbls: var_[]; constr: constr; ty: ty };
+export type constr =
     | { type: 'bool'; value: boolean }
     | { type: 'app'; name: string; types: ty[] }
     | { type: 'and'; left: constr; right: constr }
@@ -48,16 +59,16 @@ type constr =
     | { type: 'instance'; name: string; ty: ty }
     | { type: 'dump' };
 
-let sch = (ty: ty): ty_sch => ({
+export let sch = (ty: ty): ty_sch => ({
     type: 'forall',
     vbls: [],
     constr: { type: 'bool', value: true },
     ty,
 });
 
-let is_subtype = '=';
+export let is_subtype = '=';
 
-let is_instance = (sch: ty_sch, ty: ty): constr => {
+export let is_instance = (sch: ty_sch, ty: ty): constr => {
     return {
         type: 'exists',
         vbls: sch.vbls,
@@ -73,23 +84,23 @@ let is_instance = (sch: ty_sch, ty: ty): constr => {
     };
 };
 
-let has_instance = ({ vbls, constr }: ty_sch): constr => {
+export let has_instance = ({ vbls, constr }: ty_sch): constr => {
     return { type: 'exists', vbls, constr };
 };
 
-let letin = (var_: string, sch: ty_sch, constr: constr): constr => ({
+export let letin = (var_: string, sch: ty_sch, constr: constr): constr => ({
     type: 'def',
     name: var_,
     sch,
     constr,
 });
 
-let ref = <T>(v: T): ref<T> => ({ current: v });
-let Union_fresh = <T>(desc: T): Union_point<T> =>
+export let ref = <T>(v: T): ref<T> => ({ current: v });
+export let Union_fresh = <T>(desc: T): Union_point<T> =>
     ref({ type: 'info', weight: 1, descriptor: desc });
 
 let next = 0;
-let fresh_ty_var = (): var_ => {
+export let fresh_ty_var = (): var_ => {
     let name = `a${next}`;
     next++;
     return Union_fresh({
@@ -99,9 +110,9 @@ let fresh_ty_var = (): var_ => {
     });
 };
 
-let t_int: ty = { type: 'const', name: 'int' };
-let t_bool: ty = { type: 'const', name: 'bool' };
-let tvar = (x: var_): ty => ({ type: 'var', var: x });
+export let t_int: ty = { type: 'const', name: 'int' };
+export let t_bool: ty = { type: 'const', name: 'bool' };
+export let tvar = (x: var_): ty => ({ type: 'var', var: x });
 
 let _infer = (term: term, ty: ty): constr => {
     switch (term.type) {
@@ -170,13 +181,6 @@ let _infer = (term: term, ty: ty): constr => {
     }
 };
 
-export let infer = (builtins: any, expr: term, typs: any): ty => {
-    const x = fresh_ty_var();
-    const constr = _infer(expr, tvar(x));
-    console.log(x, constr);
-    return { type: 'const', name: 'lol' };
-};
-
 export let infer_prog = (p: [string, term][]) => {
     let acc: constr = { type: 'dump' };
     p.forEach(([name, term]) => {
@@ -191,6 +195,28 @@ export let infer_prog = (p: [string, term][]) => {
             },
             acc,
         );
+        // console.log('acc', acc);
     });
+    // console.log('prog', acc);
     return acc;
+};
+
+export let infer = (builtins: any, expr: term, typs: any): ty => {
+    next = 0;
+    const constr = infer_prog([['result', expr]]);
+    const env = run(constr, [
+        {
+            var_: '+',
+            sch: {
+                type: 'forall',
+                vbls: [],
+                constr: { type: 'bool', value: true },
+                ty: function_type(t_int, function_type(t_int, t_int)),
+            },
+        },
+    ]);
+    const ty = env.find((t) => t.var_ === 'result')?.sch;
+    // console.log(constr);
+    // console.log('ty', ty);
+    return ty?.ty ?? { type: 'const', name: 'lol' };
 };
