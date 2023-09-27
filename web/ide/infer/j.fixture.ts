@@ -4,12 +4,11 @@ import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-import { parse } from './parse-hmx';
-import { infer, typToString } from './hmx';
+import { infer, typToString, parse, builtins } from './hmx';
 
 // import { parse } from './parse-j';
 // import { infer, typToString } from './j';
-import { builtins } from './j-builtins';
+// import { builtins } from './j-builtins';
 import raw from './j.test.clj';
 
 export const loadChunks = (text: string) => {

@@ -1,4 +1,4 @@
-import { Union_find, chop, run } from './hmx-solve';
+import { Env, Union_find, chop, run } from './hmx-solve';
 
 export type t_const =
     | { type: 'number'; value: number }
@@ -202,22 +202,22 @@ export let infer_prog = (p: [string, term][]) => {
     return acc;
 };
 
-export let infer = (builtins: any, expr: term, typs: any): ty => {
+export const builtins: Env = [
+    {
+        var_: '+',
+        sch: sch(function_type(t_int, function_type(t_int, t_int))),
+    },
+    {
+        var_: '*',
+        sch: sch(function_type(t_int, function_type(t_int, t_int))),
+    },
+];
+export { parse } from './parse-hmx';
+
+export let infer = (builtins: Env, expr: term, typs: any): ty => {
     next = 0;
     const constr = infer_prog([['result', expr]]);
-    const env = run(constr, [
-        {
-            var_: '+',
-            sch: {
-                type: 'forall',
-                vbls: [],
-                constr: { type: 'bool', value: true },
-                ty: function_type(t_int, function_type(t_int, t_int)),
-            },
-        },
-    ]);
+    const env = run(constr, builtins);
     const ty = env.find((t) => t.var_ === 'result')?.sch;
-    // console.log(constr);
-    // console.log('ty', ty);
     return ty?.ty ?? { type: 'const', name: 'lol' };
 };

@@ -9,7 +9,7 @@ import {
     var_descr,
 } from './hmx';
 import eq from 'fast-deep-equal';
-type Env = { var_: string; sch: ty_sch }[];
+export type Env = { var_: string; sch: ty_sch }[];
 let extend = (env: Env, var_: string, sch: ty_sch): Env => [
     { var_, sch },
     ...env,
@@ -170,7 +170,8 @@ let unify_terms = (t1: ty, t2: ty): void => {
             return;
         }
         throw new Error(
-            `unable to unify builtin types: ${t1.name} and ${t2.name}`,
+            `cannot unify ${t1.name} and ${t2.name}`,
+            // `unable to unify builtin types: ${t1.name} and ${t2.name}`,
         );
     }
     throw new Error(`unable to unify ${t1.type} and ${t2.type}`);

@@ -42,14 +42,21 @@ export const parse = (
                 node.values[1].values[0].type === 'identifier' &&
                 node.values[1].values.every((n) => n.type === 'identifier')
             ) {
-                const body = parse(node.values[2], errors);
+                let body = parse(node.values[2], errors);
                 if (body == null) return;
-                return {
-                    type: 'abs',
-                    name: node.values[1].values[0].text,
-                    loc: node.loc,
-                    body,
-                };
+                for (let i = node.values[1].values.length - 1; i >= 0; i--) {
+                    let name = node.values[1].values[i];
+                    if (name.type !== 'identifier') {
+                        throw new Error('fn arg not identifier');
+                    }
+                    body = {
+                        type: 'abs',
+                        name: name.text,
+                        loc: node.loc,
+                        body: body!,
+                    };
+                }
+                return body!;
             }
 
             if (
@@ -76,14 +83,19 @@ export const parse = (
             }
 
             const values = node.values.map((v) => parse(v, errors));
-            return values.every(Boolean)
-                ? {
-                      type: 'app',
-                      fn: values[0]!,
-                      arg: values[1]!,
-                      loc: node.loc,
-                  }
-                : undefined;
+            if (!values.every(Boolean)) {
+                return;
+            }
+            let res = values[0];
+            for (let i = 1; i < values.length; i++) {
+                res = {
+                    type: 'app',
+                    fn: res!,
+                    arg: values[i]!,
+                    loc: node.loc,
+                };
+            }
+            return res;
         }
     }
     errors[node.loc] = `unhandled node type ${node.type}`;
