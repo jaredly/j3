@@ -10,13 +10,18 @@ export type term =
     | { type: 'abs'; name: string; body: term; loc: number }
     | { type: 'let'; name: string; init: term; body: term; loc: number }
     | { type: 'if'; cond: term; yes: term; no: term; loc: number }
-    | { type: 'const'; value: t_const; loc: number };
+    | { type: 'const'; value: t_const; loc: number }
+    // records!
+    | { type: 'accessor'; id: string; loc: number }
+    | { type: 'record'; items: { name: string; value: term }[] };
 
 export type typ = ty;
 export type ty =
     | { type: 'const'; name: string }
     | { type: 'var'; var: var_ }
-    | { type: 'app'; fn: ty; arg: ty };
+    | { type: 'app'; fn: ty; arg: ty }
+    // records!
+    | { type: 'record'; items: { name: string; value: ty }[] };
 
 export const unwrapVar = (t: ty) => {
     if (t.type === 'var') {
@@ -48,10 +53,13 @@ export const typToString = (t: ty): string => {
     switch (t.type) {
         case 'const':
             return t.name;
+        case 'record':
+            return `{${t.items.map(
+                (row) => `${row.name} ${typToString(row.value)}`,
+            )}}`;
         case 'var':
             const s = Union_find(t.var);
             return s.structure ? typToString(s.structure) : s.name;
-        // return 'a-var-idk';
         case 'app':
             const fn = unrollFn(t);
             if (fn) {
@@ -149,31 +157,6 @@ let _infer = (term: term, ty: ty): constr => {
                 name: is_subtype,
                 types: [{ type: 'const', name: term.value.type }, ty],
             };
-        case 'if': {
-            // const res = fresh_ty_var();
-            // return {
-            //     type: 'exists',
-            //     vbls: [res],
-            //     constr: {
-            //         type: 'and',
-            //         left: _infer(term.cond, t_bool),
-            //         right: {
-            //             type: 'and',
-            //             left: _infer(term.yes, { type: 'var', var: res }),
-            //             right: _infer(term.no, { type: 'var', var: res }),
-            //         },
-            //     },
-            // };
-            return {
-                type: 'and',
-                left: _infer(term.cond, t_bool),
-                right: {
-                    type: 'and',
-                    left: _infer(term.yes, ty),
-                    right: _infer(term.no, ty),
-                },
-            };
-        }
         case 'var':
             return { type: 'instance', name: term.name, ty };
         case 'abs': {
@@ -230,7 +213,82 @@ let _infer = (term: term, ty: ty): constr => {
                 },
             };
         }
+        // If!
+        case 'if': {
+            return {
+                type: 'and',
+                left: _infer(term.cond, t_bool),
+                right: {
+                    type: 'and',
+                    left: _infer(term.yes, ty),
+                    right: _infer(term.no, ty),
+                },
+            };
+        }
+        // Records!
+        case 'accessor': {
+            const x1 = fresh_ty_var();
+            const row = [
+                { name: term.id, value: { type: 'var' as const, var: x1 } },
+            ];
+            return {
+                type: 'app',
+                name: is_subtype,
+                types: [
+                    function_type(
+                        { type: 'record', items: row },
+                        { type: 'var', var: x1 },
+                    ),
+                    ty,
+                ],
+            };
+        }
+        case 'record': {
+            const vbls = term.items.map((row) => fresh_ty_var());
+
+            const constrs: constr[] = [
+                {
+                    type: 'app',
+                    name: is_subtype,
+                    types: [
+                        {
+                            type: 'record',
+                            items: term.items.map((row, i) => ({
+                                name: row.name,
+                                value: { type: 'var', var: vbls[i] },
+                            })),
+                        },
+                        ty,
+                    ],
+                },
+                ...term.items.map(
+                    (row, i): constr =>
+                        _infer(row.value, { type: 'var', var: vbls[i] }),
+                ),
+                // ({
+                //     type: 'app',
+                //     name: is_subtype,
+                //     types: [
+                //         row.value,
+                //         {type: 'var', var: vbls[i]}
+                //     ]
+                // })
+            ];
+
+            return ands(constrs);
+        }
     }
+};
+
+const ands = (constrs: constr[]): constr => {
+    if (!constrs.length) {
+        return { type: 'bool', value: true };
+    }
+    let res = constrs[0];
+    for (let i = 1; i < constrs.length; i++) {
+        res = { type: 'and', left: res, right: constrs[i] };
+    }
+    return res;
 };
 
 export let infer_prog = (p: [string, term][]) => {
@@ -247,9 +305,7 @@ export let infer_prog = (p: [string, term][]) => {
             },
             acc,
         );
-        // console.log('acc', acc);
     });
-    // console.log('prog', acc);
     return acc;
 };
 

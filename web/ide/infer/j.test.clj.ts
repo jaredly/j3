@@ -54,9 +54,9 @@ x cannot unify number and string
     (let [y x]
         10))
 -> number
-`;
 
-/*
+.hello
+-> (fn [{hello v1}] v1)
 
 {x 1}
 -> {x number}
@@ -64,11 +64,14 @@ x cannot unify number and string
 (let [x 10] {x x})
 -> {x number}
 
-.hello
--> (fn [{hello v1:1}] v1:1)
-
 (.hello {hello 10})
 -> number
+`;
+
+/*
+
+
+
 
 (.what {hello 10})
 -> v2:1

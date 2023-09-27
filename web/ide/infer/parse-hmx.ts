@@ -33,6 +33,35 @@ export const parse = (
                 loc: node.loc,
                 value: { type: 'string', value: node.first.text },
             };
+        case 'recordAccess':
+            if (node.target.type === 'blank') {
+                return {
+                    type: 'accessor',
+                    id: node.items[0].text,
+                    loc: node.loc,
+                };
+            }
+            return;
+        case 'record': {
+            const items: { name: string; value: term; loc: number }[] = [];
+            for (let i = 0; i < node.values.length; i += 2) {
+                const name = node.values[i];
+                const value = node.values[i + 1];
+                if (name.type !== 'identifier') {
+                    errors[name.loc] = `record key must be an identifier`;
+                    return;
+                }
+                if (!value) {
+                    errors[name.loc] = `record key has no value`;
+                    return;
+                }
+                const v = parse(value, errors);
+                if (!v) return;
+                items.push({ name: name.text, value: v, loc: name.loc });
+            }
+
+            return { type: 'record', items };
+        }
         case 'list': {
             if (
                 node.values.length === 3 &&

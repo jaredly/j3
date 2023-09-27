@@ -110,6 +110,15 @@ let alpha_conv = (term: ty, name: string, r: ty): ty => {
                 }
             }
         }
+        case 'record': {
+            return {
+                type: 'record',
+                items: term.items.map((row) => ({
+                    name: row.name,
+                    value: alpha_conv(row.value, name, r),
+                })),
+            };
+        }
         case 'const':
             return term;
     }
@@ -183,6 +192,8 @@ let free_vars_of = (term: ty): var_[] => {
     switch (term.type) {
         case 'const':
             return [];
+        case 'record':
+            return term.items.flatMap((row) => free_vars_of(row.value));
         case 'var': {
             const s = Union_find(term.var).structure;
             return s ? free_vars_of(s) : [term.var];
