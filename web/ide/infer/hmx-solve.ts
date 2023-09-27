@@ -2,6 +2,7 @@ import {
     Union_point,
     constr,
     fresh_ty_var,
+    is_subtype,
     term,
     ty,
     ty_sch,
@@ -183,6 +184,23 @@ let unify_terms = (t1: ty, t2: ty): void => {
             // `unable to unify builtin types: ${t1.name} and ${t2.name}`,
         );
     }
+    if (t1.type === 'record' && t2.type === 'record') {
+        // so, this is probably where I need to know what ranks mean?
+        // t1.
+        const m1: { [key: string]: ty } = {};
+        t1.items.forEach((row) => (m1[row.name] = row.value));
+        const m2: { [key: string]: ty } = {};
+        t2.items.forEach((row) => (m2[row.name] = row.value));
+        t1.items.forEach((row) => {
+            if (!m2[row.name]) {
+                throw new Error(
+                    `cant unify, ${row.name} is missing in the second record`,
+                );
+            }
+            unify_terms(row.value, m2[row.name]);
+        });
+        return;
+    }
     throw new Error(`unable to unify ${t1.type} and ${t2.type}`);
 };
 
@@ -213,8 +231,8 @@ export let solve = (constr: constr, pool: pool, env: Env): Env => {
             }
             return [];
         case 'app':
-            if (constr.name === '=') {
-                // console.log('solving an equal', constr.types);
+            if (constr.name === is_subtype) {
+                console.log('solving an equal', constr.types);
                 unify(chop(constr.types[0]), chop(constr.types[1]));
                 return [];
             }
