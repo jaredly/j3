@@ -3,7 +3,7 @@
 // and https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.lhs
 // https://www.cl.cam.ac.uk/teaching/1415/L28/type-inference.pdf
 
-import { Node } from '../../../src/types/cst';
+import { Node } from '../../../../src/types/cst';
 import { Type } from './types-w';
 
 type Scheme = {

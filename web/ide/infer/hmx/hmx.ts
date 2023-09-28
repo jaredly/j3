@@ -75,8 +75,7 @@ export const typToString = (t: ty): string => {
                 (row) => `${row.name} ${typToString(row.value)}`,
             )}}`;
         case 'var':
-            const s = Union_find(t.var);
-            return s.structure ? typToString(s.structure) : s.name;
+            return varToString(t.var);
         case 'app':
             const fn = unrollFn(t);
             if (fn) {
@@ -86,6 +85,11 @@ export const typToString = (t: ty): string => {
             }
             return `(${typToString(t.fn)} ${typToString(t.arg)})`;
     }
+};
+
+export const varToString = (v: var_) => {
+    const s = Union_find(v);
+    return s.structure ? typToString(s.structure) : s.name;
 };
 
 export type ref<T> = { current: T };
@@ -110,6 +114,33 @@ export type constr =
     | { type: 'def'; name: string; sch: ty_sch; constr: constr; loc: number }
     | { type: 'instance'; name: string; ty: ty; loc: number }
     | { type: 'dump'; loc: number };
+
+export const constrToString = (c: constr): string => {
+    switch (c.type) {
+        case 'bool':
+            return c.value + '';
+        case 'app':
+            return `(${c.name} ${c.types.map(typToString).join(' ')}`;
+        case 'and':
+            return `(${constrToString(c.left)} & ${constrToString(c.right)})`;
+        case 'exists':
+            return `(E [${c.vbls.map(varToString).join(' ')}] ${constrToString(
+                c.constr,
+            )})`;
+        case 'def':
+            return `(def ${c.name} ${constrToString(
+                c.constr,
+            )} : forall [${c.sch.vbls
+                .map(varToString)
+                .join(' ')}] ${constrToString(c.sch.constr)} : ${typToString(
+                c.sch.ty,
+            )})`;
+        case 'instance':
+            return `(inst ${c.name} ${typToString(c.ty)})`;
+        case 'dump':
+            return 'dump';
+    }
+};
 
 export let sch = (ty: ty): ty_sch => ({
     type: 'forall',
@@ -431,9 +462,11 @@ export let infer = (
     typs: { [loc: number]: ty },
 ): ty => {
     next = 0;
-    const map: Map = { constrs: {}, typs: typs };
+    const map: Map = { constrs: {}, typs };
+    trace(map);
     const constr = infer_prog([['result', expr]], map);
     const env = run(constr, builtins);
+    trace(env);
     const ty = env.find((t) => t.var_ === 'result')?.sch;
     Object.entries(map.constrs).forEach(([loc, constr]) => {
         if (constr.type === 'def') {
@@ -442,9 +475,5 @@ export let infer = (
             typs[constr.loc] = constr.ty;
         }
     });
-    // console.log('finished', env)
-    trace(env);
-    trace(map);
-    trace(typs);
     return ty?.ty ?? { type: 'const', name: 'lol', loc: -2 };
 };

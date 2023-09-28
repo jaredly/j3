@@ -1,4 +1,4 @@
-import { Node } from '../../../src/types/cst';
+import { Node } from '../../../../src/types/cst';
 import type { expr } from './j';
 
 export const parse = (
@@ -18,13 +18,6 @@ export const parse = (
                     loc: node.loc,
                 };
             }
-            // if (node.text.startsWith('.')) {
-            //     return {
-            //         type: 'accessor',
-            //         id: node.text.slice(1),
-            //         loc: node.loc,
-            //     };
-            // }
             return { type: 'identifier', id: node.text, loc: node.loc };
         }
         case 'recordAccess':

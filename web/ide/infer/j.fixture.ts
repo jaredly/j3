@@ -4,7 +4,7 @@ import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-import { infer, typToString, parse, builtins } from './hmx';
+import { infer, typToString, parse, builtins } from './hmx/hmx';
 
 // import { parse } from './parse-j';
 // import { infer, typToString } from './j';

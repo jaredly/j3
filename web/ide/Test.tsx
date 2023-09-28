@@ -25,7 +25,7 @@ import {
     parse,
     builtins,
     getTrace,
-} from './infer/hmx';
+} from './infer/hmx/hmx';
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
 
@@ -99,7 +99,7 @@ export const Test = ({ env }: { env: Env }) => {
                     console.log('no typ sorry');
                     results.tops[top] = {
                         summary: 'Type Error: ' + (err as Error).message,
-                        data: [(err as Error).message],
+                        data: [(err as Error).message, getTrace()],
                     };
                 }
             } else {

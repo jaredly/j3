@@ -1,11 +1,15 @@
 import {
     Union_point,
     constr,
+    constrToString,
     fresh_ty_var,
     is_subtype,
     term,
+    trace,
     ty,
     ty_sch,
+    typToString,
+    varToString,
     var_,
     var_descr,
 } from './hmx';
@@ -61,6 +65,7 @@ let Union_union = <t>(
             if (point1.current.weight >= point2.current.weight) {
                 const p2 = point2.current;
                 point2.current = { type: 'link', point: point1 };
+                trace({ at: 'Union_union - update point1', p2 });
                 point1.current = {
                     type: 'info',
                     weight: point1.current.weight + p2.weight,
@@ -68,6 +73,7 @@ let Union_union = <t>(
                 };
             } else {
                 const p1 = point1.current;
+                trace({ at: 'Union_union - update point2', p1 });
                 point1.current = { type: 'link', point: point2 };
                 point2.current = {
                     type: 'info',
@@ -140,6 +146,7 @@ let instance = (f: ty_sch) => {
 };
 
 let unify = (t1: var_, t2: var_) => {
+    trace({ at: 'unify', t1: varToString(t1), t2: varToString(t2) });
     const s1 = Union_find(t1).structure;
     const s2 = Union_find(t2).structure;
     if (!s1 && !s2) {
@@ -164,6 +171,7 @@ let unify = (t1: var_, t2: var_) => {
 };
 
 let unify_terms = (t1: ty, t2: ty): void => {
+    trace({ at: 'unify_terms', t1: typToString(t1), t2: typToString(t2) });
     if (t1.type === 'var' && t2.type === 'var') {
         return unify(t1.var, t2.var);
     }
@@ -225,6 +233,7 @@ let free_vars_of = (term: ty): var_[] => {
 };
 
 export let solve = (constr: constr, pool: pool, env: Env): Env => {
+    trace({ at: 'solve', constr: constrToString(constr), pool });
     switch (constr.type) {
         case 'dump':
             return env;
@@ -235,7 +244,7 @@ export let solve = (constr: constr, pool: pool, env: Env): Env => {
             return [];
         case 'app':
             if (constr.name === is_subtype) {
-                console.log('solving an equal', constr.types);
+                // console.log('solving an equal', constr.types);
                 unify(chop(constr.types[0]), chop(constr.types[1]));
                 return [];
             }

@@ -1,4 +1,4 @@
-import { Node } from '../../../src/types/cst';
+import { Node } from '../../../../src/types/cst';
 import { term } from './hmx';
 
 export const parse = (
