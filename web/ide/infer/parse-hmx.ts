@@ -60,7 +60,7 @@ export const parse = (
                 items.push({ name: name.text, value: v, loc: name.loc });
             }
 
-            return { type: 'record', items };
+            return { type: 'record', items, loc: node.loc };
         }
         case 'list': {
             if (
@@ -83,6 +83,7 @@ export const parse = (
                         name: name.text,
                         loc: node.loc,
                         body: body!,
+                        nameloc: name.loc,
                     };
                 }
                 return body!;
@@ -107,6 +108,7 @@ export const parse = (
                           init,
                           body,
                           loc: node.loc,
+                          nameloc: node.values[1].values[0].loc,
                       }
                     : undefined;
             }

@@ -7,8 +7,15 @@ export type t_const =
 export type term =
     | { type: 'var'; name: string; loc: number }
     | { type: 'app'; fn: term; arg: term; loc: number }
-    | { type: 'abs'; name: string; body: term; loc: number }
-    | { type: 'let'; name: string; init: term; body: term; loc: number }
+    | { type: 'abs'; name: string; body: term; loc: number; nameloc: number }
+    | {
+          type: 'let';
+          name: string;
+          init: term;
+          body: term;
+          loc: number;
+          nameloc: number;
+      }
     | { type: 'if'; cond: term; yes: term; no: term; loc: number }
     | { type: 'const'; value: t_const; loc: number }
     // records!
@@ -96,18 +103,18 @@ export let function_type = (t1: ty, t2: ty) => app(app(arrow, t1), t2);
 
 export type ty_sch = { type: 'forall'; vbls: var_[]; constr: constr; ty: ty };
 export type constr =
-    | { type: 'bool'; value: boolean }
-    | { type: 'app'; name: string; types: ty[] }
-    | { type: 'and'; left: constr; right: constr }
-    | { type: 'exists'; vbls: var_[]; constr: constr }
-    | { type: 'def'; name: string; sch: ty_sch; constr: constr }
-    | { type: 'instance'; name: string; ty: ty }
-    | { type: 'dump' };
+    | { type: 'bool'; value: boolean; loc: number }
+    | { type: 'app'; name: string; types: ty[]; loc: number }
+    | { type: 'and'; left: constr; right: constr; loc: number }
+    | { type: 'exists'; vbls: var_[]; constr: constr; loc: number }
+    | { type: 'def'; name: string; sch: ty_sch; constr: constr; loc: number }
+    | { type: 'instance'; name: string; ty: ty; loc: number }
+    | { type: 'dump'; loc: number };
 
 export let sch = (ty: ty): ty_sch => ({
     type: 'forall',
     vbls: [],
-    constr: { type: 'bool', value: true },
+    constr: { type: 'bool', value: true, loc: ty.loc },
     ty,
 });
 
@@ -124,13 +131,16 @@ export let is_instance = (sch: ty_sch, ty: ty): constr => {
                 type: 'app',
                 name: is_subtype,
                 types: [sch.ty, ty],
+                loc: ty.loc,
             },
+            loc: ty.loc,
         },
+        loc: ty.loc,
     };
 };
 
-export let has_instance = ({ vbls, constr }: ty_sch): constr => {
-    return { type: 'exists', vbls, constr };
+export let has_instance = ({ vbls, constr, ty }: ty_sch): constr => {
+    return { type: 'exists', vbls, constr, loc: ty.loc };
 };
 
 export let letin = (var_: string, sch: ty_sch, constr: constr): constr => ({
@@ -138,6 +148,7 @@ export let letin = (var_: string, sch: ty_sch, constr: constr): constr => ({
     name: var_,
     sch,
     constr,
+    loc: sch.ty.loc,
 });
 
 export let ref = <T>(v: T): ref<T> => ({ current: v });
@@ -159,11 +170,13 @@ export let t_int: ty = { type: 'const', name: 'number', loc: -2 };
 export let t_bool: ty = { type: 'const', name: 'bool', loc: -2 };
 export let tvar = (x: var_, loc: number): ty => ({ type: 'var', var: x, loc });
 
-type Map = { [loc: number]: constr };
+type Map = { constrs: { [loc: number]: constr }; typs: { [loc: number]: ty } };
 
 let _infer = (term: term, ty: ty, map: Map): constr => {
     const res = __infer(term, ty, map);
-    map[term.loc] = res;
+    map.typs[term.loc] = ty;
+    map.typs[ty.loc] = ty;
+    map.constrs[term.loc] = res;
     return res;
 };
 let __infer = (term: term, ty: ty, map: Map): constr => {
@@ -176,21 +189,23 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                     { type: 'const', name: term.value.type, loc: term.loc },
                     ty,
                 ],
+                loc: term.loc,
             };
         case 'var':
-            return { type: 'instance', name: term.name, ty };
+            return { type: 'instance', name: term.name, ty, loc: term.loc };
         case 'abs': {
             const x1 = fresh_ty_var();
             const x2 = fresh_ty_var();
             const constr_body = _infer(
                 term.body,
-                {
-                    type: 'var',
-                    var: x2,
-                    loc: term.loc,
-                },
+                { type: 'var', var: x2, loc: term.body.loc },
                 map,
             );
+            map.typs[term.nameloc] = {
+                type: 'var',
+                var: x1,
+                loc: term.nameloc,
+            };
             return {
                 type: 'exists',
                 vbls: [x1, x2],
@@ -199,21 +214,25 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                     left: {
                         type: 'def',
                         name: term.name,
-                        sch: sch({ type: 'var', var: x1, loc: term.loc }),
+                        sch: sch({ type: 'var', var: x1, loc: term.nameloc }),
                         constr: constr_body,
+                        loc: term.nameloc,
                     },
                     right: {
                         type: 'app',
                         name: is_subtype,
                         types: [
                             function_type(
-                                { type: 'var', var: x1, loc: term.loc },
-                                { type: 'var', var: x2, loc: term.loc },
+                                { type: 'var', var: x1, loc: term.nameloc },
+                                { type: 'var', var: x2, loc: term.body.loc },
                             ),
                             ty,
                         ],
+                        loc: term.loc,
                     },
+                    loc: term.loc,
                 },
+                loc: term.loc,
             };
         }
         case 'let': {
@@ -228,11 +247,11 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                         {
                             type: 'var',
                             var: x,
-                            loc: term.loc,
+                            loc: term.nameloc,
                         },
                         map,
                     ),
-                    ty: { type: 'var', var: x, loc: term.loc },
+                    ty: { type: 'var', var: x, loc: term.nameloc },
                 },
                 _infer(term.body, ty, map),
             );
@@ -250,7 +269,9 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                         map,
                     ),
                     right: _infer(term.arg, tvar(x2, term.arg.loc), map),
+                    loc: term.loc,
                 },
+                loc: term.loc,
             };
         }
         // If!
@@ -262,7 +283,9 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                     type: 'and',
                     left: _infer(term.yes, ty, map),
                     right: _infer(term.no, ty, map),
+                    loc: term.loc,
                 },
+                loc: term.loc,
             };
         }
         // Records!
@@ -284,6 +307,7 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                     ),
                     ty,
                 ],
+                loc: term.loc,
             };
         }
         case 'record': {
@@ -308,6 +332,7 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
                         },
                         ty,
                     ],
+                    loc: term.loc,
                 },
                 // ...term.items.map(
                 //     (row, i): constr => ({
@@ -356,17 +381,22 @@ let __infer = (term: term, ty: ty, map: Map): constr => {
 
 const ands = (constrs: constr[]): constr => {
     if (!constrs.length) {
-        return { type: 'bool', value: true };
+        return { type: 'bool', value: true, loc: -2 };
     }
     let res = constrs[0];
     for (let i = 1; i < constrs.length; i++) {
-        res = { type: 'and', left: res, right: constrs[i] };
+        res = {
+            type: 'and',
+            left: res,
+            right: constrs[i],
+            loc: constrs[i].loc,
+        };
     }
     return res;
 };
 
 export let infer_prog = (p: [string, term][], map: Map) => {
-    let acc: constr = { type: 'dump' };
+    let acc: constr = { type: 'dump', loc: -2 };
     p.forEach(([name, term]) => {
         let x = fresh_ty_var();
         acc = letin(
@@ -401,13 +431,20 @@ export let infer = (
     typs: { [loc: number]: ty },
 ): ty => {
     next = 0;
-    const map: Map = {};
+    const map: Map = { constrs: {}, typs: typs };
     const constr = infer_prog([['result', expr]], map);
     const env = run(constr, builtins);
     const ty = env.find((t) => t.var_ === 'result')?.sch;
-    // Object.entries(map).forEach(([loc, constr]) => { })
+    Object.entries(map.constrs).forEach(([loc, constr]) => {
+        if (constr.type === 'def') {
+            typs[constr.sch.ty.loc] = constr.sch.ty;
+        } else if (constr.type === 'instance') {
+            typs[constr.loc] = constr.ty;
+        }
+    });
     // console.log('finished', env)
     trace(env);
     trace(map);
+    trace(typs);
     return ty?.ty ?? { type: 'const', name: 'lol', loc: -2 };
 };

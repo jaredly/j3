@@ -273,7 +273,7 @@ export let solve = (constr: constr, pool: pool, env: Env): Env => {
                 extend(env, constr.name, {
                     type: 'forall',
                     vbls: vars,
-                    constr: { type: 'bool', value: true },
+                    constr: { type: 'bool', value: true, loc: t.loc },
                     ty: t,
                 }),
             );

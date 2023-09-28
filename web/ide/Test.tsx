@@ -153,6 +153,7 @@ export const Test = ({ env }: { env: Env }) => {
                         if (typ) {
                             return [{ idx: last, text: typToString(typ) }];
                         }
+                        // return [{ idx: last, text: `${last}` }];
                     }
                     return [];
                 }}
