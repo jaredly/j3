@@ -1,4 +1,38 @@
 
+# Projects to look through and maybe copy
+
+- https://github.com/Steell/DynamicStatic
+  - type inference prototype. Supports subtypes, type unions, function overloads, and recursive types.
+- https://github.com/ameerwasi001/CzariScript
+  - type system that supports subtype inference with parametric polymorphism, classes, objects, and single inheritance
+- https://github.com/Storyyeller/cubiml-demo
+  - tagged unions, records, mutual recursion
+- https://bitbucket.org/structural-types/polyte/src/master/
+  - "parametric polymorphic subtyping"?
+- https://www.normalesup.org/~simonet/soft/dalton/index.html
+  - type inference with structural subtyping
+- https://github.com/CrowdHailer/eyg-lang/tree/main
+  - lots of good things, including algebraic effects
+- https://kyagrd.github.io/mininax/
+- https://kyagrd.github.io/tiper/
+  - type inference via prolog rules!
+- https://github.com/Ekdohibs/joujou
+  - algebraic effects and handlers with multishot continuations, and a static type system with inference of types and effects, with subtyping.
+- https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
+  - typeclasssessssss
+
+
+
+
+
+# Practical type inference for arbitrary-rank types
+
+https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf
+
+this was recommended as a very accessible paper about type inference.
+and here's a great description of how to read type inference rules:
+https://cohost.org/prophet/post/2248211-how-to-read-inferenc
+
 # "Essence of ML Type Inference"
 
 https://pauillac.inria.fr/~fpottier/publis/emlti-final.pdf
