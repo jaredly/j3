@@ -98,6 +98,7 @@ let alpha_conv = (term: ty, name: string, r: ty): ty => {
                 type: 'app',
                 fn: alpha_conv(term.fn, name, r),
                 arg: alpha_conv(term.arg, name, r),
+                loc: term.loc,
             };
         case 'var': {
             let var_: var_descr = Union_find(term.var);
@@ -118,6 +119,7 @@ let alpha_conv = (term: ty, name: string, r: ty): ty => {
                     name: row.name,
                     value: alpha_conv(row.value, name, r),
                 })),
+                loc: term.loc,
             };
         }
         case 'const':
@@ -131,6 +133,7 @@ let instance = (f: ty_sch) => {
         m = alpha_conv(m, Union_find(vbl).name, {
             type: 'var',
             var: fresh_ty_var(),
+            loc: m.loc,
         });
     });
     return m;
@@ -260,7 +263,7 @@ export let solve = (constr: constr, pool: pool, env: Env): Env => {
             );
             pool.vars = [...constr.sch.vbls, ...pool_.vars];
             solve(constr.sch.constr, pool_, env);
-            let t = Union_find(v).structure ?? { type: 'var', var: v };
+            let t = Union_find(v).structure ?? { type: 'var', var: v, loc: -2 };
             let vars = free_vars_of(t).filter(
                 (v) => Union_find(v).rank > pool.rank,
             );

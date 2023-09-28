@@ -18,7 +18,14 @@ import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
 // import { infer, typ, typToString } from './infer/j';
 // import { parse } from './infer/parse-j';
-import { infer, typ, typToString, parse, builtins } from './infer/hmx';
+import {
+    infer,
+    typ,
+    typToString,
+    parse,
+    builtins,
+    getTrace,
+} from './infer/hmx';
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
 
@@ -82,8 +89,12 @@ export const Test = ({ env }: { env: Env }) => {
             if (expr) {
                 try {
                     const typ = infer(builtins, expr, results.typs);
+                    const trace = getTrace();
                     // console.log(typ);
-                    results.tops[top] = { summary: typToString(typ), data: [] };
+                    results.tops[top] = {
+                        summary: typToString(typ),
+                        data: trace,
+                    };
                 } catch (err) {
                     console.log('no typ sorry');
                     results.tops[top] = {
@@ -103,6 +114,8 @@ export const Test = ({ env }: { env: Env }) => {
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
+    // @ts-ignore
+    window.data = selTop ? results.tops[selTop].data : null;
 
     return (
         <div>
