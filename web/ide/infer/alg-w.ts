@@ -4,7 +4,7 @@
 // https://www.cl.cam.ac.uk/teaching/1415/L28/type-inference.pdf
 
 import { Node } from '../../../src/types/cst';
-import { Type } from './types';
+import { Type } from './types-w';
 
 type Scheme = {
     vbls: string[];

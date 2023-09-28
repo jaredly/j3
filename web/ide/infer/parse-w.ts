@@ -1,5 +1,5 @@
 import { Node } from '../../../src/types/cst';
-import type { Exp } from './types';
+import type { Exp } from './types-w';
 
 export const parse = (
     node: Node,

@@ -53,7 +53,12 @@ export const Test = ({ env }: { env: Env }) => {
 
     const results = useMemo(() => {
         const results: Ctx['results'] & {
-            tops: { [key: number]: string };
+            tops: {
+                [key: number]: {
+                    summary: string;
+                    data: any[];
+                };
+            };
             typs: { [loc: number]: typ };
         } = {
             display: {},
@@ -78,13 +83,16 @@ export const Test = ({ env }: { env: Env }) => {
                 try {
                     const typ = infer(builtins, expr, results.typs);
                     // console.log(typ);
-                    results.tops[top] = typToString(typ);
+                    results.tops[top] = { summary: typToString(typ), data: [] };
                 } catch (err) {
                     console.log('no typ sorry');
-                    results.tops[top] = 'Type Error: ' + (err as Error).message;
+                    results.tops[top] = {
+                        summary: 'Type Error: ' + (err as Error).message,
+                        data: [(err as Error).message],
+                    };
                 }
             } else {
-                results.tops[top] = 'not parse';
+                results.tops[top] = { summary: 'not parse', data: [errors] };
             }
 
             layout(top, 0, state.map, results.display, results.hashNames, true);
@@ -92,6 +100,9 @@ export const Test = ({ env }: { env: Env }) => {
 
         return results;
     }, [state.map]);
+
+    const start = state.at.length ? state.at[0].start : null;
+    const selTop = start?.[1].idx;
 
     return (
         <div>
@@ -106,7 +117,7 @@ export const Test = ({ env }: { env: Env }) => {
                 dispatch={dispatch}
                 tops={tops}
                 debug={false}
-                showTop={(top) => results.tops[top]}
+                showTop={(top) => results.tops[top].summary}
                 results={results}
             />
             <button
@@ -134,8 +145,9 @@ export const Test = ({ env }: { env: Env }) => {
                 }}
             />
             <Cursors at={state.at} regs={state.regs} />
-            Here we are
-            {JSON.stringify(state.hover)}
+            {selTop ? JSON.stringify(results.tops[selTop].data) : null}
+            {/* {JSON.stringify(state.at)} */}
+            {/* <div>{JSON.stringify(state.hover)}</div> */}
         </div>
     );
 };
