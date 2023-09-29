@@ -31,7 +31,11 @@ let constraint_and = (one: tconstraint, two: tconstraint) => {
 
 /** Joining two fragments is straightforward except that the environments
     must be disjoint (a pattern cannot bound a variable several times). */
-let join_fragment = (pos: position, f1: fragment, f2: fragment) => ({
+export let join_fragment = (
+    pos: number,
+    f1: fragment,
+    f2: fragment,
+): fragment => ({
     gamma: disjoint_union(f1.gamma, f2.gamma),
     vars: f1.vars.concat(f2.vars),
     tconstraint: constraint_and(f1.tconstraint, f2.tconstraint),

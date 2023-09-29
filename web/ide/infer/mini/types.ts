@@ -51,11 +51,12 @@ type binding =
     | { type: 'BindRecValue'; pos: position; defs: value_definition[] }
     | { type: 'TypeDec'; pos: position; decls: type_declaration[] };
 
-type pattern = { type: 'PVar'; pos: position; name: name };
-// | { type: 'PWildcard'; pos: position }
+export type pattern =
+    | { type: 'PVar'; pos: position; name: name }
+    | { type: 'PWildcard'; pos: position }
+    | { type: 'PPrimitive'; pos: position; prim: primitive };
 // | { type: 'PAlias'; pos: position; name: string; pat: pattern }
 // | { type: 'PTypeConstraint'; pos: position; pat: pattern; typ: typ }
-// | { type: 'PPrimitive'; pos: position; prim: primitive }
 // | { type: 'PData'; pos: position; name: string; pat: pattern[] }
 // | { type: 'PAnd'; pos: position; pats: pattern[] }
 // | { type: 'POr'; pos: position; pats: pattern[] };
@@ -68,30 +69,30 @@ export type primitive =
 export type expression =
     | { type: 'Var'; pos: position; name: string }
     | { type: 'Lambda'; pos: position; pat: pattern; expr: expression }
-    | { type: 'App'; pos: position; fn: expression; arg: expression }
-    | { type: 'Binding'; pos: position; binding: binding; expr: expression }
-    | { type: 'PrimApp'; pos: position; prim: primitive; expr: expression[] }
-    | { type: 'Forall'; pos: position; names: string[]; expr: expression }
-    | { type: 'Exists'; pos: position; names: string[]; expr: expression }
-    // | { type: 'ETypeConstraint'; pos: position; expr: expression; typ: typ }
-    | { type: 'DCon'; pos: position; name: string; expr: expression[] }
-    // | { type: 'EMatch'; pos: position; expr: expression; clauses: clause[] }
-    // | { type: 'ERecordEmpty'; pos: position }
-    // | { type: 'ERecordAccess'; pos: position; expr: expression; name: string }
-    // | {
-    //       type: 'ERecordExtend';
-    //       pos: position;
-    //       rows: record_binding[];
-    //       expr: expression;
-    //   }
-    // | {
-    //       type: 'ERecordUpdate';
-    //       pos: position;
-    //       record: expression;
-    //       name: string;
-    //       value: expression;
-    //   }
-    | { type: 'AssertFalse'; pos: position };
+    | { type: 'PrimApp'; pos: position; prim: primitive; expr: expression[] };
+// | { type: 'App'; pos: position; fn: expression; arg: expression }
+// | { type: 'Binding'; pos: position; binding: binding; expr: expression }
+// | { type: 'Forall'; pos: position; names: string[]; expr: expression }
+// | { type: 'Exists'; pos: position; names: string[]; expr: expression }
+// | { type: 'ETypeConstraint'; pos: position; expr: expression; typ: typ }
+// | { type: 'DCon'; pos: position; name: string; expr: expression[] }
+// | { type: 'EMatch'; pos: position; expr: expression; clauses: clause[] }
+// | { type: 'ERecordEmpty'; pos: position }
+// | { type: 'ERecordAccess'; pos: position; expr: expression; name: string }
+// | {
+//       type: 'ERecordExtend';
+//       pos: position;
+//       rows: record_binding[];
+//       expr: expression;
+//   }
+// | {
+//       type: 'ERecordUpdate';
+//       pos: position;
+//       record: expression;
+//       name: string;
+//       value: expression;
+//   }
+// | { type: 'AssertFalse'; pos: position }
 
 type clause = { pos: position; pat: pattern; expr: expression };
 type record_binding = { name: string; expr: expression };

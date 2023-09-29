@@ -1,29 +1,30 @@
 // <? Instance name t
 // =?= Equation t1 t2
 
-import { expression } from './types';
-import { fresh, point } from './union_find';
+import { expression, pattern, primitive } from './types';
+import { find, fresh, point } from './union_find';
 
 // ^ Conjunction (but eagerly swallow True's and flatten Conjunctions)
 export type pos = number;
 
-type tconstraint =
+export type tconstraint =
     | { type: 'True'; pos: pos }
     | { type: 'False'; pos: pos }
+    | { type: 'Dump'; pos: pos }
     | { type: 'Equation'; t1: crterm; t2: crterm; pos: pos }
     | { type: 'Conjunction'; items: tconstraint[]; pos: pos }
     | { type: 'Let'; schemes: scheme[]; constraint: tconstraint; pos: pos }
     | { type: 'Instance'; name: string; term: crterm; pos: pos }
     | { type: 'Disjunction'; constraints: tconstraint[]; pos: pos };
 
-type fragment = {
+export type fragment = {
     gamma: Record<string, { term: crterm; pos: number }>;
     vars: MultiEquation_variable[];
     tconstraint: tconstraint;
 };
 
-type Header = { [key: string]: { term: crterm; pos: pos } };
-type scheme = {
+export type Header = { [key: string]: { term: crterm; pos: pos } };
+export type scheme = {
     type: 'Scheme';
     rigid: MultiEquation_variable[];
     flexible: MultiEquation_variable[];
@@ -32,17 +33,50 @@ type scheme = {
     pos: pos;
 };
 
-type CoreAlgebra_term<t> =
+export type CoreAlgebra_term<t> =
     | { type: 'RowCons'; label: string; left: t; right: t }
     | { type: 'RowUniform'; value: t }
     | { type: 'App'; fn: t; arg: t }
-    | { type: 'var'; value: t };
+    | { type: 'Var'; value: t };
 
-type CoreAlgebra_arterm<t> =
+export let CA_iter = <t>(f: (t: t) => unknown, cat: CoreAlgebra_term<t>) => {
+    switch (cat.type) {
+        case 'RowCons':
+            f(cat.left);
+            f(cat.right);
+            return;
+        case 'RowUniform':
+            return f(cat.value);
+        case 'App':
+            f(cat.fn);
+            f(cat.arg);
+            return;
+        case 'Var':
+            return f(cat.value);
+    }
+};
+
+export let CA_map = <t, r>(
+    f: (t: t) => r,
+    cat: CoreAlgebra_term<t>,
+): CoreAlgebra_term<r> => {
+    switch (cat.type) {
+        case 'RowCons':
+            return { ...cat, left: f(cat.left), right: f(cat.right) };
+        case 'RowUniform':
+            return { ...cat, value: f(cat.value) };
+        case 'App':
+            return { ...cat, fn: f(cat.fn), arg: f(cat.arg) };
+        case 'Var':
+            return { ...cat, value: f(cat.value) };
+    }
+};
+
+export type CoreAlgebra_arterm<t> =
     | { type: 'Variable'; value: t }
     | { type: 'Term'; term: CoreAlgebra_term<CoreAlgebra_arterm<t>> };
 
-type MultiEquation_descriptor = {
+export type MultiEquation_descriptor = {
     structure?: CoreAlgebra_term<MultiEquation_variable>;
     rank: number;
     mark: Symbol;
@@ -52,11 +86,11 @@ type MultiEquation_descriptor = {
     var?: MultiEquation_variable;
 };
 
-type MultiEquation_variable = point<MultiEquation_descriptor>;
+export type MultiEquation_variable = point<MultiEquation_descriptor>;
 
-type crterm = CoreAlgebra_arterm<MultiEquation_variable>;
+export type crterm = CoreAlgebra_arterm<MultiEquation_variable>;
 
-let monoscheme = (header: Header, pos: pos): scheme => ({
+export let monoscheme = (header: Header, pos: pos): scheme => ({
     type: 'Scheme',
     pos,
     rigid: [],
@@ -65,7 +99,7 @@ let monoscheme = (header: Header, pos: pos): scheme => ({
     header,
 });
 
-let conj = (c1: tconstraint, c2: tconstraint): tconstraint => {
+export let conj = (c1: tconstraint, c2: tconstraint): tconstraint => {
     if (c1.type === 'True') {
         return c2;
     }
@@ -78,14 +112,14 @@ let conj = (c1: tconstraint, c2: tconstraint): tconstraint => {
     return { type: 'Conjunction', items: [c1, c2], pos: c1.pos };
 };
 
-let eq_eq = (pos: number, t1: crterm, t2: crterm): tconstraint => ({
+export let eq_eq = (pos: number, t1: crterm, t2: crterm): tconstraint => ({
     type: 'Equation',
     t1,
     t2,
     pos,
 });
 
-let ex = (
+export let ex = (
     pos: pos,
     qs: MultiEquation_variable[],
     c: tconstraint,
@@ -107,24 +141,24 @@ let ex = (
     };
 };
 
-type kindType = unknown;
-type algebraic_datatype = [string, MultiEquation_variable][];
+export type kindType = unknown;
+export type algebraic_datatype = [string, MultiEquation_variable][];
 
-type type_info = [
+export type type_info = [
     kindType,
     MultiEquation_variable,
     { ref: algebraic_datatype | null },
 ];
-type data_constructor = [number, MultiEquation_variable[], crterm];
+export type data_constructor = [number, MultiEquation_variable[], crterm];
 
-type env = {
+export type env = {
     type_info: [string, type_info][];
     data_constructor: [string, data_constructor][];
 };
 // type env = (name: string) =>
 
 let as_type_constructor = (what: type_info) => {
-    const p = UnionFind_find(what[1]);
+    const p = find(what[1]);
     if (p.kind == 'Constant') {
         return what;
     } else {
@@ -144,13 +178,14 @@ let symbol = (tenv: env, name: string): crterm => {
     return { type: 'Variable', value: lookup_typcon(tenv, name)[1] };
 };
 
-let Mark_none = Symbol('none');
+export let Mark_none = Symbol('none');
+export let rank_none = -1;
 
 // (** [variable()] creates a new variable, whose rank is [none]. *)
 let _variable = (kind: MultiEquation_descriptor['kind']) =>
     fresh({
         // structure = structure;
-        rank: -1,
+        rank: rank_none,
         mark: Mark_none,
         kind,
         // name = name;
@@ -178,7 +213,14 @@ let exists = (pos: number, f: (c: crterm) => tconstraint): tconstraint => {
 
 let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
     let v = symbol(tenv, '->');
-    return { type: 'Term', m: App(TTerm(App(v, t)), u) };
+    return {
+        type: 'Term',
+        term: {
+            type: 'App',
+            fn: { type: 'Term', term: { type: 'App', fn: v, arg: t } },
+            arg: u,
+        },
+    };
 };
 
 let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
@@ -188,7 +230,11 @@ let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
         case 'Lambda':
             return exists(0, (x1) =>
                 exists(0, (x2) => {
-                    let fragment: fragment = infer_pat_fragment(tenv, p, x1);
+                    let fragment: fragment = infer_pat_fragment(
+                        tenv,
+                        e.pat,
+                        x1,
+                    );
                     return ex(
                         0,
                         fragment.vars,
@@ -202,7 +248,7 @@ let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                                 constraint: conj(
                                     fragment.tconstraint,
                                     //(* Require [x2] to be a valid type for [e]. *)
-                                    infer_expr(tenv, e, x2),
+                                    infer_expr(tenv, e.expr, x2),
                                 ),
                                 pos: e.pos,
                             },
@@ -211,5 +257,93 @@ let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                     );
                 }),
             );
+        // :think:
+        case 'PrimApp': {
+            return eq_eq(e.pos, type_of_primitive(tenv, e.prim), t);
+        }
     }
+};
+
+let disjoint_union = <T>(one: Record<string, T>, two: Record<string, T>) => {
+    for (let key of Object.keys(two)) {
+        if (one[key]) {
+            throw new Error(`NonLinearPattern: ${key}`);
+        }
+    }
+    return { ...one, ...two };
+};
+
+let constraint_and = (one: tconstraint, two: tconstraint) => {
+    throw new Error('impl');
+};
+
+/** The [empty_fragment] is used when nothing has been bound. */
+let empty_fragment: fragment = {
+    gamma: {},
+    vars: [],
+    tconstraint: { type: 'True', pos: -1 },
+};
+
+/** Joining two fragments is straightforward except that the environments
+    must be disjoint (a pattern cannot bound a variable several times). */
+let join_fragment = (pos: number, f1: fragment, f2: fragment): fragment => ({
+    gamma: disjoint_union(f1.gamma, f2.gamma),
+    vars: f1.vars.concat(f2.vars),
+    tconstraint: constraint_and(f1.tconstraint, f2.tconstraint),
+});
+
+let type_of_primitive = (tenv: env, prim: primitive) => {
+    switch (prim.type) {
+        case 'PIntegerConstant':
+            return symbol(tenv, 'int');
+        case 'PUnit':
+            return symbol(tenv, 'unit');
+        case 'PCharConstant':
+            return symbol(tenv, 'char');
+    }
+};
+
+/** [infer_pat_fragment p t] generates a fragment that represents the
+    information gained by a success when matching p. */
+let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
+    let join = (pos: number, fragments: fragment[]) =>
+        fragments.reduce(
+            (res, f) => join_fragment(pos, res, f),
+            empty_fragment,
+        );
+
+    let infpat = (t: crterm, pat: pattern): fragment => {
+        switch (pat.type) {
+            case 'PWildcard':
+                return empty_fragment;
+            case 'PPrimitive':
+                return {
+                    ...empty_fragment,
+                    tconstraint: eq_eq(
+                        pat.pos,
+                        t,
+                        type_of_primitive(tenv, pat.prim),
+                    ),
+                };
+            case 'PVar': {
+                let v = variable('Flexible');
+                return {
+                    vars: [v],
+                    gamma: {
+                        [pat.name]: {
+                            term: { type: 'Variable', value: v },
+                            pos: pat.pos,
+                        },
+                    },
+                    tconstraint: eq_eq(
+                        pat.pos,
+                        { type: 'Variable', value: v },
+                        t,
+                    ),
+                };
+            }
+        }
+    };
+
+    return infpat(t, p);
 };
