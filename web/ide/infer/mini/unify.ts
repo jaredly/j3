@@ -65,35 +65,33 @@ export const unify = (
         const filter = (v: MultiEquation_variable, term: structure) =>
             _unify(pos, v, fresh(term));
 
+        const s1 = desc1.structure;
+        const s2 = desc2.structure;
+
         // Neither (or just one) multi-equation contains a term.
         // Merge them; we're done.
-        if (
-            is_flexible(v1) &&
-            is_flexible(v1) &&
-            !desc1.structure &&
-            !desc2.structure
-        ) {
+        if (is_flexible(v1) && is_flexible(v1) && !s1 && !s2) {
             return merge();
         }
-        if (is_flexible(v1) && !desc1.structure) {
+        if (is_flexible(v1) && !s1) {
             return merge2();
         }
-        if (is_flexible(v2) && !desc2.structure) {
+        if (is_flexible(v2) && !s2) {
             return merge1();
         }
         // Exactly one multi-equation contains a term; keep it. *)
-        if (desc1.structure?.type === 'Var') {
-            return _unify(pos, desc1.structure.value, v2);
+        if (s1?.type === 'Var') {
+            return _unify(pos, s1.value, v2);
         }
-        if (desc2.structure?.type === 'Var') {
-            return _unify(pos, desc2.structure.value, v1);
+        if (s2?.type === 'Var') {
+            return _unify(pos, s2.value, v1);
         }
         //   (* It is forbidden to unify rigid type variables with
         //  a structure. *)
-        if (!desc1.structure) {
+        if (!s1) {
             throw new Error(`cannot unify rigid`);
         }
-        if (!desc2.structure) {
+        if (!s2) {
             throw new Error(`cannot unify rigid 2`);
         }
 
@@ -103,33 +101,27 @@ export const unify = (
         //      that arises between the two terms. Signal an error if the
         //      terms are incompatible, i.e. do not have the same head
         //      symbol. *)
-        if (desc1.structure.type === 'App' && desc2.structure.type === 'App') {
+        if (s1.type === 'App' && s2.type === 'App') {
             merge();
-            _unify(pos, desc1.structure.fn, desc2.structure.fn);
-            _unify(pos, desc1.structure.arg, desc2.structure.arg);
+            _unify(pos, s1.fn, s2.fn);
+            _unify(pos, s1.arg, s2.arg);
             return;
         }
         //   (* Both multi-equations contain a uniform row term. Merge the
         //      multi-equations (dropping one of the terms), then decompose
         //      the equation that arises between the two terms. *)
-        if (
-            desc1.structure.type === 'RowUniform' &&
-            desc2.structure.type === 'RowUniform'
-        ) {
+        if (s1.type === 'RowUniform' && s2.type === 'RowUniform') {
             merge();
-            return _unify(pos, desc1.structure.value, desc2.structure.value);
+            return _unify(pos, s1.value, s2.value);
         }
 
         //   (* Both multi-equations contain a ``row cons'' term. Compare
         //      their labels. *)
-        if (
-            desc1.structure.type === 'RowCons' &&
-            desc2.structure.type === 'RowCons'
-        ) {
-            if (desc1.structure.label === desc2.structure.label) {
+        if (s1.type === 'RowCons' && s2.type === 'RowCons') {
+            if (s1.label === s2.label) {
                 merge();
-                _unify(pos, desc1.structure.head, desc2.structure.head);
-                _unify(pos, desc1.structure.tail, desc2.structure.tail);
+                _unify(pos, s1.head, s2.head);
+                _unify(pos, s1.tail, s2.tail);
                 return;
             } else {
                 //   (* The labels do not coincide. We must choose which
@@ -141,7 +133,7 @@ export const unify = (
                 //      first. This should tend to make the cheap case above
                 //      more frequent, thus allowing rows to be unified in
                 //      quasi-linear time. *)
-                if (desc1.structure.label < desc2.structure.label) {
+                if (s1.label < s2.label) {
                     merge1();
                 } else {
                     merge2();
@@ -152,20 +144,107 @@ export const unify = (
                 //      is logically determined by that of [v1] or [v2], it
                 //      is appropriate to give them the same rank. *)
                 let tl = fresh(undefined);
-                filter(desc1.structure.tail, {
+                filter(s1.tail, {
                     type: 'RowCons',
-                    label: desc2.structure.label,
-                    head: desc2.structure.head,
+                    label: s2.label,
+                    head: s2.head,
                     tail: tl,
                 });
-                filter(desc2.structure.tail, {
+                filter(s2.tail, {
                     type: 'RowCons',
-                    label: desc1.structure.label,
-                    head: desc1.structure.head,
+                    label: s1.label,
+                    head: s1.head,
                     tail: tl,
                 });
+                return;
             }
         }
+
+        //   (* The left-hand multi-equation contains a ``row cons'' term,
+        //      while the right-hand one contains a ``free'' term; or the
+        //      converse. *)
+        const rowApp = (
+            r: Extract<structure, { type: 'RowCons' }>,
+            app: Extract<structure, { type: 'App' }>,
+        ) => {
+            let attach = (son: MultiEquation_variable): structure => {
+                let hd = fresh(undefined);
+                let tl = fresh(undefined);
+                filter(son, {
+                    type: 'RowCons',
+                    label: r.label,
+                    head: hd,
+                    tail: tl,
+                });
+                return { type: 'App', fn: hd, arg: tl };
+            };
+            const one = attach(app.fn);
+            const two = attach(app.arg);
+            filter(r.head, one);
+            filter(r.tail, two);
+            return;
+        };
+
+        if (s1.type === 'RowCons' && s2.type === 'App') {
+            return rowApp(s1, s2);
+        }
+        if (s2.type === 'RowCons' && s1.type === 'App') {
+            return rowApp(s2, s1);
+        }
+
+        const uniApp = (
+            r: Extract<structure, { type: 'RowUniform' }>,
+            app: Extract<structure, { type: 'App' }>,
+        ) => {
+            let attach = (
+                son: MultiEquation_variable,
+            ): MultiEquation_variable => {
+                let content = fresh(undefined);
+                filter(son, { type: 'RowUniform', value: content });
+                return content;
+            };
+            filter(r.value, {
+                type: 'App',
+                fn: attach(app.fn),
+                arg: attach(app.arg),
+            });
+            return;
+        };
+        if (s1.type === 'RowUniform' && s2.type === 'App') {
+            return uniApp(s1, s2);
+        }
+        if (s2.type === 'RowUniform' && s1.type === 'App') {
+            return uniApp(s2, s1);
+        }
+        //   (* Keep the uniform representation, which is more compact. *)
+
+        if (s1.type === 'RowCons' && s2.type === 'RowUniform') {
+            merge2();
+
+            //   (* Decompose the equation that arises between the two
+            //  terms. To do so, equate [hd1] with [content2], then
+            //  equate [tl1] with a fresh uniform row whose content is
+            //  [content2].
+
+            //  Note that, instead of creating the latter fresh, one
+            //  may wish to re-use [v2], which is also a uniform row
+            //  whose content is [content2]. However, these two terms
+            //  do not have the same sort. Although this optimization
+            //  would most likely be correct, its proof of correctness
+            //  would be more involved, requiring a single variable to
+            //  simultaneously possess several sorts. *)
+
+            _unify(pos, s1.head, s2.value);
+            filter(s1.tail, { type: 'RowUniform', value: s2.value });
+            return;
+        }
+        if (s2.type === 'RowCons' && s1.type === 'RowUniform') {
+            merge1();
+            _unify(pos, s2.head, s1.value);
+            filter(s2.tail, { type: 'RowUniform', value: s1.value });
+            return;
+        }
+        console.warn('Got here somehow', s1, s2);
     };
 
     return _unify(pos, t1, t2);

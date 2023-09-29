@@ -127,7 +127,7 @@ export const instance = (pool: pool, v: MultiEquation_variable) => {
      scheme, that is, in the number of universally quantified nodes. */
     let v_ = copy(v);
     restore(v);
-    v_;
+    return v_;
 };
 
 const _solve = (env: _env, pool: pool, c: tconstraint) => {
