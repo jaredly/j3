@@ -1,4 +1,5 @@
 import {
+    CA_fold,
     CA_iter,
     CA_map,
     Header,
@@ -12,7 +13,7 @@ import {
     scheme,
     tconstraint,
 } from './infer';
-import { find, fresh } from './union_find';
+import { find, fresh, redundant } from './union_find';
 
 // export const _solve =
 
@@ -312,3 +313,122 @@ let generic_variables = (pos: pos, vl: MultiEquation_variable[]) => {
         }
     });
 };
+
+let generalize = (old_pool: pool, young_pool: pool) => {
+    /* We examine the variables in the young pool and sort them by rank
+     using a simple bucket sort mechanism. (Recall that every variable
+     in the young pool must have rank less than or equal to the pool's
+     number.)  These variables are also marked as ``young'', so as to
+     be identifiable in constant time. */
+
+    let young_number = young_pool.number;
+    let sorted: MultiEquation_variable[][] = Array(young_pool.number + 1);
+    let young = Mark_frash();
+
+    young_pool.inhabitants.forEach((v) => {
+        const desc = find(v);
+        desc.mark = young;
+        let rank = desc.rank;
+        sorted[rank] = [v, ...sorted[rank]];
+    });
+    /* Next, we update the ranks of the young variables. One goal is to ensure
+     that if [v1] is dominated by [v2], then the rank of [v1] is less than or
+     equal to the rank of [v2], or, in other words, that ranks are
+     nonincreasing along any path down the structure of terms.  The second
+     goal is to ensure that the rank of every young variable is exactly the
+     maximum of the ranks of the variables that it dominates, if there are
+     any.
+
+     The process consists of several depth-first traversals of the forest
+     whose entry points are the young variables. Traversals stop at old
+     variables. Roughly speaking, the first goal is achieved on the way
+     down, while the second goal is achieved on the way back up.
+
+     During each traversal, every visited variable is marked as such, so as
+     to avoid being visited again. To ensure that visiting every variable
+     once is enough, traversals whose starting point have lower ranks must
+     be performed first. In the absence of cycles, this enforces the
+     following invariant: when performing a traversal whose starting point
+     has rank [k], every variable marked as visited has rank [k] or less
+     already. (In the presence of cycles, this algorithm is incomplete and
+     may compute ranks that are slightly higher than necessary.) Conversely,
+     every non-visited variable must have rank greater than or equal to
+     [k]. This explains why [k] does not need to be updated while going
+     down. */
+
+    let visited = Mark_frash();
+    for (let k = 0; k <= young_pool.number; k++) {
+        let traverse = (v: MultiEquation_variable): number => {
+            let desc = find(v);
+            /* If the variable is young and was not visited before, we immediately
+	 mark it as visited (which is important, since terms may be cyclic).
+	 If the variable has no structure, we set its rank to [k]. If it has
+	 some structure, we first traverse its sons, then set its rank to the
+	 maximum of their ranks. */
+            if (desc.mark === young) {
+                desc.mark = visited;
+                desc.rank = desc.structure
+                    ? CA_fold(
+                          (son, accu) => Math.max(traverse(son), accu),
+                          desc.structure,
+                          rank_outermost,
+                      )
+                    : k;
+            } else if (desc.mark !== visited) {
+                desc.mark = visited;
+                if (k < desc.rank) {
+                    desc.rank = k;
+                }
+            }
+            /* If the variable isn't marked ``young'' or ``visited'', then it must
+	 be old. Then, we update its rank, but do not pursue the computation
+	 any further. */
+            return desc.rank;
+        };
+
+        sorted[k].forEach((m) => traverse(m));
+    }
+
+    /* The rank of every young variable has now been determined as precisely
+     as possible.
+
+     Every young variable that has become an alias for some other (old or
+     young) variable is now dropped. We need only keep one representative
+     of each equivalence class.
+
+     Every young variable whose rank has become strictly less than the
+     current pool's number may be safely turned into an old variable. We do
+     so by moving it into the previous pool. In fact, it would be safe to
+     move it directly to the pool that corresponds to its rank. However, in
+     the current implementation, we do not have all pools at hand, but only
+     the previous pool.
+
+     Every young variable whose rank has remained equal to the current
+     pool's number becomes universally quantified in the type scheme that is
+     being created. We set its rank to [none]. */
+
+    for (let k = 0; k < young_number; k++) {
+        sorted[k].forEach((v) => {
+            if (!redundant(v)) {
+                register(old_pool, v);
+            }
+        });
+    }
+
+    sorted[young_number].forEach((v) => {
+        if (!redundant(v)) {
+            const desc = find(v);
+            if (desc.rank < young_number) {
+                register(old_pool, v);
+            } else {
+                desc.rank = rank_none;
+                if (desc.kind === 'Flexible') {
+                    desc.kind = 'Rigid';
+                }
+            }
+        }
+    });
+};
+/** [outermost] is the rank assigned to variables that are
+    existentially bound at the outermost level. */
+let rank_outermost = 0;

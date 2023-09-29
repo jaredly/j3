@@ -56,6 +56,23 @@ export let CA_iter = <t>(f: (t: t) => unknown, cat: CoreAlgebra_term<t>) => {
     }
 };
 
+export let CA_fold = <t, r>(
+    f: (t: t, accu: r) => r,
+    cat: CoreAlgebra_term<t>,
+    accu: r,
+): r => {
+    switch (cat.type) {
+        case 'RowCons':
+            return f(cat.left, f(cat.right, accu));
+        case 'RowUniform':
+            return f(cat.value, accu);
+        case 'App':
+            return f(cat.arg, f(cat.arg, accu));
+        case 'Var':
+            return f(cat.value, accu);
+    }
+};
+
 export let CA_map = <t, r>(
     f: (t: t) => r,
     cat: CoreAlgebra_term<t>,
