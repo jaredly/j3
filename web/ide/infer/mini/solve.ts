@@ -13,6 +13,7 @@ import {
     scheme,
     tconstraint,
 } from './infer';
+import { unify } from './unify';
 import { find, fresh, redundant } from './union_find';
 
 // export const _solve =
@@ -206,6 +207,9 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
         generic_variables(scheme.pos, scheme.rigid);
         return header;
     };
+
+    solve(env, pool, c);
+    return final_env.current;
 };
 
 const concat = (env: _env, header: { [key: string]: MultiEquation_variable }) =>
@@ -432,3 +436,12 @@ let generalize = (old_pool: pool, young_pool: pool) => {
 /** [outermost] is the rank assigned to variables that are
     existentially bound at the outermost level. */
 let rank_outermost = 0;
+
+let unify_terms = (
+    pos: pos,
+    pool: pool,
+    t1: MultiEquation_variable,
+    t2: MultiEquation_variable,
+) => {
+    unify(pos, (v) => register(pool, v), t1, t2);
+};

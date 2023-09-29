@@ -34,7 +34,7 @@ export type scheme = {
 };
 
 export type CoreAlgebra_term<t> =
-    | { type: 'RowCons'; label: string; left: t; right: t }
+    | { type: 'RowCons'; label: string; head: t; tail: t }
     | { type: 'RowUniform'; value: t }
     | { type: 'App'; fn: t; arg: t }
     | { type: 'Var'; value: t };
@@ -42,8 +42,8 @@ export type CoreAlgebra_term<t> =
 export let CA_iter = <t>(f: (t: t) => unknown, cat: CoreAlgebra_term<t>) => {
     switch (cat.type) {
         case 'RowCons':
-            f(cat.left);
-            f(cat.right);
+            f(cat.head);
+            f(cat.tail);
             return;
         case 'RowUniform':
             return f(cat.value);
@@ -63,7 +63,7 @@ export let CA_fold = <t, r>(
 ): r => {
     switch (cat.type) {
         case 'RowCons':
-            return f(cat.left, f(cat.right, accu));
+            return f(cat.head, f(cat.tail, accu));
         case 'RowUniform':
             return f(cat.value, accu);
         case 'App':
@@ -79,7 +79,7 @@ export let CA_map = <t, r>(
 ): CoreAlgebra_term<r> => {
     switch (cat.type) {
         case 'RowCons':
-            return { ...cat, left: f(cat.left), right: f(cat.right) };
+            return { ...cat, head: f(cat.head), tail: f(cat.tail) };
         case 'RowUniform':
             return { ...cat, value: f(cat.value) };
         case 'App':

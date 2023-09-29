@@ -68,7 +68,7 @@ export const change = <t>(point: point<t>, v: t): t => {
     of the smaller class point to that of the larger class, we
     guarantee that paths remain of logarithmic length (not accounting
     for path compression, which makes them yet smaller). */
-let union = <t>(point1: point<t>, point2: point<t>) => {
+export let union = <t>(point1: point<t>, point2: point<t>) => {
     point1 = repr(point1);
     point2 = repr(point2);
 
