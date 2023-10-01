@@ -78,16 +78,16 @@ export type expression =
           pos: position;
           rows: record_binding[];
           expr: expression;
-      };
+      }
+    | { type: 'RecordAccess'; pos: position; expr: expression; name: string };
 // | { type: 'Binding'; pos: position; binding: binding; expr: expression }
 // | { type: 'Forall'; pos: position; names: string[]; expr: expression }
 // | { type: 'Exists'; pos: position; names: string[]; expr: expression }
-// | { type: 'ETypeConstraint'; pos: position; expr: expression; typ: typ }
+// | { type: 'TypeConstraint'; pos: position; expr: expression; typ: typ }
 // | { type: 'DCon'; pos: position; name: string; expr: expression[] }
-// | { type: 'EMatch'; pos: position; expr: expression; clauses: clause[] }
-// | { type: 'ERecordAccess'; pos: position; expr: expression; name: string }
+// | { type: 'Match'; pos: position; expr: expression; clauses: clause[] }
 // | {
-//       type: 'ERecordUpdate';
+//       type: 'RecordUpdate';
 //       pos: position;
 //       record: expression;
 //       name: string;

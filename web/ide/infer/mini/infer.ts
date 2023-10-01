@@ -275,6 +275,31 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                 type: 'Term',
                 term: { type: 'RowUniform', value: symbol(tenv, 'abs') },
             });
+        case 'RecordAccess':
+            return exists(e.pos, (x) =>
+                exists(e.pos, (y) => {
+                    let r = record_constructor(tenv, {
+                        type: 'Term',
+                        term: {
+                            type: 'RowCons',
+                            label: e.name,
+                            head: {
+                                type: 'Term',
+                                term: {
+                                    type: 'App',
+                                    fn: symbol(tenv, 'pre'),
+                                    arg: x,
+                                },
+                            },
+                            tail: y,
+                        },
+                    });
+                    return conj(
+                        infer_expr(tenv, e.expr, r),
+                        eq_eq(e.pos, t, x),
+                    );
+                }),
+            );
         case 'RecordExtend': {
             e.rows;
             return exists_list(e.pos, e.rows, (xs) =>
@@ -462,12 +487,19 @@ function record_type(
             type: 'Term',
             term: {
                 type: 'RowCons',
-                head: row[1],
+                head: {
+                    type: 'Term',
+                    term: { type: 'App', fn: symbol(tenv, 'pre'), arg: row[1] },
+                },
                 label: row[0].name,
                 tail: last,
             },
         };
     });
+    return record_constructor(tenv, last);
+}
+
+function record_constructor(tenv: env, last: crterm): crterm {
     return {
         type: 'Term',
         term: { type: 'App', fn: symbol(tenv, 'pi'), arg: last },

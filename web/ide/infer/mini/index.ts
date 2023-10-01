@@ -1,5 +1,6 @@
 import {
     Mark_none,
+    MultiEquation_descriptor,
     MultiEquation_variable,
     arrow,
     crterm,
@@ -117,54 +118,71 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     };
 };
 
-export const vToString = (v: MultiEquation_variable): string => {
+export const vToString = (
+    v: MultiEquation_variable,
+    seen: Seen = new Map(),
+): string => {
     const d = find(v);
     if (d.structure) {
         // return thing(d.structure)
         switch (d.structure.type) {
             case 'App':
-                return `(${vToString(d.structure.fn)} ${vToString(
+                return `(${vToString(d.structure.fn, seen)} ${vToString(
                     d.structure.arg,
+                    seen,
                 )})`;
             case 'RowUniform':
                 return '..';
             case 'RowCons':
                 return `{${d.structure.label} ${vToString(
                     d.structure.head,
-                )} ${vToString(d.structure.tail)}}`;
+                    seen,
+                )} ${vToString(d.structure.tail, seen)}}`;
             case 'Var':
-                return vToString(d.structure.value);
+                return vToString(d.structure.value, seen);
         }
     }
     if (d.kind === 'Constant') {
         return d.name ?? 'unnamed-builtin'; // + '[builtin?]';
     } else {
+        if (!seen.has(d)) {
+            seen.set(d, letters[seen.size]);
+        }
+        return seen.get(d)!;
         // return `var:${d.name}`;
-        return d.name ?? 'unnamed-variable';
+        // return d.name ?? 'unnamed-variable';
     }
 };
 
-export const typToString = (t: crterm): string => {
+const letters = 'abcdefghijklmnop';
+
+type Seen = Map<MultiEquation_descriptor, string>;
+
+export const typToString = (t: crterm, seen: Seen = new Map()): string => {
     if (t.type === 'Variable') {
-        return vToString(t.value);
+        return vToString(t.value, seen);
     } else {
-        return thing(t.term);
+        return thing(t.term, seen);
     }
 };
 
 export const getTrace = () => [];
 
-function thing(term: Extract<crterm, { type: 'Term' }>['term']) {
+function thing(term: Extract<crterm, { type: 'Term' }>['term'], seen: Seen) {
     switch (term.type) {
         case 'App':
-            return `(${typToString(term.fn)} ${typToString(term.arg)})`;
+            return `(${typToString(term.fn, seen)} ${typToString(
+                term.arg,
+                seen,
+            )})`;
         case 'RowUniform':
             return '..';
         case 'RowCons':
-            return `{${term.label} ${typToString(term.head)} ${typToString(
-                term.tail,
-            )}}`;
+            return `{${term.label} ${typToString(
+                term.head,
+                seen,
+            )} ${typToString(term.tail, seen)}}`;
         case 'Var':
-            return typToString(term.value);
+            return typToString(term.value, seen);
     }
 }
