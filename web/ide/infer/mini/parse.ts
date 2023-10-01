@@ -24,6 +24,14 @@ const _parse = (
                     expr: [],
                 };
             }
+            if (node.value.type === 'string') {
+                return {
+                    type: 'PrimApp',
+                    prim: { type: 'PCharConstant', value: node.value.value },
+                    pos: node.loc,
+                    expr: [],
+                };
+            }
             errors[node.loc] = 'sorry only int const';
             return;
         }
@@ -39,5 +47,12 @@ const _parse = (
                       pos: node.loc,
                   }
                 : undefined;
+        case 'app': {
+            const fn = _parse(node.fn, errors);
+            const arg = _parse(node.arg, errors);
+            return fn && arg
+                ? { type: 'App', fn, arg, pos: node.loc }
+                : undefined;
+        }
     }
 };

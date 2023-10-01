@@ -241,7 +241,7 @@ let exists = (pos: number, f: (c: crterm) => tconstraint): tconstraint => {
     return ex(pos, [v], c);
 };
 
-let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
+export let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
     let v = symbol(tenv, '->');
     return {
         type: 'Term',
@@ -257,6 +257,13 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
     switch (e.type) {
         case 'Var':
             return { type: 'Instance', pos: e.pos, name: e.name, term: t };
+        case 'App':
+            return exists(e.pos, (x) =>
+                conj(
+                    infer_expr(tenv, e.fn, arrow(tenv, x, t)),
+                    infer_expr(tenv, e.arg, x),
+                ),
+            );
         case 'Lambda':
             return exists(0, (x1) =>
                 exists(0, (x2) => {

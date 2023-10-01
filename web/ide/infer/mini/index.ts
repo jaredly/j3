@@ -1,7 +1,9 @@
 import {
     Mark_none,
     MultiEquation_variable,
+    arrow,
     crterm,
+    env,
     infer_expr,
     infer_vdef,
     variable,
@@ -18,39 +20,69 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     // init_builtin_env
 
     const int = variable('Constant', 'int');
+    const char = variable('Constant', 'string');
     const arr = variable('Constant', '->');
 
-    const constraint = infer_vdef(
-        term.pos,
-        {
-            type_info: [
-                ['int', [{ type: 'Star' }, int, { ref: null }]],
+    const tenv: env = {
+        type_info: [
+            ['int', [{ type: 'Star' }, int, { ref: null }]],
+            ['char', [{ type: 'Star' }, char, { ref: null }]],
+            [
+                '->',
                 [
-                    '->',
-                    [
-                        {
-                            type: 'Arrow',
-                            left: { type: 'EmptyRow' },
-                            right: { type: 'Star' },
-                        },
-                        arr,
-                        { ref: null },
-                    ],
+                    {
+                        type: 'Arrow',
+                        left: { type: 'EmptyRow' },
+                        right: { type: 'Star' },
+                    },
+                    arr,
+                    { ref: null },
                 ],
             ],
-            data_constructor: [],
-        },
-        term,
-    );
+        ],
+        data_constructor: [],
+    };
+    const constraint = infer_vdef(term.pos, tenv, term);
     console.log(constraint);
+    const plus = variable('Flexible', 'plus');
+
     const res = solve(
         {
             type: 'Let',
-            schemes: [constraint],
+            schemes: [
+                {
+                    constraint: {
+                        type: 'Equation',
+                        pos: -1,
+                        t1: { type: 'Variable', value: plus },
+                        t2: arrow(
+                            tenv,
+                            { type: 'Variable', value: int },
+                            arrow(
+                                tenv,
+                                { type: 'Variable', value: int },
+                                { type: 'Variable', value: int },
+                            ),
+                        ),
+                    },
+                    flexible: [plus],
+                    header: {},
+                    pos: -1,
+                    rigid: [],
+                    type: 'Scheme',
+                },
+                constraint,
+            ],
             constraint: { type: 'Dump', pos: -1 },
             pos: -1,
         },
-        [int, arr],
+        [int, arr, char, plus],
+        {
+            type: 'EnvFrame',
+            env: { type: 'Empty' },
+            name: '+',
+            var: plus,
+        },
     );
     if (res.type === 'EnvFrame') {
         return { type: 'Variable', value: res.var };

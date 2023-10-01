@@ -1,5 +1,6 @@
 //
 
+import { vToString } from '.';
 import {
     Mark_none,
     MultiEquation_descriptor,
@@ -90,9 +91,24 @@ export const unify = (
         //   (* It is forbidden to unify rigid type variables with
         //  a structure. *)
         if (!s1) {
+            if (desc1.kind === 'Constant') {
+                throw new Error(
+                    `cant unify builtin type ${desc1.name} with ${vToString(
+                        v2,
+                    )}`,
+                );
+            }
+            console.log(desc1, s2);
             throw new Error(`cannot unify rigid`);
         }
         if (!s2) {
+            if (desc2.kind === 'Constant') {
+                throw new Error(
+                    `cant unify builtin type ${desc2.name} with ${vToString(
+                        v1,
+                    )}`,
+                );
+            }
             throw new Error(`cannot unify rigid 2`);
         }
 

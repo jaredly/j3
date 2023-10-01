@@ -223,8 +223,12 @@ const concat = (env: _env, header: { [key: string]: MultiEquation_variable }) =>
         env,
     );
 
-export const solve = (c: tconstraint, vbls: MultiEquation_variable[]) => {
-    const env: _env = { type: 'Empty' };
+export const solve = (
+    c: tconstraint,
+    vbls: MultiEquation_variable[],
+    env: _env,
+) => {
+    // const env: _env = { type: 'Empty' };
     const pool: pool = { number: 0, inhabitants: [] };
     vbls.forEach((v) => introduce(pool, v));
     return _solve(env, pool, c);

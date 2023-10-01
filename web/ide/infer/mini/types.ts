@@ -64,13 +64,14 @@ export type pattern =
 export type primitive =
     | { type: 'PIntegerConstant'; value: number }
     | { type: 'PCharConstant'; value: string }
+    | { type: 'PBoolean'; value: boolean }
     | { type: 'PUnit' };
 
 export type expression =
     | { type: 'Var'; pos: position; name: string }
     | { type: 'Lambda'; pos: position; pat: pattern; expr: expression }
-    | { type: 'PrimApp'; pos: position; prim: primitive; expr: expression[] };
-// | { type: 'App'; pos: position; fn: expression; arg: expression }
+    | { type: 'PrimApp'; pos: position; prim: primitive; expr: expression[] }
+    | { type: 'App'; pos: position; fn: expression; arg: expression };
 // | { type: 'Binding'; pos: position; binding: binding; expr: expression }
 // | { type: 'Forall'; pos: position; names: string[]; expr: expression }
 // | { type: 'Exists'; pos: position; names: string[]; expr: expression }
