@@ -41,7 +41,7 @@ export const unify = (
        dealing with potentially cyclic structures. */
 
         if (equivalent(v1, v2)) {
-            console.log('equivalent, no need', v1);
+            // console.log('equivalent, no need', v1);
             return;
         }
         // Before performing a recursive call, we will merge the
@@ -312,7 +312,7 @@ const getit = (
     } else {
         name = desc1.name ?? desc2.name;
     }
-    console.log(` 😅 getit "${desc1.name}" "${desc2.name}" ->`, name);
+    // console.log(` 😅 getit "${desc1.name}" "${desc2.name}" ->`, name);
 
     let rank1 = desc1.rank;
     let rank2 = desc2.rank;

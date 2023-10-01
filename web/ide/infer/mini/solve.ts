@@ -132,7 +132,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
         solve_constraint(env, pool, c);
     };
     let solve_constraint = (env: _env, pool: pool, c: tconstraint) => {
-        console.log('solve', env, c);
+        // console.log('solve', env, c);
         switch (c.type) {
             case 'True':
                 return;
@@ -141,7 +141,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
                 return;
             case 'Equation': {
                 unify_terms(c.pos, pool, chop(pool, c.t1), chop(pool, c.t2));
-                console.log('eq', pool);
+                // console.log('eq', pool);
                 return;
             }
             case 'Conjunction':
@@ -153,11 +153,11 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
                     c.schemes[0].rigid.length === 0 &&
                     c.constraint.type === 'True'
                 ) {
-                    console.log('Ok fast path');
+                    // console.log('Ok fast path');
                     c.schemes[0].flexible.forEach((f) => introduce(pool, f));
                     return solve(env, pool, c.schemes[0].constraint);
                 }
-                console.log('complex let');
+                // console.log('complex let');
                 let env_ = c.schemes.reduce(
                     (env_, scheme) =>
                         concat(env_, solve_scheme(env, pool, scheme)),
@@ -166,7 +166,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
                 return solve(env_, pool, c.constraint);
             }
             case 'Instance': {
-                console.log('👨‍👩‍👦 instancel ookup', c.name);
+                // console.log('👨‍👩‍👦 instancel ookup', c.name);
                 const t = lookup(c.pos, c.name, env);
                 const i = instance(pool, t);
                 const t_ = chop(pool, c.term);
@@ -193,7 +193,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
         let vars = [...scheme.rigid, ...scheme.flexible];
         let pool_ = new_pool(pool);
         vars.forEach((v) => introduce(pool_, v));
-        console.log('🤔introduced all', JSON.stringify(vars));
+        // console.log('🤔introduced all', JSON.stringify(vars));
         let header = Object.fromEntries(
             Object.entries(scheme.header).map(([key, value]) => [
                 key,
@@ -244,12 +244,12 @@ let new_pool = (pool: pool) => ({
 let introduce = (pool: pool, v: MultiEquation_variable) => {
     let desc = find(v);
     desc.rank = pool.number;
-    console.log(
-        'introducing',
-        JSON.stringify(v),
-        pool.number,
-        JSON.stringify(desc),
-    );
+    // console.log(
+    //     'introducing',
+    //     JSON.stringify(v),
+    //     pool.number,
+    //     JSON.stringify(desc),
+    // );
     register(pool, v);
 };
 
@@ -343,7 +343,7 @@ let generalize = (old_pool: pool, young_pool: pool) => {
     }
     let young = Symbol('young');
 
-    console.log('[generalizing]', sorted, young_pool.inhabitants);
+    // console.log('[generalizing]', sorted, young_pool.inhabitants);
     young_pool.inhabitants.forEach((v) => {
         const desc = find(v);
         desc.mark = young;

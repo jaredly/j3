@@ -194,7 +194,7 @@ let as_type_constructor = (what: type_info) => {
 
 let lookup_typcon = (env: env, t: string) => {
     const got = env.type_info.find((m) => m[0] === t);
-    console.log('looping up the tuype constr', t, got);
+    // console.log('looping up the tuype constr', t, got);
     if (!got) {
         throw new Error(`UnboundTypeIdentifier: ${t}`);
     }
@@ -301,7 +301,6 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                 }),
             );
         case 'RecordExtend': {
-            e.rows;
             return exists_list(e.pos, e.rows, (xs) =>
                 exists(e.pos, (x) => {
                     return {
@@ -309,6 +308,7 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                         pos: e.pos,
                         items: [
                             eq_eq(e.pos, t, record_type(e.pos, tenv, xs, x)),
+                            infer_expr(tenv, e.expr, x),
                             ...xs.map(([row, v]) =>
                                 infer_expr(tenv, row.expr, v),
                             ),

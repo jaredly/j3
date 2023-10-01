@@ -29,9 +29,6 @@ const _parse = (
             }
             return { type: 'RecordExtend', expr: res, pos: node.loc, rows };
         }
-        // case 'accessor': {
-        //     return {type: 'ERecordAccess', expr, name: node.id, pos: node.loc}
-        // }
         case 'const': {
             if (node.value.type === 'number') {
                 return {
@@ -64,6 +61,24 @@ const _parse = (
                       pos: node.loc,
                   }
                 : undefined;
+        case 'accessor': {
+            return {
+                type: 'Lambda',
+                pat: { type: 'PVar', name: 'x', pos: node.loc },
+                expr: {
+                    type: 'RecordAccess',
+                    expr: {
+                        type: 'Var',
+                        name: 'x',
+                        pos: node.loc,
+                    },
+
+                    name: node.id,
+                    pos: node.loc,
+                },
+                pos: node.loc,
+            };
+        }
         case 'app': {
             const arg = _parse(node.arg, errors);
             if (node.fn.type === 'accessor') {

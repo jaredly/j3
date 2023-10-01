@@ -61,7 +61,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
         data_constructor: [],
     };
     const constraint = infer_vdef(term.pos, tenv, term);
-    console.log(constraint);
+    // console.log(constraint);
     const plus = variable('Flexible', 'plus');
 
     const res = solve(
@@ -105,7 +105,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     if (res.type === 'EnvFrame') {
         return { type: 'Variable', value: res.var };
     }
-    console.log(constraint, res);
+    // console.log(constraint, res);
     return {
         type: 'Variable',
         value: {
@@ -132,7 +132,7 @@ export const vToString = (
                     seen,
                 )})`;
             case 'RowUniform':
-                return '..';
+                return '{}';
             case 'RowCons':
                 return `{${d.structure.label} ${vToString(
                     d.structure.head,
@@ -176,7 +176,7 @@ function thing(term: Extract<crterm, { type: 'Term' }>['term'], seen: Seen) {
                 seen,
             )})`;
         case 'RowUniform':
-            return '..';
+            return '{}';
         case 'RowCons':
             return `{${term.label} ${typToString(
                 term.head,
