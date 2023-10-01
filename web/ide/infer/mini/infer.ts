@@ -329,8 +329,10 @@ let join_fragment = (pos: number, f1: fragment, f2: fragment): fragment => ({
     tconstraint: constraint_and(f1.tconstraint, f2.tconstraint),
 });
 
-let type_of_primitive = (tenv: env, prim: primitive) => {
+let type_of_primitive = (tenv: env, prim: primitive): crterm => {
     switch (prim.type) {
+        case 'PBoolean':
+            return symbol(tenv, 'bool');
         case 'PIntegerConstant':
             return symbol(tenv, 'int');
         case 'PUnit':
