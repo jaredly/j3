@@ -88,9 +88,10 @@ export const vToString = (v: MultiEquation_variable): string => {
         }
     }
     if (d.kind === 'Constant') {
-        return d.name ?? 'unnamed'; // + '[builtin?]';
+        return d.name ?? 'unnamed-builtin'; // + '[builtin?]';
     } else {
-        return `var:${d.name}`;
+        // return `var:${d.name}`;
+        return d.name ?? 'unnamed-variable';
     }
 };
 

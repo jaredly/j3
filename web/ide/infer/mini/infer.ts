@@ -356,7 +356,7 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
                     ),
                 };
             case 'PVar': {
-                let v = variable('Flexible', pat.name + ':pat');
+                let v = variable('Flexible', pat.name);
                 return {
                     vars: [v],
                     gamma: {
