@@ -235,7 +235,7 @@ export let variable = (
 };
 
 let exists = (pos: number, f: (c: crterm) => tconstraint): tconstraint => {
-    let v = variable('Flexible', 'exists...');
+    let v = variable('Flexible');
     let c = f({ type: 'Variable', value: v });
     return ex(pos, [v], c);
 };
@@ -355,7 +355,8 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
                     ),
                 };
             case 'PVar': {
-                let v = variable('Flexible', pat.name + ' pattern');
+                let v = variable('Flexible');
+                // let v = variable('Flexible', pat.name + ' pattern');
                 return {
                     vars: [v],
                     gamma: {
@@ -378,7 +379,7 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
 };
 
 export const infer_vdef = (pos: pos, tenv: env, expr: expression): scheme => {
-    const x = variable('Flexible', 'infer vdef');
+    const x = variable('Flexible');
     const tx: crterm = { type: 'Variable', value: x };
     let fragment = infer_pat_fragment(
         tenv,

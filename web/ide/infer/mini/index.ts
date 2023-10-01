@@ -1,7 +1,7 @@
 import { Mark_none, crterm, infer_expr, infer_vdef, variable } from './infer';
 import { solve } from './solve';
 import { expression } from './types';
-import { fresh } from './union_find';
+import { find, fresh } from './union_find';
 
 export { parse } from './parse';
 
@@ -44,6 +44,9 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
         },
         [int],
     );
+    if (res.type === 'EnvFrame') {
+        return { type: 'Variable', value: res.var };
+    }
     console.log(constraint, res);
     return {
         type: 'Variable',
@@ -57,8 +60,28 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     };
 };
 
-export const typToString = (t: crterm) => {
-    return 'lol';
+export const typToString = (t: crterm): string => {
+    if (t.type === 'Variable') {
+        const d = find(t.value);
+        if (d.kind === 'Constant') {
+            return d.name + '[builtin?]';
+        } else {
+            return `var?${d.name}`;
+        }
+    } else {
+        switch (t.term.type) {
+            case 'App':
+                return `(${typToString(t.term.fn)} ${typToString(t.term.arg)})`;
+            case 'RowUniform':
+                return '..';
+            case 'RowCons':
+                return `{${t.term.label} ${typToString(
+                    t.term.head,
+                )} ${typToString(t.term.tail)}}`;
+            case 'Var':
+                return typToString(t.term.value);
+        }
+    }
 };
 
 export const getTrace = () => [];

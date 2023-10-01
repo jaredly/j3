@@ -1,7 +1,5 @@
 //
 
-import equal from 'fast-deep-equal';
-
 export type point<t> = {
     link:
         | { type: 'Info'; weight: number; descriptor: t }
@@ -21,7 +19,7 @@ export const repr = <t>(point: point<t>): point<t> => {
         return point;
     }
     let p2 = repr(point.link.point);
-    if (!equal(p2, point.link.point)) {
+    if (p2 !== point.link.point) {
         /* [point''] is [point']'s representative element. Because we
 	   just invoked [repr point'], [point'.link] must be [Link
 	   point'']. We write this value into [point.link], thus
@@ -72,7 +70,7 @@ export let union = <t>(point1: point<t>, point2: point<t>) => {
     point1 = repr(point1);
     point2 = repr(point2);
 
-    if (equal(point1, point2)) {
+    if (point1 === point2) {
         throw new Error(`cant union something to itself`);
     }
     if (point1.link.type !== 'Info' || point2.link.type !== 'Info') {
@@ -103,7 +101,7 @@ export let union = <t>(point1: point<t>, point2: point<t>) => {
 /** [equivalent point1 point2] tells whether [point1] and [point2]
     belong to the same equivalence class. */
 export const equivalent = <t>(point1: point<t>, point2: point<t>) => {
-    return equal(repr(point1), repr(point2));
+    return repr(point1) === repr(point2);
 };
 
 /** [redundant] maps all members of an equivalence class, but one, to

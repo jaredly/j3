@@ -166,6 +166,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
                 return solve(env_, pool, c.constraint);
             }
             case 'Instance': {
+                console.log('👨‍👩‍👦 instancel ookup', c.name);
                 const t = lookup(c.pos, c.name, env);
                 const i = instance(pool, t);
                 const t_ = chop(pool, c.term);
