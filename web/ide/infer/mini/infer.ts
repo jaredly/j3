@@ -194,6 +194,7 @@ let as_type_constructor = (what: type_info) => {
 
 let lookup_typcon = (env: env, t: string) => {
     const got = env.type_info.find((m) => m[0] === t);
+    console.log('looping up the tuype constr', t, got);
     if (!got) {
         throw new Error(`UnboundTypeIdentifier: ${t}`);
     }
@@ -355,8 +356,7 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
                     ),
                 };
             case 'PVar': {
-                let v = variable('Flexible');
-                // let v = variable('Flexible', pat.name + ' pattern');
+                let v = variable('Flexible', pat.name + ':pat');
                 return {
                     vars: [v],
                     gamma: {
@@ -383,7 +383,7 @@ export const infer_vdef = (pos: pos, tenv: env, expr: expression): scheme => {
     const tx: crterm = { type: 'Variable', value: x };
     let fragment = infer_pat_fragment(
         tenv,
-        { type: 'PVar', name: 'x', pos },
+        { type: 'PVar', name: '_result', pos },
         tx,
     );
     return {

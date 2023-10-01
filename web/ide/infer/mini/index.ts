@@ -1,4 +1,11 @@
-import { Mark_none, crterm, infer_expr, infer_vdef, variable } from './infer';
+import {
+    Mark_none,
+    MultiEquation_variable,
+    crterm,
+    infer_expr,
+    infer_vdef,
+    variable,
+} from './infer';
 import { solve } from './solve';
 import { expression } from './types';
 import { find, fresh } from './union_find';
@@ -11,6 +18,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     // init_builtin_env
 
     const int = variable('Constant', 'int');
+    const arr = variable('Constant', '->');
 
     const constraint = infer_vdef(
         term.pos,
@@ -25,7 +33,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
                             left: { type: 'EmptyRow' },
                             right: { type: 'Star' },
                         },
-                        int,
+                        arr,
                         { ref: null },
                     ],
                 ],
@@ -42,7 +50,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
             constraint: { type: 'Dump', pos: -1 },
             pos: -1,
         },
-        [int],
+        [int, arr],
     );
     if (res.type === 'EnvFrame') {
         return { type: 'Variable', value: res.var };
@@ -60,28 +68,53 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     };
 };
 
-export const typToString = (t: crterm): string => {
-    if (t.type === 'Variable') {
-        const d = find(t.value);
-        if (d.kind === 'Constant') {
-            return d.name + '[builtin?]';
-        } else {
-            return `var?${d.name}`;
-        }
-    } else {
-        switch (t.term.type) {
+export const vToString = (v: MultiEquation_variable): string => {
+    const d = find(v);
+    if (d.structure) {
+        // return thing(d.structure)
+        switch (d.structure.type) {
             case 'App':
-                return `(${typToString(t.term.fn)} ${typToString(t.term.arg)})`;
+                return `(${vToString(d.structure.fn)} ${vToString(
+                    d.structure.arg,
+                )})`;
             case 'RowUniform':
                 return '..';
             case 'RowCons':
-                return `{${t.term.label} ${typToString(
-                    t.term.head,
-                )} ${typToString(t.term.tail)}}`;
+                return `{${d.structure.label} ${vToString(
+                    d.structure.head,
+                )} ${vToString(d.structure.tail)}}`;
             case 'Var':
-                return typToString(t.term.value);
+                return vToString(d.structure.value);
         }
+    }
+    if (d.kind === 'Constant') {
+        return d.name ?? 'unnamed'; // + '[builtin?]';
+    } else {
+        return `var:${d.name}`;
+    }
+};
+
+export const typToString = (t: crterm): string => {
+    if (t.type === 'Variable') {
+        return vToString(t.value);
+    } else {
+        return thing(t.term);
     }
 };
 
 export const getTrace = () => [];
+
+function thing(term: Extract<crterm, { type: 'Term' }>['term']) {
+    switch (term.type) {
+        case 'App':
+            return `(${typToString(term.fn)} ${typToString(term.arg)})`;
+        case 'RowUniform':
+            return '..';
+        case 'RowCons':
+            return `{${term.label} ${typToString(term.head)} ${typToString(
+                term.tail,
+            )}}`;
+        case 'Var':
+            return typToString(term.value);
+    }
+}
