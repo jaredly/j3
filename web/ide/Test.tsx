@@ -16,6 +16,7 @@ import { Root } from '../custom/Root';
 import { Action, NUIState, UpdatableAction } from '../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
+
 // import { infer, typ, typToString } from './infer/j';
 // import { parse } from './infer/parse-j';
 import {
@@ -25,11 +26,13 @@ import {
     parse,
     builtins,
     getTrace,
-} from './infer/hmx/hmx';
+} from './infer/mini';
+// } from './infer/hmx/hmx';
+
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
 
-const k = `test-infer-w`;
+const k = `test-infer-w2`;
 
 export const Test = ({ env }: { env: Env }) => {
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => {

@@ -337,11 +337,11 @@ const getit = (
     }
 };
 
-let is_rigid = (v: MultiEquation_variable) => {
+export let is_rigid = (v: MultiEquation_variable) => {
     const kind = find(v).kind;
     return kind === 'Rigid' || kind === 'Constant';
 };
 
-let is_flexible = (v: MultiEquation_variable) => {
+export let is_flexible = (v: MultiEquation_variable) => {
     return find(v).kind === 'Flexible';
 };

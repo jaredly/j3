@@ -83,6 +83,14 @@ export let union = <t>(point1: point<t>, point2: point<t>) => {
 
     let weight1 = info1.weight;
     let weight2 = info2.weight;
+
+    console.log(
+        'Union! Preserving ',
+        JSON.stringify(point2),
+        ' and overwriting',
+        JSON.stringify(point1),
+    );
+
     if (weight1 >= weight2) {
         point2.link = { type: 'Link', point: point1 };
         info1.weight = weight1 + weight2;

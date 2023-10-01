@@ -158,7 +158,16 @@ export let ex = (
     };
 };
 
-export type kindType = unknown;
+export type kindType =
+    | { type: 'Star' }
+    | { type: 'Arrow'; left: kindType; right: kindType }
+    | { type: 'EmptyRow' }
+    | {
+          type: 'Times';
+          left: kindType;
+          right: kindType;
+      };
+
 export type algebraic_datatype = [string, MultiEquation_variable][];
 
 export type type_info = [
@@ -199,19 +208,22 @@ export let Mark_none = Symbol('none');
 export let rank_none = -1;
 
 // (** [variable()] creates a new variable, whose rank is [none]. *)
-let _variable = (kind: MultiEquation_descriptor['kind']) =>
+let _variable = (kind: MultiEquation_descriptor['kind'], name?: string) =>
     fresh({
         // structure = structure;
         rank: rank_none,
         mark: Mark_none,
         kind,
-        // name = name;
+        name,
         // pos = pos;
         // var = None
     });
 
 // (** [variable()] returns a new variable. *)
-let variable = (kind: MultiEquation_descriptor['kind']) => {
+export let variable = (
+    kind: MultiEquation_descriptor['kind'],
+    name?: string,
+) => {
     //   let structure =
     //     match structure with
     //       | Some t ->
@@ -219,11 +231,11 @@ let variable = (kind: MultiEquation_descriptor['kind']) => {
     // 	    Some (Var v)
     //       | None -> None
     //   in
-    return _variable(kind);
+    return _variable(kind, name);
 };
 
 let exists = (pos: number, f: (c: crterm) => tconstraint): tconstraint => {
-    let v = variable('Flexible');
+    let v = variable('Flexible', 'exists...');
     let c = f({ type: 'Variable', value: v });
     return ex(pos, [v], c);
 };
@@ -240,7 +252,7 @@ let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
     };
 };
 
-let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
+export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
     switch (e.type) {
         case 'Var':
             return { type: 'Instance', pos: e.pos, name: e.name, term: t };
@@ -343,7 +355,7 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
                     ),
                 };
             case 'PVar': {
-                let v = variable('Flexible');
+                let v = variable('Flexible', pat.name + ' pattern');
                 return {
                     vars: [v],
                     gamma: {
@@ -364,3 +376,37 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
 
     return infpat(t, p);
 };
+
+export const infer_vdef = (pos: pos, tenv: env, expr: expression): scheme => {
+    const x = variable('Flexible', 'infer vdef');
+    const tx: crterm = { type: 'Variable', value: x };
+    let fragment = infer_pat_fragment(
+        tenv,
+        { type: 'PVar', name: 'x', pos },
+        tx,
+    );
+    return {
+        type: 'Scheme',
+        constraint: {
+            type: 'Conjunction',
+            items: [fragment.tconstraint, infer_expr(tenv, expr, tx)],
+            pos,
+        },
+        rigid: [],
+        flexible: [x, ...fragment.vars],
+        header: fragment.gamma,
+        pos,
+    };
+};
+
+// (** [infer_vdef pos tenv (pos, qs, p, e)] returns the constraint
+//     related to a value definition. *)
+// let rec infer_vdef pos tenv (pos, qs, p, e) =
+//   let x = variable Flexible () in
+//   let tx = TVariable x in
+//   let rqs, rtenv = fresh_rigid_vars pos tenv qs in
+//   let tenv' = add_type_variables rtenv tenv in
+//   let fragment = infer_pat_fragment tenv' p tx in
+//     Scheme (pos, rqs, x :: fragment.vars,
+// 	    fragment.tconstraint ^ infer_expr tenv' e tx,
+//     fragment.gamma)

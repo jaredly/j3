@@ -42,6 +42,14 @@ docs https://yrg.gitlab.io/homepage/static/public/mini/
 https://www.cs.tufts.edu/comp/150FP/archive/francois-pottier/hmx.pdf
 
 
+
+.......
+
+
+soooo how to trace the solving step stuff? hrm.
+
+
+
 # Applicative something?
 https://gallium.inria.fr/~fpottier/slides/fpottier-2014-09-icfp.pdf
 

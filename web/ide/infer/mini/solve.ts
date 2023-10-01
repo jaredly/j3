@@ -53,13 +53,7 @@ let chop = (pool: pool, t: crterm): MultiEquation_variable => {
 };
 
 export const instance = (pool: pool, v: MultiEquation_variable) => {
-    let m = Mark_frash();
-    let setp = (desc: MultiEquation_descriptor) => desc.mark === m;
-    let set = (desc: MultiEquation_descriptor, v: MultiEquation_variable) => {
-        desc.mark = m;
-        desc.var = v;
-    };
-    let get = (desc: MultiEquation_descriptor) => desc.var!;
+    let m = Symbol('inst');
 
     /* [get], [set], and [setp] implement a constant-time mapping from
         descriptors of rank [none] to variables. [mapped] allows determining
@@ -138,6 +132,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
         solve_constraint(env, pool, c);
     };
     let solve_constraint = (env: _env, pool: pool, c: tconstraint) => {
+        console.log('solve', env, c);
         switch (c.type) {
             case 'True':
                 return;
@@ -146,6 +141,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
                 return;
             case 'Equation': {
                 unify_terms(c.pos, pool, chop(pool, c.t1), chop(pool, c.t2));
+                console.log('eq', pool);
                 return;
             }
             case 'Conjunction':
@@ -157,9 +153,11 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
                     c.schemes[0].rigid.length === 0 &&
                     c.constraint.type === 'True'
                 ) {
+                    console.log('Ok fast path');
                     c.schemes[0].flexible.forEach((f) => introduce(pool, f));
                     return solve(env, pool, c.schemes[0].constraint);
                 }
+                console.log('complex let');
                 let env_ = c.schemes.reduce(
                     (env_, scheme) =>
                         concat(env_, solve_scheme(env, pool, scheme)),
@@ -194,6 +192,7 @@ const _solve = (env: _env, pool: pool, c: tconstraint) => {
         let vars = [...scheme.rigid, ...scheme.flexible];
         let pool_ = new_pool(pool);
         vars.forEach((v) => introduce(pool_, v));
+        console.log('🤔introduced all', JSON.stringify(vars));
         let header = Object.fromEntries(
             Object.entries(scheme.header).map(([key, value]) => [
                 key,
@@ -223,10 +222,11 @@ const concat = (env: _env, header: { [key: string]: MultiEquation_variable }) =>
         env,
     );
 
-export const solve = (c: tconstraint) => {
+export const solve = (c: tconstraint, vbls: MultiEquation_variable[]) => {
     const env: _env = { type: 'Empty' };
     const pool: pool = { number: 0, inhabitants: [] };
-    _solve(env, pool, c);
+    vbls.forEach((v) => introduce(pool, v));
+    return _solve(env, pool, c);
 };
 
 let new_pool = (pool: pool) => ({
@@ -239,6 +239,12 @@ let new_pool = (pool: pool) => ({
 let introduce = (pool: pool, v: MultiEquation_variable) => {
     let desc = find(v);
     desc.rank = pool.number;
+    console.log(
+        'introducing',
+        JSON.stringify(v),
+        pool.number,
+        JSON.stringify(desc),
+    );
     register(pool, v);
 };
 
@@ -275,7 +281,7 @@ let lookup = (pos: number, name: string, env: _env) => {
 const Mark_frash = () => Symbol();
 
 let distinct_variables = (pos: number, vl: MultiEquation_variable[]) => {
-    let m = Mark_frash();
+    let m = Symbol('distinct');
     // try {
     vl.forEach((v) => {
         let desc = find(v);
@@ -327,8 +333,12 @@ let generalize = (old_pool: pool, young_pool: pool) => {
 
     let young_number = young_pool.number;
     let sorted: MultiEquation_variable[][] = Array(young_pool.number + 1);
-    let young = Mark_frash();
+    for (let i = 0; i <= young_number; i++) {
+        sorted[i] = [];
+    }
+    let young = Symbol('young');
 
+    console.log('[generalizing]', sorted, young_pool.inhabitants);
     young_pool.inhabitants.forEach((v) => {
         const desc = find(v);
         desc.mark = young;
@@ -360,7 +370,7 @@ let generalize = (old_pool: pool, young_pool: pool) => {
      [k]. This explains why [k] does not need to be updated while going
      down. */
 
-    let visited = Mark_frash();
+    let visited = Symbol('visited');
     for (let k = 0; k <= young_pool.number; k++) {
         let traverse = (v: MultiEquation_variable): number => {
             let desc = find(v);
