@@ -22,17 +22,34 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     const int = variable('Constant', 'int');
     const char = variable('Constant', 'string');
     const arr = variable('Constant', '->');
+    const abs = variable('Constant', 'abs');
+    const pre = variable('Constant', 'pre');
+    const pi = variable('Constant', 'pi');
 
     const tenv: env = {
         type_info: [
             ['int', [{ type: 'Star' }, int, { ref: null }]],
+            ['abs', [{ type: 'Star' }, abs, { ref: null }]],
+            ['pi', [{ type: 'Star' }, pi, { ref: null }]],
+            [
+                'pre',
+                [
+                    {
+                        type: 'Arrow',
+                        left: { type: 'Star' },
+                        right: { type: 'Star' },
+                    },
+                    pre,
+                    { ref: null },
+                ],
+            ],
             ['char', [{ type: 'Star' }, char, { ref: null }]],
             [
                 '->',
                 [
                     {
                         type: 'Arrow',
-                        left: { type: 'EmptyRow' },
+                        left: { type: 'Star' },
                         right: { type: 'Star' },
                     },
                     arr,
@@ -76,7 +93,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
             constraint: { type: 'Dump', pos: -1 },
             pos: -1,
         },
-        [int, arr, char, plus],
+        [int, arr, char, plus, abs, pre, pi],
         {
             type: 'EnvFrame',
             env: { type: 'Empty' },

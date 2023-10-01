@@ -15,6 +15,20 @@ const _parse = (
     errors: { [key: number]: string },
 ): expression | undefined => {
     switch (node.type) {
+        case 'record': {
+            let res: expression = { type: 'RecordEmpty', pos: node.loc };
+            if (!node.items.length) {
+                return res;
+            }
+            const rows = node.items.map((row) => ({
+                name: row.name,
+                expr: _parse(row.value, errors)!,
+            }));
+            if (rows.some((r) => !r.expr)) {
+                return;
+            }
+            return { type: 'RecordExtend', expr: res, pos: node.loc, rows };
+        }
         case 'const': {
             if (node.value.type === 'number') {
                 return {

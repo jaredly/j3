@@ -71,21 +71,21 @@ export type expression =
     | { type: 'Var'; pos: position; name: string }
     | { type: 'Lambda'; pos: position; pat: pattern; expr: expression }
     | { type: 'PrimApp'; pos: position; prim: primitive; expr: expression[] }
-    | { type: 'App'; pos: position; fn: expression; arg: expression };
+    | { type: 'App'; pos: position; fn: expression; arg: expression }
+    | { type: 'RecordEmpty'; pos: position }
+    | {
+          type: 'RecordExtend';
+          pos: position;
+          rows: record_binding[];
+          expr: expression;
+      };
 // | { type: 'Binding'; pos: position; binding: binding; expr: expression }
 // | { type: 'Forall'; pos: position; names: string[]; expr: expression }
 // | { type: 'Exists'; pos: position; names: string[]; expr: expression }
 // | { type: 'ETypeConstraint'; pos: position; expr: expression; typ: typ }
 // | { type: 'DCon'; pos: position; name: string; expr: expression[] }
 // | { type: 'EMatch'; pos: position; expr: expression; clauses: clause[] }
-// | { type: 'ERecordEmpty'; pos: position }
 // | { type: 'ERecordAccess'; pos: position; expr: expression; name: string }
-// | {
-//       type: 'ERecordExtend';
-//       pos: position;
-//       rows: record_binding[];
-//       expr: expression;
-//   }
 // | {
 //       type: 'ERecordUpdate';
 //       pos: position;

@@ -241,6 +241,21 @@ let exists = (pos: number, f: (c: crterm) => tconstraint): tconstraint => {
     return ex(pos, [v], c);
 };
 
+let exists_list = <t>(
+    pos: number,
+    list: t[],
+    f: (c: [t, crterm][]) => tconstraint,
+): tconstraint => {
+    let vs = list.map((l) => variable('Flexible'));
+    let c = f(
+        vs.map((v, i): [t, crterm] => [
+            list[i],
+            { type: 'Variable', value: v },
+        ]),
+    );
+    return ex(pos, vs, c);
+};
+
 export let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
     let v = symbol(tenv, '->');
     return {
@@ -255,6 +270,28 @@ export let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
 
 export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
     switch (e.type) {
+        case 'RecordEmpty':
+            return eq_eq(e.pos, t, {
+                type: 'Term',
+                term: { type: 'RowUniform', value: symbol(tenv, 'abs') },
+            });
+        case 'RecordExtend': {
+            e.rows;
+            return exists_list(e.pos, e.rows, (xs) =>
+                exists(e.pos, (x) => {
+                    return {
+                        type: 'Conjunction',
+                        pos: e.pos,
+                        items: [
+                            eq_eq(e.pos, t, record_type(e.pos, tenv, xs, x)),
+                            ...xs.map(([row, v]) =>
+                                infer_expr(tenv, row.expr, v),
+                            ),
+                        ],
+                    };
+                }),
+            );
+        }
         case 'Var':
             return { type: 'Instance', pos: e.pos, name: e.name, term: t };
         case 'App':
@@ -409,6 +446,33 @@ export const infer_vdef = (pos: pos, tenv: env, expr: expression): scheme => {
     };
 };
 
+const cmp = (a: any, b: any) => (a < b ? -1 : a > b ? 1 : 0);
+
+function record_type(
+    pos: number,
+    tenv: env,
+    xs: [{ name: string; expr: expression }, crterm][],
+    x: crterm,
+): crterm {
+    // TODO block on duplicates
+    xs.sort((a, b) => -cmp(a[0].name, b[0].name));
+    let last: crterm = x;
+    xs.forEach((row) => {
+        last = {
+            type: 'Term',
+            term: {
+                type: 'RowCons',
+                head: row[1],
+                label: row[0].name,
+                tail: last,
+            },
+        };
+    });
+    return {
+        type: 'Term',
+        term: { type: 'App', fn: symbol(tenv, 'pi'), arg: last },
+    };
+}
 // (** [infer_vdef pos tenv (pos, qs, p, e)] returns the constraint
 //     related to a value definition. *)
 // let rec infer_vdef pos tenv (pos, qs, p, e) =
