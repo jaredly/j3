@@ -80,6 +80,14 @@ export type expression =
           expr: expression;
       }
     | { type: 'RecordAccess'; pos: position; expr: expression; name: string }
+    // TODO: I probably ditch this once we have `match`?
+    | {
+          type: 'If';
+          pos: position;
+          cond: expression;
+          yes: expression;
+          no: expression;
+      }
     | { type: 'Binding'; pos: position; binding: binding; expr: expression };
 // | { type: 'Forall'; pos: position; names: string[]; expr: expression }
 // | { type: 'Exists'; pos: position; names: string[]; expr: expression }

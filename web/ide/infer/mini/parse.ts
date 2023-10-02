@@ -15,6 +15,20 @@ const _parse = (
     errors: { [key: number]: string },
 ): expression | undefined => {
     switch (node.type) {
+        case 'if': {
+            const cond = _parse(node.cond, errors);
+            const yes = _parse(node.yes, errors);
+            const no = _parse(node.no, errors);
+            return cond && yes && no
+                ? {
+                      type: 'If',
+                      cond,
+                      yes,
+                      no,
+                      pos: node.loc,
+                  }
+                : undefined;
+        }
         case 'let': {
             const expr = _parse(node.body, errors);
             const init = _parse(node.init, errors);
@@ -68,6 +82,14 @@ const _parse = (
                 return {
                     type: 'PrimApp',
                     prim: { type: 'PCharConstant', value: node.value.value },
+                    pos: node.loc,
+                    expr: [],
+                };
+            }
+            if (node.value.type === 'bool') {
+                return {
+                    type: 'PrimApp',
+                    prim: { type: 'PBoolean', value: node.value.value },
                     pos: node.loc,
                     expr: [],
                 };

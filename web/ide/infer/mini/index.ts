@@ -22,16 +22,18 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     // init_builtin_env
 
     const int = variable('Constant', 'int');
+    const bool = variable('Constant', 'bool');
     const char = variable('Constant', 'string');
     const arr = variable('Constant', '->');
     const abs = variable('Constant', 'abs');
     const pre = variable('Constant', 'pre');
     const pi = variable('Constant', 'pi');
-    const vbls = [int, arr, char, abs, pre, pi];
+    const vbls = [int, arr, char, abs, pre, pi, bool];
 
     const tenv: env = {
         type_info: [
             ['int', [{ type: 'Star' }, int, { ref: null }]],
+            ['bool', [{ type: 'Star' }, bool, { ref: null }]],
             ['abs', [{ type: 'Star' }, abs, { ref: null }]],
             ['pi', [{ type: 'Star' }, pi, { ref: null }]],
             [

@@ -344,6 +344,17 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
         }
         case 'Var':
             return { type: 'Instance', pos: e.pos, name: e.name, term: t };
+        case 'If': {
+            return exists(e.pos, (x) => {
+                return conj(
+                    infer_expr(tenv, e.cond, symbol(tenv, 'bool')),
+                    conj(
+                        infer_expr(tenv, e.yes, x),
+                        conj(infer_expr(tenv, e.no, x), eq_eq(e.pos, x, t)),
+                    ),
+                );
+            });
+        }
         case 'App':
             return exists(e.pos, (x) =>
                 conj(
