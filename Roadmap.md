@@ -1,4 +1,10 @@
 
+# Ooh this looks like it has both record & variant extensibility
+
+https://github.com/willtim/Expresso
+
+
+
 # Projects to look through and maybe copy
 
 - https://github.com/Steell/DynamicStatic
