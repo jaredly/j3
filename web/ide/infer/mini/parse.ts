@@ -98,6 +98,14 @@ const _parse = (
             return;
         }
         case 'var':
+            if (node.name.match(/^[A-Z]/)) {
+                return {
+                    type: 'Variant',
+                    pos: node.loc,
+                    label: node.name,
+                    arg: null,
+                };
+            }
             return { type: 'Var', name: node.name, pos: node.loc };
         case 'abs':
             const expr = _parse(node.body, errors);
@@ -129,6 +137,16 @@ const _parse = (
         }
         case 'app': {
             const arg = _parse(node.arg, errors);
+            if (node.fn.type === 'var' && node.fn.name.match(/^[A-Z]/)) {
+                return arg
+                    ? {
+                          type: 'Variant',
+                          arg,
+                          label: node.fn.name,
+                          pos: node.loc,
+                      }
+                    : undefined;
+            }
             if (node.fn.type === 'accessor') {
                 return arg
                     ? {

@@ -28,7 +28,8 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     const abs = variable('Constant', 'abs');
     const pre = variable('Constant', 'pre');
     const pi = variable('Constant', 'pi');
-    const vbls = [int, arr, char, abs, pre, pi, bool];
+    const sigma = variable('Constant', 'sigma');
+    const vbls = [int, arr, char, abs, pre, pi, sigma, bool];
 
     const tenv: env = {
         type_info: [
@@ -36,6 +37,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
             ['bool', [{ type: 'Star' }, bool, { ref: null }]],
             ['abs', [{ type: 'Star' }, abs, { ref: null }]],
             ['pi', [{ type: 'Star' }, pi, { ref: null }]],
+            ['sigma', [{ type: 'Star' }, sigma, { ref: null }]],
             [
                 'pre',
                 [
@@ -146,7 +148,7 @@ export const vToString = (
             if (
                 !fn.structure &&
                 fn.kind === 'Constant' &&
-                (fn.name === 'pi' || fn.name === 'pre')
+                (fn.name === 'pi' || fn.name === 'pre' || fn.name === 'sigma')
             ) {
                 return vToString(d.structure.arg, seen);
             }

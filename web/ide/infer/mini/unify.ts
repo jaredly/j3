@@ -93,7 +93,9 @@ export const unify = (
         if (!s1) {
             if (desc1.kind === 'Constant') {
                 if (desc1.name === 'abs') {
-                    throw new Error(`Label not present in record`);
+                    throw new Error(
+                        `Label not present in record ${vToString(v2)}`,
+                    );
                 }
                 throw new Error(
                     `cant unify builtin type ${desc1.name} with ${vToString(
@@ -107,7 +109,9 @@ export const unify = (
         if (!s2) {
             if (desc2.kind === 'Constant') {
                 if (desc2.name === 'abs') {
-                    throw new Error(`Label not present in record`);
+                    throw new Error(
+                        `Label not present in record ${vToString(v1)}`,
+                    );
                 }
                 throw new Error(
                     `cant unify builtin type ${desc2.name} with ${vToString(

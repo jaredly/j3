@@ -72,6 +72,7 @@ export type expression =
     | { type: 'Lambda'; pos: position; pat: pattern; expr: expression }
     | { type: 'PrimApp'; pos: position; prim: primitive; expr: expression[] }
     | { type: 'App'; pos: position; fn: expression; arg: expression }
+    | { type: 'Variant'; pos: position; label: string; arg: expression | null }
     | { type: 'RecordEmpty'; pos: position }
     | {
           type: 'RecordExtend';

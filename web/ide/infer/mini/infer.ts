@@ -40,6 +40,8 @@ export type scheme = {
 };
 
 export type CoreAlgebra_term<t> =
+    | { type: 'VRowCons'; label: string; head: t; tail: t }
+    | { type: 'VRowUniform'; value: t }
     | { type: 'RowCons'; label: string; head: t; tail: t }
     | { type: 'RowUniform'; value: t }
     | { type: 'App'; fn: t; arg: t }
@@ -47,10 +49,12 @@ export type CoreAlgebra_term<t> =
 
 export let CA_iter = <t>(f: (t: t) => unknown, cat: CoreAlgebra_term<t>) => {
     switch (cat.type) {
+        case 'VRowCons':
         case 'RowCons':
             f(cat.head);
             f(cat.tail);
             return;
+        case 'VRowUniform':
         case 'RowUniform':
             return f(cat.value);
         case 'App':
@@ -68,8 +72,10 @@ export let CA_fold = <t, r>(
     accu: r,
 ): r => {
     switch (cat.type) {
+        case 'VRowCons':
         case 'RowCons':
             return f(cat.head, f(cat.tail, accu));
+        case 'VRowUniform':
         case 'RowUniform':
             return f(cat.value, accu);
         case 'App':
@@ -84,8 +90,10 @@ export let CA_map = <t, r>(
     cat: CoreAlgebra_term<t>,
 ): CoreAlgebra_term<r> => {
     switch (cat.type) {
+        case 'VRowCons':
         case 'RowCons':
             return { ...cat, head: f(cat.head), tail: f(cat.tail) };
+        case 'VRowUniform':
         case 'RowUniform':
             return { ...cat, value: f(cat.value) };
         case 'App':
@@ -291,13 +299,15 @@ export let infer_binding = (
     }
 };
 
+let abs = (tenv: env): crterm => ({
+    type: 'Term',
+    term: { type: 'RowUniform', value: symbol(tenv, 'abs') },
+});
+
 export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
     switch (e.type) {
         case 'RecordEmpty':
-            return eq_eq(e.pos, t, {
-                type: 'Term',
-                term: { type: 'RowUniform', value: symbol(tenv, 'abs') },
-            });
+            return eq_eq(e.pos, t, abs(tenv));
         case 'Binding':
             return infer_binding(tenv, e.binding, infer_expr(tenv, e.expr, t));
         case 'RecordAccess':
@@ -325,6 +335,45 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                     );
                 }),
             );
+        case 'Variant':
+            return exists(e.pos, (arg) => {
+                return conj(
+                    eq_eq(e.pos, t, {
+                        type: 'Term',
+                        term: {
+                            type: 'App',
+                            fn: symbol(tenv, 'sigma'),
+                            arg: {
+                                type: 'Term',
+                                term: {
+                                    type: 'VRowCons',
+                                    label: e.label,
+                                    head: {
+                                        type: 'Term',
+                                        term: {
+                                            type: 'App',
+                                            fn: symbol(tenv, 'pre'),
+                                            arg: e.arg
+                                                ? arg
+                                                : symbol(tenv, 'abs'),
+                                        },
+                                    },
+                                    tail: {
+                                        type: 'Term',
+                                        term: {
+                                            type: 'VRowUniform',
+                                            value: symbol(tenv, 'abs'),
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    }),
+                    e.arg
+                        ? infer_expr(tenv, e.arg, arg)
+                        : { type: 'True', pos: e.pos },
+                );
+            });
         case 'RecordExtend': {
             return exists_list(e.pos, e.rows, (xs) =>
                 exists(e.pos, (x) => {

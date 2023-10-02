@@ -32,32 +32,24 @@ import {
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
 
-const k = `test-infer-w2`;
+// const k = `test-infer-w2`;
+const names = ['what', 'w', 'w2', '10'];
 
 export const Test = ({ env }: { env: Env }) => {
-    const [state, dispatch] = useReducer(reduce, null, (): NUIState => {
-        const saved = localStorage.getItem(k);
-        const map = saved ? JSON.parse(saved) : emptyMap();
+    const k = 'test-infer-' + document.location.hash.slice(1);
+    // const [k, setK] = useState(names[0]);
 
-        let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
-        return {
-            map,
-            root: -1,
-            history: [],
-            nidx: () => idx++,
-            clipboard: [],
-            hover: [],
-            regs: {},
-            at: [],
-        };
+    const [state, dispatch] = useReducer(reduce, null, (): NUIState => {
+        return loadState(k);
     });
+
     const [debug, setDebug] = useState(true);
 
     useEffect(() => {
         if (state.at.length) {
             localStorage.setItem(k, JSON.stringify(state.map));
         }
-    }, [state]);
+    }, [state, k]);
 
     const tops = (state.map[state.root] as ListLikeContents).values;
 
@@ -113,7 +105,7 @@ export const Test = ({ env }: { env: Env }) => {
         });
 
         return results;
-    }, [state.map]);
+    }, [state.map, k]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
@@ -122,6 +114,19 @@ export const Test = ({ env }: { env: Env }) => {
 
     return (
         <div>
+            <div>
+                {names.map((n) => (
+                    <button
+                        onClick={() => {
+                            document.location.hash = '#' + n;
+                            document.location.reload();
+                        }}
+                        key={n}
+                    >
+                        {n}
+                    </button>
+                ))}
+            </div>
             <HiddenInput
                 hashNames={{}}
                 state={state}
@@ -175,6 +180,9 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     }
     if (action.type === 'yank') {
         return state;
+    }
+    if (action.type === 'reset') {
+        return action.state;
     }
     const update = actionToUpdate(state, action);
     if (!update) {
@@ -281,3 +289,20 @@ const actionToUpdate = (
         //     return action;
     }
 };
+
+function loadState(k: string) {
+    const saved = localStorage.getItem(k);
+    const map = saved ? JSON.parse(saved) : emptyMap();
+
+    let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
+    return {
+        map,
+        root: -1,
+        history: [],
+        nidx: () => idx++,
+        clipboard: [],
+        hover: [],
+        regs: {},
+        at: [],
+    };
+}
