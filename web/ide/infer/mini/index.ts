@@ -1,4 +1,5 @@
 import {
+    CoreAlgebra_term,
     Mark_none,
     MultiEquation_descriptor,
     MultiEquation_variable,
@@ -118,29 +119,35 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     };
 };
 
+type Seen = Map<MultiEquation_descriptor, string>;
+
+export const typToString = (t: crterm, seen: Seen = new Map()): string => {
+    if (t.type === 'Variable') {
+        return vToString(t.value, seen);
+    } else {
+        return caTermToString(t.term, typToString, seen);
+    }
+};
+
+const letters = 'abcdefghijklmnop';
 export const vToString = (
     v: MultiEquation_variable,
     seen: Seen = new Map(),
 ): string => {
     const d = find(v);
     if (d.structure) {
-        // return thing(d.structure)
-        switch (d.structure.type) {
-            case 'App':
-                return `(${vToString(d.structure.fn, seen)} ${vToString(
-                    d.structure.arg,
-                    seen,
-                )})`;
-            case 'RowUniform':
-                return '{}';
-            case 'RowCons':
-                return `{${d.structure.label} ${vToString(
-                    d.structure.head,
-                    seen,
-                )} ${vToString(d.structure.tail, seen)}}`;
-            case 'Var':
-                return vToString(d.structure.value, seen);
+        if (d.structure.type == 'App') {
+            const fn = find(d.structure.fn);
+            if (
+                !fn.structure &&
+                fn.kind === 'Constant' &&
+                (fn.name === 'pi' || fn.name === 'pre')
+            ) {
+                return vToString(d.structure.arg, seen);
+            }
         }
+
+        return caTermToString(d.structure, vToString, seen);
     }
     if (d.kind === 'Constant') {
         return d.name ?? 'unnamed-builtin'; // + '[builtin?]';
@@ -149,40 +156,27 @@ export const vToString = (
             seen.set(d, letters[seen.size]);
         }
         return seen.get(d)!;
-        // return `var:${d.name}`;
-        // return d.name ?? 'unnamed-variable';
-    }
-};
-
-const letters = 'abcdefghijklmnop';
-
-type Seen = Map<MultiEquation_descriptor, string>;
-
-export const typToString = (t: crterm, seen: Seen = new Map()): string => {
-    if (t.type === 'Variable') {
-        return vToString(t.value, seen);
-    } else {
-        return thing(t.term, seen);
     }
 };
 
 export const getTrace = () => [];
 
-function thing(term: Extract<crterm, { type: 'Term' }>['term'], seen: Seen) {
+function caTermToString<t>(
+    term: CoreAlgebra_term<t>,
+    tToString: (t: t, seen: Seen) => string,
+    seen: Seen,
+) {
     switch (term.type) {
         case 'App':
-            return `(${typToString(term.fn, seen)} ${typToString(
-                term.arg,
-                seen,
-            )})`;
+            return `(${tToString(term.fn, seen)} ${tToString(term.arg, seen)})`;
         case 'RowUniform':
             return '{}';
         case 'RowCons':
-            return `{${term.label} ${typToString(
-                term.head,
+            return `{${term.label} ${tToString(term.head, seen)} ${tToString(
+                term.tail,
                 seen,
-            )} ${typToString(term.tail, seen)}}`;
+            )}}`;
         case 'Var':
-            return typToString(term.value, seen);
+            return tToString(term.value, seen);
     }
 }

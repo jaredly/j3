@@ -99,7 +99,7 @@ export const Test = ({ env }: { env: Env }) => {
                         data: trace,
                     };
                 } catch (err) {
-                    console.log('no typ sorry', err);
+                    // console.log('no typ sorry', err);
                     results.tops[top] = {
                         summary: 'Type Error: ' + (err as Error).message,
                         data: [(err as Error).message, getTrace()],
