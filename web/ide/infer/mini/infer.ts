@@ -1,7 +1,13 @@
 // <? Instance name t
 // =?= Equation t1 t2
 
-import { expression, pattern, primitive } from './types';
+import {
+    binding,
+    expression,
+    pattern,
+    primitive,
+    value_definition,
+} from './types';
 import { find, fresh, point } from './union_find';
 
 // ^ Conjunction (but eagerly swallow True's and flatten Conjunctions)
@@ -209,7 +215,10 @@ export let Mark_none = Symbol('none');
 export let rank_none = -1;
 
 // (** [variable()] creates a new variable, whose rank is [none]. *)
-let _variable = (kind: MultiEquation_descriptor['kind'], name?: string) =>
+let _variable = (
+    kind: MultiEquation_descriptor['kind'],
+    name?: string,
+): MultiEquation_variable =>
     fresh({
         // structure = structure;
         rank: rank_none,
@@ -224,7 +233,7 @@ let _variable = (kind: MultiEquation_descriptor['kind'], name?: string) =>
 export let variable = (
     kind: MultiEquation_descriptor['kind'],
     name?: string,
-) => {
+): MultiEquation_variable => {
     //   let structure =
     //     match structure with
     //       | Some t ->
@@ -268,6 +277,20 @@ export let arrow = (tenv: env, t: crterm, u: crterm): crterm => {
     };
 };
 
+export let infer_binding = (
+    tenv: env,
+    binding: binding,
+    expr: tconstraint,
+): tconstraint => {
+    switch (binding.type) {
+        case 'BindValue':
+            let schemes = binding.defs.map((d) => infer_vdef2(d.pos, tenv, d));
+            return { type: 'Let', schemes, constraint: expr, pos: binding.pos };
+        default:
+            throw new Error('nop ' + binding.type);
+    }
+};
+
 export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
     switch (e.type) {
         case 'RecordEmpty':
@@ -275,6 +298,8 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                 type: 'Term',
                 term: { type: 'RowUniform', value: symbol(tenv, 'abs') },
             });
+        case 'Binding':
+            return infer_binding(tenv, e.binding, infer_expr(tenv, e.expr, t));
         case 'RecordAccess':
             return exists(e.pos, (x) =>
                 exists(e.pos, (y) => {
@@ -447,6 +472,62 @@ let infer_pat_fragment = (tenv: env, p: pattern, t: crterm): fragment => {
     };
 
     return infpat(t, p);
+};
+
+// let fresh_vars = (kind: MultiEquation_descriptor['kind'], pos: number, env: env, vars: string[]) => {
+//     const vs =
+// }
+// (** [fresh_vars kind pos env vars] allocates fresh variables from a
+//     list of names [vars], checking name clashes with type constructors. *)
+// let fresh_vars kind pos env vars =
+//   let vs = variable_list_from_names (fun v -> (kind, Some v)) vars in
+//   let fqs, denv = tycon_name_conflict pos env vs in
+//   (fqs, List.map (fun (n, v) -> (n, (fresh_kind (), v, ref None))) denv)
+
+// (** [fresh_flexible_vars] is a specialized allocator for flexible
+//     variables. *)
+// let fresh_flexible_vars = fresh_vars Flexible
+
+// (** [fresh_rigid_vars] is a specialized allocator for rigid variables. *)
+// let fresh_rigid_vars = fresh_vars Rigid
+
+export const infer_vdef2 = (
+    pos: pos,
+    tenv: env,
+    definition: value_definition,
+): scheme => {
+    const x = variable('Flexible');
+    const tx: crterm = { type: 'Variable', value: x };
+
+    // const [rqs, rtenv] = fresh_rigid_vars(pos, tenv, definition.universal_quantifiers)
+    if (definition.universal_quantifiers) {
+        throw new Error('not support');
+    }
+    const rqs: MultiEquation_variable[] = [];
+    const tenv_ = tenv; // add_type_variables(rtenv, tenv)
+
+    const fragment = infer_pat_fragment(tenv_, definition.pat, tx);
+
+    // let fragment = infer_pat_fragment(
+    //     tenv,
+    //     { type: 'PVar', name: '_result', pos },
+    //     tx,
+    // );
+    return {
+        type: 'Scheme',
+        constraint: {
+            type: 'Conjunction',
+            items: [
+                fragment.tconstraint,
+                infer_expr(tenv_, definition.expr, tx),
+            ],
+            pos,
+        },
+        rigid: rqs,
+        flexible: [x, ...fragment.vars],
+        header: fragment.gamma,
+        pos,
+    };
 };
 
 export const infer_vdef = (pos: pos, tenv: env, expr: expression): scheme => {

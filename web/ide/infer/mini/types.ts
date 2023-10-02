@@ -32,9 +32,9 @@ type type_declaration = {
 
 /** A value definition consists of a list of explicit universal
     quantifiers, a pattern, and an expression. */
-type value_definition = {
+export type value_definition = {
     pos: position;
-    names: string[];
+    universal_quantifiers?: string[];
     pat: pattern;
     expr: expression;
 };
@@ -46,7 +46,7 @@ type value_definition = {
            {[ let rec v1 = exp1 and v2 = exp2 and ... and vn = expn v ]}}
         {- a type definition ({!MiniAst.type_definition}).}}
 */
-type binding =
+export type binding =
     | { type: 'BindValue'; pos: position; defs: value_definition[] }
     | { type: 'BindRecValue'; pos: position; defs: value_definition[] }
     | { type: 'TypeDec'; pos: position; decls: type_declaration[] };
@@ -79,8 +79,8 @@ export type expression =
           rows: record_binding[];
           expr: expression;
       }
-    | { type: 'RecordAccess'; pos: position; expr: expression; name: string };
-// | { type: 'Binding'; pos: position; binding: binding; expr: expression }
+    | { type: 'RecordAccess'; pos: position; expr: expression; name: string }
+    | { type: 'Binding'; pos: position; binding: binding; expr: expression };
 // | { type: 'Forall'; pos: position; names: string[]; expr: expression }
 // | { type: 'Exists'; pos: position; names: string[]; expr: expression }
 // | { type: 'TypeConstraint'; pos: position; expr: expression; typ: typ }

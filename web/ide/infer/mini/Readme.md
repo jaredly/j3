@@ -11,3 +11,25 @@
 - constraint
 - unifier
 - miniInfer
+
+# Progress
+
+ok!!!
+We have a bunch of things!!!!!
+including records
+which appear to work just as I would like
+
+oh lol I don't have let I don't think
+
+- [x] fn
+- [x] var
+- [x] int
+- [x] char
+- [x] record (create, access)
+- [x] let
+
+and thennnn oh maybe try out their switch logic?
+yeah
+and then try to make type constructors purely structural
+
+- [ ] see if I can do like literal number types? That would be so cool

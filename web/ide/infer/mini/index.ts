@@ -27,6 +27,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     const abs = variable('Constant', 'abs');
     const pre = variable('Constant', 'pre');
     const pi = variable('Constant', 'pi');
+    const vbls = [int, arr, char, abs, pre, pi];
 
     const tenv: env = {
         type_info: [
@@ -62,8 +63,10 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
         data_constructor: [],
     };
     const constraint = infer_vdef(term.pos, tenv, term);
-    // console.log(constraint);
     const plus = variable('Flexible', 'plus');
+    vbls.push(plus);
+    // should I set this up more directly? Seems a little funny to
+    // do a whole constraint thing.
 
     const res = solve(
         {
@@ -95,7 +98,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
             constraint: { type: 'Dump', pos: -1 },
             pos: -1,
         },
-        [int, arr, char, plus, abs, pre, pi],
+        vbls,
         {
             type: 'EnvFrame',
             env: { type: 'Empty' },
@@ -147,6 +150,32 @@ export const vToString = (
             }
         }
 
+        if (d.structure.type === 'RowCons') {
+            let conses = [d.structure];
+            let last = find(d.structure.tail);
+            while (last.structure?.type === 'RowCons') {
+                conses.push(last.structure);
+                last = find(last.structure.tail);
+            }
+            return `{${conses
+                .map((c) => `${c.label} ${vToString(c.head, seen)}`)
+                .join(' ')}${
+                last.structure?.type === 'RowUniform'
+                    ? ''
+                    : ' ' +
+                      vToString(
+                          {
+                              link: {
+                                  type: 'Info',
+                                  descriptor: last,
+                                  weight: 0,
+                              },
+                          },
+                          seen,
+                      )
+            }}`;
+        }
+
         return caTermToString(d.structure, vToString, seen);
     }
     if (d.kind === 'Constant') {
@@ -155,7 +184,7 @@ export const vToString = (
         if (!seen.has(d)) {
             seen.set(d, letters[seen.size]);
         }
-        return seen.get(d)!;
+        return "'" + seen.get(d)!;
     }
 };
 

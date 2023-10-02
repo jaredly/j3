@@ -15,6 +15,32 @@ const _parse = (
     errors: { [key: number]: string },
 ): expression | undefined => {
     switch (node.type) {
+        case 'let': {
+            const expr = _parse(node.body, errors);
+            const init = _parse(node.init, errors);
+            return expr && init
+                ? {
+                      type: 'Binding',
+                      expr,
+                      pos: node.loc,
+                      binding: {
+                          type: 'BindValue',
+                          pos: node.loc,
+                          defs: [
+                              {
+                                  pat: {
+                                      type: 'PVar',
+                                      name: node.name,
+                                      pos: node.nameloc,
+                                  },
+                                  pos: node.nameloc,
+                                  expr: init,
+                              },
+                          ],
+                      },
+                  }
+                : undefined;
+        }
         case 'record': {
             let res: expression = { type: 'RecordEmpty', pos: node.loc };
             if (!node.items.length) {
