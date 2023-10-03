@@ -1,9 +1,18 @@
+import { Display } from '../../../../src/to-ast/library';
+
 export type Exp =
-    | { type: 'Var'; name: string }
-    | { type: 'Prim'; prim: Prim }
-    | { type: 'App'; fn: Exp; arg: Exp }
-    | { type: 'Abs'; name: string; body: Exp }
-    | { type: 'Let'; name: string; init: Exp; body: Exp };
+    | { type: 'Var'; name: string; loc: number }
+    | { type: 'Prim'; prim: Prim; loc: number }
+    | { type: 'App'; fn: Exp; arg: Exp; loc: number }
+    | { type: 'Abs'; name: string; body: Exp; loc: number; nameloc: number }
+    | {
+          type: 'Let';
+          name: string;
+          init: Exp;
+          body: Exp;
+          loc: number;
+          nameloc: number;
+      };
 
 export type Prim =
     | { type: 'Int'; value: number }
@@ -21,12 +30,19 @@ export type Prim =
       };
 
 export type Type =
-    | { type: 'Var'; v: TyVar }
-    | { type: 'Int' | 'Bool' | 'RowEmpty' }
-    | { type: 'Fun'; arg: Type; body: Type }
-    | { type: 'Record'; body: Type }
-    | { type: 'Variant'; body: Type }
-    | { type: 'RowExtend'; name: string; head: Type; tail: Type };
+    | { type: 'Var'; v: TyVar; loc: number }
+    | { type: 'Int' | 'Bool' | 'RowEmpty'; loc: number }
+    | { type: 'Fun'; arg: Type; body: Type; loc: number }
+    | { type: 'Record'; body: Type; loc: number }
+    | { type: 'Variant'; body: Type; loc: number }
+    | {
+          type: 'RowExtend';
+          name: string;
+          head: Type;
+          tail: Type;
+          loc: number;
+          nameloc: number;
+      };
 
 export type Constraint = { [name: string]: boolean };
 export type Kind = 'Star' | 'Row';
@@ -35,6 +51,7 @@ export type TyVar = {
     kind: Kind;
     // maybe should be called "lacks"
     constraint: Constraint;
+    loc: number;
 };
 
 export type VSet = { [name: string]: TyVar };
@@ -140,37 +157,47 @@ export type TIState = { supply: number; subst: Subst };
 
 export const initState = (): TIState => ({ supply: 0, subst: {} });
 
-export type Ctx = { state: TIState };
+export type Ctx = { state: TIState; display: { [key: number]: Display } };
 
 export const newTyVarWith = (
     kind: Kind,
     constraint: Constraint,
     prefix: string,
+    loc: number,
     ctx: Ctx,
 ): Type => {
     ctx.state.supply += 1;
     const name = `${prefix}${ctx.state.supply}`;
-    return { type: 'Var', v: { name, kind, constraint } };
+    return { type: 'Var', v: { name, kind, constraint, loc }, loc };
 };
 
-export const newTyVar = (prefix: string, ctx: Ctx) =>
-    newTyVarWith('Star', {}, prefix, ctx);
+export const newTyVar = (prefix: string, loc: number, ctx: Ctx) =>
+    newTyVarWith('Star', {}, prefix, loc, ctx);
 
 export const instantiate = (scheme: Scheme, ctx: Ctx) => {
     const nvars: Subst = Object.fromEntries(
         Object.entries(scheme.vbls).map(([k, v]) => [
             k,
-            newTyVarWith(v.kind, v.constraint, v.name[0], ctx),
+            newTyVarWith(v.kind, v.constraint, v.name[0], v.loc, ctx),
         ]),
     );
     return apply(nvars, scheme.body);
 };
 
-export const fn = (arg: Type, body: Type): Type => ({
+export const fn = (arg: Type, body: Type, loc: number): Type => ({
     type: 'Fun',
     arg,
     body,
+    loc,
 });
 
-export const rec = (body: Type): Type => ({ type: 'Record', body });
-export const vr = (body: Type): Type => ({ type: 'Variant', body });
+export const rec = (body: Type, loc: number): Type => ({
+    type: 'Record',
+    body,
+    loc,
+});
+export const vr = (body: Type, loc: number): Type => ({
+    type: 'Variant',
+    body,
+    loc,
+});

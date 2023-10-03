@@ -24,7 +24,12 @@ export function calog<T extends Function>(name: string, fn: T): T {
     }) as any;
 }
 
-export const infer = calog(
+export const infer = (env: TypeEnv, exp: Exp, ctx: Ctx): [Subst, Type] => {
+    const res = _infer(env, exp, ctx);
+    return res;
+};
+
+export const _infer = calog(
     'infer',
     (env: TypeEnv, exp: Exp, ctx: Ctx): [Subst, Type] => {
         switch (exp.type) {
@@ -36,22 +41,25 @@ export const infer = calog(
                 return [{}, instantiate(sigma, ctx)];
             }
             case 'Prim':
-                return [{}, tiPrim(exp.prim, ctx)];
+                return [{}, tiPrim(exp.prim, exp.loc, ctx)];
             case 'Abs': {
-                const tv = newTyVar('abs', ctx);
+                const tv = newTyVar('abs', exp.nameloc, ctx);
                 const env_ = { ...env };
                 delete env_[exp.name];
                 env_[exp.name] = { type: 'Scheme', vbls: {}, body: tv };
                 const [s1, t1] = infer(env_, exp.body, ctx);
-                return [s1, { type: 'Fun', arg: apply(s1, tv), body: t1 }];
+                return [
+                    s1,
+                    { type: 'Fun', arg: apply(s1, tv), body: t1, loc: exp.loc },
+                ];
             }
             case 'App': {
                 const [s1, t1] = infer(env, exp.fn, ctx);
                 const [s2, t2] = infer(applyTE(s1, env), exp.arg, ctx);
-                const tv = newTyVar('app-result', ctx);
+                const tv = newTyVar('app-result', exp.loc, ctx);
                 const s3 = unify(
                     apply(s2, t1),
-                    { type: 'Fun', arg: t2, body: tv },
+                    { type: 'Fun', arg: t2, body: tv, loc: exp.loc },
                     ctx,
                 );
                 return [
@@ -71,113 +79,169 @@ export const infer = calog(
         }
     },
 );
-export const tiPrim = (prim: Prim, ctx: Ctx): Type => {
+export const tiPrim = (prim: Prim, loc: number, ctx: Ctx): Type => {
     switch (prim.type) {
         case 'Int':
-            return { type: 'Int' };
+            return { type: 'Int', loc };
         case 'Bool':
-            return { type: 'Bool' };
+            return { type: 'Bool', loc };
         case 'Add':
             return {
                 type: 'Fun',
-                arg: { type: 'Int' },
+                arg: { type: 'Int', loc },
                 body: {
                     type: 'Fun',
-                    arg: { type: 'Int' },
-                    body: { type: 'Int' },
+                    arg: { type: 'Int', loc },
+                    body: { type: 'Int', loc },
+                    loc,
                 },
+                loc,
             };
         case 'Cond': {
-            const a = newTyVar('cond', ctx);
+            const a = newTyVar('cond', loc, ctx);
             return {
                 type: 'Fun',
-                arg: { type: 'Bool' },
+                arg: { type: 'Bool', loc },
                 body: {
                     type: 'Fun',
                     arg: a,
-                    body: { type: 'Fun', arg: a, body: a },
+                    body: { type: 'Fun', arg: a, body: a, loc },
+                    loc,
                 },
+                loc,
             };
         }
         case 'RecordEmpty':
-            return { type: 'Record', body: { type: 'RowEmpty' } };
+            return { type: 'Record', body: { type: 'RowEmpty', loc }, loc };
         case 'RecordSelect': {
-            const a = newTyVar('rs-head', ctx);
+            const a = newTyVar('rs-head', loc, ctx);
             const r = newTyVarWith(
                 'Row',
                 { [prim.name]: true },
                 'rs-tail',
+                loc,
                 ctx,
             );
             return fn(
-                rec({
-                    type: 'RowExtend',
-                    name: prim.name,
-                    head: a,
-                    tail: r,
-                }),
-                a,
-            );
-        }
-        case 'RecordExtend': {
-            const a = newTyVar('re-head', ctx);
-            const r = newTyVarWith(
-                'Row',
-                { [prim.name]: true },
-                're-tail',
-                ctx,
-            );
-            return fn(
-                a,
-                fn(rec(r), {
-                    type: 'Record',
-                    body: {
+                rec(
+                    {
                         type: 'RowExtend',
                         name: prim.name,
                         head: a,
                         tail: r,
+                        loc,
+                        nameloc: loc,
                     },
-                }),
+                    loc,
+                ),
+                a,
+                loc,
             );
         }
-        case 'RecordRestrict': {
-            const a = newTyVar('rr-head', ctx);
+        case 'RecordExtend': {
+            const a = newTyVar('re-head', loc, ctx);
             const r = newTyVarWith(
                 'Row',
                 { [prim.name]: true },
-                'rr-tail',
-                ctx,
-            );
-            return fn(
-                rec({ type: 'RowExtend', name: prim.name, head: a, tail: r }),
-                rec(r),
-            );
-        }
-        case 'VariantInject': {
-            const a = newTyVar('vi-head', ctx);
-            const r = newTyVarWith(
-                'Row',
-                { [prim.name]: true },
-                'rvi-without-' + prim.name,
+                're-tail',
+                loc,
                 ctx,
             );
             return fn(
                 a,
-                vr({ type: 'RowExtend', name: prim.name, head: a, tail: r }),
+                fn(
+                    rec(r, loc),
+                    {
+                        type: 'Record',
+                        body: {
+                            type: 'RowExtend',
+                            name: prim.name,
+                            head: a,
+                            tail: r,
+                            nameloc: loc,
+                            loc,
+                        },
+                        loc,
+                    },
+                    loc,
+                ),
+                loc,
+            );
+        }
+        case 'RecordRestrict': {
+            const a = newTyVar('rr-head', loc, ctx);
+            const r = newTyVarWith(
+                'Row',
+                { [prim.name]: true },
+                'rr-tail',
+                loc,
+                ctx,
+            );
+            return fn(
+                rec(
+                    {
+                        type: 'RowExtend',
+                        name: prim.name,
+                        head: a,
+                        tail: r,
+                        loc,
+                        nameloc: loc,
+                    },
+                    loc,
+                ),
+                rec(r, loc),
+                loc,
+            );
+        }
+        case 'VariantInject': {
+            const a = newTyVar('vi-head', loc, ctx);
+            const r = newTyVarWith(
+                'Row',
+                { [prim.name]: true },
+                'rvi-without-' + prim.name,
+                loc,
+                ctx,
+            );
+            return fn(
+                a,
+                vr(
+                    {
+                        type: 'RowExtend',
+                        name: prim.name,
+                        head: a,
+                        tail: r,
+                        loc,
+                        nameloc: loc,
+                    },
+                    loc,
+                ),
+                loc,
             );
         }
         case 'VariantElim': {
-            const a = newTyVar('ve-head', ctx);
-            const b = newTyVar('ve-res', ctx);
+            const a = newTyVar('ve-head', loc, ctx);
+            const b = newTyVar('ve-res', loc, ctx);
             const r = newTyVarWith(
                 'Row',
                 { [prim.name]: true },
                 've-without-' + prim.name,
+                loc,
                 ctx,
             );
             return fn(
-                rec({ type: 'RowExtend', name: prim.name, head: a, tail: r }),
-                fn(fn(a, b), fn(fn(vr(r), b), b)),
+                rec(
+                    {
+                        type: 'RowExtend',
+                        name: prim.name,
+                        head: a,
+                        tail: r,
+                        loc,
+                        nameloc: loc,
+                    },
+                    loc,
+                ),
+                fn(fn(a, b, loc), fn(fn(vr(r, loc), b, loc), b, loc), loc),
+                loc,
             );
         }
         default:

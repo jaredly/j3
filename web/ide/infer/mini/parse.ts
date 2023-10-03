@@ -1,13 +1,11 @@
 import { expression } from './types';
 import { term, parse as hmxparse } from '../hmx/hmx';
 import { Node } from '../../../../src/types/cst';
+import { Ctx } from '../algw-cr/parse';
 
-export const parse = (
-    node: Node,
-    errors: { [key: number]: string },
-): expression | undefined => {
-    const res = hmxparse(node, errors);
-    return res ? _parse(res, errors) : res;
+export const parse = (node: Node, ctx: Ctx): expression | undefined => {
+    const res = hmxparse(node, ctx);
+    return res ? _parse(res, ctx.errors) : res;
 };
 
 const _parse = (

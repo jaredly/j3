@@ -7,18 +7,20 @@ import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
 import { InferMod } from '../infer/infer';
 
+export type Display = {
+    [idx: number]: {
+        style?: NodeStyle;
+        layout?: Layout;
+        autoComplete?: AutoCompleteResult[];
+    };
+};
+
 export type CompilationResults = {
     errors: Report['errors'];
     mods: { [idx: number]: InferMod };
     hashNames: { [idx: number]: string };
     globalNames: { [hash: string]: string[] };
-    display: {
-        [idx: number]: {
-            style?: NodeStyle;
-            layout?: Layout;
-            autoComplete?: AutoCompleteResult[];
-        };
-    };
+    display: Display;
     localMap: {
         terms: { [idx: number]: { name: string; type: Type } };
         types: { [idx: number]: { name: string; bound?: Type } };

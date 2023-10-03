@@ -82,10 +82,10 @@ export const Test = ({ env }: { env: Env }) => {
         tops.forEach((top) => {
             const node = fromMCST(top, state.map);
             const errors = {};
-            const expr = parse(node, errors);
+            const expr = parse(node, { errors, display: results.display });
             if (expr) {
                 try {
-                    const typ = infer(builtins, expr, results.typs);
+                    const typ = infer(builtins, expr, results.display);
                     const trace = getTrace();
                     // console.log(typ);
                     results.tops[top] = {

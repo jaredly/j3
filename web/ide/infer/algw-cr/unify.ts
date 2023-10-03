@@ -33,14 +33,14 @@ export const unionConstraints = (one: TyVar, two: TyVar, ctx: Ctx): Subst => {
         throw new Error('not quite equal');
     }
     if (one.kind === 'Star' && two.kind === 'Star') {
-        return { [one.name]: { type: 'Var', v: two } };
+        return { [one.name]: { type: 'Var', v: two, loc: -1 } };
     }
     if (one.kind === 'Row' && two.kind === 'Row') {
         const c = {
             ...one.constraint,
             ...two.constraint,
         };
-        const r = newTyVarWith('Row', c, 'r', ctx);
+        const r = newTyVarWith('Row', c, 'r', -1, ctx);
         return { [one.name]: r, [two.name]: r };
     }
     throw new Error(`kind mismatch`);
@@ -138,7 +138,7 @@ const varBindRow = (one: TyVar, two: Type, ctx: Ctx): Subst => {
     }
     if (mv) {
         const c = { ...ls, ...mv.constraint };
-        const r2 = newTyVarWith('Row', c, 'r', ctx);
+        const r2 = newTyVarWith('Row', c, 'r', -1, ctx);
         const s2: Subst = { [mv.name]: r2 };
         return composeSubst(s1, s2);
     }
@@ -158,11 +158,24 @@ export const rewriteRow = (
             return [t.head, t.tail, {}];
         }
         if (t.tail.type === 'Var') {
-            const beta = newTyVarWith('Row', { [newLabel]: true }, 'r', ctx);
-            const gamma = newTyVar('a', ctx);
+            const beta = newTyVarWith(
+                'Row',
+                { [newLabel]: true },
+                'r',
+                -1,
+                ctx,
+            );
+            const gamma = newTyVar('a', t.loc, ctx);
             const s = varBindRow(
                 t.tail.v,
-                { type: 'RowExtend', name: newLabel, head: gamma, tail: beta },
+                {
+                    type: 'RowExtend',
+                    name: newLabel,
+                    head: gamma,
+                    tail: beta,
+                    loc: t.loc,
+                    nameloc: t.loc,
+                },
                 ctx,
             );
             return [
@@ -172,6 +185,8 @@ export const rewriteRow = (
                     name: t.name,
                     head: t.head,
                     tail: beta,
+                    loc: t.loc,
+                    nameloc: t.loc,
                 }),
                 s,
             ];
@@ -179,7 +194,14 @@ export const rewriteRow = (
         const [one_, two_, s] = rewriteRow(t.tail, newLabel, ctx);
         return [
             one_,
-            { type: 'RowExtend', name: t.name, head: t.head, tail: two_ },
+            {
+                type: 'RowExtend',
+                name: t.name,
+                head: t.head,
+                tail: two_,
+                loc: t.loc,
+                nameloc: t.loc,
+            },
             s,
         ];
     }

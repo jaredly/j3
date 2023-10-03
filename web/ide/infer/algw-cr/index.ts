@@ -1,5 +1,6 @@
 import { Exp, fn } from './types';
 import { typeInference } from './infer';
+import { Display } from '../../../../src/to-ast/library';
 export { type Type as typ } from './types';
 export { typToString } from './typToString';
 export { parse } from './parse';
@@ -11,14 +12,18 @@ export const getTrace = () => {
     trace = [];
     return res;
 };
-export const infer = (builtins: any, expr: Exp, what: any) => {
+export const infer = (builtins: any, expr: Exp, display: Display) => {
     trace.push(expr);
     return typeInference(
         {
             '+': {
                 type: 'Scheme',
                 vbls: {},
-                body: fn({ type: 'Int' }, fn({ type: 'Int' }, { type: 'Int' })),
+                body: fn(
+                    { type: 'Int', loc: -1 },
+                    fn({ type: 'Int', loc: -1 }, { type: 'Int', loc: -1 }, -1),
+                    -1,
+                ),
             },
         },
         expr,
@@ -27,6 +32,7 @@ export const infer = (builtins: any, expr: Exp, what: any) => {
                 subst: {},
                 supply: 0,
             },
+            display,
         },
     );
 };
