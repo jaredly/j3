@@ -127,6 +127,61 @@ export const parse = (
                     : undefined;
             }
 
+            if (
+                node.values.length > 2 &&
+                node.values[0].type === 'identifier' &&
+                node.values[0].text === 'match'
+            ) {
+                const target = parse(node.values[1], ctx);
+                if (!target) return;
+                const pairs: {
+                    label: string;
+                    arg: string | null;
+                    body: term;
+                    loc: number;
+                }[] = [];
+                for (let i = 2; i < node.values.length; i += 2) {
+                    const pat = node.values[i];
+                    if (!node.values[i + 1]) {
+                        ctx.errors[pat.loc] = 'mismatched match pair';
+                        return;
+                    }
+                    const body = parse(node.values[i + 1], ctx);
+                    if (!body) {
+                        return;
+                    }
+                    if (pat.type === 'identifier') {
+                        pairs.push({
+                            label: pat.text,
+                            arg: null,
+                            body,
+                            loc: pat.loc,
+                        });
+                    } else if (
+                        pat.type === 'list' &&
+                        pat.values.length === 2 &&
+                        pat.values[0].type === 'identifier' &&
+                        pat.values[1].type === 'identifier'
+                    ) {
+                        pairs.push({
+                            label: pat.values[0].text,
+                            arg: pat.values[1].text,
+                            body,
+                            loc: pat.loc,
+                        });
+                    } else {
+                        ctx.errors[node.loc] = 'invalid match';
+                        return;
+                    }
+                }
+                return {
+                    type: 'match',
+                    target,
+                    cases: pairs,
+                    loc: node.loc,
+                };
+            }
+
             const values = node.values.map((v) => parse(v, ctx));
             if (!values.every(Boolean)) {
                 return;

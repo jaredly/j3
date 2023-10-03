@@ -26,8 +26,8 @@ import {
     parse,
     builtins,
     getTrace,
-    // } from './infer/algw-cr';
-} from './infer/mini';
+} from './infer/algw-cr';
+// } from './infer/mini';
 // } from './infer/hmx/hmx';
 import { useLocalStorage } from '../Debug';
 

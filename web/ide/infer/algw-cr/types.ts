@@ -17,7 +17,7 @@ export type Exp =
 export type Prim =
     | { type: 'Int'; value: number }
     | { type: 'Bool'; value: boolean }
-    | { type: 'Add' | 'Cond' | 'RecordEmpty' }
+    | { type: 'Add' | 'Cond' | 'RecordEmpty' | 'ConsumeEmptyVariant' }
     | {
           type:
               | 'RecordSelect'

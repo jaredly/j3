@@ -44,7 +44,9 @@ export const typToString = (
                     res.push(`(${name} ${typToString(value, seen)})`);
                 }
             });
-            res.push(typToString(at, seen));
+            if (at.type !== 'RowEmpty') {
+                res.push(typToString(at, seen));
+            }
             return `[${res.join(' ')}]`;
         }
         case 'RowExtend':

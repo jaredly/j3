@@ -5,6 +5,21 @@ export type t_const =
     | { type: 'string'; value: string }
     | { type: 'bool'; value: boolean };
 export type term =
+    | {
+          type: 'match';
+          target: term;
+          cases: {
+              label: string;
+              arg: string | null;
+              body: term;
+              loc: number;
+          }[];
+          //   name: string;
+          //   argname: string | null;
+          //   body: term;
+          //   otherwise: term | null;
+          loc: number;
+      }
     | { type: 'var'; name: string; loc: number }
     | { type: 'app'; fn: term; arg: term; loc: number }
     | { type: 'abs'; name: string; body: term; loc: number; nameloc: number }
@@ -212,6 +227,8 @@ let _infer = (term: term, ty: ty, map: Map): constr => {
 };
 let __infer = (term: term, ty: ty, map: Map): constr => {
     switch (term.type) {
+        case 'match':
+            throw new Error(`not handled atm`);
         case 'const':
             return {
                 type: 'app',

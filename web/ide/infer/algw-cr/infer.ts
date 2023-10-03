@@ -229,7 +229,7 @@ export const tiPrim = (prim: Prim, loc: number, ctx: Ctx): Type => {
                 ctx,
             );
             return fn(
-                rec(
+                vr(
                     {
                         type: 'RowExtend',
                         name: prim.name,
@@ -240,9 +240,24 @@ export const tiPrim = (prim: Prim, loc: number, ctx: Ctx): Type => {
                     },
                     loc,
                 ),
-                fn(fn(a, b, loc), fn(fn(vr(r, loc), b, loc), b, loc), loc),
+                fn(
+                    // transform the value to the result
+                    fn(a, b, loc),
+                    fn(
+                        // the "otherwise" case, giving a result
+                        fn(vr(r, loc), b, loc),
+                        // and at the end of the day, we get the result
+                        b,
+                        loc,
+                    ),
+                    loc,
+                ),
                 loc,
             );
+        }
+        case 'ConsumeEmptyVariant': {
+            const anything = newTyVar('consume-empty', loc, ctx);
+            return fn(vr({ type: 'RowEmpty', loc }, loc), anything, loc);
         }
         default:
             throw new Error('nope prim idk: ' + prim.type);
