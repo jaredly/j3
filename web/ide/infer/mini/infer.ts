@@ -40,8 +40,6 @@ export type scheme = {
 };
 
 export type CoreAlgebra_term<t> =
-    | { type: 'VRowCons'; label: string; head: t; tail: t }
-    | { type: 'VRowUniform'; value: t }
     | { type: 'RowCons'; label: string; head: t; tail: t }
     | { type: 'RowUniform'; value: t }
     | { type: 'App'; fn: t; arg: t }
@@ -49,12 +47,10 @@ export type CoreAlgebra_term<t> =
 
 export let CA_iter = <t>(f: (t: t) => unknown, cat: CoreAlgebra_term<t>) => {
     switch (cat.type) {
-        case 'VRowCons':
         case 'RowCons':
             f(cat.head);
             f(cat.tail);
             return;
-        case 'VRowUniform':
         case 'RowUniform':
             return f(cat.value);
         case 'App':
@@ -72,10 +68,8 @@ export let CA_fold = <t, r>(
     accu: r,
 ): r => {
     switch (cat.type) {
-        case 'VRowCons':
         case 'RowCons':
             return f(cat.head, f(cat.tail, accu));
-        case 'VRowUniform':
         case 'RowUniform':
             return f(cat.value, accu);
         case 'App':
@@ -90,10 +84,8 @@ export let CA_map = <t, r>(
     cat: CoreAlgebra_term<t>,
 ): CoreAlgebra_term<r> => {
     switch (cat.type) {
-        case 'VRowCons':
         case 'RowCons':
             return { ...cat, head: f(cat.head), tail: f(cat.tail) };
-        case 'VRowUniform':
         case 'RowUniform':
             return { ...cat, value: f(cat.value) };
         case 'App':
@@ -304,6 +296,14 @@ let abs = (tenv: env): crterm => ({
     term: { type: 'RowUniform', value: symbol(tenv, 'abs') },
 });
 
+const app = (fn: crterm, arg: crterm): crterm => ({
+    type: 'Term',
+    term: {
+        type: 'App',
+        fn,
+        arg,
+    },
+});
 export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
     switch (e.type) {
         case 'RecordEmpty':
@@ -336,44 +336,43 @@ export let infer_expr = (tenv: env, e: expression, t: crterm): tconstraint => {
                 }),
             );
         case 'Variant':
-            return exists(e.pos, (arg) => {
-                return conj(
-                    eq_eq(e.pos, t, {
-                        type: 'Term',
-                        term: {
-                            type: 'App',
-                            fn: symbol(tenv, 'sigma'),
-                            arg: {
+            return exists(e.pos, (arg) =>
+                exists(e.pos, (rest) => {
+                    return conj(
+                        eq_eq(
+                            e.pos,
+                            t,
+                            // app(
+                            //     symbol(tenv, 'sigma'),
+                            //     {
+                            //         type:'Term',
+                            //         term: {
+                            //             type: 'VRowCons',
+                            //             label: e.label,
+                            //             head: app()
+                            //         }
+                            //     }
+                            // )
+
+                            app(symbol(tenv, 'sigma'), {
                                 type: 'Term',
                                 term: {
-                                    type: 'VRowCons',
+                                    type: 'RowCons',
                                     label: e.label,
-                                    head: {
-                                        type: 'Term',
-                                        term: {
-                                            type: 'App',
-                                            fn: symbol(tenv, 'pre'),
-                                            arg: e.arg
-                                                ? arg
-                                                : symbol(tenv, 'abs'),
-                                        },
-                                    },
-                                    tail: {
-                                        type: 'Term',
-                                        term: {
-                                            type: 'VRowUniform',
-                                            value: symbol(tenv, 'abs'),
-                                        },
-                                    },
+                                    head: app(
+                                        symbol(tenv, 'pre'),
+                                        e.arg ? arg : symbol(tenv, 'abs'),
+                                    ),
+                                    tail: rest,
                                 },
-                            },
-                        },
-                    }),
-                    e.arg
-                        ? infer_expr(tenv, e.arg, arg)
-                        : { type: 'True', pos: e.pos },
-                );
-            });
+                            }),
+                        ),
+                        e.arg
+                            ? infer_expr(tenv, e.arg, arg)
+                            : { type: 'True', pos: e.pos },
+                    );
+                }),
+            );
         case 'RecordExtend': {
             return exists_list(e.pos, e.rows, (xs) =>
                 exists(e.pos, (x) => {

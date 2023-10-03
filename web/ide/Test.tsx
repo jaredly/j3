@@ -26,10 +26,10 @@ import {
     parse,
     builtins,
     getTrace,
-} from './infer/algw-cr';
-import { useLocalStorage } from '../Debug';
-// } from './infer/mini';
+    // } from './infer/algw-cr';
+} from './infer/mini';
 // } from './infer/hmx/hmx';
+import { useLocalStorage } from '../Debug';
 
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
@@ -207,7 +207,8 @@ const ViewJson = ({ v }: { v: any[] }) => {
             <input
                 type="range"
                 min="1"
-                max="10"
+                max="30"
+                style={{ width: 400 }}
                 value={level}
                 onChange={(evt) => setLevel(+evt.target.value)}
             />

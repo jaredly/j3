@@ -31,12 +31,25 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
     const sigma = variable('Constant', 'sigma');
     const vbls = [int, arr, char, abs, pre, pi, sigma, bool];
 
+    trace.push(term);
+
     const tenv: env = {
         type_info: [
             ['int', [{ type: 'Star' }, int, { ref: null }]],
             ['bool', [{ type: 'Star' }, bool, { ref: null }]],
             ['abs', [{ type: 'Star' }, abs, { ref: null }]],
-            ['pi', [{ type: 'Star' }, pi, { ref: null }]],
+            [
+                'pi',
+                [
+                    {
+                        type: 'Arrow',
+                        left: { type: 'EmptyRow' },
+                        right: { type: 'Star' },
+                    },
+                    pi,
+                    { ref: null },
+                ],
+            ],
             ['sigma', [{ type: 'Star' }, sigma, { ref: null }]],
             [
                 'pre',
@@ -67,6 +80,7 @@ export const infer = (builtins: any, term: expression, _: any): crterm => {
         data_constructor: [],
     };
     const constraint = infer_vdef(term.pos, tenv, term);
+    trace.push(constraint);
     const plus = variable('Flexible', 'plus');
     vbls.push(plus);
     // should I set this up more directly? Seems a little funny to
@@ -136,6 +150,12 @@ export const typToString = (t: crterm, seen: Seen = new Map()): string => {
     }
 };
 
+const vWrap = (
+    descriptor: MultiEquation_descriptor,
+): MultiEquation_variable => ({
+    link: { type: 'Info', descriptor, weight: 0 },
+});
+
 const letters = 'abcdefghijklmnop';
 export const vToString = (
     v: MultiEquation_variable,
@@ -145,10 +165,58 @@ export const vToString = (
     if (d.structure) {
         if (d.structure.type == 'App') {
             const fn = find(d.structure.fn);
+
+            if (fn.kind === 'Constant' && fn.name === 'pi') {
+                const items: [string, MultiEquation_variable][] = [];
+                let body = find(d.structure.arg);
+                while (body.structure?.type === 'RowCons') {
+                    items.push([body.structure.label, body.structure.head]);
+                    body = find(body.structure.tail);
+                }
+                return `{${items
+                    .map(([name, v]) => `${name} ${vToString(v, seen)}`)
+                    .join(' ')}${
+                    body.structure?.type === 'RowUniform'
+                        ? ''
+                        : ' ..' + vToString(vWrap(body), seen)
+                }}`;
+            }
+
+            if (fn.kind === 'Constant' && fn.name === 'sigma') {
+                const items: [string, MultiEquation_variable][] = [];
+                let body = find(d.structure.arg);
+                while (body.structure?.type === 'RowCons') {
+                    items.push([body.structure.label, body.structure.head]);
+                    body = find(body.structure.tail);
+                }
+                return `[${items
+                    .map(([name, v]) => {
+                        const d = find(v);
+                        if (d.structure?.type === 'App') {
+                            const fn = find(d.structure.fn);
+                            if (fn.name === 'pre') {
+                                const arg = find(d.structure.arg);
+                                if (
+                                    arg.name === 'abs' &&
+                                    arg.kind === 'Constant'
+                                ) {
+                                    return name;
+                                }
+                            }
+                        }
+                        return `(${name} ${vToString(v, seen)})`;
+                    })
+                    .join(' ')}${
+                    body.structure?.type === 'RowUniform'
+                        ? ''
+                        : ' ' + vToString(vWrap(body), seen)
+                }]`;
+            }
+
             if (
                 !fn.structure &&
                 fn.kind === 'Constant' &&
-                (fn.name === 'pi' || fn.name === 'pre' || fn.name === 'sigma')
+                (fn.name === 'pi' || fn.name === 'pre')
             ) {
                 return vToString(d.structure.arg, seen);
             }
@@ -166,17 +234,7 @@ export const vToString = (
                 .join(' ')}${
                 last.structure?.type === 'RowUniform'
                     ? ''
-                    : ' ' +
-                      vToString(
-                          {
-                              link: {
-                                  type: 'Info',
-                                  descriptor: last,
-                                  weight: 0,
-                              },
-                          },
-                          seen,
-                      )
+                    : ' ' + vToString(vWrap(last), seen)
             }}`;
         }
 
@@ -192,7 +250,12 @@ export const vToString = (
     }
 };
 
-export const getTrace = () => [];
+export let trace: any[] = [];
+export const getTrace = () => {
+    const res = trace;
+    trace = [];
+    return res;
+};
 
 function caTermToString<t>(
     term: CoreAlgebra_term<t>,
