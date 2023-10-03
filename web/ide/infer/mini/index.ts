@@ -212,4 +212,5 @@ function caTermToString<t>(
         case 'Var':
             return tToString(term.value, seen);
     }
+    return '';
 }
