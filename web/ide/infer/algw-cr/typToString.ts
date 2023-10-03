@@ -21,24 +21,31 @@ export const typToString = (
                 t.body,
                 seen,
             )})`;
-        case 'Record':
-            return `{${typToString(t.body, seen)}}`;
-        case 'Variant': {
-            const options = [];
-            let at = t.body;
-            while (at.type === 'RowExtend') {
-                if (
-                    at.head.type === 'Record' &&
-                    at.head.body.type === 'RowEmpty'
-                ) {
-                    options.push(at.name);
-                } else {
-                    options.push(`(${at.name} ${typToString(at.head, seen)})`);
-                }
-                at = at.tail;
+        case 'Record': {
+            if (t.body.type === 'RowEmpty') {
+                return '()';
             }
-            options.push(typToString(at, seen));
-            return `[${options.join(' ')}]`;
+            const { options, at } = expandRows(t, seen);
+            const res = options.map(
+                ([name, value]) => `${name} ${typToString(value, seen)}`,
+            );
+            if (at.type !== 'RowEmpty') {
+                res.push('..' + typToString(at));
+            }
+            return `{${res.join(' ')}}`;
+        }
+        case 'Variant': {
+            const { options, at } = expandRows(t, seen);
+            const res = [];
+            options.forEach(([name, value]) => {
+                if (value.type === 'Record' && value.body.type === 'RowEmpty') {
+                    res.push(name);
+                } else {
+                    res.push(`(${name} ${typToString(value, seen)})`);
+                }
+            });
+            res.push(typToString(at, seen));
+            return `[${res.join(' ')}]`;
         }
         case 'RowExtend':
             return `${t.name} ${typToString(t.head, seen)}${
@@ -48,3 +55,15 @@ export const typToString = (
             }`;
     }
 };
+function expandRows(
+    t: { type: 'Variant' | 'Record'; body: Type },
+    seen: { [key: string]: string },
+) {
+    const options: [string, Type][] = [];
+    let at = t.body;
+    while (at.type === 'RowExtend') {
+        options.push([at.name, at.head]);
+        at = at.tail;
+    }
+    return { options, at };
+}

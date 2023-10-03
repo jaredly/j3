@@ -17,6 +17,26 @@ const _parse = (
     errors: { [key: number]: string },
 ): Exp | undefined => {
     switch (node.type) {
+        case 'if': {
+            const cond = _parse(node.cond, errors);
+            const yes = _parse(node.yes, errors);
+            const no = _parse(node.no, errors);
+            return cond && yes && no
+                ? {
+                      type: 'App',
+                      fn: {
+                          type: 'App',
+                          fn: {
+                              type: 'App',
+                              fn: { type: 'Prim', prim: { type: 'Cond' } },
+                              arg: cond,
+                          },
+                          arg: yes,
+                      },
+                      arg: no,
+                  }
+                : undefined;
+        }
         case 'var':
             if (node.name.match(/^[A-Z]/)) {
                 // return {
