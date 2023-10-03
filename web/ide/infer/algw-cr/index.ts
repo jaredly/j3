@@ -5,8 +5,14 @@ export { typToString } from './typToString';
 export { parse } from './parse';
 export const builtins = {};
 
-export const getTrace = () => [];
+export let trace: any[] = [];
+export const getTrace = () => {
+    const res = trace;
+    trace = [];
+    return res;
+};
 export const infer = (builtins: any, expr: Exp, what: any) => {
+    trace.push(expr);
     return typeInference(
         {
             '+': {

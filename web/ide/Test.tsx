@@ -168,9 +168,46 @@ export const Test = ({ env }: { env: Env }) => {
                 }}
             />
             <Cursors at={state.at} regs={state.regs} />
-            {selTop ? JSON.stringify(results.tops[selTop].data) : null}
+            {/* {selTop ? JSON.stringify(results.tops[selTop].data) : null} */}
+            {selTop ? <ViewJson v={results.tops[selTop].data} /> : null}
             {/* {JSON.stringify(state.at)} */}
             {/* <div>{JSON.stringify(state.hover)}</div> */}
+        </div>
+    );
+};
+
+const white = (n: number) => ''.padStart(n, ' ');
+
+const stringify = (v: any, level: number, max: number): string => {
+    if (level === max) {
+        return JSON.stringify(v);
+    }
+    const id = white(level * 2);
+    if (Array.isArray(v)) {
+        return `[\n${v
+            .map((n) => id + stringify(n, level + 1, max))
+            .join('\n')}\n${white(level * 2 - 2)}]`;
+    }
+    if (v && typeof v === 'object') {
+        return `{\n${Object.entries(v)
+            .map(([k, v]) => id + `${k}: ${stringify(v, level + 1, max)}`)
+            .join('\n')}\n${white(level * 2 - 2)}}`;
+    }
+    return JSON.stringify(v);
+};
+
+const ViewJson = ({ v }: { v: any }) => {
+    const [level, setLevel] = useState(1);
+    return (
+        <div>
+            <input
+                type="range"
+                min="1"
+                max="10"
+                value={level}
+                onChange={(evt) => setLevel(+evt.target.value)}
+            />
+            <pre>{stringify(v, 1, 1 + level)}</pre>;
         </div>
     );
 };
