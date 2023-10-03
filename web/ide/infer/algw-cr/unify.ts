@@ -76,14 +76,19 @@ export const unify = (one: Type, two: Type, ctx: Ctx): Subst => {
         return {};
     }
     if (one.type === 'RowExtend' && two.type === 'RowExtend') {
-        const [a, b, c] = rewriteRow(two, one.name, ctx);
-        const mm = toList(b);
-        if (mm[1] && c[mm[1].name]) {
+        const { name: label1, head: fieldTy1, tail: rowTail1 } = one;
+        const [fieldTy2, rowTail2, theta1] = rewriteRow(two, label1, ctx);
+        const rt1tv = toList(rowTail1)[1];
+        if (rt1tv && theta1[rt1tv.name]) {
             throw new Error(`recursive row type, cant do it`);
         }
-        const theta2 = unify(apply(c, one.head), apply(c, a), ctx);
-        const s = composeSubst(theta2, c);
-        const theta3 = unify(apply(s, one.tail), apply(s, b), ctx);
+        const theta2 = unify(
+            apply(theta1, fieldTy1),
+            apply(theta1, fieldTy2),
+            ctx,
+        );
+        const s = composeSubst(theta2, theta1);
+        const theta3 = unify(apply(s, rowTail1), apply(s, rowTail2), ctx);
         return composeSubst(theta3, s);
     }
     throw new Error(`types do not unify`);
