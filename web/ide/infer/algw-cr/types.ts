@@ -90,6 +90,8 @@ export const apply = (s: Subst, v: Type): Type => {
             return { ...v, body: apply(s, v.body) };
         case 'RowExtend':
             return { ...v, head: apply(s, v.head), tail: apply(s, v.tail) };
+        case 'Variant':
+            return { ...v, body: apply(s, v.body) };
         default:
             return v;
     }

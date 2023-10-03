@@ -18,6 +18,8 @@ export const typToString = (t: Type): string => {
         case 'Variant':
             return `{v ${typToString(t.body)}}`;
         case 'RowExtend':
-            return `${t.name}=${typToString(t.head)} ..${typToString(t.tail)}`;
+            return `${t.name}=${typToString(t.head)}${
+                t.tail.type === 'RowEmpty' ? '' : ' ..' + typToString(t.tail)
+            }`;
     }
 };

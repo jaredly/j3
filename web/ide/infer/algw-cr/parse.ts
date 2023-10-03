@@ -20,16 +20,23 @@ const _parse = (
         case 'var':
             if (node.name.match(/^[A-Z]/)) {
                 return {
-                    type: 'App',
-                    fn: {
-                        type: 'Prim',
-                        prim: {
-                            type: 'VariantInject',
-                            name: node.name,
-                        },
+                    type: 'Prim',
+                    prim: {
+                        type: 'VariantInject',
+                        name: node.name,
                     },
-                    arg: { type: 'Prim', prim: { type: 'RecordEmpty' } },
                 };
+                // return {
+                //     type: 'App',
+                //     fn: {
+                //         type: 'Prim',
+                //         prim: {
+                //             type: 'VariantInject',
+                //             name: node.name,
+                //         },
+                //     },
+                //     arg: { type: 'Prim', prim: { type: 'RecordEmpty' } },
+                // };
             }
             return { type: 'Var', name: node.name };
         case 'accessor':

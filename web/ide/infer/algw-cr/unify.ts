@@ -1,3 +1,6 @@
+import { trace } from '.';
+import { calog } from './infer';
+import { typToString } from './typToString';
 import {
     Type,
     Ctx,
@@ -43,13 +46,12 @@ export const unionConstraints = (one: TyVar, two: TyVar, ctx: Ctx): Subst => {
     throw new Error(`kind mismatch`);
 };
 
-export const unify = (one: Type, two: Type, ctx: Ctx): Subst => {
+export const unify = calog('unify', (one: Type, two: Type, ctx: Ctx): Subst => {
     if (one.type === 'Fun' && two.type === 'Fun') {
         const s1 = unify(one.arg, two.arg, ctx);
-        return composeSubst(
-            s1,
-            unify(apply(s1, two.body), apply(s1, two.body), ctx),
-        );
+        const s2 = unify(apply(s1, one.body), apply(s1, two.body), ctx);
+        trace.push({ at: 'unified args and bodies', args: s1, bodies: s2 });
+        return composeSubst(s1, s2);
     }
     if (one.type === 'Var' && two.type === 'Var') {
         return unionConstraints(one.v, two.v, ctx);
@@ -91,8 +93,10 @@ export const unify = (one: Type, two: Type, ctx: Ctx): Subst => {
         const theta3 = unify(apply(s, rowTail1), apply(s, rowTail2), ctx);
         return composeSubst(theta3, s);
     }
-    throw new Error(`types do not unify`);
-};
+    throw new Error(
+        `types do not unify ${typToString(one)} vs ${typToString(two)}`,
+    );
+});
 
 const fromList = (n: string[]): Constraint => {
     const res: Constraint = {};

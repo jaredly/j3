@@ -27,6 +27,7 @@ import {
     builtins,
     getTrace,
 } from './infer/algw-cr';
+import { useLocalStorage } from '../Debug';
 // } from './infer/mini';
 // } from './infer/hmx/hmx';
 
@@ -169,7 +170,7 @@ export const Test = ({ env }: { env: Env }) => {
             />
             <Cursors at={state.at} regs={state.regs} />
             {/* {selTop ? JSON.stringify(results.tops[selTop].data) : null} */}
-            {selTop ? <ViewJson v={results.tops[selTop].data} /> : null}
+            {selTop != null ? <ViewJson v={results.tops[selTop].data} /> : null}
             {/* {JSON.stringify(state.at)} */}
             {/* <div>{JSON.stringify(state.hover)}</div> */}
         </div>
@@ -184,20 +185,23 @@ const stringify = (v: any, level: number, max: number): string => {
     }
     const id = white(level * 2);
     if (Array.isArray(v)) {
+        if (!v.length) return '[]';
         return `[\n${v
             .map((n) => id + stringify(n, level + 1, max))
             .join('\n')}\n${white(level * 2 - 2)}]`;
     }
     if (v && typeof v === 'object') {
-        return `{\n${Object.entries(v)
+        const items = Object.entries(v);
+        if (!items.length) return '{}';
+        return `{\n${items
             .map(([k, v]) => id + `${k}: ${stringify(v, level + 1, max)}`)
             .join('\n')}\n${white(level * 2 - 2)}}`;
     }
     return JSON.stringify(v);
 };
 
-const ViewJson = ({ v }: { v: any }) => {
-    const [level, setLevel] = useState(1);
+const ViewJson = ({ v }: { v: any[] }) => {
+    const [level, setLevel] = useLocalStorage('view-json', () => 1);
     return (
         <div>
             <input
@@ -207,7 +211,9 @@ const ViewJson = ({ v }: { v: any }) => {
                 value={level}
                 onChange={(evt) => setLevel(+evt.target.value)}
             />
-            <pre>{stringify(v, 1, 1 + level)}</pre>;
+            {v.map((item, i) => (
+                <pre key={i}>{stringify(item, 1, 1 + level)}</pre>
+            ))}
         </div>
     );
 };
