@@ -1,4 +1,16 @@
 
+# So
+we have polymorphic variants
+and records
+
+given that mini actually supports
+a bunch more stuff
+and like probably recursive types? I hope?
+
+
+
+
+
 # Ooh this looks like it has both record & variant extensibility
 
 https://github.com/willtim/Expresso
