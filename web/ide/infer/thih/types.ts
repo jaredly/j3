@@ -664,12 +664,12 @@ const tiPats = (pats: Pat[], ctx: Ctx): [Pred[], Assump[], Type[]] => {
     return [ps, as, ts];
 };
 
-type Expr =
-    | { type: 'Var'; id: string }
-    | { type: 'Lit'; lit: Literal }
-    | { type: 'Const'; assump: Assump }
-    | { type: 'Ap'; fn: Expr; arg: Expr }
-    | { type: 'Let'; group: BindGroup; body: Expr };
+export type Expr =
+    | { type: 'Var'; id: string; loc: number }
+    | { type: 'Lit'; lit: Literal; loc: number }
+    | { type: 'Const'; assump: Assump; loc: number }
+    | { type: 'Ap'; fn: Expr; arg: Expr; loc: number }
+    | { type: 'Let'; group: BindGroup; body: Expr; loc: number };
 
 const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
     switch (expr.type) {
@@ -858,7 +858,7 @@ const tiExpl = (
     }
 };
 
-type Impl = [string, Alt[]];
+export type Impl = [string, Alt[]];
 
 const restricted = (bs: Impl[]) =>
     bs.some(([i, alts]) => alts.some((a) => !a[0].length));
@@ -919,7 +919,7 @@ const tiImpls: Infer<Impl[], Assump[]> = (ce, as, bs, ctx) => {
     }
 };
 
-type BindGroup = [Expl[], Impl[][]];
+export type BindGroup = [Expl[], Impl[][]];
 
 const tiBindGroup: Infer<BindGroup, Assump[]> = (ce, as, [es, iss], ctx) => {
     const as_ = es.map(([v, sc, alts]) => bird_face(v, sc));
@@ -949,9 +949,13 @@ const tiSeq = <bg>(
     ];
 };
 
-type Program = BindGroup[];
+export type Program = BindGroup[];
 
-const tiProgram = (ce: ClassEnv, as: Assump[], bgs: Program): Assump[] => {
+export const tiProgram = (
+    ce: ClassEnv,
+    as: Assump[],
+    bgs: Program,
+): Assump[] => {
     const ctx = initialCtx();
     const [ps, as_] = tiSeq(tiBindGroup, ce, as, bgs, ctx);
     const s = ctx.subst;
