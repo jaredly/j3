@@ -22,6 +22,19 @@ export type Type =
     | { type: 'App'; fn: Type; arg: Type }
     | { type: 'Gen'; num: number };
 
+export const printType = (t: Type): string => {
+    switch (t.type) {
+        case 'Var':
+            return `${t.v.name} (${printKind(t.v.k)})`;
+        case 'Con':
+            return `CON ${t.con.id} ${printKind(t.con.k)}`;
+        case 'App':
+            return `(${printType(t.fn)} ${printType(t.arg)})`;
+        case 'Gen':
+            return `Gen(${t.num})`;
+    }
+};
+
 export const typesEqual = (one: Type, two: Type): boolean => {
     if (one.type === 'Var' && two.type === 'Var') {
         return one.v.name === two.v.name;
@@ -52,6 +65,7 @@ const kf = (arg: Kind, body: Kind): Kind => ({ type: 'Fun', arg, body });
 export const builtins = {
     unit: mkType('()', star),
     char: mkType('char', star),
+    string: mkType('string', star),
     int: mkType('int', star),
     double: mkType('double', star),
     float: mkType('float', star),
@@ -202,10 +216,16 @@ const match = (one: Type, two: Type): Subst => {
 type Qual<T> = { type: 'Qual'; context: Pred[]; head: T };
 type Pred = { type: 'IsIn'; id: string; t: Type };
 
+const printPred = (p: Pred) => `IsIn ${p.id} ${printType(p.t)}`;
+
+const printQual = <T>(q: Qual<T>, p: (t: T) => string) =>
+    `[${q.context.map(printPred)}] :=> ${p(q.head)}`;
+
 type Apply<T> = (s: Subst, t: T) => T;
 type TV<T> = (t: T) => TyVar[];
 
-const applyQ = <T>(s: Subst, q: Qual<T>, apt: Apply<T>) => ({
+const applyQ = <T>(s: Subst, q: Qual<T>, apt: Apply<T>): Qual<T> => ({
+    type: 'Qual',
     context: applyP(s, q.context),
     head: apt(s, q.head),
 });
@@ -446,15 +466,496 @@ const reduce = (ce: ClassEnv, preds: Pred[]): Pred[] =>
     simplify(ce, toHnfs(ce, preds));
 
 // OK Chapter 8!
+type Scheme = { type: 'Forall'; kinds: Kind[]; qual: Qual<Type> };
+
+const applyS = (s: Subst, { kinds, qual }: Scheme): Scheme => ({
+    type: 'Forall',
+    kinds,
+    qual: applyQ(s, qual, apply),
+});
+const tvS = ({ qual }: Scheme) => tvQ(qual, tv);
+
+const quantify = (vs: TyVar[], qt: Qual<Type>): Scheme => {
+    const ids = vs.map((v) => v.name);
+    const vs_ = tvQ(qt, tv).filter((v) => ids.includes(v.name));
+    const ks = vs_.map(kind);
+    const s = vs_.map((v): Subst[0] => [v, { type: 'Gen', num: 0 }]);
+    return { type: 'Forall', kinds: ks, qual: applyQ(s, qt, apply) };
+};
+const toScheme = (t: Type): Scheme => ({
+    type: 'Forall',
+    kinds: [],
+    qual: { type: 'Qual', context: [], head: t },
+});
+
+// Chapter 9!
+// :>: is the constructor they use
+type Assump = { type: 'Assump'; id: string; scheme: Scheme };
+const bird_face = (id: string, scheme: Scheme): Assump => ({
+    type: 'Assump',
+    id,
+    scheme,
+});
+
+const printAssump = (a: Assump) => `${a.id} :>: ${printScheme(a.scheme)}`;
+
+const printScheme = (s: Scheme) =>
+    `Forall ${s.kinds.map((k) => printKind(k)).join(' ')} ${printQual(
+        s.qual,
+        printType,
+    )}`;
+
+const printKind = (k: Kind): string =>
+    k.type === 'Star' ? '*' : `(${printKind(k.arg)} -> ${printKind(k.body)})`;
+
+const applyA = (s: Subst, a: Assump): Assump => ({
+    ...a,
+    scheme: applyS(s, a.scheme),
+});
+const tvA = (a: Assump) => tvS(a.scheme);
+
+const find = (id: string, assumps: Assump[]): Scheme => {
+    for (let a of assumps) {
+        if (a.id === id) {
+            return a.scheme;
+        }
+    }
+    throw new Error('unbound identifier');
+};
+
+// Chapter 10
 
 type Ctx = {
     counter: number;
-    subst: Subst[];
+    subst: Subst;
+};
+const initialCtx = (): Ctx => ({ counter: 0, subst: [] });
+
+const extSubst = (subs: Subst, ctx: Ctx) => {
+    ctx.subst = at_at(subs, ctx.subst);
 };
 
-export type Infer = (
+const unify = (one: Type, two: Type, ctx: Ctx) => {
+    const u = mgu(apply(ctx.subst, one), apply(ctx.subst, two));
+    extSubst(u, ctx);
+};
+
+const newTVar = (k: Kind, ctx: Ctx): Type => {
+    const v: TyVar = { type: 'TV', k, name: enumId(ctx.counter) };
+    ctx.counter += 1;
+    return { type: 'Var', v };
+};
+
+const freshInst = (scheme: Scheme, ctx: Ctx): Qual<Type> => {
+    return instQ(
+        scheme.kinds.map((k) => newTVar(k, ctx)),
+        scheme.qual,
+        inst,
+    );
+};
+
+type Inst_<T> = (ts: Type[], t: T) => T;
+
+const inst = (ts: Type[], t: Type): Type => {
+    switch (t.type) {
+        case 'App':
+            return { ...t, fn: inst(ts, t.fn), arg: inst(ts, t.arg) };
+        case 'Gen':
+            return ts[t.num];
+        default:
+            return t;
+    }
+};
+
+const instQ = <T>(ts: Type[], q: Qual<T>, inst: Inst_<T>): Qual<T> => {
+    return {
+        ...q,
+        context: q.context.map((c) => instP(ts, c)),
+        head: inst(ts, q.head),
+    };
+};
+const instP: Inst_<Pred> = (ts, p) => ({ ...p, t: inst(ts, p.t) });
+
+// Chapter 11
+
+export type Infer<E, T> = (
     ce: ClassEnv,
     a: Assump[],
-    e: expr,
+    e: E,
     ctx: Ctx,
-) => [Pred[], Type];
+) => [Pred[], T];
+
+type Literal =
+    | { type: 'Int'; value: number }
+    | { type: 'Char'; value: string }
+    | { type: 'Rat'; value: number }
+    | { type: 'Str'; value: string };
+
+const tiLit = (lit: Literal, ctx: Ctx): [Pred[], Type] => {
+    switch (lit.type) {
+        case 'Char':
+            return [[], builtins.char];
+        case 'Str':
+            return [[], builtins.string];
+        case 'Int': {
+            const v = newTVar(star, ctx);
+            return [[{ type: 'IsIn', id: 'Num', t: v }], v];
+        }
+        case 'Rat': {
+            const v = newTVar(star, ctx);
+            return [[{ type: 'IsIn', id: 'Fractional', t: v }], v];
+        }
+    }
+};
+
+type Pat =
+    | { type: 'Var'; id: string }
+    | { type: 'Wildcard' }
+    | { type: 'As'; name: string; pat: Pat }
+    | { type: 'Lit'; lit: Literal }
+    | { type: 'Npk'; name: string; num: number }
+    | { type: 'Con'; assump: Assump; pat: Pat[] };
+
+const foldr = <A, B>(f: (x: A, acc: B) => B, acc: B, [h, ...t]: A[]): B =>
+    h === undefined ? acc : f(h, foldr(f, acc, t));
+
+const tiPat = (pat: Pat, ctx: Ctx): [Pred[], Assump[], Type] => {
+    switch (pat.type) {
+        case 'Var': {
+            const v = newTVar(star, ctx);
+            return [[], [bird_face(pat.id, toScheme(v))], v];
+        }
+        case 'Wildcard': {
+            const v = newTVar(star, ctx);
+            return [[], [], v];
+        }
+        case 'As': {
+            const [ps, as, t] = tiPat(pat.pat, ctx);
+            return [ps, [bird_face(pat.name, toScheme(t)), ...as], t];
+        }
+        case 'Lit': {
+            const [ps, t] = tiLit(pat.lit, ctx);
+            return [ps, [], t];
+        }
+        // lol wat is this even
+        case 'Npk': {
+            const t = newTVar(star, ctx);
+            return [
+                [{ type: 'IsIn', id: 'Integral', t }],
+                [bird_face(pat.name, toScheme(t))],
+                t,
+            ];
+        }
+        case 'Con': {
+            const [ps, as, ts] = tiPats(pat.pat, ctx);
+            const t_ = newTVar(star, ctx);
+            const { context, head } = freshInst(pat.assump.scheme, ctx);
+            unify(head, foldr(fn, t_, ts), ctx);
+            return [ps.concat(context), as, t_];
+        }
+    }
+};
+
+const tiPats = (pats: Pat[], ctx: Ctx): [Pred[], Assump[], Type[]] => {
+    const psasts = pats.map((p) => tiPat(p, ctx));
+    const ps = psasts.flatMap((p) => p[0]);
+    const as = psasts.flatMap((p) => p[1]);
+    const ts = psasts.flatMap((p) => p[2]);
+    return [ps, as, ts];
+};
+
+type Expr =
+    | { type: 'Var'; id: string }
+    | { type: 'Lit'; lit: Literal }
+    | { type: 'Const'; assump: Assump }
+    | { type: 'Ap'; fn: Expr; arg: Expr }
+    | { type: 'Let'; group: BindGroup; body: Expr };
+
+const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
+    switch (expr.type) {
+        case 'Var': {
+            const sc = find(expr.id, as);
+            const { context, head } = freshInst(sc, ctx);
+            return [context, head];
+        }
+        case 'Const': {
+            const { context, head } = freshInst(expr.assump.scheme, ctx);
+            return [context, head];
+        }
+        case 'Lit': {
+            return tiLit(expr.lit, ctx);
+        }
+        case 'Ap': {
+            const [ps, te] = tiExpr(ce, as, expr.fn, ctx);
+            const [qs, tf] = tiExpr(ce, as, expr.arg, ctx);
+            const t = newTVar(star, ctx);
+            unify(fn(tf, t), te, ctx);
+            return [[...ps, ...qs], t];
+        }
+        case 'Let': {
+            const [ps, as_] = tiBindGroup(ce, as, expr.group, ctx);
+            const [qs, t] = tiExpr(ce, [...as_, ...as], expr.body, ctx);
+            return [[...ps, ...qs], t];
+        }
+    }
+};
+
+type Alt = [Pat[], Expr];
+
+const tiAlt: Infer<Alt, Type> = (ce, as, alt, ctx) => {
+    const [ps, as_, ts] = tiPats(alt[0], ctx);
+    const [qs, t] = tiExpr(ce, [...as_, ...as], alt[1], ctx);
+    return [[...ps, ...qs], foldr(fn, t, ts)];
+};
+
+const tiAlts = (
+    ce: ClassEnv,
+    as: Assump[],
+    alts: Alt[],
+    t: Type,
+    ctx: Ctx,
+): Pred[] => {
+    const psts = alts.map((m) => tiAlt(ce, as, m, ctx));
+    psts.map((p) => p[1]).forEach((m) => unify(t, m, ctx));
+    return psts.flatMap((p) => p[0]);
+};
+
+const partition = <T>(a: T[], f: (t: T) => boolean): [T[], T[]] => {
+    const yes: T[] = [];
+    const no: T[] = [];
+    a.forEach((t) => {
+        if (f(t)) {
+            yes.push(t);
+        } else {
+            no.push(t);
+        }
+    });
+    return [yes, no];
+};
+
+const split = (
+    ce: ClassEnv,
+    fs: TyVar[],
+    gs: TyVar[],
+    ps: Pred[],
+    ctx: Ctx,
+) => {
+    const ps_ = reduce(ce, ps);
+    const [ds, rs] = partition(ps_, (p) =>
+        tv(p.t).every((x) => fs.find((f) => f.name === x.name)),
+    );
+    const rs_ = defaultedPreds(ce, [...fs, ...gs], rs);
+    return [ds, rs];
+};
+
+const without = <T>(one: T[], two: T[], eq: (a: T, b: T) => boolean) =>
+    one.filter((o) => !two.some((t) => eq(o, t)));
+
+type Ambiguity = [TyVar, Pred[]];
+const ambiguities = (ce: ClassEnv, vs: TyVar[], ps: Pred[]): Ambiguity[] => {
+    return without(tvP(ps), vs, (a, b) => a.name === b.name).map((v) => [
+        v,
+        ps.filter((p) => tv(p.t).some((t) => t.name === v.name)),
+    ]);
+};
+
+const numClasses = [
+    'Num',
+    'Integral',
+    'Floating',
+    'Fractional',
+    'Real',
+    'RealFloat',
+    'RealFrac',
+];
+const stdClasses = [
+    'Eq',
+    'Ord',
+    'Show',
+    'Read',
+    'Bounded',
+    'Enum',
+    'Ix',
+    'Functor',
+    'Monad',
+    'MonadPlus',
+    ...numClasses,
+];
+
+const candidates = (ce: ClassEnv, [v, qs]: Ambiguity): Type[] => {
+    if (qs.some((q) => q.t.type !== 'Var' || v.name !== q.t.v.name)) {
+        return [];
+    }
+    const is_ = qs.map((q) => q.id);
+    if (is_.every((i) => !numClasses.includes(i))) {
+        return [];
+    }
+    if (is_.some((i) => !stdClasses.includes(i))) {
+        return [];
+    }
+    return ce.defaults.filter((t_) => {
+        return is_.every((i) => entail(ce, [], { type: 'IsIn', id: i, t: t_ }));
+    });
+};
+
+const withDefaults = <a>(
+    f: (a: Ambiguity[], t: Type[]) => a,
+    ce: ClassEnv,
+    vs: TyVar[],
+    ps: Pred[],
+): a => {
+    const vps = ambiguities(ce, vs, ps);
+    const tss = vps.map((v) => candidates(ce, v));
+    if (tss.some((s) => !s.length)) {
+        throw new Error('cannot resolve ambiguity');
+    }
+    return f(
+        vps,
+        tss.map((ts) => ts[0]),
+    );
+};
+
+const defaultedPreds = (ce: ClassEnv, tv: TyVar[], ps: Pred[]) =>
+    withDefaults((vps, ts) => vps.flatMap((v) => v[1]), ce, tv, ps);
+
+const defaultSubst = (ce: ClassEnv, tv: TyVar[], ps: Pred[]) =>
+    withDefaults(
+        (vps, ts) =>
+            zipWith(
+                vps.map((v) => v[0]),
+                ts,
+                (a, b): [typeof a, typeof b] => [a, b],
+            ),
+        ce,
+        tv,
+        ps,
+    );
+
+type Expl = [string, Scheme, Alt[]];
+
+const tiExpl = (
+    ce: ClassEnv,
+    as: Assump[],
+    [i, sc, alts]: Expl,
+    ctx: Ctx,
+): Pred[] => {
+    const { context: qs, head: t } = freshInst(sc, ctx);
+    const ps = tiAlts(ce, as, alts, t, ctx);
+    const s = ctx.subst;
+    const qs_ = applyP(s, qs);
+    const t_ = apply(s, t);
+    const fs = as.map((a) => applyA(s, a)).flatMap(tvA);
+    const gs = without(tv(t_), fs, (a, b) => a.name === b.name);
+    const sc_ = quantify(gs, { type: 'Qual', context: qs_, head: t_ });
+    const ps_ = applyP(s, ps).filter((p) => !entail(ce, qs_, p));
+    const [ds, rs] = split(ce, fs, gs, ps_, ctx);
+    if (!equal(sc, sc_)) {
+        throw new Error('signature is too general');
+    } else if (rs.length) {
+        throw new Error('context is too weak');
+    } else {
+        return ds;
+    }
+};
+
+type Impl = [string, Alt[]];
+
+const restricted = (bs: Impl[]) =>
+    bs.some(([i, alts]) => alts.some((a) => !a[0].length));
+
+// const zipBird = (is: string[], as: Scheme[]): Assump[] => {
+//     const res = [];
+//     for (let i=0; i<is.length && i < as.length; i++) {
+//         res.push(bird_face(is[i], as[i]))
+//     }
+//     return res
+// }
+
+const zipWith = <A, B, C>(is: A[], as: B[], f: (a: A, b: B) => C): C[] => {
+    const res: C[] = [];
+    for (let i = 0; i < is.length && i < as.length; i++) {
+        res.push(f(is[i], as[i]));
+    }
+    return res;
+};
+
+const intersection = (t: TyVar[][]) => {
+    let got = t[0];
+    for (let ts of t.slice(1)) {
+        got = got.filter((t) => ts.some((s) => s.name === t.name));
+    }
+    return got;
+};
+
+const tiImpls: Infer<Impl[], Assump[]> = (ce, as, bs, ctx) => {
+    const ts = bs.map(() => newTVar(star, ctx));
+    const is = bs.map((b) => b[0]);
+    const scs = ts.map(toScheme);
+    const as_ = [...zipWith(is, scs, bird_face), ...as];
+    const altss = bs.map((b) => b[1]);
+    const pss = zipWith(altss, ts, (a, b) => tiAlts(ce, as_, a, b, ctx));
+    const s = ctx.subst;
+    const ps_ = applyP(s, pss.flat());
+    const ts_ = ts.map((t) => apply(s, t));
+    const fs = as.map((a) => tvA(applyA(s, a))).flat();
+    const vss = ts_.map(tv);
+    const gs = without(
+        unique(vss.flat(), (a) => a.name),
+        fs,
+        (a, b) => a.name === b.name,
+    );
+    const [ds, rs] = split(ce, fs, intersection(vss), ps_, ctx);
+    if (restricted(bs)) {
+        const gs_ = without(gs, tvP(rs), (a, b) => a.name === b.name);
+        const scs_ = ts_.map((t) =>
+            quantify(gs_, { type: 'Qual', context: [], head: t }),
+        );
+        return [[...ds, ...rs], zipWith(is, scs_, bird_face)];
+    } else {
+        let scs_ = ts_.map((t) =>
+            quantify(gs, { type: 'Qual', context: rs, head: t }),
+        );
+        return [ds, zipWith(is, scs_, bird_face)];
+    }
+};
+
+type BindGroup = [Expl[], Impl[][]];
+
+const tiBindGroup: Infer<BindGroup, Assump[]> = (ce, as, [es, iss], ctx) => {
+    const as_ = es.map(([v, sc, alts]) => bird_face(v, sc));
+    const [ps, as__] = tiSeq(tiImpls, ce, [...as_, ...as], iss, ctx);
+    const qss = es.map((e) => tiExpl(ce, [...as__, ...as_, ...as], e, ctx));
+    return [
+        [...ps, ...qss.flat()],
+        [...as__, ...as_],
+    ];
+};
+
+const tiSeq = <bg>(
+    ti: Infer<bg, Assump[]>,
+    ce: ClassEnv,
+    as: Assump[],
+    bs: bg[],
+    ctx: Ctx,
+): [Pred[], Assump[]] => {
+    if (!bs.length) {
+        return [[], []];
+    }
+    const [ps, as_] = ti(ce, as, bs[0], ctx);
+    const [qs, as__] = tiSeq(ti, ce, [...as_, ...as], bs.slice(1), ctx);
+    return [
+        [...ps, ...qs],
+        [...as__, ...as_],
+    ];
+};
+
+type Program = BindGroup[];
+
+const tiProgram = (ce: ClassEnv, as: Assump[], bgs: Program): Assump[] => {
+    const ctx = initialCtx();
+    const [ps, as_] = tiSeq(tiBindGroup, ce, as, bgs, ctx);
+    const s = ctx.subst;
+    const rs = reduce(ce, applyP(s, ps));
+    const s_ = defaultSubst(ce, [], rs);
+    return as_.map((a) => applyA(at_at(s_, s), a));
+};
