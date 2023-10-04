@@ -1,3 +1,5 @@
+import equal from 'fast-deep-equal';
+
 export type Id = string;
 
 export const enumId = (n: number) => `:${n}`;
@@ -209,6 +211,7 @@ const applyQ = <T>(s: Subst, q: Qual<T>, apt: Apply<T>) => ({
 });
 const tvQ = <T>(q: Qual<T>, tv: TV<T>) =>
     unique(tvP(q.context).concat(tv(q.head)), (m) => m.name);
+const applyP1 = (s: Subst, p: Pred) => ({ ...p, t: apply(s, p.t) });
 const applyP = (s: Subst, p: Pred[]) =>
     p.map((p) => ({ ...p, t: apply(s, p.t) }));
 const tvP = (p: Pred[]) =>
@@ -362,15 +365,87 @@ const addInst = (ps: Pred[], p: Pred) => (ce: ClassEnv) => {
 const bySuper = (ce: ClassEnv, pred: Pred): Pred[] => {
     return [
         pred,
-        ...(super_(ce, pred.id)?.map((m) =>
+        ...(super_(ce, pred.id)?.flatMap((m) =>
             bySuper(ce, { type: 'IsIn', id: m, t: pred.t }),
         ) ?? []),
     ];
 };
-const byInst = () => {};
-const entail = () => {}; // p17
-const toHnfs = () => {};
-const simplify = () => {};
+const byInst = (ce: ClassEnv, pred: Pred): Pred[] => {
+    const tryInst = (qu: Qual<Pred>) => {
+        const u = matchPred(qu.head, pred);
+        return qu.context.map((p) => applyP1(u, p));
+    };
+    const got = insts(ce, pred.id);
+    if (!got) {
+        throw new Error('no instst');
+    }
+    for (let it of got) {
+        try {
+            return tryInst(it);
+        } catch (err) {}
+    }
+    throw new Error('nope');
+};
+
+const entail = (ce: ClassEnv, preds: Pred[], pred: Pred): boolean => {
+    const found = preds
+        .map((p) => bySuper(ce, p))
+        .some((got) => got.find((a) => equal(a, pred)));
+    if (found) return found;
+    try {
+        const qs = byInst(ce, pred);
+        return qs.every((q) => entail(ce, preds, q));
+    } catch (err) {
+        return false;
+    }
+}; // p17
+const inHnf = (pred: Pred) => {
+    const hnf = (t: Type): boolean => {
+        switch (t.type) {
+            case 'Var':
+                return true;
+            case 'Gen':
+            case 'Con':
+                return false;
+            case 'App':
+                return hnf(t.fn);
+        }
+    };
+    return hnf(pred.t);
+};
+const toHnfs = (ce: ClassEnv, preds: Pred[]): Pred[] => {
+    return preds.flatMap((m) => toHnf(ce, m));
+};
+const toHnf = (ce: ClassEnv, pred: Pred): Pred[] => {
+    if (inHnf(pred)) {
+        return [pred];
+    }
+    try {
+        const ps = byInst(ce, pred);
+        return toHnfs(ce, ps);
+    } catch (err) {
+        throw new Error('context reduction');
+    }
+};
+const simplify = (ce: ClassEnv, preds: Pred[]): Pred[] => {
+    const loop = (rs: Pred[], preds: Pred[]): Pred[] => {
+        if (preds.length === 0) {
+            return rs;
+        }
+        const [p, ...ps] = preds;
+        if (entail(ce, [...rs, ...ps], p)) {
+            return loop(rs, ps);
+        } else {
+            return loop([p, ...rs], ps);
+        }
+    };
+    return loop([], preds);
+};
+
+const reduce = (ce: ClassEnv, preds: Pred[]): Pred[] =>
+    simplify(ce, toHnfs(ce, preds));
+
+// OK Chapter 8!
 
 type Ctx = {
     counter: number;
