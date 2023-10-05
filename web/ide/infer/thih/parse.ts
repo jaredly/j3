@@ -62,6 +62,9 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
                 : undefined;
         }
         case 'var': {
+            if (node.name.match(/^[A-Z]/)) {
+                return { type: 'Variant', label: node.name, loc: node.loc };
+            }
             return { type: 'Var', id: node.name, loc: node.loc };
         }
         case 'const': {
@@ -119,6 +122,29 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
                   )
                 : undefined;
         }
+        case 'record':
+            let res: Expr = { type: 'RecordEmpty', loc: node.loc };
+            for (let item of node.items.slice().reverse()) {
+                const value = _parse(item.value, ctx);
+                if (!value) return;
+
+                res = {
+                    type: 'Ap',
+                    fn: {
+                        type: 'Ap',
+                        fn: {
+                            type: 'RecordExtend',
+                            label: item.name,
+                            loc: node.loc,
+                        },
+                        arg: value,
+                        loc: node.loc,
+                    },
+                    arg: res,
+                    loc: node.loc,
+                };
+            }
+            return res;
     }
     trace.push(`type ${node.type}`);
 };

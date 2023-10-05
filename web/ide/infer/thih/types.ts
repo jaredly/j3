@@ -5,10 +5,16 @@ export type Id = string;
 
 export const enumId = (n: number) => `:${n}`;
 
-export type Kind = { type: 'Star' } | { type: 'Fun'; arg: Kind; body: Kind };
+export type Kind =
+    | { type: 'Star' }
+    | { type: 'Fun'; arg: Kind; body: Kind }
+    | { type: 'Row' };
 
 export const kindsEqual = (one: Kind, two: Kind): boolean => {
     if (one.type === 'Star' && two.type === 'Star') {
+        return true;
+    }
+    if (one.type === 'Row' && two.type === 'Row') {
         return true;
     }
     if (one.type === 'Fun' && two.type === 'Fun') {
@@ -78,7 +84,12 @@ export const typesEqual = (one: Type, two: Type): boolean => {
     return false;
 };
 
-export type TyVar = { type: 'TV'; name: string; k: Kind };
+export type TyVar = {
+    type: 'TV';
+    name: string;
+    k: Kind;
+    lacks?: { [name: string]: boolean };
+};
 
 export type TyCon = { type: 'TC'; id: string; k: Kind };
 
@@ -87,6 +98,7 @@ const mkType = (id: string, k: Kind): Type => ({
     con: { type: 'TC', id, k },
 });
 export const star: Kind = { type: 'Star' };
+export const row: Kind = { type: 'Row' };
 export const kf = (arg: Kind, body: Kind): Kind => ({ type: 'Fun', arg, body });
 
 export const builtins = {
@@ -99,25 +111,26 @@ export const builtins = {
     list: mkType('[]', kf(star, star)),
     arrow: mkType('(->)', kf(star, kf(star, star))),
     tuple: mkType('(,)', kf(star, kf(star, star))),
+    // things from the hugs records paper thing
+    emptyRow: mkType('{}', row),
+    rec: mkType('rec', kf(row, star)),
+    var: mkType('var', kf(row, star)),
+    // So the "one constant constructor per row" thing is a little funky
+    // but I'll not mess with it just yet
 } satisfies { [key: string]: Type };
 
-export const fn = (arg: Type, body: Type): Type => ({
-    type: 'App',
-    fn: { type: 'App', fn: builtins.arrow, arg },
-    arg: body,
-});
+export const rowExtend = (label: string): Type =>
+    mkType(`=${label}`, kf(star, kf(row, row)));
 
-export const list = (arg: Type): Type => ({
-    type: 'App',
-    fn: builtins.list,
-    arg,
-});
+export const app = (fn: Type, arg: Type): Type => ({ type: 'App', fn, arg });
 
-export const pair = (one: Type, two: Type): Type => ({
-    type: 'App',
-    fn: { type: 'App', fn: builtins.tuple, arg: one },
-    arg: two,
-});
+export const fn = (arg: Type, body: Type): Type =>
+    app(app(builtins.arrow, arg), body);
+
+export const list = (arg: Type): Type => app(builtins.list, arg);
+
+export const pair = (one: Type, two: Type): Type =>
+    app(app(builtins.tuple, one), two);
 
 export const kind = (t: TyVar | TyCon | Type): Kind => {
     switch (t.type) {
@@ -194,6 +207,7 @@ export const merge = (one: Subst, two: Subst): Subst => {
 
 // MostGeneralUnifier
 const mgu = (one: Type, two: Type): Subst => {
+    trace.push({ at: 'mgu', one, two });
     if (one.type === 'App' && two.type === 'App') {
         const s1 = mgu(one.fn, two.fn);
         const s2 = mgu(apply(s1, one.arg), apply(s1, two.arg));
@@ -221,7 +235,10 @@ const varBind = (u: TyVar, t: Type): Subst => {
         throw new Error('occurs check fails');
     }
     if (!kindsEqual(u.k, kind(t))) {
-        throw new Error('kinds do not match');
+        trace.push({ at: 'varBind', u, t });
+        throw new Error(
+            `kinds do not match: ${printKind(u.k)} vs ${printType(t)}`,
+        );
     }
     return [[u, t]];
 };
@@ -566,7 +583,11 @@ export const printScheme = (s: Scheme) => {
 };
 
 const printKind = (k: Kind): string =>
-    k.type === 'Star' ? '*' : `(${printKind(k.arg)} -> ${printKind(k.body)})`;
+    k.type === 'Star'
+        ? '*'
+        : k.type === 'Row'
+        ? '®'
+        : `(${printKind(k.arg)} -> ${printKind(k.body)})`;
 
 const applyA = (s: Subst, a: Assump): Assump => ({
     ...a,
@@ -602,7 +623,7 @@ const unify = (one: Type, two: Type, ctx: Ctx) => {
     extSubst(u, ctx);
 };
 
-const newTVar = (k: Kind, ctx: Ctx): Type => {
+const newTVar = (k: Kind, ctx: Ctx): Extract<Type, { type: 'Var' }> => {
     const v: TyVar = { type: 'TV', k, name: enumId(ctx.counter) };
     ctx.counter += 1;
     return { type: 'Var', v };
@@ -741,11 +762,43 @@ export type Expr =
     | { type: 'Const'; assump: Assump; loc: number }
     | { type: 'Ap'; fn: Expr; arg: Expr; loc: number }
     | { type: 'Let'; group: BindGroup; body: Expr; loc: number }
-    | { type: 'Abs'; pats: Pat[]; body: Expr; loc: number };
+    | { type: 'Abs'; pats: Pat[]; body: Expr; loc: number }
+    | { type: 'RecordEmpty'; loc: number }
+    | { type: 'RecordExtend'; label: string; loc: number }
+    | { type: 'Variant'; label: string; loc: number };
 
 const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
-    trace.push({ at: 'tiExpr', ce, as, expr, ctx });
+    trace.push({ at: 'tiExpr', expr });
     switch (expr.type) {
+        case 'Variant': {
+            const t = newTVar(star, ctx);
+            const a = newTVar(row, ctx);
+            a.v.lacks = { [expr.label]: true };
+            return [
+                [],
+                fn(t, app(builtins.var, app(app(rowExtend(expr.label), t), a))),
+            ];
+        }
+        case 'RecordEmpty':
+            return [[], app(builtins.rec, builtins.emptyRow)];
+        case 'RecordExtend': {
+            const t = newTVar(star, ctx);
+            const a = newTVar(row, ctx);
+            a.v.lacks = { [expr.label]: true };
+            return [
+                [],
+                fn(
+                    t,
+                    fn(
+                        app(builtins.rec, a),
+                        app(
+                            builtins.rec,
+                            app(app(rowExtend(expr.label), t), a),
+                        ),
+                    ),
+                ),
+            ];
+        }
         case 'Var': {
             const sc = find(expr.id, as);
             const { context, head } = freshInst(sc, ctx);

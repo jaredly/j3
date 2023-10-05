@@ -128,7 +128,6 @@ export const infer = (builtins: Assump[], expr: Expr, display: any): Scheme => {
     ]);
     trace.push(assump);
 
-    console.log(assump);
     // apply(assump[0].scheme.qual.context, assump[0].scheme.qual.head);
     return assump[0].scheme; //.scheme.qual.head;
 };
