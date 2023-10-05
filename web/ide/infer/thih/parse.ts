@@ -3,6 +3,7 @@ import { term, parse as hmxparse } from '../hmx/hmx';
 import { Node } from '../../../../src/types/cst';
 import { Display } from '../../../../src/to-ast/library';
 import { Ctx } from '../algw-cr/parse';
+import { trace } from '.';
 
 export const parse = (node: Node, ctx: Ctx): Expr | undefined => {
     const res = hmxparse(node, ctx);
@@ -76,7 +77,11 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
                         type: 'Lit',
                         loc: node.loc,
                         lit: {
-                            type: 'Int',
+                            type:
+                                Math.floor(node.value.value) ===
+                                node.value.value
+                                    ? 'Int'
+                                    : 'Float',
                             value: node.value.value,
                         },
                     };
@@ -99,4 +104,5 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
                 : undefined;
         }
     }
+    trace.push(`type ${node.type}`);
 };

@@ -23,14 +23,15 @@ export type Type =
     | { type: 'App'; fn: Type; arg: Type }
     | { type: 'Gen'; num: number };
 
-export const printType = (t: Type): string => {
+type Seen = { [key: string]: true };
+export const printType = (t: Type, seen: Seen = {}): string => {
     switch (t.type) {
         case 'Var':
             return `{v} ${t.v.name} (${printKind(t.v.k)})`;
         case 'Con':
             return t.con.id;
         case 'App':
-            return `(${printType(t.fn)} ${printType(t.arg)})`;
+            return `(${printType(t.fn, seen)} ${printType(t.arg, seen)})`;
         case 'Gen':
             return `Gen(${t.num})`;
     }
@@ -219,10 +220,11 @@ const match = (one: Type, two: Type): Subst => {
 type Qual<T> = { type: 'Qual'; context: Pred[]; head: T };
 type Pred = { type: 'IsIn'; id: string; t: Type };
 
-const printPred = (p: Pred) => `IsIn ${p.id} ${printType(p.t)}`;
+const printPred = (p: Pred, seen: Seen) =>
+    `IsIn ${p.id} ${printType(p.t, seen)}`;
 
-const printQual = <T>(q: Qual<T>, p: (t: T) => string) =>
-    `[${q.context.map(printPred)}] :=> ${p(q.head)}`;
+const printQual = <T>(q: Qual<T>, p: (t: T) => string, seen: Seen) =>
+    `[${q.context.map((p) => printPred(p, seen))}] :=> ${p(q.head)}`;
 
 type Apply<T> = (s: Subst, t: T) => T;
 type TV<T> = (t: T) => TyVar[];
@@ -482,7 +484,7 @@ const reduce = (ce: ClassEnv, preds: Pred[]): Pred[] =>
     simplify(ce, toHnfs(ce, preds));
 
 // OK Chapter 8!
-type Scheme = { type: 'Forall'; kinds: Kind[]; qual: Qual<Type> };
+export type Scheme = { type: 'Forall'; kinds: Kind[]; qual: Qual<Type> };
 
 const applyS = (s: Subst, { kinds, qual }: Scheme): Scheme => ({
     type: 'Forall',
@@ -513,13 +515,19 @@ const bird_face = (id: string, scheme: Scheme): Assump => ({
     scheme,
 });
 
-const printAssump = (a: Assump) => `${a.id} :>: ${printScheme(a.scheme)}`;
+export const printAssump = (a: Assump, seen: Seen = {}) =>
+    `${a.id} :>: ${printScheme(a.scheme, seen)}`;
 
-const printScheme = (s: Scheme) =>
-    `Forall ${s.kinds.map((k) => printKind(k)).join(' ')} ${printQual(
-        s.qual,
-        printType,
-    )}`;
+export const printScheme = (s: Scheme, seen: Seen = {}) => {
+    if (!s.kinds.length && !s.qual.context.length) {
+        return printType(s.qual.head, seen);
+    }
+    const q = printQual(s.qual, printType, seen);
+    if (!s.kinds.length) {
+        return q;
+    }
+    return `Forall ${s.kinds.map((k) => printKind(k)).join(' ')} ${q}`;
+};
 
 const printKind = (k: Kind): string =>
     k.type === 'Star' ? '*' : `(${printKind(k.arg)} -> ${printKind(k.body)})`;
@@ -607,6 +615,7 @@ type Literal =
     | { type: 'Int'; value: number }
     | { type: 'Char'; value: string }
     | { type: 'Rat'; value: number }
+    | { type: 'Float'; value: number }
     | { type: 'Str'; value: string };
 
 const tiLit = (lit: Literal, ctx: Ctx): [Pred[], Type] => {
@@ -619,6 +628,10 @@ const tiLit = (lit: Literal, ctx: Ctx): [Pred[], Type] => {
             // return [[], builtins.int];
             const v = newTVar(star, ctx);
             return [[{ type: 'IsIn', id: 'Num', t: v }], v];
+        }
+        case 'Float': {
+            const v = newTVar(star, ctx);
+            return [[{ type: 'IsIn', id: 'Floating', t: v }], v];
         }
         case 'Rat': {
             const v = newTVar(star, ctx);

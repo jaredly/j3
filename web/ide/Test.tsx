@@ -31,6 +31,7 @@ import {
 // } from './infer/mini';
 // } from './infer/hmx/hmx';
 import { useLocalStorage } from '../Debug';
+import { paste } from '../../src/state/clipboard';
 
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
@@ -101,7 +102,10 @@ export const Test = ({ env }: { env: Env }) => {
                     };
                 }
             } else {
-                results.tops[top] = { summary: 'not parse', data: [errors] };
+                results.tops[top] = {
+                    summary: 'not parse',
+                    data: [errors, ...getTrace()],
+                };
             }
 
             layout(top, 0, state.map, results.display, results.hashNames, true);
@@ -328,9 +332,11 @@ const actionToUpdate = (
                 type: 'full-select',
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
-        // case 'paste': {
-        //     return paste(state, state.ctx, action.items);
-        // }
+        case 'paste': {
+            const res = paste(state, {}, action.items);
+            console.log(res);
+            return res;
+        }
         // case 'namespace-rename':
         //     return action;
     }
