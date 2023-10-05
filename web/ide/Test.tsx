@@ -26,9 +26,9 @@ import {
     parse,
     builtins,
     getTrace,
-} from './infer/thih';
-// } from './infer/algw-cr';
-// } from './infer/mini';
+    // } from './infer/thih';
+    // } from './infer/algw-cr';
+} from './infer/mini';
 // } from './infer/hmx/hmx';
 import { useLocalStorage } from '../Debug';
 import { paste } from '../../src/state/clipboard';

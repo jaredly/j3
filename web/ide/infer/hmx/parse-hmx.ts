@@ -45,8 +45,20 @@ export const parse = (
             return;
         case 'record': {
             const items: { name: string; value: term; loc: number }[] = [];
+            const spreads: term[] = [];
             for (let i = 0; i < node.values.length; i += 2) {
                 const name = node.values[i];
+
+                if (name.type === 'spread') {
+                    const spread = parse(name.contents, ctx);
+                    if (!spread) {
+                        return;
+                    }
+                    spreads.push(spread);
+                    i -= 1; // lol
+                    continue;
+                }
+
                 const value = node.values[i + 1];
                 if (name.type !== 'identifier') {
                     ctx.errors[name.loc] = `record key must be an identifier`;
@@ -61,11 +73,16 @@ export const parse = (
                 items.push({ name: name.text, value: v, loc: name.loc });
             }
 
-            return { type: 'record', items, loc: node.loc };
+            return { type: 'record', items, loc: node.loc, spreads };
         }
         case 'list': {
             if (!node.values.length) {
-                return { type: 'record', items: [], loc: node.loc };
+                return {
+                    type: 'record',
+                    items: [],
+                    loc: node.loc,
+                    spreads: [],
+                };
             }
             if (
                 node.values.length === 3 &&

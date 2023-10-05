@@ -63,6 +63,24 @@ export const printType = (t: Type): string => {
                     .map((t) => printType(t))
                     .join(' ')}] ${printType(res.body)})`;
             }
+            if (t.fn.type === 'Con' && t.fn.con.id === 'rec') {
+                const ts = toList(t.arg);
+                return `{${ts[0]
+                    .map(([n, v]) => `${n} ${printType(v)}`)
+                    .join(' ')}${
+                    ts[1]
+                        ? (ts[0].length ? ' ' : '') + '..' + printType(ts[1])
+                        : ''
+                }}`;
+            }
+            if (t.fn.type === 'Con' && t.fn.con.id === 'var') {
+                const ts = toList(t.arg);
+                return `[${ts[0]
+                    .map(([n, v]) => `(${n} ${printType(v)})`)
+                    .join(' ')}${
+                    ts[1] ? (ts[0].length ? ' ' : '') + printType(ts[1]) : ''
+                }]`;
+            }
             return `(${printType(t.fn)} ${printType(t.arg)})`;
         case 'Gen':
             return genName(t.num);
@@ -220,19 +238,16 @@ const extractRecordExtend = (one: Type) => {
     }
 };
 
-const toList = (t: Type): [[string, Type][], TyVar | null] => {
+const toList = (t: Type): [[string, Type][], Type | null] => {
     if (t === builtins.emptyRow) {
         return [[], null];
-    }
-    if (t.type === 'Var') {
-        return [[], t.v];
     }
     const rec = extractRecordExtend(t);
     if (rec) {
         const [ls, mv] = toList(rec.tail);
         return [[[rec.label, rec.head], ...ls], mv];
     }
-    throw new Error('cant list it');
+    return [[], t];
 };
 
 const fromList = (n: string[]): Lacks => {
@@ -255,6 +270,9 @@ const cintersection = (one: Lacks, two: Lacks) => {
 const varBindRow = (one: TyVar, two: Type, ctx: Ctx): Subst => {
     const ls = one.lacks ?? {};
     const [items, mv] = toList(two);
+    if (mv && mv?.type !== 'Var') {
+        throw new Error('cant list it');
+    }
     const ls_ = fromList(items.map((m) => m[0]));
     const s1: Subst = [[one, two]];
     const m = cintersection(ls, ls_);
@@ -262,10 +280,10 @@ const varBindRow = (one: TyVar, two: Type, ctx: Ctx): Subst => {
         return s1;
     }
     if (mv) {
-        const c = { ...ls, ...mv.lacks };
+        const c = { ...ls, ...mv.v.lacks };
         const r2 = newTVar(row, ctx);
         r2.v.lacks = c;
-        const s2: Subst = [[mv, r2]];
+        const s2: Subst = [[mv.v, r2]];
         return at_at(s1, s2);
     }
     throw new Error(`Repeat labels??? ${Object.keys(m).join(', ')}`);
@@ -317,7 +335,10 @@ const mgu = (one: Type, two: Type, ctx: Ctx): Subst => {
     if (ore && tre) {
         const [tr2, theta1] = rewriteRow(tre, ore.label, ctx);
         const rt1tv = toList(tr2.tail)[1];
-        if (rt1tv && theta1.some((s) => s[0].name === rt1tv.name)) {
+        if (rt1tv && rt1tv.type !== 'Var') {
+            throw new Error('cant list it');
+        }
+        if (rt1tv && theta1.some((s) => s[0].name === rt1tv.v.name)) {
             throw new Error(`recursive row type, cant do it`);
         }
         const theta2 = mgu(

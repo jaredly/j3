@@ -35,7 +35,12 @@ export type term =
     | { type: 'const'; value: t_const; loc: number }
     // records!
     | { type: 'accessor'; id: string; loc: number }
-    | { type: 'record'; items: { name: string; value: term }[]; loc: number };
+    | {
+          type: 'record';
+          items: { name: string; value: term }[];
+          spreads: term[];
+          loc: number;
+      };
 
 export type typ = ty;
 export type ty =

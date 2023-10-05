@@ -124,6 +124,15 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
         }
         case 'record':
             let res: Expr = { type: 'RecordEmpty', loc: node.loc };
+            if (node.spreads.length > 1) {
+                ctx.errors[node.loc] = 'only one spread allowed';
+                return;
+            }
+            if (node.spreads.length) {
+                const spread = _parse(node.spreads[0], ctx);
+                if (!spread) return;
+                res = spread;
+            }
             for (let item of node.items.slice().reverse()) {
                 const value = _parse(item.value, ctx);
                 if (!value) return;
