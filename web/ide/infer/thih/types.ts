@@ -1,4 +1,5 @@
 import equal from 'fast-deep-equal';
+import { trace } from '.';
 
 export type Id = string;
 
@@ -25,9 +26,9 @@ export type Type =
 export const printType = (t: Type): string => {
     switch (t.type) {
         case 'Var':
-            return `${t.v.name} (${printKind(t.v.k)})`;
+            return `{v} ${t.v.name} (${printKind(t.v.k)})`;
         case 'Con':
-            return `CON ${t.con.id} ${printKind(t.con.k)}`;
+            return t.con.id;
         case 'App':
             return `(${printType(t.fn)} ${printType(t.arg)})`;
         case 'Gen':
@@ -181,7 +182,9 @@ const mgu = (one: Type, two: Type): Subst => {
     if (one.type === 'Con' && two.type === 'Con' && one.con.id === two.con.id) {
         return [];
     }
-    throw new Error(`types do not unify`);
+    throw new Error(
+        `types do not unify ${printType(one)} vs ${printType(two)}`,
+    );
 };
 
 const varBind = (u: TyVar, t: Type): Subst => {
@@ -309,34 +312,38 @@ const modify = (ce: ClassEnv, i: string, c: Class) => ({
     classes: (id: string) => (id === i ? c : ce.classes(id)),
 });
 
-const initialEnv: ClassEnv = {
+export const initialEnv: ClassEnv = {
     type: 'ClassEnv',
     defaults: [builtins.int, builtins.double],
     classes: (id) => {
-        throw new Error('class not defined');
+        throw new Error('class not defined: ' + id);
     },
 };
 
-type ET = (ce: ClassEnv) => ClassEnv | null;
+type ET = (ce: ClassEnv) => ClassEnv;
 const arrow_colon_arrow =
     (...one: ET[]): ET =>
     (ce: ClassEnv) => {
-        let res = ce as ClassEnv | null;
+        let res = ce;
         for (let et of one) {
-            res = et(ce);
-            if (!res) {
-                return null;
-            }
+            res = et(res);
         }
         return res;
     };
 
 const addClass = (i: string, Is: string[]) => (ce: ClassEnv) => {
-    if (ce.classes(i)) {
-        throw new Error('class already defined');
+    let exists = false;
+    try {
+        ce.classes(i);
+        exists = true;
+    } catch (err) {}
+    if (exists) {
+        throw new Error('class already defined ' + i);
     }
-    if (Is.some(ce.classes)) {
-        throw new Error('superclass not defined');
+    try {
+        Is.forEach((c) => ce.classes(c));
+    } catch (err) {
+        throw new Error(`some superclass not defined: ${(err as any).message}`);
     }
     return modify(ce, i, [Is, []]);
 };
@@ -360,8 +367,11 @@ const addNumClasses = arrow_colon_arrow(
     addClass('Floating', ['Fractional']),
     addClass('RealFloat', ['RealFrac', 'Floating']),
 );
-const addPreludeClasses = arrow_colon_arrow(addCoreClasses, addNumClasses);
-const addInst = (ps: Pred[], p: Pred) => (ce: ClassEnv) => {
+export const addPreludeClasses = arrow_colon_arrow(
+    addCoreClasses,
+    addNumClasses,
+);
+export const addInst = (ps: Pred[], p: Pred) => (ce: ClassEnv) => {
     if (!ce.classes(p.id)) {
         throw new Error('no class for instance');
     }
@@ -396,26 +406,32 @@ const byInst = (ce: ClassEnv, pred: Pred): Pred[] => {
         return qu.context.map((p) => applyP1(u, p));
     };
     const got = insts(ce, pred.id);
-    if (!got) {
-        throw new Error('no instst');
+    if (!got?.length) {
+        throw new Error('no instances of ' + pred.id + ' found');
     }
     for (let it of got) {
         try {
             return tryInst(it);
         } catch (err) {}
     }
-    throw new Error('nope');
+    trace.push({ byInst: got });
+    throw new Error('nope by inst, none of them');
 };
 
 const entail = (ce: ClassEnv, preds: Pred[], pred: Pred): boolean => {
+    trace.push({ at: 'entail', preds, pred });
     const found = preds
         .map((p) => bySuper(ce, p))
         .some((got) => got.find((a) => equal(a, pred)));
-    if (found) return found;
+
+    if (found) {
+        return found;
+    }
     try {
         const qs = byInst(ce, pred);
         return qs.every((q) => entail(ce, preds, q));
     } catch (err) {
+        trace.push({ entail: 'err', err: (err as Error).message });
         return false;
     }
 }; // p17
@@ -490,7 +506,7 @@ const toScheme = (t: Type): Scheme => ({
 
 // Chapter 9!
 // :>: is the constructor they use
-type Assump = { type: 'Assump'; id: string; scheme: Scheme };
+export type Assump = { type: 'Assump'; id: string; scheme: Scheme };
 const bird_face = (id: string, scheme: Scheme): Assump => ({
     type: 'Assump',
     id,
@@ -532,11 +548,13 @@ type Ctx = {
 const initialCtx = (): Ctx => ({ counter: 0, subst: [] });
 
 const extSubst = (subs: Subst, ctx: Ctx) => {
+    trace.push({ adding: subs });
     ctx.subst = at_at(subs, ctx.subst);
 };
 
 const unify = (one: Type, two: Type, ctx: Ctx) => {
     const u = mgu(apply(ctx.subst, one), apply(ctx.subst, two));
+    trace.push({ at: 'unity', one, two, u });
     extSubst(u, ctx);
 };
 
@@ -598,6 +616,7 @@ const tiLit = (lit: Literal, ctx: Ctx): [Pred[], Type] => {
         case 'Str':
             return [[], builtins.string];
         case 'Int': {
+            // return [[], builtins.int];
             const v = newTVar(star, ctx);
             return [[{ type: 'IsIn', id: 'Num', t: v }], v];
         }
@@ -672,6 +691,7 @@ export type Expr =
     | { type: 'Let'; group: BindGroup; body: Expr; loc: number };
 
 const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
+    trace.push({ at: 'tiExpr', ce, as, expr, ctx });
     switch (expr.type) {
         case 'Var': {
             const sc = find(expr.id, as);
@@ -784,15 +804,19 @@ const stdClasses = [
 
 const candidates = (ce: ClassEnv, [v, qs]: Ambiguity): Type[] => {
     if (qs.some((q) => q.t.type !== 'Var' || v.name !== q.t.v.name)) {
+        trace.push({ err: 'some not var' });
         return [];
     }
     const is_ = qs.map((q) => q.id);
     if (is_.every((i) => !numClasses.includes(i))) {
+        trace.push({ err: 'some not numclasses', is_ });
         return [];
     }
     if (is_.some((i) => !stdClasses.includes(i))) {
+        trace.push({ err: 'not all stdclasses', is_ });
         return [];
     }
+    trace.push({ at: 'candidates', defaults: ce.defaults, is_ });
     return ce.defaults.filter((t_) => {
         return is_.every((i) => entail(ce, [], { type: 'IsIn', id: i, t: t_ }));
     });
@@ -807,6 +831,7 @@ const withDefaults = <a>(
     const vps = ambiguities(ce, vs, ps);
     const tss = vps.map((v) => candidates(ce, v));
     if (tss.some((s) => !s.length)) {
+        trace.push({ vs, ps, vps, tss });
         throw new Error('cannot resolve ambiguity');
     }
     return f(

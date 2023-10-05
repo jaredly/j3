@@ -1,4 +1,4 @@
-import { Expr } from './types';
+import { Assump, Expr } from './types';
 import { term, parse as hmxparse } from '../hmx/hmx';
 import { Node } from '../../../../src/types/cst';
 import { Display } from '../../../../src/to-ast/library';
@@ -9,10 +9,59 @@ export const parse = (node: Node, ctx: Ctx): Expr | undefined => {
     return res ? _parse(res, ctx) : res;
 };
 
+const BoolA: Assump = {
+    type: 'Assump',
+    id: 'Bool',
+    scheme: {
+        type: 'Forall',
+        kinds: [],
+        qual: {
+            type: 'Qual',
+            context: [],
+            head: {
+                type: 'Con',
+                con: {
+                    type: 'TC',
+                    id: 'Bool',
+                    k: { type: 'Star' },
+                },
+            },
+        },
+    },
+};
+
 const _parse = (node: term, ctx: Ctx): Expr | undefined => {
     switch (node.type) {
         case 'var': {
             return { type: 'Var', id: node.name, loc: node.loc };
+        }
+        case 'const': {
+            switch (node.value.type) {
+                case 'bool':
+                    return {
+                        type: 'Const',
+                        loc: node.loc,
+                        assump: BoolA,
+                    };
+                case 'number':
+                    return {
+                        type: 'Lit',
+                        loc: node.loc,
+                        lit: {
+                            type: 'Int',
+                            value: node.value.value,
+                        },
+                    };
+                case 'string':
+                    return {
+                        type: 'Lit',
+                        loc: node.loc,
+                        lit: {
+                            type: 'Str',
+                            value: node.value.value,
+                        },
+                    };
+            }
         }
         case 'app': {
             const fn = _parse(node.fn, ctx);

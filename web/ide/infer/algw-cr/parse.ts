@@ -228,14 +228,6 @@ const _parse = (node: term, ctx: Ctx): Exp | undefined => {
                 loc: node.loc,
             };
         case 'app': {
-            if (node.fn.type === 'var' && node.fn.name === 'match') {
-                /**
-                 * (match x
-                 *  (Y z) hello
-                 *  _ whatsit)
-                 */
-            }
-
             const fn =
                 node.fn.type === 'var' && node.fn.name.match(/^[A-Z]/)
                     ? ({
