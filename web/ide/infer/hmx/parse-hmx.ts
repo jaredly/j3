@@ -69,7 +69,7 @@ export const parse = (
                 node.values[0].type === 'identifier' &&
                 node.values[0].text === 'fn' &&
                 node.values[1].type === 'array' &&
-                node.values[1].values[0].type === 'identifier' &&
+                node.values[1].values.length >= 1 &&
                 node.values[1].values.every((n) => n.type === 'identifier')
             ) {
                 let body = parse(node.values[2], ctx);

@@ -60,8 +60,8 @@ const mkType = (id: string, k: Kind): Type => ({
     type: 'Con',
     con: { type: 'TC', id, k },
 });
-const star: Kind = { type: 'Star' };
-const kf = (arg: Kind, body: Kind): Kind => ({ type: 'Fun', arg, body });
+export const star: Kind = { type: 'Star' };
+export const kf = (arg: Kind, body: Kind): Kind => ({ type: 'Fun', arg, body });
 
 export const builtins = {
     unit: mkType('()', star),
@@ -688,7 +688,8 @@ export type Expr =
     | { type: 'Lit'; lit: Literal; loc: number }
     | { type: 'Const'; assump: Assump; loc: number }
     | { type: 'Ap'; fn: Expr; arg: Expr; loc: number }
-    | { type: 'Let'; group: BindGroup; body: Expr; loc: number };
+    | { type: 'Let'; group: BindGroup; body: Expr; loc: number }
+    | { type: 'Abs'; pats: Pat[]; body: Expr; loc: number };
 
 const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
     trace.push({ at: 'tiExpr', ce, as, expr, ctx });
@@ -716,6 +717,9 @@ const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
             const [ps, as_] = tiBindGroup(ce, as, expr.group, ctx);
             const [qs, t] = tiExpr(ce, [...as_, ...as], expr.body, ctx);
             return [[...ps, ...qs], t];
+        }
+        case 'Abs': {
+            return tiAlt(ce, as, [expr.pats, expr.body], ctx);
         }
     }
 };

@@ -45,6 +45,7 @@ const specials = [
     'defnrec',
     'fnrec',
     'if',
+    'let',
     'match',
 ];
 

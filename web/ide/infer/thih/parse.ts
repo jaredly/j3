@@ -32,6 +32,34 @@ const BoolA: Assump = {
 
 const _parse = (node: term, ctx: Ctx): Expr | undefined => {
     switch (node.type) {
+        case 'abs': {
+            const body = _parse(node.body, ctx);
+            return body
+                ? {
+                      type: 'Abs',
+                      pats: [
+                          {
+                              type: 'Var',
+                              id: node.name,
+                          },
+                      ],
+                      body,
+                      loc: node.loc,
+                  }
+                : undefined;
+        }
+        case 'let': {
+            const init = _parse(node.init, ctx);
+            const body = _parse(node.body, ctx);
+            return init && body
+                ? {
+                      type: 'Let',
+                      body,
+                      loc: node.loc,
+                      group: [[], [[[node.name, [[[], init]]]]]],
+                  }
+                : undefined;
+        }
         case 'var': {
             return { type: 'Var', id: node.name, loc: node.loc };
         }

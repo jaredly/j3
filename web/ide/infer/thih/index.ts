@@ -6,6 +6,8 @@ import {
     apply,
     fn,
     initialEnv,
+    kf,
+    star,
     builtins as tbuiltins,
     tiProgram,
 } from './types';
@@ -34,13 +36,56 @@ export const infer = (builtins: any, expr: Expr, display: any): Type => {
                 id: '+',
                 scheme: {
                     type: 'Forall',
-                    kinds: [],
+                    kinds: [{ type: 'Star' }],
+                    qual: {
+                        type: 'Qual',
+                        context: [
+                            {
+                                type: 'IsIn',
+                                id: 'Num',
+                                t: { type: 'Gen', num: 0 },
+                            },
+                        ],
+                        head: fn(
+                            { type: 'Gen', num: 0 },
+                            fn(
+                                { type: 'Gen', num: 0 },
+                                { type: 'Gen', num: 0 },
+                            ),
+                        ),
+                    },
+                },
+            },
+            {
+                type: 'Assump',
+                id: ',',
+                scheme: {
+                    type: 'Forall',
+                    kinds: [{ type: 'Star' }, { type: 'Star' }],
                     qual: {
                         type: 'Qual',
                         context: [],
                         head: fn(
-                            tbuiltins.int,
-                            fn(tbuiltins.int, tbuiltins.int),
+                            { type: 'Gen', num: 0 },
+                            fn(
+                                { type: 'Gen', num: 1 },
+                                {
+                                    type: 'App',
+                                    fn: {
+                                        type: 'App',
+                                        fn: {
+                                            type: 'Con',
+                                            con: {
+                                                type: 'TC',
+                                                id: ',',
+                                                k: kf(star, kf(star, star)),
+                                            },
+                                        },
+                                        arg: { type: 'Gen', num: 0 },
+                                    },
+                                    arg: { type: 'Gen', num: 1 },
+                                },
+                            ),
                         ),
                     },
                 },
