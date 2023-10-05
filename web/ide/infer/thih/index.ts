@@ -19,6 +19,32 @@ export { type Scheme as typ, printScheme as typToString } from './types';
 export const builtins: Assump[] = [
     {
         type: 'Assump',
+        id: 'if',
+        scheme: {
+            type: 'Forall',
+            kinds: [{ type: 'Star' }],
+            qual: {
+                type: 'Qual',
+                context: [],
+                head: fn(
+                    {
+                        type: 'Con',
+                        con: {
+                            type: 'TC',
+                            id: 'Bool',
+                            k: { type: 'Star' },
+                        },
+                    },
+                    fn(
+                        { type: 'Gen', num: 0 },
+                        fn({ type: 'Gen', num: 0 }, { type: 'Gen', num: 0 }),
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        type: 'Assump',
         id: '+',
         scheme: {
             type: 'Forall',

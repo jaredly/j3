@@ -33,7 +33,8 @@ export const printType = (t: Type, seen: Seen = {}): string => {
         case 'App':
             return `(${printType(t.fn, seen)} ${printType(t.arg, seen)})`;
         case 'Gen':
-            return `Gen(${t.num})`;
+            return "'" + `abcdefghij`[t.num];
+        // return `Gen(${t.num})`;
     }
 };
 
@@ -648,8 +649,11 @@ type Pat =
     | { type: 'Npk'; name: string; num: number }
     | { type: 'Con'; assump: Assump; pat: Pat[] };
 
-const foldr = <A, B>(f: (x: A, acc: B) => B, acc: B, [h, ...t]: A[]): B =>
-    h === undefined ? acc : f(h, foldr(f, acc, t));
+export const foldr = <A, B>(
+    f: (x: A, acc: B) => B,
+    acc: B,
+    [h, ...t]: A[],
+): B => (h === undefined ? acc : f(h, foldr(f, acc, t)));
 
 const tiPat = (pat: Pat, ctx: Ctx): [Pred[], Assump[], Type] => {
     switch (pat.type) {

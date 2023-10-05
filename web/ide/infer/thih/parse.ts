@@ -10,7 +10,7 @@ export const parse = (node: Node, ctx: Ctx): Expr | undefined => {
     return res ? _parse(res, ctx) : res;
 };
 
-const BoolA: Assump = {
+export const BoolA: Assump = {
     type: 'Assump',
     id: 'Bool',
     scheme: {
@@ -101,6 +101,22 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
             const arg = _parse(node.arg, ctx);
             return fn && arg
                 ? { type: 'Ap', fn, arg, loc: node.loc }
+                : undefined;
+        }
+        case 'if': {
+            const cond = _parse(node.cond, ctx);
+            const yes = _parse(node.yes, ctx);
+            const no = _parse(node.no, ctx);
+            return cond && yes && no
+                ? [cond, yes, no].reduce(
+                      (fn, arg): Expr => ({
+                          type: 'Ap',
+                          fn,
+                          arg,
+                          loc: node.loc,
+                      }),
+                      { type: 'Var', id: 'if', loc: node.loc },
+                  )
                 : undefined;
         }
     }
