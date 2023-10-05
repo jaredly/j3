@@ -23,18 +23,42 @@ export type Type =
     | { type: 'App'; fn: Type; arg: Type }
     | { type: 'Gen'; num: number };
 
-type Seen = { [key: string]: true };
-export const printType = (t: Type, seen: Seen = {}): string => {
+const genName = (i: number) => "'" + `abcdefghij`[i];
+
+export const unrollFn = (t: Type): null | { args: Type[]; body: Type } => {
+    if (
+        t.type === 'App' &&
+        t.fn.type === 'App' &&
+        t.fn.fn.type === 'Con' &&
+        t.fn.fn.con.id === '(->)'
+    ) {
+        const args = [t.fn.arg];
+        const body = unrollFn(t.arg);
+        if (body) {
+            args.push(...body.args);
+            return { args, body: body.body };
+        }
+        return { args, body: t.arg };
+    }
+    return null;
+};
+
+export const printType = (t: Type): string => {
     switch (t.type) {
         case 'Var':
             return `{v} ${t.v.name} (${printKind(t.v.k)})`;
         case 'Con':
             return t.con.id;
         case 'App':
-            return `(${printType(t.fn, seen)} ${printType(t.arg, seen)})`;
+            const res = unrollFn(t);
+            if (res) {
+                return `(fn [${res.args
+                    .map((t) => printType(t))
+                    .join(' ')}] ${printType(res.body)})`;
+            }
+            return `(${printType(t.fn)} ${printType(t.arg)})`;
         case 'Gen':
-            return "'" + `abcdefghij`[t.num];
-        // return `Gen(${t.num})`;
+            return genName(t.num);
     }
 };
 
@@ -221,11 +245,10 @@ const match = (one: Type, two: Type): Subst => {
 type Qual<T> = { type: 'Qual'; context: Pred[]; head: T };
 type Pred = { type: 'IsIn'; id: string; t: Type };
 
-const printPred = (p: Pred, seen: Seen) =>
-    `IsIn ${p.id} ${printType(p.t, seen)}`;
+const printPred = (p: Pred) => `IsIn ${p.id} ${printType(p.t)}`;
 
-const printQual = <T>(q: Qual<T>, p: (t: T) => string, seen: Seen) =>
-    `[${q.context.map((p) => printPred(p, seen))}] :=> ${p(q.head)}`;
+// const printQual = <T>(q: Qual<T>, p: (t: T) => string) =>
+//     `[${q.context.map((p) => printPred(p))}] :=> ${p(q.head)}`;
 
 type Apply<T> = (s: Subst, t: T) => T;
 type TV<T> = (t: T) => TyVar[];
@@ -516,18 +539,30 @@ const bird_face = (id: string, scheme: Scheme): Assump => ({
     scheme,
 });
 
-export const printAssump = (a: Assump, seen: Seen = {}) =>
-    `${a.id} :>: ${printScheme(a.scheme, seen)}`;
+export const printAssump = (a: Assump) =>
+    `${a.id} :>: ${printScheme(a.scheme)}`;
 
-export const printScheme = (s: Scheme, seen: Seen = {}) => {
+export const printScheme = (s: Scheme) => {
     if (!s.kinds.length && !s.qual.context.length) {
-        return printType(s.qual.head, seen);
+        return printType(s.qual.head);
     }
-    const q = printQual(s.qual, printType, seen);
-    if (!s.kinds.length) {
-        return q;
+    const ts: string[] = s.kinds.map((_, i) => genName(i));
+    s.kinds.forEach((k, i) => {
+        if (k.type !== 'Star') {
+            ts.push(`(kind ${genName(i)} ${printKind(k)})`);
+        }
+    });
+    s.qual.context.forEach((pred) => {
+        ts.push(`(has ${pred.id} ${printType(pred.t)})`);
+    });
+    const res = unrollFn(s.qual.head);
+    if (res) {
+        return `(fn<${ts.join(' ')}> [${res.args
+            .map(printType)
+            .join(' ')}] ${printType(res.body)})`;
     }
-    return `Forall ${s.kinds.map((k) => printKind(k)).join(' ')} ${q}`;
+    return `(tfn [${ts.join(' ')}] ${printType(s.qual.head)})`;
+    // return `Forall ${s.kinds.map((k) => printKind(k)).join(' ')} ${q}`;
 };
 
 const printKind = (k: Kind): string =>

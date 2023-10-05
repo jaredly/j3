@@ -10,7 +10,7 @@ export const parse = (node: Node, ctx: Ctx): Expr | undefined => {
     return res ? _parse(res, ctx) : res;
 };
 
-export const BoolA: Assump = {
+const BoolA: Assump = {
     type: 'Assump',
     id: 'Bool',
     scheme: {

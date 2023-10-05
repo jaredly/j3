@@ -64,6 +64,9 @@ export const parse = (
             return { type: 'record', items, loc: node.loc };
         }
         case 'list': {
+            if (!node.values.length) {
+                return { type: 'record', items: [], loc: node.loc };
+            }
             if (
                 node.values.length === 3 &&
                 node.values[0].type === 'identifier' &&
