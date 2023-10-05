@@ -118,9 +118,13 @@ export const infer = (builtins: Assump[], expr: Expr, display: any): Scheme => {
 
     let env = addPreludeClasses(initialEnv);
     // env = addInst([], { type: 'IsIn', id: 'Integral', t: tbuiltins.int })(env);
-    env = addInst([], { type: 'IsIn', id: 'Num', t: tbuiltins.int })(env);
+    env = addInst([], { type: 'IsIn', id: 'Num', t: tbuiltins.int })(env, {
+        counter: 0,
+        subst: [],
+    });
     env = addInst([], { type: 'IsIn', id: 'Floating', t: tbuiltins.double })(
         env,
+        { counter: 0, subst: [] },
     );
 
     const assump = tiProgram(env, builtins, [

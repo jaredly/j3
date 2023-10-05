@@ -153,57 +153,51 @@ export const rewriteRow = (
     if (t.type === 'RowEmpty') {
         throw new Error(`label cannot be inserted ${newLabel}`);
     }
-    if (t.type === 'RowExtend') {
-        if (newLabel === t.name) {
-            return [t.head, t.tail, {}];
-        }
-        if (t.tail.type === 'Var') {
-            const beta = newTyVarWith(
-                'Row',
-                { [newLabel]: true },
-                'r',
-                -1,
-                ctx,
-            );
-            const gamma = newTyVar('a', t.loc, ctx);
-            const s = varBindRow(
-                t.tail.v,
-                {
-                    type: 'RowExtend',
-                    name: newLabel,
-                    head: gamma,
-                    tail: beta,
-                    loc: t.loc,
-                    nameloc: t.loc,
-                },
-                ctx,
-            );
-            return [
-                gamma,
-                apply(s, {
-                    type: 'RowExtend',
-                    name: t.name,
-                    head: t.head,
-                    tail: beta,
-                    loc: t.loc,
-                    nameloc: t.loc,
-                }),
-                s,
-            ];
-        }
-        const [one_, two_, s] = rewriteRow(t.tail, newLabel, ctx);
-        return [
-            one_,
+    if (t.type !== 'RowExtend') {
+        throw new Error(`Unexpected type...`);
+    }
+    if (newLabel === t.name) {
+        return [t.head, t.tail, {}];
+    }
+    if (t.tail.type === 'Var') {
+        const beta = newTyVarWith('Row', { [newLabel]: true }, 'r', -1, ctx);
+        const gamma = newTyVar('a', t.loc, ctx);
+        const s = varBindRow(
+            t.tail.v,
             {
                 type: 'RowExtend',
-                name: t.name,
-                head: t.head,
-                tail: two_,
+                name: newLabel,
+                head: gamma,
+                tail: beta,
                 loc: t.loc,
                 nameloc: t.loc,
             },
+            ctx,
+        );
+        return [
+            gamma,
+            apply(s, {
+                type: 'RowExtend',
+                name: t.name,
+                head: t.head,
+                tail: beta,
+                loc: t.loc,
+                nameloc: t.loc,
+            }),
             s,
         ];
     }
-    throw new Error(`Unexpected type...`);
+    const [one_, two_, s] = rewriteRow(t.tail, newLabel, ctx);
+    return [
+        one_,
+        {
+            type: 'RowExtend',
+            name: t.name,
+            head: t.head,
+            tail: two_,
+            loc: t.loc,
+            nameloc: t.loc,
+        },
+        s,
+    ];
 };

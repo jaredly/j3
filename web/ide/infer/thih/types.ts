@@ -52,7 +52,8 @@ export const unrollFn = (t: Type): null | { args: Type[]; body: Type } => {
 export const printType = (t: Type): string => {
     switch (t.type) {
         case 'Var':
-            return `{v} ${t.v.name} (${printKind(t.v.k)})`;
+            return t.v.name;
+        // return `{v} ${t.v.name} (${printKind(t.v.k)})`;
         case 'Con':
             return t.con.id;
         case 'App':
@@ -205,19 +206,140 @@ export const merge = (one: Subst, two: Subst): Subst => {
 
 // through page 9
 
+const extractRecordExtend = (one: Type) => {
+    if (
+        one.type === 'App' &&
+        one.fn.type === 'App' &&
+        one.fn.fn.type === 'Con' &&
+        one.fn.fn.con.id.startsWith('=')
+    ) {
+        const label = one.fn.fn.con.id.slice(1);
+        const head = one.fn.arg;
+        const tail = one.arg;
+        return { label, head, tail };
+    }
+};
+
+const toList = (t: Type): [[string, Type][], TyVar | null] => {
+    if (t === builtins.emptyRow) {
+        return [[], null];
+    }
+    if (t.type === 'Var') {
+        return [[], t.v];
+    }
+    const rec = extractRecordExtend(t);
+    if (rec) {
+        const [ls, mv] = toList(rec.tail);
+        return [[[rec.label, rec.head], ...ls], mv];
+    }
+    throw new Error('cant list it');
+};
+
+const fromList = (n: string[]): Lacks => {
+    const res: Lacks = {};
+    n.forEach((k) => (res[k] = true));
+    return res;
+};
+
+type Lacks = { [key: string]: boolean };
+const cintersection = (one: Lacks, two: Lacks) => {
+    const res: Lacks = {};
+    Object.keys(one).forEach((k) => {
+        if (two[k]) {
+            res[k] = true;
+        }
+    });
+    return res;
+};
+
+const varBindRow = (one: TyVar, two: Type, ctx: Ctx): Subst => {
+    const ls = one.lacks ?? {};
+    const [items, mv] = toList(two);
+    const ls_ = fromList(items.map((m) => m[0]));
+    const s1: Subst = [[one, two]];
+    const m = cintersection(ls, ls_);
+    if (Object.keys(m).length === 0 && !mv) {
+        return s1;
+    }
+    if (mv) {
+        const c = { ...ls, ...mv.lacks };
+        const r2 = newTVar(row, ctx);
+        r2.v.lacks = c;
+        const s2: Subst = [[mv, r2]];
+        return at_at(s1, s2);
+    }
+    throw new Error(`Repeat labels??? ${Object.keys(m).join(', ')}`);
+};
+
+// {ADDED}
+const rewriteRow = (
+    { label, head, tail }: { label: string; head: Type; tail: Type },
+    newLabel: string,
+    ctx: Ctx,
+): [{ head: Type; tail: Type }, Subst] => {
+    if (newLabel === label) {
+        return [{ head, tail }, []];
+    }
+    if (tail.type === 'Var') {
+        const beta = newTVar(row, ctx);
+        beta.v.lacks = { [newLabel]: true };
+        const gamma = newTVar(star, ctx);
+        const s = varBindRow(
+            tail.v,
+            app(app(rowExtend(newLabel), gamma), beta),
+            ctx,
+        );
+        return [
+            {
+                head: gamma,
+                tail: apply(s, app(app(rowExtend(label), head), beta)),
+            },
+            s,
+        ];
+    }
+    const trex = extractRecordExtend(tail);
+    if (!trex) {
+        throw new Error(`cannot insert label ${newLabel}`);
+    }
+    const [nw, s] = rewriteRow(trex, newLabel, ctx);
+    return [
+        { head: nw.head, tail: app(app(rowExtend(label), head), nw.tail) },
+        s,
+    ];
+};
+
 // MostGeneralUnifier
-const mgu = (one: Type, two: Type): Subst => {
-    trace.push({ at: 'mgu', one, two });
+const mgu = (one: Type, two: Type, ctx: Ctx): Subst => {
+    trace.push({ at: 'mgu', one, two, ot: printType(one), tt: printType(two) });
+
+    const ore = extractRecordExtend(one);
+    const tre = extractRecordExtend(two);
+    if (ore && tre) {
+        const [tr2, theta1] = rewriteRow(tre, ore.label, ctx);
+        const rt1tv = toList(tr2.tail)[1];
+        if (rt1tv && theta1.some((s) => s[0].name === rt1tv.name)) {
+            throw new Error(`recursive row type, cant do it`);
+        }
+        const theta2 = mgu(
+            apply(theta1, ore.head),
+            apply(theta1, tr2.head),
+            ctx,
+        );
+        const s = at_at(theta2, theta1);
+        const theta3 = mgu(apply(s, ore.tail), apply(s, tr2.tail), ctx);
+        return at_at(theta3, s);
+    }
+
     if (one.type === 'App' && two.type === 'App') {
-        const s1 = mgu(one.fn, two.fn);
-        const s2 = mgu(apply(s1, one.arg), apply(s1, two.arg));
+        const s1 = mgu(one.fn, two.fn, ctx);
+        const s2 = mgu(apply(s1, one.arg), apply(s1, two.arg), ctx);
         return at_at(s2, s1);
     }
     if (one.type === 'Var') {
-        return varBind(one.v, two);
+        return varBind(one.v, two, ctx);
     }
     if (two.type === 'Var') {
-        return varBind(two.v, one);
+        return varBind(two.v, one, ctx);
     }
     if (one.type === 'Con' && two.type === 'Con' && one.con.id === two.con.id) {
         return [];
@@ -227,7 +349,7 @@ const mgu = (one: Type, two: Type): Subst => {
     );
 };
 
-const varBind = (u: TyVar, t: Type): Subst => {
+const varBind = (u: TyVar, t: Type, ctx: Ctx): Subst => {
     if (t.type === 'Var' && t.v.name === u.name) {
         return [];
     }
@@ -239,6 +361,9 @@ const varBind = (u: TyVar, t: Type): Subst => {
         throw new Error(
             `kinds do not match: ${printKind(u.k)} vs ${printType(t)}`,
         );
+    }
+    if (u.k.type === 'Row') {
+        return varBindRow(u, t, ctx);
     }
     return [[u, t]];
 };
@@ -286,14 +411,21 @@ const tvP = (p: Pred[]) =>
         (m) => m.name,
     );
 
-const lift = <R>(one: Pred, two: Pred, f: (a: Type, b: Type) => R) => {
+const lift = <R>(
+    one: Pred,
+    two: Pred,
+    f: (a: Type, b: Type, ctx: Ctx) => R,
+    ctx: Ctx,
+) => {
     if (one.id === two.id) {
-        return f(one.t, two.t);
+        return f(one.t, two.t, ctx);
     }
     throw new Error('classes differ');
 };
-const mguPred = (one: Pred, two: Pred): Subst => lift(one, two, mgu);
-const matchPred = (one: Pred, two: Pred): Subst => lift(one, two, match);
+const mguPred = (one: Pred, two: Pred, ctx: Ctx): Subst =>
+    lift(one, two, mgu, ctx);
+const matchPred = (one: Pred, two: Pred, ctx: Ctx): Subst =>
+    lift(one, two, match, ctx);
 
 type Class = [string[], Inst[]];
 type Inst = Qual<Pred>;
@@ -414,7 +546,7 @@ export const addPreludeClasses = arrow_colon_arrow(
     addCoreClasses,
     addNumClasses,
 );
-export const addInst = (ps: Pred[], p: Pred) => (ce: ClassEnv) => {
+export const addInst = (ps: Pred[], p: Pred) => (ce: ClassEnv, ctx: Ctx) => {
     if (!ce.classes(p.id)) {
         throw new Error('no class for instance');
     }
@@ -422,7 +554,7 @@ export const addInst = (ps: Pred[], p: Pred) => (ce: ClassEnv) => {
     if (its) {
         for (let p_ of its) {
             try {
-                mguPred(p, p_.head);
+                mguPred(p, p_.head, ctx);
             } catch (err) {
                 continue;
             }
@@ -443,9 +575,9 @@ const bySuper = (ce: ClassEnv, pred: Pred): Pred[] => {
         ) ?? []),
     ];
 };
-const byInst = (ce: ClassEnv, pred: Pred): Pred[] => {
+const byInst = (ce: ClassEnv, pred: Pred, ctx: Ctx): Pred[] => {
     const tryInst = (qu: Qual<Pred>) => {
-        const u = matchPred(qu.head, pred);
+        const u = matchPred(qu.head, pred, ctx);
         return qu.context.map((p) => applyP1(u, p));
     };
     const got = insts(ce, pred.id);
@@ -461,7 +593,7 @@ const byInst = (ce: ClassEnv, pred: Pred): Pred[] => {
     throw new Error('nope by inst, none of them');
 };
 
-const entail = (ce: ClassEnv, preds: Pred[], pred: Pred): boolean => {
+const entail = (ce: ClassEnv, preds: Pred[], pred: Pred, ctx: Ctx): boolean => {
     trace.push({ at: 'entail', preds, pred });
     const found = preds
         .map((p) => bySuper(ce, p))
@@ -471,8 +603,8 @@ const entail = (ce: ClassEnv, preds: Pred[], pred: Pred): boolean => {
         return found;
     }
     try {
-        const qs = byInst(ce, pred);
-        return qs.every((q) => entail(ce, preds, q));
+        const qs = byInst(ce, pred, ctx);
+        return qs.every((q) => entail(ce, preds, q, ctx));
     } catch (err) {
         trace.push({ entail: 'err', err: (err as Error).message });
         return false;
@@ -492,27 +624,27 @@ const inHnf = (pred: Pred) => {
     };
     return hnf(pred.t);
 };
-const toHnfs = (ce: ClassEnv, preds: Pred[]): Pred[] => {
-    return preds.flatMap((m) => toHnf(ce, m));
+const toHnfs = (ce: ClassEnv, preds: Pred[], ctx: Ctx): Pred[] => {
+    return preds.flatMap((m) => toHnf(ce, m, ctx));
 };
-const toHnf = (ce: ClassEnv, pred: Pred): Pred[] => {
+const toHnf = (ce: ClassEnv, pred: Pred, ctx: Ctx): Pred[] => {
     if (inHnf(pred)) {
         return [pred];
     }
     try {
-        const ps = byInst(ce, pred);
-        return toHnfs(ce, ps);
+        const ps = byInst(ce, pred, ctx);
+        return toHnfs(ce, ps, ctx);
     } catch (err) {
         throw new Error('context reduction');
     }
 };
-const simplify = (ce: ClassEnv, preds: Pred[]): Pred[] => {
+const simplify = (ce: ClassEnv, preds: Pred[], ctx: Ctx): Pred[] => {
     const loop = (rs: Pred[], preds: Pred[]): Pred[] => {
         if (preds.length === 0) {
             return rs;
         }
         const [p, ...ps] = preds;
-        if (entail(ce, [...rs, ...ps], p)) {
+        if (entail(ce, [...rs, ...ps], p, ctx)) {
             return loop(rs, ps);
         } else {
             return loop([p, ...rs], ps);
@@ -521,8 +653,8 @@ const simplify = (ce: ClassEnv, preds: Pred[]): Pred[] => {
     return loop([], preds);
 };
 
-const reduce = (ce: ClassEnv, preds: Pred[]): Pred[] =>
-    simplify(ce, toHnfs(ce, preds));
+const reduce = (ce: ClassEnv, preds: Pred[], ctx: Ctx): Pred[] =>
+    simplify(ce, toHnfs(ce, preds, ctx), ctx);
 
 // OK Chapter 8!
 export type Scheme = { type: 'Forall'; kinds: Kind[]; qual: Qual<Type> };
@@ -618,7 +750,7 @@ const extSubst = (subs: Subst, ctx: Ctx) => {
 };
 
 const unify = (one: Type, two: Type, ctx: Ctx) => {
-    const u = mgu(apply(ctx.subst, one), apply(ctx.subst, two));
+    const u = mgu(apply(ctx.subst, one), apply(ctx.subst, two), ctx);
     trace.push({ at: 'unity', one, two, u });
     extSubst(u, ctx);
 };
@@ -869,11 +1001,11 @@ const split = (
     ps: Pred[],
     ctx: Ctx,
 ) => {
-    const ps_ = reduce(ce, ps);
+    const ps_ = reduce(ce, ps, ctx);
     const [ds, rs] = partition(ps_, (p) =>
         tv(p.t).every((x) => fs.find((f) => f.name === x.name)),
     );
-    const rs_ = defaultedPreds(ce, [...fs, ...gs], rs);
+    const rs_ = defaultedPreds(ce, [...fs, ...gs], rs, ctx);
     return [ds, rs];
 };
 
@@ -911,7 +1043,7 @@ const stdClasses = [
     ...numClasses,
 ];
 
-const candidates = (ce: ClassEnv, [v, qs]: Ambiguity): Type[] => {
+const candidates = (ce: ClassEnv, [v, qs]: Ambiguity, ctx: Ctx): Type[] => {
     if (qs.some((q) => q.t.type !== 'Var' || v.name !== q.t.v.name)) {
         trace.push({ err: 'some not var' });
         return [];
@@ -927,7 +1059,9 @@ const candidates = (ce: ClassEnv, [v, qs]: Ambiguity): Type[] => {
     }
     trace.push({ at: 'candidates', defaults: ce.defaults, is_ });
     return ce.defaults.filter((t_) => {
-        return is_.every((i) => entail(ce, [], { type: 'IsIn', id: i, t: t_ }));
+        return is_.every((i) =>
+            entail(ce, [], { type: 'IsIn', id: i, t: t_ }, ctx),
+        );
     });
 };
 
@@ -936,9 +1070,10 @@ const withDefaults = <a>(
     ce: ClassEnv,
     vs: TyVar[],
     ps: Pred[],
+    ctx: Ctx,
 ): a => {
     const vps = ambiguities(ce, vs, ps);
-    const tss = vps.map((v) => candidates(ce, v));
+    const tss = vps.map((v) => candidates(ce, v, ctx));
     if (tss.some((s) => !s.length)) {
         trace.push({ vs, ps, vps, tss });
         throw new Error('cannot resolve ambiguity');
@@ -949,10 +1084,10 @@ const withDefaults = <a>(
     );
 };
 
-const defaultedPreds = (ce: ClassEnv, tv: TyVar[], ps: Pred[]) =>
-    withDefaults((vps, ts) => vps.flatMap((v) => v[1]), ce, tv, ps);
+const defaultedPreds = (ce: ClassEnv, tv: TyVar[], ps: Pred[], ctx: Ctx) =>
+    withDefaults((vps, ts) => vps.flatMap((v) => v[1]), ce, tv, ps, ctx);
 
-const defaultSubst = (ce: ClassEnv, tv: TyVar[], ps: Pred[]) =>
+const defaultSubst = (ce: ClassEnv, tv: TyVar[], ps: Pred[], ctx: Ctx) =>
     withDefaults(
         (vps, ts) =>
             zipWith(
@@ -963,6 +1098,7 @@ const defaultSubst = (ce: ClassEnv, tv: TyVar[], ps: Pred[]) =>
         ce,
         tv,
         ps,
+        ctx,
     );
 
 type Expl = [string, Scheme, Alt[]];
@@ -981,7 +1117,7 @@ const tiExpl = (
     const fs = as.map((a) => applyA(s, a)).flatMap(tvA);
     const gs = without(tv(t_), fs, (a, b) => a.name === b.name);
     const sc_ = quantify(gs, { type: 'Qual', context: qs_, head: t_ });
-    const ps_ = applyP(s, ps).filter((p) => !entail(ce, qs_, p));
+    const ps_ = applyP(s, ps).filter((p) => !entail(ce, qs_, p, ctx));
     const [ds, rs] = split(ce, fs, gs, ps_, ctx);
     if (!equal(sc, sc_)) {
         throw new Error('signature is too general');
@@ -1093,7 +1229,7 @@ export const tiProgram = (
     const ctx = initialCtx();
     const [ps, as_] = tiSeq(tiBindGroup, ce, as, bgs, ctx);
     const s = ctx.subst;
-    const rs = reduce(ce, applyP(s, ps));
-    const s_ = defaultSubst(ce, [], rs);
+    const rs = reduce(ce, applyP(s, ps), ctx);
+    const s_ = defaultSubst(ce, [], rs, ctx);
     return as_.map((a) => applyA(at_at(s_, s), a));
 };
