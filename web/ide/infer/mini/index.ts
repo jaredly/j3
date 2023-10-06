@@ -157,12 +157,44 @@ const vWrap = (
     link: { type: 'Info', descriptor, weight: 0 },
 });
 
+export const unrollFn = (
+    d: MultiEquation_descriptor,
+): null | { args: MultiEquation_variable[]; body: MultiEquation_variable } => {
+    // t = unwrapVar(t);
+    if (d.structure?.type !== 'App') {
+        return null;
+    }
+    const fn = find(d.structure.fn);
+    if (fn.structure?.type !== 'App') {
+        return null;
+    }
+    const gfn = find(fn.structure.fn);
+    if (gfn.structure || gfn.name !== '->') {
+        return null;
+    }
+    const args = [fn.structure.arg];
+    const body = unrollFn(find(d.structure.arg));
+    if (body) {
+        args.push(...body.args);
+        return { args, body: body.body };
+    }
+    return { args, body: d.structure.arg };
+};
+
 const letters = 'abcdefghijklmnop';
 export const vToString = (
     v: MultiEquation_variable,
     seen: Seen = new Map(),
 ): string => {
     const d = find(v);
+
+    const fn = unrollFn(d);
+    if (fn) {
+        return `(fn [${fn.args
+            .map((a) => vToString(a, seen))
+            .join(' ')}] ${vToString(fn.body, seen)})`;
+    }
+
     if (d.structure) {
         if (d.structure.type == 'App') {
             const fn = find(d.structure.fn);

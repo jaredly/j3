@@ -55,23 +55,31 @@ let newvar_t = (): Extract<typ, { type: 'var' }> => ({
     var: { type: 'unbound', var: newvar(), level: current_level },
 });
 
-export const typToString = (t: typ): string => {
+const alpha = 'abcdefghij';
+export const typToString = (
+    t: typ,
+    seen: { [key: string]: string } = {},
+): string => {
     switch (t.type) {
         case 'lit':
             return t.name;
         case 'record':
             return `{${t.items
-                .map((r) => `${r.name} ${typToString(r.value)}`)
+                .map((r) => `${r.name} ${typToString(r.value, seen)}`)
                 .join(' ')}}`;
         case 'fn':
-            return `(fn [${t.args.map(typToString).join(' ')}] ${typToString(
-                t.ret,
-            )})`;
+            return `(fn [${t.args
+                .map((t) => typToString(t, seen))
+                .join(' ')}] ${typToString(t.ret, seen)})`;
         case 'var':
             if (t.var.type === 'bound') {
-                return typToString(t.var.typ);
+                return typToString(t.var.typ, seen);
             }
-            return `v${t.var.var}:${t.var.level}`;
+            if (!seen[t.var.var]) {
+                seen[t.var.var] = alpha[Object.keys(seen).length];
+            }
+            return "'" + seen[t.var.var];
+        // return `v${t.var.var}`; //:${t.var.level}`;
     }
 };
 

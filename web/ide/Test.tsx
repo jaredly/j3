@@ -20,8 +20,8 @@ import { verticalMove } from '../custom/verticalMove';
 // These register themselves into `./infer/types:algos`
 import './infer/hm/j';
 import './infer/hmx/hmx';
-import './infer/mini';
 import './infer/algw-cr';
+import './infer/mini';
 import './infer/thih';
 
 import { useLocalStorage } from '../Debug';
@@ -123,7 +123,7 @@ export const Test = ({ env }: { env: Env }) => {
 
     return (
         <div>
-            <div>
+            {/* <div>
                 {names.map((n) => (
                     <button
                         onClick={() => {
@@ -135,7 +135,7 @@ export const Test = ({ env }: { env: Env }) => {
                         {n}
                     </button>
                 ))}
-            </div>
+            </div> */}
             <div>
                 {Object.keys(algos).map((algo) => (
                     <button

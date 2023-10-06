@@ -17,6 +17,7 @@ export type Exp =
 export type Prim =
     | { type: 'Int'; value: number }
     | { type: 'Bool'; value: boolean }
+    | { type: 'String'; value: string }
     | { type: 'Add' | 'Cond' | 'RecordEmpty' | 'ConsumeEmptyVariant' }
     | {
           type:
@@ -31,7 +32,7 @@ export type Prim =
 
 export type Type =
     | { type: 'Var'; v: TyVar; loc: number }
-    | { type: 'Int' | 'Bool' | 'RowEmpty'; loc: number }
+    | { type: 'Int' | 'Bool' | 'String' | 'RowEmpty'; loc: number }
     | { type: 'Fun'; arg: Type; body: Type; loc: number }
     | { type: 'Record'; body: Type; loc: number }
     | { type: 'Variant'; body: Type; loc: number }
@@ -82,6 +83,7 @@ export const ftv = (item: Type | Scheme | Type[]): VSet => {
         case 'Var':
             return { [item.v.name]: item.v };
         case 'Int':
+        case 'String':
         case 'Bool':
         case 'RowEmpty':
             return {};

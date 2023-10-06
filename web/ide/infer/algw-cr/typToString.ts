@@ -14,6 +14,7 @@ export const typToString = (
             return "'" + seen[t.v.name]; // + ':' + t.v.name;
         case 'Int':
         case 'Bool':
+        case 'String':
         case 'RowEmpty':
             return t.type;
         case 'Fun':

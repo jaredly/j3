@@ -282,6 +282,11 @@ const _parse = (node: term, ctx: Ctx): Exp | undefined => {
                         { type: 'Int', value: node.value.value },
                         node.loc,
                     );
+                case 'string':
+                    return p(
+                        { type: 'String', value: node.value.value },
+                        node.loc,
+                    );
             }
             ctx.errors[node.loc] = 'bad const';
             return undefined;

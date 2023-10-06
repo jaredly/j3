@@ -694,7 +694,7 @@ const quantify = (vs: TyVar[], qt: Qual<Type>): Scheme => {
     const ids = vs.map((v) => v.name);
     const vs_ = tvQ(qt, tv).filter((v) => ids.includes(v.name));
     const ks = vs_.map(kind);
-    const s = vs_.map((v): Subst[0] => [v, { type: 'Gen', num: 0 }]);
+    const s = vs_.map((v, i): Subst[0] => [v, { type: 'Gen', num: i }]);
     return { type: 'Forall', kinds: ks, qual: applyQ(s, qt, apply) };
 };
 const toScheme = (t: Type): Scheme => ({

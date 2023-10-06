@@ -85,6 +85,8 @@ export const tiPrim = (prim: Prim, loc: number, ctx: Ctx): Type => {
             return { type: 'Int', loc };
         case 'Bool':
             return { type: 'Bool', loc };
+        case 'String':
+            return { type: 'String', loc };
         case 'Add':
             return {
                 type: 'Fun',
