@@ -14,8 +14,9 @@ import {
     tiProgram,
 } from './types';
 
-export { parse } from './parse';
-export { type Scheme as typ, printScheme as typToString } from './types';
+import { parse } from './parse';
+import { type Scheme as typ, printScheme as typToString } from './types';
+import { register } from '../types';
 export const builtins: Assump[] = [
     {
         type: 'Assump',
@@ -135,3 +136,11 @@ export const infer = (builtins: Assump[], expr: Expr, display: any): Scheme => {
     // apply(assump[0].scheme.qual.context, assump[0].scheme.qual.head);
     return assump[0].scheme; //.scheme.qual.head;
 };
+
+register('thih', {
+    builtins,
+    getTrace,
+    infer,
+    parse,
+    typToString,
+});

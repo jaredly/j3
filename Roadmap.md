@@ -1,4 +1,12 @@
 
+# Howww do I do recursive polymorphic variants?
+def something I need.
+prolly should check out roc's type inference, see if I can grab it
+
+# This slide deck sounds interesting, maybe?
+https://www.cs.ox.ac.uk/ralf.hinze/WG2.8/27/slides/jacques.pdf
+
+
 # So
 we have polymorphic variants
 and records

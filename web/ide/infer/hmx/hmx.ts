@@ -1,4 +1,7 @@
+import { Display } from '../../../../src/to-ast/library';
+import { register } from '../types';
 import { Env, Union_find, chop, run } from './hmx-solve';
+import { parse } from './parse-hmx';
 
 export type t_const =
     | { type: 'number'; value: number }
@@ -481,9 +484,11 @@ export { parse } from './parse-hmx';
 export let infer = (
     builtins: Env,
     expr: term,
-    typs: { [loc: number]: ty },
+    // typs: { [loc: number]: ty },
+    display: Display,
 ): ty => {
     next = 0;
+    const typs: { [loc: number]: ty } = {};
     const map: Map = { constrs: {}, typs };
     trace(map);
     const constr = infer_prog([['result', expr]], map);
@@ -499,3 +504,11 @@ export let infer = (
     });
     return ty?.ty ?? { type: 'const', name: 'lol', loc: -2 };
 };
+
+register('hmx', {
+    builtins,
+    getTrace,
+    infer,
+    parse,
+    typToString,
+});

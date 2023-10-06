@@ -1,3 +1,4 @@
+import { register } from '../types';
 import {
     CoreAlgebra_term,
     Mark_none,
@@ -14,7 +15,7 @@ import { solve } from './solve';
 import { expression } from './types';
 import { find, fresh } from './union_find';
 
-export { parse } from './parse';
+import { parse } from './parse';
 
 export type { crterm as typ };
 export const builtins = {};
@@ -277,3 +278,5 @@ function caTermToString<t>(
     }
     return '';
 }
+
+register('mini', { builtins, parse, infer, typToString, getTrace });

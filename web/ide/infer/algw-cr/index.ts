@@ -1,9 +1,10 @@
 import { Exp, fn } from './types';
 import { typeInference } from './infer';
 import { Display } from '../../../../src/to-ast/library';
+import { register } from '../types';
 export { type Type as typ } from './types';
-export { typToString } from './typToString';
-export { parse } from './parse';
+import { typToString } from './typToString';
+import { parse } from './parse';
 export const builtins = {};
 
 export let trace: any[] = [];
@@ -36,3 +37,11 @@ export const infer = (builtins: any, expr: Exp, display: Display) => {
         },
     );
 };
+
+register('algw-cr', {
+    builtins,
+    infer,
+    parse,
+    typToString,
+    getTrace,
+});

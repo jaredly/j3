@@ -19,19 +19,24 @@ import { verticalMove } from '../custom/verticalMove';
 
 // import { infer, typ, typToString } from './infer/j';
 // import { parse } from './infer/parse-j';
-import {
-    infer,
-    typ,
-    typToString,
-    parse,
-    builtins,
-    getTrace,
-    // } from './infer/thih';
-    // } from './infer/algw-cr';
-} from './infer/mini';
+import './infer/thih';
+import './infer/mini';
+import './infer/hmx/hmx';
+import './infer/algw-cr';
+// import {
+//     infer,
+//     typ,
+//     typToString,
+//     parse,
+//     builtins,
+//     getTrace,
+//     // } from './infer/thih';
+// } from './infer/algw-cr';
+// } from './infer/mini';
 // } from './infer/hmx/hmx';
 import { useLocalStorage } from '../Debug';
 import { paste } from '../../src/state/clipboard';
+import { algos } from './infer/types';
 
 // import { parse } from './infer/parse-hmx';
 // import { builtins } from './infer/j-builtins';
@@ -42,6 +47,10 @@ const names = ['what', 'w', 'w2', '10'];
 export const Test = ({ env }: { env: Env }) => {
     const k = 'test-infer-' + document.location.hash.slice(1);
     // const [k, setK] = useState(names[0]);
+
+    const [alg, setAlg] = useLocalStorage('test:infer-alg', () => 'thih');
+
+    const { builtins, getTrace, infer, parse, typToString } = algos[alg];
 
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => {
         return loadState(k);
@@ -65,7 +74,7 @@ export const Test = ({ env }: { env: Env }) => {
                     data: any[];
                 };
             };
-            typs: { [loc: number]: typ };
+            typs: { [loc: number]: any };
         } = {
             display: {},
             errors: {},
@@ -87,7 +96,10 @@ export const Test = ({ env }: { env: Env }) => {
             const expr = parse(node, { errors, display: results.display });
             if (expr) {
                 try {
-                    const typ = infer(builtins, expr, results.display);
+                    const typ = infer(builtins, expr, {
+                        display: results.display,
+                        typs: results.typs,
+                    });
                     const trace = getTrace();
                     // console.log(typ);
                     results.tops[top] = {
@@ -112,7 +124,7 @@ export const Test = ({ env }: { env: Env }) => {
         });
 
         return results;
-    }, [state.map, k]);
+    }, [state.map, k, alg]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
@@ -131,6 +143,17 @@ export const Test = ({ env }: { env: Env }) => {
                         key={n}
                     >
                         {n}
+                    </button>
+                ))}
+            </div>
+            <div>
+                {Object.keys(algos).map((algo) => (
+                    <button
+                        key={algo}
+                        onClick={() => setAlg(algo)}
+                        style={algo === alg ? { fontWeight: 'bold' } : {}}
+                    >
+                        {algo}
                     </button>
                 ))}
             </div>
