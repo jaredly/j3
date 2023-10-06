@@ -53,7 +53,6 @@ export const printType = (t: Type): string => {
     switch (t.type) {
         case 'Var':
             return t.v.name;
-        // return `{v} ${t.v.name} (${printKind(t.v.k)})`;
         case 'Con':
             return t.con.id;
         case 'App':
@@ -922,6 +921,7 @@ export type Expr =
     | { type: 'Abs'; pats: Pat[]; body: Expr; loc: number }
     | { type: 'RecordEmpty'; loc: number }
     | { type: 'RecordExtend'; label: string; loc: number }
+    | { type: 'RecordAccess'; label: string; loc: number }
     | { type: 'Variant'; label: string; loc: number };
 
 const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
@@ -934,6 +934,15 @@ const tiExpr: Infer<Expr, Type> = (ce, as, expr, ctx) => {
             return [
                 [],
                 fn(t, app(builtins.var, app(app(rowExtend(expr.label), t), a))),
+            ];
+        }
+        case 'RecordAccess': {
+            const a = newTVar(star, ctx);
+            const r = newTVar(row, ctx);
+            r.v.lacks = { [expr.label]: true };
+            return [
+                [],
+                fn(app(builtins.rec, app(app(rowExtend(expr.label), a), r)), a),
             ];
         }
         case 'RecordEmpty':

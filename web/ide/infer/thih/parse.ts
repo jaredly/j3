@@ -49,6 +49,8 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
                   }
                 : undefined;
         }
+        case 'accessor':
+            return { type: 'RecordAccess', label: node.id, loc: node.loc };
         case 'let': {
             const init = _parse(node.init, ctx);
             const body = _parse(node.body, ctx);
