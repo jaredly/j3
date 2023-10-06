@@ -2,7 +2,7 @@
 // nice.
 
 import { Display } from '../../../../src/to-ast/library';
-import { register } from '../types';
+import { Tree, register } from '../types';
 import { parse } from './parse-j';
 
 export type expr =
@@ -379,6 +379,53 @@ export let infer = (
     return _infer(env, expr, results.typs);
 };
 
+const toString = (expr: expr): string => {
+    switch (expr.type) {
+        case 'identifier':
+            return expr.id;
+        case 'number':
+            return expr.value + '';
+        case 'fncall':
+            return `(${[expr.fn, ...expr.args].map(toString).join(' ')})`;
+        default:
+            return expr.type;
+    }
+};
+
+const toTree = (expr: expr): Tree => {
+    if (!expr) {
+        // debugger;
+    }
+    switch (expr.type) {
+        case 'fncall':
+            return {
+                name: toString(expr).slice(0, 10),
+                loc: expr.loc,
+                children: [expr.fn, ...expr.args].map(toTree),
+            };
+        case 'lambda':
+            return {
+                name: '(fn [',
+                loc: expr.loc,
+                children: [
+                    ...expr.names.map(
+                        (name): Tree => ({
+                            name: name.name,
+                            children: [],
+                            loc: name.loc,
+                        }),
+                    ),
+                    toTree(expr.expr),
+                ],
+            };
+        case 'identifier':
+            return { name: expr.id, loc: expr.loc, children: [] };
+        case 'number':
+            return { name: '' + expr.value, loc: expr.loc, children: [] };
+    }
+    return { name: expr.type, loc: expr.loc, children: [] };
+};
+
 register('j', {
     infer,
     builtins: {
@@ -400,4 +447,5 @@ register('j', {
     getTrace: () => [],
     parse,
     typToString,
+    toTree,
 });

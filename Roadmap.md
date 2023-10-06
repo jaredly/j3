@@ -1,4 +1,11 @@
 
+# Visualize and compare!!!!
+
+- [ ] ok so I need to normalize the Expr representation at least, so that I can visualize them
+
+
+
+
 # Howww do I do recursive polymorphic variants?
 def something I need.
 prolly should check out roc's type inference, see if I can grab it
@@ -10,6 +17,7 @@ https://www.cs.ox.ac.uk/ralf.hinze/WG2.8/27/slides/jacques.pdf
 # So
 we have polymorphic variants
 and records
+
 
 given that mini actually supports
 a bunch more stuff

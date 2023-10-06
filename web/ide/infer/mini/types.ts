@@ -8,15 +8,15 @@ type kind =
     | { type: 'KEmptyRow' };
 
 type typ =
-    | { type: 'TypVar'; pos: position; name: string }
-    | { type: 'TypApp'; pos: position; fn: typ; args: typ[] }
+    | { type: 'TypVar'; loc: position; name: string }
+    | { type: 'TypApp'; loc: position; fn: typ; args: typ[] }
     | {
           type: 'TypRowCons';
-          pos: position;
+          loc: position;
           rows: { name: string; value: typ }[];
           typ: typ;
       }
-    | { type: 'TypRowUniform'; pos: position; typ: typ };
+    | { type: 'TypRowUniform'; loc: position; typ: typ };
 
 type type_definition = {
     type: 'DAlgebraic';

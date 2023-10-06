@@ -308,6 +308,7 @@ export function calcResults(
                 summary: string;
                 data: any[];
                 failed: boolean;
+                expr?: any;
             };
         };
         typs: { [loc: number]: any };
@@ -342,6 +343,7 @@ export function calcResults(
                     summary: typToString(typ),
                     data: trace,
                     failed: false,
+                    expr,
                 };
             } catch (err) {
                 // console.log('no typ sorry', err);

@@ -72,7 +72,7 @@ const run = (data: Node) => {
         .selectAll()
         .data(root.descendants())
         .join('g')
-        .attr('transform', (d) => `translate(${d.x},${d.y})`);
+        .attr('transform', (d) => `translate(${(d as any).x},${(d as any).y})`);
 
     // node.append('circle')
     //     .attr('fill', (d) => (d.children ? '#555' : '#999'))

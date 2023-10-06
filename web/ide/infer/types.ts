@@ -2,6 +2,8 @@ import { Display } from '../../../src/to-ast/library';
 import { Node } from '../../../src/types/cst';
 import { Ctx } from './algw-cr/parse';
 
+export type Tree = { name: string; loc: number; children: Tree[] };
+
 export type Algo<E, T, B> = {
     builtins: B;
     parse: (node: Node, ctx: Ctx) => E | undefined;
@@ -12,6 +14,7 @@ export type Algo<E, T, B> = {
     ) => T;
     typToString: (t: T) => string;
     getTrace: () => any[];
+    toTree?: (expr: E) => Tree;
 };
 
 export const algos: { [name: string]: Algo<any, any, any> } = {};

@@ -26,6 +26,7 @@ import { algos } from '../types';
 import { Node, Tree } from './Tree';
 import { transformNode } from '../../../../src/types/transform-cst';
 import { Node as CNode } from '../../../../src/types/cst';
+import { expr } from '../hm/j';
 
 const fixtures = [
     `(+ 1 2)`,
@@ -41,6 +42,18 @@ export const Visualize = ({ env }: { env: Env }) => {
 
     return (
         <div>
+            <div>
+                {Object.keys(algos).map((algo) => (
+                    <button
+                        key={algo}
+                        onClick={() => setAlg(algo)}
+                        style={algo === alg ? { fontWeight: 'bold' } : {}}
+                    >
+                        {algo}
+                    </button>
+                ))}
+            </div>
+
             {fixtures.map((fix, i) => (
                 <Fixture
                     fix={fix}
@@ -74,7 +87,15 @@ const Fixture = ({
         [alg, state.map],
     );
     const tops = (state.map[state.root] as ListLikeContents).values;
-    const data = useMemo(() => toTree(state.map, tops[0]), [state.map]);
+    // const data = useMemo(() => toTree(state.map, tops[0]), [state.map]);
+    const data = useMemo(() => {
+        const top = results.tops[tops[0]];
+        if (!top.expr) {
+            return { name: 'error', children: [] };
+        }
+        console.log(top);
+        return algos[alg].toTree?.(top.expr);
+    }, [state.map, alg, results]);
     return (
         <div
             onClick={() => setFocus()}
@@ -91,7 +112,8 @@ const Fixture = ({
                 showTop={() => 'ehllo'}
                 debug={false}
             />
-            {focus ? <Tree data={data} /> : null}
+            {focus && data ? <Tree data={data} /> : null}
+            <pre>{JSON.stringify(results.tops[tops[0]].expr, null, 2)}</pre>
         </div>
     );
 };
@@ -120,7 +142,6 @@ const itemToData = (item: Item): Node => {
 };
 
 const toTree = (map: NUIState['map'], root: number): Node => {
-    const node = map[root];
     const byPath: { [key: string]: Item } = {};
     transformNode(fromMCST(root, map), {
         pre(node, path) {
@@ -134,3 +155,7 @@ const toTree = (map: NUIState['map'], root: number): Node => {
     });
     return itemToData(byPath['[]']);
 };
+
+// const showExpr = (expr: expr): Node => {
+//     return { name: 'ok', children: [{ name: JSON.stringify(expr) }] };
+// };
