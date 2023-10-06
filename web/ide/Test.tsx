@@ -26,7 +26,7 @@ import './infer/thih';
 
 import { useLocalStorage } from '../Debug';
 import { paste } from '../../src/state/clipboard';
-import { algos } from './infer/types';
+import { Algo, algos } from './infer/types';
 
 const names = ['what', 'w', 'w2', '10'];
 
@@ -36,7 +36,7 @@ export const Test = ({ env }: { env: Env }) => {
 
     const [alg, setAlg] = useLocalStorage('test:infer-alg', () => 'thih');
 
-    const { builtins, getTrace, infer, parse, typToString } = algos[alg];
+    const { typToString } = algos[alg];
 
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => {
         return loadState(k);
@@ -53,67 +53,7 @@ export const Test = ({ env }: { env: Env }) => {
     const tops = (state.map[state.root] as ListLikeContents).values;
 
     const results = useMemo(() => {
-        const results: Ctx['results'] & {
-            tops: {
-                [key: number]: {
-                    summary: string;
-                    data: any[];
-                    failed: boolean;
-                };
-            };
-            typs: { [loc: number]: any };
-        } = {
-            display: {},
-            errors: {},
-            globalNames: {},
-            hashNames: {},
-            localMap: {
-                terms: {},
-                types: {},
-            },
-            mods: {},
-            toplevel: {},
-            tops: {},
-            typs: {},
-        };
-
-        tops.forEach((top) => {
-            const node = fromMCST(top, state.map);
-            const errors = {};
-            const expr = parse(node, { errors, display: results.display });
-            if (expr) {
-                try {
-                    const typ = infer(builtins, expr, {
-                        display: results.display,
-                        typs: results.typs,
-                    });
-                    const trace = getTrace();
-                    // console.log(typ);
-                    results.tops[top] = {
-                        summary: typToString(typ),
-                        data: trace,
-                        failed: false,
-                    };
-                } catch (err) {
-                    // console.log('no typ sorry', err);
-                    results.tops[top] = {
-                        summary: 'Type Error: ' + (err as Error).message,
-                        data: [(err as Error).message, getTrace()],
-                        failed: true,
-                    };
-                }
-            } else {
-                results.tops[top] = {
-                    summary: 'not parse: ' + Object.values(errors).join('; '),
-                    data: [errors, ...getTrace()],
-                    failed: true,
-                };
-            }
-
-            layout(top, 0, state.map, results.display, results.hashNames, true);
-        });
-
-        return results;
+        return calcResults(state, algos[alg]);
     }, [state.map, k, alg]);
 
     const start = state.at.length ? state.at[0].start : null;
@@ -357,10 +297,92 @@ const actionToUpdate = (
     }
 };
 
-function loadState(k: string) {
+export function calcResults(
+    state: NUIState,
+    { builtins, getTrace, infer, parse, typToString }: Algo<any, any, any>,
+) {
+    const tops = (state.map[state.root] as ListLikeContents).values;
+    const results: Ctx['results'] & {
+        tops: {
+            [key: number]: {
+                summary: string;
+                data: any[];
+                failed: boolean;
+            };
+        };
+        typs: { [loc: number]: any };
+    } = {
+        display: {},
+        errors: {},
+        globalNames: {},
+        hashNames: {},
+        localMap: {
+            terms: {},
+            types: {},
+        },
+        mods: {},
+        toplevel: {},
+        tops: {},
+        typs: {},
+    };
+
+    tops.forEach((top) => {
+        const node = fromMCST(top, state.map);
+        const errors = {};
+        const expr = parse(node, { errors, display: results.display });
+        if (expr) {
+            try {
+                const typ = infer(builtins, expr, {
+                    display: results.display,
+                    typs: results.typs,
+                });
+                const trace = getTrace();
+                // console.log(typ);
+                results.tops[top] = {
+                    summary: typToString(typ),
+                    data: trace,
+                    failed: false,
+                };
+            } catch (err) {
+                // console.log('no typ sorry', err);
+                results.tops[top] = {
+                    summary: 'Type Error: ' + (err as Error).message,
+                    data: [(err as Error).message, getTrace()],
+                    failed: true,
+                };
+            }
+        } else {
+            results.tops[top] = {
+                summary: 'not parse: ' + Object.values(errors).join('; '),
+                data: [errors, ...getTrace()],
+                failed: true,
+            };
+        }
+
+        layout(top, 0, state.map, results.display, results.hashNames, true);
+    });
+
+    return results;
+}
+
+export function loadState(k: string) {
     const saved = localStorage.getItem(k);
     const map = saved ? JSON.parse(saved) : emptyMap();
 
+    let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
+    return {
+        map,
+        root: -1,
+        history: [],
+        nidx: () => idx++,
+        clipboard: [],
+        hover: [],
+        regs: {},
+        at: [],
+    };
+}
+
+export function stateFromMap(map: NUIState['map']) {
     let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         map,
