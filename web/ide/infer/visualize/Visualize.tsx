@@ -23,6 +23,9 @@ import { verticalMove } from '../../../custom/verticalMove';
 import { calcResults, loadState, stateFromMap } from '../../Test';
 import { useLocalStorage } from '../../../Debug';
 import { algos } from '../types';
+import { Node, Tree } from './Tree';
+import { transformNode } from '../../../../src/types/transform-cst';
+import { Node as CNode } from '../../../../src/types/cst';
 
 const fixtures = [
     `(+ 1 2)`,
@@ -34,7 +37,7 @@ const fixtures = [
 
 export const Visualize = ({ env }: { env: Env }) => {
     const [alg, setAlg] = useLocalStorage('test:infer-alg', () => 'thih');
-    const [focus, setFocus] = useState(0);
+    const [focus, setFocus] = useLocalStorage('test:vis-focus', () => 0);
 
     return (
         <div>
@@ -70,6 +73,7 @@ const Fixture = ({
         () => calcResults(state, algos[alg]),
         [alg, state.map],
     );
+    const data = useMemo(() => toTree(state.map, -1), [state.map]);
     const tops = (state.map[state.root] as ListLikeContents).values;
     return (
         <div
@@ -87,6 +91,32 @@ const Fixture = ({
                 showTop={() => 'ehllo'}
                 debug={false}
             />
+            {focus ? <Tree data={data} /> : null}
         </div>
     );
+};
+
+type Item = { node: CNode; children: Item[] };
+
+const itemToData = (item: Item): Node => {
+    return {
+        name: item.node.type + ':' + item.node.loc,
+        children: item.children.map(itemToData),
+    };
+};
+
+const toTree = (map: NUIState['map'], root: number): Node => {
+    const node = map[root];
+    const byPath: { [key: string]: Item } = {};
+    transformNode(fromMCST(root, map), {
+        pre(node, path) {
+            const key = JSON.stringify(path);
+            byPath[key] = { node, children: [] };
+            if (path.length > 0) {
+                const parent = JSON.stringify(path.slice(0, -1));
+                byPath[parent].children.push(byPath[key]);
+            }
+        },
+    });
+    return itemToData(byPath['[]']);
 };
