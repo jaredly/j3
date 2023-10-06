@@ -57,7 +57,7 @@ export const runChunk = (code: string) => {
     const idx = (map[-1] as ListLikeContents).values[0];
     const node = fromMCST(idx, map);
     const parseErrors = {};
-    const expr = parse(node, parseErrors);
+    const expr = parse(node, { errors: parseErrors, display: {} });
     if (!expr) {
         console.log(parseErrors);
         console.log(code);

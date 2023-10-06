@@ -17,31 +17,17 @@ import { Action, NUIState, UpdatableAction } from '../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
 import { verticalMove } from '../custom/verticalMove';
 
-// import { infer, typ, typToString } from './infer/j';
-// import { parse } from './infer/parse-j';
+// These register themselves into `./infer/types:algos`
+import './infer/hm/j';
+import './infer/hmx/hmx';
 import './infer/thih';
 import './infer/mini';
-import './infer/hmx/hmx';
 import './infer/algw-cr';
-// import {
-//     infer,
-//     typ,
-//     typToString,
-//     parse,
-//     builtins,
-//     getTrace,
-//     // } from './infer/thih';
-// } from './infer/algw-cr';
-// } from './infer/mini';
-// } from './infer/hmx/hmx';
+
 import { useLocalStorage } from '../Debug';
 import { paste } from '../../src/state/clipboard';
 import { algos } from './infer/types';
 
-// import { parse } from './infer/parse-hmx';
-// import { builtins } from './infer/j-builtins';
-
-// const k = `test-infer-w2`;
 const names = ['what', 'w', 'w2', '10'];
 
 export const Test = ({ env }: { env: Env }) => {
@@ -72,6 +58,7 @@ export const Test = ({ env }: { env: Env }) => {
                 [key: number]: {
                     summary: string;
                     data: any[];
+                    failed: boolean;
                 };
             };
             typs: { [loc: number]: any };
@@ -105,18 +92,21 @@ export const Test = ({ env }: { env: Env }) => {
                     results.tops[top] = {
                         summary: typToString(typ),
                         data: trace,
+                        failed: false,
                     };
                 } catch (err) {
                     // console.log('no typ sorry', err);
                     results.tops[top] = {
                         summary: 'Type Error: ' + (err as Error).message,
                         data: [(err as Error).message, getTrace()],
+                        failed: true,
                     };
                 }
             } else {
                 results.tops[top] = {
                     summary: 'not parse',
                     data: [errors, ...getTrace()],
+                    failed: true,
                 };
             }
 
@@ -168,7 +158,10 @@ export const Test = ({ env }: { env: Env }) => {
                 dispatch={dispatch}
                 tops={tops}
                 debug={false}
-                showTop={(top) => results.tops[top].summary}
+                showTop={(top) =>
+                    (results.tops[top].failed ? '🚨 ' : '') +
+                    results.tops[top].summary
+                }
                 results={results}
             />
             <button
@@ -185,13 +178,12 @@ export const Test = ({ env }: { env: Env }) => {
                 state={state}
                 dispatch={dispatch}
                 calc={() => {
-                    const last = state.hover[state.hover.length - 1]?.idx;
-                    if (last) {
+                    for (let i = state.hover.length - 1; i >= 0; i--) {
+                        const last = state.hover[i].idx;
                         const typ = results.typs[last];
                         if (typ) {
                             return [{ idx: last, text: typToString(typ) }];
                         }
-                        // return [{ idx: last, text: `${last}` }];
                     }
                     return [];
                 }}
@@ -254,9 +246,9 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (action.type === 'yank') {
         return state;
     }
-    if (action.type === 'reset') {
-        return action.state;
-    }
+    // if (action.type === 'reset') {
+    //     return action.state;
+    // }
     const update = actionToUpdate(state, action);
     if (!update) {
         return state;

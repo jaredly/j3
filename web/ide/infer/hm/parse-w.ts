@@ -1,4 +1,4 @@
-import { Node } from '../../../src/types/cst';
+import { Node } from '../../../../src/types/cst';
 import type { Exp } from './types-w';
 
 export const parse = (

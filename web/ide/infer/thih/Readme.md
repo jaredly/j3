@@ -1,5 +1,7 @@
 # Typing Haskell in Haskell
 
+https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
+
 Following the paper
 
 I didn't realize there was a code tarball I could have used, but I think it was better to read through the paper.

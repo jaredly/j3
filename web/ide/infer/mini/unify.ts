@@ -34,7 +34,7 @@ export const unify = (
         pos: pos,
         v1: MultiEquation_variable,
         v2: MultiEquation_variable,
-    ) => {
+    ): void => {
         /* If the two variables already belong to the same multi-equation,
        there is nothing to do. This check is not just an optimization;
        it is essential in guaranteeing termination, since we are

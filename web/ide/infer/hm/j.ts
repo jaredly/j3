@@ -1,6 +1,10 @@
 // https://github.com/jfecher/algorithm-j/blob/master/j.ml
 // nice.
 
+import { Display } from '../../../../src/to-ast/library';
+import { register } from '../types';
+import { parse } from './parse-j';
+
 export type expr =
     | { type: 'number'; value: number; loc: number }
     | { type: 'string'; value: string; loc: number }
@@ -171,7 +175,7 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
     }
 };
 
-export let unify = (t1: typ, t2: typ) => {
+export let unify = (t1: typ, t2: typ): void => {
     if (t1.type === 'lit' && t2.type === 'lit') {
         if (t1.name !== t2.name) {
             throw new Error(`cannot unify ${t1.name} and ${t2.name}`);
@@ -354,8 +358,35 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
     }
 };
 
-export let infer = (env: Env, expr: expr, results: Results): typ => {
+export let infer = (
+    env: Env,
+    expr: expr,
+    results: { typs: Results; display: Display },
+): typ => {
     current_level = 1;
     current_typevar = 0;
-    return _infer(env, expr, results);
+    return _infer(env, expr, results.typs);
 };
+
+register('j', {
+    infer,
+    builtins: {
+        '+': {
+            typevars: [],
+            typ: {
+                type: 'fn',
+                args: [
+                    {
+                        type: 'lit',
+                        name: 'number',
+                    },
+                    { type: 'lit', name: 'number' },
+                ],
+                ret: { type: 'lit', name: 'number' },
+            },
+        },
+    },
+    getTrace: () => [],
+    parse,
+    typToString,
+});

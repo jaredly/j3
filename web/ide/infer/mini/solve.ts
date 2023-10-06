@@ -273,7 +273,7 @@ let register = (pool: pool, v: MultiEquation_variable) => {
 
 /** [lookup name env] looks for a definition of [name] within
     the environment [env]. */
-let lookup = (pos: number, name: string, env: _env) => {
+let lookup = (pos: number, name: string, env: _env): MultiEquation_variable => {
     if (env.type === 'Empty') {
         throw new Error(`unbound ${name}`);
     }

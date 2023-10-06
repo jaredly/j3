@@ -28,7 +28,7 @@ export type Action =
     | { type: 'undo' }
     | { type: 'redo' }
     | { type: 'yank'; expr: DefType | Def; loc: number }
-    | { type: 'reset'; state: NUIState }
+    // | { type: 'reset'; state: NUIState }
     | UpdatableAction;
 
 /** Actions that can be turned into a StateChange | UIStatechange */

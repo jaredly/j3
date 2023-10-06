@@ -35,7 +35,7 @@ const and = (left: Type, right: Type): Type => ({
     },
 });
 
-const minus = (left: Type, right: Type): Type =>
+export const minus = (left: Type, right: Type): Type =>
     and(left, { type: 'Not', target: right });
 const any: Type = { type: 'Not', target: { type: 'Never' } };
 
