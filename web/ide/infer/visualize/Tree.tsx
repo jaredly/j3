@@ -12,7 +12,7 @@ const run = (data: Node) => {
     // Compute the tree height; this approach will allow the height of the
     // SVG to scale according to the breadth (width) of the tree layout.
     const root = d3.hierarchy<Node>(data);
-    const dx = 20;
+    const dx = 50;
     // const dy = width / (root.height + 1);
     const dy = 30;
 
@@ -20,7 +20,7 @@ const run = (data: Node) => {
     const tree = d3.tree<Node>().nodeSize([dx, dy]);
 
     // Sort the tree and apply the layout.
-    root.sort((a, b) => d3.ascending(a.data.name, b.data.name));
+    // root.sort((a, b) => d3.scending(a.data.name, b.data.name));
     tree(root);
 
     // Compute the extent of the tree. Note that x and y are swapped here
@@ -29,20 +29,24 @@ const run = (data: Node) => {
     let x0 = Infinity;
     let x1 = -x0;
     root.each((d) => {
-        if (d.x > x1) x1 = d.x;
-        if (d.x < x0) x0 = d.x;
+        const x = (d as any).x;
+        if (x > x1) x1 = x;
+        if (x < x0) x0 = x;
     });
 
     // Compute the adjusted height of the tree.
-    const height = x1 - x0 + dx * 2; // + 100;
-    const width = (root.height * dy + dy) * 5; // + 100;
+    const width = x1 - x0 + dx * 2; // + 100;
+    const height = root.height * dy + dy; // + 100;
 
     const svg = d3
         .create('svg')
         .attr('width', width)
         .attr('height', height)
-        .attr('viewBox', [-dy * 2, x0 - dx, width, height])
-        .attr('style', 'max-width: 100%; height: auto; font: 10px sans-serif;');
+        .attr('viewBox', [x0 - dx, -dy / 2, width, height])
+        .attr(
+            'style',
+            'max-width: 100%; height: auto; font: 10px sans-serif; background-color: white',
+        );
 
     const link = svg
         .append('g')
@@ -56,9 +60,9 @@ const run = (data: Node) => {
         .attr(
             'd',
             d3
-                .linkHorizontal()
-                .x((d) => d.y)
-                .y((d) => d.x),
+                .linkHorizontal<any, Node>()
+                .x((d) => d.x!)
+                .y((d) => d.y!),
         );
 
     const node = svg
@@ -68,16 +72,15 @@ const run = (data: Node) => {
         .selectAll()
         .data(root.descendants())
         .join('g')
-        .attr('transform', (d) => `translate(${d.y},${d.x})`);
+        .attr('transform', (d) => `translate(${d.x},${d.y})`);
 
-    node.append('circle')
-        .attr('fill', (d) => (d.children ? '#555' : '#999'))
-        .attr('r', 2.5);
+    // node.append('circle')
+    //     .attr('fill', (d) => (d.children ? '#555' : '#999'))
+    //     .attr('r', 2.5);
 
     node.append('text')
         .attr('dy', '0.31em')
-        .attr('x', (d) => (d.children ? -6 : 6))
-        .attr('text-anchor', (d) => (d.children ? 'end' : 'start'))
+        .attr('text-anchor', (d) => 'middle')
         .text((d) => d.data.name)
         .clone(true)
         .lower()
@@ -112,7 +115,7 @@ export const Tree = ({ data }: { data: Node }) => {
     }, []);
 
     return (
-        <div style={{ color: 'red', backgroundColor: 'white' }}>
+        <div style={{ color: 'red' }}>
             <div ref={ref} />
         </div>
     );

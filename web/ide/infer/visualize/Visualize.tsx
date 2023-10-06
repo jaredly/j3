@@ -73,8 +73,8 @@ const Fixture = ({
         () => calcResults(state, algos[alg]),
         [alg, state.map],
     );
-    const data = useMemo(() => toTree(state.map, -1), [state.map]);
     const tops = (state.map[state.root] as ListLikeContents).values;
+    const data = useMemo(() => toTree(state.map, tops[0]), [state.map]);
     return (
         <div
             onClick={() => setFocus()}
@@ -98,9 +98,23 @@ const Fixture = ({
 
 type Item = { node: CNode; children: Item[] };
 
+const nodeName = (node: CNode) => {
+    switch (node.type) {
+        case 'identifier':
+            return node.text;
+        case 'array':
+            return '[ ]';
+        case 'record':
+            return '{ }';
+        case 'list':
+            return '( )';
+    }
+    return node.type;
+};
+
 const itemToData = (item: Item): Node => {
     return {
-        name: item.node.type + ':' + item.node.loc,
+        name: nodeName(item.node),
         children: item.children.map(itemToData),
     };
 };
