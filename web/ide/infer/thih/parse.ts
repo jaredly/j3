@@ -1,4 +1,4 @@
-import { Assump, Expr } from './types';
+import { Assump, Expr, builtins } from './types';
 import { term, parse as hmxparse } from '../hmx/hmx';
 import { Node } from '../../../../src/types/cst';
 import { Display } from '../../../../src/to-ast/library';
@@ -63,7 +63,32 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
         }
         case 'var': {
             if (node.name.match(/^[A-Z]/)) {
-                return { type: 'Variant', label: node.name, loc: node.loc };
+                return {
+                    type: 'Ap',
+                    fn: {
+                        type: 'Variant',
+                        label: node.name,
+                        loc: node.loc,
+                    },
+                    arg: {
+                        type: 'Const',
+                        loc: node.loc,
+                        assump: {
+                            type: 'Assump',
+                            id: 'Unit',
+                            scheme: {
+                                kinds: [],
+                                type: 'Forall',
+                                qual: {
+                                    context: [],
+                                    head: builtins.unit,
+                                    type: 'Qual',
+                                },
+                            },
+                        },
+                    },
+                    loc: node.loc,
+                };
             }
             return { type: 'Var', id: node.name, loc: node.loc };
         }
@@ -100,6 +125,21 @@ const _parse = (node: term, ctx: Ctx): Expr | undefined => {
             }
         }
         case 'app': {
+            if (node.fn.type === 'var' && node.fn.name.match(/^[A-Z]/)) {
+                const arg = _parse(node.arg, ctx);
+                return arg
+                    ? {
+                          type: 'Ap',
+                          fn: {
+                              type: 'Variant',
+                              label: node.fn.name,
+                              loc: node.fn.loc,
+                          },
+                          arg,
+                          loc: node.loc,
+                      }
+                    : undefined;
+            }
             const fn = _parse(node.fn, ctx);
             const arg = _parse(node.arg, ctx);
             return fn && arg

@@ -94,9 +94,9 @@ export const typToString = (t: ty): string => {
         case 'const':
             return t.name;
         case 'record':
-            return `{${t.items.map(
-                (row) => `${row.name} ${typToString(row.value)}`,
-            )}}`;
+            return `{${t.items
+                .map((row) => `${row.name} ${typToString(row.value)}`)
+                .join(' ')}}`;
         case 'var':
             return varToString(t.var);
         case 'app':

@@ -20,9 +20,9 @@ import { verticalMove } from '../custom/verticalMove';
 // These register themselves into `./infer/types:algos`
 import './infer/hm/j';
 import './infer/hmx/hmx';
-import './infer/thih';
 import './infer/mini';
 import './infer/algw-cr';
+import './infer/thih';
 
 import { useLocalStorage } from '../Debug';
 import { paste } from '../../src/state/clipboard';
@@ -104,7 +104,7 @@ export const Test = ({ env }: { env: Env }) => {
                 }
             } else {
                 results.tops[top] = {
-                    summary: 'not parse',
+                    summary: 'not parse: ' + Object.values(errors).join('; '),
                     data: [errors, ...getTrace()],
                     failed: true,
                 };

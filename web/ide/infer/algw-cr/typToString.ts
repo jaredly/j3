@@ -11,7 +11,7 @@ export const typToString = (
             if (!seen[t.v.name]) {
                 seen[t.v.name] = letters[Object.keys(seen).length];
             }
-            return "'" + seen[t.v.name];
+            return "'" + seen[t.v.name]; // + ':' + t.v.name;
         case 'Int':
         case 'Bool':
         case 'RowEmpty':
@@ -30,7 +30,7 @@ export const typToString = (
                 ([name, value]) => `${name} ${typToString(value, seen)}`,
             );
             if (at.type !== 'RowEmpty') {
-                res.push('..' + typToString(at));
+                res.push('..' + typToString(at, seen));
             }
             return `{${res.join(' ')}}`;
         }

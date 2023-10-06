@@ -76,7 +76,11 @@ export const printType = (t: Type): string => {
             if (t.fn.type === 'Con' && t.fn.con.id === 'var') {
                 const ts = toList(t.arg);
                 return `[${ts[0]
-                    .map(([n, v]) => `(${n} ${printType(v)})`)
+                    .map(([n, v]) =>
+                        v.type === 'Con' && v.con.id === '()'
+                            ? n
+                            : `(${n} ${printType(v)})`,
+                    )
                     .join(' ')}${
                     ts[1] ? (ts[0].length ? ' ' : '') + printType(ts[1]) : ''
                 }]`;

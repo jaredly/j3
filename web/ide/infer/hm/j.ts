@@ -217,28 +217,30 @@ export let unify = (t1: typ, t2: typ): void => {
         return;
     }
     if (t1.type === 'record' && t2.type === 'record') {
-        // if (t1.items.length === t2.items.length) {
-        const m2: { [key: string]: typ } = {};
-        t2.items.forEach((row) => (m2[row.name] = row.value));
-        const m1: { [key: string]: typ } = {};
-        t1.items.forEach((row) => (m1[row.name] = row.value));
+        if (t1.items.length === t2.items.length) {
+            const m2: { [key: string]: typ } = {};
+            t2.items.forEach((row) => (m2[row.name] = row.value));
+            const m1: { [key: string]: typ } = {};
+            t1.items.forEach((row) => (m1[row.name] = row.value));
 
-        t1.items.forEach((row) => {
-            if (!m2[row.name]) {
-                t2.items.push({ ...row });
-            } else {
-                unify(row.value, m2[row.name]);
-            }
-        });
-        t2.items.forEach((row) => {
-            if (!m1[row.name]) {
-                t1.items.push({ ...row });
-            }
-        });
-        return;
-        // } else {
-        //     throw new Error(`records have different lengths`);
-        // }
+            t1.items.forEach((row) => {
+                if (!m2[row.name]) {
+                    throw new Error(`extra row ${row.name}`);
+                    // t2.items.push({ ...row });
+                } else {
+                    unify(row.value, m2[row.name]);
+                }
+            });
+            t2.items.forEach((row) => {
+                if (!m1[row.name]) {
+                    // t1.items.push({ ...row });
+                    throw new Error(`extra row ${row.name}`);
+                }
+            });
+            return;
+        } else {
+            throw new Error(`records have different lengths`);
+        }
     }
 
     throw new Error(`cannot unify '${t1.type}' and '${t2.type}' sorry`);

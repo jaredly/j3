@@ -58,6 +58,15 @@ const _parse = (
             if (!node.items.length) {
                 return res;
             }
+            if (node.spreads.length > 1) {
+                errors[node.loc] = 'multiple spreads not supported atm';
+                return;
+            }
+            if (node.spreads.length) {
+                const spread = _parse(node.spreads[0], errors);
+                if (!spread) return;
+                res = spread;
+            }
             const rows = node.items.map((row) => ({
                 name: row.name,
                 expr: _parse(row.value, errors)!,
