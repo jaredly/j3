@@ -32,6 +32,7 @@ export type expr =
           loc: number;
       }
     | { type: 'if'; cond: expr; yes: expr; no: expr; loc: number };
+
 export type typ =
     | { type: 'lit'; name: string }
     | { type: 'var'; var: typevar }
