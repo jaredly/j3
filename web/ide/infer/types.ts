@@ -17,6 +17,7 @@ export type Trace = {
     locs: number[];
     kind: TraceKind;
     text: string;
+    state?: any;
 };
 
 export type Algo<E, T, B> = {

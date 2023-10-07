@@ -204,10 +204,11 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
     }
 };
 
-export let unify = (t1: typ, t2: typ): void => {
+export let unify = (t1: typ, t2: typ, _env: Env): void => {
     trace.push({
         kind: 'misc',
         locs: [t1.loc, t2.loc],
+        state: envState(_env),
         text: `unify ${typToString(t1)} with ${typToString(t2)}`,
     });
     if (t1.type === 'lit' && t2.type === 'lit') {
@@ -217,10 +218,10 @@ export let unify = (t1: typ, t2: typ): void => {
         return;
     }
     if (t1.type === 'var' && t1.var.type === 'bound') {
-        return unify(t1.var.typ, t2);
+        return unify(t1.var.typ, t2, _env);
     }
     if (t2.type === 'var' && t2.var.type === 'bound') {
-        return unify(t1, t2.var.typ);
+        return unify(t1, t2.var.typ, _env);
     }
     if (t1.type === 'var' && t1.var.type === 'unbound') {
         if (equal(t1, t2)) {
@@ -235,6 +236,7 @@ export let unify = (t1: typ, t2: typ): void => {
             kind: typTraceKind(t2),
             text: `binding ${varName(t1v)} to ` + typToString(t2),
             locs: t1.var.locs,
+            state: envState(_env),
         });
         return;
     }
@@ -251,6 +253,7 @@ export let unify = (t1: typ, t2: typ): void => {
             kind: typTraceKind(t1),
             text: `binding ${varName(t2v)} to ` + typToString(t1),
             locs: t2.var.locs,
+            state: envState(_env),
         });
         return;
     }
@@ -258,8 +261,8 @@ export let unify = (t1: typ, t2: typ): void => {
         if (t1.args.length !== t2.args.length) {
             throw new Error(`different arg numbers`);
         }
-        t1.args.forEach((arg, i) => unify(arg, t2.args[i]));
-        unify(t1.ret, t2.ret);
+        t1.args.forEach((arg, i) => unify(arg, t2.args[i], _env));
+        unify(t1.ret, t2.ret, _env);
         return;
     }
     if (t1.type === 'record' && t2.type === 'record') {
@@ -274,7 +277,7 @@ export let unify = (t1: typ, t2: typ): void => {
                     throw new Error(`extra row ${row.name}`);
                     // t2.items.push({ ...row });
                 } else {
-                    unify(row.value, m2[row.name]);
+                    unify(row.value, m2[row.name], _env);
                 }
             });
             t2.items.forEach((row) => {
@@ -339,12 +342,18 @@ const typIsPartial = (t: typ): boolean => {
     }
 };
 
-const track = (expr: expr, results: Results, typ: typ) => {
+const envState = (env: Env) =>
+    Object.entries(env)
+        .map(([key, v]) => `${key}  ${typToString(v.typ)}`)
+        .join('\n');
+
+const track = (env: Env, expr: expr, results: Results, typ: typ) => {
     results[expr.loc] = typ;
     trace.push({
         locs: [expr.loc],
         text: 'inferred type: ' + typToString(typ),
         kind: typTraceKind(typ),
+        state: envState(env),
     });
     return typ;
 };
@@ -353,22 +362,23 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         locs: [expr.loc],
         kind: 'infer:start',
         text: 'start inference',
+        state: envState(env),
     });
     switch (expr.type) {
         case 'bool':
-            return track(expr, results, {
+            return track(env, expr, results, {
                 type: 'lit',
                 name: 'bool',
                 loc: expr.loc,
             });
         case 'string':
-            return track(expr, results, {
+            return track(env, expr, results, {
                 type: 'lit',
                 name: 'string',
                 loc: expr.loc,
             });
         case 'number':
-            return track(expr, results, {
+            return track(env, expr, results, {
                 type: 'lit',
                 name: 'number',
                 loc: expr.loc,
@@ -376,7 +386,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         case 'accessor': {
             let t_ = newvar_t(expr.loc);
 
-            return track(expr, results, {
+            return track(env, expr, results, {
                 type: 'fn',
                 args: [
                     {
@@ -390,7 +400,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             });
         }
         case 'record':
-            return track(expr, results, {
+            return track(env, expr, results, {
                 type: 'record',
                 items: expr.items.map((row) => ({
                     name: row.name,
@@ -407,7 +417,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
                 // s.typ.var.locs.push(expr.loc);
                 s.typ.var.locs = [...s.typ.var.locs, expr.loc];
             }
-            return track(expr, results, inst(s));
+            return track(env, expr, results, inst(s));
         }
         case 'fncall': {
             let t0 = _infer(env, expr.fn, results);
@@ -418,8 +428,8 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             //     text: 'new tvar',
             //     kind: 'tvar:new',
             // });
-            unify(t0, { type: 'fn', args: t1, ret: t_, loc: expr.loc });
-            return track(expr, results, t_);
+            unify(t0, { type: 'fn', args: t1, ret: t_, loc: expr.loc }, env);
+            return track(env, expr, results, t_);
         }
         case 'lambda': {
             let env_: Env = { ...env };
@@ -430,7 +440,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
                 return t;
             });
             let ret = _infer(env_, expr.expr, results);
-            return track(expr, results, {
+            return track(env, expr, results, {
                 type: 'fn',
                 args,
                 ret,
@@ -447,6 +457,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             });
             exit_level();
             return track(
+                env,
                 expr,
                 results,
                 _infer(
@@ -458,11 +469,11 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         }
         case 'if': {
             const cond = _infer(env, expr.cond, results);
-            unify(cond, { type: 'lit', name: 'bool', loc: expr.loc });
+            unify(cond, { type: 'lit', name: 'bool', loc: expr.loc }, env);
             const yes = _infer(env, expr.yes, results);
             const no = _infer(env, expr.no, results);
-            unify(yes, no);
-            return track(expr, results, yes);
+            unify(yes, no, env);
+            return track(env, expr, results, yes);
         }
     }
 };
@@ -491,9 +502,6 @@ const toString = (expr: expr): string => {
 };
 
 const toTree = (expr: expr): Tree => {
-    if (!expr) {
-        // debugger;
-    }
     switch (expr.type) {
         case 'let':
             return {

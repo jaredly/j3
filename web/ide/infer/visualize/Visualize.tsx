@@ -114,6 +114,10 @@ const Fixture = ({
 
     const trace = results.tops[tops[0]].data;
     const focus = trace[at]?.locs;
+    let traceState = trace[at]?.state;
+    for (let i = at; i >= 0 && !traceState; i--) {
+        traceState = trace[i]?.state;
+    }
 
     const { colors, borders } = useMemo(() => {
         const colors: { [loc: number]: string } = {};
@@ -198,29 +202,43 @@ const Fixture = ({
     }, [missing]);
 
     return (
-        <div style={{ display: 'flex' }}>
+        <div>
+            <div style={{ display: 'flex' }}>
+                <div
+                    // onClick={() => setFocus()}
+                    style={{
+                        // flex: 1,
+                        // border: focus
+                        //     ? '1px solid magenta'
+                        //     : '1px solid transparent',
+                        position: 'relative',
+                        paddingRight: 16,
+                        margin: 2,
+                    }}
+                >
+                    <div style={{ marginBottom: -20, paddingTop: m }}>
+                        {levels}
+                    </div>
+                    <Root
+                        key={t}
+                        state={state}
+                        dispatch={() => {}}
+                        results={results}
+                        tops={tops}
+                        showTop={() => results.tops[tops[0]].summary}
+                        debug={false}
+                    />
+                </div>
+                <div style={{ width: 200 }}>
+                    <pre>{traceState}</pre>
+                </div>
+            </div>
             <div
-                // onClick={() => setFocus()}
                 style={{
-                    flex: 1,
-                    // border: focus
-                    //     ? '1px solid magenta'
-                    //     : '1px solid transparent',
-                    position: 'relative',
-                    padding: 16,
-                    margin: 2,
+                    paddingLeft: 40,
+                    marginBottom: 32,
                 }}
             >
-                <div style={{ marginBottom: -20, paddingTop: m }}>{levels}</div>
-                <Root
-                    key={t}
-                    state={state}
-                    dispatch={() => {}}
-                    results={results}
-                    tops={tops}
-                    showTop={() => results.tops[tops[0]].summary}
-                    debug={false}
-                />
                 <input
                     type="range"
                     value={at}
@@ -243,13 +261,6 @@ const Fixture = ({
                     }}
                 />
                 <div>{trace[at]?.text ?? '.'}</div>
-            </div>
-            <div style={{ width: 200 }}>
-                {/* <pre>
-                    {results.tops[tops[0]].data
-                        .map((row) => JSON.stringify(row))
-                        .join('\n')}
-                </pre> */}
             </div>
         </div>
     );
