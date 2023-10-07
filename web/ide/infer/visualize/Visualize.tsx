@@ -1,38 +1,21 @@
-import React, { useEffect, useMemo, useReducer, useState } from 'react';
-import { layout } from '../../../../src/layout';
-import { emptyMap, parseByCharacter } from '../../../../src/parse/parse';
-import {
-    StateChange,
-    applyUpdate,
-    getKeyUpdate,
-    isRootPath,
-} from '../../../../src/state/getKeyUpdate';
-import { Ctx, Env } from '../../../../src/to-ast/library';
-import { ListLikeContents, fromMCST } from '../../../../src/types/mcst';
-import { Cursors } from '../../../custom/Cursors';
-import { HiddenInput } from '../../../custom/HiddenInput';
-import { Hover, calc } from '../../../custom/Hover';
-import { Root } from '../../../custom/Root';
-import { Action, NUIState, UpdatableAction } from '../../../custom/UIState';
-import {
-    UIStateChange,
-    calcHistoryItem,
-    undoRedo,
-} from '../../../custom/reduce';
-import { verticalMove } from '../../../custom/verticalMove';
-import { calcResults, loadState, stateFromMap } from '../../Test';
-import { useLocalStorage } from '../../../Debug';
-import { Tree, algos } from '../types';
-import { Node } from './Tree';
-import { transformNode } from '../../../../src/types/transform-cst';
+import React, { useEffect, useMemo, useState } from 'react';
+import { parseByCharacter } from '../../../../src/parse/parse';
+import { Env } from '../../../../src/to-ast/library';
 import { Node as CNode } from '../../../../src/types/cst';
-import { expr } from '../hm/j';
+import { ListLikeContents } from '../../../../src/types/mcst';
+import { useLocalStorage } from '../../../Debug';
+import { Root } from '../../../custom/Root';
+import { calcResults, stateFromMap } from '../../Test';
+import { TraceKind, Tree, algos } from '../types';
+import { Node } from './Tree';
 
 const fixtures = [
     `(+ 1 2)`,
     `(let [x 2] (+ 2 x))`,
     `(fn [x] (+ 2 x))`,
     `(fn [x] (let [y x] (+ 2 y)))`,
+    `(fn [x y] (+ (x (+ y 2)) 3))`,
+    `(fn [a] (let [x (fn [x] x)] (let [y (x (+ a 2))] (x "hi"))))`,
     `(let [x (fn [v] (if (> v 2) v (x (+ v 1))))] (x 0))`,
 ];
 
@@ -78,9 +61,10 @@ const Fixture = ({
     focus: boolean;
     setFocus: () => void;
 }) => {
-    const state = useMemo(() => {
+    const [t, state] = useMemo(() => {
         const res = parseByCharacter(fix.replaceAll(/\n\s*/g, ' '), null);
-        return stateFromMap(res.map);
+        console.log('doing a state');
+        return [Date.now(), stateFromMap(res.map)];
     }, []);
     const results = useMemo(
         () => calcResults(state, algos[alg], false),
@@ -114,101 +98,155 @@ const Fixture = ({
         return levels.filter((l) => l.length);
     }, [state.map, alg, results]);
 
-    const [refs, setRefs] = useState(null as null | NUIState['regs']);
-    // useEffect(() => {
-    //     setRefs(state.regs);
-    // }, [state.map]);
+    const [_, setTick] = useState(0);
 
     const h = 10;
     const m = 4;
 
-    return (
-        <div
-            onClick={() => setFocus()}
-            style={{
-                border: focus ? '1px solid magenta' : '1px solid transparent',
-                position: 'relative',
-            }}
-            ref={(node) => {
-                if (!refs) {
-                    setRefs(state.regs);
+    const [at, setAt] = useState(-1);
+
+    const kindColor: Partial<Record<TraceKind, string>> = {
+        'infer:end': 'red',
+        'infer:start': '#55f',
+        'tvar:new': 'green',
+        'type:fixed': 'orange',
+        'type:free': '#800080',
+        'type:partial': '#c000c0',
+    };
+
+    const { colors, borders } = useMemo(() => {
+        const colors: { [loc: number]: string } = {};
+        const borders: { [loc: number]: string } = {};
+        results.tops[tops[0]].data.slice(0, at + 1).forEach((line) => {
+            line.locs.forEach((loc) => {
+                // if (line.kind.startsWith('type')) {
+                if (kindColor[line.kind]) {
+                    colors[loc] = kindColor[line.kind]!;
                 }
-            }}
-        >
-            {/* <pre>{fix}</pre> */}
-            {refs && (
-                <div style={{ marginBottom: -20, paddingTop: m }}>
-                    {data?.map((level, i) => (
+                // } else {
+                //     borders[loc] = kindColor[line.kind];
+                // }
+            });
+        });
+        return { colors, borders };
+    }, [results, at]);
+
+    let missing = false;
+    const levels =
+        state.regs &&
+        data?.map((level, i) => (
+            <div key={i} style={{ height: h + m }}>
+                {level.map((node, i) => {
+                    const rf = state.regs![node.loc];
+                    if (!rf) {
+                        missing = true;
+                        // return 'nobox' + node.loc;
+                        return;
+                    }
+                    let left;
+                    let right;
+                    if (rf.main) {
+                        const box = rf.main.node.getBoundingClientRect();
+                        left = box.left;
+                        right = box.right;
+                    }
+                    if (rf.start) {
+                        left = rf.start.node.getBoundingClientRect().left;
+                    }
+                    if (rf.end) {
+                        right = rf.end.node.getBoundingClientRect().right;
+                    }
+                    if (left == null || right == null) {
+                        missing = true;
+                        return;
+                    }
+                    return (
                         <div
                             key={i}
                             style={{
-                                height: h + m,
-                                // backgroundColor: 'red',
-                                // marginBottom: 2,
+                                position: 'absolute',
+                                left,
+                                width: right - left,
+                                backgroundColor: colors[node.loc] ?? 'blue',
+                                borderColor: borders[node.loc] ?? 'transparent',
+                                borderWidth: 1,
+                                borderStyle: 'solid',
+                                height: h,
+                                borderRadius: h / 2,
                             }}
                         >
-                            {level.map((node, i) => {
-                                const rf = refs![node.loc];
-                                if (!rf) return 'nobox' + node.loc;
-                                let left;
-                                let right;
-                                if (rf.main) {
-                                    const box =
-                                        rf.main.node.getBoundingClientRect();
-                                    left = box.left;
-                                    right = box.right;
-                                }
-                                if (rf.start) {
-                                    left =
-                                        rf.start.node.getBoundingClientRect()
-                                            .left;
-                                }
-                                if (rf.end) {
-                                    right =
-                                        rf.end.node.getBoundingClientRect()
-                                            .right;
-                                }
-                                if (left == null || right == null) {
-                                    return 'badn';
-                                }
-                                // const box = rf?.main?.node.getBoundingClientRect();
-                                return (
-                                    <div
-                                        key={i}
-                                        style={{
-                                            position: 'absolute',
-                                            left,
-                                            width: right - left,
-                                            backgroundColor: 'blue',
-                                            height: h,
-                                            borderRadius: h / 2,
-                                        }}
-                                    >
-                                        {/* {node.name}:{node.loc} */}
-                                    </div>
-                                );
-                            })}
+                            {/* {node.name}:{node.loc} */}
                         </div>
-                    ))}
-                </div>
-            )}
-            <Root
-                // ref={node => {
-                //     if
-                // }}
-                state={state}
-                dispatch={() => {}}
-                results={results}
-                tops={tops}
-                showTop={() => results.tops[tops[0]].summary}
-                debug={false}
-            />
-            {/* {focus && data ? <Tree data={data} /> : null} */}
-            <pre>
-                {results.tops[tops[0]].data
-                    .map((row) => JSON.stringify(row))
-                    .join('\n')}
-            </pre>
+                    );
+                })}
+            </div>
+        ));
+    if (missing) {
+        console.log('um', state.regs);
+    }
+
+    useEffect(() => {
+        // setTimeout(() => {
+        //     setTick((t) => t + 1);
+        // }, 100);
+        setTick((t) => t + 1);
+    }, [missing]);
+
+    return (
+        <div style={{ display: 'flex' }}>
+            <div
+                onClick={() => setFocus()}
+                style={{
+                    flex: 1,
+                    border: focus
+                        ? '1px solid magenta'
+                        : '1px solid transparent',
+                    position: 'relative',
+                    padding: 16,
+                    margin: 2,
+                }}
+            >
+                <div style={{ marginBottom: -20, paddingTop: m }}>{levels}</div>
+                <Root
+                    key={t}
+                    state={state}
+                    dispatch={() => {}}
+                    results={results}
+                    tops={tops}
+                    showTop={() => results.tops[tops[0]].summary}
+                    debug={false}
+                />
+                <input
+                    type="range"
+                    value={at}
+                    min={-1}
+                    max={results.tops[tops[0]].data.length}
+                    onChange={(evt) => setAt(+evt.target.value)}
+                    onKeyDown={(evt) => {
+                        if (evt.key === 'Enter') {
+                            let iv = setInterval(() => {
+                                setAt((m) => {
+                                    if (
+                                        m >= results.tops[tops[0]].data.length
+                                    ) {
+                                        clearInterval(iv);
+                                        return m;
+                                    }
+                                    return m + 1;
+                                });
+                            }, 500);
+                        }
+                    }}
+                />
+                <div>{results.tops[tops[0]].data[at]?.text ?? '.'}</div>
+            </div>
+            <div style={{ width: 200 }}>
+                {/* <pre>
+                    {results.tops[tops[0]].data
+                        .map((row) => JSON.stringify(row))
+                        .join('\n')}
+                </pre> */}
+            </div>
         </div>
     );
 };

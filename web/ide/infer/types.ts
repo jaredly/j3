@@ -4,6 +4,21 @@ import { Ctx } from './algw-cr/parse';
 
 export type Tree = { name: string; loc: number; children: Tree[] };
 
+export type TraceKind =
+    | 'infer:start'
+    | 'infer:end'
+    | 'tvar:new'
+    | 'misc'
+    | 'type:free'
+    | 'type:partial'
+    | 'type:fixed';
+
+export type Trace = {
+    locs: number[];
+    kind: TraceKind;
+    text: string;
+};
+
 export type Algo<E, T, B> = {
     builtins: B;
     parse: (node: Node, ctx: Ctx) => E | undefined;
@@ -13,7 +28,7 @@ export type Algo<E, T, B> = {
         ctx: { display: Display; typs: { [key: string]: any } },
     ) => T;
     typToString: (t: T) => string;
-    getTrace: () => any[];
+    getTrace: () => Trace[];
     toTree?: (expr: E) => Tree;
 };
 

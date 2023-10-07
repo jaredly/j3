@@ -30,6 +30,9 @@ export function Root({
     showTop: (top: number) => React.ReactNode;
     results: Ctx['results'];
 }) {
+    useEffect(() => {
+        console.log('ROOT First render');
+    }, []);
     const selections = React.useMemo(
         () =>
             state.at

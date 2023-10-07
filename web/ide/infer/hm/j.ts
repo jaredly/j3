@@ -2,7 +2,7 @@
 // nice.
 
 import { Display } from '../../../../src/to-ast/library';
-import { Tree, register } from '../types';
+import { Trace, Tree, register } from '../types';
 import { parse } from './parse-j';
 
 export type expr =
@@ -39,8 +39,8 @@ export type typ =
     | { type: 'record'; items: { name: string; value: typ }[] }
     | { type: 'fn'; args: typ[]; ret: typ };
 export type typevar =
-    | { type: 'bound'; typ: typ }
-    | { type: 'unbound'; var: number; level: number };
+    | { type: 'bound'; typ: typ; locs: number[] }
+    | { type: 'unbound'; var: number; level: number; locs: number[] };
 export type polytype = { typevars: number[]; typ: typ };
 
 let current_level = 1;
@@ -48,15 +48,23 @@ let current_typevar = 0;
 let enter_level = () => current_level++;
 let exit_level = () => current_level--;
 let newvar = () => {
-    current_typevar++;
-    return current_typevar;
+    return current_typevar++;
 };
-let newvar_t = (): Extract<typ, { type: 'var' }> => ({
-    type: 'var',
-    var: { type: 'unbound', var: newvar(), level: current_level },
-});
+let newvar_t = (locs: number[] = []): Extract<typ, { type: 'var' }> => {
+    const t = {
+        type: 'var',
+        var: { type: 'unbound', var: newvar(), level: current_level, locs },
+    } as const;
+    trace.push({
+        kind: 'type:free',
+        locs,
+        text: 'new type var: ' + typToString(t),
+    });
+    return t;
+};
 
 const alpha = 'abcdefghij';
+const varName = (v: number) => "'" + alpha[v];
 export const typToString = (
     t: typ,
     seen: { [key: string]: string } = {},
@@ -76,10 +84,11 @@ export const typToString = (
             if (t.var.type === 'bound') {
                 return typToString(t.var.typ, seen);
             }
-            if (!seen[t.var.var]) {
-                seen[t.var.var] = alpha[Object.keys(seen).length];
-            }
-            return "'" + seen[t.var.var];
+            // if (!seen[t.var.var]) {
+            //     seen[t.var.var] = alpha[Object.keys(seen).length];
+            // }
+            // return "'" + seen[t.var.var];
+            return varName(t.var.var);
         // return `v${t.var.var}`; //:${t.var.level}`;
     }
 };
@@ -173,7 +182,12 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
             }
             let { var: b_id, level: b_level } = typ.var;
             let min_level = Math.min(a_level, b_level);
-            typ.var = { type: 'unbound', var: b_id, level: min_level };
+            typ.var = {
+                type: 'unbound',
+                var: b_id,
+                level: min_level,
+                locs: typ.var.locs,
+            };
             return a_id == b_id;
         }
         case 'fn':
@@ -185,6 +199,11 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
 };
 
 export let unify = (t1: typ, t2: typ): void => {
+    trace.push({
+        kind: 'misc',
+        locs: [],
+        text: `unify ${typToString(t1)} with ${typToString(t2)}`,
+    });
     if (t1.type === 'lit' && t2.type === 'lit') {
         if (t1.name !== t2.name) {
             throw new Error(`cannot unify ${t1.name} and ${t2.name}`);
@@ -204,7 +223,13 @@ export let unify = (t1: typ, t2: typ): void => {
         if (occurs(t1.var.var, t1.var.level, t2)) {
             throw new Error('t2 occurs in t1');
         }
-        t1.var = { type: 'bound', typ: t2 };
+        const t1v = t1.var.var;
+        t1.var = { type: 'bound', typ: t2, locs: t1.var.locs };
+        trace.push({
+            kind: typTraceKind(t2),
+            text: `binding ${varName(t1v)} to ` + typToString(t2),
+            locs: t1.var.locs,
+        });
         return;
     }
     if (t2.type === 'var' && t2.var.type === 'unbound') {
@@ -214,7 +239,13 @@ export let unify = (t1: typ, t2: typ): void => {
         if (occurs(t2.var.var, t2.var.level, t1)) {
             throw new Error('t1 occurs in t2');
         }
-        t2.var = { type: 'bound', typ: t1 };
+        const t2v = t2.var.var;
+        t2.var = { type: 'bound', typ: t1, locs: t2.var.locs };
+        trace.push({
+            kind: typTraceKind(t1),
+            text: `binding ${varName(t2v)} to ` + typToString(t1),
+            locs: t2.var.locs,
+        });
         return;
     }
     if (t1.type === 'fn' && t2.type === 'fn') {
@@ -288,13 +319,35 @@ let dont_generalize = (typ: typ): polytype => ({ typevars: [], typ });
 
 export type Env = { [name: string]: polytype };
 export type Results = { [loc: number]: typ };
+
+const typIsPartial = (t: typ): boolean => {
+    switch (t.type) {
+        case 'var':
+            return t.var.type === 'unbound' || typIsPartial(t.var.typ);
+        case 'fn':
+            return t.args.some(typIsPartial) || typIsPartial(t.ret);
+        case 'lit':
+            return false;
+        case 'record':
+            return t.items.some((r) => typIsPartial(r.value));
+    }
+};
+
 const track = (expr: expr, results: Results, typ: typ) => {
     results[expr.loc] = typ;
-    trace.push({ loc: expr.loc, typ });
+    trace.push({
+        locs: [expr.loc],
+        text: 'inferred type: ' + typToString(typ),
+        kind: typTraceKind(typ),
+    });
     return typ;
 };
 let _infer = (env: Env, expr: expr, results: Results): typ => {
-    trace.push({ start: expr.loc });
+    trace.push({
+        locs: [expr.loc],
+        kind: 'infer:start',
+        text: 'start inference',
+    });
     switch (expr.type) {
         case 'bool':
             return track(expr, results, { type: 'lit', name: 'bool' });
@@ -303,7 +356,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         case 'number':
             return track(expr, results, { type: 'lit', name: 'number' });
         case 'accessor': {
-            let t_ = newvar_t();
+            let t_ = newvar_t([expr.loc]);
 
             return track(expr, results, {
                 type: 'fn',
@@ -326,13 +379,21 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             if (!s) {
                 throw new Error(`undefined ${expr.id}`);
             }
+            if (s.typ.type === 'var') {
+                // s.typ.var.locs.push(expr.loc);
+                s.typ.var.locs = [...s.typ.var.locs, expr.loc];
+            }
             return track(expr, results, inst(s));
         }
         case 'fncall': {
             let t0 = _infer(env, expr.fn, results);
             let t1 = expr.args.map((arg) => _infer(env, arg, results));
-            let t_ = newvar_t();
-            trace.push({ newvar: expr.loc });
+            let t_ = newvar_t([expr.loc]);
+            // trace.push({
+            //     locs: [expr.loc],
+            //     text: 'new tvar',
+            //     kind: 'tvar:new',
+            // });
             unify(t0, { type: 'fn', args: t1, ret: t_ });
             return track(expr, results, t_);
         }
@@ -340,7 +401,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             let env_: Env = { ...env };
 
             let args = expr.names.map((name) => {
-                const t = newvar_t();
+                const t = newvar_t([name.loc]);
                 env_[name.name] = dont_generalize(t);
                 return t;
             });
@@ -350,6 +411,11 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         case 'let': {
             enter_level();
             let t = (results[expr.nameloc] = _infer(env, expr.init, results));
+            trace.push({
+                kind: 'type:fixed',
+                locs: [expr.nameloc],
+                text: typToString(t),
+            });
             exit_level();
             return track(
                 expr,
@@ -438,7 +504,7 @@ const toTree = (expr: expr): Tree => {
     return { name: expr.type, loc: expr.loc, children: [] };
 };
 
-let trace: any[] = [];
+let trace: Trace[] = [];
 
 register('j', {
     infer,
@@ -481,3 +547,12 @@ register('j', {
     typToString,
     toTree,
 });
+function typTraceKind(
+    typ: typ,
+): import('/Users/jared/clone/exploration/j3/web/ide/infer/types').TraceKind {
+    return typ.type === 'var' && typ.var.type === 'unbound'
+        ? 'type:free'
+        : // : typIsPartial(typ)
+          // ? 'type:partial'
+          'type:fixed';
+}

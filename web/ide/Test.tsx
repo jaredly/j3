@@ -26,7 +26,7 @@ import './infer/thih';
 
 import { useLocalStorage } from '../Debug';
 import { paste } from '../../src/state/clipboard';
-import { Algo, algos } from './infer/types';
+import { Algo, Trace, algos } from './infer/types';
 
 const names = ['what', 'w', 'w2', '10'];
 
@@ -307,7 +307,7 @@ export function calcResults(
         tops: {
             [key: number]: {
                 summary: string;
-                data: any[];
+                data: Trace[];
                 failed: boolean;
                 expr?: any;
             };
@@ -350,14 +350,14 @@ export function calcResults(
                 // console.log('no typ sorry', err);
                 results.tops[top] = {
                     summary: 'Type Error: ' + (err as Error).message,
-                    data: [(err as Error).message, getTrace()],
+                    data: getTrace(),
                     failed: true,
                 };
             }
         } else {
             results.tops[top] = {
                 summary: 'not parse: ' + Object.values(errors).join('; '),
-                data: [errors, ...getTrace()],
+                data: getTrace(),
                 failed: true,
             };
         }
@@ -387,7 +387,7 @@ export function loadState(k: string) {
     };
 }
 
-export function stateFromMap(map: NUIState['map']) {
+export function stateFromMap(map: NUIState['map']): NUIState {
     let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         map,
