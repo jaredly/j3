@@ -53,8 +53,6 @@ export const Visualize = ({ env }: { env: Env }) => {
 const Fixture = ({
     fix,
     alg,
-    focus,
-    setFocus,
 }: {
     fix: string;
     alg: string;
@@ -114,10 +112,13 @@ const Fixture = ({
         'type:partial': '#c000c0',
     };
 
+    const trace = results.tops[tops[0]].data;
+    const focus = trace[at]?.locs;
+
     const { colors, borders } = useMemo(() => {
         const colors: { [loc: number]: string } = {};
         const borders: { [loc: number]: string } = {};
-        results.tops[tops[0]].data.slice(0, at + 1).forEach((line) => {
+        trace.slice(0, at + 1).forEach((line) => {
             line.locs.forEach((loc) => {
                 // if (line.kind.startsWith('type')) {
                 if (kindColor[line.kind]) {
@@ -168,8 +169,12 @@ const Fixture = ({
                                 left,
                                 width: right - left,
                                 backgroundColor: colors[node.loc] ?? 'blue',
-                                borderColor: borders[node.loc] ?? 'transparent',
-                                borderWidth: 1,
+                                borderColor: focus?.includes(node.loc)
+                                    ? 'white'
+                                    : 'transparent',
+                                borderWidth: 2,
+                                transition:
+                                    '.2s ease border-color, background-color',
                                 borderStyle: 'solid',
                                 height: h,
                                 borderRadius: h / 2,
@@ -195,12 +200,12 @@ const Fixture = ({
     return (
         <div style={{ display: 'flex' }}>
             <div
-                onClick={() => setFocus()}
+                // onClick={() => setFocus()}
                 style={{
                     flex: 1,
-                    border: focus
-                        ? '1px solid magenta'
-                        : '1px solid transparent',
+                    // border: focus
+                    //     ? '1px solid magenta'
+                    //     : '1px solid transparent',
                     position: 'relative',
                     padding: 16,
                     margin: 2,
@@ -220,25 +225,24 @@ const Fixture = ({
                     type="range"
                     value={at}
                     min={-1}
-                    max={results.tops[tops[0]].data.length}
+                    max={trace.length}
                     onChange={(evt) => setAt(+evt.target.value)}
+                    style={{ outline: 'none' }}
                     onKeyDown={(evt) => {
                         if (evt.key === 'Enter') {
                             let iv = setInterval(() => {
                                 setAt((m) => {
-                                    if (
-                                        m >= results.tops[tops[0]].data.length
-                                    ) {
+                                    if (m >= trace.length) {
                                         clearInterval(iv);
                                         return m;
                                     }
                                     return m + 1;
                                 });
-                            }, 500);
+                            }, 800);
                         }
                     }}
                 />
-                <div>{results.tops[tops[0]].data[at]?.text ?? '.'}</div>
+                <div>{trace[at]?.text ?? '.'}</div>
             </div>
             <div style={{ width: 200 }}>
                 {/* <pre>

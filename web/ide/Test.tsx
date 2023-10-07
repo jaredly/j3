@@ -34,7 +34,7 @@ export const Test = ({ env }: { env: Env }) => {
     const k = 'test-infer-' + document.location.hash.slice(1);
     // const [k, setK] = useState(names[0]);
 
-    const [alg, setAlg] = useLocalStorage('test:infer-alg', () => 'thih');
+    const [alg, setAlg] = useLocalStorage('test:infer-alg', () => 'j');
 
     const { typToString } = algos[alg];
 

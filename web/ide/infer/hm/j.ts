@@ -34,10 +34,10 @@ export type expr =
     | { type: 'if'; cond: expr; yes: expr; no: expr; loc: number };
 
 export type typ =
-    | { type: 'lit'; name: string }
-    | { type: 'var'; var: typevar }
-    | { type: 'record'; items: { name: string; value: typ }[] }
-    | { type: 'fn'; args: typ[]; ret: typ };
+    | { type: 'lit'; name: string; loc: number }
+    | { type: 'var'; var: typevar; loc: number }
+    | { type: 'record'; items: { name: string; value: typ }[]; loc: number }
+    | { type: 'fn'; args: typ[]; ret: typ; loc: number };
 export type typevar =
     | { type: 'bound'; typ: typ; locs: number[] }
     | { type: 'unbound'; var: number; level: number; locs: number[] };
@@ -50,14 +50,20 @@ let exit_level = () => current_level--;
 let newvar = () => {
     return current_typevar++;
 };
-let newvar_t = (locs: number[] = []): Extract<typ, { type: 'var' }> => {
+let newvar_t = (loc?: number): Extract<typ, { type: 'var' }> => {
     const t = {
         type: 'var',
-        var: { type: 'unbound', var: newvar(), level: current_level, locs },
+        var: {
+            type: 'unbound',
+            var: newvar(),
+            level: current_level,
+            locs: loc != null ? [loc] : [],
+        },
+        loc: loc ?? -1,
     } as const;
     trace.push({
         kind: 'type:free',
-        locs,
+        locs: loc != null ? [loc] : [],
         text: 'new type var: ' + typToString(t),
     });
     return t;
@@ -157,7 +163,7 @@ let inst = ({ typevars, typ }: polytype): typ => {
             }
             case 'fn':
                 return {
-                    type: 'fn',
+                    ...typ,
                     args: typ.args.map((arg) => replace_tvs(tbl, arg)),
                     ret: replace_tvs(tbl, typ.ret),
                 };
@@ -201,7 +207,7 @@ let occurs = (a_id: number, a_level: number, typ: typ): boolean => {
 export let unify = (t1: typ, t2: typ): void => {
     trace.push({
         kind: 'misc',
-        locs: [],
+        locs: [t1.loc, t2.loc],
         text: `unify ${typToString(t1)} with ${typToString(t2)}`,
     });
     if (t1.type === 'lit' && t2.type === 'lit') {
@@ -350,20 +356,37 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
     });
     switch (expr.type) {
         case 'bool':
-            return track(expr, results, { type: 'lit', name: 'bool' });
+            return track(expr, results, {
+                type: 'lit',
+                name: 'bool',
+                loc: expr.loc,
+            });
         case 'string':
-            return track(expr, results, { type: 'lit', name: 'string' });
+            return track(expr, results, {
+                type: 'lit',
+                name: 'string',
+                loc: expr.loc,
+            });
         case 'number':
-            return track(expr, results, { type: 'lit', name: 'number' });
+            return track(expr, results, {
+                type: 'lit',
+                name: 'number',
+                loc: expr.loc,
+            });
         case 'accessor': {
-            let t_ = newvar_t([expr.loc]);
+            let t_ = newvar_t(expr.loc);
 
             return track(expr, results, {
                 type: 'fn',
                 args: [
-                    { type: 'record', items: [{ name: expr.id, value: t_ }] },
+                    {
+                        type: 'record',
+                        items: [{ name: expr.id, value: t_ }],
+                        loc: expr.loc,
+                    },
                 ],
                 ret: t_,
+                loc: expr.loc,
             });
         }
         case 'record':
@@ -373,6 +396,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
                     name: row.name,
                     value: _infer(env, row.value, results),
                 })),
+                loc: expr.loc,
             });
         case 'identifier': {
             let s = env[expr.id];
@@ -388,25 +412,30 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         case 'fncall': {
             let t0 = _infer(env, expr.fn, results);
             let t1 = expr.args.map((arg) => _infer(env, arg, results));
-            let t_ = newvar_t([expr.loc]);
+            let t_ = newvar_t(expr.loc);
             // trace.push({
             //     locs: [expr.loc],
             //     text: 'new tvar',
             //     kind: 'tvar:new',
             // });
-            unify(t0, { type: 'fn', args: t1, ret: t_ });
+            unify(t0, { type: 'fn', args: t1, ret: t_, loc: expr.loc });
             return track(expr, results, t_);
         }
         case 'lambda': {
             let env_: Env = { ...env };
 
             let args = expr.names.map((name) => {
-                const t = newvar_t([name.loc]);
+                const t = newvar_t(name.loc);
                 env_[name.name] = dont_generalize(t);
                 return t;
             });
             let ret = _infer(env_, expr.expr, results);
-            return track(expr, results, { type: 'fn', args, ret });
+            return track(expr, results, {
+                type: 'fn',
+                args,
+                ret,
+                loc: expr.loc,
+            });
         }
         case 'let': {
             enter_level();
@@ -429,7 +458,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
         }
         case 'if': {
             const cond = _infer(env, expr.cond, results);
-            unify(cond, { type: 'lit', name: 'bool' });
+            unify(cond, { type: 'lit', name: 'bool', loc: expr.loc });
             const yes = _infer(env, expr.yes, results);
             const no = _infer(env, expr.no, results);
             unify(yes, no);
@@ -517,10 +546,12 @@ register('j', {
                     {
                         type: 'lit',
                         name: 'number',
+                        loc: -1,
                     },
-                    { type: 'lit', name: 'number' },
+                    { type: 'lit', name: 'number', loc: -1 },
                 ],
-                ret: { type: 'lit', name: 'bool' },
+                ret: { type: 'lit', name: 'bool', loc: -1 },
+                loc: -1,
             },
         },
         '+': {
@@ -531,10 +562,12 @@ register('j', {
                     {
                         type: 'lit',
                         name: 'number',
+                        loc: -1,
                     },
-                    { type: 'lit', name: 'number' },
+                    { type: 'lit', name: 'number', loc: -1 },
                 ],
-                ret: { type: 'lit', name: 'number' },
+                ret: { type: 'lit', name: 'number', loc: -1 },
+                loc: -1,
             },
         },
     },
