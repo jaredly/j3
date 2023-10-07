@@ -300,6 +300,7 @@ const actionToUpdate = (
 export function calcResults(
     state: NUIState,
     { builtins, getTrace, infer, parse, typToString }: Algo<any, any, any>,
+    doLayout = true,
 ) {
     const tops = (state.map[state.root] as ListLikeContents).values;
     const results: Ctx['results'] & {
@@ -361,7 +362,9 @@ export function calcResults(
             };
         }
 
-        layout(top, 0, state.map, results.display, results.hashNames, true);
+        if (doLayout) {
+            layout(top, 0, state.map, results.display, results.hashNames, true);
+        }
     });
 
     return results;

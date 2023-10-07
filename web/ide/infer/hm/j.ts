@@ -290,9 +290,11 @@ export type Env = { [name: string]: polytype };
 export type Results = { [loc: number]: typ };
 const track = (expr: expr, results: Results, typ: typ) => {
     results[expr.loc] = typ;
+    trace.push({ loc: expr.loc, typ });
     return typ;
 };
 let _infer = (env: Env, expr: expr, results: Results): typ => {
+    trace.push({ start: expr.loc });
     switch (expr.type) {
         case 'bool':
             return track(expr, results, { type: 'lit', name: 'bool' });
@@ -330,6 +332,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
             let t0 = _infer(env, expr.fn, results);
             let t1 = expr.args.map((arg) => _infer(env, arg, results));
             let t_ = newvar_t();
+            trace.push({ newvar: expr.loc });
             unify(t0, { type: 'fn', args: t1, ret: t_ });
             return track(expr, results, t_);
         }
@@ -397,6 +400,15 @@ const toTree = (expr: expr): Tree => {
         // debugger;
     }
     switch (expr.type) {
+        case 'let':
+            return {
+                name: '(let',
+                loc: expr.loc,
+                children: [
+                    { name: expr.name, loc: expr.nameloc, children: [] },
+                    ...[expr.init, expr.body].map(toTree),
+                ],
+            };
         case 'fncall':
             return {
                 name: toString(expr).slice(0, 10),
@@ -426,9 +438,25 @@ const toTree = (expr: expr): Tree => {
     return { name: expr.type, loc: expr.loc, children: [] };
 };
 
+let trace: any[] = [];
+
 register('j', {
     infer,
     builtins: {
+        '>': {
+            typevars: [],
+            typ: {
+                type: 'fn',
+                args: [
+                    {
+                        type: 'lit',
+                        name: 'number',
+                    },
+                    { type: 'lit', name: 'number' },
+                ],
+                ret: { type: 'lit', name: 'bool' },
+            },
+        },
         '+': {
             typevars: [],
             typ: {
@@ -444,7 +472,11 @@ register('j', {
             },
         },
     },
-    getTrace: () => [],
+    getTrace: () => {
+        const res = trace;
+        trace = [];
+        return res;
+    },
     parse,
     typToString,
     toTree,

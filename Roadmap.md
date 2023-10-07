@@ -2,6 +2,13 @@
 # Visualize and compare!!!!
 
 - [ ] ok so I need to normalize the Expr representation at least, so that I can visualize them
+  - or just make another mapper, that's fine
+
+ok um so instead of all that
+
+what if I just have things be totally linear
+and then
+render stuff above where they are.
 
 
 
