@@ -50,6 +50,14 @@ let exit_level = () => current_level--;
 let newvar = () => {
     return current_typevar++;
 };
+let registeredVars: [number, { type: 'var'; var: typevar }][] = [];
+
+const reset = () => {
+    current_level = 1;
+    current_typevar = 0;
+    registeredVars = [];
+};
+
 let newvar_t = (loc?: number): Extract<typ, { type: 'var' }> => {
     const t = {
         type: 'var',
@@ -66,6 +74,7 @@ let newvar_t = (loc?: number): Extract<typ, { type: 'var' }> => {
         locs: loc != null ? [loc] : [],
         text: 'new type var: ' + typToString(t),
     });
+    registeredVars.push([t.var.var, t]);
     return t;
 };
 
@@ -345,7 +354,18 @@ const typIsPartial = (t: typ): boolean => {
 const envState = (env: Env) =>
     Object.entries(env)
         .map(([key, v]) => `${key}  ${typToString(v.typ)}`)
-        .join('\n');
+        .join('\n') +
+    '\n\n--\n' +
+    registeredVars
+        .map(
+            (v) =>
+                `\n${varName(v[0])}  ${
+                    v[1].var.type === 'bound'
+                        ? typToString(v[1].var.typ)
+                        : 'unbound'
+                }`,
+        )
+        .join('');
 
 const track = (env: Env, expr: expr, results: Results, typ: typ) => {
     results[expr.loc] = typ;
@@ -483,8 +503,7 @@ export let infer = (
     expr: expr,
     results: { typs: Results; display: Display },
 ): typ => {
-    current_level = 1;
-    current_typevar = 0;
+    reset();
     return _infer(env, expr, results.typs);
 };
 

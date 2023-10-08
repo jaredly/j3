@@ -15,6 +15,7 @@ import { Node } from '../types/cst';
 import { fromMCST, Map, MNode } from '../types/mcst';
 import { applyMenuItem } from '../to-ast/autoComplete';
 import { fixMissingReferences } from '../../web/custom/reduce';
+import GraphemeSplitter from 'grapheme-splitter';
 
 export const idText = (node: MNode, map: Map) => {
     switch (node.type) {
@@ -48,10 +49,10 @@ export const idText = (node: MNode, map: Map) => {
     }
 };
 
-const seg = new Intl.Segmenter('en');
+const seg = new GraphemeSplitter();
 
 export const splitGraphemes = (text: string) => {
-    return [...seg.segment(text)].map((seg) => seg.segment);
+    return seg.splitGraphemes(text);
 };
 
 export const parseByCharacter = (
