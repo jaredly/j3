@@ -362,7 +362,7 @@ const envState = (env: Env) =>
                 `\n${varName(v[0])}  ${
                     v[1].var.type === 'bound'
                         ? typToString(v[1].var.typ)
-                        : 'unbound'
+                        : 'free'
                 }`,
         )
         .join('');

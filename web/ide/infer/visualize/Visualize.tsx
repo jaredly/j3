@@ -174,11 +174,16 @@ const Fixture = ({
                                 width: right - left,
                                 backgroundColor: colors[node.loc] ?? 'blue',
                                 borderColor: focus?.includes(node.loc)
-                                    ? 'white'
+                                    ? 'black'
                                     : 'transparent',
-                                borderWidth: 2,
+                                // backgroundClip: 'content-box',
+                                padding: 2,
+                                outline: focus?.includes(node.loc)
+                                    ? '1px solid white'
+                                    : '1px solid transparent',
+                                borderWidth: 1,
                                 transition:
-                                    '.2s ease border-color, background-color',
+                                    '.2s ease background-color, outline-color',
                                 borderStyle: 'solid',
                                 height: h,
                                 borderRadius: h / 2,
@@ -228,39 +233,39 @@ const Fixture = ({
                         showTop={() => results.tops[tops[0]].summary}
                         debug={false}
                     />
+                    <div
+                        style={{
+                            paddingLeft: 40,
+                            marginBottom: 32,
+                        }}
+                    >
+                        <input
+                            type="range"
+                            value={at}
+                            min={-1}
+                            max={trace.length}
+                            onChange={(evt) => setAt(+evt.target.value)}
+                            style={{ outline: 'none' }}
+                            onKeyDown={(evt) => {
+                                if (evt.key === 'Enter') {
+                                    let iv = setInterval(() => {
+                                        setAt((m) => {
+                                            if (m >= trace.length) {
+                                                clearInterval(iv);
+                                                return m;
+                                            }
+                                            return m + 1;
+                                        });
+                                    }, 800);
+                                }
+                            }}
+                        />
+                        <div>{trace[at]?.text ?? '.'}</div>
+                    </div>
                 </div>
                 <div style={{ width: 200 }}>
                     <pre>{traceState}</pre>
                 </div>
-            </div>
-            <div
-                style={{
-                    paddingLeft: 40,
-                    marginBottom: 32,
-                }}
-            >
-                <input
-                    type="range"
-                    value={at}
-                    min={-1}
-                    max={trace.length}
-                    onChange={(evt) => setAt(+evt.target.value)}
-                    style={{ outline: 'none' }}
-                    onKeyDown={(evt) => {
-                        if (evt.key === 'Enter') {
-                            let iv = setInterval(() => {
-                                setAt((m) => {
-                                    if (m >= trace.length) {
-                                        clearInterval(iv);
-                                        return m;
-                                    }
-                                    return m + 1;
-                                });
-                            }, 800);
-                        }
-                    }}
-                />
-                <div>{trace[at]?.text ?? '.'}</div>
             </div>
         </div>
     );
