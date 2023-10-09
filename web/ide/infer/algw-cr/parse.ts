@@ -292,6 +292,14 @@ const _parse = (node: term, ctx: Ctx): Exp | undefined => {
             return undefined;
         case 'record': {
             let res: Exp = p({ type: 'RecordEmpty' }, node.loc);
+            if (node.spreads.length === 1) {
+                const spread = _parse(node.spreads[0], ctx);
+                if (!spread) return;
+                res = spread;
+            } else if (node.spreads.length) {
+                ctx.errors[node.loc] = `too many spreads`;
+                return;
+            }
             node.items
                 .slice()
                 .reverse()

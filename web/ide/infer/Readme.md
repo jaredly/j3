@@ -27,3 +27,13 @@ things, and makes the "traversal" functions etc. very simple, and only gets
 a little annoying in a couple of places, like pretty-printing. And if you have
 special unification logic for a certain type of thing that you've encoded as
 a bunch of `app`s.
+
+# Different Algorithms
+
+HM-J
+HM-W
+
+both can be expanded to handle row types, right? do we even need to add the 'kind'?
+but they can't do TypeClasses/abilities or more general subtyping.
+
+

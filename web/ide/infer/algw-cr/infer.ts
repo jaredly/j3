@@ -62,11 +62,7 @@ export const _infer = calog(
                     { type: 'Fun', arg: t2, body: tv, loc: exp.loc },
                     ctx,
                 );
-                return [
-                    // composeSubst(composeSubst(s3, s2), s1),
-                    composeSubst(s3, composeSubst(s2, s1)),
-                    apply(s3, tv),
-                ];
+                return [composeSubst(s3, composeSubst(s2, s1)), apply(s3, tv)];
             }
             case 'Let': {
                 const [s1, t1] = infer(env, exp.init, ctx);

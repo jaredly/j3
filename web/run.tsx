@@ -56,8 +56,8 @@ initialData(location.hash ? location.hash.slice(1) : null).then(
             <React.StrictMode>
                 <ErrorBoundary>
                     {/* <IDE initial={initial} /> */}
-                    {/* <Test env={initial.env} /> */}
-                    <Visualize env={initial.env} />
+                    <Test env={initial.env} />
+                    {/* <Visualize env={initial.env} /> */}
                 </ErrorBoundary>
             </React.StrictMode>,
         ),

@@ -2,8 +2,28 @@
 // nice.
 
 import { Display } from '../../../../src/to-ast/library';
-import { Trace, Tree, register } from '../types';
+import { Trace, TraceKind, Tree, register } from '../types';
 import { parse } from './parse-j';
+
+const walkExpr = (expr: expr, fn: (e: expr) => void): void => {
+    fn(expr);
+    switch (expr.type) {
+        case 'lambda':
+            return walkExpr(expr.expr, fn);
+        case 'fncall':
+            walkExpr(expr.fn, fn);
+            return expr.args.forEach((arg) => walkExpr(arg, fn));
+        case 'record':
+            return expr.items.forEach((row) => walkExpr(row.value, fn));
+        case 'let':
+            walkExpr(expr.init, fn);
+            return walkExpr(expr.body, fn);
+        case 'if':
+            return [expr.cond, expr.yes, expr.no].forEach((e) =>
+                walkExpr(e, fn),
+            );
+    }
+};
 
 export type expr =
     | { type: 'number'; value: number; loc: number }
@@ -504,7 +524,15 @@ export let infer = (
     results: { typs: Results; display: Display },
 ): typ => {
     reset();
-    return _infer(env, expr, results.typs);
+    // env = { ...env };
+    const renv: Env = {};
+    walkExpr(expr, (e) => {
+        if (e.type === 'identifier' && env[e.id]) {
+            renv[e.id] = env[e.id];
+        }
+    });
+
+    return _infer(renv, expr, results.typs);
 };
 
 const toString = (expr: expr): string => {
@@ -607,9 +635,8 @@ register('j', {
     typToString,
     toTree,
 });
-function typTraceKind(
-    typ: typ,
-): import('/Users/jared/clone/exploration/j3/web/ide/infer/types').TraceKind {
+
+function typTraceKind(typ: typ): TraceKind {
     return typ.type === 'var' && typ.var.type === 'unbound'
         ? 'type:free'
         : // : typIsPartial(typ)
