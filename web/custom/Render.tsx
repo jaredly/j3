@@ -99,6 +99,8 @@ export const textStyle = (
             return { color: color };
         case 'stringText':
             return { color: color, whiteSpace: 'pre' };
+        case 'comment':
+            return { color: '#4eb94e' };
     }
     return { color: 'violet' };
 };

@@ -223,8 +223,18 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'end' },
                 ],
             };
-        case 'identifier':
         case 'comment':
+            return {
+                type: 'horiz',
+                children: [
+                    { type: 'punct', color: '#4eb94e', text: '; ' },
+                    {
+                        type: 'text',
+                        text: text ?? idText(node, map) ?? '🚨',
+                    },
+                ],
+            };
+        case 'identifier':
         case 'unparsed':
         case 'blank':
         case 'accessText':

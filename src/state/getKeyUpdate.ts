@@ -312,6 +312,18 @@ export const getKeyUpdate = (
         // return rrr;
     }
 
+    if (node.type === 'comment' && key !== 'Enter') {
+        return updateText(
+            node,
+            pos,
+            splitGraphemes(key),
+            idx,
+            fullPath.slice(0, -1),
+            map,
+            hashNames[idx],
+        );
+    }
+
     if (node.type === 'stringText') {
         return handleStringText({
             key,
@@ -421,6 +433,20 @@ export const getKeyUpdate = (
         return newNodeAfter(fullPath, map, newString(nidx(), nidx()), nidx);
     }
 
+    if (key === ';' && node.type === 'blank') {
+        return replaceWith(fullPath.slice(0, -1), {
+            map: {
+                [idx]: {
+                    type: 'comment',
+                    text: '',
+                    loc: idx,
+                },
+            },
+            idx: idx,
+            selection: [{ idx, type: 'text', at: 0 }],
+        });
+    }
+
     if (key === '.') {
         if (node.type === 'blank') {
             const nat = newRecordAccess(idx, '', nidx(), nidx());
@@ -528,6 +554,7 @@ export const insertText = (
         node.type === 'identifier' ||
         node.type === 'accessText' ||
         node.type === 'stringText' ||
+        node.type === 'comment' ||
         node.type === 'hash'
     ) {
         return updateText(

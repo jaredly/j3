@@ -20,10 +20,10 @@ import GraphemeSplitter from 'grapheme-splitter';
 export const idText = (node: MNode, map: Map) => {
     switch (node.type) {
         case 'identifier':
-        case 'comment':
             if (!node.text) {
                 console.log('empty node text', node);
             }
+        case 'comment':
             return node.text;
         case 'unparsed':
             return node.raw;

@@ -476,6 +476,10 @@ export function handleBackspace(
         };
     }
 
+    if (node.type === 'comment' && atStart && node.text === '') {
+        return replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx));
+    }
+
     if (atStart) {
         const um = maybeRemovePrevBlank(fullPath, map);
         if (um) {

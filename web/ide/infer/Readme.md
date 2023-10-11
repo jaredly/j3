@@ -36,4 +36,40 @@ HM-W
 both can be expanded to handle row types, right? do we even need to add the 'kind'?
 but they can't do TypeClasses/abilities or more general subtyping.
 
+hmm might be interesting to try to strip down
+algw-cr
 
+anyway, I sure would like to be able to ..spread without caring whether I'm adding or overriding.
+.. but is that quite necessary? idk. maybe it's fine to have to specify.
+I feel like my default would be to overwrite.
+orr I could cue off of the position. {a b ..c} is extension, {..c a b} is overwrite? maybe a little gimmicky. but maybe it's fine actually.
+
+ANYWAY can I also get HM to deal with recursive types without doing too much malarky?
+
+OH ALSO lets make sure we can get array types, and probably map types, working before we
+get too far. Also pattern matching lets.
+
+I feel like what I'm building up to is a "Let's build a type inference"
+where I start with very bare HM (prolly W, not J)
+and then I add in
+- arrays
+- recursion
+- pattern
+- row types
+- recursive row types
+- ooh can we do row types with default values? plsssss
+- alg effects maybeee
+- can I get default values in type args? mayubeeee maybe not if we're currying all the way tbh
+- but then let's talk about my little dependent types, array lengths and such.
+  - are we also inferring the need for recursion, partial fns, and a heap?
+  - could be fun
+
+I'd want to talk about the remarkable simplicity if boiling everything down to fn application.
+
+# OK BUT ALSO
+
+cannn we get the inference algorithm to be self-hosting? that would be rad.
+(requires recursive row types at minimum)
+
+
+#

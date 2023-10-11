@@ -1,4 +1,46 @@
 
+# Ok, so one idea: making a massive tutorial dealio
+"Type inference from the ground up" or some such
+where we're making a succession of type inference algorithms
+using only the features made available by the algorithm of the current section.
+Such that we are self-hosting, if you will.
+
+
+
+
+
+
+# Reading through this slide deck
+https://www.irif.fr/~gc/slides/sigpl19-slides.pdf
+on polymorphism and such.
+
+CAN we represent EXTENSIBLE RECORDS as TYPECLASSES?
+I mean probably not rite
+
+{x 1} has type x_int w/ an instance of getX that returns int??
+{x 1 y 2} has type x_int_y_int
+lol yeah this is probably no good.
+
+oh hey, this is nice: an algorithm for determining whether two types have a subtype
+relation, in the presence of recursive types: http://lucacardelli.name/Papers/SRT.pdf
+
+
+oooh types for elixir? https://arxiv.org/abs/2306.06391
+and an example: https://typex.fly.dev/
+hm maybe not all that useful.
+
+
+
+
+Set Theoretic Types for Polymorphic Variants
+https://www.cduce.org/ocaml/bi
+
+
+
+
+
+
+
 # Visualize and compare!!!!
 
 - [ ] ok so I need to normalize the Expr representation at least, so that I can visualize them
@@ -33,6 +75,27 @@ and like probably recursive types? I hope?
 
 
 
+# More things
+
+https://dl.acm.org/doi/10.1145/3009837.3009882 - Polymorphism, subtyping, and type inference in MLsub
+because subtyping! I'm very interested.
+
+
+Polymorphic Type Inference for Dynamic Languages
+- https://www.irif.fr/~gc/papers/dynlang.pdf
+- online: https://poly-dl.github.io/poly-dl/
+- so they present the recursive definition for `flatten` as taking *300ms* to type check, which, like
+  that seems like a very long time.
+```ml
+let rec flatten x = match x with
+| [] -> []
+| h :: t -> concat ( flatten h ) ( flatten t )
+| _ -> [ x ]
+```
+this is not a large function.
+
+[Luau](https://github.com/Roblox/luau/tree/master) structural types, and subtyping, and inference.
+might be interesting to look into.
 
 # Ooh this looks like it has both record & variant extensibility
 
