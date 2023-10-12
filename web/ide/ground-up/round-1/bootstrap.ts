@@ -1,12 +1,23 @@
 //
 
-import { expr } from './parse';
+import { expr, printExpr, unwrapArray } from './parse';
 
 export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
     switch (expr.type) {
         case 'eprim':
+            if (expr[0].type === 'pstr') {
+                return expr[0][0]
+                    .replaceAll('\\n', '\n')
+                    .replaceAll('\\"', '"');
+                // return JSON.parse(
+                //     '"' + expr[0][0].replaceAll('"', '\\"') + '"',
+                // );
+            }
             return expr[0][0];
         case 'evar':
+            if (scope[expr[0]] === undefined) {
+                throw new Error(`Unbound variable "${expr[0]}"`);
+            }
             return scope[expr[0]];
         case 'elambda':
             return (arg: any) =>
@@ -20,7 +31,8 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
             });
         case 'ematch': {
             const target = evalExpr(expr[0], scope);
-            for (let kase of expr[1]) {
+            // console.log(target);
+            for (let kase of unwrapArray(expr[1])) {
                 switch (kase[0].type) {
                     case 'pany':
                         return evalExpr(kase[1], scope);
@@ -32,15 +44,24 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
                     case 'pcon':
                         if (target.type === kase[0][0]) {
                             const iscope = { ...scope };
-                            for (let i = 0; i < kase[0][1].length; i++) {
-                                iscope[kase[0][1][i]] = target[i];
+                            const items = unwrapArray(kase[0][1]);
+                            for (let i = 0; i < items.length; i++) {
+                                iscope[items[i]] = target[i];
                             }
                             return evalExpr(kase[1], iscope);
+                        } else {
+                            // console.log('nope', target.type, kase[0][0]);
                         }
                 }
+                // console.log(kase[0].type);
             }
-            throw new Error(`failed to match`);
+            // console.log('targ', target);
+            throw new Error(
+                `failed to match ${JSON.stringify(target)} ${printExpr(
+                    expr[0],
+                )}`,
+            );
         }
     }
-    throw new Error(`nope ${expr.type}`);
+    throw new Error(`nope ${(expr as any).type}`);
 };

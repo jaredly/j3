@@ -1,5 +1,35 @@
 import { Node } from '../../../../src/types/cst';
 
+export type arr<a> = { type: 'cons'; 0: a; 1: arr<a> } | { type: 'nil' };
+
+export const unwrapArray = <a>(v: arr<a>): a[] =>
+    v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])];
+
+export const wrapArray = <a>(v: Array<a>): arr<a> => {
+    let res: arr<a> = { type: 'nil' };
+    for (let i = v.length - 1; i >= 0; i--) {
+        res = { type: 'cons', 0: v[i], 1: res };
+    }
+    return res;
+};
+
+export const printExpr = (e: expr): string => {
+    switch (e.type) {
+        case 'eprim':
+            return e[0] + '';
+        case 'evar':
+            return e[0];
+        case 'elambda':
+            return `(fn [${e[0]}] ${printExpr(e[1])})`;
+        case 'eapp':
+            return `(${printExpr(e[0])} ${printExpr(e[0])})`;
+        case 'elet':
+            return `(let [${e[0]} ${printExpr(e[1])}] ${printExpr(e[2])})`;
+        case 'ematch':
+            return 'match';
+    }
+};
+
 export type prim =
     | { type: 'pstr'; 0: string }
     | { type: 'pint'; 0: number }
@@ -10,11 +40,11 @@ export type expr =
     | { type: 'elambda'; 0: string; 1: expr }
     | { type: 'eapp'; 0: expr; 1: expr }
     | { type: 'elet'; 0: string; 1: expr; 2: expr }
-    | { type: 'ematch'; 0: expr; 1: { type: 'tuple'; 0: pat; 1: expr }[] };
+    | { type: 'ematch'; 0: expr; 1: arr<{ type: ','; 0: pat; 1: expr }> };
 export type pat =
     | { type: 'pany' }
     | { type: 'pvar'; 0: string }
-    | { type: 'pcon'; 0: string; 1: string[] };
+    | { type: 'pcon'; 0: string; 1: arr<string> };
 export type type_ =
     | { type: 'tvar'; 0: number }
     | { type: 'tapp'; 0: type_; 1: type_ }
@@ -23,7 +53,7 @@ export type stmt =
     | {
           type: 'sdeftype';
           0: string;
-          1: { type: 'tuple'; 0: string; 1: type_[] }[];
+          1: arr<{ type: ','; 0: string; 1: arr<type_> }>;
       }
     | { type: 'sdef'; 0: string; 1: expr }
     | { type: 'sexpr'; 0: expr };
@@ -31,7 +61,7 @@ export type stmt =
 export type node =
     | { type: 'nid'; 0: string }
     | { type: 'nstring'; 0: string }
-    | { type: 'nlist'; 0: node[] };
+    | { type: 'nlist'; 0: arr<node> };
 
 // type Shape = {type: 'identifier', text?: string} | {type: 'array', length?: number} | {type: 'list', length?: number}
 // const listShape = (shape: Shape[], nodes: Node[]) => {
@@ -51,8 +81,11 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
             ) {
                 switch (values[0].text) {
                     case 'deftype': {
-                        const vvalues: Extract<stmt, { type: 'sdeftype' }>[1] =
-                            [];
+                        const vvalues: {
+                            type: ',';
+                            0: string;
+                            1: arr<type_>;
+                        }[] = [];
                         for (let item of filterBlanks(values.slice(2))) {
                             if (
                                 item.type !== 'list' ||
@@ -72,15 +105,15 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                                 }
                             }
                             vvalues.push({
-                                type: 'tuple',
+                                type: ',',
                                 0: item.values[0].text,
-                                1: args,
+                                1: wrapArray(args),
                             });
                         }
                         return {
                             type: 'sdeftype',
                             0: values[1].text,
-                            1: vvalues,
+                            1: wrapArray(vvalues),
                         };
                     }
                     case 'def': {
@@ -177,22 +210,23 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
             // const p = parsePat(arg, errors)
             // if (!p) continue
         }
-        return { type: 'pcon', 0: node.values[0].type, 1: args };
+        return { type: 'pcon', 0: node.values[0].text, 1: wrapArray(args) };
     }
     if (node.type === 'array') {
         if (!node.values.length) {
-            return { type: 'pcon', 0: 'nil', 1: [] };
+            return { type: 'pcon', 0: 'nil', 1: { type: 'nil' } };
         }
+        const v = filterBlanks(node.values);
         if (
-            node.values.length === 2 &&
-            node.values[0].type === 'identifier' &&
-            node.values[1].type === 'spread' &&
-            node.values[1].contents.type === 'identifier'
+            v.length === 2 &&
+            v[0].type === 'identifier' &&
+            v[1].type === 'spread' &&
+            v[1].contents.type === 'identifier'
         ) {
             return {
                 type: 'pcon',
                 0: 'cons',
-                1: [node.values[0].text, node.values[1].contents.text],
+                1: wrapArray([v[0].text, v[1].contents.text]),
             };
         }
     }
@@ -203,7 +237,7 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
     switch (node.type) {
         case 'identifier': {
             const num = +node.text;
-            if (isNaN(num)) {
+            if (!isNaN(num)) {
                 return { type: 'eprim', 0: { type: 'pint', 0: num } };
             }
             if (node.text === 'true' || node.text === 'false') {
@@ -217,25 +251,25 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
         case 'string':
             return { type: 'eprim', 0: { type: 'pstr', 0: node.first.text } };
         case 'list': {
-            // (fn [args] body)
+            const values = filterBlanks(node.values);
             if (
-                node.values.length === 3 &&
-                node.values[0].type === 'identifier' &&
-                node.values[0].text === 'fn'
+                values.length === 3 &&
+                values[0].type === 'identifier' &&
+                values[0].text === 'fn'
             ) {
-                if (node.values[1].type !== 'array') {
-                    errors[node.values[1].loc] = 'expected array';
+                if (values[1].type !== 'array') {
+                    errors[values[1].loc] = 'expected array';
                     return;
                 }
                 const args: string[] = [];
-                for (let arg of node.values[1].values) {
+                for (let arg of values[1].values) {
                     if (arg.type === 'identifier') {
                         args.push(arg.text);
                     } else {
                         errors[arg.loc] = 'expected ident';
                     }
                 }
-                let body = parseExpr(node.values[2], errors);
+                let body = parseExpr(values[2], errors);
                 if (!body) return;
                 for (let i = args.length - 1; i >= 0; i--) {
                     body = { type: 'elambda', 0: args[i], 1: body };
@@ -245,27 +279,24 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
 
             // (let [...bindings] body)
             if (
-                node.values.length === 3 &&
-                node.values[0].type === 'identifier' &&
-                node.values[0].text === 'let'
+                values.length === 3 &&
+                values[0].type === 'identifier' &&
+                values[0].text === 'let'
             ) {
-                if (node.values[1].type !== 'array') {
-                    errors[node.values[1].loc] = 'expected buinding array';
+                if (values[1].type !== 'array') {
+                    errors[values[1].loc] = 'expected buinding array';
                     return;
                 }
-                let body = parseExpr(node.values[2], errors);
+                let body = parseExpr(values[2], errors);
                 if (!body) return;
+                const bv = filterBlanks(values[1].values);
                 for (
-                    let i =
-                        Math.floor(node.values[1].values.length / 2) * 2 - 2;
+                    let i = Math.floor(bv.length / 2) * 2 - 2;
                     i >= 0;
                     i -= 2
                 ) {
-                    const id = node.values[1].values[i];
-                    const value = parseExpr(
-                        node.values[1].values[i + 1],
-                        errors,
-                    );
+                    const id = bv[i];
+                    const value = parseExpr(bv[i + 1], errors);
                     if (!value) continue;
                     if (id.type === 'identifier') {
                         body = { type: 'elet', 0: id.text, 1: value, 2: body };
@@ -275,7 +306,7 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                         body = {
                             type: 'ematch',
                             0: value,
-                            1: [{ type: 'tuple', 0: pat, 1: body }],
+                            1: wrapArray([{ type: ',', 0: pat, 1: body }]),
                         };
                     }
                 }
@@ -284,37 +315,96 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
 
             // (match target ...cases)
             if (
-                node.values.length > 2 &&
-                node.values[0].type === 'identifier' &&
-                node.values[0].text === 'match'
+                values.length > 2 &&
+                values[0].type === 'identifier' &&
+                values[0].text === 'match'
             ) {
-                const target = parseExpr(node.values[1], errors);
+                const target = parseExpr(values[1], errors);
                 if (!target) return;
-                const cases: Extract<expr, { type: 'ematch' }>[1] = [];
-                for (let i = 2; i < node.values.length - 1; i += 2) {
-                    const pat = parsePat(node.values[i], errors);
-                    const body = parseExpr(node.values[i + 1], errors);
+                const cases: { type: ','; 0: pat; 1: expr }[] = [];
+                for (let i = 2; i < values.length - 1; i += 2) {
+                    const pat = parsePat(values[i], errors);
+                    const body = parseExpr(values[i + 1], errors);
                     if (!pat) continue;
                     if (!body) continue;
-                    cases.push({ type: 'tuple', 0: pat, 1: body });
+                    cases.push({ type: ',', 0: pat, 1: body });
                 }
-                return { type: 'ematch', 0: target, 1: cases };
+                return { type: 'ematch', 0: target, 1: wrapArray(cases) };
             }
 
             // (a-fn ...args)
-            if (!node.values.length) {
+            if (!values.length) {
                 errors[node.loc] = 'empty list';
                 return;
             }
-            let fn = parseExpr(node.values[0], errors);
+            let fn = parseExpr(values[0], errors);
             if (!fn) return;
-            for (let i = 1; i < node.values.length; i++) {
-                const arg = parseExpr(node.values[i], errors);
+            for (let i = 1; i < values.length; i++) {
+                const arg = parseExpr(values[i], errors);
                 if (!arg) return;
                 fn = { type: 'eapp', 0: fn, 1: arg };
             }
             return fn;
         }
+        case 'array':
+            const v = filterBlanks(node.values);
+            if (v.length === 0) {
+                return { type: 'evar', 0: 'nil' };
+            }
+            let res: expr = { type: 'evar', 0: 'nil' };
+            for (let i = v.length - 1; i >= 0; i--) {
+                const node = v[i];
+                if (i === v.length - 1) {
+                    if (node.type === 'spread') {
+                        const spread = parseExpr(node.contents, errors);
+                        if (!spread) return;
+                        res = spread;
+                    } else {
+                        const expr = parseExpr(node, errors);
+                        if (!expr) return;
+                        res = {
+                            type: 'eapp',
+                            0: {
+                                type: 'eapp',
+                                0: { type: 'evar', 0: 'cons' },
+                                1: expr,
+                            },
+                            1: res,
+                        };
+                    }
+                } else {
+                    const expr = parseExpr(node, errors);
+                    if (!expr) return;
+                    res = {
+                        type: 'eapp',
+                        0: {
+                            type: 'eapp',
+                            0: { type: 'evar', 0: 'cons' },
+                            1: expr,
+                        },
+                        1: res,
+                    };
+                }
+            }
+            return res;
+        // let first = parseExpr(v[v.length - 1], errors)
+        // if (!first) return
+        // if ()
+
+        // if (v.length == 2 && v[1].type === 'spread') {
+        //     const head = parseExpr(v[0], errors);
+        //     const tail = parseExpr(v[1].contents, errors);
+        //     if (!head || !tail) return;
+        //     return {
+        //         type: 'eapp',
+        //         0: {
+        //             type: 'eapp',
+        //             0: { type: 'evar', 0: 'cons' },
+        //             1: head,
+        //         },
+        //         1: tail,
+        //     };
+        // }
     }
     errors[node.loc] = 'unexpected expr ' + JSON.stringify(node);
 };

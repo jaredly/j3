@@ -1,4 +1,13 @@
 
+# SELF_HOSTING
+
+We're hosting some kind of self, that's for sure.
+So the bootstrap runner is running the code, and we are successfully
+executing the bootstrap!
+The in-code compilation is not necessarily correct, however.
+Things we still need:
+
+
 # Ok, so one idea: making a massive tutorial dealio
 "Type inference from the ground up" or some such
 where we're making a succession of type inference algorithms

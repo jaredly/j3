@@ -1,15 +1,5 @@
 
-; do we need arrays?
-; or maps?
-; eh maps might be more difficult tbh
-; do we need ... numbers? yeah looks like it
-
-; Purity compromises:
-; - mutable refs for counting up unique var ids
-;   unlessss of course we do a preprocessing pass? That would be nice, remove the mutability
-; - how do we handle partial functions? match failures? have a fatal() function prolly tbh
-
-;; (deftype (tuple a b)
+;; (deftype (, a b)
 ;;     (, a b)
 ;; )
 
@@ -18,11 +8,30 @@
 ;;     (nil)
 ;; )
 
-(deftype prim
-    (pstr string)
-    (pint int)
-    (pbool bool)
-)
+(def hello "what")
+(def mo "\"")
+(def at "a\"b")
+(def end "ab\"")
+(def nl "\n")
+(def mid "hi\nby")
+
+(def builtins "
+const unwrapArray = (v) => v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])];
+const nil = { type: 'nil' };
+const cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });
+const $pl$pl = (items) => unwrapArray(items).join('');
+const $pl = (a) => (b) => a + b;
+const _ = (a) => (b) => a - b;
+const int_to_string = (a) => a + '';
+const replace_all = (a) => (b) => (c) => {
+    return a.replaceAll(b, c);
+};
+const $co = (a) => (b) => ({ type: ',', 0: a, 1: b });
+import { sanitize } from './builtins.ts';
+const reduce = (init) => (items) => (f) => {
+    return unwrapArray(items).reduce((a, b) => f(a)(b), init);
+};
+")
 
 (deftype expr
     (eprim prim)
@@ -30,8 +39,12 @@
     (elambda string expr)
     (eapp expr expr)
     (elet string expr expr)
-    (ematch expr (array (, pat expr)))
-)
+    (ematch expr (array (, pat expr))))
+
+(deftype prim
+    (pstr string)
+    (pint int)
+    (pbool bool))
 
 (deftype pat
     (pany)
@@ -41,22 +54,12 @@
 (deftype type
     (tvar int)
     (tapp type type)
-    (tcon string)
-    ; (ttuple (array type))
-)
+    (tcon string))
 
 (deftype stmt
     (sdeftype string (array (, string (array type))))
     (sdefn string (array string) expr)
     (sexpr expr))
-
-
-; should we do a parsing? Whyever not?
-
-(deftype node
-    (nid string)
-    (nstring string)
-    (nlist (array node)))
 
 ; eh because it's annoying?
 ; also I'll need to do a bootstrap parser anyway
@@ -71,17 +74,16 @@
 (defn compile-st [stmt]
     (match stmt
         (sexpr expr) (compile expr)
-        (sdefn name args body)
+        (sdef name body)
             (++
-            "const "
+            ["export const "
             (sanitize name)
-            " = ("
-            (join ", " args)
-            ") => "
-            (compile body))
-        (sdeftype name cases
-            (map cases)
-        )
+            " = "
+            (compile body)
+            ";\n"])
+        (sdeftype name cases)
+            ; (map cases)
+            (++ ["/* typedef " name " */"])
     )
 )
 
@@ -97,55 +99,66 @@
 ;;             (let [(, find repl)]
 ;;                 (replace find repl res)))))
 
+(defn snd [tuple]
+    (let [(, _ v) tuple] v))
+
+(defn fst [tuple]
+    (let [(, v _) tuple] v))
+
 (defn compile [expr]
     (match expr
         (eprim prim)
             (match prim
-                (pstr string) (++ "\"" string "\"")
+                (pstr string) (++ ["\"" (replace-all string "\n" "\\n") "\""])
                 (pint int) (int-to-string int)
                 (pbool bool) (if bool "true" "false"))
         (evar name) (sanitize name)
-        (elambda name body) (++ "(" (sanitize name) ") => " (compile body))
-        (elet name init body) (++ "((" (sanitize name) ") => " (compile body) ")(" (compile init) ")")
+        (elambda name body) (++ ["(" (sanitize name) ") => " (compile body)])
+        (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
+        (eapp fn arg)
+            (match fn
+                (elambda name)
+                    (++ ["(" (compile fn) ")(" (compile arg) ")"])
+                _ (++ [(compile fn) "(" (compile arg) ")"])
+            )
         (ematch target cases)
         (++
-        "(($target) => "
+        ["(($target) => "
             (reduce
                 "fatal('ran out of cases')"
                 cases
                 (fn [otherwise case]
                     (let [(, pat body) case]
                         (match pat
-                            (pany) (++ "true ? " (compile body) " : " otherwise)
+                            (pany) (++ ["true ? " (compile body) " : " otherwise])
                             (pvar name)
-                                (++ "true ? ((" (sanitize name) ") => " (compile body) ")($target)")
+                                (++ ["true ? ((" (sanitize name) ") => " (compile body) ")($target)"])
                             (pcon name args)
                                 (++
-                                    "$target.$type == \""
+                                    ["$target.type == \""
                                     name
                                     "\" ? "
-                                    (reduce
-                                        (compile body)
+                                    (snd (reduce
+                                        (, 0 (compile body))
                                         args
                                         (fn [inner name]
                                             (let [(, i inner) inner]
                                                 (, (+ i 1) (++
-                                                "(("
+                                                ["(("
                                                 (sanitize name)
                                                 ") => "
                                                 inner
                                                 ")($target["
                                                 (int-to-string i)
-                                                "])"
-                                                )))))
+                                                "])" ]))))))
                                     " : "
-                                    otherwise
+                                    otherwise]
                                 )
                         )
                     )
                 )
             )
-            ")(" (compile target) ")")
+            ")(" (compile target) ")"])
     )
 )
 
@@ -196,7 +209,7 @@
             (, (map-set empty-map name t) [])
         (pcon name args)
             (match (tc-get env name)
-                (None) (fatal (++ "Unknown type constructor " name))
+                (None) (fatal (++ ["Unknown type constructor " name]))
                 (Some result)
                     (let [(, tname vbls raw-arg-types) result
                           (, the-type type-vars) (make-type tname vbls)
@@ -233,7 +246,7 @@
         (evar name)
             (match (var-get env name)
                 (Some scheme) (, (instantiate scheme) [])
-                (None) (fatal (++ "Unbound identifier " name)))
+                (None) (fatal (++ ["Unbound identifier " name])))
         (elambda name body)
             (let [arg-var (newTV)
                   inner-env (var-set env name arg-var)
