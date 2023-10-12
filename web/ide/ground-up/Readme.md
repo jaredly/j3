@@ -8,31 +8,32 @@ Starting things off, we'll build a basic Hindley Milner impl with a couple of ad
 
 ## Papers
 
-Algorithm M
-https://dl.acm.org/doi/10.1145/291891.291892
+- Algorithm M
+  - https://dl.acm.org/doi/10.1145/291891.291892
 
-Type Inference with Constrainted Types
-the HM(X) paper
-https://www.cs.tufts.edu/~nr/cs257/archive/martin-odersky/hmx.pdf
+- Type Inference with Constrainted Types
+  - the HM(X) paper
+  - https://www.cs.tufts.edu/~nr/cs257/archive/martin-odersky/hmx.pdf
 
-Typing Haskell in Haskell (uses HM(X))
-https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
+- Typing Haskell in Haskell (uses HM(X))
+  - https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
 
-The Essence of ML Type Inference (uses HM(X))
-(or, Typing OCaml in OCaml)
-https://www.cs.tufts.edu/comp/150FP/archive/francois-pottier/hmx.pdf
+- The Essence of ML Type Inference (uses HM(X))
+  - (or, Typing OCaml in OCaml)
+  - https://www.cs.tufts.edu/comp/150FP/archive/francois-pottier/hmx.pdf
+  - http://cristal.inria.fr/attapl/
 
-Modular Type Inference with Local Assumptions
-the OutsideIn(X) paper
-https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/jfp-outsidein.pdf
+- Modular Type Inference with Local Assumptions
+  - the OutsideIn(X) paper
+  - https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/jfp-outsidein.pdf
 
-Set Theoretic Types for Polymorphic Variants
-/\, \/, and `not` on constraints
-https://arxiv.org/pdf/1606.01106.pdf
+- Set Theoretic Types for Polymorphic Variants
+  - /\, \/, and `not` on constraints
+  - https://arxiv.org/pdf/1606.01106.pdf
 
-A Polymorphic Type System for Extensible Records and Variants
-uses a "lacks" meta-variable
-https://web.cecs.pdx.edu/~mpj/pubs/96-3.pdf
+- A Polymorphic Type System for Extensible Records and Variants
+  - uses a "lacks" meta-variable
+  - https://web.cecs.pdx.edu/~mpj/pubs/96-3.pdf
 
 
 ## Things to highlight
@@ -47,3 +48,17 @@ Do we need generic type constructors?
 Yes, in order to have tuples and lists.
 You could mayybe do without lists,
 but skipping tuples would be maybe impossible? Or at least really hacky.
+
+
+## Watchlist
+
+- https://www.youtube.com/watch?v=_S3X2QgQoYY
+- https://www.youtube.com/watch?v=8OlHJ6KVjgg
+- https://www.youtube.com/watch?v=OHMqbSpjhzc
+- https://www.youtube.com/watch?v=Sn5X2UkNKVs
+- https://www.youtube.com/watch?v=BPNxvRCnOBA
+- https://www.youtube.com/watch?v=XaJ905voxGw
+- https://danel.ahman.ee/talks/chocola19.pdf
+- https://gist.github.com/CodaFi/ca35a0c22fbd96eca505b5df45f2509e
+- https://arxiv.org/abs/1910.11629
+- https://github.com/andrejbauer/coop
