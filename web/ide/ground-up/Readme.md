@@ -8,8 +8,31 @@ Starting things off, we'll build a basic Hindley Milner impl with a couple of ad
 
 ## Papers
 
-"Algorithm M" maybe?
+Algorithm M
 https://dl.acm.org/doi/10.1145/291891.291892
+
+Type Inference with Constrainted Types
+the HM(X) paper
+https://www.cs.tufts.edu/~nr/cs257/archive/martin-odersky/hmx.pdf
+
+Typing Haskell in Haskell (uses HM(X))
+https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
+
+The Essence of ML Type Inference (uses HM(X))
+(or, Typing OCaml in OCaml)
+https://www.cs.tufts.edu/comp/150FP/archive/francois-pottier/hmx.pdf
+
+Modular Type Inference with Local Assumptions
+the OutsideIn(X) paper
+https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/jfp-outsidein.pdf
+
+Set Theoretic Types for Polymorphic Variants
+/\, \/, and `not` on constraints
+https://arxiv.org/pdf/1606.01106.pdf
+
+A Polymorphic Type System for Extensible Records and Variants
+uses a "lacks" meta-variable
+https://web.cecs.pdx.edu/~mpj/pubs/96-3.pdf
 
 
 ## Things to highlight
@@ -21,21 +44,6 @@ we could do something terrible like use magic numbers in a single massive array
 but we're not doing this to punish ourselves.
 
 Do we need generic type constructors?
-Yes, in order to have tuples and arrays.
-You could concievably do without arrays,
+Yes, in order to have tuples and lists.
+You could mayybe do without lists,
 but skipping tuples would be maybe impossible? Or at least really hacky.
-
-
-##
-
-multiple syntaxes??
-but then: lambda-calcuilus wasm
-"getting started guide is write your own interpreter"
-
-but then effect types!
-
-.one .two
-
-> Effect types!
-Color lines based on what effects they do
-

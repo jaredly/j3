@@ -18,6 +18,17 @@ Such that we are self-hosting, if you will.
 
 
 
+# Thoughts from eyg conversation
+
+- do I want to lean into "code is ship-aroundable"?
+- Effect types! Color lines of code based on what effects they do
+
+multiple syntaxes??
+but then: lambda-calcuilus wasm
+"getting started guide is write your own interpreter"
+
+
+
 
 # Reading through this slide deck
 https://www.irif.fr/~gc/slides/sigpl19-slides.pdf
