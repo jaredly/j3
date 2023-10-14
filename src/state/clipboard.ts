@@ -233,6 +233,7 @@ export const paste = (
     state: State,
     hashNames: { [idx: number]: string },
     items: ClipboardItem[],
+    withCtx: boolean,
 ): StateUpdate | void => {
     if (state.at.length === 1 && !state.at[0].end && items.length === 1) {
         const item = items[0];
@@ -248,7 +249,7 @@ export const paste = (
                         state.nidx,
                     );
                 } else {
-                    return generateRawPasteUpdate(item, state);
+                    return generateRawPasteUpdate(item, state, withCtx);
                 }
             }
             case 'nodes': {
@@ -556,11 +557,11 @@ const basicLex = (text: string) => {
             let rest = text.slice(at);
             let found = rest.match(/^[^"]*"/);
             if (!found) {
-                // console.log('what found', found, rest);
                 continue;
             }
             let string = found[0];
             at += string.length;
+            // console.log('string', string, at, text[at]);
             while (string.endsWith('\\"')) {
                 rest = text.slice(at);
                 let next = rest.match(/^[^"]*"/);
@@ -568,11 +569,13 @@ const basicLex = (text: string) => {
                     // console.log(rest);
                     break;
                 }
-                at += next.length;
-                string += next;
+                at += next[0].length;
+                string += next[0];
+                // console.log('next pit', string, next, at);
             }
             chunks.push(string.slice(0, -1));
             chunks.push('"');
+            // console.log('final splot', string, at, text[at]);
             continue;
         }
 
@@ -588,33 +591,13 @@ const basicLex = (text: string) => {
             chunks.push(text.slice(at + 1, i));
             chunks.push('\n');
             at = i + 1;
+            const m = text.slice(at).match(/^[\s\n]*/);
+            if (m) {
+                at += m[0].length;
+            }
             continue;
         }
 
-        /*
-        const rest = text.slice(at);
-        switch (c) {
-            case '(':
-            case ')':
-                chunks.push(c);
-                at++;
-                continue;
-            case ' ':
-            case '\n':
-                const white = rest.match(/[\s\n]+/)!;
-                chunks.push(white[0]);
-                at += white[0].length;
-                continue;
-            case '"':
-                const pos = rest.match(/(?:[^\\])"/)!;
-                if (!pos) {
-
-                }
-                chunks.push(rest.slice(0, pos.index! + 1));
-                at += pos.index! + 1;
-                continue;
-        }
-        */
         chunks.push(c);
         at++;
     }
@@ -625,47 +608,50 @@ const basicLex = (text: string) => {
 export function generateRawPasteUpdate(
     item: Extract<ClipboardItem, { type: 'text' }>,
     state: State,
+    withCtx: boolean,
 ): StateUpdate {
     const chars = basicLex(item.text); // splitGraphemes(item.text); //.replace(/\s+/g, ' '));
     let tmp = { ...state };
-    let tctx = newCtx();
+    let tctx = withCtx ? newCtx() : null;
     for (let char of chars) {
         const update = getKeyUpdate(
             char,
             tmp.map,
             tmp.at[0],
-            tctx.results.hashNames,
+            tctx?.results.hashNames ?? {},
             tmp.nidx,
         );
-        if (update?.autoComplete) {
+        if (update?.autoComplete && tctx) {
             tmp = autoCompleteIfNeeded(tmp, tctx.results.display);
         }
 
         tmp = applyUpdate(tmp, 0, update);
 
-        tctx = newCtx();
+        if (tctx) {
+            tctx = newCtx();
 
-        const root = fromMCST(tmp.root, tmp.map) as {
-            values: Node[];
-        };
-        filterComments(root.values).forEach((node) => {
-            const expr = nodeToExpr(node, tctx);
-            let t = getType(expr, tctx, {
-                errors: tctx.results.errors,
-                types: {},
+            const root = fromMCST(tmp.root, tmp.map) as {
+                values: Node[];
+            };
+            filterComments(root.values).forEach((node) => {
+                const expr = nodeToExpr(node, tctx!);
+                let t = getType(expr, tctx!, {
+                    errors: tctx!.results.errors,
+                    types: {},
+                });
+                validateExpr(expr, tctx!, tctx!.results.errors);
+                tctx = addDef(expr, tctx!) as CstCtx;
             });
-            validateExpr(expr, tctx, tctx.results.errors);
-            tctx = addDef(expr, tctx) as CstCtx;
-        });
 
-        tmp = { ...tmp, map: { ...tmp.map } };
-        applyMods(tctx, tmp.map, state.nidx);
+            tmp = { ...tmp, map: { ...tmp.map } };
+            applyMods(tctx, tmp.map, state.nidx);
 
-        if (update?.autoComplete) {
-            const mods = infer(tctx, tmp.map);
-            Object.keys(mods).forEach((id) => {
-                applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);
-            });
+            if (update?.autoComplete) {
+                const mods = infer(tctx, tmp.map);
+                Object.keys(mods).forEach((id) => {
+                    applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);
+                });
+            }
         }
     }
     const update: UpdateMap = {};

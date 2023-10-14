@@ -7,7 +7,7 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../src/state/getKeyUpdate';
-import { Ctx, Env } from '../../src/to-ast/library';
+import { CompilationResults, Ctx, Env } from '../../src/to-ast/library';
 import { ListLikeContents, fromMCST } from '../../src/types/mcst';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
@@ -288,7 +288,7 @@ const actionToUpdate = (
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
         case 'paste': {
-            const res = paste(state, {}, action.items);
+            const res = paste(state, {}, action.items, false);
             console.log(res);
             return res;
         }
@@ -303,30 +303,7 @@ export function calcResults(
     doLayout = true,
 ) {
     const tops = (state.map[state.root] as ListLikeContents).values;
-    const results: Ctx['results'] & {
-        tops: {
-            [key: number]: {
-                summary: string;
-                data: Trace[];
-                failed: boolean;
-                expr?: any;
-            };
-        };
-        typs: { [loc: number]: any };
-    } = {
-        display: {},
-        errors: {},
-        globalNames: {},
-        hashNames: {},
-        localMap: {
-            terms: {},
-            types: {},
-        },
-        mods: {},
-        toplevel: {},
-        tops: {},
-        typs: {},
-    };
+    const results = newResults();
 
     tops.forEach((top) => {
         const node = fromMCST(top, state.map);
@@ -368,6 +345,33 @@ export function calcResults(
     });
 
     return results;
+}
+
+export function newResults(): CompilationResults & {
+    tops: {
+        [key: number]: {
+            summary: string;
+            data: Trace[];
+            failed: boolean;
+            expr?: any;
+        };
+    };
+    typs: { [loc: number]: any };
+} {
+    return {
+        display: {},
+        errors: {},
+        globalNames: {},
+        hashNames: {},
+        localMap: {
+            terms: {},
+            types: {},
+        },
+        mods: {},
+        toplevel: {},
+        tops: {},
+        typs: {},
+    };
 }
 
 export function loadState(k: string) {

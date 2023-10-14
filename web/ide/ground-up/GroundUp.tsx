@@ -33,6 +33,7 @@ import { verticalMove } from '../../custom/verticalMove';
 import { useLocalStorage } from '../../Debug';
 import { paste } from '../../../src/state/clipboard';
 import { Algo, Trace, algos } from '../infer/types';
+import { newResults } from '../Test';
 
 const names = ['what', 'w', 'w2', '10'];
 
@@ -211,6 +212,15 @@ export const GroundUp = ({
 
     const tops = (state.map[state.root] as ListLikeContents).values;
 
+    const results = useMemo(() => {
+        const results = newResults();
+
+        tops.map((top) => {
+            layout(top, 0, state.map, results.display, results.hashNames, true);
+        });
+
+        return results;
+    }, [state.map]);
     // const results = useMemo(() => {
     //     return calcResults(state, algos[alg]);
     // }, [state.map, k, alg]);
@@ -248,7 +258,7 @@ export const GroundUp = ({
                 //     (results.tops[top].failed ? '🚨 ' : '') +
                 //     results.tops[top].summary
                 // }
-                // results={results}
+                results={results}
             />
             <button
                 onClick={() => setDebug(!debug)}
@@ -388,15 +398,6 @@ const actionToUpdate = (
             return { type: 'ui', hover: action.path };
         case 'menu':
             return { type: 'menu', menu: { selection: action.selection } };
-        // case 'menu-select': {
-        //     const idx = action.path[action.path.length - 1].idx;
-        //     return autoCompleteUpdate(idx, state.map, action.path, action.item);
-        // }
-        // case 'copy':
-        //     return {
-        //         type: 'ui',
-        //         clipboard: [action.items, ...state.clipboard],
-        //     };
         case 'key':
             if (!state.at.length) {
                 return;
@@ -409,7 +410,6 @@ const actionToUpdate = (
                 );
             }
             if (action.key === 'Escape') {
-                // console.log('dismiss');
                 return {
                     type: 'menu',
                     menu: { dismissed: true, selection: 0 },
@@ -434,7 +434,7 @@ const actionToUpdate = (
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
         case 'paste': {
-            const res = paste(state, {}, action.items);
+            const res = paste(state, {}, action.items, false);
             // console.log(res);
             return res;
         }
