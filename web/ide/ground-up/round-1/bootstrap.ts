@@ -16,6 +16,7 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
             return expr[0][0];
         case 'evar':
             if (scope[expr[0]] === undefined) {
+                console.log(scope);
                 throw new Error(`Unbound variable "${expr[0]}"`);
             }
             return scope[expr[0]];

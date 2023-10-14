@@ -226,9 +226,6 @@ export const GroundUp = ({
 
         return results;
     }, [state.map]);
-    // const results = useMemo(() => {
-    //     return calcResults(state, algos[alg]);
-    // }, [state.map, k, alg]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
@@ -242,26 +239,36 @@ export const GroundUp = ({
                     const stmts = tops.map((t) => fromMCST(t, state.map));
 
                     const env: { [key: string]: any } = {};
-                    stmts.forEach((_stmt) => {
-                        const errors = {};
-                        const stmt = parseStmt(_stmt, errors);
-                        if (Object.keys(errors).length || !stmt) {
-                            return;
-                        }
-                        console.log(stmt.type);
+
+                    const parsed = stmts
+                        .filter((node) => node.type !== 'blank')
+                        .map((node) => {
+                            const errors = {};
+                            const stmt = parseStmt(node, errors);
+                            if (Object.keys(errors).length || !stmt) {
+                                console.log('unable to parse a stmt', errors);
+                                return;
+                            }
+                            return stmt;
+                        })
+                        .filter((x): x is NonNullable<typeof x> => x != null);
+
+                    parsed.forEach((stmt) => {
                         if (stmt.type === 'sdeftype') {
-                            console.log('skipping deftype');
                             return;
                         }
                         if (stmt.type === 'sdef') {
                             const res = evalExpr(stmt[1], env);
                             env[stmt[0]] = res;
                             if (stmt[0] === 'builtins') {
-                                // hrm
+                                Object.assign(env, extractBuiltins(res));
                             }
                         }
                     });
                     console.log(env);
+                    parsed.forEach((stmt) => {
+                        console.log(env['compile-st'](stmt));
+                    });
                 }}
             >
                 Ok
@@ -466,6 +473,23 @@ const actionToUpdate = (
         //     return action;
     }
 };
+
+function extractBuiltins(raw: any) {
+    const names: string[] = [];
+    (raw as string).replaceAll(/^const ([a-zA-Z0-9_$]+)/gm, (v, name) => {
+        names.push(name);
+        return '';
+    });
+    const res = new Function('', raw + `\nreturn {${names.join(', ')}}`)();
+    Object.keys(res).forEach((name) => {
+        let desan = name;
+        Object.entries(res.sanMap).forEach(([key, value]) => {
+            desan = desan.replaceAll(value as string, key);
+        });
+        res[desan] = res[name];
+    });
+    return res;
+}
 
 export function calcResults(
     state: NUIState,
