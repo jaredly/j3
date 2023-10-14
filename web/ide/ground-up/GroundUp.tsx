@@ -43,26 +43,29 @@ const saveState = (id: string, state: NUIState) => {
         method: 'POST',
         body: JSON.stringify(state),
         headers: { 'Content-type': 'application/json' },
-    }).then((r) => r.json());
+    }).then(() => {});
 };
 
-function blankNUIState() {
-    const map = emptyMap();
-
-    let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
-    return {
-        map,
+function loadState(
+    state: NUIState = {
+        map: emptyMap(),
         root: -1,
         history: [],
-        nidx: () => idx++,
+        nidx: () => 0,
         clipboard: [],
         hover: [],
         regs: {},
         at: [],
+    },
+) {
+    let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
+    return {
+        ...state,
+        nidx: () => idx++,
     };
 }
 
-const useHash = (): [string, (v: string) => void] => {
+const useHash = (): string => {
     const [hash, update] = useState(location.hash);
     useEffect(() => {
         const fn = () => {
@@ -71,15 +74,12 @@ const useHash = (): [string, (v: string) => void] => {
         window.addEventListener('hashchange', fn);
         return () => window.removeEventListener('hashchange', fn);
     }, []);
-    const setHash = useCallback((hash: string) => {
-        location.hash = hash;
-    }, []);
-    return [hash, setHash];
+    return hash;
 };
 
 export const Outside = () => {
     const [listing, setListing] = useState(null as null | string[]);
-    const [hash, setHash] = useHash();
+    const hash = useHash();
 
     useEffect(() => {
         fetch(urlForId(''))
@@ -136,11 +136,11 @@ export const Loader = ({ id }: { id: string }) => {
             (res) =>
                 res.status === 200
                     ? res.json().then((state) => {
-                          setInitial(state);
+                          setInitial(loadState(state));
                       })
-                    : setInitial(blankNUIState()),
+                    : setInitial(loadState()),
             (err) => {
-                console.log('failed', err);
+                setInitial(loadState());
             },
         );
     }, [id]);
@@ -165,6 +165,7 @@ export const debounce = <T,>(
     let last = Date.now();
     let wait = null as null | Promise<void>;
     return async (arg: T) => {
+        // console.log('called', arg);
         if (tid != null) {
             clearTimeout(tid);
             tid = null;
@@ -173,16 +174,19 @@ export const debounce = <T,>(
 
         if (wait) {
             await wait;
+            // console.log('waited');
         }
 
         if (now > last + time) {
             last = now;
+            // console.log('calling immediate');
             wait = fn(arg);
             return;
         }
         tid = setTimeout(() => {
             tid = null;
             last = now;
+            // console.log('calling delayed');
             wait = fn(arg);
         }, time);
     };
@@ -405,7 +409,7 @@ const actionToUpdate = (
                 );
             }
             if (action.key === 'Escape') {
-                console.log('dismiss');
+                // console.log('dismiss');
                 return {
                     type: 'menu',
                     menu: { dismissed: true, selection: 0 },
@@ -431,7 +435,7 @@ const actionToUpdate = (
             };
         case 'paste': {
             const res = paste(state, {}, action.items);
-            console.log(res);
+            // console.log(res);
             return res;
         }
         // case 'namespace-rename':

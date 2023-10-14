@@ -312,7 +312,7 @@ export const getKeyUpdate = (
         // return rrr;
     }
 
-    if (node.type === 'comment' && key !== 'Enter') {
+    if (node.type === 'comment' && key !== 'Enter' && key !== '\n') {
         return updateText(
             node,
             pos,
@@ -344,7 +344,7 @@ export const getKeyUpdate = (
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
-    if (key === ' ' || key === 'Enter') {
+    if (key === ' ' || key === 'Enter' || key === '\n') {
         if (ppath.type === 'child' && 'values' in parent) {
             // Move forward into next blank, if it exists
             if (

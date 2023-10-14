@@ -521,11 +521,112 @@ export const reLoc = (node: Node, nidx: () => number): Node => {
     });
 };
 
+const basicLex = (text: string) => {
+    let at = 0;
+    const chunks: string[] = [];
+    let m = 0;
+    while (at < text.length) {
+        // console.log('at', at, chunks);
+        if (m++ > 1000) {
+            break;
+        }
+        const c = text[at];
+        if (c.match(/^[a-zA-Z0-9_]/)) {
+            const rest = text.slice(at);
+            const token = rest.match(/^[a-zA-Z0-9_]+/)!;
+            chunks.push(token[0]);
+            at += token[0].length;
+            continue;
+        }
+
+        if (c.match(/[\s\n]/)) {
+            const rest = text.slice(at);
+            const white = rest.match(/^[\s\n]+/)![0];
+            at += white.length;
+            // ignore white before a closing brace
+            if (!'])}'.includes(text[at])) {
+                chunks.push(white.includes('\n') ? '\n' : ' '); // collapsing whitespace
+            }
+            continue;
+        }
+
+        if (c === '"') {
+            chunks.push(c);
+            at++;
+            let rest = text.slice(at);
+            let found = rest.match(/^[^"]*"/);
+            if (!found) {
+                // console.log('what found', found, rest);
+                continue;
+            }
+            let string = found[0];
+            at += string.length;
+            while (string.endsWith('\\"')) {
+                rest = text.slice(at);
+                let next = rest.match(/^[^"]*"/);
+                if (!next) {
+                    // console.log(rest);
+                    break;
+                }
+                at += next.length;
+                string += next;
+            }
+            chunks.push(string.slice(0, -1));
+            chunks.push('"');
+            continue;
+        }
+
+        if (c === ';') {
+            chunks.push(c);
+            const i = text.indexOf('\n', at);
+            if (i === -1) {
+                chunks.push(text.slice(at + 1));
+                chunks.push('\n');
+                at = text.length;
+                continue;
+            }
+            chunks.push(text.slice(at + 1, i));
+            chunks.push('\n');
+            at = i + 1;
+            continue;
+        }
+
+        /*
+        const rest = text.slice(at);
+        switch (c) {
+            case '(':
+            case ')':
+                chunks.push(c);
+                at++;
+                continue;
+            case ' ':
+            case '\n':
+                const white = rest.match(/[\s\n]+/)!;
+                chunks.push(white[0]);
+                at += white[0].length;
+                continue;
+            case '"':
+                const pos = rest.match(/(?:[^\\])"/)!;
+                if (!pos) {
+
+                }
+                chunks.push(rest.slice(0, pos.index! + 1));
+                at += pos.index! + 1;
+                continue;
+        }
+        */
+        chunks.push(c);
+        at++;
+    }
+    console.log('lexed', chunks);
+    return chunks;
+};
+
 export function generateRawPasteUpdate(
     item: Extract<ClipboardItem, { type: 'text' }>,
     state: State,
 ): StateUpdate {
-    const chars = splitGraphemes(item.text.replace(/\s+/g, ' '));
+    const chars = basicLex(item.text); // splitGraphemes(item.text); //.replace(/\s+/g, ' '));
     let tmp = { ...state };
     let tctx = newCtx();
     for (let char of chars) {
