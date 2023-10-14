@@ -1,4 +1,18 @@
 
+# So, pasting...
+I think I want to do a little bit of pre lexing
+yeah that's nice.
+
+OK so a weird issue, is that
+
+
+ok so now I have all of these things, and frankly I want them
+to collapse
+
+oh hey I could just do that.
+
+
+
 # SELF_HOSTING
 
 We're hosting some kind of self, that's for sure.

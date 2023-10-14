@@ -21,6 +21,7 @@ export function Root({
     // ctx,
     showTop,
     results,
+    clickTop,
 }: {
     state: NUIState;
     dispatch: React.Dispatch<Action>;
@@ -28,6 +29,7 @@ export function Root({
     debug: boolean;
     // ctx: Ctx;
     showTop?: (top: number) => React.ReactNode;
+    clickTop?: (top: number) => void;
     results?: Ctx['results'];
 }) {
     useEffect(() => {
@@ -140,6 +142,16 @@ export function Root({
                                 height: 10,
                             }}
                         >
+                            {clickTop ? (
+                                <div
+                                    onClick={() => {
+                                        clickTop(top);
+                                    }}
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    &lt;-
+                                </div>
+                            ) : null}
                             {got?.type === 'def' || got?.type === 'deftype' ? (
                                 <div
                                     onClick={() => {

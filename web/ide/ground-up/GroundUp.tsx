@@ -210,7 +210,10 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    const tops = (state.map[state.root] as ListLikeContents).values;
+    const [hidden, setHidden] = useState({} as { [idx: number]: boolean });
+    const tops = (state.map[state.root] as ListLikeContents).values.filter(
+        (t) => !hidden[t],
+    );
 
     const results = useMemo(() => {
         const results = newResults();
@@ -254,6 +257,7 @@ export const GroundUp = ({
                 dispatch={dispatch}
                 tops={tops}
                 debug={false}
+                clickTop={(top) => setHidden((t) => ({ ...t, [top]: true }))}
                 // showTop={(top) =>
                 //     (results.tops[top].failed ? '🚨 ' : '') +
                 //     results.tops[top].summary
