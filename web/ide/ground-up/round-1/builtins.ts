@@ -13,7 +13,6 @@ const sanMap = {
 };
 
 const kwds = 'case var if return';
-
 const rx: [RegExp, string][] = [];
 kwds.split(' ').forEach((kwd) =>
     rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),

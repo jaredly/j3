@@ -50,6 +50,7 @@ export const realOffset = (
     pos: { x: number; y: number },
     off = 0,
 ): null | number => {
+    // console.log('realoffsert', node, pos, off);
     let range = new Range();
     for (let child of node.childNodes) {
         if (child.nodeName === '#text') {
@@ -59,7 +60,14 @@ export const realOffset = (
             for (let i = 0; i < graphemes.length; i++) {
                 range.setStart(child, offset);
                 range.setEnd(child, offset);
-                let dx = range.getBoundingClientRect().left - pos.x;
+                const rb = range.getBoundingClientRect();
+                let dx = rb.left - pos.x;
+                // console.log(rb.top, rb.bottom, pos.y);
+                if (pos.y > rb.bottom) {
+                    // prevPos = dx;
+                    offset += graphemes[i].length;
+                    continue;
+                }
                 if (Math.abs(dx) < 2) {
                     return off + i;
                 }

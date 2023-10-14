@@ -11,7 +11,7 @@ to collapse
 
 oh hey I could just do that.
 
-
+> Pasting into a string, should just be flat
 
 # SELF_HOSTING
 
