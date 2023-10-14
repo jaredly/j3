@@ -27,8 +27,8 @@ export function Root({
     tops: number[];
     debug: boolean;
     // ctx: Ctx;
-    showTop: (top: number) => React.ReactNode;
-    results: Ctx['results'];
+    showTop?: (top: number) => React.ReactNode;
+    results?: Ctx['results'];
 }) {
     useEffect(() => {
         console.log('ROOT First render');
@@ -129,8 +129,8 @@ export function Root({
             }}
         >
             {tops.map((top, i) => {
-                const got = results.toplevel[top];
-                const tt = showTop(top);
+                const got = results?.toplevel[top];
+                const tt = showTop?.(top);
                 return (
                     <div key={top} style={{ marginBottom: 8, display: 'flex' }}>
                         <div
@@ -164,9 +164,9 @@ export function Root({
                                 idx={top}
                                 map={state.map}
                                 reg={reg}
-                                display={results.display}
-                                hashNames={results.hashNames}
-                                errors={results.errors}
+                                display={results?.display ?? {}}
+                                hashNames={results?.hashNames ?? {}}
+                                errors={results?.errors ?? {}}
                                 dispatch={dispatch}
                                 selection={selections}
                                 path={[

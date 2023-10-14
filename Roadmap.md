@@ -4,8 +4,59 @@
 We're hosting some kind of self, that's for sure.
 So the bootstrap runner is running the code, and we are successfully
 executing the bootstrap!
-The in-code compilation is not necessarily correct, however.
-Things we still need:
+Annd now we've got the full wrap, it looks like.
+
+
+Checkpoint 1: we can self-host compile, with some external builtins
+(We might want to have some pre-steps to this, where we start with a truly basic AST? idk)
+like just the lambda calculus. But then we need to add in algebraic data types & pattern matching to actually represent the current code that we have.
+Yeah so it's like, we're executing this on some test files, fibbonacci function and such.
+And then we beef it up to handle matches. Love it.
+
+Ok, so next step is:
+let's get going on the web interface, why am I slumming it with the cli
+
+andddd let's make a little web server to persist these because we can't rely on localstorage.
+
+AND THEN:
+make type inference a thing
+
+AND THEN FINALLY:
+let's get labels into these typedefs
+
+```clj
+(deftype expr
+  (eprim :prim prim)
+  (evar :id string)
+  (elambda :id string :body expr)
+  (eapp :fn expr :arg expr)
+  (elet :id string :init expr :body expr)
+  (ematch :target expr :cases (, pat expr))
+)
+
+(deftype prim
+  (pstr string)
+  (pint int)
+  (pbool bool)
+)
+
+(deftype (, a b) (, a b)) ; equivalent to (, :0 a :1 b)
+
+(deftype stmt
+  (sdeftype
+    :name string
+    :constructors
+      (array (, string (array
+        ; if this string is "", then it's anonymous
+        ; ohh wait nvm we'll say if string is a number
+        ; like "1" or "0" then it can be used in anonymous
+        ; mode.
+        (, string type)))))
+  (sdefn :name string :value expr)
+  (sexpr expr)
+)
+```
+
 
 
 # Ok, so one idea: making a massive tutorial dealio
@@ -14,6 +65,8 @@ where we're making a succession of type inference algorithms
 using only the features made available by the algorithm of the current section.
 Such that we are self-hosting, if you will.
 
+Sooo it looks like I would probably want, the ability to do anonymous
+a little bit if I want.
 
 
 

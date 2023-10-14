@@ -5,6 +5,7 @@ import { initialData } from './ide/initialData';
 import { IDE } from './ide/IDE';
 import { Test } from './ide/Test';
 import { Visualize } from './ide/infer/visualize/Visualize';
+import { GroundUp, Outside } from './ide/ground-up/GroundUp';
 
 declare global {
     var root: Root;
@@ -56,7 +57,8 @@ initialData(location.hash ? location.hash.slice(1) : null).then(
             <React.StrictMode>
                 <ErrorBoundary>
                     {/* <IDE initial={initial} /> */}
-                    <Test env={initial.env} />
+                    <Outside />
+                    {/* <Test env={initial.env} /> */}
                     {/* <Visualize env={initial.env} /> */}
                 </ErrorBoundary>
             </React.StrictMode>,

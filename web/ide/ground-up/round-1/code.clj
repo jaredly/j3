@@ -58,7 +58,7 @@ const reduce = (init) => (items) => (f) => {
 
 (deftype stmt
     (sdeftype string (array (, string (array type))))
-    (sdefn string (array string) expr)
+    (sdef string expr)
     (sexpr expr))
 
 ; eh because it's annoying?

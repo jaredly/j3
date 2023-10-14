@@ -35,6 +35,11 @@ Starting things off, we'll build a basic Hindley Milner impl with a couple of ad
   - uses a "lacks" meta-variable
   - https://web.cecs.pdx.edu/~mpj/pubs/96-3.pdf
 
+- Extensible records with scoped labels
+  - https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/scopedlabels.pdf
+
+- The simple essence of algebraic subtyping: principal type inference with subtyping made easy (functional pearl)
+  - https://dl.acm.org/doi/10.1145/3409006
 
 ## Things to highlight
 
