@@ -6,9 +6,13 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
     switch (expr.type) {
         case 'eprim':
             if (expr[0].type === 'pstr') {
-                return expr[0][0]
-                    .replaceAll('\\n', '\n')
-                    .replaceAll('\\"', '"');
+                // console.log('GOT A THING', JSON.stringify(expr[0][0]));
+                return expr[0][0].replaceAll(/\\./g, (m) => {
+                    if (m[1] === 'n') {
+                        return '\n';
+                    }
+                    return m[1];
+                });
                 // return JSON.parse(
                 //     '"' + expr[0][0].replaceAll('"', '\\"') + '"',
                 // );

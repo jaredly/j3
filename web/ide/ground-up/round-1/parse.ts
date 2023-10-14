@@ -30,6 +30,8 @@ export const printExpr = (e: expr): string => {
     }
 };
 
+// export const
+
 export type prim =
     | { type: 'pstr'; 0: string }
     | { type: 'pint'; 0: number }
@@ -76,8 +78,8 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
             const values = filterBlanks(node.values);
             if (
                 values.length &&
-                values[0].type === 'identifier' &&
-                values[1].type === 'identifier'
+                values[0].type === 'identifier'
+                // && values[1].type === 'identifier'
             ) {
                 switch (values[0].text) {
                     case 'deftype': {
@@ -110,6 +112,11 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                                 1: wrapArray(args),
                             });
                         }
+                        // hrm
+                        if (values[1].type !== 'identifier') {
+                            errors[values[1].loc] = 'whmmmm';
+                            return;
+                        }
                         return {
                             type: 'sdeftype',
                             0: values[1].text,
@@ -117,6 +124,10 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                         };
                     }
                     case 'def': {
+                        if (values[1].type !== 'identifier') {
+                            errors[node.loc] = 'def needs id';
+                            return;
+                        }
                         if (values.length !== 3) {
                             errors[node.loc] =
                                 'invalid def - need 3 items, not ' +
@@ -135,6 +146,10 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                         };
                     }
                     case 'defn': {
+                        if (values[1].type !== 'identifier') {
+                            errors[node.loc] = 'def needs id';
+                            return;
+                        }
                         if (values.length !== 4) {
                             errors[node.loc] =
                                 'invalid defn - need 4 items, not ' +
@@ -171,7 +186,9 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                 }
             }
     }
-    errors[node.loc] = 'unknown statement ' + JSON.stringify(node);
+    const inner = parseExpr(node, errors);
+    return inner ? { type: 'sexpr', 0: inner } : undefined;
+    // errors[node.loc] = 'unknown statement ' + JSON.stringify(node);
 };
 
 // Don't need this until we can self-host
@@ -217,6 +234,9 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
             return { type: 'pcon', 0: 'nil', 1: { type: 'nil' } };
         }
         const v = filterBlanks(node.values);
+        // if (v.length === 1 && v[0].type === 'identifier') {
+        //     return {type: 'pcon', 0: 'cons', 1: wrapa}
+        // }
         if (
             v.length === 2 &&
             v[0].type === 'identifier' &&

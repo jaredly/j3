@@ -36,6 +36,7 @@ import { Algo, Trace, algos } from '../infer/types';
 import { newResults } from '../Test';
 import { parseStmt } from './round-1/parse';
 import { evalExpr } from './round-1/bootstrap';
+import { sanitize } from './round-1/builtins';
 
 const names = ['what', 'w', 'w2', '10'];
 
@@ -102,7 +103,7 @@ export const Outside = () => {
                         </a>
                     ))}
                 </div>
-                <Loader id={hash.slice(1)} />
+                <Loader id={hash.slice(1)} key={hash.slice(1)} />
             </div>
         );
     }
@@ -217,6 +218,92 @@ export const GroundUp = ({
         (t) => !hidden[t],
     );
 
+    const evaluated = useMemo(() => {
+        const produce: { [key: number]: string } = {};
+        try {
+            const stmts = tops.map((t) => fromMCST(t, state.map));
+            const env: { [key: string]: any } = {};
+            const parsed = stmts
+                .filter((node) => node.type !== 'blank')
+                .map((node) => {
+                    const errors = {};
+                    const stmt = parseStmt(node, errors);
+                    if (Object.keys(errors).length || !stmt) {
+                        console.log('unable to parse a stmt', errors);
+                        return;
+                    }
+                    (stmt as any).loc = node.loc;
+                    return stmt;
+                })
+                .filter((x): x is NonNullable<typeof x> => x != null);
+
+            parsed.forEach((stmt) => {
+                if (stmt.type === 'sdeftype') {
+                    return;
+                }
+                if (stmt.type === 'sdef') {
+                    const res = evalExpr(stmt[1], env);
+                    env[stmt[0]] = res;
+                    produce[(stmt as any).loc] = JSON.stringify(res);
+                    if (stmt[0] === 'builtins') {
+                        Object.assign(env, extractBuiltins(res));
+                    }
+                }
+                if (stmt.type === 'sexpr') {
+                    try {
+                        const res = evalExpr(stmt[0], env);
+                        produce[(stmt as any).loc] =
+                            'js-boot: ' + JSON.stringify(res);
+                    } catch (err) {
+                        produce[(stmt as any).loc] =
+                            'js-boot-err: ' + (err as Error).message;
+                    }
+                }
+            });
+
+            let total = '';
+            total += `const {${Object.keys(env)
+                .filter((k) => sanitize(k) === k)
+                .join(', ')}} = env;\n{`;
+
+            parsed.forEach((stmt) => {
+                try {
+                    const res = env['compile-st'](stmt);
+                    if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
+                        total += res + '\n';
+                        produce[(stmt as any).loc] = res;
+                    } else if (stmt.type === 'sexpr') {
+                        const ok = total + '\nreturn ' + res + '}';
+                        produce[(stmt as any).loc] = ok; //JSON.stringify(f());
+                        try {
+                            const f = new Function('env', ok);
+                            produce[(stmt as any).loc] = JSON.stringify(f(env));
+                        } catch (err) {
+                            console.error(err);
+                            produce[(stmt as any).loc] += (
+                                err as Error
+                            ).message;
+                        }
+                    }
+                } catch (err) {
+                    produce[(stmt as any).loc] = (err as Error).message;
+                }
+            });
+
+            // let source = parsed
+            //     .map((stmt) => env['compile-st'](stmt))
+            //     .join('\n');
+            // const got = getConstNames(source);
+            // source += `\nreturn {${got.join(', ')}}`;
+            // console.log(source);
+            // const full = new Function('', source)();
+            // console.log(full);
+        } catch (err) {
+            console.log('didnt work', err);
+        }
+        return produce;
+    }, [state.map]);
+
     const results = useMemo(() => {
         const results = newResults();
 
@@ -234,45 +321,7 @@ export const GroundUp = ({
 
     return (
         <div>
-            <button
-                onClick={() => {
-                    const stmts = tops.map((t) => fromMCST(t, state.map));
-
-                    const env: { [key: string]: any } = {};
-
-                    const parsed = stmts
-                        .filter((node) => node.type !== 'blank')
-                        .map((node) => {
-                            const errors = {};
-                            const stmt = parseStmt(node, errors);
-                            if (Object.keys(errors).length || !stmt) {
-                                console.log('unable to parse a stmt', errors);
-                                return;
-                            }
-                            return stmt;
-                        })
-                        .filter((x): x is NonNullable<typeof x> => x != null);
-
-                    parsed.forEach((stmt) => {
-                        if (stmt.type === 'sdeftype') {
-                            return;
-                        }
-                        if (stmt.type === 'sdef') {
-                            const res = evalExpr(stmt[1], env);
-                            env[stmt[0]] = res;
-                            if (stmt[0] === 'builtins') {
-                                Object.assign(env, extractBuiltins(res));
-                            }
-                        }
-                    });
-                    console.log(env);
-                    parsed.forEach((stmt) => {
-                        console.log(env['compile-st'](stmt));
-                    });
-                }}
-            >
-                Ok
-            </button>
+            <button onClick={() => {}}>Ok</button>
             <HiddenInput
                 hashNames={{}}
                 state={state}
@@ -285,10 +334,16 @@ export const GroundUp = ({
                 tops={tops}
                 debug={false}
                 clickTop={(top) => setHidden((t) => ({ ...t, [top]: true }))}
-                // showTop={(top) =>
-                //     (results.tops[top].failed ? '🚨 ' : '') +
-                //     results.tops[top].summary
-                // }
+                showTop={
+                    (top) =>
+                        debug ? (
+                            <pre style={{ whiteSpace: 'pre-wrap' }}>
+                                {evaluated[top]}
+                            </pre>
+                        ) : null
+                    // (results.tops[top].failed ? '🚨 ' : '') +
+                    // results.tops[top].summary
+                }
                 results={results}
             />
             <button
@@ -474,12 +529,8 @@ const actionToUpdate = (
     }
 };
 
-function extractBuiltins(raw: any) {
-    const names: string[] = [];
-    (raw as string).replaceAll(/^const ([a-zA-Z0-9_$]+)/gm, (v, name) => {
-        names.push(name);
-        return '';
-    });
+function extractBuiltins(raw: string) {
+    const names: string[] = getConstNames(raw);
     const res = new Function('', raw + `\nreturn {${names.join(', ')}}`)();
     Object.keys(res).forEach((name) => {
         let desan = name;
@@ -489,6 +540,15 @@ function extractBuiltins(raw: any) {
         res[desan] = res[name];
     });
     return res;
+}
+
+function getConstNames(raw: any) {
+    const names: string[] = [];
+    (raw as string).replaceAll(/^const ([a-zA-Z0-9_$]+)/gm, (v, name) => {
+        names.push(name);
+        return '';
+    });
+    return names;
 }
 
 export function calcResults(
