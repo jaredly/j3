@@ -112,7 +112,12 @@ export const parseByCharacter = (
             state = applyUpdate(
                 state,
                 0,
-                paste(state, ctx?.results.hashNames ?? {}, clipboard),
+                paste(
+                    state,
+                    ctx?.results.hashNames ?? {},
+                    clipboard,
+                    ctx != null,
+                ),
             );
             continue;
         }

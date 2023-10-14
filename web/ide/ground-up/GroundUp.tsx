@@ -34,6 +34,8 @@ import { useLocalStorage } from '../../Debug';
 import { paste } from '../../../src/state/clipboard';
 import { Algo, Trace, algos } from '../infer/types';
 import { newResults } from '../Test';
+import { parseStmt } from './round-1/parse';
+import { evalExpr } from './round-1/bootstrap';
 
 const names = ['what', 'w', 'w2', '10'];
 
@@ -235,17 +237,35 @@ export const GroundUp = ({
 
     return (
         <div>
-            {/* <div>
-                {Object.keys(algos).map((algo) => (
-                    <button
-                        key={algo}
-                        onClick={() => setAlg(algo)}
-                        style={algo === alg ? { fontWeight: 'bold' } : {}}
-                    >
-                        {algo}
-                    </button>
-                ))}
-            </div> */}
+            <button
+                onClick={() => {
+                    const stmts = tops.map((t) => fromMCST(t, state.map));
+
+                    const env: { [key: string]: any } = {};
+                    stmts.forEach((_stmt) => {
+                        const errors = {};
+                        const stmt = parseStmt(_stmt, errors);
+                        if (Object.keys(errors).length || !stmt) {
+                            return;
+                        }
+                        console.log(stmt.type);
+                        if (stmt.type === 'sdeftype') {
+                            console.log('skipping deftype');
+                            return;
+                        }
+                        if (stmt.type === 'sdef') {
+                            const res = evalExpr(stmt[1], env);
+                            env[stmt[0]] = res;
+                            if (stmt[0] === 'builtins') {
+                                // hrm
+                            }
+                        }
+                    });
+                    console.log(env);
+                }}
+            >
+                Ok
+            </button>
             <HiddenInput
                 hashNames={{}}
                 state={state}

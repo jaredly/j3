@@ -52,7 +52,8 @@ export const closestSelection = (
             if (!value || which === 'outside') {
                 return;
             }
-            const box = value.node.getBoundingClientRect(); //subRect( //,
+            const box = value.node.getBoundingClientRect();
+            // subRect( //,
             // value.node.offsetParent!.getBoundingClientRect(),
             // );
             const dy =
@@ -93,7 +94,7 @@ export const closestSelection = (
                     ? value.path.concat({
                           idx: +key,
                           type: 'subtext',
-                          at: calcOffset(value.node, pos.x),
+                          at: calcOffset(value.node, pos),
                       } satisfies Path)
                     : value.path.concat({
                           idx: +key,

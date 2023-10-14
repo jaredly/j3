@@ -92,7 +92,7 @@ const actionToUpdate = (
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
         case 'paste': {
-            return paste(state, state.ctx, action.items);
+            return paste(state, state.ctx, action.items, true);
         }
         case 'namespace-rename':
             return action;
