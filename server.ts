@@ -8,6 +8,8 @@ import {
 } from 'fs';
 import { IncomingMessage, createServer } from 'http';
 import path from 'path';
+import { NUIState } from './web/custom/UIState';
+import { ListLikeContents, fromMCST } from './src/types/mcst';
 
 const base = path.join(__dirname, 'data');
 
@@ -27,6 +29,21 @@ const readBody = (readable: IncomingMessage) => {
             res(content);
         });
     });
+};
+
+const serializeFile = (state: NUIState) => {
+    const tops = (state.map[-1] as ListLikeContents).values;
+    return tops
+        .map(
+            (id) =>
+                `;! ${JSON.stringify(
+                    fromMCST(id, state.map),
+                )}\npretty . print . lol`,
+        )
+        .join('\n');
+};
+const deserializeFile = (raw: string) => {
+    const data: NUIState = JSON.parse(raw);
 };
 
 createServer(async (req, res) => {
