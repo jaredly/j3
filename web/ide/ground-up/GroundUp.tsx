@@ -13,8 +13,8 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
-import { Ctx, Display, Env } from '../../../src/to-ast/library';
-import { ListLikeContents, Map, fromMCST } from '../../../src/types/mcst';
+import { Ctx, Env } from '../../../src/to-ast/library';
+import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
 import { Cursors } from '../../custom/Cursors';
 import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover, calc } from '../../custom/Hover';
@@ -38,7 +38,7 @@ import { parseStmt } from './round-1/parse';
 import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 import { nodeToString } from '../../../src/to-cst/nodeToString';
-import { NNode, getNestedNodes } from '../../../src/state/getNestedNodes';
+import { renderNodeToString } from './renderNodeToString';
 
 const names = ['what', 'w', 'w2', '10'];
 
@@ -345,7 +345,7 @@ export const GroundUp = ({
                             <pre style={{ whiteSpace: 'pre-wrap' }}>
                                 {/* {evaluated[top]} */}
                                 {/* {nodeToString(fromMCST(top, state.map), {})} */}
-                                {renderNodes(
+                                {renderNodeToString(
                                     top,
                                     state.map,
                                     0,
@@ -391,7 +391,7 @@ export const GroundUp = ({
     );
 };
 
-const white = (n: number) => ''.padStart(n, ' ');
+export const white = (n: number) => ''.padStart(n, ' ');
 
 const stringify = (v: any, level: number, max: number): string => {
     if (level === max) {
@@ -655,58 +655,4 @@ const valueToString = (v: any): string => {
     }
 
     return '' + v;
-};
-
-export const renderNodes = (
-    top: number,
-    map: Map,
-    left: number,
-    display: Display,
-) => {
-    const nnode = getNestedNodes(map[top], map, undefined, display[top].layout);
-    return renderNNode(nnode, map, left, display);
-};
-
-export const renderNNode = (
-    nnode: NNode,
-    map: Map,
-    left: number,
-    display: Display,
-): string => {
-    switch (nnode.type) {
-        case 'horiz':
-        case 'inline':
-            return nnode.children
-                .map((c) => renderNNode(c, map, left, display))
-                .join('');
-        case 'vert':
-            return nnode.children
-                .map((c) => renderNNode(c, map, left, display))
-                .join('\n' + white(left));
-        case 'blinker':
-            return '';
-        case 'brace':
-            return nnode.text;
-        case 'indent':
-            return renderNNode(nnode.child, map, left + 4, display);
-        case 'punct':
-            return nnode.text;
-        case 'text':
-            return nnode.text;
-        case 'ref':
-            return renderNodes(nnode.id, map, left, display);
-        case 'pairs':
-            return (
-                nnode.firstLine
-                    .map((c) => renderNNode(c, map, left, display))
-                    .join('') +
-                nnode.children
-                    .map((c) =>
-                        c
-                            .map((c) => renderNNode(c, map, left + 4, display))
-                            .join(' '),
-                    )
-                    .join('\n' + white(left))
-            );
-    }
 };
