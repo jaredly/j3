@@ -220,6 +220,7 @@ export const GroundUp = ({
 
     const evaluated = useMemo(() => {
         const produce: { [key: number]: string } = {};
+        tops.forEach((t) => (produce[t] = ''));
         try {
             const stmts = tops.map((t) => fromMCST(t, state.map));
             const env: { [key: string]: any } = {};
@@ -271,13 +272,14 @@ export const GroundUp = ({
                     const res = env['compile-st'](stmt);
                     if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
                         total += res + '\n';
-                        produce[(stmt as any).loc] = res;
+                        produce[(stmt as any).loc] += '\nself-cmp: ' + res;
                     } else if (stmt.type === 'sexpr') {
                         const ok = total + '\nreturn ' + res + '}';
-                        produce[(stmt as any).loc] = ok; //JSON.stringify(f());
+                        produce[(stmt as any).loc] += '\nself-eval: ' + ok; //JSON.stringify(f());
                         try {
                             const f = new Function('env', ok);
-                            produce[(stmt as any).loc] = JSON.stringify(f(env));
+                            produce[(stmt as any).loc] +=
+                                '\n' + JSON.stringify(f(env));
                         } catch (err) {
                             console.error(err);
                             produce[(stmt as any).loc] += (
