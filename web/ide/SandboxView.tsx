@@ -101,6 +101,7 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
         throw new Error(`map change on load?`);
     }
     return {
+        collapse: {},
         map: sandbox.map,
         root: sandbox.root,
         history: sandbox.history,

@@ -54,6 +54,7 @@ function loadState(
     state: NUIState = {
         map: emptyMap(),
         root: -1,
+        collapse: {},
         history: [],
         nidx: () => 0,
         clipboard: [],
@@ -250,16 +251,16 @@ export const GroundUp = ({
                         Object.assign(env, extractBuiltins(res));
                     }
                 }
-                if (stmt.type === 'sexpr') {
-                    try {
-                        const res = evalExpr(stmt[0], env);
-                        produce[(stmt as any).loc] =
-                            'js-boot: ' + JSON.stringify(res);
-                    } catch (err) {
-                        produce[(stmt as any).loc] =
-                            'js-boot-err: ' + (err as Error).message;
-                    }
-                }
+                // if (stmt.type === 'sexpr') {
+                //     try {
+                //         const res = evalExpr(stmt[0], env);
+                //         produce[(stmt as any).loc] =
+                //             'js-boot: ' + JSON.stringify(res);
+                //     } catch (err) {
+                //         produce[(stmt as any).loc] =
+                //             'js-boot-err: ' + (err as Error).message;
+                //     }
+                // }
             });
 
             let total = '';
@@ -272,14 +273,14 @@ export const GroundUp = ({
                     const res = env['compile-st'](stmt);
                     if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
                         total += res + '\n';
-                        produce[(stmt as any).loc] += '\nself-cmp: ' + res;
+                        // produce[(stmt as any).loc] += '\nself-cmp: ' + res;
                     } else if (stmt.type === 'sexpr') {
                         const ok = total + '\nreturn ' + res + '}';
-                        produce[(stmt as any).loc] += '\nself-eval: ' + ok; //JSON.stringify(f());
+                        // produce[(stmt as any).loc] += '\nself-eval: ' + ok; //JSON.stringify(f());
                         try {
                             const f = new Function('env', ok);
                             produce[(stmt as any).loc] +=
-                                '\n' + JSON.stringify(f(env));
+                                '\n' + valueToString(f(env));
                         } catch (err) {
                             console.error(err);
                             produce[(stmt as any).loc] += (
@@ -626,16 +627,23 @@ export function calcResults(
     return results;
 }
 
-export function stateFromMap(map: NUIState['map']): NUIState {
-    let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
-    return {
-        map,
-        root: -1,
-        history: [],
-        nidx: () => idx++,
-        clipboard: [],
-        hover: [],
-        regs: {},
-        at: [],
-    };
-}
+const valueToString = (v: any): string => {
+    if (Array.isArray(v)) {
+        return `[${v.map(valueToString).join(', ')}]`;
+    }
+
+    if (typeof v === 'object' && v && 'type' in v) {
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return `(${v.type}${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})`;
+    }
+    if (typeof v === 'string') {
+        return JSON.stringify(v);
+    }
+
+    return '' + v;
+};

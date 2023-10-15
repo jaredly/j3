@@ -1,4 +1,9 @@
 
+# Next up:
+- [ ] save to a ~literate format
+- [ ] hmm do I want to get tests going already?
+
+
 # So, pasting...
 I think I want to do a little bit of pre lexing
 yeah that's nice.

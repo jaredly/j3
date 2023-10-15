@@ -374,7 +374,7 @@ export function newResults(): CompilationResults & {
     };
 }
 
-export function loadState(k: string) {
+export function loadState(k: string): NUIState {
     const saved = localStorage.getItem(k);
     const map = saved ? JSON.parse(saved) : emptyMap();
 
@@ -383,6 +383,7 @@ export function loadState(k: string) {
         map,
         root: -1,
         history: [],
+        collapse: {},
         nidx: () => idx++,
         clipboard: [],
         hover: [],
@@ -397,6 +398,7 @@ export function stateFromMap(map: NUIState['map']): NUIState {
         map,
         root: -1,
         history: [],
+        collapse: {},
         nidx: () => idx++,
         clipboard: [],
         hover: [],

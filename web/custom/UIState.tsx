@@ -10,6 +10,7 @@ export type NUIState = {
     clipboard: ClipboardItem[][];
     hover: Path[];
     history: HistoryItem[];
+    collapse: { [idx: number]: boolean };
 } & State;
 
 export type UIState = { ctx: Ctx } & NUIState;

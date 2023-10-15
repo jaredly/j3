@@ -71,6 +71,7 @@ export const uiState = (state: State): UIState => {
     const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], state.map)!;
     return {
         nidx: state.nidx,
+        collapse: {},
         root: -1,
         regs: {},
         clipboard: [],
