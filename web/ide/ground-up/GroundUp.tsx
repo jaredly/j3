@@ -349,14 +349,14 @@ export const GroundUp = ({
                     (top) =>
                         debug ? (
                             <pre style={{ whiteSpace: 'pre-wrap' }}>
-                                {/* {evaluated[top]} */}
+                                {evaluated[top]}
                                 {/* {nodeToString(fromMCST(top, state.map), {})} */}
-                                {renderNodeToString(
+                                {/* {renderNodeToString(
                                     top,
                                     state.map,
                                     0,
                                     results.display,
-                                )}
+                                )} */}
                             </pre>
                         ) : null
                     // (results.tops[top].failed ? '🚨 ' : '') +
