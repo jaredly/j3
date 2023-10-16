@@ -9,7 +9,7 @@ import {
 import { IncomingMessage, createServer } from 'http';
 import path from 'path';
 import { NUIState } from './web/custom/UIState';
-import { ListLikeContents, fromMCST } from './src/types/mcst';
+import { ListLikeContents, fromMCST, toMCST } from './src/types/mcst';
 import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
 
@@ -33,7 +33,8 @@ const readBody = (readable: IncomingMessage) => {
     });
 };
 
-const serializeFile = (state: NUIState) => {
+const serializeFile = (raw: string) => {
+    const state: NUIState = JSON.parse(raw);
     const tops = (state.map[-1] as ListLikeContents).values;
     const display = {};
     tops.map((top) => {
@@ -43,7 +44,6 @@ const serializeFile = (state: NUIState) => {
     const { map, ...others } = state;
 
     return (
-        `;!! ${JSON.stringify(others)}\n\n` +
         tops
             .map(
                 (id) =>
@@ -51,12 +51,13 @@ const serializeFile = (state: NUIState) => {
                         fromMCST(id, state.map),
                     )}\n\n${renderNodeToString(id, state.map, 0, display)}`,
             )
-            .join('\n\n')
+            .join('\n\n') + `\n\n;!! ${JSON.stringify(others)}`
     );
 };
 
 const deserializeFile = (raw: string) => {
-    if (!raw.startsWith(';!! ')) {
+    console.log('ok here');
+    if (!raw.startsWith(';!')) {
         const data: NUIState = JSON.parse(raw);
         return data;
     }
@@ -67,12 +68,21 @@ const deserializeFile = (raw: string) => {
     };
     let state: NUIState;
     lines.forEach((line) => {
-        if (line.startsWith(':!! ')) {
-            state = JSON.parse(line.slice(4));
+        if (line.startsWith(';!! ')) {
+            try {
+                state = JSON.parse(line.slice(4));
+            } catch (err) {
+                console.warn(err);
+                throw err;
+            }
         } else if (line.startsWith(';! ')) {
-            const node = JSON.parse(line.slice(3));
-            map[node.loc] = node;
-            tops.push(node.loc);
+            try {
+                const node = JSON.parse(line.slice(3));
+                tops.push(toMCST(node, map));
+            } catch (err) {
+                console.warn(err);
+                throw err;
+            }
         }
     });
     state!.map = map;
@@ -93,7 +103,7 @@ createServer(async (req, res) => {
     if (req.method === 'POST') {
         console.log('posting', full);
         mkdirSync(path.dirname(full), { recursive: true });
-        writeFileSync(full, await readBody(req));
+        writeFileSync(full, serializeFile(await readBody(req)));
         res.writeHead(200, {
             'Content-type': 'application/json',
             'Access-Control-Allow-Origin': '*',
@@ -124,7 +134,9 @@ createServer(async (req, res) => {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'content-type',
         });
-        return res.end(readFileSync(full, 'utf-8'));
+        const raw = readFileSync(full, 'utf-8');
+        const v = deserializeFile(raw);
+        return res.end(JSON.stringify(v));
     }
     if (req.method === 'OPTIONS') {
         res.writeHead(200, {

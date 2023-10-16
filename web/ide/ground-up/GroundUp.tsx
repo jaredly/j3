@@ -101,7 +101,13 @@ export const Outside = () => {
             <div>
                 <div>
                     {listing?.map((name) => (
-                        <a href={'#' + name} key={name}>
+                        <a
+                            href={'#' + name}
+                            key={name}
+                            style={{
+                                margin: 4,
+                            }}
+                        >
                             {name}
                         </a>
                     ))}
