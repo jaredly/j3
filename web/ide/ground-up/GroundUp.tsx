@@ -224,10 +224,10 @@ export const GroundUp = ({
             const parsed = stmts
                 .filter((node) => node.type !== 'blank')
                 .map((node) => {
-                    const errors = {};
-                    const stmt = parseStmt(node, errors);
-                    if (Object.keys(errors).length || !stmt) {
-                        console.log('unable to parse a stmt', errors);
+                    const ctx = { errors: {}, display: results.display };
+                    const stmt = parseStmt(node, ctx);
+                    if (Object.keys(ctx.errors).length || !stmt) {
+                        console.log('unable to parse a stmt', ctx.errors);
                         return;
                     }
                     (stmt as any).loc = node.loc;

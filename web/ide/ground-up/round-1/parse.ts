@@ -1,3 +1,4 @@
+import { Display } from '../../../../src/to-ast/library';
 import { Node } from '../../../../src/types/cst';
 
 export type arr<a> = { type: 'cons'; 0: a; 1: arr<a> } | { type: 'nil' };
@@ -29,8 +30,6 @@ export const printExpr = (e: expr): string => {
             return 'match';
     }
 };
-
-// export const
 
 export type prim =
     | { type: 'pstr'; 0: string }
@@ -65,22 +64,16 @@ export type node =
     | { type: 'nstring'; 0: string }
     | { type: 'nlist'; 0: arr<node> };
 
-// type Shape = {type: 'identifier', text?: string} | {type: 'array', length?: number} | {type: 'list', length?: number}
-// const listShape = (shape: Shape[], nodes: Node[]) => {
-// }
-
 type Errors = { [loc: number]: string };
-export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
+type Ctx = { errors: Errors; display: Display };
+
+export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
     switch (node.type) {
         case 'comment':
             return;
         case 'list':
             const values = filterBlanks(node.values);
-            if (
-                values.length &&
-                values[0].type === 'identifier'
-                // && values[1].type === 'identifier'
-            ) {
+            if (values.length && values[0].type === 'identifier') {
                 switch (values[0].text) {
                     case 'deftype': {
                         const vvalues: {
@@ -94,14 +87,14 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                                 item.values.length < 1 ||
                                 item.values[0].type !== 'identifier'
                             ) {
-                                errors[item.loc] =
+                                ctx.errors[item.loc] =
                                     'invalid type constructor' +
                                     JSON.stringify(item);
                                 continue;
                             }
                             const args = [];
                             for (let arg of item.values.slice(1)) {
-                                const p = parseType(arg, errors);
+                                const p = parseType(arg, ctx);
                                 if (p) {
                                     args.push(p);
                                 }
@@ -112,9 +105,8 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                                 1: wrapArray(args),
                             });
                         }
-                        // hrm
                         if (values[1].type !== 'identifier') {
-                            errors[values[1].loc] = 'whmmmm';
+                            ctx.errors[values[1].loc] = 'whmmmm';
                             return;
                         }
                         return {
@@ -125,18 +117,18 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                     }
                     case 'def': {
                         if (values[1].type !== 'identifier') {
-                            errors[node.loc] = 'def needs id';
+                            ctx.errors[node.loc] = 'def needs id';
                             return;
                         }
                         if (values.length !== 3) {
-                            errors[node.loc] =
+                            ctx.errors[node.loc] =
                                 'invalid def - need 3 items, not ' +
                                 values.length;
                             return;
                         }
-                        const body = parseExpr(values[2], errors);
+                        const body = parseExpr(values[2], ctx);
                         if (!body) {
-                            errors[values[2].loc] = 'failed to parse body';
+                            ctx.errors[values[2].loc] = 'failed to parse body';
                             return;
                         }
                         return {
@@ -147,11 +139,11 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                     }
                     case 'defn': {
                         if (values[1].type !== 'identifier') {
-                            errors[node.loc] = 'def needs id';
+                            ctx.errors[node.loc] = 'def needs id';
                             return;
                         }
                         if (values.length !== 4) {
-                            errors[node.loc] =
+                            ctx.errors[node.loc] =
                                 'invalid defn - need 4 items, not ' +
                                 values.length;
                             return;
@@ -162,7 +154,7 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                                 (t) => t.type !== 'identifier',
                             )
                         ) {
-                            errors[values[2].loc] = 'invalid argument decl';
+                            ctx.errors[values[2].loc] = 'invalid argument decl';
                             return;
                         }
                         const args: string[] = values[2].values.map(
@@ -170,7 +162,7 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                                 (t as Extract<Node, { type: 'identifier' }>)
                                     .text,
                         );
-                        let body = parseExpr(values[3], errors);
+                        let body = parseExpr(values[3], ctx);
                         if (!body) return;
 
                         for (let i = args.length - 1; i >= 0; i--) {
@@ -186,9 +178,8 @@ export const parseStmt = (node: Node, errors: Errors): stmt | undefined => {
                 }
             }
     }
-    const inner = parseExpr(node, errors);
+    const inner = parseExpr(node, ctx);
     return inner ? { type: 'sexpr', 0: inner } : undefined;
-    // errors[node.loc] = 'unknown statement ' + JSON.stringify(node);
 };
 
 // Don't need this until we can self-host
@@ -253,7 +244,7 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
     errors[node.loc] = 'unknown pat ' + JSON.stringify(node);
 };
 
-export const parseExpr = (node: Node, errors: Errors): expr | void => {
+export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
     switch (node.type) {
         case 'identifier': {
             const num = +node.text;
@@ -278,7 +269,7 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                 values[0].text === 'fn'
             ) {
                 if (values[1].type !== 'array') {
-                    errors[values[1].loc] = 'expected array';
+                    ctx.errors[values[1].loc] = 'expected array';
                     return;
                 }
                 const args: string[] = [];
@@ -286,10 +277,10 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                     if (arg.type === 'identifier') {
                         args.push(arg.text);
                     } else {
-                        errors[arg.loc] = 'expected ident';
+                        ctx.errors[arg.loc] = 'expected ident';
                     }
                 }
-                let body = parseExpr(values[2], errors);
+                let body = parseExpr(values[2], ctx);
                 if (!body) return;
                 for (let i = args.length - 1; i >= 0; i--) {
                     body = { type: 'elambda', 0: args[i], 1: body };
@@ -304,10 +295,10 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                 values[0].text === 'let'
             ) {
                 if (values[1].type !== 'array') {
-                    errors[values[1].loc] = 'expected buinding array';
+                    ctx.errors[values[1].loc] = 'expected buinding array';
                     return;
                 }
-                let body = parseExpr(values[2], errors);
+                let body = parseExpr(values[2], ctx);
                 if (!body) return;
                 const bv = filterBlanks(values[1].values);
                 for (
@@ -316,12 +307,12 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                     i -= 2
                 ) {
                     const id = bv[i];
-                    const value = parseExpr(bv[i + 1], errors);
+                    const value = parseExpr(bv[i + 1], ctx);
                     if (!value) continue;
                     if (id.type === 'identifier') {
                         body = { type: 'elet', 0: id.text, 1: value, 2: body };
                     } else {
-                        const pat = parsePat(id, errors);
+                        const pat = parsePat(id, ctx);
                         if (!pat) continue;
                         body = {
                             type: 'ematch',
@@ -339,12 +330,12 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                 values[0].type === 'identifier' &&
                 values[0].text === 'match'
             ) {
-                const target = parseExpr(values[1], errors);
+                const target = parseExpr(values[1], ctx);
                 if (!target) return;
                 const cases: { type: ','; 0: pat; 1: expr }[] = [];
                 for (let i = 2; i < values.length - 1; i += 2) {
-                    const pat = parsePat(values[i], errors);
-                    const body = parseExpr(values[i + 1], errors);
+                    const pat = parsePat(values[i], ctx);
+                    const body = parseExpr(values[i + 1], ctx);
                     if (!pat) continue;
                     if (!body) continue;
                     cases.push({ type: ',', 0: pat, 1: body });
@@ -354,13 +345,13 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
 
             // (a-fn ...args)
             if (!values.length) {
-                errors[node.loc] = 'empty list';
+                ctx.errors[node.loc] = 'empty list';
                 return;
             }
-            let fn = parseExpr(values[0], errors);
+            let fn = parseExpr(values[0], ctx);
             if (!fn) return;
             for (let i = 1; i < values.length; i++) {
-                const arg = parseExpr(values[i], errors);
+                const arg = parseExpr(values[i], ctx);
                 if (!arg) return;
                 fn = { type: 'eapp', 0: fn, 1: arg };
             }
@@ -376,11 +367,11 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                 const node = v[i];
                 if (i === v.length - 1) {
                     if (node.type === 'spread') {
-                        const spread = parseExpr(node.contents, errors);
+                        const spread = parseExpr(node.contents, ctx);
                         if (!spread) return;
                         res = spread;
                     } else {
-                        const expr = parseExpr(node, errors);
+                        const expr = parseExpr(node, ctx);
                         if (!expr) return;
                         res = {
                             type: 'eapp',
@@ -393,7 +384,7 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                         };
                     }
                 } else {
-                    const expr = parseExpr(node, errors);
+                    const expr = parseExpr(node, ctx);
                     if (!expr) return;
                     res = {
                         type: 'eapp',
@@ -407,26 +398,8 @@ export const parseExpr = (node: Node, errors: Errors): expr | void => {
                 }
             }
             return res;
-        // let first = parseExpr(v[v.length - 1], errors)
-        // if (!first) return
-        // if ()
-
-        // if (v.length == 2 && v[1].type === 'spread') {
-        //     const head = parseExpr(v[0], errors);
-        //     const tail = parseExpr(v[1].contents, errors);
-        //     if (!head || !tail) return;
-        //     return {
-        //         type: 'eapp',
-        //         0: {
-        //             type: 'eapp',
-        //             0: { type: 'evar', 0: 'cons' },
-        //             1: head,
-        //         },
-        //         1: tail,
-        //     };
-        // }
     }
-    errors[node.loc] = 'unexpected expr ' + JSON.stringify(node);
+    ctx.errors[node.loc] = 'unexpected expr ' + JSON.stringify(node);
 };
 function filterBlanks(arg0: Node[]) {
     return arg0.filter((a) => a.type !== 'blank' && a.type !== 'comment');
