@@ -101,17 +101,19 @@ export const Outside = () => {
         return (
             <div>
                 <div>
-                    {listing?.map((name) => (
-                        <a
-                            href={'#' + name}
-                            key={name}
-                            style={{
-                                margin: 4,
-                            }}
-                        >
-                            {name}
-                        </a>
-                    ))}
+                    {listing
+                        ?.filter((k) => !k.endsWith('.clj'))
+                        .map((name) => (
+                            <a
+                                href={'#' + name}
+                                key={name}
+                                style={{
+                                    margin: 4,
+                                }}
+                            >
+                                {name}
+                            </a>
+                        ))}
                 </div>
                 <Loader id={hash.slice(1)} key={hash.slice(1)} />
             </div>
@@ -304,15 +306,6 @@ export const GroundUp = ({
                     produce[(stmt as any).loc] = (err as Error).message;
                 }
             });
-
-            // let source = parsed
-            //     .map((stmt) => env['compile-st'](stmt))
-            //     .join('\n');
-            // const got = getConstNames(source);
-            // source += `\nreturn {${got.join(', ')}}`;
-            // console.log(source);
-            // const full = new Function('', source)();
-            // console.log(full);
         } catch (err) {
             console.log('didnt work', err);
         }
@@ -343,9 +336,13 @@ export const GroundUp = ({
                 dispatch={dispatch}
                 menu={undefined}
             />
-            {collapsed.map((top, i) => (
-                <div key={i}>Go to jog #${i}</div>
-            ))}
+            <div style={{ display: 'flex' }}>
+                {collapsed.map((top, i) => (
+                    <div key={i} style={{ margin: 4 }}>
+                        Item {i}
+                    </div>
+                ))}
+            </div>
             <Root
                 state={state}
                 dispatch={dispatch}

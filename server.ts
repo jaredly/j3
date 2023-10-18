@@ -41,22 +41,13 @@ const serializeFile = (raw: string) => {
         layout(top, 0, state.map, display, {}, true);
     });
 
-    const { map, ...others } = state;
-
-    return (
-        tops
-            .map(
-                (id) =>
-                    `;! ${JSON.stringify(
-                        fromMCST(id, state.map),
-                    )}\n\n${renderNodeToString(id, state.map, 0, display)}`,
-            )
-            .join('\n\n') + `\n\n;!! ${JSON.stringify(others)}`
-    );
+    return tops
+        .map((id) => renderNodeToString(id, state.map, 0, display))
+        .join('\n\n')
+        .replaceAll(/[“”]/g, '"');
 };
 
 const deserializeFile = (raw: string) => {
-    console.log('ok here');
     if (!raw.startsWith(';!')) {
         const data: NUIState = JSON.parse(raw);
         return data;
@@ -102,8 +93,13 @@ createServer(async (req, res) => {
     const full = path.join(base, req.url!);
     if (req.method === 'POST') {
         console.log('posting', full);
+        if (!full.endsWith('.json')) {
+            return res.end('Need an end ok');
+        }
         mkdirSync(path.dirname(full), { recursive: true });
-        writeFileSync(full, serializeFile(await readBody(req)));
+        const state = await readBody(req);
+        writeFileSync(full, state);
+        writeFileSync(full.replace('.json', '.clj'), serializeFile(state));
         res.writeHead(200, {
             'Content-type': 'application/json',
             'Access-Control-Allow-Origin': '*',

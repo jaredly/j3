@@ -38,7 +38,7 @@ export const renderNNode = (
         case 'punct':
             return nnode.text;
         case 'text':
-            return nnode.text;
+            return nnode.text.replaceAll(/(?:[^\\])"/g, '\\"');
         case 'ref':
             return renderNodeToString(nnode.id, map, left, display);
         case 'pairs':

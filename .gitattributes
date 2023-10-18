@@ -1,2 +1,3 @@
 src/grammar.js binary
 pnpm-lock.yaml binary
+data/tmp/*.json binary
