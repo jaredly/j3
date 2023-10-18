@@ -83,13 +83,14 @@ export const calculateLayout = (
                 cw > maxWidth ||
                 (firstName === 'let' && node.values.length > 2) ||
                 firstName === 'switch' ||
+                firstName === 'match' ||
                 firstName === 'if'
             ) {
                 return {
                     type: 'multiline',
                     tightFirst: howTight(map[node.values[0]]),
                     pos,
-                    pairs: firstName === 'switch',
+                    pairs: firstName === 'switch' || firstName === 'match',
                     cw,
                 };
             }
@@ -199,6 +200,7 @@ const tightFirsts: { [key: string]: number } = {
     defnrec: 3,
     deftype: 2,
     switch: 2,
+    match: 2,
     let: 2,
     if: 2,
     '<>': 2,
