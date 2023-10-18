@@ -1,10 +1,4 @@
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useReducer,
-    useState,
-} from 'react';
+import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import { layout } from '../../../src/layout';
 import { emptyMap } from '../../../src/parse/parse';
 import {
@@ -13,34 +7,23 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
-import { Ctx, Env } from '../../../src/to-ast/library';
+import { Ctx } from '../../../src/to-ast/library';
 import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
 import { Cursors } from '../../custom/Cursors';
 import { HiddenInput } from '../../custom/HiddenInput';
-import { Hover, calc } from '../../custom/Hover';
+import { Hover } from '../../custom/Hover';
 import { Root } from '../../custom/Root';
 import { Action, NUIState, UpdatableAction } from '../../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../../custom/reduce';
 import { verticalMove } from '../../custom/verticalMove';
 
-// These register themselves into `./infer/types:algos`
-// import '../infer/hm/j';
-// import '../infer/hmx/hmx';
-// import '../infer/algw-cr';
-// import '../infer/mini';
-// import '../infer/thih';
-
-import { useLocalStorage } from '../../Debug';
 import { paste } from '../../../src/state/clipboard';
-import { Algo, Trace, algos } from '../infer/types';
+import { useLocalStorage } from '../../Debug';
 import { newResults } from '../Test';
-import { parseStmt } from './round-1/parse';
+import { Algo, Trace } from '../infer/types';
 import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
-import { nodeToString } from '../../../src/to-cst/nodeToString';
-import { renderNodeToString } from './renderNodeToString';
-
-const names = ['what', 'w', 'w2', '10'];
+import { parseStmt } from './round-1/parse';
 
 const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 
@@ -124,11 +107,13 @@ export const Outside = () => {
         <div>
             Filessss
             <div>
-                {listing?.map((name) => (
-                    <a href={'#' + name} key={name}>
-                        {name}
-                    </a>
-                ))}
+                {listing
+                    ?.filter((k) => !k.endsWith('.clj'))
+                    .map((name) => (
+                        <a href={'#' + name} key={name}>
+                            {name}
+                        </a>
+                    ))}
                 <input
                     value={name}
                     onChange={(evt) => setName(evt.target.value)}
@@ -225,19 +210,16 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    // const [hidden, setHidden] = useState({} as { [idx: number]: boolean });
-    const tops = (state.map[state.root] as ListLikeContents).values.filter(
-        (t) => !state.collapse[t],
-    );
-    const collapsed = (state.map[state.root] as ListLikeContents).values.filter(
-        (t) => state.collapse[t],
-    );
+    const all = (state.map[state.root] as ListLikeContents).values;
+    const tops = all.filter((t) => !state.collapse[t]);
+    const collapsed = all.filter((t) => state.collapse[t]);
 
-    const evaluated = useMemo(() => {
+    const { produce: evaluated, results } = useMemo(() => {
+        const results = newResults();
         const produce: { [key: number]: string } = {};
-        tops.forEach((t) => (produce[t] = ''));
+        all.forEach((t) => (produce[t] = ''));
         try {
-            const stmts = tops.map((t) => fromMCST(t, state.map));
+            const stmts = all.map((t) => fromMCST(t, state.map));
             const env: { [key: string]: any } = {};
             const parsed = stmts
                 .filter((node) => node.type !== 'blank')
@@ -255,9 +237,19 @@ export const GroundUp = ({
 
             parsed.forEach((stmt) => {
                 if (stmt.type === 'sdeftype') {
+                    results.tops[(stmt as any).loc] = {
+                        summary: stmt[0],
+                        data: [],
+                        failed: false,
+                    };
                     return;
                 }
                 if (stmt.type === 'sdef') {
+                    results.tops[(stmt as any).loc] = {
+                        summary: stmt[0],
+                        data: [],
+                        failed: false,
+                    };
                     const res = evalExpr(stmt[1], env);
                     env[stmt[0]] = res;
                     produce[(stmt as any).loc] = JSON.stringify(res);
@@ -265,16 +257,6 @@ export const GroundUp = ({
                         Object.assign(env, extractBuiltins(res));
                     }
                 }
-                // if (stmt.type === 'sexpr') {
-                //     try {
-                //         const res = evalExpr(stmt[0], env);
-                //         produce[(stmt as any).loc] =
-                //             'js-boot: ' + JSON.stringify(res);
-                //     } catch (err) {
-                //         produce[(stmt as any).loc] =
-                //             'js-boot-err: ' + (err as Error).message;
-                //     }
-                // }
             });
 
             let total = '';
@@ -309,23 +291,16 @@ export const GroundUp = ({
         } catch (err) {
             console.log('didnt work', err);
         }
-        return produce;
-    }, [state.map]);
 
-    const results = useMemo(() => {
-        const results = newResults();
-
-        tops.map((top) => {
+        all.map((top) => {
             layout(top, 0, state.map, results.display, results.hashNames, true);
         });
 
-        return results;
+        return { produce, results };
     }, [state.map]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
-    // @ts-ignore
-    // window.data = selTop ? results.tops[selTop].data : null;
 
     return (
         <div>
@@ -338,8 +313,14 @@ export const GroundUp = ({
             />
             <div style={{ display: 'flex' }}>
                 {collapsed.map((top, i) => (
-                    <div key={i} style={{ margin: 4 }}>
-                        Item {i}
+                    <div
+                        key={i}
+                        style={{ margin: 4 }}
+                        onClick={() => {
+                            dispatch({ type: 'collapse', top });
+                        }}
+                    >
+                        {results.tops[top]?.summary ?? top}
                     </div>
                 ))}
             </div>
@@ -348,24 +329,15 @@ export const GroundUp = ({
                 dispatch={dispatch}
                 tops={tops}
                 debug={false}
-                // clickTop={(top) => setHidden((t) => ({ ...t, [top]: true }))}
                 clickTop={(top) => dispatch({ type: 'collapse', top })}
-                showTop={
-                    (top) =>
-                        debug ? (
-                            <pre style={{ whiteSpace: 'pre-wrap' }}>
-                                {evaluated[top]}
-                                {/* {nodeToString(fromMCST(top, state.map), {})} */}
-                                {/* {renderNodeToString(
-                                    top,
-                                    state.map,
-                                    0,
-                                    results.display,
-                                )} */}
-                            </pre>
-                        ) : null
-                    // (results.tops[top].failed ? '🚨 ' : '') +
-                    // results.tops[top].summary
+                showTop={(top) =>
+                    debug ? (
+                        <pre style={{ whiteSpace: 'pre-wrap' }}>
+                            {evaluated[top] || top}
+                        </pre>
+                    ) : (
+                        top
+                    )
                 }
                 results={results}
             />

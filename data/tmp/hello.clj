@@ -34,11 +34,9 @@ const reduce = (init) => (items) => (f) => {
 };
 ")
 
-nice
+
 
 (deftype (array a) (nil) (cons a (array a)))
-
-(deftype (, a b) (, a b))
 
 (deftype expr
     (eprim prim)
@@ -48,7 +46,7 @@ nice
         (elet string expr expr)
         (ematch expr (array (, pat expr))))
 
-(evar "hi")
+
 
 (deftype prim (pstr string) (pint int) (pbool bool))
 
