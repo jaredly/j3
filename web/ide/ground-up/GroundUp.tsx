@@ -67,6 +67,7 @@ function loadState(
 ) {
     let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
+        // collapse: {},
         ...state,
         nidx: () => idx++,
     };
@@ -222,9 +223,12 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    const [hidden, setHidden] = useState({} as { [idx: number]: boolean });
+    // const [hidden, setHidden] = useState({} as { [idx: number]: boolean });
     const tops = (state.map[state.root] as ListLikeContents).values.filter(
-        (t) => !hidden[t],
+        (t) => !state.collapse[t],
+    );
+    const collapsed = (state.map[state.root] as ListLikeContents).values.filter(
+        (t) => state.collapse[t],
     );
 
     const evaluated = useMemo(() => {
@@ -339,12 +343,16 @@ export const GroundUp = ({
                 dispatch={dispatch}
                 menu={undefined}
             />
+            {collapsed.map((top, i) => (
+                <div key={i}>Go to jog #${i}</div>
+            ))}
             <Root
                 state={state}
                 dispatch={dispatch}
                 tops={tops}
                 debug={false}
-                clickTop={(top) => setHidden((t) => ({ ...t, [top]: true }))}
+                // clickTop={(top) => setHidden((t) => ({ ...t, [top]: true }))}
+                clickTop={(top) => dispatch({ type: 'collapse', top })}
                 showTop={
                     (top) =>
                         debug ? (
@@ -486,6 +494,14 @@ export const reduceUpdate = (
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
             return state;
+        case 'collapse':
+            return {
+                ...state,
+                collapse: {
+                    ...state.collapse,
+                    [update.top]: !state.collapse[update.top],
+                },
+            };
         // return state;
         default:
             const _: never = update;
@@ -542,6 +558,8 @@ const actionToUpdate = (
             // console.log(res);
             return res;
         }
+        case 'collapse':
+            return action;
         // case 'namespace-rename':
         //     return action;
     }

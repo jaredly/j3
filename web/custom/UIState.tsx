@@ -35,24 +35,14 @@ export type Action =
 /** Actions that can be turned into a StateChange | UIStatechange */
 export type UpdatableAction =
     | { type: 'hover'; path: Path[] }
-    | {
-          type: 'select';
-          add?: boolean;
-          at: { start: Path[]; end?: Path[] }[];
-      }
+    | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
     | { type: 'copy'; items: ClipboardItem[] }
     | { type: 'menu'; selection: number }
     | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
     // expr:def expr:deftype
-    | {
-          type: 'key';
-          key: string;
-          mods: Mods;
-      }
-    | {
-          type: 'paste';
-          items: ClipboardItem[];
-      }
+    | { type: 'key'; key: string; mods: Mods }
+    | { type: 'collapse'; top: number }
+    | { type: 'paste'; items: ClipboardItem[] }
     | DualAction;
 
 export type DualAction = {

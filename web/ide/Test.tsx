@@ -227,6 +227,8 @@ export const reduceUpdate = (
             console.warn('ignoring namespace rename');
             return state;
         // return state;
+        case 'collapse':
+            return state;
         default:
             const _: never = update;
             throw new Error('nope update');
