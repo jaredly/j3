@@ -324,6 +324,8 @@ export const GroundUp = ({
                         typeof res === 'function'
                             ? `<function>`
                             : JSON.stringify(res);
+                    // produce[(stmt as any).loc] +=
+                    //     '\n\nAST: ' + JSON.stringify(stmt);
                     if (stmt[0] === 'builtins') {
                         Object.assign(env, extractBuiltins(res));
                     }
@@ -353,11 +355,8 @@ export const GroundUp = ({
                             // produce[(stmt as any).loc] += '\njs: ' + res;
                         } else if (stmt.type === 'sexpr') {
                             const ok = total + '\nreturn ' + res + '}';
-                            produce[(stmt as any).loc] +=
-                                '\nself-eval: ' +
-                                res +
-                                '\nWhatsit:' +
-                                JSON.stringify(stmt); //JSON.stringify(f());
+                            // produce[(stmt as any).loc] += '\nself-eval: ' + res;
+                            // produce[(stmt as any).loc] += + '\nAST: ' + JSON.stringify(stmt);
                             let f;
                             try {
                                 f = new Function('env', ok);
@@ -762,7 +761,7 @@ const valueToString = (v: any): string => {
             .join('')})`;
     }
     if (typeof v === 'string') {
-        return JSON.stringify(v) + 'umraw' + v;
+        return JSON.stringify(v); // + 'umraw' + v;
     }
 
     return '' + v;

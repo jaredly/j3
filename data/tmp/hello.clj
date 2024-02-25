@@ -36,7 +36,9 @@ const reduce = (init) => (items) => (f) => {
 };
 ")
 
-1
+"\""
+
+"""
 
 (deftype (array a) (nil) (cons a (array a)))
 
@@ -161,6 +163,12 @@ const reduce = (init) => (items) => (f) => {
 
 (replaces "\n" [(, "\\" "\\\\") (, "\n" "\\n")])
 
+(defn escape-string [string]
+    (replaces string [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\"")]))
+
+(defn unescape-string [string]
+    (replaces string [(, "\\"" "\"") (, "\\n" "\n") (, "\\\\" "\\")]))
+
 (defn quot [expr]
     (match expr
     (eprim prim) (match prim
@@ -169,7 +177,7 @@ const reduce = (init) => (items) => (f) => {
 (defn compile [expr]
     (match expr
     (eprim prim) (match prim
-        (pstr string) (++ ["\"" (replaces string [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\"")]) "\""])
+        (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
         (pint int) (int-to-string int)
         (pbool bool) (if bool
                 "true"
