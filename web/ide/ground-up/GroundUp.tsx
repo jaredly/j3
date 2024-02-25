@@ -252,7 +252,10 @@ export const GroundUp = ({
                     };
                     const res = evalExpr(stmt[1], env);
                     env[stmt[0]] = res;
-                    produce[(stmt as any).loc] = JSON.stringify(res);
+                    produce[(stmt as any).loc] =
+                        typeof res === 'function'
+                            ? `<function>`
+                            : JSON.stringify(res);
                     if (stmt[0] === 'builtins') {
                         Object.assign(env, extractBuiltins(res));
                     }
@@ -264,30 +267,51 @@ export const GroundUp = ({
                 .filter((k) => sanitize(k) === k)
                 .join(', ')}} = env;\n{`;
 
-            parsed.forEach((stmt) => {
-                try {
-                    const res = env['compile-st'](stmt);
-                    if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                        total += res + '\n';
-                        // produce[(stmt as any).loc] += '\nself-cmp: ' + res;
-                    } else if (stmt.type === 'sexpr') {
-                        const ok = total + '\nreturn ' + res + '}';
-                        // produce[(stmt as any).loc] += '\nself-eval: ' + ok; //JSON.stringify(f());
-                        try {
-                            const f = new Function('env', ok);
-                            produce[(stmt as any).loc] +=
-                                '\n' + valueToString(f(env));
-                        } catch (err) {
-                            console.error(err);
-                            produce[(stmt as any).loc] += (
-                                err as Error
-                            ).message;
+            if (env['compile-st']) {
+                parsed.forEach((stmt) => {
+                    try {
+                        const res = env['compile-st'](stmt);
+                        if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
+                            total += res + '\n';
+                            // produce[(stmt as any).loc] += 'defined'; // '\njs: ' + res;
+                        } else if (stmt.type === 'sexpr') {
+                            const ok = total + '\nreturn ' + res + '}';
+                            // produce[(stmt as any).loc] += '\nself-eval: ' + ok; //JSON.stringify(f());
+                            try {
+                                const f = new Function('env', ok);
+                                produce[(stmt as any).loc] +=
+                                    '\n' + valueToString(f(env));
+                            } catch (err) {
+                                console.error(err);
+                                produce[(stmt as any).loc] += (
+                                    err as Error
+                                ).message;
+                            }
                         }
+                    } catch (err) {
+                        produce[(stmt as any).loc] = (err as Error).message;
                     }
-                } catch (err) {
-                    produce[(stmt as any).loc] = (err as Error).message;
-                }
-            });
+                });
+            } else {
+                parsed.forEach((stmt) => {
+                    try {
+                        if (stmt.type === 'sexpr') {
+                            try {
+                                const res = evalExpr(stmt[0], env);
+                                produce[(stmt as any).loc] +=
+                                    '\n' + valueToString(res);
+                            } catch (err) {
+                                console.error(err);
+                                produce[(stmt as any).loc] += (
+                                    err as Error
+                                ).message;
+                            }
+                        }
+                    } catch (err) {
+                        produce[(stmt as any).loc] = (err as Error).message;
+                    }
+                });
+            }
         } catch (err) {
             console.log('didnt work', err);
         }
@@ -333,7 +357,7 @@ export const GroundUp = ({
                 showTop={(top) =>
                     debug ? (
                         <pre style={{ whiteSpace: 'pre-wrap' }}>
-                            {evaluated[top] || top}
+                            {evaluated[top] || 'not evaluated'}
                         </pre>
                     ) : (
                         top

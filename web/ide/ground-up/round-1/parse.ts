@@ -20,6 +20,8 @@ export const printExpr = (e: expr): string => {
             return e[0] + '';
         case 'evar':
             return e[0];
+        case 'equot':
+            return `(@ ${JSON.stringify(e[0])})`;
         case 'elambda':
             return `(fn [${e[0]}] ${printExpr(e[1])})`;
         case 'eapp':
@@ -37,6 +39,7 @@ export type prim =
     | { type: 'pbool'; 0: boolean };
 export type expr =
     | { type: 'eprim'; 0: prim }
+    | { type: 'equot'; 0: expr }
     | { type: 'evar'; 0: string }
     | { type: 'elambda'; 0: string; 1: expr }
     | { type: 'eapp'; 0: expr; 1: expr }
@@ -65,7 +68,7 @@ export type node =
     | { type: 'nlist'; 0: arr<node> };
 
 type Errors = { [loc: number]: string };
-type Ctx = { errors: Errors; display: Display };
+export type Ctx = { errors: Errors; display: Display };
 
 export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
     switch (node.type) {
@@ -106,7 +109,9 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                             });
                         }
                         if (values[1].type !== 'identifier') {
-                            ctx.errors[values[1].loc] = 'whmmmm';
+                            ctx.errors[values[1].loc] =
+                                'first thing isnt an identifier?' +
+                                values[1].type;
                             return;
                         }
                         return {
@@ -260,6 +265,9 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
             return { type: 'evar', 0: node.text };
         }
         case 'string':
+            if (node.templates.length) {
+                return;
+            }
             return { type: 'eprim', 0: { type: 'pstr', 0: node.first.text } };
         case 'list': {
             const values = filterBlanks(node.values);
@@ -341,6 +349,15 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                     cases.push({ type: ',', 0: pat, 1: body });
                 }
                 return { type: 'ematch', 0: target, 1: wrapArray(cases) };
+            }
+
+            if (
+                values.length === 2 &&
+                values[0].type === 'identifier' &&
+                values[0].text === '@'
+            ) {
+                const inner = parseExpr(values[1], ctx);
+                return inner ? { type: 'equot', 0: inner } : undefined;
             }
 
             // (a-fn ...args)

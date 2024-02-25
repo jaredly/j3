@@ -3,7 +3,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { evalExpr } from './bootstrap';
 import { parseByCharacter } from '../../../../src/parse/parse.js';
 import { fromMCST } from '../../../../src/types/mcst.js';
-import { parseStmt, stmt } from './parse';
+import { Ctx, parseStmt, stmt } from './parse';
 import { sanitize } from './builtins';
 
 const [_, __, arg, outfile] = process.argv;
@@ -25,7 +25,7 @@ const loadFile = (arg: string) => {
         process.exit(1);
     }
 
-    const errors = {};
+    const errors: Ctx = { errors: {}, display: {} };
     const stmts = top.values
         .map((n) => parseStmt(n, errors))
         .filter(Boolean) as stmt[];

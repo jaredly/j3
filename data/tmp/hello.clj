@@ -34,8 +34,6 @@ const reduce = (init) => (items) => (f) => {
 };
 ")
 
-
-
 (deftype (array a) (nil) (cons a (array a)))
 
 (deftype expr
@@ -45,8 +43,6 @@ const reduce = (init) => (items) => (f) => {
         (eapp expr expr)
         (elet string expr expr)
         (ematch expr (array (, pat expr))))
-
-
 
 (deftype prim (pstr string) (pint int) (pbool bool))
 
@@ -60,24 +56,31 @@ const reduce = (init) => (items) => (f) => {
         (sexpr expr))
 
 (defn join [sep items]
-    (match
-        items
-            []
-            ""
-            [one ..rest]
-            (match rest [] one _ (++ [one sep (join sep rest)]))))
+    (match items
+    [] ""
+    [one ..rest] (match rest
+        [] one
+        _ (++ [one sep (join sep rest)]))))
 
 (defn map [values f]
-    (match values [] [] [one ..rest] [(f one) ..(map rest f)]))
+    (match values
+    [] []
+    [one ..rest] [(f one) ..(map rest f)]))
 
 (defn mapi [i values f]
-    (match values [] [] [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+    (match values
+    [] []
+    [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
 
 (defn foldl [init items f]
-    (match items [] init [one ..rest] (foldl (f init one) rest f)))
+    (match items
+    [] init
+    [one ..rest] (foldl (f init one) rest f)))
 
 (defn foldr [init items f]
-    (match items [] init [one ..rest] (f (foldr init rest f) one)))
+    (match items
+    [] init
+    [one ..rest] (f (foldr init rest f) one)))
 
 (foldr 0 [1 2 3 4] ,)
 
@@ -87,19 +90,17 @@ const reduce = (init) => (items) => (f) => {
 
 ["hello" "folks"]
 
-(match ["hi"] [] "" [one ..rest] rest)
+(match ["hi"]
+[] ""
+[one ..rest] rest)
 
 (join " " ["one" "two" "three"])
 
 (defn compile-st [stmt]
-    (match
-        stmt
-            (sexpr expr)
-            (compile expr)
-            (sdef name body)
-            (++ ["const " (sanitize name) " = " (compile body) ";\n"])
-            (sdeftype name cases)
-            (join
+    (match stmt
+    (sexpr expr) (compile expr)
+    (sdef name body) (++ ["const " (sanitize name) " = " (compile body) ";\n"])
+    (sdeftype name cases) (join
             "\n"
                 (map
                 cases
@@ -129,48 +130,30 @@ const reduce = (init) => (items) => (f) => {
         v))
 
 (defn compile [expr]
-    (match
-        expr
-            (eprim prim)
-            (match
-            prim
-                (pstr string)
-                (++ ["\"" (replace-all (replace-all string "\n" "\\n") "\"" "\\\"") "\""])
-                (pint int)
-                (int-to-string int)
-                (pbool bool)
-                (if bool
+    (match expr
+    (eprim prim) (match prim
+        (pstr string) (++ ["\"" (replace-all (replace-all string "\n" "\\n") "\"" "\\\"") "\""])
+        (pint int) (int-to-string int)
+        (pbool bool) (if bool
                 "true"
                     "false"))
-            (evar name)
-            (sanitize name)
-            (elambda name body)
-            (++ ["(" (sanitize name) ") => " (compile body)])
-            (elet name init body)
-            (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
-            (eapp fn arg)
-            (match
-            fn
-                (elambda name)
-                (++ ["(" (compile fn) ")(" (compile arg) ")"])
-                _
-                (++ [(compile fn) "(" (compile arg) ")"]))
-            (ematch target cases)
-            (++
+    (evar name) (sanitize name)
+    (elambda name body) (++ ["(" (sanitize name) ") => " (compile body)])
+    (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
+    (eapp fn arg) (match fn
+        (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
+        _ (++ [(compile fn) "(" (compile arg) ")"]))
+    (ematch target cases) (++
             ["(($target) => "
                 (foldr
                 "fatal('ran out of cases')"
                     cases
                     (fn [otherwise case]
                     (let [(, pat body) case]
-                        (match
-                            pat
-                                (pany)
-                                (++ ["true ? " (compile body) " : " otherwise])
-                                (pvar name)
-                                (++ ["true ? ((" (sanitize name) ") => " (compile body) ")($target)"])
-                                (pcon name args)
-                                (++
+                        (match pat
+                        (pany) (++ ["true ? " (compile body) " : " otherwise])
+                        (pvar name) (++ ["true ? ((" (sanitize name) ") => " (compile body) ")($target)"])
+                        (pcon name args) (++
                                 ["$target.type == \""
                                     name
                                     "\" ? "

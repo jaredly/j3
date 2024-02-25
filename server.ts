@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import {
     existsSync,
     mkdirSync,
