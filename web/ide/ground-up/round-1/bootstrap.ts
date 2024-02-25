@@ -29,8 +29,13 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
         case 'elambda':
             return (arg: any) =>
                 evalExpr(expr[1], { ...scope, [expr[0]]: arg });
-        case 'eapp':
-            return evalExpr(expr[0], scope)(evalExpr(expr[1], scope));
+        case 'eapp': {
+            const target = evalExpr(expr[0], scope);
+            if (typeof target !== 'function') {
+                console.warn(target);
+            }
+            return target(evalExpr(expr[1], scope));
+        }
         case 'elet':
             return evalExpr(expr[2], {
                 ...scope,

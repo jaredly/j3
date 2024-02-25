@@ -14,11 +14,13 @@ const sanitize = (raw) => {
     });
     return raw;
 };
+const jsonify = (raw) => JSON.stringify(raw);
 
 const unwrapArray = (v) => {
     if (!v) debugger
     return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]
 };
+const fatal = (e) => {throw new Error(e)}
 const nil = { type: 'nil' };
 const cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });
 const $pl$pl = (items) => unwrapArray(items).join('');
@@ -33,6 +35,8 @@ const reduce = (init) => (items) => (f) => {
     return unwrapArray(items).reduce((a, b) => f(a)(b), init);
 };
 ")
+
+1
 
 (deftype (array a) (nil) (cons a (array a)))
 
@@ -82,9 +86,13 @@ const reduce = (init) => (items) => (f) => {
     [] init
     [one ..rest] (f (foldr init rest f) one)))
 
-(foldr 0 [1 2 3 4] ,)
+(foldr 5 [1 2 3 4] ,)
 
 (foldl 0 [1 2 3 4] ,)
+
+(defn consr [a b] (cons b a))
+
+(foldr nil [1 2 3 4] consr)
 
 1111
 
@@ -95,6 +103,22 @@ const reduce = (init) => (items) => (f) => {
 [one ..rest] rest)
 
 (join " " ["one" "two" "three"])
+
+"\n"
+
+"\\hello"
+
+"\""
+
+(defn literal-constr [name args]
+    (++
+        ["({type: \""
+            name
+            "\\""
+            (++ (mapi 0 args (fn [i arg] (++ [", " (int-to-string i) ": " arg]))))
+            "});"]))
+
+(literal-constr "cons" ["0"])
 
 (defn compile-st [stmt]
     (match stmt
@@ -129,15 +153,29 @@ const reduce = (init) => (items) => (f) => {
     (let [(, v _) tuple]
         v))
 
+(defn replaces [target repl]
+    (match repl
+    [] target
+    [one ..rest] (match one
+        (, find nw) (replaces (replace-all target find nw) rest))))
+
+(replaces "\n" [(, "\\" "\\\\") (, "\n" "\\n")])
+
+(defn quot [expr]
+    (match expr
+    (eprim prim) (match prim
+        (pstr string) (++ ["{type: "]))))
+
 (defn compile [expr]
     (match expr
     (eprim prim) (match prim
-        (pstr string) (++ ["\"" (replace-all (replace-all string "\n" "\\n") "\"" "\\\"") "\""])
+        (pstr string) (++ ["\"" (replaces string [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\"")]) "\""])
         (pint int) (int-to-string int)
         (pbool bool) (if bool
                 "true"
                     "false"))
     (evar name) (sanitize name)
+    (equot inner) (jsonify inner)
     (elambda name body) (++ ["(" (sanitize name) ") => " (compile body)])
     (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
     (eapp fn arg) (match fn
@@ -146,7 +184,7 @@ const reduce = (init) => (items) => (f) => {
     (ematch target cases) (++
             ["(($target) => "
                 (foldr
-                "fatal('ran out of cases')"
+                "fatal('ran out of cases: ' + JSON.stringify($target))"
                     cases
                     (fn [otherwise case]
                     (let [(, pat body) case]
@@ -179,3 +217,10 @@ const reduce = (init) => (items) => (f) => {
                 (compile target)
                 ")"])))
 
+(compile (@ 1))
+
+(compile (@ "\""))
+
+(compile (@ "lol"))
+
+(compile (@ (+ 2 3)))

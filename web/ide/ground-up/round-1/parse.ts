@@ -14,6 +14,14 @@ export const wrapArray = <a>(v: Array<a>): arr<a> => {
     return res;
 };
 
+export const wrapTapp = (v: Array<type_>): type_ => {
+    let res: type_ = v[v.length - 1];
+    for (let i = v.length - 2; i >= 0; i--) {
+        res = { type: 'tapp', 0: v[i], 1: res };
+    }
+    return res;
+};
+
 export const printExpr = (e: expr): string => {
     switch (e.type) {
         case 'eprim':
@@ -108,15 +116,22 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                                 1: wrapArray(args),
                             });
                         }
-                        if (values[1].type !== 'identifier') {
+                        let name;
+                        if (values[1].type === 'identifier') {
+                            name = values[1].text;
+                        } else if (
+                            values[1].type === 'list' &&
+                            values[1].values[0].type === 'identifier'
+                        ) {
+                            name = values[1].values[0].text;
+                        } else {
                             ctx.errors[values[1].loc] =
-                                'first thing isnt an identifier?' +
-                                values[1].type;
+                                'Unable to determine name for deftype';
                             return;
                         }
                         return {
                             type: 'sdeftype',
-                            0: values[1].text,
+                            0: name,
                             1: wrapArray(vvalues),
                         };
                     }
@@ -192,8 +207,16 @@ export const parseType = (node: Node, errors: Errors): type_ | void => {
     switch (node.type) {
         case 'identifier':
             return { type: 'tcon', 0: node.text };
-        case 'list':
-            return;
+        case 'list': {
+            const args: type_[] = [];
+            for (const arg of filterBlanks(node.values).slice(1)) {
+                const t = parseType(arg, errors);
+                if (t) {
+                    args.push(t);
+                }
+            }
+            return wrapTapp(args);
+        }
     }
 };
 
@@ -217,11 +240,10 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
                     arg.type +
                     ' ' +
                     JSON.stringify(arg);
+                console.error('BAD PAT', arg);
                 continue;
             }
             args.push(arg.text);
-            // const p = parsePat(arg, errors)
-            // if (!p) continue
         }
         return { type: 'pcon', 0: node.values[0].text, 1: wrapArray(args) };
     }
@@ -247,6 +269,7 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
         }
     }
     errors[node.loc] = 'unknown pat ' + JSON.stringify(node);
+    console.error('bad bad', node);
 };
 
 export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
@@ -320,7 +343,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                     if (id.type === 'identifier') {
                         body = { type: 'elet', 0: id.text, 1: value, 2: body };
                     } else {
-                        const pat = parsePat(id, ctx);
+                        const pat = parsePat(id, ctx.errors);
                         if (!pat) continue;
                         body = {
                             type: 'ematch',
@@ -342,7 +365,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                 if (!target) return;
                 const cases: { type: ','; 0: pat; 1: expr }[] = [];
                 for (let i = 2; i < values.length - 1; i += 2) {
-                    const pat = parsePat(values[i], ctx);
+                    const pat = parsePat(values[i], ctx.errors);
                     const body = parseExpr(values[i + 1], ctx);
                     if (!pat) continue;
                     if (!body) continue;

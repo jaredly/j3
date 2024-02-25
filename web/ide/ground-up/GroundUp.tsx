@@ -23,7 +23,7 @@ import { newResults } from '../Test';
 import { Algo, Trace } from '../infer/types';
 import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
-import { parseStmt } from './round-1/parse';
+import { arr, parseStmt, type_, unwrapArray } from './round-1/parse';
 
 const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 
@@ -91,12 +91,27 @@ export const Outside = () => {
                                 href={'#' + name}
                                 key={name}
                                 style={{
-                                    margin: 4,
+                                    display: 'inline-block',
+                                    padding: '8px 16px',
+                                    color:
+                                        hash === '#' + name
+                                            ? 'yellow'
+                                            : 'white',
                                 }}
                             >
                                 {name}
                             </a>
                         ))}
+                    <a
+                        href={'#'}
+                        style={{
+                            display: 'inline-block',
+                            padding: '8px 16px',
+                            color: 'white',
+                        }}
+                    >
+                        Close
+                    </a>
                 </div>
                 <Loader id={hash.slice(1)} key={hash.slice(1)} />
             </div>
@@ -105,20 +120,45 @@ export const Outside = () => {
 
     return (
         <div>
-            Filessss
+            <h3 style={{ paddingLeft: 24 }}>Pick a file to open</h3>
             <div>
                 {listing
                     ?.filter((k) => !k.endsWith('.clj'))
                     .map((name) => (
-                        <a href={'#' + name} key={name}>
+                        <a
+                            href={'#' + name}
+                            key={name}
+                            style={{
+                                padding: '8px 16px',
+                                color: 'white',
+                                display: 'inline-block',
+                            }}
+                        >
                             {name}
                         </a>
                     ))}
-                <input
-                    value={name}
-                    onChange={(evt) => setName(evt.target.value)}
-                />
-                <a href={`#${name}`}>Get me a new one</a>
+                <div
+                    style={{
+                        padding: '8px 16px',
+                    }}
+                >
+                    <input
+                        value={name}
+                        onChange={(evt) => setName(evt.target.value)}
+                        placeholder="New file name"
+                    />
+
+                    <a
+                        href={name ? `#${name}` : ''}
+                        style={{
+                            padding: '8px 16px',
+                            color: name.length ? 'white' : '#aaa',
+                            cursor: name.length ? 'pointer' : 'not-allowed',
+                        }}
+                    >
+                        New File
+                    </a>
+                </div>
             </div>
         </div>
     );
@@ -220,7 +260,11 @@ export const GroundUp = ({
         all.forEach((t) => (produce[t] = ''));
         try {
             const stmts = all.map((t) => fromMCST(t, state.map));
-            const env: { [key: string]: any } = {};
+            const env: { [key: string]: any } = {
+                '+': (a: number) => (b: number) => a + b,
+                'replace-all': (a: string) => (b: string) => (c: string) =>
+                    a.replaceAll(b, c),
+            };
             const parsed = stmts
                 .filter((node) => node.type !== 'blank')
                 .map((node) => {
@@ -242,6 +286,30 @@ export const GroundUp = ({
                         data: [],
                         failed: false,
                     };
+                    unwrapArray(stmt[1]).forEach((constr) => {
+                        const cname = constr[0];
+                        // const cargs = unwrapArray(constr[1]);
+                        // console.log('doing a thing', cname);
+                        // if (cargs.length === 0) {
+                        //     env[cname] = { type: cname };
+                        // } else {
+                        const next = (args: arr<type_>) => {
+                            if (args.type === 'nil') {
+                                return (values: any[]) => ({
+                                    type: cname,
+                                    ...values,
+                                });
+                            }
+                            return (values: any[]) => (arg: any) =>
+                                next(args[1])([...values, arg]);
+                        };
+                        env[cname] = next(constr[1])([]);
+                        console.log(env[cname]);
+                        // }
+                    });
+                    produce[(stmt as any).loc] = `type with ${
+                        unwrapArray(stmt[1]).length
+                    } constructors`;
                     return;
                 }
                 if (stmt.type === 'sdef') {
@@ -273,23 +341,48 @@ export const GroundUp = ({
                         const res = env['compile-st'](stmt);
                         if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
                             total += res + '\n';
-                            // produce[(stmt as any).loc] += 'defined'; // '\njs: ' + res;
+                            try {
+                                new Function('env', res);
+                            } catch (err) {
+                                produce[(stmt as any).loc] +=
+                                    'Self-compilation produced errors: ' +
+                                    (err as Error).message +
+                                    '\n\n' +
+                                    res; // '\njs: ' + res;
+                            }
+                            // produce[(stmt as any).loc] += '\njs: ' + res;
                         } else if (stmt.type === 'sexpr') {
                             const ok = total + '\nreturn ' + res + '}';
-                            // produce[(stmt as any).loc] += '\nself-eval: ' + ok; //JSON.stringify(f());
+                            produce[(stmt as any).loc] +=
+                                '\nself-eval: ' +
+                                res +
+                                '\nWhatsit:' +
+                                JSON.stringify(stmt); //JSON.stringify(f());
+                            let f;
                             try {
-                                const f = new Function('env', ok);
+                                f = new Function('env', ok);
+                            } catch (err) {
+                                produce[(stmt as any).loc] +=
+                                    `Error self-compiling: ` +
+                                    (err as Error).message +
+                                    '\n\n' +
+                                    ok;
+                                console.log(ok);
+                                return;
+                            }
+                            try {
                                 produce[(stmt as any).loc] +=
                                     '\n' + valueToString(f(env));
                             } catch (err) {
                                 console.error(err);
-                                produce[(stmt as any).loc] += (
-                                    err as Error
-                                ).message;
+                                produce[(stmt as any).loc] +=
+                                    `Error evaluating (self-compiled): ` +
+                                    (err as Error).message;
                             }
                         }
                     } catch (err) {
-                        produce[(stmt as any).loc] = (err as Error).message;
+                        console.error(err);
+                        produce[(stmt as any).loc] += (err as Error).message;
                     }
                 });
             } else {
@@ -300,6 +393,8 @@ export const GroundUp = ({
                                 const res = evalExpr(stmt[0], env);
                                 produce[(stmt as any).loc] +=
                                     '\n' + valueToString(res);
+                                produce[(stmt as any).loc] +=
+                                    '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
                             } catch (err) {
                                 console.error(err);
                                 produce[(stmt as any).loc] += (
@@ -313,7 +408,7 @@ export const GroundUp = ({
                 });
             }
         } catch (err) {
-            console.log('didnt work', err);
+            console.error('Something didnt work', err);
         }
 
         all.map((top) => {
@@ -328,7 +423,6 @@ export const GroundUp = ({
 
     return (
         <div>
-            <button onClick={() => {}}>Ok</button>
             <HiddenInput
                 hashNames={{}}
                 state={state}
@@ -668,7 +762,7 @@ const valueToString = (v: any): string => {
             .join('')})`;
     }
     if (typeof v === 'string') {
-        return JSON.stringify(v);
+        return JSON.stringify(v) + 'umraw' + v;
     }
 
     return '' + v;
