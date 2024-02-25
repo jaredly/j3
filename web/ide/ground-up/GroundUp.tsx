@@ -423,7 +423,7 @@ export const GroundUp = ({
     return (
         <div>
             <HiddenInput
-                hashNames={{}}
+                display={results.display}
                 state={state}
                 dispatch={dispatch}
                 menu={undefined}

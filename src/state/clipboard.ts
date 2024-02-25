@@ -5,7 +5,7 @@ import {
     orderStartAndEnd,
     splitGraphemes,
 } from '../parse/parse';
-import { newCtx } from '../to-ast/Ctx';
+import { Ctx, newCtx } from '../to-ast/Ctx';
 import { nodeToString } from '../to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../types/cst';
 import {
@@ -33,7 +33,8 @@ import { getType } from '../get-type/get-types-new';
 import { validateExpr } from '../get-type/validate';
 import { addDef } from '../to-ast/to-ast';
 import { applyInferMod, infer } from '../infer/infer';
-import { CstCtx, Ctx } from '../to-ast/library';
+import { CstCtx } from '../to-ast/library';
+import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -304,7 +305,7 @@ export const paste = (
 
 export const clipboardText = (
     items: ClipboardItem[],
-    display: Ctx['results']['hashNames'],
+    display: Ctx['display'], //['hashNames'],
     sep = '\n',
 ) => {
     return items
@@ -312,7 +313,11 @@ export const clipboardText = (
             item.type === 'text'
                 ? item.text
                 : item.nodes
-                      .map((node) => nodeToString(node, display))
+                      .map((node) => {
+                          const map: Map = {};
+                          const top = toMCST(node, map);
+                          return renderNodeToString(top, map, 0, display);
+                      })
                       .join(sep),
         )
         .join(sep);

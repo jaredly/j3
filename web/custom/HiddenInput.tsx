@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AutoCompleteResult } from '../../src/to-ast/Ctx';
+import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
@@ -8,18 +8,20 @@ import {
 import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { UIState, Action, NUIState } from './UIState';
-import { Ctx } from '../../src/to-ast/library';
+// import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
     state,
     dispatch,
     menu,
+    display,
     hashNames,
 }: {
     state: NUIState;
     dispatch: React.Dispatch<Action>;
     menu?: { path: Path[]; items: AutoCompleteResult[] };
     hashNames: { [hash: string]: string };
+    display: Ctx['display'];
 }) {
     useEffect(() => {
         if (document.activeElement !== hiddenInput.current) {
@@ -67,7 +69,7 @@ export function HiddenInput({
 
                 dispatch({ type: 'copy', items });
 
-                const text = clipboardText(items, hashNames);
+                const text = clipboardText(items, display);
                 navigator.clipboard.write([
                     new ClipboardItem({
                         ['text/plain']: new Blob([text], {

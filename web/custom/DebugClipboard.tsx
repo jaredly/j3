@@ -54,7 +54,8 @@ export function DebugClipboard({
                                 <div key={i}>
                                     {clipboardText(
                                         [item],
-                                        state.ctx.results.hashNames,
+                                        // state.ctx.results.hashNames,
+                                        {},
                                     )}
                                 </div>
                             ))}
