@@ -1,4 +1,13 @@
 
+- [ ] the perf is currently terrible. Who's fault is that?
+  - RenderNNode...
+    - I want a RenderRoot that
+    - takes the map
+    - and makes listeners n stuff
+
+- [ ] what abouttt having `..` as the final argument to function application mean "this is partial"??? hmmmmm??
+- [ ]
+
 # Next up:
 - [ ] save to a ~literate format
 - [ ] hmm do I want to get tests going already?

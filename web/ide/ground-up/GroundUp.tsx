@@ -427,6 +427,7 @@ export const GroundUp = ({
                 state={state}
                 dispatch={dispatch}
                 menu={undefined}
+                hashNames={{}}
             />
             <div style={{ display: 'flex' }}>
                 {collapsed.map((top, i) => (

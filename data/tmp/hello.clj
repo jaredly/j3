@@ -1,46 +1,9 @@
 (def builtins
-    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', '>': '$gt', '<': '$lt',\"\": '$qu', \"': '$dq', ',': '$co',};
-
-const kwds = 'case var if return';
-const rx = [];
-kwds.split(' ').forEach((kwd) =>
-    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);
-const sanitize = (raw) => {
-    for (let [key, val] of Object.entries(sanMap)) {
-        raw = raw.replaceAll(key, val);
-    }
-    rx.forEach(([rx, res]) => {
-        raw = raw.replaceAll(rx, res);
-    });
-    return raw;
-};
-const jsonify = (raw) => JSON.stringify(raw);
-
-const unwrapArray = (v) => {
-    if (!v) debugger
-    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]
-};
-const fatal = (e) => {throw new Error(e)}
-const nil = { type: 'nil' };
-const cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });
-const $pl$pl = (items) => unwrapArray(items).join('');
-const $pl = (a) => (b) => a + b;
-const _ = (a) => (b) => a - b;
-const int_to_string = (a) => a + '';
-const replace_all = (a) => (b) => (c) => {
-    return a.replaceAll(b, c);
-};
-const $co = (a) => (b) => ({ type: ',', 0: a, 1: b });
-const reduce = (init) => (items) => (f) => {
-    return unwrapArray(items).reduce((a, b) => f(a)(b), init);
-};
-")
+    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', '>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co',};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
 "\""
 
-"""
-
-"""
+"\""
 
 (deftype (array a) (nil) (cons a (array a)))
 
@@ -118,7 +81,7 @@ const reduce = (init) => (items) => (f) => {
     (++
         ["({type: \""
             name
-            "\\""
+            "\n\""
             (++ (mapi 0 args (fn [i arg] (++ [", " (int-to-string i) ": " arg]))))
             "});"]))
 
@@ -166,10 +129,10 @@ const reduce = (init) => (items) => (f) => {
 (replaces "\n" [(, "\\" "\\\\") (, "\n" "\\n")])
 
 (defn escape-string [string]
-    (replaces string [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\"")]))
+    (replaces string [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\\"")]))
 
 (defn unescape-string [string]
-    (replaces string [(, "\\"" "\"") (, "\\n" "\n") (, "\\\\" "\\")]))
+    (replaces string [(, "\\\"" "\"") (, "\\n" "\n") (, "\\\\" "\\")]))
 
 (defn quot [expr]
     (match expr

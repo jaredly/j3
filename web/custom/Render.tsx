@@ -25,13 +25,16 @@ export function getRainbowHashColor(hash: string | number) {
         typeof hash === 'number'
             ? Math.floor(hash * (rainbow.length / 5 - 1))
             : parseInt(hash, 16);
-    // console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
     const color = rainbow[idx % rainbow.length];
     return color;
 }
 
 const nodeColor = (type: MNode['type'], text?: string | null) => {
-    return specials.includes(text!) ? '#814d4d' : colors[type];
+    return specials.includes(text!)
+        ? '#814d4d'
+        : // : type === 'identifier' && text != null
+          // ? getRainbowHashColor(parseInt(text, 32))
+          colors[type];
 };
 
 const columnRecords = true;

@@ -176,9 +176,9 @@ export function Root({
                                 idx={top}
                                 map={state.map}
                                 reg={reg}
-                                display={results?.display ?? {}}
-                                hashNames={results?.hashNames ?? {}}
-                                errors={results?.errors ?? {}}
+                                display={results?.display ?? empty}
+                                hashNames={results?.hashNames ?? empty}
+                                errors={results?.errors ?? empty}
                                 dispatch={dispatch}
                                 selection={selections}
                                 path={[
@@ -207,3 +207,5 @@ export function Root({
         </div>
     );
 }
+
+const empty = {};
