@@ -6,7 +6,8 @@
     - and makes listeners n stuff
 
 - [ ] what abouttt having `..` as the final argument to function application mean "this is partial"??? hmmmmm??
-- [ ]
+- [ ] verify that pasting in the whole contents of a file parses like I expect
+  - so like, a test.
 
 # Next up:
 - [ ] save to a ~literate format

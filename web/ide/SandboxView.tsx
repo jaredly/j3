@@ -42,6 +42,7 @@ export const SandboxView = ({
                 state={state}
                 dispatch={dispatch}
                 menu={!state.menu?.dismissed ? menu : undefined}
+                display={{}}
             />
             <button
                 onClick={() => setDebug(!debug)}

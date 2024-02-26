@@ -7,7 +7,7 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
-import { Ctx } from '../../../src/to-ast/library';
+import { CompilationResults, Ctx } from '../../../src/to-ast/library';
 import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
 import { Cursors } from '../../custom/Cursors';
 import { HiddenInput } from '../../custom/HiddenInput';
@@ -23,7 +23,8 @@ import { newResults } from '../Test';
 import { Algo, Trace } from '../infer/types';
 import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
-import { arr, parseStmt, type_, unwrapArray } from './round-1/parse';
+import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
+import { Node } from '../../../src/types/cst';
 
 const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 
@@ -265,19 +266,7 @@ export const GroundUp = ({
                 'replace-all': (a: string) => (b: string) => (c: string) =>
                     a.replaceAll(b, c),
             };
-            const parsed = stmts
-                .filter((node) => node.type !== 'blank')
-                .map((node) => {
-                    const ctx = { errors: {}, display: results.display };
-                    const stmt = parseStmt(node, ctx);
-                    if (Object.keys(ctx.errors).length || !stmt) {
-                        console.log('unable to parse a stmt', ctx.errors);
-                        return;
-                    }
-                    (stmt as any).loc = node.loc;
-                    return stmt;
-                })
-                .filter((x): x is NonNullable<typeof x> => x != null);
+            const parsed = bootstrapParse(stmts, results);
 
             parsed.forEach((stmt) => {
                 if (stmt.type === 'sdeftype') {
@@ -286,27 +275,7 @@ export const GroundUp = ({
                         data: [],
                         failed: false,
                     };
-                    unwrapArray(stmt[1]).forEach((constr) => {
-                        const cname = constr[0];
-                        // const cargs = unwrapArray(constr[1]);
-                        // console.log('doing a thing', cname);
-                        // if (cargs.length === 0) {
-                        //     env[cname] = { type: cname };
-                        // } else {
-                        const next = (args: arr<type_>) => {
-                            if (args.type === 'nil') {
-                                return (values: any[]) => ({
-                                    type: cname,
-                                    ...values,
-                                });
-                            }
-                            return (values: any[]) => (arg: any) =>
-                                next(args[1])([...values, arg]);
-                        };
-                        env[cname] = next(constr[1])([]);
-                        console.log(env[cname]);
-                        // }
-                    });
+                    addTypeConstructors(stmt, env);
                     produce[(stmt as any).loc] = `type with ${
                         unwrapArray(stmt[1]).length
                     } constructors`;
@@ -332,79 +301,15 @@ export const GroundUp = ({
                 }
             });
 
-            let total = '';
-            total += `const {${Object.keys(env)
-                .filter((k) => sanitize(k) === k)
-                .join(', ')}} = env;\n{`;
-
             if (env['compile-st']) {
-                parsed.forEach((stmt) => {
-                    try {
-                        const res = env['compile-st'](stmt);
-                        if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                            total += res + '\n';
-                            try {
-                                new Function('env', res);
-                            } catch (err) {
-                                produce[(stmt as any).loc] +=
-                                    'Self-compilation produced errors: ' +
-                                    (err as Error).message +
-                                    '\n\n' +
-                                    res; // '\njs: ' + res;
-                            }
-                            // produce[(stmt as any).loc] += '\njs: ' + res;
-                        } else if (stmt.type === 'sexpr') {
-                            const ok = total + '\nreturn ' + res + '}';
-                            // produce[(stmt as any).loc] += '\nself-eval: ' + res;
-                            // produce[(stmt as any).loc] += + '\nAST: ' + JSON.stringify(stmt);
-                            let f;
-                            try {
-                                f = new Function('env', ok);
-                            } catch (err) {
-                                produce[(stmt as any).loc] +=
-                                    `Error self-compiling: ` +
-                                    (err as Error).message +
-                                    '\n\n' +
-                                    ok;
-                                console.log(ok);
-                                return;
-                            }
-                            try {
-                                produce[(stmt as any).loc] +=
-                                    '\n' + valueToString(f(env));
-                            } catch (err) {
-                                console.error(err);
-                                produce[(stmt as any).loc] +=
-                                    `Error evaluating (self-compiled): ` +
-                                    (err as Error).message;
-                            }
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        produce[(stmt as any).loc] += (err as Error).message;
-                    }
-                });
+                let prelude = '';
+                prelude += `const {${Object.keys(env)
+                    .filter((k) => sanitize(k) === k)
+                    .join(', ')}} = env;\n{`;
+
+                selfCompileAndEval(parsed, env, prelude, produce);
             } else {
-                parsed.forEach((stmt) => {
-                    try {
-                        if (stmt.type === 'sexpr') {
-                            try {
-                                const res = evalExpr(stmt[0], env);
-                                produce[(stmt as any).loc] +=
-                                    '\n' + valueToString(res);
-                                produce[(stmt as any).loc] +=
-                                    '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
-                            } catch (err) {
-                                console.error(err);
-                                produce[(stmt as any).loc] += (
-                                    err as Error
-                                ).message;
-                            }
-                        }
-                    } catch (err) {
-                        produce[(stmt as any).loc] = (err as Error).message;
-                    }
-                });
+                bootstrapEval(parsed, env, produce);
             }
         } catch (err) {
             console.error('Something didnt work', err);
@@ -651,6 +556,136 @@ const actionToUpdate = (
         //     return action;
     }
 };
+
+function bootstrapParse(
+    stmts: Node[],
+    results: CompilationResults & {
+        tops: {
+            [key: number]: {
+                summary: string;
+                data: Trace[];
+                failed: boolean;
+                expr?: any;
+            };
+        };
+        typs: { [loc: number]: any };
+    },
+) {
+    return stmts
+        .filter((node) => node.type !== 'blank')
+        .map((node) => {
+            const ctx = { errors: {}, display: results.display };
+            const stmt = parseStmt(node, ctx);
+            if (Object.keys(ctx.errors).length || !stmt) {
+                console.log('unable to parse a stmt', ctx.errors);
+                return;
+            }
+            (stmt as any).loc = node.loc;
+            return stmt;
+        })
+        .filter((x): x is NonNullable<typeof x> => x != null);
+}
+
+function addTypeConstructors(
+    stmt: {
+        type: 'sdeftype';
+        0: string;
+        1: arr<{ type: ','; 0: string; 1: arr<type_> }>;
+    },
+    env: { [key: string]: any },
+) {
+    unwrapArray(stmt[1]).forEach((constr) => {
+        const cname = constr[0];
+        const next = (args: arr<type_>) => {
+            if (args.type === 'nil') {
+                return (values: any[]) => ({
+                    type: cname,
+                    ...values,
+                });
+            }
+            return (values: any[]) => (arg: any) =>
+                next(args[1])([...values, arg]);
+        };
+        env[cname] = next(constr[1])([]);
+    });
+}
+
+function bootstrapEval(
+    parsed: stmt[],
+    env: { [key: string]: any },
+    produce: { [key: number]: string },
+) {
+    parsed.forEach((stmt) => {
+        try {
+            if (stmt.type === 'sexpr') {
+                try {
+                    const res = evalExpr(stmt[0], env);
+                    produce[(stmt as any).loc] += '\n' + valueToString(res);
+                    produce[(stmt as any).loc] +=
+                        '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
+                } catch (err) {
+                    console.error(err);
+                    produce[(stmt as any).loc] += (err as Error).message;
+                }
+            }
+        } catch (err) {
+            produce[(stmt as any).loc] = (err as Error).message;
+        }
+    });
+}
+
+function selfCompileAndEval(
+    parsed: stmt[],
+    env: { [key: string]: any },
+    total: string,
+    produce: { [key: number]: string },
+) {
+    parsed.forEach((stmt) => {
+        try {
+            const res = env['compile-st'](stmt);
+            if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
+                total += res + '\n';
+                try {
+                    new Function('env', res);
+                } catch (err) {
+                    produce[(stmt as any).loc] +=
+                        'Self-compilation produced errors: ' +
+                        (err as Error).message +
+                        '\n\n' +
+                        res; // '\njs: ' + res;
+                }
+                // produce[(stmt as any).loc] += '\njs: ' + res;
+            } else if (stmt.type === 'sexpr') {
+                const ok = total + '\nreturn ' + res + '}';
+                // produce[(stmt as any).loc] += '\nself-eval: ' + res;
+                // produce[(stmt as any).loc] += + '\nAST: ' + JSON.stringify(stmt);
+                let f;
+                try {
+                    f = new Function('env', ok);
+                } catch (err) {
+                    produce[(stmt as any).loc] +=
+                        `Error self-compiling: ` +
+                        (err as Error).message +
+                        '\n\n' +
+                        ok;
+                    console.log(ok);
+                    return;
+                }
+                try {
+                    produce[(stmt as any).loc] += '\n' + valueToString(f(env));
+                } catch (err) {
+                    console.error(err);
+                    produce[(stmt as any).loc] +=
+                        `Error evaluating (self-compiled): ` +
+                        (err as Error).message;
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            produce[(stmt as any).loc] += (err as Error).message;
+        }
+    });
+}
 
 function extractBuiltins(raw: string) {
     const names: string[] = getConstNames(raw);

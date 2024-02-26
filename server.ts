@@ -81,8 +81,19 @@ const deserializeFile = (raw: string) => {
     return state!;
 };
 
+const nowString = () => {
+    const now = new Date();
+    return `[${now.getHours()}:${now
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}.${now
+        .getMilliseconds()
+        .toString()
+        .padStart(3, '0')}]`;
+};
+
 createServer(async (req, res) => {
-    console.log('got', req.url, req.method);
+    console.log(nowString(), req.url, req.method);
     if (req.url?.includes('..')) {
         res.writeHead(404, {
             'Content-type': 'application/json',
