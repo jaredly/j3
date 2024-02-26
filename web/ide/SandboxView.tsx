@@ -102,8 +102,17 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
         throw new Error(`map change on load?`);
     }
     return {
-        collapse: {},
         map: sandbox.map,
+        cards: [
+            {
+                path: [],
+                ns: {
+                    type: 'normal',
+                    children: [],
+                    top: idx,
+                },
+            },
+        ],
         root: sandbox.root,
         history: sandbox.history,
         at: sandbox.history.length
@@ -117,8 +126,8 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
                               [
                                   {
                                       idx: -1,
-                                      at: 0,
-                                      type: 'child',
+                                      type: 'card',
+                                      card: 0,
                                   },
                               ],
                               sandbox.map,

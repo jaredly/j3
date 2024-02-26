@@ -13,7 +13,12 @@ import { Cursors } from '../../custom/Cursors';
 import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover } from '../../custom/Hover';
 import { Root } from '../../custom/Root';
-import { Action, NUIState, UpdatableAction } from '../../custom/UIState';
+import {
+    Action,
+    NUIState,
+    SandboxNamespace,
+    UpdatableAction,
+} from '../../custom/UIState';
 import { UIStateChange, calcHistoryItem, undoRedo } from '../../custom/reduce';
 import { verticalMove } from '../../custom/verticalMove';
 
@@ -25,6 +30,7 @@ import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
 import { Node } from '../../../src/types/cst';
+import { CardRoot } from '../../custom/CardRoot';
 
 const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 
@@ -36,19 +42,32 @@ const saveState = (id: string, state: NUIState) => {
     }).then(() => {});
 };
 
-function loadState(
-    state: NUIState = {
-        map: emptyMap(),
+const initialState = (): NUIState => {
+    const map = emptyMap();
+    return {
+        map,
         root: -1,
-        collapse: {},
         history: [],
         nidx: () => 0,
         clipboard: [],
         hover: [],
+        cards: [
+            {
+                path: [],
+                ns: {
+                    type: 'normal',
+                    hash: null,
+                    top: 0,
+                    children: [],
+                },
+            },
+        ],
         regs: {},
         at: [],
-    },
-) {
+    };
+};
+
+function loadState(state: NUIState = initialState()) {
     let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         // collapse: {},
@@ -234,6 +253,10 @@ export const debounce = <T,>(
     };
 };
 
+export const ShowCard = ({ state, idx }: { state: NUIState; idx: number }) => {
+    return <div>Card {idx}</div>;
+};
+
 export const GroundUp = ({
     id,
     initial,
@@ -251,16 +274,25 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    const all = (state.map[state.root] as ListLikeContents).values;
-    const tops = all.filter((t) => !state.collapse[t]);
-    const collapsed = all.filter((t) => state.collapse[t]);
+    let all: { top: number; hidden?: boolean }[] = [];
+    const add = (ns: SandboxNamespace) => {
+        if (ns.type === 'normal') {
+            all.push({ top: ns.top, hidden: ns.hidden });
+            ns.children.forEach(add);
+        }
+    };
+    state.cards.forEach((card) => add(card.ns));
+    // const all = (state.map[state.root] as ListLikeContents).values;
+    // const tops = all.filter((t) => !state.collapse[t]);
+    // const collapsed = all.filter((t) => state.collapse[t]);
+    // const tops
 
     const { produce: evaluated, results } = useMemo(() => {
         const results = newResults();
         const produce: { [key: number]: string } = {};
-        all.forEach((t) => (produce[t] = ''));
+        all.forEach((t) => (produce[t.top] = ''));
         try {
-            const stmts = all.map((t) => fromMCST(t, state.map));
+            const stmts = all.map((t) => fromMCST(t.top, state.map));
             const env: { [key: string]: any } = {
                 '+': (a: number) => (b: number) => a + b,
                 'replace-all': (a: string) => (b: string) => (c: string) =>
@@ -287,6 +319,7 @@ export const GroundUp = ({
                         data: [],
                         failed: false,
                     };
+
                     const res = evalExpr(stmt[1], env);
                     env[stmt[0]] = res;
                     produce[(stmt as any).loc] =
@@ -315,7 +348,7 @@ export const GroundUp = ({
             console.error('Something didnt work', err);
         }
 
-        all.map((top) => {
+        all.map(({ top }) => {
             layout(top, 0, state.map, results.display, results.hashNames, true);
         });
 
@@ -334,7 +367,7 @@ export const GroundUp = ({
                 menu={undefined}
                 hashNames={{}}
             />
-            <div style={{ display: 'flex' }}>
+            {/* <div style={{ display: 'flex' }}>
                 {collapsed.map((top, i) => (
                     <div
                         key={i}
@@ -346,24 +379,15 @@ export const GroundUp = ({
                         {results.tops[top]?.summary ?? top}
                     </div>
                 ))}
-            </div>
-            <Root
-                state={state}
-                dispatch={dispatch}
-                tops={tops}
-                debug={false}
-                clickTop={(top) => dispatch({ type: 'collapse', top })}
-                showTop={(top) =>
-                    debug ? (
-                        <pre style={{ whiteSpace: 'pre-wrap' }}>
-                            {evaluated[top] || 'not evaluated'}
-                        </pre>
-                    ) : (
-                        top
-                    )
-                }
-                results={results}
-            />
+            </div> */}
+            {state.cards.map((_, i) => (
+                <CardRoot
+                    state={state}
+                    dispatch={dispatch}
+                    card={i}
+                    results={results}
+                />
+            ))}
             <button
                 onClick={() => setDebug(!debug)}
                 style={{
@@ -486,14 +510,14 @@ export const reduceUpdate = (
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
             return state;
-        case 'collapse':
-            return {
-                ...state,
-                collapse: {
-                    ...state.collapse,
-                    [update.top]: !state.collapse[update.top],
-                },
-            };
+        // case 'collapse':
+        //     return {
+        //         ...state,
+        //         collapse: {
+        //             ...state.collapse,
+        //             [update.top]: !state.collapse[update.top],
+        //         },
+        //     };
         // return state;
         default:
             const _: never = update;
@@ -550,8 +574,8 @@ const actionToUpdate = (
             // console.log(res);
             return res;
         }
-        case 'collapse':
-            return action;
+        // case 'collapse':
+        //     return action;
         // case 'namespace-rename':
         //     return action;
     }
@@ -644,9 +668,9 @@ function selfCompileAndEval(
         try {
             const res = env['compile-st'](stmt);
             if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                total += res + '\n';
                 try {
                     new Function('env', res);
+                    total += res + '\n';
                 } catch (err) {
                     produce[(stmt as any).loc] +=
                         'Self-compilation produced errors: ' +

@@ -1,7 +1,7 @@
 import { calcOffset } from './calcOffset';
 import { NUIState, UIState } from './UIState';
 import { calcCursorPos, subRect } from './Cursors';
-import { Mods, StateSelect } from '../../src/state/getKeyUpdate';
+import { Mods, StateSelect, pathCard } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 
 export const verticalMove = (
@@ -28,7 +28,18 @@ export const verticalMove = (
     );
     if (best) {
         if (mods.shift) {
-            return { type: 'select', selection: sel.start, selectionEnd: best };
+            // TODO: multi-card-selections? Probably
+            if (pathCard(sel.start) !== pathCard(best)) {
+                return {
+                    type: 'select',
+                    selection: best,
+                };
+            }
+            return {
+                type: 'select',
+                selection: sel.start,
+                selectionEnd: best,
+            };
         } else {
             return { type: 'select', selection: best };
         }

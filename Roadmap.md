@@ -1,4 +1,43 @@
 
+# Night thoughts
+
+So
+I want a little tree
+with expressions as children of definitions
+and, sure, definitions as children of ... Headings / text blocks
+do I have a reason to say that Headings / text blocks should be anything other than ... expressions?
+yeah, I think I do. Anything that's a parent should be named. So that the names can form an addressable namespace.
+Ok next question. How is this ... naming ... represented?
+Sorry, I mean .. .this treeliness. And do we have a way of preventing duplicate names?
+I think name duplication can be tracked & resolved separately.
+
+Andddd maybe it's ok to have a ... set of "toplevel ids"
+and then a separate structure ... indicating where toplevel ids live.
+with nodes
+and such.
+
+
+
+
+
+
+Ok do the editor, I want it to be a tree
+And expressions also live in that tree
+Like you can make some repl evals the children of a defn. And then your can mark them as "test cases".
+Anyway so your like editing UI can have just one root and children, or your can pull something out to be it's own root
+Also when expanding a thing that has children, it first just shows things collapsed. So names of defns, status of test cases. Probably test cases status would be shown recursive too.
+Test cases have "matchers". The simplest is just "equal to this expected"
+But there could be more complex, e.g. fuzzy equals on floats, or ignoring certain fields.
+You can also have a ... "Showcase". Which isn't a test case, necessarily. And might display in interesting ways.
+
+
+Space in the middle of a token needs to split it.
+Also I need vim normal mode. And git commits maybe.
+Paste isn't totally working, need to check on that.
+Also the renderNodeToString needs to escape a little more.
+
+
+
 - [ ] the perf is currently terrible. Who's fault is that?
   - RenderNNode...
     - I want a RenderRoot that

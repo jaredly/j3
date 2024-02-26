@@ -6,6 +6,7 @@ import { HashedTree } from '../db/hash-tree';
 import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
 import { InferMod } from '../infer/infer';
+import { Card } from '../../web/custom/UIState';
 
 export type Display = {
     [idx: number]: {
@@ -122,5 +123,6 @@ export type Sandbox = {
 
     root: number;
     map: { [idx: number]: MNode };
+    cards: Card[];
     history: HistoryItem[];
 };

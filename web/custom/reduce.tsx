@@ -39,7 +39,7 @@ export type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }
     | { type: 'menu'; menu: State['menu'] }
     | { type: 'full-select'; at: State['at'] }
-    | { type: 'collapse'; top: number }
+    // | { type: 'collapse'; top: number }
     | DualAction;
 
 const actionToUpdate = (
@@ -97,8 +97,8 @@ const actionToUpdate = (
         }
         case 'namespace-rename':
             return action;
-        case 'collapse':
-            return action;
+        // case 'collapse':
+        //     return action;
     }
     const _: never = action;
 };
@@ -351,14 +351,14 @@ export const reduceUpdate = (
                 ...state,
                 ctx: { ...state.ctx, global: { ...state.ctx.global, library } },
             };
-        case 'collapse':
-            return {
-                ...state,
-                collapse: {
-                    ...state.collapse,
-                    [update.top]: !state.collapse[update.top],
-                },
-            };
+        // case 'collapse':
+        //     return {
+        //         ...state,
+        //         collapse: {
+        //             ...state.collapse,
+        //             [update.top]: !state.collapse[update.top],
+        //         },
+        //     };
         // return state;
         default:
             const _: never = update;

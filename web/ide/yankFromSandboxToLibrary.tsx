@@ -25,7 +25,7 @@ export const yankFromSandboxToLibrary = (
     state: UIState,
     action: { type: 'yank'; expr: DefType | Def; loc: number },
     meta: Sandbox['meta'],
-) => {
+): UIState => {
     const result = yankInner(
         state.map,
         state.ctx,

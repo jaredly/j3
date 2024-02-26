@@ -228,8 +228,8 @@ export const reduceUpdate = (
             console.warn('ignoring namespace rename');
             return state;
         // return state;
-        case 'collapse':
-            return state;
+        // case 'collapse':
+        //     return state;
         default:
             const _: never = update;
             throw new Error('nope update');
@@ -386,8 +386,8 @@ export function loadState(k: string): NUIState {
         map,
         root: -1,
         history: [],
-        collapse: {},
         nidx: () => idx++,
+        cards: [],
         clipboard: [],
         hover: [],
         regs: {},
@@ -401,7 +401,7 @@ export function stateFromMap(map: NUIState['map']): NUIState {
         map,
         root: -1,
         history: [],
-        collapse: {},
+        cards: [],
         nidx: () => idx++,
         clipboard: [],
         hover: [],

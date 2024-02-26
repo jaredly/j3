@@ -1,12 +1,18 @@
 import equal from 'fast-deep-equal';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { sexp } from '../../progress/sexp';
 import { nilt } from '../../src/to-ast/Ctx';
 import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../../src/state/path';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
-import { UIState, Action, NUIState } from './UIState';
+import { UIState, Action, NUIState, SandboxNamespace } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
@@ -15,29 +21,68 @@ import { Ctx } from '../../src/to-ast/library';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
 import { Reg } from './types';
 
-export function Root({
+export function ViewSNS({
+    ns,
     state,
-    dispatch,
-    tops,
-    debug,
-    showTop,
+    reg,
     results,
-    clickTop,
+    dispatch,
+    selections,
+    card,
 }: {
+    path: string[];
+    dispatch: React.Dispatch<Action>;
+    state: NUIState;
+    reg: Reg;
+    results: Ctx['results'];
+    ns: Extract<SandboxNamespace, { type: 'normal' }>;
+    selections: Cursor[];
+    card: number;
+}) {
+    const cardPath: Path[] = useMemo(
+        () => [{ type: 'card', card, idx: -1 }],
+        [card],
+    );
+    return (
+        <div style={{ marginBottom: 8, display: 'flex' }}>
+            <div>
+                <Render
+                    debug={false}
+                    idx={ns.top}
+                    map={state.map}
+                    reg={reg}
+                    display={results.display ?? empty}
+                    hashNames={results.hashNames ?? empty}
+                    errors={results.errors ?? empty}
+                    dispatch={dispatch}
+                    selection={selections}
+                    path={cardPath}
+                />
+            </div>
+        </div>
+    );
+}
+
+export function CardRoot({
+    state,
+    card,
+    dispatch,
+    results,
+}: {
+    card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
-    tops: number[];
-    debug: boolean;
-    showTop?: (top: number) => React.ReactNode;
-    clickTop?: (top: number) => void;
-    results?: Ctx['results'];
+    results: Ctx['results'];
 }) {
     useEffect(() => {
         console.log('ROOT First render');
     }, []);
     const selections = React.useMemo(
-        () => normalizeSelections(state.at),
-        [state.at],
+        () =>
+            normalizeSelections(
+                state.at.filter((s) => pathCard(s.start) === card),
+            ),
+        [state.at, card],
     );
     const reg = useRegs(state);
     const dragProps = useDrag(dispatch, state);
@@ -56,83 +101,20 @@ export function Root({
                 }
             }}
         >
-            {tops.map((top, i) => {
+            <ViewSNS
+                card={card}
+                reg={reg}
+                ns={state.cards[card].ns}
+                path={state.cards[card].path}
+                state={state}
+                dispatch={dispatch}
+                results={results}
+                selections={selections}
+            />
+            {/* {tops.map((top, i) => {
                 const got = results?.toplevel[top];
-                return (
-                    <div key={top} style={{ marginBottom: 8, display: 'flex' }}>
-                        <div
-                            style={{
-                                marginRight: 4,
-                                width: 20,
-                                height: 10,
-                            }}
-                        >
-                            {clickTop ? (
-                                <div
-                                    onClick={() => {
-                                        clickTop(top);
-                                    }}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    &lt;-
-                                </div>
-                            ) : null}
-                            {got?.type === 'def' || got?.type === 'deftype' ? (
-                                <div
-                                    onClick={() => {
-                                        const loc = got.form.loc;
-                                        dispatch({
-                                            type: 'yank',
-                                            expr: got,
-                                            loc,
-                                        });
-                                    }}
-                                    style={{ cursor: 'pointer' }}
-                                >
-                                    &lt;-
-                                </div>
-                            ) : (
-                                ''
-                            )}
-                        </div>
-                        <div>
-                            <Render
-                                debug={debug}
-                                idx={top}
-                                map={state.map}
-                                reg={reg}
-                                display={results?.display ?? empty}
-                                hashNames={results?.hashNames ?? empty}
-                                errors={results?.errors ?? empty}
-                                dispatch={dispatch}
-                                selection={selections}
-                                path={[
-                                    {
-                                        idx: state.root,
-                                        type: 'child',
-                                        at: i,
-                                    },
-                                ]}
-                            />
-                            <div
-                                style={{
-                                    fontSize: '80%',
-                                    opacity: 0.3,
-                                    marginTop: 4,
-                                }}
-                            >
-                                {showTop?.(top)}
-                            </div>
-                            {debug ? (
-                                <div>{sexp(fromMCST(top, state.map))}</div>
-                            ) : null}
-                            {debug ? (
-                                <div>{JSON.stringify(state.at)}</div>
-                            ) : null}
-                        </div>
-                    </div>
-                );
-            })}
+                return ;
+            })} */}
         </div>
     );
 }
@@ -170,7 +152,7 @@ function selectionAction(
     }
 }
 
-function normalizeSelections(at: Cursor[]): { start: Path[]; end: Path[] }[] {
+function normalizeSelections(at: Cursor[]): Cursor[] {
     return at
         .filter((s) => s.end)
         .map(({ start, end }) => {

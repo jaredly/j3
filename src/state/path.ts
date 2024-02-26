@@ -1,6 +1,7 @@
 // Um the path
 
 export type PathChild =
+    | { type: 'card'; card: number }
     | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
@@ -32,6 +33,8 @@ export const cmpPath = (one: Path, two: Path): number => {
             case 'expr':
             case 'text':
                 return one.at - (two as { at: number }).at;
+            case 'card':
+                return one.card - (two as Extract<Path, { type: 'card' }>).card;
             default:
                 let _: never = one;
         }

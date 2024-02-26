@@ -93,6 +93,13 @@ export type Menu = {
     location: number;
 };
 
+export const pathCard = (path: Path[]) => {
+    if (path[0].type !== 'card') {
+        throw new Error(`path doesnt start with a card`);
+    }
+    return path[0].card;
+};
+
 export type Cursor = {
     start: Path[];
     end?: Path[];
@@ -405,7 +412,11 @@ export const getKeyUpdate = (
                 const sel = fullPath
                     .slice(0, i)
                     .concat({ idx: parent.idx, type: 'end' });
-                return { type: 'select', selection: sel, autoComplete: true };
+                return {
+                    type: 'select',
+                    selection: sel,
+                    autoComplete: true,
+                };
             }
         }
     }
@@ -422,7 +433,7 @@ export const getKeyUpdate = (
         if (fullPath.some((s) => s.type === 'annot-annot')) {
             return;
         }
-        return goToTannot(fullPath, node, idx, map, nidx);
+        return goToTannot(fullPath, idx, map, nidx);
     }
 
     if (key === '"') {
@@ -650,7 +661,6 @@ function updateText(
 
 function goToTannot(
     path: Path[],
-    node: MNode,
     idx: number,
     map: Map,
     nidx: () => number,

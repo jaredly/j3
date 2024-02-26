@@ -293,7 +293,7 @@ function initialState() {
         at: [
             {
                 start: [
-                    { idx: -1, type: 'child', at: 0 },
+                    { idx: -1, type: 'card', card: 0 },
                     { idx: top, type: 'start' },
                 ],
             },
