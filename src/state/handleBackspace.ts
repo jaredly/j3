@@ -1,6 +1,6 @@
 import { ListLikeContents, Map, MNode, MNodeExtra } from '../types/mcst';
 import { newBlank } from './newNodes';
-import { selectEnd } from './navigate';
+import { goLeft, selectEnd } from './navigate';
 import {
     StateChange,
     UpdateMap,
@@ -15,11 +15,14 @@ import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../to-ast/Ctx';
 import { modChildren } from './modChildren';
+import { nsPath } from './newNodeBefore';
+import { Card } from '../../web/custom/UIState';
 
 export function handleBackspace(
     map: Map,
     selection: { start: Path[]; end?: Path[] },
     hashNames: { [idx: number]: string },
+    cards: Card[],
 ): StateChange {
     if (selection.end) {
         const [start, end] = orderStartAndEnd(selection.start, selection.end);
@@ -65,7 +68,7 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            return removeNodes(start, end, item.nodes, map, hashNames);
+            return removeNodes(start, end, item.nodes, map, cards, hashNames);
         }
     }
 
@@ -106,6 +109,22 @@ export function handleBackspace(
 
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
+
+    if (ppath.type === 'ns' && atStart) {
+        const left = goLeft(selection.start, map, cards);
+        if (!left) return;
+        const ns = nsPath(fullPath.slice(0, -1));
+        if (!ns) return;
+        return {
+            type: 'update',
+            map: { [flast.idx]: null },
+            selection: left.selection,
+            nsUpdate: {
+                type: 'rm',
+                path: ns,
+            },
+        };
+    }
 
     if (
         ppath.type === 'child' &&

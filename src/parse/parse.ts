@@ -142,6 +142,7 @@ export const parseByCharacter = (
         const update = getKeyUpdate(
             key,
             state.map,
+            [],
             state.at[0],
             ctx?.results.hashNames ?? {},
             state.nidx,

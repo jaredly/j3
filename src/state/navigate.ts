@@ -5,6 +5,8 @@ import { getNodes } from './getNestedNodes';
 import { ONode } from './types';
 import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
+import { Card } from '../../web/custom/UIState';
+import { nsPath } from './newNodeBefore';
 
 export const selectStart = (
     idx: number,
@@ -43,9 +45,47 @@ export const pathChildEqual = (
     return equal(one, two);
 };
 
-export const goLeft = (path: Path[], map: Map): StateSelect | void => {
+export const goLeft = (
+    path: Path[],
+    map: Map,
+    cards: Card[],
+): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
+
+    if (last.type === 'ns') {
+        // HERE we traverse the card/namespace dealio
+        const nsp = nsPath(path);
+        if (!nsp) return;
+        let ns = cards[nsp[0]].ns;
+        for (let at of nsp.slice(1, -1)) {
+            const child = ns.children[at];
+            if (!child || child.type !== 'normal') {
+                return;
+            }
+            ns = child;
+        }
+        const last = nsp[nsp.length - 1];
+        if (last === 0) return;
+        const nns = ns.children[last - 1];
+        if (nns.type !== 'normal') {
+            return;
+        }
+        const end = selectEnd(
+            nns.top,
+            path.slice(0, -1).concat([
+                {
+                    type: 'ns',
+                    idx: -1,
+                    at: last - 1,
+                },
+            ]),
+            map,
+        );
+        if (!end) return;
+        return { type: 'select', selection: end };
+    }
+
     const pnodes = getNodes(map[last.idx], map);
 
     let prev: Path[] | null = null;
@@ -55,12 +95,12 @@ export const goLeft = (path: Path[], map: Map): StateSelect | void => {
         if (ps.length && pathChildEqual(ps[0], last)) {
             return prev
                 ? { type: 'select', selection: path.slice(0, -1).concat(prev) }
-                : goLeft(path.slice(0, -1), map);
+                : goLeft(path.slice(0, -1), map, cards);
         }
         prev = ps;
     }
 
-    return goLeft(path.slice(0, -1), map);
+    return goLeft(path.slice(0, -1), map, cards);
 };
 
 export const goRight = (

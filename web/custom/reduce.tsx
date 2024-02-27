@@ -78,6 +78,7 @@ const actionToUpdate = (
             return getKeyUpdate(
                 action.key,
                 state.map,
+                state.cards,
                 state.at[0],
                 state.ctx.results.hashNames,
                 state.nidx,

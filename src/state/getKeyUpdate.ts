@@ -1,3 +1,4 @@
+import { Card } from '../../web/custom/UIState';
 import { idText, pathPos, splitGraphemes } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
@@ -218,6 +219,7 @@ export type Mods = {
 export const getKeyUpdate = (
     key: string,
     map: Map,
+    cards: Card[],
     selection: { start: Path[]; end?: Path[] },
     hashNames: { [idx: number]: string },
     nidx: () => number,
@@ -245,7 +247,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, selection, hashNames);
+        return handleBackspace(map, selection, hashNames, cards);
     }
 
     const textRaw = hashNames[node.loc] ?? idText(node, map) ?? '';
@@ -278,7 +280,7 @@ export const getKeyUpdate = (
                 };
             }
         }
-        const lll = goLeft(fullPath, map);
+        const lll = goLeft(fullPath, map, cards);
         if (lll && mods?.shift) {
             return {
                 type: 'select',
@@ -321,7 +323,7 @@ export const getKeyUpdate = (
 
     if (key === 'Tab') {
         return mods?.shift
-            ? goLeft(fullPath, map)
+            ? goLeft(fullPath, map, cards)
             : goRight(fullPath, idx, map);
         // if (rrr && mods?.shift) {
         //     return {

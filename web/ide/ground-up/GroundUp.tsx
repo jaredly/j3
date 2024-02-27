@@ -527,31 +527,60 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     return next;
 };
 
+const modifyNs = (
+    card: Card,
+    path: number[],
+    mod: (ns: Extract<SandboxNamespace, { type: 'normal' }>) => void,
+): Card | void => {
+    card = { ...card };
+    let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
+    for (let at of path.slice(1, -1)) {
+        const child = ns.children[at];
+        if (!child || child.type !== 'normal') {
+            console.log('bad child', at, ns, card);
+            return;
+        }
+        ns = ns.children[at] = { ...child };
+        ns.children = ns.children.slice();
+    }
+    mod(ns);
+    return card;
+};
+
 const applyNsUpdate = (
     state: NUIState,
     nsUpdate: NonNullable<StateUpdate['nsUpdate']>,
 ) => {
-    if (nsUpdate.type === 'add') {
-        const card = { ...state.cards[nsUpdate.path[0]] };
-        let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
-        for (let at of nsUpdate.path.slice(1, -1)) {
-            const child = ns.children[at];
-            if (!child || child.type !== 'normal') {
-                console.log('bad child', at, ns, card);
-                return;
-            }
-            ns = ns.children[at] = { ...child };
-            ns.children = ns.children.slice();
-        }
-        ns.children.splice(
-            nsUpdate.path[nsUpdate.path.length - 1] + (nsUpdate.after ? 1 : 0),
-            0,
-            {
-                type: 'normal',
-                top: nsUpdate.top,
-                children: [],
+    if (nsUpdate.type === 'rm') {
+        const card = modifyNs(
+            state.cards[nsUpdate.path[0]],
+            nsUpdate.path.slice(1, -1),
+            (ns) => {
+                ns.children.splice(nsUpdate.path[nsUpdate.path.length - 1], 1);
             },
         );
+        if (!card) return;
+        state.cards = state.cards.slice();
+        state.cards[nsUpdate.path[0]] = card;
+    }
+    if (nsUpdate.type === 'add') {
+        const card = modifyNs(
+            state.cards[nsUpdate.path[0]],
+            nsUpdate.path.slice(1, -1),
+            (ns) => {
+                ns.children.splice(
+                    nsUpdate.path[nsUpdate.path.length - 1] +
+                        (nsUpdate.after ? 1 : 0),
+                    0,
+                    {
+                        type: 'normal',
+                        top: nsUpdate.top,
+                        children: [],
+                    },
+                );
+            },
+        );
+        if (!card) return;
         state.cards = state.cards.slice();
         state.cards[nsUpdate.path[0]] = card;
     }
@@ -631,6 +660,7 @@ const actionToUpdate = (
             return getKeyUpdate(
                 action.key,
                 state.map,
+                state.cards,
                 state.at[0],
                 // TODO do I want some hashnames?
                 {},

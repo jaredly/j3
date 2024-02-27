@@ -622,6 +622,7 @@ export function generateRawPasteUpdate(
         const update = getKeyUpdate(
             char,
             tmp.map,
+            [],
             tmp.at[0],
             tctx?.results.hashNames ?? {},
             tmp.nidx,

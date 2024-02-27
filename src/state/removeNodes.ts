@@ -7,12 +7,14 @@ import { commonAncestor, validatePath } from './clipboard';
 import { transformNode } from '../types/transform-cst';
 import { Path } from './path';
 import { Ctx } from '../to-ast/Ctx';
+import { Card } from '../../web/custom/UIState';
 
 export const removeNodes = (
     start: Path[],
     end: Path[],
     nodes: Node[],
     map: Map,
+    cards: Card[],
     hashNames: { [idx: number]: string },
 ): StateChange | void => {
     const ancestor = commonAncestor(start, end);
@@ -161,7 +163,7 @@ export const removeNodes = (
     //     return;
     // }
     while (!validatePath(updated, left!, hashNames)) {
-        left = goLeft(left!, map)?.selection!;
+        left = goLeft(left!, map, cards)?.selection!;
         if (!left) {
             console.log('cannot left');
             return;

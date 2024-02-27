@@ -4,7 +4,7 @@ import { newBlank } from './newNodes';
 import { NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 
-const nsPath = (path: Path[]): number[] | void => {
+export const nsPath = (path: Path[]): number[] | void => {
     if (path[0].type !== 'card') {
         console.log('first not a card', path);
         return;

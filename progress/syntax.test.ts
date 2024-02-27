@@ -219,7 +219,7 @@ id
 (())
 (list (list))
 
-((^l 
+((^l
 ( ())
 (list blank (list))
 
@@ -440,6 +440,7 @@ function doABunchOfKeys({
         const update = getKeyUpdate(
             key,
             state.map,
+            [],
             state.at[0],
             {},
             state.nidx,
