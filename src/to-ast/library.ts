@@ -6,7 +6,7 @@ import { HashedTree } from '../db/hash-tree';
 import { Cursor, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
 import { InferMod } from '../infer/infer';
-import { Card } from '../../web/custom/UIState';
+import { Card, SandboxNamespace } from '../../web/custom/UIState';
 
 export type Display = {
     [idx: number]: {
@@ -99,6 +99,15 @@ export type HistoryItem = {
     id: number;
     map: UpdateMap;
     prev: UpdateMap;
+    cardChange: (
+        | {
+              type: 'ns';
+              path: number[];
+              ns?: SandboxNamespace;
+              prev?: SandboxNamespace;
+          }
+        | { type: 'card'; idx: number; next?: Card; prev?: Card }
+    )[];
     at: Cursor[];
     prevAt: Cursor[];
     ts: number;

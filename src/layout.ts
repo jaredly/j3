@@ -13,6 +13,7 @@ export const calculateLayout = (
     map: Map,
     recursive = false,
 ): Layout => {
+    if (!node) debugger;
     switch (node.type) {
         case 'identifier':
         case 'comment':

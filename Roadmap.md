@@ -1,5 +1,6 @@
 
-- [ ] left hover
+- [x] left hover
+- [ ] oh gotta get undo under control
 
 # Night thoughts
 

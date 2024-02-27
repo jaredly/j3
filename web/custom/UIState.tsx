@@ -1,6 +1,6 @@
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { type ClipboardItem } from '../../src/state/clipboard';
-import { State, Mods } from '../../src/state/getKeyUpdate';
+import { State, Mods, StateUpdate } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
@@ -134,6 +134,7 @@ export type RealizedNamespace = {
     top: number;
     hidden?: boolean;
     children: SandboxNamespace[];
+    collapsed?: boolean;
 };
 
 export type SandboxNamespace =
@@ -173,6 +174,11 @@ export type UpdatableAction =
     | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
     // expr:def expr:deftype
     | { type: 'key'; key: string; mods: Mods }
+    | {
+          type: 'ns';
+          selection?: Path[];
+          nsUpdate: NonNullable<StateUpdate['nsUpdate']>;
+      }
     // | { type: 'collapse'; top: number }
     | { type: 'paste'; items: ClipboardItem[] }
     | DualAction;

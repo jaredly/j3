@@ -112,9 +112,6 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
-    if (ppath.type === 'ns') {
-        console.log('NS', ppath, fullPath, atStart, parent);
-    }
     if (ppath.type === 'ns' && atStart) {
         const left = goLeft(selection.start, map, cards);
         if (!left) return;

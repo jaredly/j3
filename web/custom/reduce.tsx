@@ -20,8 +20,11 @@ import { Path } from '../../src/state/path';
 import { isRootPath } from './ByHand';
 import {
     Action,
+    Card,
     DualAction,
     NUIState,
+    RealizedNamespace,
+    SandboxNamespace,
     UIState,
     UpdatableAction,
 } from './UIState';
@@ -54,6 +57,14 @@ const actionToUpdate = (
         case 'menu-select': {
             const idx = action.path[action.path.length - 1].idx;
             return autoCompleteUpdate(idx, state.map, action.path, action.item);
+        }
+        case 'ns': {
+            return {
+                type: 'update',
+                map: {},
+                selection: action.selection ?? state.at[0].start,
+                nsUpdate: action.nsUpdate,
+            };
         }
         case 'copy':
             return {
@@ -198,7 +209,7 @@ export const prevMap = (map: Map, update: UpdateMap): UpdateMap => {
     return prev;
 };
 
-export const undoRedo = (state: NUIState, kind: 'undo' | 'redo') => {
+export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
     const undid =
         kind === 'undo' ? undoItem(state.history) : redoItem(state.history);
     if (!undid) {
@@ -212,6 +223,15 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo') => {
         map: undid.prev,
         at: undid.prevAt,
         prevAt: undid.at,
+        cardChange: undid.cardChange.map((change) =>
+            change.type === 'ns'
+                ? {
+                      ...change,
+                      ns: change.prev,
+                      prev: change.ns,
+                  }
+                : { ...change, prev: change.next, next: change.prev },
+        ),
         ts: Date.now() / 1000,
         libraryRoot: undid.libraryRoot,
     };
@@ -223,9 +243,11 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo') => {
             smap[+k] = v;
         }
     });
+    const cards = applyCardChange(nitem.cardChange, state.cards);
 
     return {
         ...state,
+        cards,
         map: smap,
         at: nitem.at,
         history: state.history.concat([nitem]),
@@ -237,6 +259,7 @@ export const reduce = (
     action: Action,
     meta: Sandbox['meta'],
 ): UIState => {
+    console.log('red', action);
     switch (action.type) {
         case 'yank':
             // This handles the `history` itself. so, ya know.
@@ -267,6 +290,226 @@ export const reduce = (
     }
 };
 
+export const findAdded = <T,>(shorter: T[], longer: T[]) => {
+    const added = [];
+    let i = 0,
+        ti = 0;
+    for (; i < shorter.length && ti < longer.length; i++, ti++) {
+        while (ti < longer.length && shorter[i] !== longer[ti]) {
+            added.push({ i, ti, item: longer[ti] });
+            ti++;
+        }
+    }
+    for (; ti < longer.length; ti++) {
+        added.push({ i: shorter.length, ti, item: longer[ti] });
+    }
+    if (added.length === longer.length - shorter.length) {
+        return added;
+    }
+};
+
+export const applyCardChange = (
+    changes: HistoryItem['cardChange'],
+    cards: Card[],
+) => {
+    if (!changes.length) return cards;
+    cards = cards.slice();
+    changes.forEach((change) => {
+        if (change.type === 'card') {
+            if (!change.next) {
+                cards.splice(change.idx, 1);
+            } else if (!change.prev) {
+                cards.splice(change.idx, 0, change.next);
+            } else {
+                cards[change.idx] = {
+                    ...cards[change.idx],
+                    path: change.next.path,
+                };
+            }
+            return;
+        }
+        const { path, ns: next, prev } = change;
+        const cidx = path[0];
+        cards[cidx] = { ...cards[cidx] };
+        let at = (cards[cidx].ns = { ...cards[cidx].ns });
+        at.children = at.children.slice();
+        for (let i = 1; i < path.length - 1; i++) {
+            const child = at.children[i];
+            if (child.type !== 'normal') {
+                throw new Error('invalid card ns change');
+            }
+            at = { ...child };
+            at.children = at.children.slice();
+        }
+
+        const last = path[path.length - 1];
+        if (next && prev) {
+            const cur = at.children[last];
+            if (cur.type === 'normal' && next.type === 'normal') {
+                at.children[last] = {
+                    ...cur,
+                    top: next.top,
+                    hidden: next.hidden,
+                    collapsed: next.collapsed,
+                };
+            } else {
+                at.children[last] = next;
+            }
+        } else if (next) {
+            at.children.splice(last, 0, next);
+        } else if (prev) {
+            at.children.splice(last, 1);
+        }
+    });
+    return cards;
+};
+
+export const nsDiffs = (
+    path: number[],
+    prev?: SandboxNamespace,
+    next?: SandboxNamespace,
+): HistoryItem['cardChange'] => {
+    if (prev === next) return [];
+    if (
+        !prev ||
+        !next ||
+        prev.type !== next.type ||
+        (prev.type === 'normal' &&
+            next.type === 'normal' &&
+            (prev.top !== next.top ||
+                prev.hidden !== next.hidden ||
+                prev.collapsed !== next.collapsed))
+    ) {
+        return [{ type: 'ns', path, ns: next, prev }];
+    }
+    if (prev.type === 'placeholder' || next.type === 'placeholder') {
+        return prev.hash !== next.hash
+            ? [{ type: 'ns', path, ns: next, prev }]
+            : [];
+    }
+    if (prev.top !== next.top) {
+        return [{ type: 'ns', path, ns: next, prev }];
+    }
+
+    if (prev.children.length < next.children.length) {
+        const added = findAdded(prev.children, next.children);
+        if (added) {
+            return added.map((add) => ({
+                type: 'ns',
+                path: path.concat([add.i]),
+                ns: add.item,
+            }));
+        }
+    }
+
+    if (prev.children.length > next.children.length) {
+        const removed = findAdded(next.children, prev.children);
+        if (removed) {
+            return removed.map((add) => ({
+                type: 'ns',
+                path: path.concat([add.ti]),
+                prev: add.item,
+            }));
+        }
+    }
+
+    if (prev.children.length === next.children.length) {
+        const change: HistoryItem['cardChange'] = [];
+        for (let i = 0; i < prev.children.length; i++) {
+            change.push(
+                ...nsDiffs(
+                    path.concat([i]),
+                    prev.children[i],
+                    next.children[i],
+                ),
+            );
+        }
+        return change;
+    }
+
+    throw new Error(
+        'couldnt figure out hte difference between the two namespaces',
+    );
+    // const change: HistoryItem['cardChange'] = [];
+    // let pi = 0
+    // let ni = 0
+    // while (pi < prev.children.length && ni < next.children.length) {
+
+    // }
+    // for (;pi < prev.children.length; pi++) {
+    //     change.push({path: path.concat([pi]), prev: prev.children[pi], type: 'ns'})
+    // }
+    // for (;ni < next.children.length; ni++) {
+    //     change.push({path: path.concat([ni]), next: next.children[ni], type: 'ns'})
+    // }
+
+    // // fallback
+    // for (
+    //     let i = 0;
+    //     i < Math.max(prev.children.length, next.children.length);
+    //     i++
+    // ) {
+    //     if (prev.children[i] !== next.children[i]) {
+    //         change.push(
+    //             ...nsDiffs(
+    //                 path.concat([i]),
+    //                 prev.children[i],
+    //                 next.children[i],
+    //             ),
+    //         );
+    //     }
+    // }
+    // return change;
+};
+
+export const calcCardChange = (
+    state: NUIState,
+    next: NUIState,
+): HistoryItem['cardChange'] => {
+    const change: HistoryItem['cardChange'] = [];
+
+    if (state.cards.length !== next.cards.length) {
+        if (state.cards.length < next.cards.length) {
+            const added = findAdded(state.cards, next.cards);
+            if (added) {
+                return added.map((add) => ({
+                    type: 'card',
+                    idx: add.i,
+                    next: add.item,
+                }));
+            }
+        } else {
+            const removed = findAdded(state.cards, next.cards);
+            if (removed) {
+                return removed.map((add) => ({
+                    type: 'card',
+                    idx: add.ti,
+                    prev: add.item,
+                }));
+            }
+        }
+        throw new Error('cant figure out the add/removal of cards');
+    }
+
+    for (let i = 0; i < state.cards.length; i++) {
+        const prev = state.cards[i];
+        const card = next.cards[i];
+        if (prev === card) continue;
+        if (prev.path !== card.path) {
+            change.push({
+                type: 'card',
+                idx: i,
+                prev: { ...prev, ns: { ...prev.ns, children: [] } },
+                next: { ...card, ns: { ...card.ns, children: [] } },
+            });
+        } else {
+            change.push(...nsDiffs([i], prev.ns, card.ns));
+        }
+    }
+
+    return change;
+};
+
 export const calcHistoryItem = (
     state: NUIState,
     next: NUIState,
@@ -277,7 +520,9 @@ export const calcHistoryItem = (
     }
     const update: UpdateMap = {};
     const prev: UpdateMap = {};
-    let changed = false;
+    const cardChange: HistoryItem['cardChange'] = calcCardChange(state, next);
+
+    let changed = cardChange.length > 0;
     Object.keys(next.map).forEach((k) => {
         if (next.map[+k] !== state.map[+k]) {
             changed = true;
@@ -299,6 +544,7 @@ export const calcHistoryItem = (
         at: next.at,
         prevAt: state.at,
         prev,
+        cardChange,
         map: update,
         id: state.history.length
             ? state.history[state.history.length - 1].id + 1

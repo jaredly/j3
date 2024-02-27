@@ -26,8 +26,17 @@ import { getType } from '../../src/get-type/get-types-new';
 import { Ctx } from '../../src/to-ast/library';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
 import { Reg } from './types';
+import { nsPath } from '../../src/state/newNodeBefore';
 
-const Whatsit = () => {
+const Whatsit = ({
+    ns,
+    path,
+    dispatch,
+}: {
+    ns: RealizedNamespace;
+    path: Path[];
+    dispatch: React.Dispatch<Action>;
+}) => {
     const [hover, setHover] = useState(false);
     return (
         <div
@@ -39,12 +48,21 @@ const Whatsit = () => {
             data-handle="true"
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onMouseDownCapture={(evt) => {
-                evt.stopPropagation();
-                evt.preventDefault();
+            onClick={() => {
+                console.log('clicked it');
+                const nsp = nsPath(path);
+                if (!nsp) throw new Error('path not nspath');
+                dispatch({
+                    type: 'ns',
+                    nsUpdate: {
+                        type: 'replace',
+                        path: nsp,
+                        collapsed: !ns.collapsed,
+                    },
+                });
             }}
         >
-            {/* [{hover ? '-' : ' '}] */}[ ]
+            [{ns.collapsed ? '>' : 'v'}]
         </div>
     );
 };
@@ -56,6 +74,7 @@ export function ViewSNS({
     results,
     dispatch,
     selections,
+    produce,
     path,
 }: {
     path: Path[];
@@ -65,11 +84,8 @@ export function ViewSNS({
     results: Ctx['results'];
     ns: RealizedNamespace;
     selections: Cursor[];
+    produce: { [key: number]: string };
 }) {
-    // const cardPath: Path[] = useMemo(
-    //     () => [{ type: 'card', card, idx: -1 }],
-    //     [card],
-    // );
     return (
         <div
             style={{
@@ -81,19 +97,31 @@ export function ViewSNS({
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 {ns.top !== -1 ? (
                     <>
-                        <Whatsit />
-                        <Render
-                            debug={false}
-                            idx={ns.top}
-                            map={state.map}
-                            reg={reg}
-                            display={results.display ?? empty}
-                            hashNames={results.hashNames ?? empty}
-                            errors={results.errors ?? empty}
-                            dispatch={dispatch}
-                            selection={selections}
-                            path={path}
-                        />
+                        <Whatsit ns={ns} dispatch={dispatch} path={path} />
+                        <div>
+                            <Render
+                                debug={false}
+                                idx={ns.top}
+                                map={state.map}
+                                reg={reg}
+                                display={results.display ?? empty}
+                                hashNames={results.hashNames ?? empty}
+                                errors={results.errors ?? empty}
+                                dispatch={dispatch}
+                                selection={selections}
+                                path={path}
+                            />
+                            {ns.collapsed ? null : (
+                                <div
+                                    style={{
+                                        whiteSpace: 'pre',
+                                        fontSize: '80%',
+                                    }}
+                                >
+                                    {produce[ns.top]?.trim() ?? 'hrm'}
+                                </div>
+                            )}
+                        </div>
                     </>
                 ) : null}
             </div>
@@ -102,6 +130,7 @@ export function ViewSNS({
                     child.type === 'normal' ? (
                         <ViewSNS
                             reg={reg}
+                            produce={produce}
                             key={i}
                             ns={child}
                             path={path.concat({
@@ -126,11 +155,13 @@ export function CardRoot({
     card,
     dispatch,
     results,
+    produce,
 }: {
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
     results: Ctx['results'];
+    produce: { [key: number]: string };
 }) {
     const selections = React.useMemo(
         () =>
@@ -167,6 +198,7 @@ export function CardRoot({
                 state={state}
                 dispatch={dispatch}
                 results={results}
+                produce={produce}
                 selections={selections}
             />
             {/* {tops.map((top, i) => {

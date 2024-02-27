@@ -40,7 +40,13 @@ export type StateUpdate = {
               after: boolean;
               top: number;
           }
-        | { type: 'replace'; path: number[]; top: number }
+        | {
+              type: 'replace';
+              path: number[];
+              top?: number;
+              hidden?: boolean;
+              collapsed?: boolean;
+          }
         | { type: 'rm'; path: number[] };
 };
 

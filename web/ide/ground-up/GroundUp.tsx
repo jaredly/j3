@@ -60,8 +60,14 @@ const initialState = (): NUIState => {
                 ns: {
                     type: 'normal',
                     hash: null,
-                    top: 0,
-                    children: [],
+                    top: -1,
+                    children: [
+                        {
+                            type: 'normal',
+                            top: 0,
+                            children: [],
+                        },
+                    ],
                 },
             },
         ],
@@ -71,43 +77,43 @@ const initialState = (): NUIState => {
 };
 
 function loadState(state: NUIState = initialState()) {
-    if (!state.cards) {
-        const node = state.map[state.root];
-        const tops = node.type === 'list' ? node.values : [-1];
-        state.cards = tops.map((top) => ({
-            path: [],
-            ns: {
-                type: 'normal',
-                top,
-                children: [],
-            },
-        }));
-        state.hover = [];
-        console.log(state.at);
-        state.at.forEach((cursor) => {
-            cursor.start = [
-                {
-                    idx: -1,
-                    type: 'card',
-                    card: (cursor.start[0] as { type: 'child'; at: number }).at,
-                },
-                ...cursor.start.slice(1),
-            ];
-        });
-    }
+    // if (!state.cards) {
+    //     const node = state.map[state.root];
+    //     const tops = node.type === 'list' ? node.values : [-1];
+    //     state.cards = tops.map((top) => ({
+    //         path: [],
+    //         ns: {
+    //             type: 'normal',
+    //             top,
+    //             children: [],
+    //         },
+    //     }));
+    //     state.hover = [];
+    //     console.log(state.at);
+    //     state.at.forEach((cursor) => {
+    //         cursor.start = [
+    //             {
+    //                 idx: -1,
+    //                 type: 'card',
+    //                 card: (cursor.start[0] as { type: 'child'; at: number }).at,
+    //             },
+    //             ...cursor.start.slice(1),
+    //         ];
+    //     });
+    // }
 
-    if (state.cards.length > 1) {
-        state.cards = [
-            {
-                path: [],
-                ns: {
-                    type: 'normal',
-                    top: -1,
-                    children: state.cards.map((card) => card.ns),
-                },
-            },
-        ];
-    }
+    // if (state.cards.length > 1) {
+    //     state.cards = [
+    //         {
+    //             path: [],
+    //             ns: {
+    //                 type: 'normal',
+    //                 top: -1,
+    //                 children: state.cards.map((card) => card.ns),
+    //             },
+    //         },
+    //     ];
+    // }
 
     let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
@@ -311,6 +317,11 @@ export const GroundUp = ({
     const [debug, setDebug] = useState(true);
 
     useEffect(() => {
+        // @ts-ignore
+        window.state = state;
+    }, [state]);
+
+    useEffect(() => {
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
@@ -395,7 +406,7 @@ export const GroundUp = ({
         });
 
         return { produce, results };
-    }, [state.map]);
+    }, [state.map, state.cards, all]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
@@ -429,6 +440,7 @@ export const GroundUp = ({
                     dispatch={dispatch}
                     card={i}
                     results={results}
+                    produce={evaluated}
                 />
             ))}
             <div style={{ position: 'absolute', top: 4, right: 4 }}>
@@ -527,6 +539,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     // }
     const update = actionToUpdate(state, action);
     if (!update) {
+        console.warn('acrtion acannot be an update', action);
         return state;
     }
     const next = reduceUpdate(state, update);
@@ -588,6 +601,29 @@ const applyNsUpdate = (
                         children: [],
                     },
                 );
+            },
+        );
+        if (!card) return;
+        state.cards = state.cards.slice();
+        state.cards[nsUpdate.path[0]] = card;
+    }
+    if (nsUpdate.type === 'replace') {
+        const last = nsUpdate.path[nsUpdate.path.length - 1];
+        const card = modifyNs(
+            state.cards[nsUpdate.path[0]],
+            nsUpdate.path.slice(1, -1),
+            (ns) => {
+                const child = (ns.children[last] = { ...ns.children[last] });
+                if (child.type === 'placeholder') return;
+                if (nsUpdate.top != null) {
+                    child.top = nsUpdate.top;
+                }
+                if (nsUpdate.hidden != null) {
+                    child.hidden = nsUpdate.hidden;
+                }
+                if (nsUpdate.collapsed != null) {
+                    child.collapsed = nsUpdate.collapsed;
+                }
             },
         );
         if (!card) return;
@@ -689,6 +725,14 @@ const actionToUpdate = (
             // console.log(res);
             return res;
         }
+        case 'ns': {
+            return {
+                type: 'update',
+                map: {},
+                selection: action.selection ?? state.at[0].start,
+                nsUpdate: action.nsUpdate,
+            };
+        }
         // case 'collapse':
         //     return action;
         // case 'namespace-rename':
@@ -760,8 +804,8 @@ function bootstrapEval(
                 try {
                     const res = evalExpr(stmt[0], env);
                     produce[(stmt as any).loc] += '\n' + valueToString(res);
-                    produce[(stmt as any).loc] +=
-                        '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
+                    // produce[(stmt as any).loc] +=
+                    //     '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
                 } catch (err) {
                     console.error(err, stmt, i);
                     produce[(stmt as any).loc] += (err as Error).message;
