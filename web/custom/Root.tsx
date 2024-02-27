@@ -1,19 +1,15 @@
 import equal from 'fast-deep-equal';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { sexp } from '../../progress/sexp';
-import { nilt } from '../../src/to-ast/Ctx';
-import { fromMCST } from '../../src/types/mcst';
-import { Path } from '../../src/state/path';
-import { Render } from './Render';
-import { closestSelection } from './verticalMove';
-import { UIState, Action, NUIState } from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
-import { nodeToString } from '../../src/to-cst/nodeToString';
-import { nodeForType } from '../../src/to-cst/nodeForType';
-import { getType } from '../../src/get-type/get-types-new';
+import { Cursor } from '../../src/state/getKeyUpdate';
+import { Path } from '../../src/state/path';
 import { Ctx } from '../../src/to-ast/library';
-import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
+import { fromMCST } from '../../src/types/mcst';
+import { Render } from './Render';
+import { Action, NUIState } from './UIState';
 import { Reg } from './types';
+import { closestSelection } from './verticalMove';
 
 export function Root({
     state,
@@ -150,11 +146,7 @@ function selectionAction(
     });
     if (!sel) return;
 
-    if (
-        evt.shiftKey &&
-        at.length &&
-        pathCard(at[at.length - 1].start) === pathCard(sel)
-    ) {
+    if (evt.shiftKey && at.length) {
         const sels = at.slice();
         sels[sels.length - 1] = {
             ...sels[sels.length - 1],
@@ -209,10 +201,7 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
             if (sel) {
                 const at = state.at.slice();
                 const idx = at.length - 1;
-                if (
-                    equal(sel, at[idx].start) ||
-                    pathCard(at[idx].start) !== pathCard(sel)
-                ) {
+                if (equal(sel, at[idx].start)) {
                     at[idx] = { start: sel };
                     dispatch({ type: 'select', at });
                 } else {

@@ -145,6 +145,28 @@ export function CardRoot({
 
 const empty = {};
 
+// hmm don't actually need this yet
+export const sameCardAndNs = (p1: Path[], p2: Path[]) => {
+    if (
+        p1[0].type !== 'card' ||
+        p2[0].type !== 'card' ||
+        p1[0].card !== p2[0].card
+    ) {
+        return false;
+    }
+    for (let i = 1; i < p1.length && i < p2.length; i++) {
+        const a = p1[i];
+        const b = p2[i];
+        if (a.type === 'ns' && b.type === 'ns') {
+            if (a.at !== b.at) return false;
+            continue;
+        }
+        if (a.type === 'ns' || b.type === 'ns') return false;
+        break;
+    }
+    return true;
+};
+
 function selectionAction(
     evt: React.MouseEvent<HTMLDivElement, MouseEvent>,
     at: Cursor[],
@@ -156,11 +178,7 @@ function selectionAction(
     });
     if (!sel) return;
 
-    if (
-        evt.shiftKey &&
-        at.length &&
-        pathCard(at[at.length - 1].start) === pathCard(sel)
-    ) {
+    if (evt.shiftKey && at.length) {
         const sels = at.slice();
         sels[sels.length - 1] = {
             ...sels[sels.length - 1],
@@ -215,10 +233,7 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
             if (sel) {
                 const at = state.at.slice();
                 const idx = at.length - 1;
-                if (
-                    equal(sel, at[idx].start) ||
-                    pathCard(at[idx].start) !== pathCard(sel)
-                ) {
+                if (equal(sel, at[idx].start)) {
                     at[idx] = { start: sel };
                     dispatch({ type: 'select', at });
                 } else {

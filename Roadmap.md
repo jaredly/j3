@@ -2,7 +2,11 @@
 # Night thoughts
 
 - [x] cards
-- [ ] make it so you can make more namespace dealios
+- [x] make it so you can make more namespace dealios
+- [x] space/enter to create new NS entry
+- [x] backspace to delete one
+- [ ] hmm selecting... across ... namespaces ... probably shouldn't do itemwise selection.
+  but tbh it's fine for the moment? maybe?
 
 - [x] ahhhh waittttt
   I forgot that I was adding two layers, not just one.
