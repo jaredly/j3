@@ -9,6 +9,7 @@ import {
 } from '../types/mcst';
 import { UpdateMap } from './getKeyUpdate';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
+import { nsPath } from './newNodeBefore';
 import { Path } from './path';
 
 export function replacePathWith(
@@ -19,7 +20,7 @@ export function replacePathWith(
     if (!path.length) {
         return;
     }
-    const update = replacePath(path[path.length - 1], newThing.idx, map);
+    const { update, nsUpdate } = replacePath(path, newThing.idx, map);
     return {
         type: 'update',
         map: {
@@ -27,17 +28,31 @@ export function replacePathWith(
             ...update,
         },
         selection: path.concat(newThing.selection),
+        nsUpdate,
     };
 }
 
 export const replacePath = (
-    parent: Path,
+    path: Path[],
     newIdx: number,
     map: Map,
-): UpdateMap => {
+): { update: UpdateMap; nsUpdate?: StateUpdate['nsUpdate'] } => {
+    const parent = path[path.length - 1];
     const update: UpdateMap = {};
     const pnode = map[parent.idx];
     switch (parent.type) {
+        case 'ns': {
+            const nsp = nsPath(path);
+            if (!nsp) return { update: {} };
+            return {
+                update: {},
+                nsUpdate: {
+                    type: 'replace',
+                    path: nsp,
+                    top: newIdx,
+                },
+            };
+        }
         case 'child': {
             const values = (pnode as ListLikeContents).values.slice();
             values[parent.at] = newIdx;
@@ -78,5 +93,5 @@ export const replacePath = (
                 `Can't replace parent. ${parent.type}. is this a valid place for an expr?`,
             );
     }
-    return update;
+    return { update };
 };

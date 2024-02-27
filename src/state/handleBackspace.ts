@@ -325,8 +325,8 @@ export function handleBackspace(
 
     if (node.type === 'blank') {
         if (ppath.type === 'annot-annot' && parent.type === 'annot') {
-            const update = replacePath(
-                fullPath[fullPath.length - 3],
+            const { update, nsUpdate } = replacePath(
+                fullPath,
                 parent.target,
                 map,
             );
@@ -342,6 +342,7 @@ export function handleBackspace(
                 type: 'update',
                 map: update,
                 selection: sel,
+                nsUpdate,
             };
         }
         if (ppath.type === 'expr') {

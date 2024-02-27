@@ -8,6 +8,8 @@
 - [ ] hmm selecting... across ... namespaces ... probably shouldn't do itemwise selection.
   but tbh it's fine for the moment? maybe?
 
+- [ ] drag anddd whatsitttt with a handle on the left
+
 - [x] ahhhh waittttt
   I forgot that I was adding two layers, not just one.
   we have cards, and then we have namespaces
