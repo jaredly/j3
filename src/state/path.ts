@@ -2,6 +2,7 @@
 
 export type PathChild =
     | { type: 'card'; card: number }
+    | { type: 'ns'; at: number }
     | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
@@ -33,6 +34,11 @@ export const cmpPath = (one: Path, two: Path): number => {
             case 'expr':
             case 'text':
                 return one.at - (two as { at: number }).at;
+            case 'ns':
+                // THIS IS WRONG because they might be from different cards?
+                // but actually maybe it's fine... because if we get this far,
+                // it's because the paths match?
+                return one.at - (two as Extract<Path, { type: 'ns' }>).at;
             case 'card':
                 return one.card - (two as Extract<Path, { type: 'card' }>).card;
             default:

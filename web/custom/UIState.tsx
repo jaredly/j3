@@ -120,6 +120,10 @@ type Namespace = {
 
 export type Card = {
     path: string[];
+    // So, it seems like, sometimes I'll want
+    // to load up just the children of a namespace.
+    // not the root of the namespace.
+    // this is immediately relevant for ... the root namespace.
     ns: Extract<SandboxNamespace, { type: 'normal' }>;
 };
 

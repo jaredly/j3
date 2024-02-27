@@ -32,6 +32,19 @@ export type StateUpdate = {
     selection: Path[];
     selectionEnd?: Path[];
     autoComplete?: boolean;
+    nsUpdate?:
+        | {
+              type: 'add';
+              path: number[]; // card, then ns ats
+              top: number;
+          }
+        | { type: 'rm'; path: number[] };
+};
+
+export type NewCard = {
+    type: 'new-card';
+    current: number;
+    after: boolean;
 };
 
 export type StateSelect = {

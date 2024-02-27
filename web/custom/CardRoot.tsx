@@ -28,36 +28,57 @@ export function ViewSNS({
     results,
     dispatch,
     selections,
-    card,
+    path,
 }: {
-    path: string[];
+    path: Path[];
     dispatch: React.Dispatch<Action>;
     state: NUIState;
     reg: Reg;
     results: Ctx['results'];
     ns: Extract<SandboxNamespace, { type: 'normal' }>;
     selections: Cursor[];
-    card: number;
 }) {
-    const cardPath: Path[] = useMemo(
-        () => [{ type: 'card', card, idx: -1 }],
-        [card],
-    );
+    // const cardPath: Path[] = useMemo(
+    //     () => [{ type: 'card', card, idx: -1 }],
+    //     [card],
+    // );
     return (
         <div style={{ marginBottom: 8, display: 'flex' }}>
             <div>
-                <Render
-                    debug={false}
-                    idx={ns.top}
-                    map={state.map}
-                    reg={reg}
-                    display={results.display ?? empty}
-                    hashNames={results.hashNames ?? empty}
-                    errors={results.errors ?? empty}
-                    dispatch={dispatch}
-                    selection={selections}
-                    path={cardPath}
-                />
+                {ns.top !== -1 ? (
+                    <Render
+                        debug={false}
+                        idx={ns.top}
+                        map={state.map}
+                        reg={reg}
+                        display={results.display ?? empty}
+                        hashNames={results.hashNames ?? empty}
+                        errors={results.errors ?? empty}
+                        dispatch={dispatch}
+                        selection={selections}
+                        path={path}
+                    />
+                ) : null}
+            </div>
+            <div>
+                {ns.children.map((child, i) =>
+                    child.type === 'normal' ? (
+                        <ViewSNS
+                            reg={reg}
+                            key={i}
+                            ns={child}
+                            path={path.concat({
+                                type: 'ns' as const,
+                                at: i,
+                                idx: ns.top,
+                            })}
+                            state={state}
+                            dispatch={dispatch}
+                            results={results}
+                            selections={selections}
+                        />
+                    ) : null,
+                )}
             </div>
         </div>
     );
@@ -87,10 +108,14 @@ export function CardRoot({
     const reg = useRegs(state);
     const dragProps = useDrag(dispatch, state);
 
+    const cardPath: Path[] = useMemo(
+        () => [{ type: 'card', idx: -1, card }],
+        [card],
+    );
+
     return (
         <div
             {...dragProps}
-            // style={{ cursor: 'text', padding: 16 }}
             onMouseLeave={(evt) => {
                 dispatch({ type: 'hover', path: [] });
             }}
@@ -102,10 +127,9 @@ export function CardRoot({
             }}
         >
             <ViewSNS
-                card={card}
                 reg={reg}
                 ns={state.cards[card].ns}
-                path={state.cards[card].path}
+                path={cardPath}
                 state={state}
                 dispatch={dispatch}
                 results={results}

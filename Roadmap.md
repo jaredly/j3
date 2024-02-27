@@ -2,7 +2,15 @@
 # Night thoughts
 
 - [x] cards
-- [ ] make it so you can make more cards, if you want to
+- [ ] make it so you can make more namespace dealios
+
+- [x] ahhhh waittttt
+  I forgot that I was adding two layers, not just one.
+  we have cards, and then we have namespaces
+  anddd I actually wanted all of this nonsense to be inside of a namespace.
+  not in all separate cards
+  this is madness.
+  - [x] ok, fixed that at least
 
 So
 I want a little tree

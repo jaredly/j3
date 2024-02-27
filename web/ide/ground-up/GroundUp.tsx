@@ -3,6 +3,7 @@ import { layout } from '../../../src/layout';
 import { emptyMap } from '../../../src/parse/parse';
 import {
     StateChange,
+    StateUpdate,
     applyUpdate,
     getKeyUpdate,
     isRootPath,
@@ -92,8 +93,21 @@ function loadState(state: NUIState = initialState()) {
                 ...cursor.start.slice(1),
             ];
         });
-        // throw new Error('');
     }
+
+    if (state.cards.length > 1) {
+        state.cards = [
+            {
+                path: [],
+                ns: {
+                    type: 'normal',
+                    top: -1,
+                    children: state.cards.map((card) => card.ns),
+                },
+            },
+        ];
+    }
+
     let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         ...state,
@@ -302,7 +316,9 @@ export const GroundUp = ({
     let all: { top: number; hidden?: boolean }[] = [];
     const add = (ns: SandboxNamespace) => {
         if (ns.type === 'normal') {
-            all.push({ top: ns.top, hidden: ns.hidden });
+            if (ns.top !== -1) {
+                all.push({ top: ns.top, hidden: ns.hidden });
+            }
             ns.children.forEach(add);
         }
     };
@@ -511,6 +527,29 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     return next;
 };
 
+const applyNsUpdate = (
+    state: NUIState,
+    nsUpdate: NonNullable<StateUpdate['nsUpdate']>,
+) => {
+    if (nsUpdate.type === 'add') {
+        const card = { ...state.cards[nsUpdate.path[0]] };
+        let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
+        for (let at of nsUpdate.path.slice(1, -1)) {
+            const child = ns.children[at];
+            if (!child || child.type !== 'normal') {
+                return;
+            }
+            ns = ns.children[at] = { ...child };
+            ns.children = ns.children.slice();
+        }
+        ns.children.splice(nsUpdate.path[nsUpdate.path.length - 1], 0, {
+            type: 'normal',
+            top: nsUpdate.top,
+            children: [],
+        });
+    }
+};
+
 export const reduceUpdate = (
     state: NUIState,
     update: StateChange | UIStateChange,
@@ -532,6 +571,9 @@ export const reduceUpdate = (
         case 'select':
         case 'update':
             state = { ...state, ...applyUpdate(state, 0, update) };
+            if (update.type === 'update' && update.nsUpdate) {
+                applyNsUpdate(state, update.nsUpdate);
+            }
             return state;
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
@@ -665,7 +707,7 @@ function bootstrapEval(
     env: { [key: string]: any },
     produce: { [key: number]: string },
 ) {
-    parsed.forEach((stmt) => {
+    parsed.forEach((stmt, i) => {
         try {
             if (stmt.type === 'sexpr') {
                 try {
@@ -674,7 +716,7 @@ function bootstrapEval(
                     produce[(stmt as any).loc] +=
                         '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
                 } catch (err) {
-                    console.error(err);
+                    console.error(err, stmt, i);
                     produce[(stmt as any).loc] += (err as Error).message;
                 }
             }
@@ -690,7 +732,7 @@ function selfCompileAndEval(
     total: string,
     produce: { [key: number]: string },
 ) {
-    parsed.forEach((stmt) => {
+    parsed.forEach((stmt, i) => {
         try {
             const res = env['compile-st'](stmt);
             if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
@@ -724,7 +766,7 @@ function selfCompileAndEval(
                 try {
                     produce[(stmt as any).loc] += '\n' + valueToString(f(env));
                 } catch (err) {
-                    console.error(err);
+                    console.error(err, stmt, i);
                     produce[(stmt as any).loc] +=
                         `Error evaluating (self-compiled): ` +
                         (err as Error).message;

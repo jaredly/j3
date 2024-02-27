@@ -3,7 +3,21 @@ import { modChildren } from './modChildren';
 import { newBlank } from './newNodes';
 import { NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
-import { Node } from '../types/cst';
+
+const nsPath = (path: Path[]): number[] | void => {
+    if (path[0].type !== 'card') {
+        return;
+    }
+    const res = [path[0].card];
+    for (let i = 1; i < path.length; i++) {
+        const p = path[i];
+        if (p.type !== 'ns') {
+            return;
+        }
+        res.push(p.at);
+    }
+    return res;
+};
 
 export const newNodeAfter = (
     path: Path[],
@@ -14,6 +28,31 @@ export const newNodeAfter = (
 ): StateUpdate | void => {
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
+
+        if (parent.type === 'ns') {
+            const np = nsPath(path.slice(0, i));
+            if (!np) {
+                console.error('unable to parse an nspath');
+                return;
+            }
+            return {
+                type: 'update',
+                map: newThing.map,
+                selection: path.slice(0, i).concat([
+                    {
+                        type: 'ns',
+                        at: parent.at + 1,
+                        idx: parent.idx,
+                    },
+                    ...newThing.selection,
+                ]),
+                nsUpdate: {
+                    type: 'add',
+                    path: np,
+                    top: newThing.idx,
+                },
+            };
+        }
 
         if (parent.type !== 'child' && parent.type !== 'inside') {
             continue;
