@@ -15,6 +15,7 @@ import { Hover } from '../../custom/Hover';
 import { Root } from '../../custom/Root';
 import {
     Action,
+    Card,
     NUIState,
     SandboxNamespace,
     UpdatableAction,
@@ -68,9 +69,33 @@ const initialState = (): NUIState => {
 };
 
 function loadState(state: NUIState = initialState()) {
+    if (!state.cards) {
+        const node = state.map[state.root];
+        const tops = node.type === 'list' ? node.values : [-1];
+        state.cards = tops.map((top) => ({
+            path: [],
+            ns: {
+                type: 'normal',
+                top,
+                children: [],
+            },
+        }));
+        state.hover = [];
+        console.log(state.at);
+        state.at.forEach((cursor) => {
+            cursor.start = [
+                {
+                    idx: -1,
+                    type: 'card',
+                    card: (cursor.start[0] as { type: 'child'; at: number }).at,
+                },
+                ...cursor.start.slice(1),
+            ];
+        });
+        // throw new Error('');
+    }
     let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
-        // collapse: {},
         ...state,
         nidx: () => idx++,
     };
@@ -359,7 +384,7 @@ export const GroundUp = ({
     const selTop = start?.[1].idx;
 
     return (
-        <div>
+        <div style={{ padding: 16, cursor: 'text' }}>
             <HiddenInput
                 display={results.display}
                 state={state}
@@ -383,6 +408,7 @@ export const GroundUp = ({
             {state.cards.map((_, i) => (
                 <CardRoot
                     state={state}
+                    key={i}
                     dispatch={dispatch}
                     card={i}
                     results={results}
@@ -596,12 +622,12 @@ function bootstrapParse(
     },
 ) {
     return stmts
-        .filter((node) => node.type !== 'blank')
+        .filter((node) => node.type !== 'blank' && node.type !== 'comment')
         .map((node) => {
             const ctx = { errors: {}, display: results.display };
             const stmt = parseStmt(node, ctx);
             if (Object.keys(ctx.errors).length || !stmt) {
-                console.log('unable to parse a stmt', ctx.errors);
+                console.log('unable to parse a stmt', ctx.errors, node);
                 return;
             }
             (stmt as any).loc = node.loc;

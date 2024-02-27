@@ -1,6 +1,9 @@
 
 # Night thoughts
 
+- [x] cards
+- [ ] make it so you can make more cards, if you want to
+
 So
 I want a little tree
 with expressions as children of definitions

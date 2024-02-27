@@ -74,9 +74,9 @@ export function CardRoot({
     dispatch: React.Dispatch<Action>;
     results: Ctx['results'];
 }) {
-    useEffect(() => {
-        console.log('ROOT First render');
-    }, []);
+    // useEffect(() => {
+    //     console.log('ROOT First render');
+    // }, []);
     const selections = React.useMemo(
         () =>
             normalizeSelections(
@@ -90,7 +90,7 @@ export function CardRoot({
     return (
         <div
             {...dragProps}
-            style={{ cursor: 'text', padding: 16 }}
+            // style={{ cursor: 'text', padding: 16 }}
             onMouseLeave={(evt) => {
                 dispatch({ type: 'hover', path: [] });
             }}

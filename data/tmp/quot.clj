@@ -4,25 +4,25 @@
 
 (+ 1 2)
 
-"h\"llo"
+"he\"llo"
 
 "\""
 
-"""
-
-"\\""
+"\""
 
 "\\\""
 
-"\"
+"\\\""
+
+"\\"
 
 "\\\\"
 
 (replace-all "" "")
 
-(replace-all (replace-all "lol\nf\"lks" "\n" "\\n") "\"" "\\"")
+(replace-all (replace-all "lol\nfo\"lks" "\n" "\\n") "\"" "\\\"")
 
-(replace-all """ "\"" "\\"")
+(replace-all "\"" "\"" "\\\"")
 
 "\""
 
