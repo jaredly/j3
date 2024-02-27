@@ -117,6 +117,32 @@ export const newNodeBefore = (
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
 
+        if (parent.type === 'ns') {
+            const np = nsPath(path.slice(0, i + 1));
+            if (!np) {
+                console.error('unable to parse an nspath');
+                return;
+            }
+            return {
+                type: 'update',
+                map: newThing.map,
+                selection: path.slice(0, i).concat([
+                    {
+                        type: 'ns',
+                        at: parent.at + 1,
+                        idx: parent.idx,
+                    },
+                    ...newThing.selection,
+                ]),
+                nsUpdate: {
+                    type: 'add',
+                    path: np,
+                    top: newThing.idx,
+                    after: false,
+                },
+            };
+        }
+
         if (parent.type !== 'child') {
             continue;
         }

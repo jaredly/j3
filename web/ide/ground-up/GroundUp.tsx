@@ -430,16 +430,25 @@ export const GroundUp = ({
                     results={results}
                 />
             ))}
-            <button
-                onClick={() => setDebug(!debug)}
-                style={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                }}
-            >
-                {debug ? 'Debug on' : 'Debug off'}
-            </button>
+            <div style={{ position: 'absolute', top: 4, right: 4 }}>
+                <button onClick={() => setDebug(!debug)}>
+                    {debug ? 'Debug on' : 'Debug off'}
+                </button>
+                {debug ? (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            backgroundColor: 'black',
+                            border: '1px solid #aaa',
+                            top: '100%',
+                            marginTop: 4,
+                            right: 0,
+                        }}
+                    >
+                        {JSON.stringify(state.at)}
+                    </div>
+                ) : null}
+            </div>
             <Hover
                 state={state}
                 dispatch={dispatch}
