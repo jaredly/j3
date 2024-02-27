@@ -36,6 +36,7 @@ export type StateUpdate = {
         | {
               type: 'add';
               path: number[]; // card, then ns ats
+              after: boolean;
               top: number;
           }
         | { type: 'rm'; path: number[] };

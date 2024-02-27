@@ -6,12 +6,14 @@ import { Path } from './path';
 
 const nsPath = (path: Path[]): number[] | void => {
     if (path[0].type !== 'card') {
+        console.log('first not a card', path);
         return;
     }
     const res = [path[0].card];
     for (let i = 1; i < path.length; i++) {
         const p = path[i];
         if (p.type !== 'ns') {
+            console.log(`not an ns`, p);
             return;
         }
         res.push(p.at);
@@ -30,7 +32,7 @@ export const newNodeAfter = (
         const parent = path[i];
 
         if (parent.type === 'ns') {
-            const np = nsPath(path.slice(0, i));
+            const np = nsPath(path.slice(0, i + 1));
             if (!np) {
                 console.error('unable to parse an nspath');
                 return;
@@ -50,6 +52,7 @@ export const newNodeAfter = (
                     type: 'add',
                     path: np,
                     top: newThing.idx,
+                    after: true,
                 },
             };
         }

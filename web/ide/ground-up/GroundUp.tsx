@@ -537,16 +537,23 @@ const applyNsUpdate = (
         for (let at of nsUpdate.path.slice(1, -1)) {
             const child = ns.children[at];
             if (!child || child.type !== 'normal') {
+                console.log('bad child', at, ns, card);
                 return;
             }
             ns = ns.children[at] = { ...child };
             ns.children = ns.children.slice();
         }
-        ns.children.splice(nsUpdate.path[nsUpdate.path.length - 1], 0, {
-            type: 'normal',
-            top: nsUpdate.top,
-            children: [],
-        });
+        ns.children.splice(
+            nsUpdate.path[nsUpdate.path.length - 1] + (nsUpdate.after ? 1 : 0),
+            0,
+            {
+                type: 'normal',
+                top: nsUpdate.top,
+                children: [],
+            },
+        );
+        state.cards = state.cards.slice();
+        state.cards[nsUpdate.path[0]] = card;
     }
 };
 
@@ -570,10 +577,12 @@ export const reduceUpdate = (
             return { ...state, menu: update.menu };
         case 'select':
         case 'update':
+            console.log('prev', state);
             state = { ...state, ...applyUpdate(state, 0, update) };
             if (update.type === 'update' && update.nsUpdate) {
                 applyNsUpdate(state, update.nsUpdate);
             }
+            console.log('updated', state);
             return state;
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
