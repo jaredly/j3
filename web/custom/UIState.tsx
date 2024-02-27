@@ -124,7 +124,16 @@ export type Card = {
     // to load up just the children of a namespace.
     // not the root of the namespace.
     // this is immediately relevant for ... the root namespace.
-    ns: Extract<SandboxNamespace, { type: 'normal' }>;
+    ns: RealizedNamespace;
+};
+
+export type RealizedNamespace = {
+    type: 'normal';
+    hash?: string | null; // if hash, then this corresponds to something existing in the library.
+    // the idx into the Map
+    top: number;
+    hidden?: boolean;
+    children: SandboxNamespace[];
 };
 
 export type SandboxNamespace =
@@ -134,15 +143,7 @@ export type SandboxNamespace =
           // just holding a place
           // don't need to know the children, b/c it doesn't really exist.
       }
-    | {
-          type: 'normal';
-          hash?: string | null; // if hash, then this corresponds to something existing in the library.
-          // the idx into the Map
-          top: number;
-          hidden?: boolean;
-
-          children: SandboxNamespace[];
-      };
+    | RealizedNamespace;
 
 export type UIState = { ctx: Ctx } & NUIState;
 

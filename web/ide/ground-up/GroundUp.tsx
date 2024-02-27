@@ -18,6 +18,7 @@ import {
     Action,
     Card,
     NUIState,
+    RealizedNamespace,
     SandboxNamespace,
     UpdatableAction,
 } from '../../custom/UIState';
@@ -539,7 +540,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
 const modifyNs = (
     card: Card,
     path: number[],
-    mod: (ns: Extract<SandboxNamespace, { type: 'normal' }>) => void,
+    mod: (ns: RealizedNamespace) => void,
 ): Card | void => {
     card = { ...card };
     let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });

@@ -12,7 +12,13 @@ import { fromMCST } from '../../src/types/mcst';
 import { Path } from '../../src/state/path';
 import { Render } from './Render';
 import { closestSelection } from './verticalMove';
-import { UIState, Action, NUIState, SandboxNamespace } from './UIState';
+import {
+    UIState,
+    Action,
+    NUIState,
+    SandboxNamespace,
+    RealizedNamespace,
+} from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
@@ -20,6 +26,28 @@ import { getType } from '../../src/get-type/get-types-new';
 import { Ctx } from '../../src/to-ast/library';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
 import { Reg } from './types';
+
+const Whatsit = () => {
+    const [hover, setHover] = useState(false);
+    return (
+        <div
+            style={{
+                cursor: 'pointer',
+                marginRight: 12,
+                color: hover ? 'white' : '#444',
+            }}
+            data-handle="true"
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            onMouseDownCapture={(evt) => {
+                evt.stopPropagation();
+                evt.preventDefault();
+            }}
+        >
+            {/* [{hover ? '-' : ' '}] */}[ ]
+        </div>
+    );
+};
 
 export function ViewSNS({
     ns,
@@ -35,7 +63,7 @@ export function ViewSNS({
     state: NUIState;
     reg: Reg;
     results: Ctx['results'];
-    ns: Extract<SandboxNamespace, { type: 'normal' }>;
+    ns: RealizedNamespace;
     selections: Cursor[];
 }) {
     // const cardPath: Path[] = useMemo(
@@ -43,21 +71,30 @@ export function ViewSNS({
     //     [card],
     // );
     return (
-        <div style={{ marginBottom: 8, display: 'flex' }}>
-            <div>
+        <div
+            style={{
+                marginBottom: 8,
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
                 {ns.top !== -1 ? (
-                    <Render
-                        debug={false}
-                        idx={ns.top}
-                        map={state.map}
-                        reg={reg}
-                        display={results.display ?? empty}
-                        hashNames={results.hashNames ?? empty}
-                        errors={results.errors ?? empty}
-                        dispatch={dispatch}
-                        selection={selections}
-                        path={path}
-                    />
+                    <>
+                        <Whatsit />
+                        <Render
+                            debug={false}
+                            idx={ns.top}
+                            map={state.map}
+                            reg={reg}
+                            display={results.display ?? empty}
+                            hashNames={results.hashNames ?? empty}
+                            errors={results.errors ?? empty}
+                            dispatch={dispatch}
+                            selection={selections}
+                            path={path}
+                        />
+                    </>
                 ) : null}
             </div>
             <div>
@@ -95,9 +132,6 @@ export function CardRoot({
     dispatch: React.Dispatch<Action>;
     results: Ctx['results'];
 }) {
-    // useEffect(() => {
-    //     console.log('ROOT First render');
-    // }, []);
     const selections = React.useMemo(
         () =>
             normalizeSelections(
@@ -146,26 +180,26 @@ export function CardRoot({
 const empty = {};
 
 // hmm don't actually need this yet
-export const sameCardAndNs = (p1: Path[], p2: Path[]) => {
-    if (
-        p1[0].type !== 'card' ||
-        p2[0].type !== 'card' ||
-        p1[0].card !== p2[0].card
-    ) {
-        return false;
-    }
-    for (let i = 1; i < p1.length && i < p2.length; i++) {
-        const a = p1[i];
-        const b = p2[i];
-        if (a.type === 'ns' && b.type === 'ns') {
-            if (a.at !== b.at) return false;
-            continue;
-        }
-        if (a.type === 'ns' || b.type === 'ns') return false;
-        break;
-    }
-    return true;
-};
+// export const sameCardAndNs = (p1: Path[], p2: Path[]) => {
+//     if (
+//         p1[0].type !== 'card' ||
+//         p2[0].type !== 'card' ||
+//         p1[0].card !== p2[0].card
+//     ) {
+//         return false;
+//     }
+//     for (let i = 1; i < p1.length && i < p2.length; i++) {
+//         const a = p1[i];
+//         const b = p2[i];
+//         if (a.type === 'ns' && b.type === 'ns') {
+//             if (a.at !== b.at) return false;
+//             continue;
+//         }
+//         if (a.type === 'ns' || b.type === 'ns') return false;
+//         break;
+//     }
+//     return true;
+// };
 
 function selectionAction(
     evt: React.MouseEvent<HTMLDivElement, MouseEvent>,
@@ -249,5 +283,12 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
             document.removeEventListener('mouseup', up, { capture: true });
         };
     }, [drag]);
-    return { onMouseDownCapture: () => setDrag(true) };
+    return {
+        onMouseDownCapture: (evt: React.MouseEvent) => {
+            if ((evt.target as HTMLElement).getAttribute('data-handle')) {
+                return;
+            }
+            setDrag(true);
+        },
+    };
 }
