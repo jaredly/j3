@@ -310,7 +310,7 @@ export const getKeyUpdate = (
                 selection: next,
             };
         }
-        const rrr = goRight(fullPath, idx, map);
+        const rrr = goRight(fullPath, idx, map, cards);
         if (rrr && mods?.shift) {
             return {
                 type: 'select',
@@ -324,7 +324,7 @@ export const getKeyUpdate = (
     if (key === 'Tab') {
         return mods?.shift
             ? goLeft(fullPath, map, cards)
-            : goRight(fullPath, idx, map);
+            : goRight(fullPath, idx, map, cards);
         // if (rrr && mods?.shift) {
         //     return {
         //         type: 'select',

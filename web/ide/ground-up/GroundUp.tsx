@@ -606,12 +606,10 @@ export const reduceUpdate = (
             return { ...state, menu: update.menu };
         case 'select':
         case 'update':
-            console.log('prev', state);
             state = { ...state, ...applyUpdate(state, 0, update) };
             if (update.type === 'update' && update.nsUpdate) {
                 applyNsUpdate(state, update.nsUpdate);
             }
-            console.log('updated', state);
             return state;
         case 'namespace-rename':
             console.warn('ignoring namespace rename');

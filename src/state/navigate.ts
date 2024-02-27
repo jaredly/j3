@@ -54,7 +54,6 @@ export const goLeft = (
     const last = path[path.length - 1];
 
     if (last.type === 'ns') {
-        // HERE we traverse the card/namespace dealio
         const nsp = nsPath(path);
         if (!nsp) return;
         let ns = cards[nsp[0]].ns;
@@ -107,9 +106,42 @@ export const goRight = (
     path: Path[],
     idx: number,
     map: Map,
+    cards: Card[],
 ): StateSelect | void => {
     if (!path.length) return;
     const last = path[path.length - 1];
+
+    if (last.type === 'ns') {
+        const nsp = nsPath(path);
+        if (!nsp) return;
+        let ns = cards[nsp[0]].ns;
+        for (let at of nsp.slice(1, -1)) {
+            const child = ns.children[at];
+            if (!child || child.type !== 'normal') {
+                return;
+            }
+            ns = child;
+        }
+        const last = nsp[nsp.length - 1];
+        if (last === ns.children.length - 1) return;
+        const nns = ns.children[last + 1];
+        if (nns.type !== 'normal') {
+            return;
+        }
+        const start = selectStart(
+            nns.top,
+            path.slice(0, -1).concat([
+                {
+                    type: 'ns',
+                    idx: -1,
+                    at: last + 1,
+                },
+            ]),
+            map,
+        );
+        if (!start) return;
+        return { type: 'select', selection: start };
+    }
 
     const pnodes = getNodes(map[last.idx], map).reverse();
     let prev: Path[] | null = null;
@@ -122,13 +154,13 @@ export const goRight = (
                       type: 'select',
                       selection: path.slice(0, -1).concat(prev),
                   }
-                : goRight(path.slice(0, -1), last.idx, map);
+                : goRight(path.slice(0, -1), last.idx, map, cards);
         }
         prev = ps;
     }
 
     // throw new Error(`current not vound in pnodes`);
-    return goRight(path.slice(0, -1), last.idx, map);
+    return goRight(path.slice(0, -1), last.idx, map, cards);
 };
 
 export const pathSelForNode = (
