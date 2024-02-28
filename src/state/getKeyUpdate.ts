@@ -395,10 +395,16 @@ export const getKeyUpdate = (
             (flast.type === 'start' ||
                 (flast.type === 'subtext' && flast.at === 0))
         ) {
-            return newNodeBefore(fullPath.slice(0, -1), map, nsMap, {
-                ...newBlank(nidx()),
-                selection: fullPath.slice(-1),
-            });
+            return newNodeBefore(
+                fullPath.slice(0, -1),
+                map,
+                nsMap,
+                {
+                    ...newBlank(nidx()),
+                    selection: fullPath.slice(-1),
+                },
+                nidx,
+            );
         }
         return newNodeAfter(fullPath, map, nsMap, newBlank(nidx()), nidx);
     }
@@ -610,7 +616,7 @@ export const insertText = (
     }
 
     if (flast.type === 'start') {
-        return newNodeBefore(fullPath, map, nsMap, newId(input, nidx()));
+        return newNodeBefore(fullPath, map, nsMap, newId(input, nidx()), nidx);
     }
 
     return newNodeAfter(fullPath, map, nsMap, newId(input, nidx()), nidx);

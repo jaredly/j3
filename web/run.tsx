@@ -54,14 +54,14 @@ class ErrorBoundary extends React.Component<
 initialData(location.hash ? location.hash.slice(1) : null).then(
     (initial) =>
         root.render(
-            <React.StrictMode>
-                <ErrorBoundary>
-                    {/* <IDE initial={initial} /> */}
-                    <Outside />
-                    {/* <Test env={initial.env} /> */}
-                    {/* <Visualize env={initial.env} /> */}
-                </ErrorBoundary>
-            </React.StrictMode>,
+            // <React.StrictMode>
+            <ErrorBoundary>
+                {/* <IDE initial={initial} /> */}
+                <Outside />
+                {/* <Test env={initial.env} /> */}
+                {/* <Visualize env={initial.env} /> */}
+            </ErrorBoundary>,
+            // </React.StrictMode>,
         ),
     (err) => {
         root.render(

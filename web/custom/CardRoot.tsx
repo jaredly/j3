@@ -173,7 +173,7 @@ export function ViewSNS({
                                 path={path.concat({
                                     type: 'ns' as const,
                                     at: i,
-                                    idx: ns.top,
+                                    idx: ns.id,
                                 })}
                                 state={state}
                                 dispatch={dispatch}
@@ -351,7 +351,7 @@ export function CardRoot({
                     }}
                 ></div>
             ) : null}
-            <pre>{JSON.stringify(state.cards, null, 2)}</pre>
+            <pre>{JSON.stringify(state.nsMap, null, 2)}</pre>
         </div>
     );
 }

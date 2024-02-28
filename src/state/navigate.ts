@@ -57,7 +57,7 @@ export const goLeft = (
         const ns = nsMap[last.idx] as RealizedNamespace;
         if (last.at === 0) return goLeft(path.slice(0, -1), map, nsMap, cards);
         const end = selectEnd(
-            ns.children[last.at - 1],
+            (nsMap[ns.children[last.at - 1]] as RealizedNamespace).top,
             path.slice(0, -1).concat([{ ...last, at: last.at - 1 }]),
             map,
         );
@@ -95,9 +95,9 @@ export const goRight = (
     if (last.type === 'ns') {
         const ns = nsMap[last.idx] as RealizedNamespace;
         if (last.at === ns.children.length - 1)
-            return goLeft(path.slice(0, -1), map, nsMap, cards);
-        const end = selectEnd(
-            ns.children[last.at - 1],
+            return goRight(path.slice(0, -1), idx, map, nsMap, cards);
+        const end = selectStart(
+            (nsMap[ns.children[last.at + 1]] as RealizedNamespace).top,
             path.slice(0, -1).concat([{ ...last, at: last.at + 1 }]),
             map,
         );

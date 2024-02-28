@@ -5,23 +5,6 @@ import { NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
 
-// export const nsPath = (path: Path[]): number[] | void => {
-//     if (path[0].type !== 'card') {
-//         console.log('first not a card', path);
-//         return;
-//     }
-//     const res = [path[0].card];
-//     for (let i = 1; i < path.length; i++) {
-//         const p = path[i];
-//         if (p.type !== 'ns') {
-//             console.log(`not an ns`, p);
-//             return;
-//         }
-//         res.push(p.at);
-//     }
-//     return res;
-// };
-
 export const newNodeAfter = (
     path: Path[],
     map: Map,
@@ -36,7 +19,8 @@ export const newNodeAfter = (
         if (parent.type === 'ns') {
             const ns = nsMap[parent.idx] as RealizedNamespace;
             const children = ns.children.slice();
-            children.splice(parent.at + 1, 0, newThing.idx);
+            const nid = nidx();
+            children.splice(parent.at + 1, 0, nid);
             return {
                 type: 'update',
                 map: newThing.map,
@@ -46,38 +30,16 @@ export const newNodeAfter = (
                         { ...parent, at: parent.at + 1 },
                         ...newThing.selection,
                     ]),
-                nsMap: { [parent.idx]: { ...ns, children } },
+                nsMap: {
+                    [parent.idx]: { ...ns, children },
+                    [nid]: {
+                        type: 'normal',
+                        top: newThing.idx,
+                        children: [],
+                        id: nid,
+                    },
+                },
             };
-
-            // const np = nsPath(path.slice(0, i + 1));
-            // if (!np) {
-            //     console.error('unable to parse an nspath');
-            //     return;
-            // }
-            // return {
-            //     type: 'update',
-            //     map: newThing.map,
-            //     selection: path.slice(0, i).concat([
-            //         {
-            //             type: 'ns',
-            //             at: parent.at + 1,
-            //             idx: parent.idx,
-            //         },
-            //         ...newThing.selection,
-            //     ]),
-            //     // nsUpdate: [
-            //     //     {
-            //     //         type: 'add',
-            //     //         path: np,
-            //     //         ns: {
-            //     //             type: 'normal',
-            //     //             top: newThing.idx,
-            //     //             children: [],
-            //     //         },
-            //     //         after: true,
-            //     //     },
-            //     // ],
-            // };
         }
 
         if (parent.type !== 'child' && parent.type !== 'inside') {
@@ -137,6 +99,7 @@ export const newNodeBefore = (
     map: Map,
     nsMap: NUIState['nsMap'],
     newThing: NewThing,
+    nidx: () => number,
 ): StateUpdate | void => {
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
@@ -144,7 +107,8 @@ export const newNodeBefore = (
         if (parent.type === 'ns') {
             const ns = nsMap[parent.idx] as RealizedNamespace;
             const children = ns.children.slice();
-            children.splice(parent.at, 0, newThing.idx);
+            const nid = nidx();
+            children.splice(parent.at, 0, nid);
             return {
                 type: 'update',
                 map: newThing.map,
@@ -154,7 +118,15 @@ export const newNodeBefore = (
                         { ...parent, at: parent.at },
                         ...newThing.selection,
                     ]),
-                nsMap: { [parent.idx]: { ...ns, children } },
+                nsMap: {
+                    [parent.idx]: { ...ns, children },
+                    [nid]: {
+                        type: 'normal',
+                        top: newThing.idx,
+                        id: nid,
+                        children: [],
+                    },
+                },
             };
         }
 

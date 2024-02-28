@@ -15,7 +15,7 @@ import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../to-ast/Ctx';
 import { modChildren } from './modChildren';
-import { Card } from '../../web/custom/UIState';
+import { Card, RealizedNamespace } from '../../web/custom/UIState';
 
 export function handleBackspace(
     map: Map,
@@ -123,11 +123,18 @@ export function handleBackspace(
     if (ppath.type === 'ns' && atStart) {
         const left = goLeft(selection.start, map, nsMap, cards);
         if (!left) return;
+        const ns = nsMap[ppath.idx] as RealizedNamespace;
+        const children = ns.children.slice();
+        const cid = children.splice(ppath.at, 1)[0];
+        // STOPSHIP cleanup the thing that was removed
         return {
             type: 'update',
             map: { [flast.idx]: null },
             selection: left.selection,
-            nsMap: { [ppath.idx]: null },
+            nsMap: {
+                [cid]: null,
+                [ns.id]: { ...ns, children },
+            },
         };
     }
 
