@@ -95,6 +95,7 @@ export function ViewSNS({
                 marginBottom: 8,
                 display: 'flex',
                 flexDirection: 'column',
+                padding: 4,
             }}
         >
             <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -148,7 +149,7 @@ export function ViewSNS({
                     </>
                 ) : null}
             </div>
-            <div>
+            <div style={{ marginLeft: 30 }}>
                 {ns.children.map((child, i) =>
                     child.type === 'normal' ? (
                         <ViewSNS
@@ -228,8 +229,8 @@ export function CardRoot({
             const drag = latestDrag.current!;
             if (
                 drag.moved ||
-                evt.clientX - drag.orig.x > margin ||
-                evt.clientY - drag.orig.y > margin
+                Math.abs(evt.clientX - drag.orig.x) > margin ||
+                Math.abs(evt.clientY - drag.orig.y) > margin
             ) {
                 setDrag({ ...drag, moved: true, drop: findDrop(nsReg, evt) });
             }
@@ -237,6 +238,21 @@ export function CardRoot({
         const up = (evt: MouseEvent) => {
             const drag = latestDrag.current;
             if (drag?.drop) {
+                const lesser =
+                    drag.path.length <= drag.drop.path.length &&
+                    drag.path.every((n, i) =>
+                        i === drag.path.length - 1
+                            ? n < drag.drop!.path[i]
+                            : n == drag.drop!.path[i],
+                    );
+                let target = drag.drop.path;
+                if (lesser) {
+                    target = target.slice();
+                    target[drag.path.length - 1] -= 1;
+                }
+                if (drag.drop.position === 'inside') {
+                    target.push(0);
+                }
                 dispatch({
                     type: 'ns',
                     nsUpdate: [
@@ -244,12 +260,10 @@ export function CardRoot({
                             type: 'rm',
                             path: drag.path,
                         },
+                        // ok if we're dropping in the same place, we need to compensate
                         {
                             type: 'add',
-                            path:
-                                drag.drop.position === 'inside'
-                                    ? drag.drop.path.concat([0])
-                                    : drag.drop.path,
+                            path: target,
                             after: drag.drop.position === 'after',
                             ns: drag.ns,
                         },
@@ -318,6 +332,7 @@ export function CardRoot({
                     }}
                 ></div>
             ) : null}
+            <pre>{JSON.stringify(state.cards, null, 2)}</pre>
         </div>
     );
 }

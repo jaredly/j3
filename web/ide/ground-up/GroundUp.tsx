@@ -540,7 +540,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
         return state;
     }
     const next = reduceUpdate(state, update);
-    const item = calcHistoryItem(state, next, '');
+    const item = calcHistoryItem(state, next, '', action);
     if (item) {
         next.history = state.history.concat([item]);
     }
@@ -554,7 +554,7 @@ const modifyNs = (
 ): Card | void => {
     card = { ...card };
     let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
-    for (let at of path.slice(1, -1)) {
+    for (let at of path) {
         const child = ns.children[at];
         if (!child || child.type !== 'normal') {
             console.log('bad child', at, ns, card);
@@ -596,7 +596,10 @@ const applyNsUpdate = (
                 );
             },
         );
-        if (!card) return;
+        if (!card) {
+            console.log('modfy ns failed');
+            return;
+        }
         state.cards = state.cards.slice();
         state.cards[nsUpdate.path[0]] = card;
     }

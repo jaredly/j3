@@ -274,6 +274,7 @@ export const reduce = (
                 state,
                 next,
                 next.ctx.global.library.root,
+                action,
             );
             if (item) {
                 next.history = state.history.concat([item]);
@@ -454,11 +455,74 @@ export const nsDiffs = (
     // return change;
 };
 
+export const getNs = (path: number[], state: NUIState) => {
+    let ns = state.cards[path[0]].ns;
+    for (let i = 1; i < path.length; i++) {
+        const child = ns.children[path[i]];
+        if (child.type !== 'normal') {
+            return;
+        }
+        ns = child;
+    }
+    return ns;
+};
+
+export const nsUpdateToCardChange = (
+    nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
+    prev: NUIState,
+    next: NUIState,
+): HistoryItem['cardChange'][0] | undefined => {
+    switch (nsUpdate.type) {
+        case 'add': {
+            let path = nsUpdate.path;
+            if (nsUpdate.after) {
+                path = path.slice();
+                path[path.length - 1] += 1;
+            }
+            return {
+                type: 'ns',
+                path,
+                ns: nsUpdate.ns,
+            };
+        }
+        case 'replace': {
+            const pns = getNs(nsUpdate.path, prev);
+            const ns = getNs(nsUpdate.path, next);
+            if (!pns || !ns) return;
+            return {
+                type: 'ns',
+                path: nsUpdate.path,
+                ns,
+                prev: pns,
+            };
+        }
+        case 'rm': {
+            const pns = getNs(nsUpdate.path, prev);
+            return {
+                type: 'ns',
+                path: nsUpdate.path,
+                prev: pns,
+            };
+        }
+    }
+};
+
+export const filterNulls = <T,>(
+    value: T,
+): value is Exclude<T, null | undefined> => value != null;
+
 export const calcCardChange = (
     state: NUIState,
     next: NUIState,
+    action: Action,
 ): HistoryItem['cardChange'] => {
     const change: HistoryItem['cardChange'] = [];
+
+    if (action.type === 'ns') {
+        return action.nsUpdate
+            .map((update) => nsUpdateToCardChange(update, state, next))
+            .filter(filterNulls);
+    }
 
     if (state.cards.length !== next.cards.length) {
         if (state.cards.length < next.cards.length) {
@@ -506,13 +570,18 @@ export const calcHistoryItem = (
     state: NUIState,
     next: NUIState,
     libraryRoot: string,
+    action: Action,
 ): HistoryItem | null => {
     if (next.map === state.map) {
         return null;
     }
     const update: UpdateMap = {};
     const prev: UpdateMap = {};
-    const cardChange: HistoryItem['cardChange'] = calcCardChange(state, next);
+    const cardChange: HistoryItem['cardChange'] = calcCardChange(
+        state,
+        next,
+        action,
+    );
 
     let changed = cardChange.length > 0;
     Object.keys(next.map).forEach((k) => {

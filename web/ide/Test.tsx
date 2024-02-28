@@ -195,7 +195,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
         return state;
     }
     const next = reduceUpdate(state, update);
-    const item = calcHistoryItem(state, next, '');
+    const item = calcHistoryItem(state, next, '', action);
     if (item) {
         next.history = state.history.concat([item]);
     }
