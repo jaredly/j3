@@ -23,15 +23,13 @@ const Whatsit = ({
     path,
     dispatch,
     startDrag,
-}: // nsReg
-{
+}: {
     ns: RealizedNamespace;
     path: number[];
     dispatch: React.Dispatch<Action>;
     startDrag: StartDrag;
 }) => {
     const [hover, setHover] = useState(false);
-    // const [drag,setDrag] = useState(null as null | {orig: {x: number, y: number}, moved: boolean})
 
     return (
         <div
@@ -275,10 +273,6 @@ export function CardRoot({
                 produce={produce}
                 selections={selections}
             />
-            {/* {tops.map((top, i) => {
-                const got = results?.toplevel[top];
-                return ;
-            })} */}
             {drag?.drop && drag.drop.path !== drag.path ? (
                 <div
                     style={{
@@ -288,6 +282,7 @@ export function CardRoot({
                         width: drag.drop.w,
                         height: drag.drop.h,
                         backgroundColor: 'red',
+                        borderRadius: 3,
                         opacity: 0.3,
                     }}
                 ></div>
@@ -425,11 +420,16 @@ type DragState = {
         w: number;
         h: number;
         path: number[];
+        position: 'before' | 'after' | 'inside';
     };
 };
 
 const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
     let closest = null as null | [number, DOMRect, number[]];
+    // let offset = 4;
+    let boffset = 7;
+    let aoffset = 1;
+    let insideOffset = 20;
     for (let v of Object.values(nsReg)) {
         if (!v) continue;
         const box = v.node.getBoundingClientRect();
@@ -445,12 +445,19 @@ const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
     }
     if (closest) {
         const [_, box, path] = closest;
+        const position =
+            evt.clientX > box.left + insideOffset
+                ? 'inside'
+                : evt.clientY < (box.bottom + box.top) / 2
+                ? 'before'
+                : 'after';
         return {
             path,
-            x: box.left,
-            y: box.top,
-            w: box.width,
-            h: box.height,
+            x: box.left + (position === 'inside' ? insideOffset : 0),
+            y: position === 'before' ? box.top - boffset : box.bottom + aoffset,
+            w: 200,
+            h: 10,
+            position,
         };
     }
     return null;
