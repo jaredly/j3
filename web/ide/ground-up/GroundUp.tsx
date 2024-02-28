@@ -75,11 +75,16 @@ const initialState = (): NUIState => {
 };
 
 function loadState(state: NUIState = initialState()) {
+    let idx =
+        Object.keys(state.map)
+            .concat(Object.keys(state.nsMap || {}))
+            .reduce((a, b) => Math.max(a, +b), 0) + 1;
+
     if (!state.nsMap) {
         state.nsMap = {};
         state.cards.forEach((card) => {
             const addNs = (ns: SandboxNamespace) => {
-                ns.id = state.nidx();
+                ns.id = idx++;
                 state.nsMap[ns.id] = ns;
                 if (ns.type === 'normal') {
                     ns.children = ns.children.map(addNs as any);
@@ -91,45 +96,7 @@ function loadState(state: NUIState = initialState()) {
             delete (card as any)['ns'];
         });
     }
-    // if (!state.cards) {
-    //     const node = state.map[state.root];
-    //     const tops = node.type === 'list' ? node.values : [-1];
-    //     state.cards = tops.map((top) => ({
-    //         path: [],
-    //         ns: {
-    //             type: 'normal',
-    //             top,
-    //             children: [],
-    //         },
-    //     }));
-    //     state.hover = [];
-    //     console.log(state.at);
-    //     state.at.forEach((cursor) => {
-    //         cursor.start = [
-    //             {
-    //                 idx: -1,
-    //                 type: 'card',
-    //                 card: (cursor.start[0] as { type: 'child'; at: number }).at,
-    //             },
-    //             ...cursor.start.slice(1),
-    //         ];
-    //     });
-    // }
 
-    // if (state.cards.length > 1) {
-    //     state.cards = [
-    //         {
-    //             path: [],
-    //             ns: {
-    //                 type: 'normal',
-    //                 top: -1,
-    //                 children: state.cards.map((card) => card.ns),
-    //             },
-    //         },
-    //     ];
-    // }
-
-    let idx = Object.keys(state.map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         ...state,
         nidx: () => idx++,

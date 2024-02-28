@@ -36,6 +36,7 @@ const Whatsit = ({
     const source = useMemo(() => {
         const last = path[path.length - 1];
         if (last.type !== 'ns') {
+            console.log(path);
             throw new Error('bad path');
         }
         return { idx: last.idx, at: last.at };
@@ -94,7 +95,7 @@ export function ViewSNS({
     const source = useMemo(() => {
         const last = path[path.length - 1];
         if (last.type !== 'ns') {
-            throw new Error('bad path');
+            return null;
         }
         return { idx: last.idx, at: last.at };
     }, [path]);
@@ -109,7 +110,7 @@ export function ViewSNS({
             }}
         >
             <div style={{ display: 'flex', flexDirection: 'row' }}>
-                {ns.top !== -1 ? (
+                {ns.top !== -1 && source ? (
                     <>
                         <Whatsit
                             startDrag={startDrag}
