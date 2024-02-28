@@ -75,6 +75,22 @@ const initialState = (): NUIState => {
 };
 
 function loadState(state: NUIState = initialState()) {
+    if (!state.nsMap) {
+        state.nsMap = {};
+        state.cards.forEach((card) => {
+            const addNs = (ns: SandboxNamespace) => {
+                ns.id = state.nidx();
+                state.nsMap[ns.id] = ns;
+                if (ns.type === 'normal') {
+                    ns.children = ns.children.map(addNs as any);
+                }
+                return ns.id;
+            };
+
+            card.top = addNs((card as any).ns);
+            delete (card as any)['ns'];
+        });
+    }
     // if (!state.cards) {
     //     const node = state.map[state.root];
     //     const tops = node.type === 'list' ? node.values : [-1];
@@ -697,6 +713,7 @@ const actionToUpdate = (
             return getKeyUpdate(
                 action.key,
                 state.map,
+                state.nsMap,
                 state.cards,
                 state.at[0],
                 // TODO do I want some hashnames?

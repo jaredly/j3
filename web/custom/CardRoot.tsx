@@ -249,8 +249,8 @@ export function CardRoot({
         const up = (evt: MouseEvent) => {
             const drag = latestDrag.current;
             if (drag?.drop) {
-                let target = drag.drop.dest;
-                if (target === drag.source) return;
+                let target = drag.drop.path;
+                // if (target === drag.path) return;
                 // if (lesser) {
                 //     target = target.slice();
                 //     target[drag.path.length - 1] -= 1;
@@ -336,7 +336,7 @@ export function CardRoot({
                 produce={produce}
                 selections={selections}
             />
-            {drag?.drop && drag.drop.dest !== drag.source ? (
+            {drag?.drop ? (
                 <div
                     style={{
                         position: 'absolute',
@@ -484,8 +484,7 @@ type DragState = {
         y: number;
         w: number;
         h: number;
-        // path: number[];
-        dest: { idx: number; at: number };
+        path: Path[];
         position: 'before' | 'after' | 'inside';
     };
 };
@@ -518,7 +517,7 @@ const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
                 ? 'before'
                 : 'after';
         return {
-            // dest: {idx}
+            path,
             x: box.left + (position === 'inside' ? insideOffset : 0),
             y: position === 'before' ? box.top - boffset : box.bottom + aoffset,
             w: 200,

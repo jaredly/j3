@@ -1,5 +1,5 @@
 import { UpdateMap } from './getKeyUpdate';
-import { fromMCST, Map } from '../types/mcst';
+import { fromMCST, Map, NsMap } from '../types/mcst';
 import { goLeft, selectStart } from './navigate';
 import { StateChange } from './getKeyUpdate';
 import { Node, NodeExtra, stringText } from '../types/cst';
@@ -14,6 +14,7 @@ export const removeNodes = (
     end: Path[],
     nodes: Node[],
     map: Map,
+    nsMap: NsMap,
     cards: Card[],
     hashNames: { [idx: number]: string },
 ): StateChange | void => {
@@ -163,7 +164,7 @@ export const removeNodes = (
     //     return;
     // }
     while (!validatePath(updated, left!, hashNames)) {
-        left = goLeft(left!, map, cards)?.selection!;
+        left = goLeft(left!, map, nsMap, cards)?.selection!;
         if (!left) {
             console.log('cannot left');
             return;

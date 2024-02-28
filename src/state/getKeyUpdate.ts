@@ -6,7 +6,7 @@ import {
 import { idText, pathPos, splitGraphemes } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
-import { Map, MNode } from '../types/mcst';
+import { Map, MNode, NsMap } from '../types/mcst';
 import { ClipboardItem } from './clipboard';
 import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
@@ -217,6 +217,7 @@ export type Mods = {
 export const getKeyUpdate = (
     key: string,
     map: Map,
+    nsMap: NsMap,
     cards: Card[],
     selection: { start: Path[]; end?: Path[] },
     hashNames: { [idx: number]: string },
@@ -245,7 +246,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, selection, hashNames, cards);
+        return handleBackspace(map, nsMap, selection, hashNames, cards);
     }
 
     const textRaw = hashNames[node.loc] ?? idText(node, map) ?? '';
@@ -278,7 +279,7 @@ export const getKeyUpdate = (
                 };
             }
         }
-        const lll = goLeft(fullPath, map, cards);
+        const lll = goLeft(fullPath, map, nsMap, cards);
         if (lll && mods?.shift) {
             return {
                 type: 'select',
@@ -308,7 +309,7 @@ export const getKeyUpdate = (
                 selection: next,
             };
         }
-        const rrr = goRight(fullPath, idx, map, cards);
+        const rrr = goRight(fullPath, idx, map, nsMap, cards);
         if (rrr && mods?.shift) {
             return {
                 type: 'select',
@@ -321,8 +322,8 @@ export const getKeyUpdate = (
 
     if (key === 'Tab') {
         return mods?.shift
-            ? goLeft(fullPath, map, cards)
-            : goRight(fullPath, idx, map, cards);
+            ? goLeft(fullPath, map, nsMap, cards)
+            : goRight(fullPath, idx, map, nsMap, cards);
         // if (rrr && mods?.shift) {
         //     return {
         //         type: 'select',
@@ -359,7 +360,7 @@ export const getKeyUpdate = (
 
     // Start a list-like!
     if ('([{'.includes(key)) {
-        return openListLike({ key, idx, node, fullPath, map, nidx });
+        return openListLike({ key, idx, node, fullPath, map, nsMap, nidx });
     }
 
     const ppath = fullPath[fullPath.length - 2];
@@ -394,12 +395,12 @@ export const getKeyUpdate = (
             (flast.type === 'start' ||
                 (flast.type === 'subtext' && flast.at === 0))
         ) {
-            return newNodeBefore(fullPath.slice(0, -1), map, {
+            return newNodeBefore(fullPath.slice(0, -1), map, nsMap, {
                 ...newBlank(nidx()),
                 selection: fullPath.slice(-1),
             });
         }
-        return newNodeAfter(fullPath, map, newBlank(nidx()), nidx);
+        return newNodeAfter(fullPath, map, nsMap, newBlank(nidx()), nidx);
     }
 
     if (
@@ -409,7 +410,7 @@ export const getKeyUpdate = (
             (node.type === 'list' && flast.type === 'end'))
     ) {
         const nat = newTapply(idx, '', nidx(), nidx());
-        const up = replacePathWith(fullPath.slice(0, -1), map, nat);
+        const up = replacePathWith(fullPath.slice(0, -1), map, nsMap, nat);
         if (up) {
             up.autoComplete = true;
         }
@@ -447,7 +448,7 @@ export const getKeyUpdate = (
         if (fullPath.some((s) => s.type === 'annot-annot')) {
             return;
         }
-        return goToTannot(fullPath, idx, map, nidx);
+        return goToTannot(fullPath, idx, map, nsMap, nidx);
     }
 
     if (key === '"') {
@@ -455,7 +456,13 @@ export const getKeyUpdate = (
         if (node.type === 'blank') {
             return replaceWith(fullPath.slice(0, -1), newString(idx, nidx()));
         }
-        return newNodeAfter(fullPath, map, newString(nidx(), nidx()), nidx);
+        return newNodeAfter(
+            fullPath,
+            map,
+            nsMap,
+            newString(nidx(), nidx()),
+            nidx,
+        );
     }
 
     if (key === ';' && node.type === 'blank') {
@@ -475,7 +482,7 @@ export const getKeyUpdate = (
     if (key === '.') {
         if (node.type === 'blank') {
             const nat = newRecordAccess(idx, '', nidx(), nidx());
-            return replacePathWith(fullPath.slice(0, -1), map, nat);
+            return replacePathWith(fullPath.slice(0, -1), map, nsMap, nat);
         }
         if (flast.type === 'inside') {
             const blank = newBlank(nidx());
@@ -505,7 +512,7 @@ export const getKeyUpdate = (
                     loc: node.loc,
                 };
             }
-            const up = replacePathWith(fullPath.slice(0, -1), map, nat);
+            const up = replacePathWith(fullPath.slice(0, -1), map, nsMap, nat);
             return up ? { ...up, autoComplete: true } : up;
         }
         if (node.type === 'accessText' && ppath.type === 'attribute') {
@@ -526,7 +533,7 @@ export const getKeyUpdate = (
                 nat.map[ppath.idx] = null;
                 // Delete the accessText
                 nat.map[idx] = null;
-                return replacePathWith(fullPath.slice(0, -2), map, nat);
+                return replacePathWith(fullPath.slice(0, -2), map, nsMap, nat);
             }
 
             const nat = newAccessText(text.slice(pos), nidx());
@@ -553,16 +560,17 @@ export const getKeyUpdate = (
         if (node.type !== 'identifier') {
             const at = newBlank(nidx());
             const one = newRecordAccess(at.idx, '', nidx(), nidx());
-            return newNodeAfter(fullPath, map, mergeNew(at, one), nidx);
+            return newNodeAfter(fullPath, map, nsMap, mergeNew(at, one), nidx);
         }
     }
 
-    return insertText(key, map, fullPath, hashNames, nidx);
+    return insertText(key, map, nsMap, fullPath, hashNames, nidx);
 };
 
 export const insertText = (
     inputRaw: string,
     map: Map,
+    nsMap: NsMap,
     fullPath: Path[],
     hashNames: { [idx: number]: string },
     nidx: () => number,
@@ -602,10 +610,10 @@ export const insertText = (
     }
 
     if (flast.type === 'start') {
-        return newNodeBefore(fullPath, map, newId(input, nidx()));
+        return newNodeBefore(fullPath, map, nsMap, newId(input, nidx()));
     }
 
-    return newNodeAfter(fullPath, map, newId(input, nidx()), nidx);
+    return newNodeAfter(fullPath, map, nsMap, newId(input, nidx()), nidx);
 };
 
 function addToListLike(
@@ -677,6 +685,7 @@ function goToTannot(
     path: Path[],
     idx: number,
     map: Map,
+    nsMap: NsMap,
     nidx: () => number,
 ): StateChange {
     if (path.length > 1 && path[path.length - 2].type === 'annot-target') {
@@ -698,6 +707,7 @@ function goToTannot(
     return replacePathWith(
         path.slice(0, -1),
         map,
+        nsMap,
         newAnnot(idx, nidx(), newBlank(nidx())),
     );
 }
@@ -708,6 +718,7 @@ export function openListLike({
     node,
     fullPath,
     map,
+    nsMap,
     nidx,
 }: {
     key: string;
@@ -715,6 +726,7 @@ export function openListLike({
     node: MNode;
     fullPath: Path[];
     map: Map;
+    nsMap: NsMap;
     nidx: () => number;
 }): StateUpdate | void {
     const type = ({ '(': 'list', '[': 'array', '{': 'record' } as const)[key]!;
@@ -757,12 +769,13 @@ export function openListLike({
             return replacePathWith(
                 subPath.slice(0, -1),
                 map,
+                nsMap,
                 newListLike(type, nidx(), nw),
             );
         }
     }
 
-    return newNodeAfter(fullPath, map, newListLike(type, nidx()), nidx);
+    return newNodeAfter(fullPath, map, nsMap, newListLike(type, nidx()), nidx);
 }
 
 export function replaceWith(path: Path[], newThing: NewThing): StateUpdate {

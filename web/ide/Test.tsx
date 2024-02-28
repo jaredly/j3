@@ -275,6 +275,7 @@ const actionToUpdate = (
             return getKeyUpdate(
                 action.key,
                 state.map,
+                state.nsMap,
                 state.cards,
                 state.at[0],
                 // TODO do I want some hashnames?

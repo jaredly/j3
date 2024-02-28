@@ -245,6 +245,7 @@ export const paste = (
                     return insertText(
                         item.text,
                         state.map,
+                        {},
                         path,
                         hashNames,
                         state.nidx,
@@ -293,6 +294,7 @@ export const paste = (
                 return newNodeAfter(
                     start,
                     state.map,
+                    {},
                     { map, idx: lidx, selection },
                     state.nidx,
                     idxes.slice(0, -1),
@@ -622,6 +624,7 @@ export function generateRawPasteUpdate(
         const update = getKeyUpdate(
             char,
             tmp.map,
+            {},
             [],
             tmp.at[0],
             tctx?.results.hashNames ?? {},

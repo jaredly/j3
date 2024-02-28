@@ -440,6 +440,7 @@ function doABunchOfKeys({
         const update = getKeyUpdate(
             key,
             state.map,
+            {},
             [],
             state.at[0],
             {},

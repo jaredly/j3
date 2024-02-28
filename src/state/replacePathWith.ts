@@ -10,7 +10,6 @@ import {
 } from '../types/mcst';
 import { NsUpdateMap, UpdateMap } from './getKeyUpdate';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
-import { nsPath } from './newNodeBefore';
 import { Path } from './path';
 
 export function replacePathWith(
@@ -45,16 +44,14 @@ export const replacePath = (
     const pnode = map[parent.idx];
     switch (parent.type) {
         case 'ns': {
-            const nsp = nsPath(path);
-            if (!nsp) return { update: {} };
-            const last = nsp[nsp.length - 1];
-            const sb = nsMap[last];
+            const last = path[path.length - 1];
+            const sb = nsMap[last.idx];
             if (sb.type === 'placeholder') {
                 throw new Error('sandbox placeholder');
             }
             return {
                 update: {},
-                nsMap: { [last]: { ...sb, top: newIdx } },
+                nsMap: { [last.idx]: { ...sb, top: newIdx } },
             };
         }
         case 'child': {

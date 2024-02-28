@@ -62,6 +62,7 @@ export const posToPath = (
         const update = getKeyUpdate(
             'ArrowRight',
             map,
+            {},
             [],
             { start: path },
             {},

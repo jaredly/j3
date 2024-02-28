@@ -68,7 +68,15 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            return removeNodes(start, end, item.nodes, map, cards, hashNames);
+            return removeNodes(
+                start,
+                end,
+                item.nodes,
+                map,
+                nsMap,
+                cards,
+                hashNames,
+            );
         }
     }
 
