@@ -149,7 +149,7 @@ export function ViewSNS({
                     </>
                 ) : null}
             </div>
-            <div style={{ marginLeft: 30 }}>
+            <div style={{ marginLeft: 30, marginTop: 8, marginBottom: -8 }}>
                 {ns.children.map((child, i) =>
                     child.type === 'normal' ? (
                         <ViewSNS
