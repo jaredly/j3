@@ -4,6 +4,7 @@ import { applyInferMod, infer } from '../../src/infer/infer';
 import { getAutoCompleteUpdate } from '../../src/parse/parse';
 import { paste } from '../../src/state/clipboard';
 import {
+    NsUpdateMap,
     State,
     StateChange,
     StateSelect,
@@ -55,7 +56,7 @@ const actionToUpdate = (
                 type: 'update',
                 map: {},
                 selection: action.selection ?? state.at[0].start,
-                nsUpdate: action.nsUpdate,
+                nsMap: action.nsMap,
             };
         }
         case 'copy':
@@ -215,19 +216,11 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
         map: undid.prev,
         at: undid.prevAt,
         prevAt: undid.at,
-        cardChange: undid.cardChange.map((change) =>
-            change.type === 'ns'
-                ? {
-                      ...change,
-                      ns: change.prev,
-                      prev: change.ns,
-                  }
-                : { ...change, prev: change.next, next: change.prev },
-        ),
+        nsMap: undid.nsPrev,
+        nsPrev: undid.nsMap,
         ts: Date.now() / 1000,
         libraryRoot: undid.libraryRoot,
     };
-    console.log(`UndoRedo`, nitem.map, nitem.cardChange);
     const smap = { ...state.map };
     Object.entries(nitem.map).forEach(([k, v]) => {
         if (v == null) {
@@ -236,11 +229,18 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
             smap[+k] = v;
         }
     });
-    const cards = applyCardChange(nitem.cardChange, state.cards);
+    const nsMap = { ...state.nsMap };
+    Object.entries(nitem.nsMap).forEach(([k, v]) => {
+        if (v == null) {
+            delete nsMap[+k];
+        } else {
+            nsMap[+k] = v;
+        }
+    });
 
     return {
         ...state,
-        cards,
+        nsMap,
         map: smap,
         at: nitem.at,
         history: state.history.concat([nitem]),
@@ -302,277 +302,277 @@ export const findAdded = <T,>(shorter: T[], longer: T[]) => {
     }
 };
 
-export const applyCardChange = (
-    changes: HistoryItem['cardChange'],
-    cards: Card[],
-) => {
-    if (!changes.length) return cards;
-    cards = cards.slice();
-    changes.forEach((change) => {
-        if (change.type === 'card') {
-            if (!change.next) {
-                cards.splice(change.idx, 1);
-            } else if (!change.prev) {
-                cards.splice(change.idx, 0, change.next);
-            } else {
-                cards[change.idx] = {
-                    ...cards[change.idx],
-                    path: change.next.path,
-                };
-            }
-            return;
-        }
-        const { path, ns: next, prev } = change;
-        const cidx = path[0];
-        cards[cidx] = { ...cards[cidx] };
-        let at = (cards[cidx].ns = { ...cards[cidx].ns });
-        at.children = at.children.slice();
-        for (let i = 1; i < path.length - 1; i++) {
-            const child = (at.children[i] = { ...at.children[i] });
-            if (child.type !== 'normal') {
-                throw new Error('invalid card ns change');
-            }
-            at = child;
-            at.children = at.children.slice();
-        }
+// export const applyCardChange = (
+//     changes: HistoryItem['cardChange'],
+//     cards: Card[],
+// ) => {
+//     if (!changes.length) return cards;
+//     cards = cards.slice();
+//     changes.forEach((change) => {
+//         if (change.type === 'card') {
+//             if (!change.next) {
+//                 cards.splice(change.idx, 1);
+//             } else if (!change.prev) {
+//                 cards.splice(change.idx, 0, change.next);
+//             } else {
+//                 cards[change.idx] = {
+//                     ...cards[change.idx],
+//                     path: change.next.path,
+//                 };
+//             }
+//             return;
+//         }
+//         const { path, ns: next, prev } = change;
+//         const cidx = path[0];
+//         cards[cidx] = { ...cards[cidx] };
+//         let at = (cards[cidx].ns = { ...cards[cidx].ns });
+//         at.children = at.children.slice();
+//         for (let i = 1; i < path.length - 1; i++) {
+//             const child = (at.children[i] = { ...at.children[i] });
+//             if (child.type !== 'normal') {
+//                 throw new Error('invalid card ns change');
+//             }
+//             at = child;
+//             at.children = at.children.slice();
+//         }
 
-        const last = path[path.length - 1];
-        if (next && prev) {
-            console.log(`replacing`, at, last);
-            const cur = at.children[last];
-            if (cur.type === 'normal' && next.type === 'normal') {
-                at.children[last] = {
-                    ...cur,
-                    top: next.top,
-                    hidden: next.hidden,
-                    collapsed: next.collapsed,
-                };
-            } else {
-                at.children[last] = next;
-            }
-        } else if (next) {
-            console.log(`> adding to`, at, last, next);
-            at.children.splice(last, 0, next);
-            console.log('< ', at);
-        } else if (prev) {
-            console.log(`removing from`, at, last);
-            at.children.splice(last, 1);
-            console.log('< ', at);
-        }
-        console.log(cards[cidx]);
-    });
-    console.log('applied changes');
-    return cards;
-};
+//         const last = path[path.length - 1];
+//         if (next && prev) {
+//             console.log(`replacing`, at, last);
+//             const cur = at.children[last];
+//             if (cur.type === 'normal' && next.type === 'normal') {
+//                 at.children[last] = {
+//                     ...cur,
+//                     top: next.top,
+//                     hidden: next.hidden,
+//                     collapsed: next.collapsed,
+//                 };
+//             } else {
+//                 at.children[last] = next;
+//             }
+//         } else if (next) {
+//             console.log(`> adding to`, at, last, next);
+//             at.children.splice(last, 0, next);
+//             console.log('< ', at);
+//         } else if (prev) {
+//             console.log(`removing from`, at, last);
+//             at.children.splice(last, 1);
+//             console.log('< ', at);
+//         }
+//         console.log(cards[cidx]);
+//     });
+//     console.log('applied changes');
+//     return cards;
+// };
 
-export const nsDiffs = (
-    path: number[],
-    prev?: SandboxNamespace,
-    next?: SandboxNamespace,
-): HistoryItem['cardChange'] => {
-    if (prev === next) return [];
-    if (
-        !prev ||
-        !next ||
-        prev.type !== next.type ||
-        (prev.type === 'normal' &&
-            next.type === 'normal' &&
-            (prev.top !== next.top ||
-                prev.hidden !== next.hidden ||
-                prev.collapsed !== next.collapsed))
-    ) {
-        return [{ type: 'ns', path, ns: next, prev }];
-    }
-    if (prev.type === 'placeholder' || next.type === 'placeholder') {
-        return prev.hash !== next.hash
-            ? [{ type: 'ns', path, ns: next, prev }]
-            : [];
-    }
-    if (prev.top !== next.top) {
-        return [{ type: 'ns', path, ns: next, prev }];
-    }
+// export const nsDiffs = (
+//     path: number[],
+//     prev?: SandboxNamespace,
+//     next?: SandboxNamespace,
+// ): HistoryItem['cardChange'] => {
+//     if (prev === next) return [];
+//     if (
+//         !prev ||
+//         !next ||
+//         prev.type !== next.type ||
+//         (prev.type === 'normal' &&
+//             next.type === 'normal' &&
+//             (prev.top !== next.top ||
+//                 prev.hidden !== next.hidden ||
+//                 prev.collapsed !== next.collapsed))
+//     ) {
+//         return [{ type: 'ns', path, ns: next, prev }];
+//     }
+//     if (prev.type === 'placeholder' || next.type === 'placeholder') {
+//         return prev.hash !== next.hash
+//             ? [{ type: 'ns', path, ns: next, prev }]
+//             : [];
+//     }
+//     if (prev.top !== next.top) {
+//         return [{ type: 'ns', path, ns: next, prev }];
+//     }
 
-    if (prev.children.length < next.children.length) {
-        const added = findAdded(prev.children, next.children);
-        if (added) {
-            return added.map((add) => ({
-                type: 'ns',
-                path: path.concat([add.i]),
-                ns: add.item,
-            }));
-        }
-    }
+//     if (prev.children.length < next.children.length) {
+//         const added = findAdded(prev.children, next.children);
+//         if (added) {
+//             return added.map((add) => ({
+//                 type: 'ns',
+//                 path: path.concat([add.i]),
+//                 ns: add.item,
+//             }));
+//         }
+//     }
 
-    if (prev.children.length > next.children.length) {
-        const removed = findAdded(next.children, prev.children);
-        if (removed) {
-            return removed.map((add) => ({
-                type: 'ns',
-                path: path.concat([add.ti]),
-                prev: add.item,
-            }));
-        }
-    }
+//     if (prev.children.length > next.children.length) {
+//         const removed = findAdded(next.children, prev.children);
+//         if (removed) {
+//             return removed.map((add) => ({
+//                 type: 'ns',
+//                 path: path.concat([add.ti]),
+//                 prev: add.item,
+//             }));
+//         }
+//     }
 
-    if (prev.children.length === next.children.length) {
-        const change: HistoryItem['cardChange'] = [];
-        for (let i = 0; i < prev.children.length; i++) {
-            change.push(
-                ...nsDiffs(
-                    path.concat([i]),
-                    prev.children[i],
-                    next.children[i],
-                ),
-            );
-        }
-        return change;
-    }
+//     if (prev.children.length === next.children.length) {
+//         const change: HistoryItem['cardChange'] = [];
+//         for (let i = 0; i < prev.children.length; i++) {
+//             change.push(
+//                 ...nsDiffs(
+//                     path.concat([i]),
+//                     prev.children[i],
+//                     next.children[i],
+//                 ),
+//             );
+//         }
+//         return change;
+//     }
 
-    throw new Error(
-        'couldnt figure out hte difference between the two namespaces',
-    );
-    // const change: HistoryItem['cardChange'] = [];
-    // let pi = 0
-    // let ni = 0
-    // while (pi < prev.children.length && ni < next.children.length) {
+//     throw new Error(
+//         'couldnt figure out hte difference between the two namespaces',
+//     );
+//     // const change: HistoryItem['cardChange'] = [];
+//     // let pi = 0
+//     // let ni = 0
+//     // while (pi < prev.children.length && ni < next.children.length) {
 
-    // }
-    // for (;pi < prev.children.length; pi++) {
-    //     change.push({path: path.concat([pi]), prev: prev.children[pi], type: 'ns'})
-    // }
-    // for (;ni < next.children.length; ni++) {
-    //     change.push({path: path.concat([ni]), next: next.children[ni], type: 'ns'})
-    // }
+//     // }
+//     // for (;pi < prev.children.length; pi++) {
+//     //     change.push({path: path.concat([pi]), prev: prev.children[pi], type: 'ns'})
+//     // }
+//     // for (;ni < next.children.length; ni++) {
+//     //     change.push({path: path.concat([ni]), next: next.children[ni], type: 'ns'})
+//     // }
 
-    // // fallback
-    // for (
-    //     let i = 0;
-    //     i < Math.max(prev.children.length, next.children.length);
-    //     i++
-    // ) {
-    //     if (prev.children[i] !== next.children[i]) {
-    //         change.push(
-    //             ...nsDiffs(
-    //                 path.concat([i]),
-    //                 prev.children[i],
-    //                 next.children[i],
-    //             ),
-    //         );
-    //     }
-    // }
-    // return change;
-};
+//     // // fallback
+//     // for (
+//     //     let i = 0;
+//     //     i < Math.max(prev.children.length, next.children.length);
+//     //     i++
+//     // ) {
+//     //     if (prev.children[i] !== next.children[i]) {
+//     //         change.push(
+//     //             ...nsDiffs(
+//     //                 path.concat([i]),
+//     //                 prev.children[i],
+//     //                 next.children[i],
+//     //             ),
+//     //         );
+//     //     }
+//     // }
+//     // return change;
+// };
 
-export const getNs = (path: number[], state: NUIState) => {
-    let ns = state.cards[path[0]].ns;
-    for (let i = 1; i < path.length; i++) {
-        const child = ns.children[path[i]];
-        if (child?.type !== 'normal') {
-            return;
-        }
-        ns = child;
-    }
-    return ns;
-};
+// export const getNs = (path: number[], state: NUIState) => {
+//     let ns = state.cards[path[0]].ns;
+//     for (let i = 1; i < path.length; i++) {
+//         const child = ns.children[path[i]];
+//         if (child?.type !== 'normal') {
+//             return;
+//         }
+//         ns = child;
+//     }
+//     return ns;
+// };
 
-export const nsUpdateToCardChange = (
-    nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
-    prev: NUIState,
-    next: NUIState,
-): HistoryItem['cardChange'][0] | undefined => {
-    switch (nsUpdate.type) {
-        case 'add': {
-            let path = nsUpdate.path;
-            if (nsUpdate.after) {
-                path = path.slice();
-                path[path.length - 1] += 1;
-            }
-            return {
-                type: 'ns',
-                path,
-                ns: nsUpdate.ns,
-            };
-        }
-        case 'replace': {
-            const pns = getNs(nsUpdate.path, prev);
-            const ns = getNs(nsUpdate.path, next);
-            if (!pns || !ns) return;
-            return {
-                type: 'ns',
-                path: nsUpdate.path,
-                ns,
-                prev: pns,
-            };
-        }
-        case 'rm': {
-            const pns = getNs(nsUpdate.path, prev);
-            return {
-                type: 'ns',
-                path: nsUpdate.path,
-                prev: pns,
-            };
-        }
-    }
-};
+// export const nsUpdateToCardChange = (
+//     nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
+//     prev: NUIState,
+//     next: NUIState,
+// ): HistoryItem['cardChange'][0] | undefined => {
+//     switch (nsUpdate.type) {
+//         case 'add': {
+//             let path = nsUpdate.path;
+//             if (nsUpdate.after) {
+//                 path = path.slice();
+//                 path[path.length - 1] += 1;
+//             }
+//             return {
+//                 type: 'ns',
+//                 path,
+//                 ns: nsUpdate.ns,
+//             };
+//         }
+//         case 'replace': {
+//             const pns = getNs(nsUpdate.path, prev);
+//             const ns = getNs(nsUpdate.path, next);
+//             if (!pns || !ns) return;
+//             return {
+//                 type: 'ns',
+//                 path: nsUpdate.path,
+//                 ns,
+//                 prev: pns,
+//             };
+//         }
+//         case 'rm': {
+//             const pns = getNs(nsUpdate.path, prev);
+//             return {
+//                 type: 'ns',
+//                 path: nsUpdate.path,
+//                 prev: pns,
+//             };
+//         }
+//     }
+// };
 
 export const filterNulls = <T,>(
     value: T,
 ): value is Exclude<T, null | undefined> => value != null;
 
-export const calcCardChange = (
-    state: NUIState,
-    next: NUIState,
-    action: Action,
-): HistoryItem['cardChange'] => {
-    const change: HistoryItem['cardChange'] = [];
+// export const calcCardChange = (
+//     state: NUIState,
+//     next: NUIState,
+//     action: Action,
+// ): HistoryItem['cardChange'] => {
+//     const change: HistoryItem['cardChange'] = [];
 
-    if (action.type === 'ns') {
-        return action.nsUpdate
-            .map((update) => nsUpdateToCardChange(update, state, next))
-            .filter(filterNulls);
-    }
+//     if (action.type === 'ns') {
+//         return action.nsUpdate
+//             .map((update) => nsUpdateToCardChange(update, state, next))
+//             .filter(filterNulls);
+//     }
 
-    if (state.cards.length !== next.cards.length) {
-        if (state.cards.length < next.cards.length) {
-            const added = findAdded(state.cards, next.cards);
-            if (added) {
-                return added.map((add) => ({
-                    type: 'card',
-                    idx: add.i,
-                    next: add.item,
-                }));
-            }
-        } else {
-            const removed = findAdded(state.cards, next.cards);
-            if (removed) {
-                return removed.map((add) => ({
-                    type: 'card',
-                    idx: add.ti,
-                    prev: add.item,
-                }));
-            }
-        }
-        throw new Error('cant figure out the add/removal of cards');
-    }
+//     if (state.cards.length !== next.cards.length) {
+//         if (state.cards.length < next.cards.length) {
+//             const added = findAdded(state.cards, next.cards);
+//             if (added) {
+//                 return added.map((add) => ({
+//                     type: 'card',
+//                     idx: add.i,
+//                     next: add.item,
+//                 }));
+//             }
+//         } else {
+//             const removed = findAdded(state.cards, next.cards);
+//             if (removed) {
+//                 return removed.map((add) => ({
+//                     type: 'card',
+//                     idx: add.ti,
+//                     prev: add.item,
+//                 }));
+//             }
+//         }
+//         throw new Error('cant figure out the add/removal of cards');
+//     }
 
-    for (let i = 0; i < state.cards.length; i++) {
-        const prev = state.cards[i];
-        const card = next.cards[i];
-        if (prev === card) continue;
-        if (prev.path !== card.path) {
-            change.push({
-                type: 'card',
-                idx: i,
-                prev: { ...prev, ns: { ...prev.ns, children: [] } },
-                next: { ...card, ns: { ...card.ns, children: [] } },
-            });
-        } else {
-            change.push(...nsDiffs([i], prev.ns, card.ns));
-        }
-    }
+//     for (let i = 0; i < state.cards.length; i++) {
+//         const prev = state.cards[i];
+//         const card = next.cards[i];
+//         if (prev === card) continue;
+//         if (prev.path !== card.path) {
+//             change.push({
+//                 type: 'card',
+//                 idx: i,
+//                 prev: { ...prev, ns: { ...prev.ns, children: [] } },
+//                 next: { ...card, ns: { ...card.ns, children: [] } },
+//             });
+//         } else {
+//             change.push(...nsDiffs([i], prev.ns, card.ns));
+//         }
+//     }
 
-    return change;
-};
+//     return change;
+// };
 
 export const calcHistoryItem = (
     state: NUIState,
@@ -585,14 +585,10 @@ export const calcHistoryItem = (
     }
     const update: UpdateMap = {};
     const prev: UpdateMap = {};
-    const cardChange: HistoryItem['cardChange'] = calcCardChange(
-        state,
-        next,
-        action,
-    );
-    console.log('card change', cardChange);
+    const nsUpdate: NsUpdateMap = {};
+    const nsPrev: NsUpdateMap = {};
 
-    let changed = cardChange.length > 0;
+    let changed = false;
     Object.keys(next.map).forEach((k) => {
         if (next.map[+k] !== state.map[+k]) {
             changed = true;
@@ -607,6 +603,22 @@ export const calcHistoryItem = (
             prev[+k] = state.map[+k];
         }
     });
+
+    Object.keys(next.nsMap).forEach((k) => {
+        if (next.nsMap[+k] !== state.nsMap[+k]) {
+            changed = true;
+            nsUpdate[+k] = next.nsMap[+k];
+            nsPrev[+k] = state.nsMap[+k] || null;
+        }
+    });
+    Object.keys(state.nsMap).forEach((k) => {
+        if (!next.nsMap[+k]) {
+            changed = true;
+            nsUpdate[+k] = null;
+            nsPrev[+k] = state.nsMap[+k];
+        }
+    });
+
     if (!changed) {
         return null;
     }
@@ -614,8 +626,9 @@ export const calcHistoryItem = (
         at: next.at,
         prevAt: state.at,
         prev,
-        cardChange,
         map: update,
+        nsMap: nsUpdate,
+        nsPrev: nsPrev,
         id: state.history.length
             ? state.history[state.history.length - 1].id + 1
             : 0,

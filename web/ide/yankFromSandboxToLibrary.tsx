@@ -48,7 +48,8 @@ export const yankFromSandboxToLibrary = (
             {
                 map: update,
                 prev,
-                cardChange: [],
+                nsMap: {},
+                nsPrev: {},
                 at: [{ start: nselect }],
                 prevAt: state.at,
                 id: state.history[state.history.length - 1].id + 1,

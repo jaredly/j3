@@ -1,6 +1,7 @@
 
 - [x] left hover
 - [ ] oh gotta get undo under control
+- [ ] arghhhhh okkk okk I'll cave, we can do id-based cards and namespaces. I agree that indexes are the worst. alright already.
 
 # Night thoughts
 

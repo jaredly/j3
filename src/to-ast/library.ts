@@ -3,7 +3,7 @@ import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteReplace, AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
-import { Cursor, StateUpdate } from '../state/getKeyUpdate';
+import { Cursor, NsUpdateMap, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
 import { InferMod } from '../infer/infer';
 import { Card, SandboxNamespace } from '../../web/custom/UIState';
@@ -99,15 +99,8 @@ export type HistoryItem = {
     id: number;
     map: UpdateMap;
     prev: UpdateMap;
-    cardChange: (
-        | {
-              type: 'ns';
-              path: number[];
-              ns?: SandboxNamespace;
-              prev?: SandboxNamespace;
-          }
-        | { type: 'card'; idx: number; next?: Card; prev?: Card }
-    )[];
+    nsMap: NsUpdateMap;
+    nsPrev: NsUpdateMap;
     at: Cursor[];
     prevAt: Cursor[];
     ts: number;

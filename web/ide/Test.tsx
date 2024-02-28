@@ -385,6 +385,7 @@ export function loadState(k: string): NUIState {
     let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         map,
+        nsMap: {}, // STOPSHIP
         root: -1,
         history: [],
         nidx: () => idx++,
@@ -400,6 +401,7 @@ export function stateFromMap(map: NUIState['map']): NUIState {
     let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         map,
+        nsMap: {}, // STOPSHIP
         root: -1,
         history: [],
         cards: [],

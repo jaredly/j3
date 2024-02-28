@@ -57,6 +57,7 @@ export const loadState = (raw: string): State => {
             max = Math.max(max, node.loc);
         },
     });
+    // STOPSHIP namespace ids?
     max += 1;
     return {
         nidx: () => max++,
@@ -72,15 +73,17 @@ export const uiState = (state: State): UIState => {
     return {
         nidx: state.nidx,
         root: -1,
+        nsMap: {},
         cards: [
             {
                 path: [],
-                ns: {
-                    type: 'normal',
-                    children: [],
-                    hash: null,
-                    top: idx,
-                },
+                // ns: {
+                //     type: 'normal',
+                //     children: [],
+                //     hash: null,
+                //     top: idx,
+                // },
+                top: -2,
             },
         ],
         regs: {},

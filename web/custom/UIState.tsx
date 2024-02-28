@@ -11,6 +11,7 @@ export type NUIState = {
     hover: Path[];
     history: HistoryItem[];
     cards: Card[];
+    nsMap: { [key: number]: SandboxNamespace };
 } & State;
 
 /*
@@ -124,21 +125,24 @@ export type Card = {
     // to load up just the children of a namespace.
     // not the root of the namespace.
     // this is immediately relevant for ... the root namespace.
-    ns: RealizedNamespace;
+    // map: { [key: number]: RealizedNamespace };
+    top: number;
 };
 
 export type RealizedNamespace = {
+    id: number;
     type: 'normal';
     hash?: string | null; // if hash, then this corresponds to something existing in the library.
     // the idx into the Map
     top: number;
     hidden?: boolean;
-    children: SandboxNamespace[];
+    children: number[];
     collapsed?: boolean;
 };
 
 export type SandboxNamespace =
     | {
+          id: number;
           type: 'placeholder';
           hash: string;
           // just holding a place
@@ -177,7 +181,7 @@ export type UpdatableAction =
     | {
           type: 'ns';
           selection?: Path[];
-          nsUpdate: NonNullable<StateUpdate['nsUpdate']>;
+          nsMap: { [key: number]: SandboxNamespace | null };
       }
     // | { type: 'collapse'; top: number }
     | { type: 'paste'; items: ClipboardItem[] }

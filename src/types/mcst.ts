@@ -1,3 +1,4 @@
+import { NUIState } from '../../web/custom/UIState';
 import { UpdateMap } from '../state/getKeyUpdate';
 import {
     accessText,
@@ -78,6 +79,7 @@ export type WithLoc<T> = T & { loc: Loc };
 export type Map = {
     [key: number]: MNode;
 };
+export type NsMap = NUIState['nsMap'];
 export type Layout =
     | {
           type: 'flat';

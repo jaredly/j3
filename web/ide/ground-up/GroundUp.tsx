@@ -54,25 +54,23 @@ const initialState = (): NUIState => {
         nidx: () => 0,
         clipboard: [],
         hover: [],
-        cards: [
-            {
-                path: [],
-                ns: {
-                    type: 'normal',
-                    hash: null,
-                    top: -1,
-                    children: [
-                        {
-                            type: 'normal',
-                            top: 0,
-                            children: [],
-                        },
-                    ],
-                },
-            },
-        ],
         regs: {},
         at: [],
+        cards: [{ path: [], top: 0 }],
+        nsMap: {
+            [0]: {
+                id: 0,
+                top: -1,
+                children: [1],
+                type: 'normal',
+            },
+            [1]: {
+                id: 1,
+                top: 0,
+                children: [],
+                type: 'normal',
+            },
+        },
     };
 };
 
@@ -327,7 +325,8 @@ export const GroundUp = ({
 
     let all: { top: number; hidden?: boolean }[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
-    const add = (ns: SandboxNamespace) => {
+    const add = (id: number) => {
+        const ns = state.nsMap[id];
         if (ns.type === 'normal') {
             if (!seen[ns.top]) {
                 seen[ns.top] = true;
@@ -337,7 +336,7 @@ export const GroundUp = ({
         }
     };
 
-    state.cards.forEach((card) => add(card.ns));
+    state.cards.forEach((card) => add(card.top));
 
     const { produce: evaluated, results } = useMemo(() => {
         const results = newResults();
@@ -546,86 +545,87 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     return next;
 };
 
-const modifyNs = (
-    card: Card,
-    path: number[],
-    mod: (ns: RealizedNamespace) => void,
-): Card | void => {
-    card = { ...card };
-    let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
-    for (let at of path) {
-        const child = ns.children[at];
-        if (!child || child.type !== 'normal') {
-            console.log('bad child', at, ns, card);
-            return;
-        }
-        ns = ns.children[at] = { ...child };
-        ns.children = ns.children.slice();
-    }
-    mod(ns);
-    return card;
-};
+// const modifyNs = (
+//     card: Card,
+//     path: number[],
+//     mod: (ns: RealizedNamespace) => void,
+// ): Card | void => {
+//     card = { ...card };
+//     let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
+//     for (let at of path) {
+//         const child = ns.children[at];
+//         if (!child || child.type !== 'normal') {
+//             console.log('bad child', at, ns, card);
+//             return;
+//         }
+//         ns = ns.children[at] = { ...child };
+//         ns.children = ns.children.slice();
+//     }
+//     mod(ns);
+//     return card;
+// };
 
-const applyNsUpdate = (
-    state: NUIState,
-    nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
-) => {
-    if (nsUpdate.type === 'rm') {
-        const card = modifyNs(
-            state.cards[nsUpdate.path[0]],
-            nsUpdate.path.slice(1, -1),
-            (ns) => {
-                ns.children.splice(nsUpdate.path[nsUpdate.path.length - 1], 1);
-            },
-        );
-        if (!card) return;
-        state.cards = state.cards.slice();
-        state.cards[nsUpdate.path[0]] = card;
-    }
-    if (nsUpdate.type === 'add') {
-        const card = modifyNs(
-            state.cards[nsUpdate.path[0]],
-            nsUpdate.path.slice(1, -1),
-            (ns) => {
-                ns.children.splice(
-                    nsUpdate.path[nsUpdate.path.length - 1] +
-                        (nsUpdate.after ? 1 : 0),
-                    0,
-                    nsUpdate.ns,
-                );
-            },
-        );
-        if (!card) {
-            console.log('modfy ns failed');
-            return;
-        }
-        state.cards = state.cards.slice();
-        state.cards[nsUpdate.path[0]] = card;
-    }
-    if (nsUpdate.type === 'replace') {
-        const last = nsUpdate.path[nsUpdate.path.length - 1];
-        const card = modifyNs(
-            state.cards[nsUpdate.path[0]],
-            nsUpdate.path.slice(1, -1),
-            (ns) => {
-                const child = (ns.children[last] = { ...ns.children[last] });
-                if (child.type === 'placeholder') return;
-                if (nsUpdate.top != null) {
-                    child.top = nsUpdate.top;
-                }
-                if (nsUpdate.hidden != null) {
-                    child.hidden = nsUpdate.hidden;
-                }
-                if (nsUpdate.collapsed != null) {
-                    child.collapsed = nsUpdate.collapsed;
-                }
-            },
-        );
-        if (!card) return;
-        state.cards = state.cards.slice();
-        state.cards[nsUpdate.path[0]] = card;
-    }
-};
+// const applyNsUpdate = (
+//     state: NUIState,
+//     nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
+// ) => {
+//     if (nsUpdate.type === 'rm') {
+//         // const card = modifyNs(
+//         //     state.cards[nsUpdate.path[0]],
+//         //     nsUpdate.path.slice(1, -1),
+//         //     (ns) => {
+//         //         ns.children.splice(nsUpdate.path[nsUpdate.path.length - 1], 1);
+//         //     },
+//         // );
+//         // if (!card) return;
+//         // state.cards = state.cards.slice();
+//         // state.cards[nsUpdate.path[0]] = card;
+//         // state.nsMap
+//     }
+//     if (nsUpdate.type === 'add') {
+//         // const card = modifyNs(
+//         //     state.cards[nsUpdate.path[0]],
+//         //     nsUpdate.path.slice(1, -1),
+//         //     (ns) => {
+//         //         ns.children.splice(
+//         //             nsUpdate.path[nsUpdate.path.length - 1] +
+//         //                 (nsUpdate.after ? 1 : 0),
+//         //             0,
+//         //             nsUpdate.ns,
+//         //         );
+//         //     },
+//         // );
+//         // if (!card) {
+//         //     console.log('modfy ns failed');
+//         //     return;
+//         // }
+//         // state.cards = state.cards.slice();
+//         // state.cards[nsUpdate.path[0]] = card;
+//     }
+//     if (nsUpdate.type === 'replace') {
+//         const last = nsUpdate.path[nsUpdate.path.length - 1];
+//         const card = modifyNs(
+//             state.cards[nsUpdate.path[0]],
+//             nsUpdate.path.slice(1, -1),
+//             (ns) => {
+//                 const child = (ns.children[last] = { ...ns.children[last] });
+//                 if (child.type === 'placeholder') return;
+//                 if (nsUpdate.top != null) {
+//                     child.top = nsUpdate.top;
+//                 }
+//                 if (nsUpdate.hidden != null) {
+//                     child.hidden = nsUpdate.hidden;
+//                 }
+//                 if (nsUpdate.collapsed != null) {
+//                     child.collapsed = nsUpdate.collapsed;
+//                 }
+//             },
+//         );
+//         if (!card) return;
+//         state.cards = state.cards.slice();
+//         state.cards[nsUpdate.path[0]] = card;
+//     }
+// };
 
 export const reduceUpdate = (
     state: NUIState,
@@ -648,24 +648,20 @@ export const reduceUpdate = (
         case 'select':
         case 'update':
             state = { ...state, ...applyUpdate(state, 0, update) };
-            if (update.type === 'update' && update.nsUpdate) {
-                update.nsUpdate.forEach((item) => {
-                    applyNsUpdate(state, item);
+            if (update.type === 'update' && update.nsMap) {
+                state.nsMap = { ...state.nsMap };
+                Object.entries(update.nsMap).forEach(([key, value]) => {
+                    if (value == null) {
+                        delete state.nsMap[+key];
+                    } else {
+                        state.nsMap[+key] = value;
+                    }
                 });
             }
             return state;
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
             return state;
-        // case 'collapse':
-        //     return {
-        //         ...state,
-        //         collapse: {
-        //             ...state.collapse,
-        //             [update.top]: !state.collapse[update.top],
-        //         },
-        //     };
-        // return state;
         default:
             const _: never = update;
             throw new Error('nope update');
@@ -727,7 +723,7 @@ const actionToUpdate = (
                 type: 'update',
                 map: {},
                 selection: action.selection ?? state.at[0].start,
-                nsUpdate: action.nsUpdate,
+                nsMap: action.nsMap,
             };
         }
         // case 'collapse':

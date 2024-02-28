@@ -1,3 +1,4 @@
+import { NUIState } from '../../web/custom/UIState';
 import {
     ListLikeContents,
     Map,
@@ -7,7 +8,7 @@ import {
     MCString,
     MNodeExtra,
 } from '../types/mcst';
-import { UpdateMap } from './getKeyUpdate';
+import { NsUpdateMap, UpdateMap } from './getKeyUpdate';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { nsPath } from './newNodeBefore';
 import { Path } from './path';
@@ -15,12 +16,13 @@ import { Path } from './path';
 export function replacePathWith(
     path: Path[],
     map: Map,
+    onsMap: NUIState['nsMap'],
     newThing: NewThing,
 ): StateUpdate | void {
     if (!path.length) {
         return;
     }
-    const { update, nsUpdate } = replacePath(path, newThing.idx, map);
+    const { update, nsMap } = replacePath(path, newThing.idx, map, onsMap);
     return {
         type: 'update',
         map: {
@@ -28,7 +30,7 @@ export function replacePathWith(
             ...update,
         },
         selection: path.concat(newThing.selection),
-        nsUpdate,
+        nsMap,
     };
 }
 
@@ -36,7 +38,8 @@ export const replacePath = (
     path: Path[],
     newIdx: number,
     map: Map,
-): { update: UpdateMap; nsUpdate?: StateUpdate['nsUpdate'] } => {
+    nsMap: NUIState['nsMap'],
+): { update: UpdateMap; nsMap?: NsUpdateMap } => {
     const parent = path[path.length - 1];
     const update: UpdateMap = {};
     const pnode = map[parent.idx];
@@ -44,15 +47,14 @@ export const replacePath = (
         case 'ns': {
             const nsp = nsPath(path);
             if (!nsp) return { update: {} };
+            const last = nsp[nsp.length - 1];
+            const sb = nsMap[last];
+            if (sb.type === 'placeholder') {
+                throw new Error('sandbox placeholder');
+            }
             return {
                 update: {},
-                nsUpdate: [
-                    {
-                        type: 'replace',
-                        path: nsp,
-                        top: newIdx,
-                    },
-                ],
+                nsMap: { [last]: { ...sb, top: newIdx } },
             };
         }
         case 'child': {

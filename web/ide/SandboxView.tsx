@@ -103,15 +103,16 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     }
     return {
         map: sandbox.map,
+        nsMap: {},
         cards: [
-            {
-                path: [],
-                ns: {
-                    type: 'normal',
-                    children: [],
-                    top: idx,
-                },
-            },
+            // {
+            //     path: [],
+            //     ns: {
+            //         type: 'normal',
+            //         children: [],
+            //         top: idx,
+            //     },
+            // },
         ],
         root: sandbox.root,
         history: sandbox.history,

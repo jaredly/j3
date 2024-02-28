@@ -1,4 +1,8 @@
-import { Card, RealizedNamespace } from '../../web/custom/UIState';
+import {
+    Card,
+    RealizedNamespace,
+    SandboxNamespace,
+} from '../../web/custom/UIState';
 import { idText, pathPos, splitGraphemes } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
@@ -33,23 +37,7 @@ export type StateUpdate = {
     selection: Path[];
     selectionEnd?: Path[];
     autoComplete?: boolean;
-    nsUpdate?: (
-        | {
-              type: 'add';
-              path: number[]; // card, then ns ats
-              after: boolean;
-              // top: number;
-              ns: RealizedNamespace;
-          }
-        | {
-              type: 'replace';
-              path: number[];
-              top?: number;
-              hidden?: boolean;
-              collapsed?: boolean;
-          }
-        | { type: 'rm'; path: number[] }
-    )[];
+    nsMap?: { [key: string]: SandboxNamespace | null };
 };
 
 export type NewCard = {
@@ -137,6 +125,7 @@ export type State = {
     menu?: { selection: number; dismissed?: boolean };
 };
 export type UpdateMap = { [key: string]: null | Map[0] };
+export type NsUpdateMap = { [key: string]: null | SandboxNamespace };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {
     map = { ...map };
