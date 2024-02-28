@@ -48,12 +48,18 @@ export const newNodeAfter = (
                     },
                     ...newThing.selection,
                 ]),
-                nsUpdate: {
-                    type: 'add',
-                    path: np,
-                    top: newThing.idx,
-                    after: true,
-                },
+                nsUpdate: [
+                    {
+                        type: 'add',
+                        path: np,
+                        ns: {
+                            type: 'normal',
+                            top: newThing.idx,
+                            children: [],
+                        },
+                        after: true,
+                    },
+                ],
             };
         }
 
@@ -134,12 +140,18 @@ export const newNodeBefore = (
                     },
                     ...newThing.selection,
                 ]),
-                nsUpdate: {
-                    type: 'add',
-                    path: np,
-                    top: newThing.idx,
-                    after: false,
-                },
+                nsUpdate: [
+                    {
+                        type: 'add',
+                        path: np,
+                        ns: {
+                            type: 'normal',
+                            top: newThing.idx,
+                            children: [],
+                        },
+                        after: false,
+                    },
+                ],
             };
         }
 

@@ -46,11 +46,13 @@ export const replacePath = (
             if (!nsp) return { update: {} };
             return {
                 update: {},
-                nsUpdate: {
-                    type: 'replace',
-                    path: nsp,
-                    top: newIdx,
-                },
+                nsUpdate: [
+                    {
+                        type: 'replace',
+                        path: nsp,
+                        top: newIdx,
+                    },
+                ],
             };
         }
         case 'child': {

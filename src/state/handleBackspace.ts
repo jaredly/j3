@@ -121,10 +121,12 @@ export function handleBackspace(
             type: 'update',
             map: { [flast.idx]: null },
             selection: left.selection,
-            nsUpdate: {
-                type: 'rm',
-                path: ns,
-            },
+            nsUpdate: [
+                {
+                    type: 'rm',
+                    path: ns,
+                },
+            ],
         };
     }
 

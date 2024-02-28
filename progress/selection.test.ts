@@ -1,5 +1,4 @@
 import { parseByCharacter } from '../src/parse/parse';
-import { newCtx } from '../src/to-ast/Ctx';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
 import { clipboardText, collectNodes } from '../src/state/clipboard';

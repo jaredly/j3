@@ -569,7 +569,7 @@ const modifyNs = (
 
 const applyNsUpdate = (
     state: NUIState,
-    nsUpdate: NonNullable<StateUpdate['nsUpdate']>,
+    nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
 ) => {
     if (nsUpdate.type === 'rm') {
         const card = modifyNs(
@@ -592,11 +592,7 @@ const applyNsUpdate = (
                     nsUpdate.path[nsUpdate.path.length - 1] +
                         (nsUpdate.after ? 1 : 0),
                     0,
-                    {
-                        type: 'normal',
-                        top: nsUpdate.top,
-                        children: [],
-                    },
+                    nsUpdate.ns,
                 );
             },
         );
@@ -651,7 +647,9 @@ export const reduceUpdate = (
         case 'update':
             state = { ...state, ...applyUpdate(state, 0, update) };
             if (update.type === 'update' && update.nsUpdate) {
-                applyNsUpdate(state, update.nsUpdate);
+                update.nsUpdate.forEach((item) => {
+                    applyNsUpdate(state, item);
+                });
             }
             return state;
         case 'namespace-rename':

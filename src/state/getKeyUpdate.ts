@@ -1,4 +1,4 @@
-import { Card } from '../../web/custom/UIState';
+import { Card, RealizedNamespace } from '../../web/custom/UIState';
 import { idText, pathPos, splitGraphemes } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
@@ -33,12 +33,13 @@ export type StateUpdate = {
     selection: Path[];
     selectionEnd?: Path[];
     autoComplete?: boolean;
-    nsUpdate?:
+    nsUpdate?: (
         | {
               type: 'add';
               path: number[]; // card, then ns ats
               after: boolean;
-              top: number;
+              // top: number;
+              ns: RealizedNamespace;
           }
         | {
               type: 'replace';
@@ -47,7 +48,8 @@ export type StateUpdate = {
               hidden?: boolean;
               collapsed?: boolean;
           }
-        | { type: 'rm'; path: number[] };
+        | { type: 'rm'; path: number[] }
+    )[];
 };
 
 export type NewCard = {

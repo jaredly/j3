@@ -16,7 +16,11 @@ import { Action, NUIState, RealizedNamespace } from './UIState';
 import { Reg } from './types';
 import { closestSelection } from './verticalMove';
 
-type StartDrag = (evt: React.MouseEvent, path: number[]) => void;
+type StartDrag = (
+    evt: React.MouseEvent,
+    path: number[],
+    ns: RealizedNamespace,
+) => void;
 
 const Whatsit = ({
     ns,
@@ -41,15 +45,17 @@ const Whatsit = ({
             data-handle="true"
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onMouseDown={(evt) => startDrag(evt, path)}
+            onMouseDown={(evt) => startDrag(evt, path, ns)}
             onClick={() => {
                 dispatch({
                     type: 'ns',
-                    nsUpdate: {
-                        type: 'replace',
-                        path,
-                        collapsed: !ns.collapsed,
-                    },
+                    nsUpdate: [
+                        {
+                            type: 'replace',
+                            path,
+                            collapsed: !ns.collapsed,
+                        },
+                    ],
                 });
             }}
         >
@@ -229,6 +235,27 @@ export function CardRoot({
             }
         };
         const up = (evt: MouseEvent) => {
+            const drag = latestDrag.current;
+            if (drag?.drop) {
+                dispatch({
+                    type: 'ns',
+                    nsUpdate: [
+                        {
+                            type: 'rm',
+                            path: drag.path,
+                        },
+                        {
+                            type: 'add',
+                            path:
+                                drag.drop.position === 'inside'
+                                    ? drag.drop.path.concat([0])
+                                    : drag.drop.path,
+                            after: drag.drop.position === 'after',
+                            ns: drag.ns,
+                        },
+                    ],
+                });
+            }
             setDrag(null);
         };
         document.addEventListener('mousemove', move);
@@ -239,14 +266,18 @@ export function CardRoot({
         };
     }, [drag]);
 
-    const startDrag = useCallback((evt: React.MouseEvent, path: number[]) => {
-        setDrag({
-            orig: { x: evt.clientX, y: evt.clientY },
-            moved: false,
-            drop: null,
-            path,
-        });
-    }, []);
+    const startDrag = useCallback(
+        (evt: React.MouseEvent, path: number[], ns: RealizedNamespace) => {
+            setDrag({
+                ns,
+                orig: { x: evt.clientX, y: evt.clientY },
+                moved: false,
+                drop: null,
+                path,
+            });
+        },
+        [],
+    );
 
     return (
         <div
@@ -281,9 +312,9 @@ export function CardRoot({
                         left: drag.drop.x,
                         width: drag.drop.w,
                         height: drag.drop.h,
-                        backgroundColor: 'red',
+                        backgroundColor: 'blue',
                         borderRadius: 3,
-                        opacity: 0.3,
+                        opacity: 0.8,
                     }}
                 ></div>
             ) : null}
@@ -408,6 +439,7 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
 }
 
 type DragState = {
+    ns: RealizedNamespace;
     path: number[];
     orig: {
         x: number;
