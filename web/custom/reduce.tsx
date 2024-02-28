@@ -1,11 +1,7 @@
+import { hashedTreeRename } from '../../src/db/hash-tree';
+import { getCtx } from '../../src/getCtx';
 import { applyInferMod, infer } from '../../src/infer/infer';
-import {
-    autoCompleteIfNeeded,
-    getAutoCompleteUpdate,
-    splitGraphemes,
-} from '../../src/parse/parse';
-import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
-import { MNode, Map } from '../../src/types/mcst';
+import { getAutoCompleteUpdate } from '../../src/parse/parse';
 import { paste } from '../../src/state/clipboard';
 import {
     State,
@@ -16,27 +12,23 @@ import {
     applyUpdate,
     getKeyUpdate,
 } from '../../src/state/getKeyUpdate';
-import { Path } from '../../src/state/path';
+import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
+import { redoItem, undoItem } from '../../src/to-ast/history';
+import { CstCtx, Ctx, HistoryItem, Sandbox } from '../../src/to-ast/library';
+import { Map } from '../../src/types/mcst';
+import { makeHash } from '../ide/makeHash';
+import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
 import { isRootPath } from './ByHand';
 import {
     Action,
     Card,
     DualAction,
     NUIState,
-    RealizedNamespace,
     SandboxNamespace,
     UIState,
     UpdatableAction,
 } from './UIState';
-import { getCtx } from '../../src/getCtx';
 import { verticalMove } from './verticalMove';
-import { autoCompleteUpdate, verifyLocs } from '../../src/to-ast/autoComplete';
-import { redoItem, undoItem } from '../../src/to-ast/history';
-import { CstCtx, Ctx, HistoryItem, Sandbox } from '../../src/to-ast/library';
-import { transformNode } from '../../src/types/transform-cst';
-import { yankFromSandboxToLibrary } from '../ide/yankFromSandboxToLibrary';
-import { hashedToTree, hashedTreeRename } from '../../src/db/hash-tree';
-import { makeHash } from '../ide/makeHash';
 
 export type UIStateChange =
     | { type: 'ui'; clipboard?: UIState['clipboard']; hover?: UIState['hover'] }

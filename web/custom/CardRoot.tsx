@@ -6,38 +6,33 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { sexp } from '../../progress/sexp';
-import { nilt } from '../../src/to-ast/Ctx';
-import { fromMCST } from '../../src/types/mcst';
-import { Path } from '../../src/state/path';
-import { Render } from './Render';
-import { closestSelection } from './verticalMove';
-import {
-    UIState,
-    Action,
-    NUIState,
-    SandboxNamespace,
-    RealizedNamespace,
-} from './UIState';
 import { orderStartAndEnd } from '../../src/parse/parse';
-import { nodeToString } from '../../src/to-cst/nodeToString';
-import { nodeForType } from '../../src/to-cst/nodeForType';
-import { getType } from '../../src/get-type/get-types-new';
-import { Ctx } from '../../src/to-ast/library';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
-import { Reg } from './types';
 import { nsPath } from '../../src/state/newNodeBefore';
+import { Path } from '../../src/state/path';
+import { Ctx } from '../../src/to-ast/library';
+import { Render } from './Render';
+import { Action, NUIState, RealizedNamespace } from './UIState';
+import { Reg } from './types';
+import { closestSelection } from './verticalMove';
+
+type StartDrag = (evt: React.MouseEvent, path: number[]) => void;
 
 const Whatsit = ({
     ns,
     path,
     dispatch,
-}: {
+    startDrag,
+}: // nsReg
+{
     ns: RealizedNamespace;
-    path: Path[];
+    path: number[];
     dispatch: React.Dispatch<Action>;
+    startDrag: StartDrag;
 }) => {
     const [hover, setHover] = useState(false);
+    // const [drag,setDrag] = useState(null as null | {orig: {x: number, y: number}, moved: boolean})
+
     return (
         <div
             style={{
@@ -48,15 +43,13 @@ const Whatsit = ({
             data-handle="true"
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
+            onMouseDown={(evt) => startDrag(evt, path)}
             onClick={() => {
-                console.log('clicked it');
-                const nsp = nsPath(path);
-                if (!nsp) throw new Error('path not nspath');
                 dispatch({
                     type: 'ns',
                     nsUpdate: {
                         type: 'replace',
-                        path: nsp,
+                        path,
                         collapsed: !ns.collapsed,
                     },
                 });
@@ -76,7 +69,10 @@ export function ViewSNS({
     selections,
     produce,
     path,
+    nsReg,
+    startDrag,
 }: {
+    nsReg: NsReg;
     path: Path[];
     dispatch: React.Dispatch<Action>;
     state: NUIState;
@@ -85,7 +81,10 @@ export function ViewSNS({
     ns: RealizedNamespace;
     selections: Cursor[];
     produce: { [key: number]: string };
+    startDrag: StartDrag;
 }) {
+    const nsp = useMemo(() => nsPath(path), []);
+    if (!nsp) return <div>Invalid ns path</div>;
     return (
         <div
             style={{
@@ -97,8 +96,28 @@ export function ViewSNS({
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 {ns.top !== -1 ? (
                     <>
-                        <Whatsit ns={ns} dispatch={dispatch} path={path} />
-                        <div>
+                        <Whatsit
+                            startDrag={startDrag}
+                            ns={ns}
+                            dispatch={dispatch}
+                            path={nsp}
+                        />
+                        <div
+                            ref={
+                                nsp
+                                    ? (node) => {
+                                          if (node) {
+                                              nsReg[nsp.join(':')] = {
+                                                  node,
+                                                  path: nsp,
+                                              };
+                                          } else {
+                                              nsReg[nsp.join(':')] = null;
+                                          }
+                                      }
+                                    : undefined
+                            }
+                        >
                             <Render
                                 debug={false}
                                 idx={ns.top}
@@ -130,6 +149,8 @@ export function ViewSNS({
                     child.type === 'normal' ? (
                         <ViewSNS
                             reg={reg}
+                            startDrag={startDrag}
+                            nsReg={nsReg}
                             produce={produce}
                             key={i}
                             ns={child}
@@ -149,6 +170,19 @@ export function ViewSNS({
         </div>
     );
 }
+
+type NsReg = {
+    [key: string]: {
+        node: HTMLDivElement;
+        path: number[];
+    } | null;
+};
+
+const useLatest = <T,>(v: T) => {
+    const r = useRef(v);
+    r.current = v;
+    return r;
+};
 
 export function CardRoot({
     state,
@@ -178,6 +212,44 @@ export function CardRoot({
         [card],
     );
 
+    const nsReg: NsReg = useMemo(() => ({}), []);
+
+    const [drag, setDrag] = useState(null as null | DragState);
+    const latestDrag = useLatest(drag);
+
+    useEffect(() => {
+        if (!drag) return;
+        const margin = 10;
+        const move = (evt: MouseEvent) => {
+            const drag = latestDrag.current!;
+            if (
+                drag.moved ||
+                evt.clientX - drag.orig.x > margin ||
+                evt.clientY - drag.orig.y > margin
+            ) {
+                setDrag({ ...drag, moved: true, drop: findDrop(nsReg, evt) });
+            }
+        };
+        const up = (evt: MouseEvent) => {
+            setDrag(null);
+        };
+        document.addEventListener('mousemove', move);
+        document.addEventListener('mouseup', up);
+        return () => {
+            document.removeEventListener('mousemove', move);
+            document.removeEventListener('mouseup', up);
+        };
+    }, [drag]);
+
+    const startDrag = useCallback((evt: React.MouseEvent, path: number[]) => {
+        setDrag({
+            orig: { x: evt.clientX, y: evt.clientY },
+            moved: false,
+            drop: null,
+            path,
+        });
+    }, []);
+
     return (
         <div
             {...dragProps}
@@ -193,6 +265,8 @@ export function CardRoot({
         >
             <ViewSNS
                 reg={reg}
+                nsReg={nsReg}
+                startDrag={startDrag}
                 ns={state.cards[card].ns}
                 path={cardPath}
                 state={state}
@@ -205,6 +279,19 @@ export function CardRoot({
                 const got = results?.toplevel[top];
                 return ;
             })} */}
+            {drag?.drop && drag.drop.path !== drag.path ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: drag.drop.y,
+                        left: drag.drop.x,
+                        width: drag.drop.w,
+                        height: drag.drop.h,
+                        backgroundColor: 'red',
+                        opacity: 0.3,
+                    }}
+                ></div>
+            ) : null}
         </div>
     );
 }
@@ -324,3 +411,47 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
         },
     };
 }
+
+type DragState = {
+    path: number[];
+    orig: {
+        x: number;
+        y: number;
+    };
+    moved: boolean;
+    drop: null | {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        path: number[];
+    };
+};
+
+const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
+    let closest = null as null | [number, DOMRect, number[]];
+    for (let v of Object.values(nsReg)) {
+        if (!v) continue;
+        const box = v.node.getBoundingClientRect();
+        const dist =
+            evt.clientY < box.top
+                ? box.top - evt.clientY
+                : evt.clientY > box.bottom
+                ? evt.clientY - box.bottom
+                : 0;
+        if (!closest || closest[0] > dist) {
+            closest = [dist, box, v.path];
+        }
+    }
+    if (closest) {
+        const [_, box, path] = closest;
+        return {
+            path,
+            x: box.left,
+            y: box.top,
+            w: box.width,
+            h: box.height,
+        };
+    }
+    return null;
+};

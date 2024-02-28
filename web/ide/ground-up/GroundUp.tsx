@@ -534,9 +534,6 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (action.type === 'yank') {
         return state;
     }
-    // if (action.type === 'reset') {
-    //     return action.state;
-    // }
     const update = actionToUpdate(state, action);
     if (!update) {
         console.warn('acrtion acannot be an update', action);
