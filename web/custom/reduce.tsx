@@ -227,6 +227,7 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
         ts: Date.now() / 1000,
         libraryRoot: undid.libraryRoot,
     };
+    console.log(`UndoRedo`, nitem.map, nitem.cardChange);
     const smap = { ...state.map };
     Object.entries(nitem.map).forEach(([k, v]) => {
         if (v == null) {
@@ -327,16 +328,17 @@ export const applyCardChange = (
         let at = (cards[cidx].ns = { ...cards[cidx].ns });
         at.children = at.children.slice();
         for (let i = 1; i < path.length - 1; i++) {
-            const child = at.children[i];
+            const child = (at.children[i] = { ...at.children[i] });
             if (child.type !== 'normal') {
                 throw new Error('invalid card ns change');
             }
-            at = { ...child };
+            at = child;
             at.children = at.children.slice();
         }
 
         const last = path[path.length - 1];
         if (next && prev) {
+            console.log(`replacing`, at, last);
             const cur = at.children[last];
             if (cur.type === 'normal' && next.type === 'normal') {
                 at.children[last] = {
@@ -349,11 +351,17 @@ export const applyCardChange = (
                 at.children[last] = next;
             }
         } else if (next) {
+            console.log(`> adding to`, at, last, next);
             at.children.splice(last, 0, next);
+            console.log('< ', at);
         } else if (prev) {
+            console.log(`removing from`, at, last);
             at.children.splice(last, 1);
+            console.log('< ', at);
         }
+        console.log(cards[cidx]);
     });
+    console.log('applied changes');
     return cards;
 };
 
@@ -459,7 +467,7 @@ export const getNs = (path: number[], state: NUIState) => {
     let ns = state.cards[path[0]].ns;
     for (let i = 1; i < path.length; i++) {
         const child = ns.children[path[i]];
-        if (child.type !== 'normal') {
+        if (child?.type !== 'normal') {
             return;
         }
         ns = child;
@@ -582,6 +590,7 @@ export const calcHistoryItem = (
         next,
         action,
     );
+    console.log('card change', cardChange);
 
     let changed = cardChange.length > 0;
     Object.keys(next.map).forEach((k) => {

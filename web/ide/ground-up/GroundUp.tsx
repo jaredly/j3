@@ -326,19 +326,18 @@ export const GroundUp = ({
     }, [state.map, id]);
 
     let all: { top: number; hidden?: boolean }[] = [];
+    const seen: { [top: number]: boolean } = { [-1]: true };
     const add = (ns: SandboxNamespace) => {
         if (ns.type === 'normal') {
-            if (ns.top !== -1) {
+            if (!seen[ns.top]) {
+                seen[ns.top] = true;
                 all.push({ top: ns.top, hidden: ns.hidden });
             }
             ns.children.forEach(add);
         }
     };
+
     state.cards.forEach((card) => add(card.ns));
-    // const all = (state.map[state.root] as ListLikeContents).values;
-    // const tops = all.filter((t) => !state.collapse[t]);
-    // const collapsed = all.filter((t) => state.collapse[t]);
-    // const tops
 
     const { produce: evaluated, results } = useMemo(() => {
         const results = newResults();

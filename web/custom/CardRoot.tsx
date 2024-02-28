@@ -246,6 +246,7 @@ export function CardRoot({
                             : n == drag.drop!.path[i],
                     );
                 let target = drag.drop.path;
+                if (target === drag.path) return;
                 if (lesser) {
                     target = target.slice();
                     target[drag.path.length - 1] -= 1;
@@ -253,6 +254,12 @@ export function CardRoot({
                 if (drag.drop.position === 'inside') {
                     target.push(0);
                 }
+                console.log(
+                    `DRAG&DRAOP`,
+                    drag.path,
+                    target,
+                    drag.drop.position,
+                );
                 dispatch({
                     type: 'ns',
                     nsUpdate: [
