@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
-import { Path } from '../../src/state/path';
+import { NsPath, Path } from '../../src/state/path';
 import { Ctx } from '../../src/to-ast/library';
 import { Render } from './Render';
 import { Action, NUIState, RealizedNamespace } from './UIState';
@@ -19,15 +19,18 @@ type StartDrag = (
     evt: React.MouseEvent,
     source: DragState['source'],
     ns: RealizedNamespace,
+    nsp: string,
 ) => void;
 
 const Whatsit = ({
     ns,
+    nsp,
     path,
     dispatch,
     startDrag,
 }: {
     ns: RealizedNamespace;
+    nsp: string;
     path: Path[];
     dispatch: React.Dispatch<Action>;
     startDrag: StartDrag;
@@ -52,7 +55,7 @@ const Whatsit = ({
             data-handle="true"
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onMouseDown={(evt) => startDrag(evt, source, ns)}
+            onMouseDown={(evt) => startDrag(evt, source, ns, nsp)}
             onClick={() => {
                 dispatch({
                     type: 'ns',
@@ -100,6 +103,10 @@ export function ViewSNS({
         return { idx: last.idx, at: last.at };
     }, [path]);
 
+    const nsp = path
+        .map((p) => (p.type === 'ns' ? `${p.idx}$${p.at}` : `${p.idx}`))
+        .join(':');
+
     return (
         <div
             style={{
@@ -114,6 +121,7 @@ export function ViewSNS({
                     <>
                         <Whatsit
                             startDrag={startDrag}
+                            nsp={nsp}
                             ns={ns}
                             dispatch={dispatch}
                             path={path}
@@ -121,14 +129,9 @@ export function ViewSNS({
                         <div
                             ref={(node) => {
                                 if (node) {
-                                    nsReg[path.map((p) => p.idx).join(':')] = {
-                                        node,
-                                        path,
-                                        dest: source,
-                                    };
+                                    nsReg[nsp] = { node, path, dest: source };
                                 } else {
-                                    nsReg[path.map((p) => p.idx).join(':')] =
-                                        null;
+                                    nsReg[nsp] = null;
                                 }
                             }}
                         >
@@ -250,40 +253,54 @@ export function CardRoot({
         const up = (evt: MouseEvent) => {
             const drag = latestDrag.current;
             if (drag?.drop) {
-                let target = drag.drop.path;
-                // if (target === drag.path) return;
-                // if (lesser) {
-                //     target = target.slice();
-                //     target[drag.path.length - 1] -= 1;
-                // }
-                // if (drag.drop.position === 'inside') {
-                //     target.push(0);
-                // }
-                // console.log(
-                //     `DRAG&DRAOP`,
-                //     drag.path,
-                //     target,
-                //     drag.drop.position,
-                // );
-                dispatch({
-                    type: 'ns',
-                    nsMap: {
-                        // TODO
-                    },
-                    // nsUpdate: [
-                    //     {
-                    //         type: 'rm',
-                    //         path: drag.path,
-                    //     },
-                    //     // ok if we're dropping in the same place, we need to compensate
-                    //     {
-                    //         type: 'add',
-                    //         path: target,
-                    //         after: drag.drop.position === 'after',
-                    //         ns: drag.ns,
-                    //     },
-                    // ],
-                });
+                let target = drag.drop.path[
+                    drag.drop.path.length - 1
+                ] as NsPath;
+                console.log('dropping', target, drag.source);
+                // const nsMap: NsUpdateMap = {};
+                const tparent = state.nsMap[target.idx] as RealizedNamespace;
+                const children = tparent.children.slice();
+                const oparent = state.nsMap[
+                    drag.source.idx
+                ] as RealizedNamespace;
+                const nid = oparent.children[drag.source.at];
+
+                if (target.idx === drag.source.idx) {
+                    children.splice(drag.source.at, 1);
+                    children.splice(
+                        target.at +
+                            (drag.source.at < target.at ? -1 : 0) +
+                            (drag.drop.position === 'after' ? 1 : 0),
+                        0,
+                        nid,
+                    );
+                    dispatch({
+                        type: 'ns',
+                        nsMap: {
+                            [tparent.id]: {
+                                ...tparent,
+                                children,
+                            },
+                        },
+                    });
+                } else {
+                    children.splice(target.at, 0, nid);
+                    dispatch({
+                        type: 'ns',
+                        nsMap: {
+                            [tparent.id]: {
+                                ...tparent,
+                                children,
+                            },
+                            [oparent.id]: {
+                                ...oparent,
+                                children: oparent.children.filter(
+                                    (id) => id !== nid,
+                                ),
+                            },
+                        },
+                    });
+                }
             }
             setDrag(null);
         };
@@ -300,9 +317,11 @@ export function CardRoot({
             evt: React.MouseEvent,
             source: DragState['source'],
             ns: RealizedNamespace,
+            nsp: string,
         ) => {
             setDrag({
                 ns,
+                nsp,
                 orig: { x: evt.clientX, y: evt.clientY },
                 moved: false,
                 drop: null,
@@ -311,6 +330,8 @@ export function CardRoot({
         },
         [],
     );
+
+    const ok = drag ? nsReg[drag.nsp]?.node.getBoundingClientRect() : null;
 
     return (
         <div
@@ -337,6 +358,20 @@ export function CardRoot({
                 produce={produce}
                 selections={selections}
             />
+            {ok ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: ok.y,
+                        left: ok.x,
+                        width: Math.max(ok.width, 200),
+                        height: ok.height,
+                        backgroundColor: '#aaa',
+                        borderRadius: 3,
+                        opacity: 0.3,
+                    }}
+                ></div>
+            ) : null}
             {drag?.drop ? (
                 <div
                     style={{
@@ -475,6 +510,7 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
 type DragState = {
     ns: RealizedNamespace;
     source: { idx: number; at: number };
+    nsp: string;
     orig: {
         x: number;
         y: number;
@@ -491,10 +527,11 @@ type DragState = {
 };
 
 const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
+    // console.log('regs', nsReg);
     let closest = null as null | [number, DOMRect, Path[]];
     // let offset = 4;
-    let boffset = 7;
-    let aoffset = 1;
+    let boffset = 13;
+    let aoffset = 3;
     let insideOffset = 20;
     for (let v of Object.values(nsReg)) {
         if (!v) continue;

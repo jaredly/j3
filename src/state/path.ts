@@ -12,6 +12,7 @@ export type PathChild =
     | { type: 'record-target' | 'spread-contents' };
 
 export type Path = PathChild & { idx: number };
+export type NsPath = Extract<Path, { type: 'ns' }>;
 
 // Soooo what if I just ran `getNestedNodes` on the shared parent,
 // and then compare positions there?
