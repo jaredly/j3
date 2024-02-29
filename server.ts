@@ -39,7 +39,11 @@ const serializeFile = (raw: string) => {
     const tops = (state.map[-1] as ListLikeContents).values;
     const display = {};
     tops.map((top) => {
-        layout(top, 0, state.map, display, {}, true);
+        try {
+            layout(top, 0, state.map, display, {}, true);
+        } catch (err) {
+            console.log('Failed to handle' + top);
+        }
     });
 
     return tops
@@ -111,7 +115,12 @@ createServer(async (req, res) => {
         mkdirSync(path.dirname(full), { recursive: true });
         const state = await readBody(req);
         writeFileSync(full, state);
-        writeFileSync(full.replace('.json', '.clj'), serializeFile(state));
+        try {
+            writeFileSync(full.replace('.json', '.clj'), serializeFile(state));
+        } catch (err) {
+            console.log('Agh what');
+            console.error(err);
+        }
         res.writeHead(200, {
             'Content-type': 'application/json',
             'Access-Control-Allow-Origin': '*',

@@ -5,7 +5,8 @@ import { initialData } from './ide/initialData';
 import { IDE } from './ide/IDE';
 import { Test } from './ide/Test';
 import { Visualize } from './ide/infer/visualize/Visualize';
-import { GroundUp, Outside } from './ide/ground-up/GroundUp';
+import { GroundUp } from './ide/ground-up/GroundUp';
+import { Outside } from './ide/ground-up/Outside';
 
 declare global {
     var root: Root;

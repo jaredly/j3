@@ -3,6 +3,7 @@
 - [x] oh gotta get undo under control
 - [x] arghhhhh okkk okk I'll cave, we can do id-based cards and namespaces. I agree that indexes are the worst. alright already.
 - [x] redo nested drag
+- [ ] do a thing to verify that we're not missing any nodes
 
 
 # Night thoughts

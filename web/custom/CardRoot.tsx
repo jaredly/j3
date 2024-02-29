@@ -164,29 +164,30 @@ export function ViewSNS({
                 ) : null}
             </div>
             <div style={{ marginLeft: 30, marginTop: 8, marginBottom: -8 }}>
-                {ns.children
-                    .map((id) => state.nsMap[id])
-                    .map((child, i) =>
-                        child.type === 'normal' ? (
-                            <ViewSNS
-                                reg={reg}
-                                startDrag={startDrag}
-                                nsReg={nsReg}
-                                produce={produce}
-                                key={i}
-                                ns={child}
-                                path={path.concat({
-                                    type: 'ns' as const,
-                                    at: i,
-                                    idx: ns.id,
-                                })}
-                                state={state}
-                                dispatch={dispatch}
-                                results={results}
-                                selections={selections}
-                            />
-                        ) : null,
-                    )}
+                {!ns.collapsed &&
+                    ns.children
+                        .map((id) => state.nsMap[id])
+                        .map((child, i) =>
+                            child.type === 'normal' ? (
+                                <ViewSNS
+                                    reg={reg}
+                                    startDrag={startDrag}
+                                    nsReg={nsReg}
+                                    produce={produce}
+                                    key={i}
+                                    ns={child}
+                                    path={path.concat({
+                                        type: 'ns' as const,
+                                        at: i,
+                                        idx: ns.id,
+                                    })}
+                                    state={state}
+                                    dispatch={dispatch}
+                                    results={results}
+                                    selections={selections}
+                                />
+                            ) : null,
+                        )}
             </div>
         </div>
     );
@@ -381,7 +382,7 @@ export function CardRoot({
             {ok ? (
                 <div
                     style={{
-                        position: 'absolute',
+                        position: 'fixed',
                         top: ok.y,
                         left: ok.x,
                         width: Math.max(ok.width, 200),
@@ -395,7 +396,7 @@ export function CardRoot({
             {drag?.drop && canDrop(drag) ? (
                 <div
                     style={{
-                        position: 'absolute',
+                        position: 'fixed',
                         top: drag.drop.y,
                         left: drag.drop.x,
                         width: drag.drop.w,

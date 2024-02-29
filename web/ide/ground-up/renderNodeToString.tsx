@@ -1,7 +1,7 @@
 import { Display } from '../../../src/to-ast/library';
 import { Map } from '../../../src/types/mcst';
 import { NNode, getNestedNodes } from '../../../src/state/getNestedNodes';
-import { white } from './GroundUp';
+import { white } from './reduce';
 
 export const renderNodeToString = (
     top: number,
@@ -9,6 +9,9 @@ export const renderNodeToString = (
     left: number,
     display: Display,
 ) => {
+    if (!map[top]) {
+        return `MISSING NODE`;
+    }
     const nnode = getNestedNodes(map[top], map, undefined, display[top].layout);
     return renderNNode(nnode, map, left, display);
 };

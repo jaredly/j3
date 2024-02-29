@@ -70,7 +70,7 @@
 
 (foldr nil [1 2 3 4] consr)
 
-1111
+MISSING NODE
 
 ["hello" "folks"]
 
