@@ -6,7 +6,7 @@ import {
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
 import { CompilationResults, Ctx } from '../../../src/to-ast/library';
-import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
+import { ListLikeContents, fromMCST, fromMNode } from '../../../src/types/mcst';
 import {
     Action,
     NUIState,
@@ -22,6 +22,8 @@ import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
 import { Node } from '../../../src/types/cst';
 import { useState, useEffect } from 'react';
 import { emptyMap } from '../../../src/parse/parse';
+import { eq_eq } from '../infer/mini/infer';
+import { transformNode } from '../../../src/types/transform-cst';
 
 // const modifyNs = (
 //     card: Card,
@@ -601,5 +603,32 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (item) {
         next.history = state.history.concat([item]);
     }
+    console.log('verifying state', state);
+    verifyState(state);
     return next;
+};
+
+export const traverseNS = (
+    id: number,
+    state: NUIState,
+    fn: (ns: SandboxNamespace) => void,
+) => {
+    const ns = state.nsMap[id];
+    fn(ns);
+    if (ns.type === 'normal') {
+        ns.children.forEach((id) => traverseNS(id, state, fn));
+    }
+};
+
+const verifyState = (state: NUIState) => {
+    for (let card of state.cards) {
+        traverseNS(card.top, state, (ns) => {
+            if (ns.type === 'normal') {
+                if (ns.top === 3442) {
+                    console.log(ns.top, state.map[ns.top]);
+                }
+                fromMNode(state.map[ns.top], state.map);
+            }
+        });
+    }
 };
