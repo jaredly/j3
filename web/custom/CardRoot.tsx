@@ -20,6 +20,7 @@ type StartDrag = (
     source: DragState['source'],
     ns: RealizedNamespace,
     nsp: string,
+    onClick: () => void,
 ) => void;
 
 const Whatsit = ({
@@ -55,15 +56,16 @@ const Whatsit = ({
             data-handle="true"
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
-            onMouseDown={(evt) => startDrag(evt, source, ns, nsp)}
-            onClick={() => {
-                dispatch({
-                    type: 'ns',
-                    nsMap: {
-                        [ns.id]: { ...ns, collapsed: !ns.collapsed },
-                    },
-                });
-            }}
+            onMouseDown={(evt) =>
+                startDrag(evt, source, ns, nsp, () => {
+                    dispatch({
+                        type: 'ns',
+                        nsMap: {
+                            [ns.id]: { ...ns, collapsed: !ns.collapsed },
+                        },
+                    });
+                })
+            }
         >
             [{ns.collapsed ? '>' : 'v'}]
         </div>
@@ -252,6 +254,9 @@ export function CardRoot({
         };
         const up = (evt: MouseEvent) => {
             const drag = latestDrag.current;
+            if (drag && !drag?.moved) {
+                drag.onClick();
+            }
             if (drag?.drop && canDrop(drag)) {
                 let target = drag.drop.path[
                     drag.drop.path.length - 1
@@ -329,10 +334,12 @@ export function CardRoot({
             source: DragState['source'],
             ns: RealizedNamespace,
             nsp: string,
+            onClick: () => void,
         ) => {
             setDrag({
                 ns,
                 nsp,
+                onClick,
                 orig: { x: evt.clientX, y: evt.clientY },
                 moved: false,
                 drop: null,
@@ -342,7 +349,9 @@ export function CardRoot({
         [],
     );
 
-    const ok = drag ? nsReg[drag.nsp]?.node.getBoundingClientRect() : null;
+    const ok = drag?.moved
+        ? nsReg[drag.nsp]?.node.getBoundingClientRect()
+        : null;
 
     return (
         <div
@@ -403,7 +412,7 @@ export function CardRoot({
 }
 
 const canDrop = (drag: DragState) => {
-    if (!drag.drop) return false;
+    if (!drag.drop || !drag.moved) return false;
     const end = drag.drop.path[drag.drop.path.length - 1] as NsPath;
     if (
         drag.source.idx === end.idx &&
@@ -534,6 +543,7 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
 
 type DragState = {
     ns: RealizedNamespace;
+    onClick(): void;
     source: { idx: number; at: number };
     nsp: string;
     orig: {
