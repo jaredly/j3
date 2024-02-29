@@ -252,18 +252,25 @@ export function CardRoot({
         };
         const up = (evt: MouseEvent) => {
             const drag = latestDrag.current;
-            if (drag?.drop) {
+            if (drag?.drop && canDrop(drag)) {
                 let target = drag.drop.path[
                     drag.drop.path.length - 1
                 ] as NsPath;
                 console.log('dropping', target, drag.source);
                 // const nsMap: NsUpdateMap = {};
-                const tparent = state.nsMap[target.idx] as RealizedNamespace;
-                const children = tparent.children.slice();
+                let tparent = state.nsMap[target.idx] as RealizedNamespace;
+                let children = tparent.children.slice();
                 const oparent = state.nsMap[
                     drag.source.idx
                 ] as RealizedNamespace;
                 const nid = oparent.children[drag.source.at];
+
+                if (drag.drop.position === 'inside') {
+                    let tid = children[target.at];
+                    tparent = state.nsMap[tid] as RealizedNamespace;
+                    children = tparent.children.slice();
+                    target = { type: 'ns', idx: tid, at: 0 };
+                }
 
                 if (target.idx === drag.source.idx) {
                     children.splice(drag.source.at, 1);
@@ -284,7 +291,11 @@ export function CardRoot({
                         },
                     });
                 } else {
-                    children.splice(target.at, 0, nid);
+                    children.splice(
+                        target.at + (drag.drop.position === 'after' ? 1 : 0),
+                        0,
+                        nid,
+                    );
                     dispatch({
                         type: 'ns',
                         nsMap: {
@@ -372,7 +383,7 @@ export function CardRoot({
                     }}
                 ></div>
             ) : null}
-            {drag?.drop ? (
+            {drag?.drop && canDrop(drag) ? (
                 <div
                     style={{
                         position: 'absolute',
@@ -390,6 +401,20 @@ export function CardRoot({
         </div>
     );
 }
+
+const canDrop = (drag: DragState) => {
+    if (!drag.drop) return false;
+    const end = drag.drop.path[drag.drop.path.length - 1] as NsPath;
+    if (
+        drag.source.idx === end.idx &&
+        (drag.source.at === end.at ||
+            (drag.source.at === end.at + 1 && drag.drop.position === 'after') ||
+            (drag.source.at === end.at - 1 && drag.drop.position === 'before'))
+    ) {
+        return false;
+    }
+    return true;
+};
 
 const empty = {};
 
@@ -549,7 +574,7 @@ const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
     if (closest) {
         const [_, box, path] = closest;
         const position =
-            evt.clientX > box.left + insideOffset
+            evt.clientX > box.left + insideOffset * 3
                 ? 'inside'
                 : evt.clientY < (box.bottom + box.top) / 2
                 ? 'before'
