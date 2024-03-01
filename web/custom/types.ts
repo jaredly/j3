@@ -12,6 +12,7 @@ export type Reg = (
 
 export type RenderProps = {
     debug?: boolean;
+    firstLineOnly?: boolean;
     idx: number;
     map: Map;
     hashNames: Ctx['hashNames'];

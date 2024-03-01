@@ -205,6 +205,9 @@ export const RenderNNode = (
         case 'vert':
         case 'horiz':
         case 'inline':
+            let firstRenderable = nnode.children.findIndex((item) =>
+                ['horiz', 'vert'].includes(item.type),
+            );
             return (
                 <span
                     style={{
@@ -217,9 +220,16 @@ export const RenderNNode = (
                     ref={(node) => reg(node, idx, path, 'outside')}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
-                    {nnode.children.map((nnode, i) => (
+                    {props.debug ? nnode.type : null}
+                    {(props.firstLineOnly && firstRenderable != -1
+                        ? nnode.children.slice(0, firstRenderable + 1)
+                        : nnode.children
+                    ).map((nnode, i) => (
                         <RenderNNode
                             {...props}
+                            firstLineOnly={
+                                props.firstLineOnly && firstRenderable != -1
+                            }
                             nnode={nnode}
                             key={nnode.type === 'ref' ? 'id:' + nnode.id : i}
                         />

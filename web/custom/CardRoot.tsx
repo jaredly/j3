@@ -149,6 +149,7 @@ export function ViewSNS({
                                 idx={ns.top}
                                 map={state.map}
                                 reg={reg}
+                                firstLineOnly={ns.collapsed}
                                 display={results.display ?? empty}
                                 hashNames={results.hashNames ?? empty}
                                 errors={results.errors ?? empty}
@@ -156,7 +157,9 @@ export function ViewSNS({
                                 selection={selections}
                                 path={path}
                             />
-                            {ns.collapsed ? null : (
+                            {ns.collapsed ? (
+                                '...'
+                            ) : (
                                 <div
                                     style={{
                                         whiteSpace: 'pre',
