@@ -3,6 +3,7 @@
 export type PathChild =
     | { type: 'card'; card: number }
     | { type: 'ns'; at: number }
+    | { type: 'ns-top' }
     | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
@@ -28,6 +29,7 @@ export const cmpPath = (one: Path, two: Path): number => {
             case 'record-target':
             case 'spread-contents':
             case 'tapply-target':
+            case 'ns-top':
                 return 0;
             case 'subtext':
             case 'attribute':
@@ -45,6 +47,12 @@ export const cmpPath = (one: Path, two: Path): number => {
             default:
                 let _: never = one;
         }
+    }
+    if (one.type === 'ns-top') {
+        return -1;
+    }
+    if (two.type === 'ns-top') {
+        return 1;
     }
     if (one.type === 'end') {
         return 1;

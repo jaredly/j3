@@ -155,7 +155,9 @@ export function ViewSNS({
                                 errors={results.errors ?? empty}
                                 dispatch={dispatch}
                                 selection={selections}
-                                path={path}
+                                path={path.concat([
+                                    { type: 'ns-top', idx: ns.id },
+                                ])}
                             />
                             {ns.collapsed ? (
                                 '...'
