@@ -24,6 +24,7 @@ import { useState, useEffect } from 'react';
 import { emptyMap } from '../../../src/parse/parse';
 import { eq_eq } from '../infer/mini/infer';
 import { transformNode } from '../../../src/types/transform-cst';
+import { newResults } from '../Test';
 
 // const modifyNs = (
 //     card: Card,
@@ -445,6 +446,11 @@ const valueToString = (v: any): string => {
             .join('')})`;
     }
     if (typeof v === 'string') {
+        if (v.includes('"') && !v.includes("'")) {
+            return (
+                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+            );
+        }
         return JSON.stringify(v); // + 'umraw' + v;
     }
 
@@ -603,8 +609,17 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (item) {
         next.history = state.history.concat([item]);
     }
-    console.log('verifying state', state);
-    verifyState(state);
+    // console.log('verifying state', next, action);
+    try {
+        verifyState(next);
+    } catch (err) {
+        console.warn(`Action failed`);
+        console.log(action);
+        console.log(update);
+        console.log(item);
+        console.error(err);
+        return state;
+    }
     return next;
 };
 
@@ -620,15 +635,44 @@ export const traverseNS = (
     }
 };
 
-const verifyState = (state: NUIState) => {
+export const verifyState = (state: NUIState) => {
+    const results = newResults();
+    const all = findTops(state);
+    all.map(({ top }) => {
+        layout(top, 0, state.map, results.display, results.hashNames, true);
+    });
+
+    const seen: { [key: number]: number } = {};
     for (let card of state.cards) {
         traverseNS(card.top, state, (ns) => {
             if (ns.type === 'normal') {
-                if (ns.top === 3442) {
-                    console.log(ns.top, state.map[ns.top]);
+                if (seen[ns.top] != null) {
+                    throw new Error(
+                        `top appears twice ${ns.top} - first in ${
+                            seen[ns.top]
+                        }, again in ${ns.id}`,
+                    );
                 }
-                fromMNode(state.map[ns.top], state.map);
+                seen[ns.top] = ns.id;
             }
         });
     }
+};
+
+export const findTops = (state: NUIState) => {
+    let all: { top: number; hidden?: boolean }[] = [];
+    const seen: { [top: number]: boolean } = { [-1]: true };
+    const add = (id: number) => {
+        const ns = state.nsMap[id];
+        if (ns.type === 'normal') {
+            if (!seen[ns.top]) {
+                seen[ns.top] = true;
+                all.push({ top: ns.top, hidden: ns.hidden });
+            }
+            ns.children.forEach(add);
+        }
+    };
+    state.cards.forEach((card) => add(card.top));
+
+    return all;
 };

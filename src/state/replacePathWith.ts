@@ -44,14 +44,18 @@ export const replacePath = (
     const pnode = map[parent.idx];
     switch (parent.type) {
         case 'ns': {
-            const last = path[path.length - 1];
-            const sb = nsMap[last.idx];
-            if (sb.type === 'placeholder') {
+            const parentNs = nsMap[parent.idx];
+            if (parentNs.type === 'placeholder') {
+                throw new Error('sandbox placeholder');
+            }
+            const nsid = parentNs.children[parent.at];
+            const ns = nsMap[nsid];
+            if (ns.type === 'placeholder') {
                 throw new Error('sandbox placeholder');
             }
             return {
                 update: {},
-                nsMap: { [last.idx]: { ...sb, top: newIdx } },
+                nsMap: { [nsid]: { ...ns, top: newIdx } },
             };
         }
         case 'child': {

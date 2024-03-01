@@ -136,7 +136,10 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                         };
                     }
                     case 'def': {
-                        if (values[1].type !== 'identifier') {
+                        if (
+                            values.length < 2 ||
+                            values[1].type !== 'identifier'
+                        ) {
                             ctx.errors[node.loc] = 'def needs id';
                             return;
                         }

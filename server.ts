@@ -13,6 +13,7 @@ import { NUIState } from './web/custom/UIState';
 import { ListLikeContents, fromMCST, toMCST } from './src/types/mcst';
 import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
+import { findTops } from './web/ide/ground-up/reduce';
 
 const base = path.join(__dirname, 'data');
 
@@ -36,18 +37,19 @@ const readBody = (readable: IncomingMessage) => {
 
 const serializeFile = (raw: string) => {
     const state: NUIState = JSON.parse(raw);
-    const tops = (state.map[-1] as ListLikeContents).values;
+    const all = findTops(state);
+    // const tops = (state.map[-1] as ListLikeContents).values;
     const display = {};
-    tops.map((top) => {
+    all.map((top) => {
         try {
-            layout(top, 0, state.map, display, {}, true);
+            layout(top.top, 0, state.map, display, {}, true);
         } catch (err) {
             console.log('Failed to handle' + top);
         }
     });
 
-    return tops
-        .map((id) => renderNodeToString(id, state.map, 0, display))
+    return all
+        .map((id) => renderNodeToString(id.top, state.map, 0, display))
         .join('\n\n')
         .replaceAll(/[“”]/g, '"');
 };

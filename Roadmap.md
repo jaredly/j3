@@ -3,7 +3,14 @@
 - [x] oh gotta get undo under control
 - [x] arghhhhh okkk okk I'll cave, we can do id-based cards and namespaces. I agree that indexes are the worst. alright already.
 - [x] redo nested drag
-- [ ] do a thing to verify that we're not missing any nodes
+- [x] do a thing to verify that we're not missing any nodes
+- [ ] figure out how to mark the tests in the NSssssliness
+  - maybe a "render" attribute of a RealizedNamespace?
+- [ ] goLeft and goRight need to know more about namespaces
+- [ ] backspace at the start of a namespace currently deletes that namespace. which is bad.
+- [x] teach serializeFile a little about namespaces
+- [ ] ok we still have a huge perf issue though
+- [x] make it so when you type `(def)` it doesn't torch everything
 
 
 # Night thoughts

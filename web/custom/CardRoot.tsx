@@ -14,6 +14,7 @@ import { Render } from './Render';
 import { Action, NUIState, RealizedNamespace } from './UIState';
 import { Reg } from './types';
 import { closestSelection } from './verticalMove';
+import { verifyState } from '../ide/ground-up/reduce';
 
 type StartDrag = (
     evt: React.MouseEvent,
@@ -67,7 +68,13 @@ const Whatsit = ({
                 })
             }
         >
-            [{ns.collapsed ? '>' : 'v'}]
+            [
+            {ns.collapsed ? (
+                <span style={{ color: '#aaa' }}>{ns.children.length}</span>
+            ) : (
+                'v'
+            )}
+            ]
         </div>
     );
 };
@@ -354,6 +361,14 @@ export function CardRoot({
         ? nsReg[drag.nsp]?.node.getBoundingClientRect()
         : null;
 
+    const invalid = useMemo(() => {
+        try {
+            verifyState(state);
+        } catch (err) {
+            return err as Error;
+        }
+    }, []);
+
     return (
         <div
             {...dragProps}
@@ -407,7 +422,19 @@ export function CardRoot({
                     }}
                 ></div>
             ) : null}
-            <pre>{JSON.stringify(state.nsMap, null, 2)}</pre>
+            {/* <pre>{JSON.stringify(state.nsMap, null, 2)}</pre> */}
+            {invalid ? (
+                <pre
+                    style={{
+                        backgroundColor: 'rgba(100,0,0)',
+                        margin: 16,
+                        padding: 16,
+                    }}
+                >
+                    INVALID STATE detecteed
+                    {'\n' + invalid.message}
+                </pre>
+            ) : null}
         </div>
     );
 }

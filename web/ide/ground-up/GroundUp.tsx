@@ -13,6 +13,7 @@ import {
     bootstrapEval,
     bootstrapParse,
     extractBuiltins,
+    findTops,
     selfCompileAndEval,
 } from './reduce';
 import { evalExpr } from './round-1/bootstrap';
@@ -42,22 +43,9 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    let all: { top: number; hidden?: boolean }[] = [];
-    const seen: { [top: number]: boolean } = { [-1]: true };
-    const add = (id: number) => {
-        const ns = state.nsMap[id];
-        if (ns.type === 'normal') {
-            if (!seen[ns.top]) {
-                seen[ns.top] = true;
-                all.push({ top: ns.top, hidden: ns.hidden });
-            }
-            ns.children.forEach(add);
-        }
-    };
-
-    state.cards.forEach((card) => add(card.top));
-
     const { produce: evaluated, results } = useMemo(() => {
+        const all = findTops(state);
+
         const results = newResults();
         const produce: { [key: number]: string } = {};
         all.forEach((t) => (produce[t.top] = ''));
@@ -123,7 +111,7 @@ export const GroundUp = ({
         });
 
         return { produce, results };
-    }, [state.map, state.cards, all]);
+    }, [state.map, state.nsMap, state.cards]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
