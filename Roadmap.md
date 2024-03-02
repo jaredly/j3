@@ -1,4 +1,112 @@
 
+- [ ] can't delete a spread???
+
+Test
+Cases
+let's talk about it.
+
+So basic normal idea is: have expressions that are children of a definition or whatnot.
+and you can choose to display them in a certain way
+
+Buuuut then I was thinking
+what iff
+especially for a function with lots of exit points
+what if I had like
+a "trace test"
+which had
+
+(def compile [expr]
+  (match expr
+    abc def
+    (evar name)
+      (@trace-test
+        (sanitize name) ; the real impl
+        [
+          (, (compile (@ lol)) "lol")
+          (, (compile (@ a-b-c)) "a_b_c")
+        ]
+      )
+    ghi jkl
+  )
+)
+
+So, I kinda
+want to be able to put named tracers
+on things
+and then have like a "compile with tracing"
+which would give you access to like this trace context
+and things would put info on the trace context
+with the names
+and you could specify whether it's a "last write wins"
+trace, or a "append to array" trace, or a "keyed" trace
+(with lrw or array for contents)
+
+anyway then `(@trace-type some-fn)` would give you the
+struct type of the trace. And the struct would be
+keyed by the hash of the function that produced the trace,
+probably.
+`{(hash some-fn): {name-1: value, name-2: [v1, v2]}}`
+
+Anyway, then you could also do `(@trace (some-invocation))`
+and it would give you the trace for that invocation.
+Probably the trace object would also have the `result`
+on it?? That's what I think.
+
+So you could make a little visualizer dealio. That takes the trace
+and visualizes it. That would be the bomb.
+
+OK but let's think about the test case table
+would be super nice.
+Is there something special going on here?
+It would just be like
+[(, a b) (, c d) (, e f)] under the hood, right? `(array (, input output))`?
+OR `(array (, input (matcher output)))`? Not sure how that would look.
+
+oh, a `(matcher T)` is `(T) -> bool`, right? or rather `(T) -> [(Ok) (Error string)]`.
+So that's fine.
+
+OK, but then, how do we decide to render it as a table?
+Do we just inspect it, notice that it's a literal list of tuples, and allow that to
+be a renderer?
+
+So then, actually, any list of tuples could be rendered as a table, right?
+Ok but the catch here, is we're *executing* it in a special way. No longer
+just passing the whole thing to `compile`, but instead
+walking through it, running the one side ...
+OH
+but
+yeah ok, in this case I do want to pass the values to the thing, right?
+so
+```js
+(, (fn [input] output) (array (, input output)))
+```
+Which would be rendered with like
+[ the thing to run ]
+[ input | output ]
+[ input | output ]
+[ input | output ]
+[ input | output ]
+[ input | output ]
+
+Yeah, that makes sense, right?
+
+So, we've got a `slash` item called `test cases`
+And that toplevel then gets a whatsit
+where we know it's going to be rendered by the certain plugin dealio.
+
+And the plugin gets to decide how to render it.
+And also defer to normal rendering for child cells.
+
+Would it fit within NNode structure? Or work outside of it?
+
+OK yeah it would probably be best to work within NNodes. Maybe extend the
+type a little to allow for fancier drawing n such.
+And have a "black hole" nnode type, for e.g. a wisywig markdown editor?
+But yeah, having a `box` NNode type that allows you to do some styling...
+seems like that ought to work just fine.
+
+###
+
 - [x] left hover
 - [x] oh gotta get undo under control
 - [x] arghhhhh okkk okk I'll cave, we can do id-based cards and namespaces. I agree that indexes are the worst. alright already.
