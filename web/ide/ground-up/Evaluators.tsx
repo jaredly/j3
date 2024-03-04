@@ -4,7 +4,8 @@
 import { Node } from '../../../src/types/cst';
 import { addTypeConstructors, extractBuiltins, valueToString } from './reduce';
 import { evalExpr } from './round-1/bootstrap';
-import { expr, parseStmt, stmt, unwrapArray } from './round-1/parse';
+import { sanitize } from './round-1/builtins';
+import { arr, expr, parseStmt, stmt, unwrapArray } from './round-1/parse';
 
 export type BasicEvaluator<T> = {};
 
@@ -27,8 +28,22 @@ export const bootstrap: FullEvalator<
 > = {
     init: () => ({
         '+': (a: number) => (b: number) => a + b,
-        //             'replace-all': (a: string) => (b: string) => (c: string) =>
-        //                 a.replaceAll(b, c),
+        nil: { type: 'nil' },
+        cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),
+        '++': (items: arr<string>) => unwrapArray(items).join(''),
+        '-': (a: number) => (b: number) => a - b,
+        'int-to-string': (a: number) => a + '',
+        'replace-all': (a: string) => (b: string) => (c: string) =>
+            a.replaceAll(b, c),
+        ',':
+            <a, b>(a: a) =>
+            (b: b) => ({ type: ',', 0: a, 1: b }),
+        sanitize,
+        reduce:
+            <T, A>(init: T) =>
+            (items: arr<A>) =>
+            (f: (res: T) => (item: A) => T) =>
+                unwrapArray(items).reduce((a, b) => f(a)(b), init),
     }),
     parse(node, errors) {
         const ctx = { errors, display: {} };
