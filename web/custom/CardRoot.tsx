@@ -16,6 +16,7 @@ import { Reg } from './types';
 import { closestSelection } from './verticalMove';
 import { verifyState } from '../ide/ground-up/reduce';
 import { Results } from '../ide/ground-up/GroundUp';
+import { plugins } from './plugins';
 
 type StartDrag = (
     evt: React.MouseEvent,
@@ -25,18 +26,20 @@ type StartDrag = (
     onClick: () => void,
 ) => void;
 
+type Drag = { start: StartDrag; cancel: () => void };
+
 const Whatsit = ({
     ns,
     nsp,
     path,
     dispatch,
-    startDrag,
+    drag,
 }: {
     ns: RealizedNamespace;
     nsp: string;
     path: Path[];
     dispatch: React.Dispatch<Action>;
-    startDrag: StartDrag;
+    drag: Drag;
 }) => {
     const [hover, setHover] = useState(false);
     const source = useMemo(() => {
@@ -48,18 +51,42 @@ const Whatsit = ({
         return { idx: last.idx, at: last.at };
     }, [path]);
 
+    const [cm, setCM] = useState(false);
+    const mref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!cm) return;
+        const fn = (evt: MouseEvent) => {
+            if (!isAncestor(evt.target as HTMLElement, mref.current!)) {
+                drag.cancel();
+                evt.preventDefault();
+                evt.stopPropagation();
+                setCM(false);
+            }
+        };
+        document.addEventListener('mousedown', fn, { capture: true });
+        return () =>
+            document.removeEventListener('mousedown', fn, { capture: true });
+    });
+
     return (
         <div
             style={{
                 cursor: 'pointer',
                 marginRight: 12,
                 color: hover ? 'white' : '#444',
+                position: 'relative',
+            }}
+            onContextMenu={(evt) => {
+                drag.cancel();
+                evt.preventDefault();
+                setCM(true);
             }}
             data-handle="true"
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
             onMouseDown={(evt) =>
-                startDrag(evt, source, ns, nsp, () => {
+                drag.start(evt, source, ns, nsp, () => {
                     dispatch({
                         type: 'ns',
                         nsMap: {
@@ -76,9 +103,76 @@ const Whatsit = ({
                 'v'
             )}
             ]
+            {cm ? (
+                <NSMenu mref={mref} setCM={setCM} dispatch={dispatch} ns={ns} />
+            ) : null}
         </div>
     );
 };
+
+function NSMenu({
+    mref,
+    setCM,
+    dispatch,
+    ns,
+}: {
+    mref: React.RefObject<HTMLDivElement>;
+    setCM: React.Dispatch<React.SetStateAction<boolean>>;
+    dispatch: React.Dispatch<Action>;
+    ns: RealizedNamespace;
+}) {
+    return (
+        <div
+            ref={mref}
+            onMouseDown={(evt) => evt.stopPropagation()}
+            onClick={() => setCM(false)}
+            style={{
+                color: 'white',
+                cursor: 'default',
+                zIndex: 1000,
+                position: 'absolute',
+                width: 200,
+                top: 0,
+                left: 0,
+                backgroundColor: 'black',
+                border: '1px solid #aaa',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <div style={{ padding: '4px 8px' }}>Set Plugin</div>
+            {plugins.map((plugin) => (
+                <button
+                    key={plugin.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                        dispatch({
+                            type: 'ns',
+                            nsMap: {
+                                [ns.id]: { ...ns, plugin: plugin.id },
+                            },
+                        });
+                    }}
+                >
+                    {plugin.title}
+                </button>
+            ))}
+            <button
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                    dispatch({
+                        type: 'ns',
+                        nsMap: {
+                            [ns.id]: { ...ns, plugin: undefined },
+                        },
+                    });
+                }}
+            >
+                No plugin
+            </button>
+        </div>
+    );
+}
 
 export function ViewSNS({
     ns,
@@ -90,7 +184,7 @@ export function ViewSNS({
     produce,
     path,
     nsReg,
-    startDrag,
+    drag,
 }: {
     nsReg: NsReg;
     path: Path[];
@@ -101,7 +195,7 @@ export function ViewSNS({
     ns: RealizedNamespace;
     selections: Cursor[];
     produce: { [key: number]: string | JSX.Element };
-    startDrag: StartDrag;
+    drag: Drag;
 }) {
     // const nsp = useMemo(() => nsPath(path), []);
     // if (!nsp) return <div>Invalid ns path</div>;
@@ -133,7 +227,7 @@ export function ViewSNS({
                 {ns.top !== -1 && source ? (
                     <>
                         <Whatsit
-                            startDrag={startDrag}
+                            drag={drag}
                             nsp={nsp}
                             ns={ns}
                             dispatch={dispatch}
@@ -148,21 +242,25 @@ export function ViewSNS({
                                 }
                             }}
                         >
-                            <Render
-                                debug={false}
-                                idx={ns.top}
-                                map={state.map}
-                                reg={reg}
-                                firstLineOnly={ns.collapsed}
-                                display={results.display ?? empty}
-                                hashNames={results.hashNames ?? empty}
-                                errors={results.errors ?? empty}
-                                dispatch={dispatch}
-                                selection={selections}
-                                path={path.concat([
-                                    { type: 'ns-top', idx: ns.id },
-                                ])}
-                            />
+                            {ns.plugin ? (
+                                'PLUGIN: ' + ns.plugin
+                            ) : (
+                                <Render
+                                    debug={false}
+                                    idx={ns.top}
+                                    map={state.map}
+                                    reg={reg}
+                                    firstLineOnly={ns.collapsed}
+                                    display={results.display ?? empty}
+                                    hashNames={results.hashNames ?? empty}
+                                    errors={results.errors ?? empty}
+                                    dispatch={dispatch}
+                                    selection={selections}
+                                    path={path.concat([
+                                        { type: 'ns-top', idx: ns.id },
+                                    ])}
+                                />
+                            )}
                             {ns.collapsed ? (
                                 '...'
                             ) : (
@@ -187,7 +285,7 @@ export function ViewSNS({
                             child.type === 'normal' ? (
                                 <ViewSNS
                                     reg={reg}
-                                    startDrag={startDrag}
+                                    drag={drag}
                                     nsReg={nsReg}
                                     produce={produce}
                                     key={i}
@@ -365,6 +463,11 @@ export function CardRoot({
         },
         [],
     );
+    const cancelDrag = useCallback(() => setDrag(null), []);
+    const dragObj = useMemo(
+        (): Drag => ({ start: startDrag, cancel: cancelDrag }),
+        [startDrag, cancelDrag],
+    );
 
     const ok = drag?.moved
         ? nsReg[drag.nsp]?.node.getBoundingClientRect()
@@ -391,7 +494,7 @@ export function CardRoot({
             <ViewSNS
                 reg={reg}
                 nsReg={nsReg}
-                startDrag={startDrag}
+                drag={dragObj}
                 ns={state.nsMap[state.cards[card].top] as RealizedNamespace}
                 path={cardPath}
                 state={state}
@@ -633,4 +736,15 @@ const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
         };
     }
     return null;
+};
+
+const isAncestor = (node: HTMLElement, parent: HTMLElement) => {
+    while (
+        node !== parent &&
+        node.parentElement !== node &&
+        node.parentElement
+    ) {
+        node = node.parentElement;
+    }
+    return node === parent;
 };

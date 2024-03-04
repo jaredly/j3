@@ -51,7 +51,7 @@ const parse = (node: Node): Data | void => {
     }
 };
 
-export const fixturePlugin = {
+export const fixturePlugin: NamespacePlugin<any> = {
     id: 'fixture',
     title: 'Fixture tests',
     test: (node: Node) => {
