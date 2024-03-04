@@ -459,6 +459,9 @@ export const valueToString = (v: any): string => {
         }
         return JSON.stringify(v); // + 'umraw' + v;
     }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
 
     return '' + v;
 };

@@ -19,6 +19,7 @@ export type NNode =
     | { type: 'text'; text: string }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | { type: 'ref'; id: number; path: PathChild }
+    // | {type: 'sub-path', path: PathChild, child: NNode}
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
 export const getNodes = (node: MNode, map: Map, text?: string) =>
@@ -39,6 +40,9 @@ export const unnestNodes = (node: NNode): ONode[] => {
                     ),
                 );
         case 'indent':
+            // STOPSHIP: this might mess with things
+            // as I'm losing the subpath dealio
+            // case 'sub-path':
             return unnestNodes(node.child);
         case 'punct':
             return [

@@ -25,11 +25,18 @@ yess that sounds good.
 -
 
 
+Ok, now that I have an evaluator ... I can
+do my plugin dealio?
+
+
+
+
 
 
 
 - [x] hover to show errors pls
 - [ ] can't delete a spread???
+- [ ]
 
 Test
 Cases

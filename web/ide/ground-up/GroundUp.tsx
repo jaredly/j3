@@ -67,6 +67,8 @@ export const GroundUp = ({
                 const res = evaluator.addStatement(ast, env);
                 env = res.env;
                 produce[stmt.loc] = res.display;
+            } else {
+                produce[stmt.loc] = 'not parsed';
             }
 
             layout(top, 0, state.map, results.display, results.hashNames, true);
@@ -196,8 +198,8 @@ export const GroundUp = ({
                         }}
                     >
                         {JSON.stringify(state.at)}
-                        <br />
-                        {JSON.stringify(state.hover)}
+                        {/* <br />
+                        {JSON.stringify(state.hover)} */}
                     </div>
                 ) : null}
             </div>
