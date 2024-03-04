@@ -125,6 +125,9 @@ export function ViewSNS({
                 flexDirection: 'column',
                 padding: 4,
             }}
+            onMouseLeave={() => {
+                dispatch({ type: 'hover', path: [] });
+            }}
         >
             <div style={{ display: 'flex', flexDirection: 'row' }}>
                 {ns.top !== -1 && source ? (
@@ -378,9 +381,6 @@ export function CardRoot({
     return (
         <div
             {...dragProps}
-            onMouseLeave={(evt) => {
-                dispatch({ type: 'hover', path: [] });
-            }}
             onMouseDown={(evt) => {
                 let action = selectionAction(evt, state.at, state.regs);
                 if (action) {

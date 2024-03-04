@@ -196,6 +196,8 @@ export const GroundUp = ({
                         }}
                     >
                         {JSON.stringify(state.at)}
+                        <br />
+                        {JSON.stringify(state.hover)}
                     </div>
                 ) : null}
             </div>
@@ -203,13 +205,17 @@ export const GroundUp = ({
                 state={state}
                 dispatch={dispatch}
                 calc={() => {
-                    // for (let i = state.hover.length - 1; i >= 0; i--) {
-                    //     const last = state.hover[i].idx;
-                    //     const typ = results.typs[last];
-                    //     if (typ) {
-                    //         return [{ idx: last, text: typToString(typ) }];
-                    //     }
-                    // }
+                    for (let i = state.hover.length - 1; i >= 0; i--) {
+                        const last = state.hover[i].idx;
+                        const errs = results.errors[last];
+                        // const typ = results.typs[last];
+                        // if (typ) {
+                        //     return [{ idx: last, text: typToString(typ) }];
+                        // }
+                        if (errs?.length) {
+                            return [{ idx: last, text: errs.join('\n') }];
+                        }
+                    }
                     return [];
                 }}
             />

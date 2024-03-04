@@ -7,7 +7,7 @@ import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 import { arr, expr, parseStmt, stmt, unwrapArray } from './round-1/parse';
 
-export type BasicEvaluator<T> = {};
+// export type BasicEvaluator<T> = {};
 
 export type Errors = { [key: number]: string[] };
 export type FullEvalator<Env, Stmt, Expr> = {

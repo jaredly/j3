@@ -1,4 +1,15 @@
 
+
+- save the compiled result of a thing to disk as well,
+  so that we don't have to do the full bootstrap chain
+  when wanting to use something as an evaluator
+- we'll probably need to do a CST conversion to make it
+  legible in the runtime, however we slice it, because I don't
+  want to be prevented from using the attribute `type` ...
+  right? well, I guess once we go full structural, that won't be
+  a problem anymore? Except, we'll need to do a conversion then as well.
+
+
 # Switching Evaluatorss
 
 So, it seems like I might want
@@ -17,6 +28,7 @@ yess that sounds good.
 
 
 
+- [x] hover to show errors pls
 - [ ] can't delete a spread???
 
 Test
