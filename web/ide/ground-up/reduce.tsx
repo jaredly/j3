@@ -13,7 +13,12 @@ import {
     SandboxNamespace,
     UpdatableAction,
 } from '../../custom/UIState';
-import { UIStateChange, calcHistoryItem, undoRedo } from '../../custom/reduce';
+import {
+    UIStateChange,
+    calcHistoryItem,
+    filterNulls,
+    undoRedo,
+} from '../../custom/reduce';
 import { verticalMove } from '../../custom/verticalMove';
 import { paste } from '../../../src/state/clipboard';
 import { Algo, Trace } from '../infer/types';
@@ -238,8 +243,9 @@ export function bootstrapParse(
             (stmt as any).loc = node.loc;
             return stmt;
         })
-        .filter((x): x is NonNullable<typeof x> => x != null);
+        .filter(filterNulls);
 }
+
 export function addTypeConstructors(
     stmt: {
         type: 'sdeftype';
@@ -431,7 +437,7 @@ export function calcResults(
 
     return results;
 }
-const valueToString = (v: any): string => {
+export const valueToString = (v: any): string => {
     if (Array.isArray(v)) {
         return `[${v.map(valueToString).join(', ')}]`;
     }

@@ -20,6 +20,15 @@ import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 import { unwrapArray } from './round-1/parse';
 import { reduce } from './reduce';
+import { bootstrap } from './Evaluators';
+import { Display } from '../../../src/to-ast/library';
+import { RenderProps } from '../../custom/types';
+
+export type Results = {
+    display: Display;
+    errors: RenderProps['errors'];
+    hashNames: { [idx: number]: string };
+};
 
 export const GroundUp = ({
     id,
@@ -34,6 +43,8 @@ export const GroundUp = ({
 
     const [debug, setDebug] = useState(true);
 
+    const evaluator = bootstrap;
+
     useEffect(() => {
         // @ts-ignore
         window.state = state;
@@ -43,75 +54,96 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    const { produce: evaluated, results } = useMemo(() => {
-        const all = findTops(state);
+    const { produce, results } = useMemo(() => {
+        const results: Results = { display: {}, errors: {}, hashNames: {} };
+        const produce: { [key: string]: JSX.Element | string } = {};
 
-        const results = newResults();
-        const produce: { [key: number]: string } = {};
-        all.forEach((t) => (produce[t.top] = ''));
-        try {
-            const stmts = all.map((t) => fromMCST(t.top, state.map));
-            const env: { [key: string]: any } = {
-                '+': (a: number) => (b: number) => a + b,
-                'replace-all': (a: string) => (b: string) => (c: string) =>
-                    a.replaceAll(b, c),
-            };
-            const parsed = bootstrapParse(stmts, results);
-
-            parsed.forEach((stmt) => {
-                if (stmt.type === 'sdeftype') {
-                    results.tops[(stmt as any).loc] = {
-                        summary: stmt[0],
-                        data: [],
-                        failed: false,
-                    };
-                    addTypeConstructors(stmt, env);
-                    produce[(stmt as any).loc] = `type with ${
-                        unwrapArray(stmt[1]).length
-                    } constructors`;
-                    return;
-                }
-                if (stmt.type === 'sdef') {
-                    results.tops[(stmt as any).loc] = {
-                        summary: stmt[0],
-                        data: [],
-                        failed: false,
-                    };
-
-                    const res = evalExpr(stmt[1], env);
-                    env[stmt[0]] = res;
-                    produce[(stmt as any).loc] =
-                        typeof res === 'function'
-                            ? `<function>`
-                            : JSON.stringify(res);
-                    // produce[(stmt as any).loc] +=
-                    //     '\n\nAST: ' + JSON.stringify(stmt);
-                    if (stmt[0] === 'builtins') {
-                        Object.assign(env, extractBuiltins(res));
-                    }
-                }
-            });
-
-            if (env['compile-st']) {
-                let prelude = '';
-                prelude += `const {${Object.keys(env)
-                    .filter((k) => sanitize(k) === k)
-                    .join(', ')}} = env;\n{`;
-
-                selfCompileAndEval(parsed, env, prelude, produce);
-            } else {
-                bootstrapEval(parsed, env, produce);
+        let env = evaluator.init();
+        findTops(state).forEach(({ top, hidden }) => {
+            if (hidden) return;
+            const stmt = fromMCST(top, state.map);
+            const ast = evaluator.parse(stmt, results.errors);
+            if (ast) {
+                const res = evaluator.addStatement(ast, env);
+                env = res.env;
+                produce[stmt.loc] = res.display;
             }
-        } catch (err) {
-            console.error('Something didnt work', err);
-        }
 
-        all.map(({ top }) => {
             layout(top, 0, state.map, results.display, results.hashNames, true);
         });
 
-        return { produce, results };
+        return { results, produce };
     }, [state.map, state.nsMap, state.cards]);
+
+    // const { produce: evaluated, results } = useMemo(() => {
+    //     const all = findTops(state);
+
+    //     const results = newResults();
+    //     const produce: { [key: number]: string } = {};
+    //     all.forEach((t) => (produce[t.top] = ''));
+    //     try {
+    //         const stmts = all.map((t) => fromMCST(t.top, state.map));
+    //         const env: { [key: string]: any } = {
+    //             '+': (a: number) => (b: number) => a + b,
+    //             'replace-all': (a: string) => (b: string) => (c: string) =>
+    //                 a.replaceAll(b, c),
+    //         };
+    //         const parsed = bootstrapParse(stmts, results);
+
+    //         parsed.forEach((stmt) => {
+    //             if (stmt.type === 'sdeftype') {
+    //                 results.tops[(stmt as any).loc] = {
+    //                     summary: stmt[0],
+    //                     data: [],
+    //                     failed: false,
+    //                 };
+    //                 addTypeConstructors(stmt, env);
+    //                 produce[(stmt as any).loc] = `type with ${
+    //                     unwrapArray(stmt[1]).length
+    //                 } constructors`;
+    //                 return;
+    //             }
+    //             if (stmt.type === 'sdef') {
+    //                 results.tops[(stmt as any).loc] = {
+    //                     summary: stmt[0],
+    //                     data: [],
+    //                     failed: false,
+    //                 };
+
+    //                 const res = evalExpr(stmt[1], env);
+    //                 env[stmt[0]] = res;
+    //                 produce[(stmt as any).loc] =
+    //                     typeof res === 'function'
+    //                         ? `<function>`
+    //                         : JSON.stringify(res);
+    //                 // produce[(stmt as any).loc] +=
+    //                 //     '\n\nAST: ' + JSON.stringify(stmt);
+    //                 if (stmt[0] === 'builtins') {
+    //                     Object.assign(env, extractBuiltins(res));
+    //                 }
+    //             }
+    //         });
+
+    //         if (env['compile-st']) {
+    //             let prelude = '';
+    //             prelude += `const {${Object.keys(env)
+    //                 .filter((k) => sanitize(k) === k)
+    //                 .join(', ')}} = env;\n{`;
+
+    //             selfCompileAndEval(parsed, env, prelude, produce);
+    //         } else {
+    //             bootstrapEval(parsed, env, produce);
+    //         }
+    //     } catch (err) {
+    //         console.error('Something didnt work', err);
+    //     }
+
+    //     all.map(({ top }) => {
+    //         layout(top, 0, state.map, results.display, results.hashNames, true);
+    //     });
+
+    //     return { produce, results };
+    // }, [state.map, state.nsMap, state.cards]);
 
     const start = state.at.length ? state.at[0].start : null;
     const selTop = start?.[1].idx;
@@ -145,7 +177,7 @@ export const GroundUp = ({
                     dispatch={dispatch}
                     card={i}
                     results={results}
-                    produce={evaluated}
+                    produce={produce}
                 />
             ))}
             <div style={{ position: 'absolute', top: 4, right: 4 }}>

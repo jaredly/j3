@@ -75,8 +75,16 @@ export type node =
     | { type: 'nstring'; 0: string }
     | { type: 'nlist'; 0: arr<node> };
 
-type Errors = { [loc: number]: string };
+type Errors = { [loc: number]: string[] };
 export type Ctx = { errors: Errors; display: Display };
+
+const addError = (errors: Errors, loc: number, error: string) => {
+    if (errors[loc] == null) {
+        errors[loc] = [error];
+    } else {
+        errors[loc].push(error);
+    }
+};
 
 export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
     switch (node.type) {
@@ -98,9 +106,12 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                                 item.values.length < 1 ||
                                 item.values[0].type !== 'identifier'
                             ) {
-                                ctx.errors[item.loc] =
+                                addError(
+                                    ctx.errors,
+                                    item.loc,
                                     'invalid type constructor' +
-                                    JSON.stringify(item);
+                                        JSON.stringify(item),
+                                );
                                 continue;
                             }
                             const args = [];
@@ -125,8 +136,11 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                         ) {
                             name = values[1].values[0].text;
                         } else {
-                            ctx.errors[values[1].loc] =
-                                'Unable to determine name for deftype';
+                            addError(
+                                ctx.errors,
+                                values[1].loc,
+                                'Unable to determine name for deftype',
+                            );
                             return;
                         }
                         return {
@@ -140,18 +154,25 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                             values.length < 2 ||
                             values[1].type !== 'identifier'
                         ) {
-                            ctx.errors[node.loc] = 'def needs id';
+                            addError(ctx.errors, node.loc, 'def needs id');
                             return;
                         }
                         if (values.length !== 3) {
-                            ctx.errors[node.loc] =
+                            addError(
+                                ctx.errors,
+                                node.loc,
                                 'invalid def - need 3 items, not ' +
-                                values.length;
+                                    values.length,
+                            );
                             return;
                         }
                         const body = parseExpr(values[2], ctx);
                         if (!body) {
-                            ctx.errors[values[2].loc] = 'failed to parse body';
+                            addError(
+                                ctx.errors,
+                                values[2].loc,
+                                'failed to parse body',
+                            );
                             return;
                         }
                         return {
@@ -162,13 +183,16 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                     }
                     case 'defn': {
                         if (values[1].type !== 'identifier') {
-                            ctx.errors[node.loc] = 'def needs id';
+                            addError(ctx.errors, node.loc, 'def needs id');
                             return;
                         }
                         if (values.length !== 4) {
-                            ctx.errors[node.loc] =
+                            addError(
+                                ctx.errors,
+                                node.loc,
                                 'invalid defn - need 4 items, not ' +
-                                values.length;
+                                    values.length,
+                            );
                             return;
                         }
                         if (
@@ -177,7 +201,11 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                                 (t) => t.type !== 'identifier',
                             )
                         ) {
-                            ctx.errors[values[2].loc] = 'invalid argument decl';
+                            addError(
+                                ctx.errors,
+                                values[2].loc,
+                                'invalid argument decl',
+                            );
                             return;
                         }
                         const args: string[] = values[2].values.map(
@@ -238,11 +266,14 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
         const args: string[] = [];
         for (const arg of filterBlanks(node.values).slice(1)) {
             if (arg.type !== 'identifier') {
-                errors[arg.loc] =
+                addError(
+                    errors,
+                    arg.loc,
                     'only idents allowed in nested patterns at the moment not ' +
-                    arg.type +
-                    ' ' +
-                    JSON.stringify(arg);
+                        arg.type +
+                        ' ' +
+                        JSON.stringify(arg),
+                );
                 console.error('BAD PAT', arg);
                 continue;
             }
@@ -271,7 +302,7 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
             };
         }
     }
-    errors[node.loc] = 'unknown pat ' + JSON.stringify(node);
+    addError(errors, node.loc, 'unknown pat ' + JSON.stringify(node));
     console.error('bad bad', node);
 };
 
@@ -303,7 +334,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                 values[0].text === 'fn'
             ) {
                 if (values[1].type !== 'array') {
-                    ctx.errors[values[1].loc] = 'expected array';
+                    addError(ctx.errors, values[1].loc, 'expected array');
                     return;
                 }
                 const args: string[] = [];
@@ -311,7 +342,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                     if (arg.type === 'identifier') {
                         args.push(arg.text);
                     } else {
-                        ctx.errors[arg.loc] = 'expected ident';
+                        addError(ctx.errors, arg.loc, 'expected ident');
                     }
                 }
                 let body = parseExpr(values[2], ctx);
@@ -329,7 +360,11 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                 values[0].text === 'let'
             ) {
                 if (values[1].type !== 'array') {
-                    ctx.errors[values[1].loc] = 'expected buinding array';
+                    addError(
+                        ctx.errors,
+                        values[1].loc,
+                        'expected buinding array',
+                    );
                     return;
                 }
                 let body = parseExpr(values[2], ctx);
@@ -388,7 +423,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
 
             // (a-fn ...args)
             if (!values.length) {
-                ctx.errors[node.loc] = 'empty list';
+                addError(ctx.errors, node.loc, 'empty list');
                 return;
             }
             let fn = parseExpr(values[0], ctx);
@@ -442,7 +477,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
             }
             return res;
     }
-    ctx.errors[node.loc] = 'unexpected expr ' + JSON.stringify(node);
+    addError(ctx.errors, node.loc, 'unexpected expr ' + JSON.stringify(node));
 };
 function filterBlanks(arg0: Node[]) {
     return arg0.filter((a) => a.type !== 'blank' && a.type !== 'comment');

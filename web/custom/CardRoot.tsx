@@ -15,6 +15,7 @@ import { Action, NUIState, RealizedNamespace } from './UIState';
 import { Reg } from './types';
 import { closestSelection } from './verticalMove';
 import { verifyState } from '../ide/ground-up/reduce';
+import { Results } from '../ide/ground-up/GroundUp';
 
 type StartDrag = (
     evt: React.MouseEvent,
@@ -96,10 +97,10 @@ export function ViewSNS({
     dispatch: React.Dispatch<Action>;
     state: NUIState;
     reg: Reg;
-    results: Ctx['results'];
+    results: Results;
     ns: RealizedNamespace;
     selections: Cursor[];
-    produce: { [key: number]: string };
+    produce: { [key: number]: string | JSX.Element };
     startDrag: StartDrag;
 }) {
     // const nsp = useMemo(() => nsPath(path), []);
@@ -168,7 +169,7 @@ export function ViewSNS({
                                         fontSize: '80%',
                                     }}
                                 >
-                                    {produce[ns.top]?.trim() ?? 'hrm'}
+                                    {produce[ns.top] ?? 'hrm'}
                                 </div>
                             )}
                         </div>
@@ -229,8 +230,8 @@ export function CardRoot({
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
-    results: Ctx['results'];
-    produce: { [key: number]: string };
+    results: Results;
+    produce: { [key: number]: string | JSX.Element };
 }) {
     const selections = React.useMemo(
         () =>

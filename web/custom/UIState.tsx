@@ -4,6 +4,7 @@ import { State, Mods, StateUpdate } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
+import { NNode } from '../../src/state/getNestedNodes';
 
 export type NUIState = {
     regs: RegMap;
@@ -12,6 +13,9 @@ export type NUIState = {
     history: HistoryItem[];
     cards: Card[];
     nsMap: { [key: number]: SandboxNamespace };
+    // evaluator?: string,
+    // you pull up the file ... and
+    // evaluate it n stuff
 } & State;
 
 /*
@@ -138,6 +142,17 @@ export type RealizedNamespace = {
     hidden?: boolean;
     children: number[];
     collapsed?: boolean;
+    plugin?: string; // hash or something, or just a name ya know
+    // PLUGINS get evaluated ... after everything else?
+    //
+};
+
+export type NamespacePlugin<T> = {
+    id: string;
+    title: string;
+    test: (node: Node) => boolean;
+    evaluate: (node: Node, env: T) => T;
+    render: (node: Node, results: T) => NNode;
 };
 
 export type SandboxNamespace =

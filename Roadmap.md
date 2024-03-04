@@ -1,4 +1,22 @@
 
+# Switching Evaluatorss
+
+So, it seems like I might want
+to be able to switch between "evaluators" for a given sandbox document.
+Yeah, I might want that very much.
+So, I can develop a dealio in one tab
+and then use it in another.
+
+yess that sounds good.
+
+
+- init () -> Env
+-
+
+
+
+
+
 - [ ] can't delete a spread???
 
 Test

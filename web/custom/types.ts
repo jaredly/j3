@@ -20,6 +20,7 @@ export type RenderProps = {
     reg: Reg;
     path: Path[];
     display: Ctx['display'];
-    errors: Ctx['errors'];
+    // TODO make this fancier, probably
+    errors: { [loc: number]: string[] };
     dispatch: React.Dispatch<Action>;
 };

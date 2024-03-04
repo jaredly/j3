@@ -99,7 +99,8 @@ export function Root({
                                 reg={reg}
                                 display={results?.display ?? empty}
                                 hashNames={results?.hashNames ?? empty}
-                                errors={results?.errors ?? empty}
+                                // STOPSHIP this is disabled for a minute
+                                errors={empty} // results?.errors ?? empty}
                                 dispatch={dispatch}
                                 selection={selections}
                                 path={[
