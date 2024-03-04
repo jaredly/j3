@@ -1,14 +1,52 @@
 import React, { useMemo } from 'react';
 import { Cursor } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
-import { Render } from './Render';
-import { Action, NUIState, RealizedNamespace } from './UIState';
-import { Reg } from './types';
+import { Render, RenderNNode } from './Render';
+import {
+    Action,
+    NUIState,
+    NamespacePlugin,
+    RealizedNamespace,
+} from './UIState';
+import { Reg, RenderProps } from './types';
 import { Results } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { NsReg, Drag } from './useNSDrag';
+import { fromMCST } from '../../src/types/mcst';
+import { FullEvalator, bootstrap } from '../ide/ground-up/Evaluators';
+import { plugins } from './plugins';
 
 const empty = {};
+
+const PluginRender = ({
+    ns,
+    plugin,
+    map,
+    env,
+    ev,
+    ...props
+}: RenderProps & {
+    ev: FullEvalator<any, any, any>;
+    env: any;
+    ns: RealizedNamespace;
+    plugin: NamespacePlugin<any>;
+}) => {
+    const expanded = useMemo(() => fromMCST(ns.top, map), [ns.top, map]);
+    const results = useMemo(
+        () =>
+            plugin.process(expanded, (node) => {
+                const errors = {};
+                const expr = ev.parseExpr(node, errors);
+                return bootstrap.evaluate(expr, env);
+            }),
+        [ev, env, expanded],
+    );
+    const rn = useMemo(
+        () => plugin.render(expanded, results),
+        [expanded, results],
+    );
+    return <RenderNNode {...props} nnode={rn} map={map} />;
+};
 
 export function NSTop({
     ns,
@@ -21,7 +59,9 @@ export function NSTop({
     path,
     nsReg,
     drag,
+    env,
 }: {
+    env: any;
     nsReg: NsReg;
     path: Path[];
     dispatch: React.Dispatch<Action>;
@@ -33,8 +73,6 @@ export function NSTop({
     produce: { [key: number]: string | JSX.Element };
     drag: Drag;
 }) {
-    // const nsp = useMemo(() => nsPath(path), []);
-    // if (!nsp) return <div>Invalid ns path</div>;
     const source = useMemo(() => {
         const last = path[path.length - 1];
         if (last.type !== 'ns') {
@@ -79,7 +117,27 @@ export function NSTop({
                             }}
                         >
                             {ns.plugin ? (
-                                'PLUGIN: ' + ns.plugin
+                                <PluginRender
+                                    ns={ns}
+                                    env={env}
+                                    ev={bootstrap}
+                                    plugin={
+                                        plugins.find((p) => p.id === ns.plugin)!
+                                    }
+                                    debug={false}
+                                    idx={ns.top}
+                                    map={state.map}
+                                    reg={reg}
+                                    firstLineOnly={ns.collapsed}
+                                    display={results.display ?? empty}
+                                    hashNames={results.hashNames ?? empty}
+                                    errors={results.errors ?? empty}
+                                    dispatch={dispatch}
+                                    selection={selections}
+                                    path={path.concat([
+                                        { type: 'ns-top', idx: ns.id },
+                                    ])}
+                                />
                             ) : (
                                 <Render
                                     debug={false}
@@ -120,6 +178,7 @@ export function NSTop({
                         .map((child, i) =>
                             child.type === 'normal' ? (
                                 <NSTop
+                                    env={env}
                                     reg={reg}
                                     drag={drag}
                                     nsReg={nsReg}

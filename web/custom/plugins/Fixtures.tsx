@@ -3,6 +3,7 @@ import { Node } from '../../../src/types/cst';
 import { Map } from '../../../src/types/mcst';
 import { NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
+import equal from 'fast-deep-equal';
 
 type Data = {
     test: null | Node;
@@ -131,14 +132,25 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                             }
                                           : { type: 'blinker', loc: 'start' },
                                       {
+                                          type: 'punct',
+                                          color: 'white',
+                                          text: ' ',
+                                      },
+                                      {
                                           type: 'text',
                                           text:
                                               item.input &&
                                               results[item.input.loc] != null
-                                                  ? JSON.stringify(
-                                                        results[item.input.loc],
-                                                    )
-                                                  : 'No results',
+                                                  ? equal(
+                                                        results[item.input.loc]
+                                                            ?.expected,
+                                                        results[item.input.loc]
+                                                            ?.found,
+                                                    ) + ''
+                                                  : //   JSON.stringify(
+                                                    //         results[item.input.loc],
+                                                    //     )
+                                                    'No results',
                                       },
                                   ],
                               },

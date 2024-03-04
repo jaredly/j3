@@ -6,23 +6,11 @@ import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover } from '../../custom/Hover';
 import { NUIState } from '../../custom/UIState';
 
-import { CardRoot } from '../../custom/CardRoot';
-import { newResults } from '../Test';
-import {
-    addTypeConstructors,
-    bootstrapEval,
-    bootstrapParse,
-    extractBuiltins,
-    findTops,
-    selfCompileAndEval,
-} from './reduce';
-import { evalExpr } from './round-1/bootstrap';
-import { sanitize } from './round-1/builtins';
-import { unwrapArray } from './round-1/parse';
-import { reduce } from './reduce';
-import { bootstrap } from './Evaluators';
 import { Display } from '../../../src/to-ast/library';
+import { CardRoot } from '../../custom/CardRoot';
 import { RenderProps } from '../../custom/types';
+import { bootstrap } from './Evaluators';
+import { findTops, reduce } from './reduce';
 
 export type Results = {
     display: Display;
@@ -54,7 +42,7 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    const { produce, results } = useMemo(() => {
+    const { produce, results, env } = useMemo(() => {
         const results: Results = { display: {}, errors: {}, hashNames: {} };
         const produce: { [key: string]: JSX.Element | string } = {};
 
@@ -74,7 +62,7 @@ export const GroundUp = ({
             layout(top, 0, state.map, results.display, results.hashNames, true);
         });
 
-        return { results, produce };
+        return { results, produce, env };
     }, [state.map, state.nsMap, state.cards]);
 
     // const { produce: evaluated, results } = useMemo(() => {
@@ -159,19 +147,6 @@ export const GroundUp = ({
                 menu={undefined}
                 hashNames={{}}
             />
-            {/* <div style={{ display: 'flex' }}>
-                {collapsed.map((top, i) => (
-                    <div
-                        key={i}
-                        style={{ margin: 4 }}
-                        onClick={() => {
-                            dispatch({ type: 'collapse', top });
-                        }}
-                    >
-                        {results.tops[top]?.summary ?? top}
-                    </div>
-                ))}
-            </div> */}
             {state.cards.map((_, i) => (
                 <CardRoot
                     state={state}
@@ -180,6 +155,7 @@ export const GroundUp = ({
                     card={i}
                     results={results}
                     produce={produce}
+                    env={env}
                 />
             ))}
             <div style={{ position: 'absolute', top: 4, right: 4 }}>
@@ -210,10 +186,6 @@ export const GroundUp = ({
                     for (let i = state.hover.length - 1; i >= 0; i--) {
                         const last = state.hover[i].idx;
                         const errs = results.errors[last];
-                        // const typ = results.typs[last];
-                        // if (typ) {
-                        //     return [{ idx: last, text: typToString(typ) }];
-                        // }
                         if (errs?.length) {
                             return [{ idx: last, text: errs.join('\n') }];
                         }

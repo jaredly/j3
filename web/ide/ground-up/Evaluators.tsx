@@ -5,7 +5,14 @@ import { Node } from '../../../src/types/cst';
 import { addTypeConstructors, extractBuiltins, valueToString } from './reduce';
 import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
-import { arr, expr, parseStmt, stmt, unwrapArray } from './round-1/parse';
+import {
+    arr,
+    expr,
+    parseExpr,
+    parseStmt,
+    stmt,
+    unwrapArray,
+} from './round-1/parse';
 
 // export type BasicEvaluator<T> = {};
 
@@ -13,12 +20,12 @@ export type Errors = { [key: number]: string[] };
 export type FullEvalator<Env, Stmt, Expr> = {
     init(): Env;
     parse(node: Node, errors: Errors): Stmt | void;
+    parseExpr(node: Node, errors: Errors): Expr | void;
     addStatement(
         stmt: Stmt,
         env: Env,
     ): { env: Env; display: JSX.Element | string };
-    // evaluateExpression(expr: Expr, env: Env): any;
-    // showValue(value: any): JSX.Element;
+    evaluate(expr: Expr, env: Env): any;
 };
 
 export const bootstrap: FullEvalator<
@@ -53,6 +60,13 @@ export const bootstrap: FullEvalator<
         }
         stmt.loc = node.loc;
         return stmt;
+    },
+    parseExpr(node, errors) {
+        const ctx = { errors, display: {} };
+        return parseExpr(node, ctx);
+    },
+    evaluate(expr, env) {
+        return evalExpr(expr, env);
     },
     addStatement(stmt, env) {
         switch (stmt.type) {

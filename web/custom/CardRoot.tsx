@@ -23,7 +23,9 @@ export function CardRoot({
     dispatch,
     results,
     produce,
+    env,
 }: {
+    env: any;
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
@@ -76,6 +78,7 @@ export function CardRoot({
                 results={results}
                 produce={produce}
                 selections={selections}
+                env={env}
             />
             {dragElements}
             {invalid ? (

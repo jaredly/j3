@@ -150,7 +150,7 @@ export type RealizedNamespace = {
 export type NamespacePlugin<T> = {
     id: string;
     title: string;
-    test: (node: Node) => boolean;
+    test(node: Node): boolean;
     process(node: Node, evaluate: (node: Node) => any): T;
     render(node: Node, results: T): NNode;
     // evaluate: (node: Node, env: T) => T;
