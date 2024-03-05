@@ -1,5 +1,14 @@
 
 
+
+
+
+
+
+
+
+
+
 - save the compiled result of a thing to disk as well,
   so that we don't have to do the full bootstrap chain
   when wanting to use something as an evaluator
@@ -13,6 +22,7 @@
 # Pluginss
 
 - [ ] editing all the places needs to work, including:
+  - [ ] delete the test case
   - delete any thing
   - goLeft
   - goRight
@@ -25,7 +35,7 @@
 - [ ] Full experience:
   - [ ] case with no expected should have a button to adopt the output
 
-- [ ] BUG space at the start of a node results in the WRONG PATH
+- [x] BUG space at the start of a node results in the WRONG PATH
 
 # Switching Evaluatorss
 

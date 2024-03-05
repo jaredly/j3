@@ -115,7 +115,7 @@ export const newNodeBefore = (
                 selection: path
                     .slice(0, i)
                     .concat([
-                        { ...parent, at: parent.at },
+                        { ...parent, at: parent.at + 1 },
                         ...newThing.selection,
                     ]),
                 nsMap: {
@@ -151,7 +151,7 @@ export const newNodeBefore = (
             ...newThing,
             selection: path
                 .slice(0, i)
-                .concat({ idx: parent.idx, type: 'child', at: at })
+                .concat({ idx: parent.idx, type: 'child', at: at + 1 })
                 .concat(newThing.selection),
         };
     }
