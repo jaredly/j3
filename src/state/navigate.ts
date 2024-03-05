@@ -5,7 +5,8 @@ import { getNodes } from './getNestedNodes';
 import { ONode } from './types';
 import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
-import { Card, RealizedNamespace } from '../../web/custom/UIState';
+import { Card, RealizedNamespace, RegMap } from '../../web/custom/UIState';
+import { isValidCursorLocation } from '../../web/custom/Cursors';
 
 export const selectStart = (
     idx: number,
@@ -42,6 +43,20 @@ export const pathChildEqual = (
     { idx, ...two }: Path,
 ) => {
     return equal(one, two);
+};
+
+export const goLeftUntil = (
+    path: Path[],
+    map: Map,
+    nsMap: NsMap,
+    cards: Card[],
+    valid?: RegMap,
+) => {
+    let next = goLeft(path, map, nsMap, cards);
+    while (valid && next && !isValidCursorLocation(next.selection, valid)) {
+        next = goLeft(next.selection, map, nsMap, cards);
+    }
+    return next;
 };
 
 export const goLeft = (
@@ -83,6 +98,20 @@ export const goLeft = (
     }
 
     return goLeft(path.slice(0, -1), map, nsMap, cards);
+};
+
+export const goRightUntil = (
+    path: Path[],
+    map: Map,
+    nsMap: NsMap,
+    cards: Card[],
+    valid?: RegMap,
+) => {
+    let next = goRight(path, map, nsMap, cards);
+    while (valid && next && !isValidCursorLocation(next.selection, valid)) {
+        next = goRight(next.selection, map, nsMap, cards);
+    }
+    return next;
 };
 
 export const goRight = (

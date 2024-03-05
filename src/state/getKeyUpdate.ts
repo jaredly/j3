@@ -1,6 +1,7 @@
 import {
     Card,
     RealizedNamespace,
+    RegMap,
     SandboxNamespace,
 } from '../../web/custom/UIState';
 import { idText, pathPos, splitGraphemes } from '../parse/parse';
@@ -12,7 +13,13 @@ import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
 import { handleStringText } from './handleStringText';
 import { modChildren } from './modChildren';
-import { goLeft, goRight, selectStart } from './navigate';
+import {
+    goLeft,
+    goLeftUntil,
+    goRight,
+    goRightUntil,
+    selectStart,
+} from './navigate';
 import { newNodeBefore, newNodeAfter } from './newNodeBefore';
 import {
     mergeNew,
@@ -223,6 +230,7 @@ export const getKeyUpdate = (
     hashNames: { [idx: number]: string },
     nidx: () => number,
     mods?: Mods,
+    valid?: RegMap,
 ): StateChange => {
     if (!selection.start.length) {
         throw new Error(`no path ${key} ${JSON.stringify(map)}`);
@@ -279,7 +287,7 @@ export const getKeyUpdate = (
                 };
             }
         }
-        const lll = goLeft(fullPath, map, nsMap, cards);
+        const lll = goLeftUntil(fullPath, map, nsMap, cards, valid);
         if (lll && mods?.shift) {
             return {
                 type: 'select',
@@ -309,7 +317,7 @@ export const getKeyUpdate = (
                 selection: next,
             };
         }
-        const rrr = goRight(fullPath, map, nsMap, cards);
+        const rrr = goRightUntil(fullPath, map, nsMap, cards, valid);
         if (rrr && mods?.shift) {
             return {
                 type: 'select',

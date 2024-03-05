@@ -1,6 +1,5 @@
 import React from 'react';
 import { Node } from '../../../src/types/cst';
-import { Map } from '../../../src/types/mcst';
 import { NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
@@ -22,6 +21,7 @@ type Data = {
 const parseTuple = (node: Node) => {
     if (
         node.type === 'list' &&
+        node.values.length > 1 &&
         node.values[0].type === 'identifier' &&
         node.values[0].text === ','
     ) {
@@ -32,7 +32,7 @@ const parseTuple = (node: Node) => {
 
 const parseFixture = (item: Node, path: Path): Data['fixtures'][0] => {
     const inner = parseTuple(item);
-    if (!inner?.length) {
+    if (!inner?.length || inner.length >= 3) {
         return { type: 'unknown', node: item, child: path };
     } else {
         return {

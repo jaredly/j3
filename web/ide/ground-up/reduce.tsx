@@ -188,6 +188,7 @@ export const actionToUpdate = (
                 {},
                 state.nidx,
                 action.mods,
+                state.regs,
             );
         case 'select':
             // Ignore attempts to select the root node

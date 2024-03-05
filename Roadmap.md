@@ -5,7 +5,7 @@
 
 
 
-
+- [ ] goLeft should accept a `regs` map to determine valid positions
 
 
 
