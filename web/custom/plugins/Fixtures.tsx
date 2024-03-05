@@ -129,7 +129,12 @@ export const fixturePlugin: NamespacePlugin<any> = {
         });
         return results;
     },
-    render(node: Node, results: { [key: number]: any }): NNode | void {
+    render(
+        node: Node,
+        results: {
+            [key: number]: { expected: any; found: any; error?: string };
+        },
+    ): NNode | void {
         const data = parse(node);
         if (!data) return;
         return {
@@ -194,30 +199,10 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                   {
                                                       type: 'punct',
                                                       color: 'red',
-                                                      text: (
-                                                          item.input &&
-                                                          results[
-                                                              item.input.node
-                                                                  .loc
-                                                          ] != null
-                                                              ? equal(
-                                                                    results[
-                                                                        item
-                                                                            .input
-                                                                            .node
-                                                                            .loc
-                                                                    ]?.expected,
-                                                                    results[
-                                                                        item
-                                                                            .input
-                                                                            .node
-                                                                            .loc
-                                                                    ]?.found,
-                                                                )
-                                                              : false
-                                                      )
-                                                          ? '✅ '
-                                                          : '🚨 ',
+                                                      text: statusIndicator(
+                                                          item,
+                                                          results,
+                                                      ),
                                                   },
                                                   item.output
                                                       ? {
@@ -243,21 +228,10 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                   {
                                                       type: 'punct',
                                                       color: 'purple',
-                                                      text:
-                                                          item.input &&
-                                                          results[
-                                                              item.input.node
-                                                                  .loc
-                                                          ] != null
-                                                              ? valueToString(
-                                                                    results[
-                                                                        item
-                                                                            .input
-                                                                            .node
-                                                                            .loc
-                                                                    ]?.found,
-                                                                ) + ''
-                                                              : '',
+                                                      text: statusMessage(
+                                                          item,
+                                                          results,
+                                                      ),
                                                   },
                                               ],
                                           },
@@ -292,3 +266,45 @@ export const fixturePlugin: NamespacePlugin<any> = {
         };
     },
 };
+
+function statusMessage(
+    item: {
+        type: 'line';
+        input: null | { node: Node; child: Path };
+        output: null | { node: Node; child: Path };
+    },
+    results: {
+        [key: number]: {
+            expected: any;
+            found: any;
+            error?: string | undefined;
+        };
+    },
+): string {
+    if (!item.input) return 'no input';
+    const res = results[item.input.node.loc];
+    if (!res) return 'no results';
+    if (res.error) return res.error;
+    if (!equal(res.expected, res.found)) {
+        return valueToString(results[item.input.node.loc]?.found);
+    }
+    return '';
+}
+
+function statusIndicator(
+    item: {
+        type: 'line';
+        input: null | { node: Node; child: Path };
+        output: null | { node: Node; child: Path };
+    },
+    results: { [key: number]: { expected: any; found: any; error?: string } },
+): string {
+    if (!item.input || !item.output) {
+        return '🚧 ';
+    }
+    const res = results[item.input.node.loc];
+    if (!res || res.error) {
+        return '🛑 ';
+    }
+    return equal(res.expected, res.found) ? '✅ ' : '🚨 ';
+}
