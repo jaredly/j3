@@ -5,12 +5,17 @@ import { NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
 import { valueToString } from '../../ide/ground-up/reduce';
+import { Path } from '../../store';
 
 type Data = {
-    test: null | Node;
+    test: null | { node: Node; child: Path };
     fixtures: (
-        | { type: 'line'; input: null | Node; output: null | Node }
-        | { type: 'unknown'; node: Node }
+        | {
+              type: 'line';
+              input: null | { node: Node; child: Path };
+              output: null | { node: Node; child: Path };
+          }
+        | { type: 'unknown'; node: Node; child: Path }
     )[];
 };
 
@@ -25,19 +30,23 @@ const parseTuple = (node: Node) => {
     return null;
 };
 
-const parseFixture = (
-    item: Node,
-):
-    | { type: 'unknown'; node: Node; input?: undefined; output?: undefined }
-    | { type: 'line'; input: Node; output: Node; node?: undefined } => {
+const parseFixture = (item: Node, path: Path): Data['fixtures'][0] => {
     const inner = parseTuple(item);
     if (!inner?.length) {
-        return { type: 'unknown', node: item };
+        return { type: 'unknown', node: item, child: path };
     } else {
         return {
             type: 'line',
-            input: inner[0],
-            output: inner[1],
+            input: {
+                node: inner[0],
+                child: { idx: item.loc, type: 'child', at: 1 },
+            },
+            output: inner[1]
+                ? {
+                      node: inner[1],
+                      child: { idx: item.loc, type: 'child', at: 2 },
+                  }
+                : null,
         };
     }
 };
@@ -49,7 +58,9 @@ const parse = (node: Node): Data | void => {
     if (node.type === 'array') {
         return {
             test: null,
-            fixtures: node.values.map(parseFixture),
+            fixtures: node.values.map((item, i) =>
+                parseFixture(item, { type: 'child', at: i, idx: node.loc }),
+            ),
         };
     }
     const top = parseTuple(node);
@@ -58,8 +69,17 @@ const parse = (node: Node): Data | void => {
         const [test, fixtures] = top;
         if (fixtures.type === 'array') {
             return {
-                test,
-                fixtures: fixtures.values.map(parseFixture),
+                test: {
+                    node: test,
+                    child: { idx: node.loc, type: 'child', at: 1 },
+                },
+                fixtures: fixtures.values.map((item, i) =>
+                    parseFixture(item, {
+                        type: 'child',
+                        at: i + 1,
+                        idx: node.loc,
+                    }),
+                ),
             };
         }
     }
@@ -77,7 +97,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
         let test: null | Function = null;
         if (data.test) {
             try {
-                test = evaluate(data.test);
+                test = evaluate(data.test.node);
             } catch (err) {
                 return {};
             }
@@ -89,15 +109,17 @@ export const fixturePlugin: NamespacePlugin<any> = {
         data.fixtures.forEach((item) => {
             if (item.type === 'line' && item.input) {
                 try {
-                    results[item.input.loc] = {
-                        expected: item.output ? evaluate(item.output) : null,
+                    results[item.input.node.loc] = {
+                        expected: item.output
+                            ? evaluate(item.output.node)
+                            : null,
                         found: test
-                            ? test(evaluate(item.input))
-                            : evaluate(item.input),
+                            ? test(evaluate(item.input.node))
+                            : evaluate(item.input.node),
                     };
                 } catch (err) {
                     // failed
-                    results[item.input.loc] = {
+                    results[item.input.node.loc] = {
                         expected: null,
                         found: null,
                         error: (err as Error).message,
@@ -117,8 +139,8 @@ export const fixturePlugin: NamespacePlugin<any> = {
                     ? ([
                           {
                               type: 'ref',
-                              id: data.test.loc,
-                              path: { type: 'start' },
+                              id: data.test.node.loc,
+                              path: data.test.child,
                           },
                       ] as const)
                     : []),
@@ -141,7 +163,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                           {
                                               type: 'ref',
                                               id: item.node.loc,
-                                              path: { type: 'child', at: i },
+                                              path: item.child,
                                           },
                                       ]
                                     : [
@@ -151,15 +173,18 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                   item.input
                                                       ? {
                                                             type: 'ref',
-                                                            id: item.input.loc,
-                                                            path: {
-                                                                type: 'child',
-                                                                at: i,
-                                                            },
+                                                            id: item.input.node
+                                                                .loc,
+                                                            path: item.input
+                                                                .child,
                                                         }
                                                       : {
-                                                            type: 'blinker',
-                                                            loc: 'start',
+                                                            type: 'dom',
+                                                            node: (
+                                                                <button>
+                                                                    Add input
+                                                                </button>
+                                                            ),
                                                         },
                                               ],
                                           },
@@ -172,17 +197,20 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                       text: (
                                                           item.input &&
                                                           results[
-                                                              item.input.loc
+                                                              item.input.node
+                                                                  .loc
                                                           ] != null
                                                               ? equal(
                                                                     results[
                                                                         item
                                                                             .input
+                                                                            .node
                                                                             .loc
                                                                     ]?.expected,
                                                                     results[
                                                                         item
                                                                             .input
+                                                                            .node
                                                                             .loc
                                                                     ]?.found,
                                                                 )
@@ -194,15 +222,18 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                   item.output
                                                       ? {
                                                             type: 'ref',
-                                                            id: item.output.loc,
-                                                            path: {
-                                                                type: 'child',
-                                                                at: i,
-                                                            },
+                                                            id: item.output.node
+                                                                .loc,
+                                                            path: item.output
+                                                                .child,
                                                         }
                                                       : {
-                                                            type: 'blinker',
-                                                            loc: 'start',
+                                                            type: 'dom',
+                                                            node: (
+                                                                <button>
+                                                                    Output
+                                                                </button>
+                                                            ),
                                                         },
                                                   {
                                                       type: 'punct',
@@ -215,12 +246,14 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                       text:
                                                           item.input &&
                                                           results[
-                                                              item.input.loc
+                                                              item.input.node
+                                                                  .loc
                                                           ] != null
                                                               ? valueToString(
                                                                     results[
                                                                         item
                                                                             .input
+                                                                            .node
                                                                             .loc
                                                                     ]?.found,
                                                                 ) + ''
