@@ -6,16 +6,23 @@ import equal from 'fast-deep-equal';
 import { valueToString } from '../../ide/ground-up/reduce';
 import { Path } from '../../store';
 
+type RefNode = Extract<NNode, { type: 'ref' }> & { path: Path };
+
+type LineFixture = {
+    type: 'line';
+    input: null | {
+        node: Node;
+        child: RefNode;
+    };
+    output: null | {
+        node: Node;
+        child: RefNode;
+    };
+};
+
 type Data = {
-    test: null | { node: Node; child: Path };
-    fixtures: (
-        | {
-              type: 'line';
-              input: null | { node: Node; child: Path };
-              output: null | { node: Node; child: Path };
-          }
-        | { type: 'unknown'; node: Node; child: Path }
-    )[];
+    test: null | { node: Node; child: RefNode };
+    fixtures: (LineFixture | { type: 'unknown'; node: Node; child: RefNode })[];
 };
 
 const parseTuple = (node: Node) => {
@@ -33,18 +40,30 @@ const parseTuple = (node: Node) => {
 const parseFixture = (item: Node, path: Path): Data['fixtures'][0] => {
     const inner = parseTuple(item);
     if (!inner?.length || inner.length >= 3) {
-        return { type: 'unknown', node: item, child: path };
+        return {
+            type: 'unknown',
+            node: item,
+            child: { type: 'ref', path, id: item.loc },
+        };
     } else {
         return {
             type: 'line',
             input: {
                 node: inner[0],
-                child: { idx: item.loc, type: 'child', at: 1 },
+                child: {
+                    path: { idx: item.loc, type: 'child', at: 1 },
+                    type: 'ref',
+                    id: inner[0].loc,
+                },
             },
             output: inner[1]
                 ? {
                       node: inner[1],
-                      child: { idx: item.loc, type: 'child', at: 2 },
+                      child: {
+                          path: { idx: item.loc, type: 'child', at: 2 },
+                          type: 'ref',
+                          id: inner[1].loc,
+                      },
                   }
                 : null,
         };
@@ -71,7 +90,11 @@ const parse = (node: Node): Data | void => {
             return {
                 test: {
                     node: test,
-                    child: { idx: node.loc, type: 'child', at: 1 },
+                    child: {
+                        path: { idx: node.loc, type: 'child', at: 1 },
+                        id: test.loc,
+                        type: 'ref',
+                    },
                 },
                 fixtures: fixtures.values.map((item, i) =>
                     parseFixture(item, {
@@ -140,15 +163,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
         return {
             type: 'vert',
             children: [
-                ...(data.test
-                    ? ([
-                          {
-                              type: 'ref',
-                              id: data.test.node.loc,
-                              path: data.test.child,
-                          },
-                      ] as const)
-                    : []),
+                ...(data.test ? ([data.test.child] as const) : []),
                 {
                     type: 'pairs',
                     firstLine: [],
@@ -164,25 +179,13 @@ export const fixturePlugin: NamespacePlugin<any> = {
                         ...data.fixtures.map(
                             (item, i): [NNode] | [NNode, NNode] =>
                                 item.type === 'unknown'
-                                    ? [
-                                          {
-                                              type: 'ref',
-                                              id: item.node.loc,
-                                              path: item.child,
-                                          },
-                                      ]
+                                    ? [item.child]
                                     : [
                                           {
                                               type: 'horiz',
                                               children: [
                                                   item.input
-                                                      ? {
-                                                            type: 'ref',
-                                                            id: item.input.node
-                                                                .loc,
-                                                            path: item.input
-                                                                .child,
-                                                        }
+                                                      ? item.input.child
                                                       : {
                                                             type: 'dom',
                                                             node: (
@@ -205,13 +208,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                       ),
                                                   },
                                                   item.output
-                                                      ? {
-                                                            type: 'ref',
-                                                            id: item.output.node
-                                                                .loc,
-                                                            path: item.output
-                                                                .child,
-                                                        }
+                                                      ? item.output.child
                                                       : {
                                                             type: 'dom',
                                                             node: (
@@ -268,11 +265,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
 };
 
 function statusMessage(
-    item: {
-        type: 'line';
-        input: null | { node: Node; child: Path };
-        output: null | { node: Node; child: Path };
-    },
+    item: LineFixture,
     results: {
         [key: number]: {
             expected: any;
@@ -292,11 +285,7 @@ function statusMessage(
 }
 
 function statusIndicator(
-    item: {
-        type: 'line';
-        input: null | { node: Node; child: Path };
-        output: null | { node: Node; child: Path };
-    },
+    item: LineFixture,
     results: { [key: number]: { expected: any; found: any; error?: string } },
 ): string {
     if (!item.input || !item.output) {
