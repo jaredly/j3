@@ -1,6 +1,6 @@
 import { idText } from '../parse/parse';
 import { Layout, MCString, MNode, MNodeExtra, Map } from '../types/mcst';
-import { PathChild } from './path';
+import { Path, PathChild } from './path';
 import { ONode } from './types';
 
 export const stringColor = '#ff9b00';
@@ -17,7 +17,7 @@ export type NNode =
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
-    | { type: 'ref'; id: number; path: PathChild }
+    | { type: 'ref'; id: number; path: PathChild; ancestors?: Path[] }
     | { type: 'dom'; node: JSX.Element }
     // | {type: 'sub-path', path: PathChild, child: NNode}
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };

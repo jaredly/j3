@@ -387,7 +387,10 @@ export const RenderNNode = (
                     idx={nnode.id}
                     selection={props.selection}
                     debug={props.debug}
-                    path={path.concat([{ idx, ...nnode.path }])}
+                    path={path.concat([
+                        ...(nnode.ancestors ?? []),
+                        { idx, ...nnode.path },
+                    ])}
                 />
             );
         case 'pairs':

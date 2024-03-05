@@ -37,13 +37,17 @@ const parseTuple = (node: Node) => {
     return null;
 };
 
-const parseFixture = (item: Node, path: Path): Data['fixtures'][0] => {
+const parseFixture = (
+    item: Node,
+    path: Path,
+    ancestors: Path[],
+): Data['fixtures'][0] => {
     const inner = parseTuple(item);
-    if (!inner?.length || inner.length >= 3) {
+    if (!inner?.length || inner.length != 2) {
         return {
             type: 'unknown',
             node: item,
-            child: { type: 'ref', path, id: item.loc },
+            child: { type: 'ref', path, id: item.loc, ancestors },
         };
     } else {
         return {
@@ -52,6 +56,7 @@ const parseFixture = (item: Node, path: Path): Data['fixtures'][0] => {
                 node: inner[0],
                 child: {
                     path: { idx: item.loc, type: 'child', at: 1 },
+                    ancestors: [...ancestors, path],
                     type: 'ref',
                     id: inner[0].loc,
                 },
@@ -61,6 +66,7 @@ const parseFixture = (item: Node, path: Path): Data['fixtures'][0] => {
                       node: inner[1],
                       child: {
                           path: { idx: item.loc, type: 'child', at: 2 },
+                          ancestors: [...ancestors, path],
                           type: 'ref',
                           id: inner[1].loc,
                       },
@@ -78,7 +84,7 @@ const parse = (node: Node): Data | void => {
         return {
             test: null,
             fixtures: node.values.map((item, i) =>
-                parseFixture(item, { type: 'child', at: i, idx: node.loc }),
+                parseFixture(item, { type: 'child', at: i, idx: node.loc }, []),
             ),
         };
     }
@@ -97,11 +103,15 @@ const parse = (node: Node): Data | void => {
                     },
                 },
                 fixtures: fixtures.values.map((item, i) =>
-                    parseFixture(item, {
-                        type: 'child',
-                        at: i + 1,
-                        idx: node.loc,
-                    }),
+                    parseFixture(
+                        item,
+                        {
+                            type: 'child',
+                            at: i,
+                            idx: fixtures.loc,
+                        },
+                        [{ idx: node.loc, type: 'child', at: 2 }],
+                    ),
                 ),
             };
         }

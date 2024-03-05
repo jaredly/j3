@@ -73,7 +73,13 @@ export const goLeft = (
         if (last.at === 0) return goLeft(path.slice(0, -1), map, nsMap, cards);
         const end = selectEnd(
             (nsMap[ns.children[last.at - 1]] as RealizedNamespace).top,
-            path.slice(0, -1).concat([{ ...last, at: last.at - 1 }]),
+            path.slice(0, -1).concat([
+                { ...last, at: last.at - 1 },
+                {
+                    type: 'ns-top',
+                    idx: ns.children[last.at - 1],
+                },
+            ]),
             map,
         );
         if (!end) return;
@@ -130,7 +136,13 @@ export const goRight = (
             return goRight(path.slice(0, -1), map, nsMap, cards);
         const end = selectStart(
             (nsMap[ns.children[last.at + 1]] as RealizedNamespace).top,
-            path.slice(0, -1).concat([{ ...last, at: last.at + 1 }]),
+            path.slice(0, -1).concat([
+                { ...last, at: last.at + 1 },
+                {
+                    type: 'ns-top',
+                    idx: ns.children[last.at + 1],
+                },
+            ]),
             map,
         );
         if (!end) return;
@@ -173,7 +185,13 @@ export const pathSelForNode = (
         case 'render':
             return [{ idx, type: loc }];
         case 'ref': {
-            const path: Path[] = [{ idx, ...node.path }];
+            if (node.ancestors) {
+                console.log('got ancestors folks');
+            }
+            const path: Path[] = [
+                ...(node.ancestors ?? []),
+                { idx, ...node.path },
+            ];
             const cnode = map[node.id];
             switch (cnode.type) {
                 case 'array':
