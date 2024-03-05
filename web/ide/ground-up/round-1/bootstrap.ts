@@ -58,6 +58,11 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
                             ...scope,
                             [kase[0][0]]: target,
                         });
+                    case 'pbool':
+                        if (target === kase[0][0]) {
+                            return evalExpr(kase[1], scope);
+                        }
+                        continue;
                     case 'pcon':
                         if (target === true && kase[0][0] === 'true') {
                             return evalExpr(kase[1], scope);

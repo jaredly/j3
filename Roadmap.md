@@ -20,6 +20,11 @@
     switch the selection up the chain until we find something that works.
 - [ ]
 
+# Fixture plugin
+
+- [ ] Full experience:
+  - [ ] case with no expected should have a button to adopt the output
+
 
 # Switching Evaluatorss
 

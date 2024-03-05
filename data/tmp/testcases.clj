@@ -16,6 +16,8 @@
 
 (defn range [n] (range' n []))
 
+(range 10)
+
 (, range [(, 0 []) (, 1 [0]) (, 5 [0 1 2 3 4])])
 
 (defn fib [n]
