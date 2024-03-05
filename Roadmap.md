@@ -25,6 +25,7 @@
 - [ ] Full experience:
   - [ ] case with no expected should have a button to adopt the output
 
+- [ ] BUG space at the start of a node results in the WRONG PATH
 
 # Switching Evaluatorss
 

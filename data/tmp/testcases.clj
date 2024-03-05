@@ -2,12 +2,12 @@
 
 (, (+ 2) [])
 
-(defn map [arr f]
+(defn map [f arr]
     (match arr
         []         []
-        (cons a b) [(f a) ..(map b f)]))
+        (cons a b) [(f a) ..(map f b)]))
 
-(, (fn [arr] (map arr (+ 2))) [(, [] []) (, [1] [3]) (, [4 5 6 10] [6 7 8 12])])
+(, (map (+ 2)) [(, [] []) (, [1] [3]) (, [4 5 6 10] [6 7 8 12])])
 
 (defn range' [n col]
     (match (< n 1)
@@ -27,7 +27,7 @@
         2 1
         _ (+ (fib (- n 2)) (fib (- n 1)))))
 
-[(, (fib 3) 2) (, (map (range 7) fib) [0 1 1 2 3 5 8])]
+[(, (fib 3) 2) (, (map fib (range 7)) [0 1 1 2 3 5 8])]
 
 (, fib [(, 15 610) (, 0 0) (, 1 1) (, 2 1) (, 3 2)])
 
