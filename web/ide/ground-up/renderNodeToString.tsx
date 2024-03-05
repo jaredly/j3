@@ -53,20 +53,29 @@ export const renderNNode = (
             ).slice(1, -1);
         case 'ref':
             return renderNodeToString(nnode.id, map, left, display);
-        case 'pairs':
+        case 'pairs': {
+            const firsts = nnode.children.map((child) =>
+                renderNNode(child[0], map, left + 4, display),
+            );
+            const indent = Math.max(...firsts.map((f) => f.length));
             return (
                 nnode.firstLine
                     .map((c) => renderNNode(c, map, left, display))
                     .join('') +
                 '\n' +
-                white(left) +
+                white(left + 4) +
                 nnode.children
-                    .map((c) =>
-                        c
-                            .map((c) => renderNNode(c, map, left + 4, display))
-                            .join(' '),
-                    )
-                    .join('\n' + white(left))
+                    .map((c, i) => {
+                        if (c.length === 1) return firsts[i];
+                        return `${firsts[i].padEnd(indent, ' ')} ${renderNNode(
+                            c[1],
+                            map,
+                            left + 5 + indent,
+                            display,
+                        )}`;
+                    })
+                    .join('\n' + white(left + 4))
             );
+        }
     }
 };
