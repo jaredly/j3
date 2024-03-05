@@ -25,9 +25,32 @@ const parseTuple = (node: Node) => {
     return null;
 };
 
+const parseFixture = (
+    item: Node,
+):
+    | { type: 'unknown'; node: Node; input?: undefined; output?: undefined }
+    | { type: 'line'; input: Node; output: Node; node?: undefined } => {
+    const inner = parseTuple(item);
+    if (!inner?.length) {
+        return { type: 'unknown', node: item };
+    } else {
+        return {
+            type: 'line',
+            input: inner[0],
+            output: inner[1],
+        };
+    }
+};
+
 const parse = (node: Node): Data | void => {
     if (node.type === 'blank') {
         return { test: null, fixtures: [] };
+    }
+    if (node.type === 'array') {
+        return {
+            test: null,
+            fixtures: node.values.map(parseFixture),
+        };
     }
     const top = parseTuple(node);
     if (!top) return;
@@ -36,18 +59,7 @@ const parse = (node: Node): Data | void => {
         if (fixtures.type === 'array') {
             return {
                 test,
-                fixtures: fixtures.values.map((item) => {
-                    const inner = parseTuple(item);
-                    if (!inner?.length) {
-                        return { type: 'unknown', node: item };
-                    } else {
-                        return {
-                            type: 'line',
-                            input: inner[0],
-                            output: inner[1],
-                        };
-                    }
-                }),
+                fixtures: fixtures.values.map(parseFixture),
             };
         }
     }
@@ -61,9 +73,16 @@ export const fixturePlugin: NamespacePlugin<any> = {
     },
     process(node: Node, evaluate: (node: Node) => any) {
         const data = parse(node);
-        if (!data || !data.test) return;
-        const test = evaluate(data.test);
-        if (typeof test !== 'function') return;
+        if (!data) return {};
+        let test: null | Function = null;
+        if (data.test) {
+            try {
+                test = evaluate(data.test);
+            } catch (err) {
+                return {};
+            }
+            if (typeof test !== 'function') return {};
+        }
         const results: {
             [key: number]: { expected: any; found: any; error?: string };
         } = {};
@@ -72,7 +91,9 @@ export const fixturePlugin: NamespacePlugin<any> = {
                 try {
                     results[item.input.loc] = {
                         expected: item.output ? evaluate(item.output) : null,
-                        found: test(evaluate(item.input)),
+                        found: test
+                            ? test(evaluate(item.input))
+                            : evaluate(item.input),
                     };
                 } catch (err) {
                     // failed
@@ -92,13 +113,15 @@ export const fixturePlugin: NamespacePlugin<any> = {
         return {
             type: 'vert',
             children: [
-                data.test
-                    ? {
-                          type: 'ref',
-                          id: data.test.loc,
-                          path: { type: 'start' },
-                      }
-                    : { type: 'blinker', loc: 'start' },
+                ...(data.test
+                    ? ([
+                          {
+                              type: 'ref',
+                              id: data.test.loc,
+                              path: { type: 'start' },
+                          },
+                      ] as const)
+                    : []),
                 {
                     type: 'pairs',
                     firstLine: [],

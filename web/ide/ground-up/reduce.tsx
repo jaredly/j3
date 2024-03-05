@@ -681,7 +681,10 @@ export const findTops = (state: NUIState) => {
         if (ns.type === 'normal') {
             if (!seen[ns.top]) {
                 seen[ns.top] = true;
-                all.push({ top: ns.top, hidden: ns.hidden });
+                all.push({
+                    top: ns.top,
+                    hidden: ns.hidden || ns.plugin != null,
+                });
             }
             ns.children.forEach(add);
         }

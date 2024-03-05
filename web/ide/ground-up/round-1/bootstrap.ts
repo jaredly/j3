@@ -48,6 +48,11 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
                 switch (kase[0].type) {
                     case 'pany':
                         return evalExpr(kase[1], scope);
+                    case 'pint':
+                        if (target === kase[0][0]) {
+                            return evalExpr(kase[1], scope);
+                        }
+                        continue;
                     case 'pvar':
                         return evalExpr(kase[1], {
                             ...scope,

@@ -156,13 +156,14 @@ export function NSTop({
                                     ])}
                                 />
                             )}
-                            {ns.collapsed ? (
+                            {ns.plugin ? null : ns.collapsed ? (
                                 '...'
                             ) : (
                                 <div
                                     style={{
                                         whiteSpace: 'pre',
                                         fontSize: '80%',
+                                        opacity: 0.5,
                                     }}
                                 >
                                     {produce[ns.top] ?? 'hrm'}

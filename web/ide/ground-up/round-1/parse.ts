@@ -56,6 +56,8 @@ export type expr =
 export type pat =
     | { type: 'pany' }
     | { type: 'pvar'; 0: string }
+    | { type: 'pint'; 0: number }
+    | { type: 'pbool'; 0: boolean }
     | { type: 'pcon'; 0: string; 1: arr<string> };
 export type type_ =
     | { type: 'tvar'; 0: number }
@@ -258,6 +260,13 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
     if (node.type === 'identifier') {
         if (node.text === '_') {
             return { type: 'pany' };
+        }
+        if (node.text === 'true' || node.text === 'false') {
+            return { type: 'pbool', 0: node.text === 'true' };
+        }
+        const v = +node.text;
+        if ('' + Math.floor(v) === node.text) {
+            return { type: 'pint', 0: v };
         }
         return { type: 'pvar', 0: node.text };
     }
