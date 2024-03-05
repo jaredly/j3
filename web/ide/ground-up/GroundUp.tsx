@@ -49,13 +49,18 @@ export const GroundUp = ({
         let env = evaluator.init();
         findTops(state).forEach(({ top, hidden }) => {
             if (hidden) return;
+            console.log('process top', top);
             const stmt = fromMCST(top, state.map);
-            const ast = evaluator.parse(stmt, results.errors);
+            const errs: Results['errors'] = {};
+            const ast = evaluator.parse(stmt, errs);
+            Object.assign(results.errors, errs);
             if (ast) {
                 const res = evaluator.addStatement(ast, env);
                 env = res.env;
                 produce[stmt.loc] = res.display;
+                console.log('good', res.display);
             } else {
+                console.log('not parsed');
                 produce[stmt.loc] = 'not parsed';
             }
 

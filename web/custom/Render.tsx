@@ -522,6 +522,8 @@ export const RenderNNode = (
                     )}
                 </span>
             );
+        case 'dom':
+            return nnode.node;
         case 'indent':
             return (
                 <span

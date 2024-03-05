@@ -58,6 +58,15 @@ export const replacePath = (
                 nsMap: { [nsid]: { ...ns, top: newIdx } },
             };
         }
+        case 'ns-top':
+            const parentNs = nsMap[parent.idx];
+            if (parentNs.type === 'placeholder') {
+                throw new Error('sandbox placeholder');
+            }
+            return {
+                update: {},
+                nsMap: { [parent.idx]: { ...parentNs, top: newIdx } },
+            };
         case 'child': {
             const values = (pnode as ListLikeContents).values.slice();
             values[parent.at] = newIdx;

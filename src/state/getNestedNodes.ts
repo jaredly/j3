@@ -19,6 +19,7 @@ export type NNode =
     | { type: 'text'; text: string }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | { type: 'ref'; id: number; path: PathChild }
+    | { type: 'dom'; node: JSX.Element }
     // | {type: 'sub-path', path: PathChild, child: NNode}
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
@@ -62,8 +63,9 @@ export const unnestNodes = (node: NNode): ONode[] => {
                     color: node.color ?? 'rainbow',
                 },
             ];
+        case 'dom':
+            return [];
         case 'ref':
-            return [node];
         case 'blinker':
             return [node];
     }
@@ -75,6 +77,7 @@ export const getNestedNodes = (
     text?: string,
     layout?: Layout,
 ): NNode => {
+    if (!node) debugger;
     switch (node.type) {
         case 'spread':
             return {

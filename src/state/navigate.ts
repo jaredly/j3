@@ -64,6 +64,9 @@ export const goLeft = (
         if (!end) return;
         return { type: 'select', selection: end };
     }
+    if (last.type === 'ns-top') {
+        return goLeft(path.slice(0, -1), map, nsMap, cards);
+    }
 
     const pnodes = getNodes(map[last.idx], map);
 
@@ -84,7 +87,7 @@ export const goLeft = (
 
 export const goRight = (
     path: Path[],
-    idx: number,
+    // idx: number,
     map: Map,
     nsMap: NsMap,
     cards: Card[],
@@ -95,7 +98,7 @@ export const goRight = (
     if (last.type === 'ns') {
         const ns = nsMap[last.idx] as RealizedNamespace;
         if (last.at === ns.children.length - 1)
-            return goRight(path.slice(0, -1), idx, map, nsMap, cards);
+            return goRight(path.slice(0, -1), map, nsMap, cards);
         const end = selectStart(
             (nsMap[ns.children[last.at + 1]] as RealizedNamespace).top,
             path.slice(0, -1).concat([{ ...last, at: last.at + 1 }]),
@@ -103,6 +106,9 @@ export const goRight = (
         );
         if (!end) return;
         return { type: 'select', selection: end };
+    }
+    if (last.type === 'ns-top') {
+        return goRight(path.slice(0, -1), map, nsMap, cards);
     }
 
     const pnodes = getNodes(map[last.idx], map).reverse();
@@ -116,12 +122,12 @@ export const goRight = (
                       type: 'select',
                       selection: path.slice(0, -1).concat(prev),
                   }
-                : goRight(path.slice(0, -1), last.idx, map, nsMap, cards);
+                : goRight(path.slice(0, -1), map, nsMap, cards);
         }
         prev = ps;
     }
 
-    return goRight(path.slice(0, -1), last.idx, map, nsMap, cards);
+    return goRight(path.slice(0, -1), map, nsMap, cards);
 };
 
 export const pathSelForNode = (

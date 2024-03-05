@@ -443,6 +443,11 @@ export const valueToString = (v: any): string => {
     }
 
     if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapArray(v);
+            return '[' + un.map(valueToString).join(' ') + ']';
+        }
+
         let args = [];
         for (let i = 0; i in v; i++) {
             args.push(v[i]);

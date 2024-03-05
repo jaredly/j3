@@ -23,6 +23,8 @@ export const renderNNode = (
     display: Display,
 ): string => {
     switch (nnode.type) {
+        case 'dom':
+            return '<dom node>';
         case 'horiz':
         case 'inline':
             return nnode.children

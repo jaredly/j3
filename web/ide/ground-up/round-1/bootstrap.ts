@@ -54,6 +54,12 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
                             [kase[0][0]]: target,
                         });
                     case 'pcon':
+                        if (target === true && kase[0][0] === 'true') {
+                            return evalExpr(kase[1], scope);
+                        }
+                        if (target === false && kase[0][0] === 'false') {
+                            return evalExpr(kase[1], scope);
+                        }
                         if (target.type === kase[0][0]) {
                             const iscope = { ...scope };
                             const items = unwrapArray(kase[0][1]);

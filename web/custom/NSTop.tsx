@@ -45,6 +45,7 @@ const PluginRender = ({
         () => plugin.render(expanded, results),
         [expanded, results],
     );
+    if (!rn) return <Render map={map} {...props} />;
     return <RenderNNode {...props} nnode={rn} map={map} />;
 };
 

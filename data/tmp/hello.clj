@@ -187,7 +187,15 @@
 
 (,
     compile
-        [(, (@ 1) "1") (, (@ "hello") "\"hello\"") (, (@ (+ 2 3)) "$pl(2)(3)")])
+        [(, (@ 1) "1")
+        (, (@ "hello") "\"hello\"")
+        (, (@ (+ 2 3)) "$pl(2)(3)")
+        (,
+        (@
+            (match sth
+            (pany) "any"
+            (pvar name) name))
+            1)])
 
 (compile (@ 1))
 

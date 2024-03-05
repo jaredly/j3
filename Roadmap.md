@@ -10,6 +10,17 @@
   a problem anymore? Except, we'll need to do a conversion then as well.
 
 
+# Pluginss
+
+- [ ] editing all the places needs to work, including:
+  - delete any thing
+  - goLeft
+  - goRight
+  - if navigating gets us to a place that doesn't have a rendered node,
+    switch the selection up the chain until we find something that works.
+- [ ]
+
+
 # Switching Evaluatorss
 
 So, it seems like I might want

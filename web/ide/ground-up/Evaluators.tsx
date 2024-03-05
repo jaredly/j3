@@ -35,6 +35,8 @@ export const bootstrap: FullEvalator<
 > = {
     init: () => ({
         '+': (a: number) => (b: number) => a + b,
+        '<': (a: number) => (b: number) => a < b,
+        '>': (a: number) => (b: number) => a > b,
         nil: { type: 'nil' },
         cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),
         '++': (items: arr<string>) => unwrapArray(items).join(''),

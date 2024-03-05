@@ -152,7 +152,7 @@ export type NamespacePlugin<T> = {
     title: string;
     test(node: Node): boolean;
     process(node: Node, evaluate: (node: Node) => any): T;
-    render(node: Node, results: T): NNode;
+    render(node: Node, results: T): NNode | void;
     // evaluate: (node: Node, env: T) => T;
     // render: (node: Node, results: T) => NNode;
 };

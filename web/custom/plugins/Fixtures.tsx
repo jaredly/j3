@@ -4,6 +4,7 @@ import { Map } from '../../../src/types/mcst';
 import { NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
+import { valueToString } from '../../ide/ground-up/reduce';
 
 type Data = {
     test: null | Node;
@@ -37,7 +38,7 @@ const parse = (node: Node): Data | void => {
                 test,
                 fixtures: fixtures.values.map((item) => {
                     const inner = parseTuple(item);
-                    if (!inner || inner.length !== 2) {
+                    if (!inner?.length) {
                         return { type: 'unknown', node: item };
                     } else {
                         return {
@@ -85,9 +86,9 @@ export const fixturePlugin: NamespacePlugin<any> = {
         });
         return results;
     },
-    render(node: Node, results: { [key: number]: any }): NNode {
+    render(node: Node, results: { [key: number]: any }): NNode | void {
         const data = parse(node);
-        if (!data) return { type: 'text', text: 'Unable to parse data' };
+        if (!data) return;
         return {
             type: 'vert',
             children: [
@@ -101,96 +102,135 @@ export const fixturePlugin: NamespacePlugin<any> = {
                 {
                     type: 'pairs',
                     firstLine: [],
-                    children: data.fixtures.map(
-                        (item, i): [NNode] | [NNode, NNode] =>
-                            item.type === 'unknown'
-                                ? [
-                                      {
-                                          type: 'ref',
-                                          id: item.node.loc,
-                                          path: { type: 'child', at: i },
-                                      },
-                                  ]
-                                : [
-                                      {
-                                          type: 'horiz',
-                                          children: [
-                                              item.input
-                                                  ? {
-                                                        type: 'ref',
-                                                        id: item.input.loc,
-                                                        path: {
-                                                            type: 'child',
-                                                            at: i,
+                    children: [
+                        [
+                            { type: 'punct', text: 'Input', color: 'gray' },
+                            {
+                                type: 'punct',
+                                text: 'Output',
+                                color: 'gray',
+                            },
+                        ],
+                        ...data.fixtures.map(
+                            (item, i): [NNode] | [NNode, NNode] =>
+                                item.type === 'unknown'
+                                    ? [
+                                          {
+                                              type: 'ref',
+                                              id: item.node.loc,
+                                              path: { type: 'child', at: i },
+                                          },
+                                      ]
+                                    : [
+                                          {
+                                              type: 'horiz',
+                                              children: [
+                                                  item.input
+                                                      ? {
+                                                            type: 'ref',
+                                                            id: item.input.loc,
+                                                            path: {
+                                                                type: 'child',
+                                                                at: i,
+                                                            },
+                                                        }
+                                                      : {
+                                                            type: 'blinker',
+                                                            loc: 'start',
                                                         },
-                                                    }
-                                                  : {
-                                                        type: 'blinker',
-                                                        loc: 'start',
-                                                    },
-                                          ],
-                                      },
-                                      {
-                                          type: 'horiz',
-                                          children: [
-                                              {
-                                                  type: 'punct',
-                                                  color: 'red',
-                                                  text: (
-                                                      item.input &&
-                                                      results[item.input.loc] !=
-                                                          null
-                                                          ? equal(
-                                                                results[
-                                                                    item.input
-                                                                        .loc
-                                                                ]?.expected,
-                                                                results[
-                                                                    item.input
-                                                                        .loc
-                                                                ]?.found,
-                                                            )
-                                                          : false
-                                                  )
-                                                      ? '✅ '
-                                                      : '🚨 ',
-                                              },
-                                              item.output
-                                                  ? {
-                                                        type: 'ref',
-                                                        id: item.output.loc,
-                                                        path: {
-                                                            type: 'child',
-                                                            at: i,
+                                              ],
+                                          },
+                                          {
+                                              type: 'horiz',
+                                              children: [
+                                                  {
+                                                      type: 'punct',
+                                                      color: 'red',
+                                                      text: (
+                                                          item.input &&
+                                                          results[
+                                                              item.input.loc
+                                                          ] != null
+                                                              ? equal(
+                                                                    results[
+                                                                        item
+                                                                            .input
+                                                                            .loc
+                                                                    ]?.expected,
+                                                                    results[
+                                                                        item
+                                                                            .input
+                                                                            .loc
+                                                                    ]?.found,
+                                                                )
+                                                              : false
+                                                      )
+                                                          ? '✅ '
+                                                          : '🚨 ',
+                                                  },
+                                                  item.output
+                                                      ? {
+                                                            type: 'ref',
+                                                            id: item.output.loc,
+                                                            path: {
+                                                                type: 'child',
+                                                                at: i,
+                                                            },
+                                                        }
+                                                      : {
+                                                            type: 'blinker',
+                                                            loc: 'start',
                                                         },
-                                                    }
-                                                  : {
-                                                        type: 'blinker',
-                                                        loc: 'start',
-                                                    },
-                                              {
-                                                  type: 'punct',
-                                                  color: 'white',
-                                                  text: ' ',
-                                              },
-                                              {
-                                                  type: 'text',
-                                                  text:
-                                                      item.input &&
-                                                      results[item.input.loc] !=
-                                                          null
-                                                          ? JSON.stringify(
-                                                                results[
-                                                                    item.input
-                                                                        .loc
-                                                                ]?.found,
-                                                            ) + ''
-                                                          : '',
-                                              },
-                                          ],
-                                      },
-                                  ],
-                    ),
+                                                  {
+                                                      type: 'punct',
+                                                      color: 'white',
+                                                      text: ' ',
+                                                  },
+                                                  {
+                                                      type: 'punct',
+                                                      color: 'purple',
+                                                      text:
+                                                          item.input &&
+                                                          results[
+                                                              item.input.loc
+                                                          ] != null
+                                                              ? valueToString(
+                                                                    results[
+                                                                        item
+                                                                            .input
+                                                                            .loc
+                                                                    ]?.found,
+                                                                ) + ''
+                                                              : '',
+                                                  },
+                                              ],
+                                          },
+                                      ],
+                        ),
+
+                        [
+                            {
+                                type: 'dom',
+                                node: (
+                                    <button
+                                        style={{
+                                            cursor: 'pointer',
+                                            color: 'inherit',
+                                            padding: '8px 12px',
+                                            backgroundColor: 'transparent',
+                                            border: 'none',
+                                            opacity: 0.6,
+                                        }}
+                                        onMouseDown={(evt) => {
+                                            evt.stopPropagation();
+                                        }}
+                                    >
+                                        Add a test case
+                                    </button>
+                                ),
+                            },
+                        ],
+                    ],
                 },
             ],
         };
