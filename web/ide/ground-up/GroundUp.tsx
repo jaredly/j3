@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import { layout } from '../../../src/layout';
 import { fromMCST } from '../../../src/types/mcst';
-import { Cursors } from '../../custom/Cursors';
+import { Cursors, isValidCursorLocation } from '../../custom/Cursors';
 import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover } from '../../custom/Hover';
 import { NUIState } from '../../custom/UIState';
@@ -11,6 +11,7 @@ import { CardRoot } from '../../custom/CardRoot';
 import { RenderProps } from '../../custom/types';
 import { bootstrap } from './Evaluators';
 import { findTops, reduce } from './reduce';
+import { goLeftUntil, selectEnd } from '../../../src/state/navigate';
 
 export type Results = {
     display: Display;
@@ -69,6 +70,26 @@ export const GroundUp = ({
 
         return { results, produce, env };
     }, [state.map, state.nsMap, state.cards]);
+
+    useEffect(() => {
+        const path = state.at[0]?.start;
+        if (path && !isValidCursorLocation(path, state.regs)) {
+            console.log('Not valid sorry');
+            const left = goLeftUntil(
+                path,
+                state.map,
+                state.nsMap,
+                state.cards,
+                state.regs,
+            );
+            if (left) {
+                return dispatch({
+                    type: 'select',
+                    at: [{ start: left.selection }],
+                });
+            }
+        }
+    }, [state.at, state.map, state.regs]);
 
     // const { produce: evaluated, results } = useMemo(() => {
     //     const all = findTops(state);

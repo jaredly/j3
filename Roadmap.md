@@ -4,8 +4,18 @@
 
 
 
+- [ ] backspace at start deletes the NS
 
-- [ ] goLeft should accept a `regs` map to determine valid positions
+- [x] goLeft should accept a `regs` map to determine valid positions
+- [ ] Ok folks, navigation (left/right) is looking quite nice. We can give accurate
+  paths, and we keep going left/right until we get somewhere good.
+  Now, there is the little matter of being able to get to selections that don't go anywhere.
+  - [x] I still need to put something in for that.
+  BUT
+  - [ ] the bigger UX thing is: I want to press "enter" after an "output", and produce a new
+    line of fixtures. How hard can that be?
+
+
 
 
 

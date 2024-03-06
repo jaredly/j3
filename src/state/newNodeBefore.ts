@@ -28,6 +28,7 @@ export const newNodeAfter = (
                     .slice(0, i)
                     .concat([
                         { ...parent, at: parent.at + 1 },
+                        { type: 'ns-top', idx: nid },
                         ...newThing.selection,
                     ]),
                 nsMap: {
@@ -107,6 +108,7 @@ export const newNodeBefore = (
         if (parent.type === 'ns') {
             const ns = nsMap[parent.idx] as RealizedNamespace;
             const children = ns.children.slice();
+            const mid = children[parent.at];
             const nid = nidx();
             children.splice(parent.at, 0, nid);
             return {
@@ -116,6 +118,7 @@ export const newNodeBefore = (
                     .slice(0, i)
                     .concat([
                         { ...parent, at: parent.at + 1 },
+                        { type: 'ns-top', idx: mid },
                         ...newThing.selection,
                     ]),
                 nsMap: {

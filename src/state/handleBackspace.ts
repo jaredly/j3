@@ -121,6 +121,7 @@ export function handleBackspace(
     const parent = map[ppath.idx];
 
     if (ppath.type === 'ns' && atStart) {
+        console.log('back', node);
         const left = goLeft(selection.start, map, nsMap, cards);
         if (!left) return;
         const ns = nsMap[ppath.idx] as RealizedNamespace;
