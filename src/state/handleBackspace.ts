@@ -120,6 +120,29 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
+    const gpath = fullPath[fullPath.length - 3];
+    if (ppath.type === 'ns-top' && gpath.type === 'ns') {
+        if (node.type !== 'blank') {
+            return goLeft(selection.start, map, nsMap, cards);
+        }
+        console.log('back', node);
+        const left = goLeft(selection.start, map, nsMap, cards);
+        if (!left) return;
+        const ns = nsMap[gpath.idx] as RealizedNamespace;
+        const children = ns.children.slice();
+        const cid = children.splice(gpath.at, 1)[0];
+        // STOPSHIP cleanup the thing that was removed
+        return {
+            type: 'update',
+            map: { [flast.idx]: null },
+            selection: left.selection,
+            nsMap: {
+                [cid]: null,
+                [ns.id]: { ...ns, children },
+            },
+        };
+    }
+
     if (ppath.type === 'ns' && atStart) {
         console.log('back', node);
         const left = goLeft(selection.start, map, nsMap, cards);
