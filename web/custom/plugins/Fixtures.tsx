@@ -13,6 +13,7 @@ type RefNode = Extract<NNode, { type: 'ref' }> & { path: Path };
 
 type LineFixture = {
     type: 'line';
+    loc: number;
     input: null | {
         node: Node;
         child: RefNode;
@@ -56,6 +57,7 @@ const parseFixture = (
     } else {
         return {
             type: 'line',
+            loc: item.loc,
             input: {
                 node: inner[0],
                 child: {
@@ -145,8 +147,6 @@ export const fixturePlugin: NamespacePlugin<any> = {
             child.at === 1 &&
             parsed.fixtures.length
         ) {
-            console.log('Got it!');
-            // thennn we want ...
             const loc = path.slice(0, cidx - 1).concat([
                 { type: 'child', idx: child.idx, at: 2 },
                 { type: 'child', idx: parsed.fxid, at: 0 },
@@ -163,7 +163,52 @@ export const fixturePlugin: NamespacePlugin<any> = {
                 ),
                 nidx,
             );
-            // return newNodeBefore(loc, map, nsMap, newBlank(nidx()), nidx);
+        }
+
+        if (child.idx === parsed.fxid) {
+            const loc = path.slice(0, cidx - 1).concat([
+                { type: 'child', idx: child.idx, at: 2 },
+                { type: 'child', idx: parsed.fxid, at: child.at },
+            ]);
+            return newNodeAfter(
+                loc,
+                map,
+                nsMap,
+                newListLike(
+                    'list',
+                    nidx(),
+                    [newId([','], nidx()), newBlank(nidx()), newBlank(nidx())],
+                    1,
+                ),
+                nidx,
+            );
+        }
+
+        for (let i = 0; i < parsed.fixtures.length; i++) {
+            const fx = parsed.fixtures[i];
+            console.log('child', child.idx, fx.loc);
+            if (child.idx === fx.loc && child.at === 2) {
+                const loc = path.slice(0, cidx - 1).concat([
+                    { type: 'child', idx: child.idx, at: 2 },
+                    { type: 'child', idx: parsed.fxid, at: i },
+                ]);
+                return newNodeAfter(
+                    loc,
+                    map,
+                    nsMap,
+                    newListLike(
+                        'list',
+                        nidx(),
+                        [
+                            newId([','], nidx()),
+                            newBlank(nidx()),
+                            newBlank(nidx()),
+                        ],
+                        1,
+                    ),
+                    nidx,
+                );
+            }
         }
 
         console.log(child.idx, parsed.test?.node.loc);
