@@ -1,8 +1,8 @@
 
 
-- [ ] BUG backspace on the output of a fixture puts us in a BAD path, where deleting the (, )
+- [x] BUG backspace on the output of a fixture puts us in a BAD path, where deleting the (, )
   tuple deletes more than it should.
-- [ ] FEAT space after an output should add a fixture, thanks.
+- [x] FEAT space after an output should add a fixture, thanks.
 
 
 Thinking about translating sum types into GLSL
@@ -18,15 +18,15 @@ Except that you can't really `map` over a tuple type...
 
 
 
-- [ ] backspace at start deletes the NS
+- [x] backspace at start deletes the NS
 
 - [x] goLeft should accept a `regs` map to determine valid positions
-- [ ] Ok folks, navigation (left/right) is looking quite nice. We can give accurate
+- [x] Ok folks, navigation (left/right) is looking quite nice. We can give accurate
   paths, and we keep going left/right until we get somewhere good.
   Now, there is the little matter of being able to get to selections that don't go anywhere.
   - [x] I still need to put something in for that.
   BUT
-  - [ ] the bigger UX thing is: I want to press "enter" after an "output", and produce a new
+  - [x] the bigger UX thing is: I want to press "enter" after an "output", and produce a new
     line of fixtures. How hard can that be?
 
 

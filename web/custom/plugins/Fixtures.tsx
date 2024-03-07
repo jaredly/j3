@@ -27,7 +27,10 @@ type LineFixture = {
 type Data = {
     test: null | { node: Node; child: RefNode };
     fxid: number;
-    fixtures: (LineFixture | { type: 'unknown'; node: Node; child: RefNode })[];
+    fixtures: (
+        | LineFixture
+        | { type: 'unknown'; node: Node; child: RefNode; loc: number }
+    )[];
 };
 
 const parseTuple = (node: Node) => {
@@ -51,6 +54,7 @@ const parseFixture = (
     if (!inner?.length || inner.length != 2) {
         return {
             type: 'unknown',
+            loc: item.loc,
             node: item,
             child: { type: 'ref', path, id: item.loc, ancestors },
         };
@@ -147,11 +151,11 @@ export const fixturePlugin: NamespacePlugin<any> = {
             child.at === 1 &&
             parsed.fixtures.length
         ) {
-            const loc = path.slice(0, cidx - 1).concat([
+            const loc = path.slice(0, cidx).concat([
                 { type: 'child', idx: child.idx, at: 2 },
-                { type: 'child', idx: parsed.fxid, at: 0 },
+                { type: 'inside', idx: parsed.fxid },
             ]);
-            return newNodeBefore(
+            return newNodeAfter(
                 loc,
                 map,
                 nsMap,

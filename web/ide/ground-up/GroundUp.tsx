@@ -12,6 +12,7 @@ import { RenderProps } from '../../custom/types';
 import { bootstrap } from './Evaluators';
 import { findTops, reduce } from './reduce';
 import { goLeftUntil, selectEnd } from '../../../src/state/navigate';
+import { Path } from '../../store';
 
 export type Results = {
     display: Display;
@@ -199,7 +200,7 @@ export const GroundUp = ({
                             right: 0,
                         }}
                     >
-                        {JSON.stringify(state.at)}
+                        <ShowAt at={state.at} />
                         {/* <br />
                         {JSON.stringify(state.hover)} */}
                     </div>
@@ -225,5 +226,44 @@ export const GroundUp = ({
             {/* {JSON.stringify(state.at)} */}
             {/* <div>{JSON.stringify(state.hover)}</div> */}
         </div>
+    );
+};
+
+const showPath = (path: Path[]) => {
+    return (
+        <table>
+            <tbody>
+                {path.map((item) => (
+                    <tr>
+                        <td style={{ width: '3em', display: 'inline-block' }}>
+                            {item.idx}
+                        </td>
+                        <td
+                            style={{
+                                whiteSpace: 'nowrap',
+                                wordBreak: 'keep-all',
+                                minWidth: '5em',
+                            }}
+                        >
+                            {item.type}
+                        </td>
+                        {'at' in item ? <td>{item.at}</td> : null}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    );
+};
+const ShowAt = ({ at }: { at: NUIState['at'] }) => {
+    return (
+        <>
+            {at.map(({ start, end }, i) => (
+                <div key={i}>
+                    {showPath(start)}
+                    {end ? '[...]' : null}
+                    {end ? showPath(end) : null}
+                </div>
+            ))}
+        </>
     );
 };

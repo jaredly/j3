@@ -52,7 +52,9 @@ export const newNodeAfter = (
 
         let firstBlank =
             child.type === 'inside' &&
-            newThing.map[newThing.idx]!.type === 'blank'
+            newThing.map[newThing.idx]!.type === 'blank' &&
+            'values' in pnode &&
+            pnode.values.length === 0
                 ? newBlank(nidx())
                 : null;
         if (firstBlank) {

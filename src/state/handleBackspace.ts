@@ -121,7 +121,7 @@ export function handleBackspace(
     const parent = map[ppath.idx];
 
     const gpath = fullPath[fullPath.length - 3];
-    if (ppath.type === 'ns-top' && gpath.type === 'ns') {
+    if (ppath.type === 'ns-top' && gpath.type === 'ns' && atStart) {
         if (node.type !== 'blank') {
             return goLeft(selection.start, map, nsMap, cards);
         }
