@@ -4,6 +4,7 @@ import {
     RegMap,
     SandboxNamespace,
 } from '../../web/custom/UIState';
+import { plugins } from '../../web/custom/plugins';
 import { idText, pathPos, splitGraphemes } from '../parse/parse';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
@@ -414,6 +415,27 @@ export const getKeyUpdate = (
                 nidx,
             );
         }
+
+        const nsTop = fullPath.find((p) => p.type === 'ns-top');
+        if (nsTop) {
+            const ns = nsMap[nsTop.idx];
+            if (ns.type === 'normal' && ns.plugin) {
+                const plugin = plugins.find((p) => p.id === ns.plugin);
+                if (plugin) {
+                    const change = plugin.newNodeAfter(
+                        fullPath,
+                        map,
+                        nsMap,
+                        nidx,
+                    );
+                    if (change) {
+                        console.log('plugin change', change);
+                        return change;
+                    }
+                }
+            }
+        }
+
         return newNodeAfter(fullPath, map, nsMap, newBlank(nidx()), nidx);
     }
 
@@ -784,7 +806,7 @@ export function openListLike({
                 subPath.slice(0, -1),
                 map,
                 nsMap,
-                newListLike(type, nidx(), nw),
+                newListLike(type, nidx(), [nw]),
             );
         }
     }

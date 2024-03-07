@@ -5,6 +5,9 @@ import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
 import { valueToString } from '../../ide/ground-up/reduce';
 import { Path } from '../../store';
+import { fromMCST } from '../../../src/types/mcst';
+import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
+import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 
 type RefNode = Extract<NNode, { type: 'ref' }> & { path: Path };
 
@@ -22,6 +25,7 @@ type LineFixture = {
 
 type Data = {
     test: null | { node: Node; child: RefNode };
+    fxid: number;
     fixtures: (LineFixture | { type: 'unknown'; node: Node; child: RefNode })[];
 };
 
@@ -78,11 +82,12 @@ const parseFixture = (
 
 const parse = (node: Node): Data | void => {
     if (node.type === 'blank') {
-        return { test: null, fixtures: [] };
+        return;
     }
     if (node.type === 'array') {
         return {
             test: null,
+            fxid: node.loc,
             fixtures: node.values.map((item, i) =>
                 parseFixture(item, { type: 'child', at: i, idx: node.loc }, []),
             ),
@@ -102,6 +107,7 @@ const parse = (node: Node): Data | void => {
                         type: 'ref',
                     },
                 },
+                fxid: fixtures.loc,
                 fixtures: fixtures.values.map((item, i) =>
                     parseFixture(
                         item,
@@ -124,6 +130,49 @@ export const fixturePlugin: NamespacePlugin<any> = {
     test: (node: Node) => {
         return parse(node) != null;
     },
+    newNodeAfter(path, map, nsMap, nidx) {
+        const tid = path.findIndex((p) => p.type === 'ns-top');
+        if (tid === -1) return null;
+        const node = fromMCST(path[tid + 1].idx, map);
+        const parsed = parse(node);
+        if (!parsed) return null;
+        const cidx = path.findLastIndex((p) => p.type === 'child');
+        if (cidx === -1) return null;
+        const child = path[cidx] as Extract<Path, { type: 'child' }>;
+
+        if (
+            child.idx === node.loc &&
+            child.at === 1 &&
+            parsed.fixtures.length
+        ) {
+            console.log('Got it!');
+            // thennn we want ...
+            const loc = path.slice(0, cidx - 1).concat([
+                { type: 'child', idx: child.idx, at: 2 },
+                { type: 'child', idx: parsed.fxid, at: 0 },
+            ]);
+            return newNodeBefore(
+                loc,
+                map,
+                nsMap,
+                newListLike(
+                    'list',
+                    nidx(),
+                    [newId([','], nidx()), newBlank(nidx()), newBlank(nidx())],
+                    1,
+                ),
+                nidx,
+            );
+            // return newNodeBefore(loc, map, nsMap, newBlank(nidx()), nidx);
+        }
+
+        console.log(child.idx, parsed.test?.node.loc);
+
+        console.log('parsed', path, node, parsed);
+        // console.log('checkiong', path, node);
+        // if ... this ... is ...
+        return null;
+    },
     process(node: Node, evaluate: (node: Node) => any) {
         const data = parse(node);
         if (!data) return {};
@@ -140,17 +189,23 @@ export const fixturePlugin: NamespacePlugin<any> = {
             [key: number]: { expected: any; found: any; error?: string };
         } = {};
         data.fixtures.forEach((item) => {
-            if (item.type === 'line' && item.input) {
+            if (
+                item.type === 'line' &&
+                item.input &&
+                item.input?.node.type !== 'blank'
+            ) {
                 try {
                     results[item.input.node.loc] = {
-                        expected: item.output
-                            ? evaluate(item.output.node)
-                            : null,
+                        expected:
+                            item.output?.node.type !== 'blank'
+                                ? evaluate(item.output!.node)
+                                : null,
                         found: test
                             ? test(evaluate(item.input.node))
                             : evaluate(item.input.node),
                     };
                 } catch (err) {
+                    console.error(err);
                     // failed
                     results[item.input.node.loc] = {
                         expected: null,
@@ -286,7 +341,7 @@ function statusMessage(
 ): string {
     if (!item.input) return 'no input';
     const res = results[item.input.node.loc];
-    if (!res) return 'no results';
+    if (!res) return '';
     if (res.error) return res.error;
     if (!equal(res.expected, res.found)) {
         return valueToString(results[item.input.node.loc]?.found);

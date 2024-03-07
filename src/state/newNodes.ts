@@ -178,20 +178,26 @@ export function newAnnot(
 export function newListLike(
     kind: 'array' | 'list' | 'record',
     idx: number,
-    child?: NewThing,
+    children?: NewThing[],
+    selected: number = children ? children.length - 1 : 0,
 ): NewThing {
-    return {
-        map: {
-            ...child?.map,
-            [idx]: {
-                type: kind,
-                values: child != null ? [child.idx] : [],
-                loc: idx,
-            },
+    const map = {
+        // ...child?.map,
+        [idx]: {
+            type: kind,
+            values: children?.map((c) => c.idx) ?? [],
+            loc: idx,
         },
+    };
+    children?.forEach((child) => Object.assign(map, child.map));
+    return {
+        map,
         idx,
-        selection: child
-            ? [{ idx, type: 'child', at: 0 }, ...child.selection]
+        selection: children?.length
+            ? [
+                  { idx, type: 'child', at: selected },
+                  ...children[selected].selection,
+              ]
             : [{ idx, type: 'inside' }],
     };
 }

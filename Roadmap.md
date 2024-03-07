@@ -1,5 +1,19 @@
 
 
+- [ ] BUG backspace on the output of a fixture puts us in a BAD path, where deleting the (, )
+  tuple deletes more than it should.
+- [ ] FEAT space after an output should add a fixture, thanks.
+
+
+Thinking about translating sum types into GLSL
+as long as it's non-recursive, and doesn't have
+arrays, we're good? I think?
+oh so I should think more about fixed-length arrays.
+because they can be quite useful.
+So, functionally they can be similar to a tuple-type,
+right? Like a little bit?
+Except that you can't really `map` over a tuple type...
+
 
 
 

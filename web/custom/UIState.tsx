@@ -1,10 +1,16 @@
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { type ClipboardItem } from '../../src/state/clipboard';
-import { State, Mods, StateUpdate } from '../../src/state/getKeyUpdate';
+import {
+    State,
+    Mods,
+    StateUpdate,
+    StateChange,
+} from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
+import { Map, NsMap } from '../../src/types/mcst';
 
 export type NUIState = {
     regs: RegMap;
@@ -153,7 +159,12 @@ export type NamespacePlugin<T> = {
     test(node: Node): boolean;
     process(node: Node, evaluate: (node: Node) => any): T;
     render(node: Node, results: T): NNode | void;
-    newNodeAfter(path: Path[]): Path[] | null;
+    newNodeAfter(
+        path: Path[],
+        map: Map,
+        nsMap: NsMap,
+        nidx: () => number,
+    ): StateChange | null;
     // evaluate: (node: Node, env: T) => T;
     // render: (node: Node, results: T) => NNode;
 };
