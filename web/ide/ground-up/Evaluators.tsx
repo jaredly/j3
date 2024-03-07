@@ -33,27 +33,38 @@ export const bootstrap: FullEvalator<
     stmt & { loc: number },
     expr
 > = {
-    init: () => ({
-        '+': (a: number) => (b: number) => a + b,
-        '<': (a: number) => (b: number) => a < b,
-        '>': (a: number) => (b: number) => a > b,
-        nil: { type: 'nil' },
-        cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),
-        '++': (items: arr<string>) => unwrapArray(items).join(''),
-        '-': (a: number) => (b: number) => a - b,
-        'int-to-string': (a: number) => a + '',
-        'replace-all': (a: string) => (b: string) => (c: string) =>
-            a.replaceAll(b, c),
-        ',':
-            <a, b>(a: a) =>
-            (b: b) => ({ type: ',', 0: a, 1: b }),
-        sanitize,
-        reduce:
-            <T, A>(init: T) =>
-            (items: arr<A>) =>
-            (f: (res: T) => (item: A) => T) =>
-                unwrapArray(items).reduce((a, b) => f(a)(b), init),
-    }),
+    init: () => {
+        const env = {
+            '+': (a: number) => (b: number) => a + b,
+            '<': (a: number) => (b: number) => a < b,
+            '<=': (a: number) => (b: number) => a <= b,
+            '>': (a: number) => (b: number) => a > b,
+            '>=': (a: number) => (b: number) => a >= b,
+            nil: { type: 'nil' },
+            cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),
+            '++': (items: arr<string>) => unwrapArray(items).join(''),
+            '-': (a: number) => (b: number) => a - b,
+            'int-to-string': (a: number) => a + '',
+            eval: (v: string) => {
+                const obj: { [key: string]: any } = {};
+                Object.entries(env).forEach(([k, v]) => (obj[sanitize(k)] = v));
+                const k = `{${Object.keys(obj).join(',')}}`;
+                return new Function(k, 'return ' + v)(obj);
+            },
+            'replace-all': (a: string) => (b: string) => (c: string) =>
+                a.replaceAll(b, c),
+            ',':
+                <a, b>(a: a) =>
+                (b: b) => ({ type: ',', 0: a, 1: b }),
+            sanitize,
+            reduce:
+                <T, A>(init: T) =>
+                (items: arr<A>) =>
+                (f: (res: T) => (item: A) => T) =>
+                    unwrapArray(items).reduce((a, b) => f(a)(b), init),
+        };
+        return env;
+    },
     parse(node, errors) {
         const ctx = { errors, display: {} };
         const stmt = parseStmt(node, ctx) as stmt & { loc: number };

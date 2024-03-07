@@ -74,21 +74,26 @@ export const GroundUp = ({
 
     useEffect(() => {
         const path = state.at[0]?.start;
-        if (path && !isValidCursorLocation(path, state.regs)) {
-            console.log('Not valid sorry');
-            const left = goLeftUntil(
-                path,
-                state.map,
-                state.nsMap,
-                state.cards,
-                state.regs,
-            );
-            if (left) {
-                return dispatch({
-                    type: 'select',
-                    at: [{ start: left.selection }],
-                });
+        try {
+            if (path && !isValidCursorLocation(path, state.regs)) {
+                console.log('Not valid sorry');
+                const left = goLeftUntil(
+                    path,
+                    state.map,
+                    state.nsMap,
+                    state.cards,
+                    state.regs,
+                );
+                if (left) {
+                    return dispatch({
+                        type: 'select',
+                        at: [{ start: left.selection }],
+                    });
+                }
             }
+        } catch (err) {
+            console.error(err);
+            console.log('failed to find valid');
         }
     }, [state.at, state.map, state.regs]);
 

@@ -20,6 +20,7 @@ import {
     applyUpdate,
     getKeyUpdate,
     insertText,
+    NsUpdateMap,
     State,
     StateUpdate,
 } from './getKeyUpdate';
@@ -35,6 +36,8 @@ import { addDef } from '../to-ast/to-ast';
 import { applyInferMod, infer } from '../infer/infer';
 import { CstCtx } from '../to-ast/library';
 import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
+import { NUIState } from '../../web/custom/UIState';
+import { reduceUpdate } from '../../web/ide/ground-up/reduce';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -231,7 +234,7 @@ export type ClipboardItem =
     | { type: 'nodes'; nodes: Node[] };
 
 export const paste = (
-    state: State,
+    state: NUIState,
     hashNames: { [idx: number]: string },
     items: ClipboardItem[],
     withCtx: boolean,
@@ -614,27 +617,31 @@ const basicLex = (text: string) => {
 
 export function generateRawPasteUpdate(
     item: Extract<ClipboardItem, { type: 'text' }>,
-    state: State,
+    state: NUIState,
     withCtx: boolean,
 ): StateUpdate {
-    const chars = basicLex(item.text); // splitGraphemes(item.text); //.replace(/\s+/g, ' '));
+    const chars = basicLex(item.text.trim()); // splitGraphemes(item.text); //.replace(/\s+/g, ' '));
     let tmp = { ...state };
     let tctx = withCtx ? newCtx() : null;
     for (let char of chars) {
+        console.log(char);
         const update = getKeyUpdate(
             char,
             tmp.map,
-            {},
-            [],
+            tmp.nsMap,
+            tmp.cards,
             tmp.at[0],
             tctx?.results.hashNames ?? {},
             tmp.nidx,
         );
-        if (update?.autoComplete && tctx) {
-            tmp = autoCompleteIfNeeded(tmp, tctx.results.display);
-        }
+        // if (update?.autoComplete && tctx) {
+        //     tmp = autoCompleteIfNeeded(tmp, tctx.results.display);
+        // }
 
-        tmp = applyUpdate(tmp, 0, update);
+        console.log('up', update, tmp);
+        tmp = reduceUpdate(tmp, update);
+        console.log('mod', tmp);
+        // applyUpdate(tmp, 0, update);
 
         if (tctx) {
             tctx = newCtx();
@@ -674,9 +681,22 @@ export function generateRawPasteUpdate(
             update[+key] = null;
         }
     }
+    const nsUpdate: NsUpdateMap = {};
+    Object.keys(tmp.nsMap).forEach((k) => {
+        if (tmp.nsMap[+k] !== state.nsMap[+k]) {
+            nsUpdate[+k] = tmp.nsMap[+k];
+        }
+    });
+    Object.keys(state.nsMap).forEach((k) => {
+        if (!tmp.nsMap[+k]) {
+            nsUpdate[+k] = null;
+        }
+    });
+
     return {
         type: 'update',
         map: update,
+        nsMap: nsUpdate,
         selection: tmp.at[0].start,
         selectionEnd: tmp.at[0].end,
     };

@@ -19,7 +19,8 @@ export type NUIState = {
     history: HistoryItem[];
     cards: Card[];
     nsMap: { [key: number]: SandboxNamespace };
-    // evaluator?: string,
+    // Ok here's where it gets real.
+    evaluator?: string;
     // you pull up the file ... and
     // evaluate it n stuff
 } & State;

@@ -185,23 +185,49 @@
                                       (compile target)
                                       ")"])))
 
+(defn run [v] (eval (compile v)))
+
 (,
-    compile
-        [(, (@ 1) "1")
-        (, (@ "hello") "\"hello\"")
-        (, (@ (+ 2 3)) "$pl(2)(3)")
+    run
+        [(, (@ 1) 1)
+        (, (@ "hello") "hello")
+        (, (@ (+ 2 3)) 5)
         (,
         (@
-            (match sth
+            (match (pany)
                 (pany)      "any"
                 (pvar name) name))
-            1)])
+            "any")
+        (, (@ ((fn [a] (+ a 2)) 21)) 23)
+        (,
+        (@
+            (let [one 1 two 2]
+                (+ 1 2)))
+            3)])
 
-(compile (@ 1))
+(eval (compile (@ (+ 2 3))))
 
-(compile (@ "\""))
+(def type-check "# Type Check")
 
-(compile (@ "lol"))
+(defn tfn [arg body] (tapp (tapp (tcon "->") arg) body))
 
-(compile (@ (+ 2 3)))
+(def empty-subst [])
+
+(defn var-set [env name value]
+    (, (map-set (fst env) name value) (snd env)))
+
+(defn var-get [env name] (map-get (fst env) name))
+
+(defn tc-get [env name] (map-get (snd env) name))
+
+(defn make-type [tname count]
+    (let [loop
+        (fn [type count]
+        (match (>= 0 count)
+            true  (, type [])
+            false (let [var (newTV) (, type vbls) (loop (tapp type var) (- count 1))]
+                      (, type [var ..vbls]))))]
+        (loop (tcon tname) count)))
+
+(make-type "hi" 21)
 
