@@ -37,7 +37,7 @@ const PluginRender = ({
             plugin.process(expanded, (node) => {
                 const errors = {};
                 const expr = ev.parseExpr(node, errors);
-                return bootstrap.evaluate(expr, env);
+                return ev.evaluate(expr, env);
             }),
         [ev, env, expanded],
     );
@@ -61,7 +61,9 @@ export function NSTop({
     nsReg,
     drag,
     env,
+    ev,
 }: {
+    ev: FullEvalator<any, any, any> | void | null;
     env: any;
     nsReg: NsReg;
     path: Path[];
@@ -117,11 +119,11 @@ export function NSTop({
                                 }
                             }}
                         >
-                            {ns.plugin ? (
+                            {ns.plugin && ev ? (
                                 <PluginRender
                                     ns={ns}
                                     env={env}
-                                    ev={bootstrap}
+                                    ev={ev}
                                     plugin={
                                         plugins.find((p) => p.id === ns.plugin)!
                                     }
@@ -181,6 +183,7 @@ export function NSTop({
                             child.type === 'normal' ? (
                                 <NSTop
                                     env={env}
+                                    ev={ev}
                                     reg={reg}
                                     drag={drag}
                                     nsReg={nsReg}

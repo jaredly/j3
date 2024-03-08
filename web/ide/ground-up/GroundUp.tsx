@@ -101,7 +101,25 @@ const loadEv = async (
                 return parseExpr(node, ctx);
             },
             evaluate(expr, env) {
-                return evalExpr(expr, env);
+                let raw;
+                try {
+                    raw = env.join('\n') + '\nreturn ' + benv['compile'](expr);
+                } catch (err) {
+                    console.error(err);
+                    return {
+                        env,
+                        display:
+                            'Compilation failed: ' + (err as Error).message,
+                    };
+                }
+                try {
+                    const res = new Function(envArgs, '{' + raw + '}')(san);
+                    return res;
+                } catch (err) {
+                    console.log(raw);
+                    console.error(err);
+                    return 'Error evaluating! ' + (err as Error).message;
+                }
             },
         };
         // first we have to pass everything through the bootstrapping.
@@ -187,7 +205,7 @@ export const GroundUp = ({
                     // console.log('good', res.display);
                 } else {
                     console.log('not parsed');
-                    produce[stmt.loc] = 'not parsed';
+                    produce[stmt.loc] = 'not parsed ' + JSON.stringify(errs);
                 }
             } else {
                 produce[stmt.loc] = 'No evaluator';
@@ -228,7 +246,7 @@ export const GroundUp = ({
     // const selTop = start?.[1].idx;
 
     return (
-        <div style={{ padding: 16, cursor: 'text' }}>
+        <div style={{ padding: 16, cursor: 'text', marginBottom: 300 }}>
             <HiddenInput
                 display={results.display}
                 state={state}
@@ -240,6 +258,7 @@ export const GroundUp = ({
                 <CardRoot
                     state={state}
                     key={i}
+                    ev={evaluator}
                     dispatch={dispatch}
                     card={i}
                     results={results}
@@ -254,7 +273,7 @@ export const GroundUp = ({
                 <div>
                     {state.evaluator ?? 'Non set'}
                     <select
-                        value={state.evaluator ?? 'bootstrap'}
+                        value={state.evaluator ?? ''}
                         onChange={(evt) => {
                             dispatch({
                                 type: 'config:evaluator',

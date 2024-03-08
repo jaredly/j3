@@ -16,6 +16,7 @@ import { Action, NUIState, RealizedNamespace } from './UIState';
 import { Reg } from './types';
 import { useNSDrag } from './useNSDrag';
 import { closestSelection } from './verticalMove';
+import { FullEvalator } from '../ide/ground-up/Evaluators';
 
 export function CardRoot({
     state,
@@ -24,6 +25,7 @@ export function CardRoot({
     results,
     produce,
     env,
+    ev,
 }: {
     env: any;
     card: number;
@@ -31,6 +33,7 @@ export function CardRoot({
     dispatch: React.Dispatch<Action>;
     results: Results;
     produce: { [key: number]: string | JSX.Element };
+    ev: FullEvalator<any, any, any> | void | null;
 }) {
     const selections = React.useMemo(
         () =>
@@ -69,6 +72,7 @@ export function CardRoot({
         >
             <NSTop
                 reg={reg}
+                ev={ev}
                 nsReg={nsReg}
                 drag={dragObj}
                 ns={state.nsMap[state.cards[card].top] as RealizedNamespace}

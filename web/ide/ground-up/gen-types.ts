@@ -12,6 +12,10 @@ const file = ts.createSourceFile(
 
 export type One = {type: X, 0: a, 1: b}
 
+
+hrmmmmmmmmmmm
+
+
 */
 
 const output: string[] = [];

@@ -322,7 +322,12 @@ export const clipboardText = (
                       .map((node) => {
                           const map: Map = {};
                           const top = toMCST(node, map);
-                          return renderNodeToString(top, map, 0, display);
+                          return renderNodeToString(
+                              top,
+                              map,
+                              0,
+                              display,
+                          ).replaceAll(/[“”]/g, '"');
                       })
                       .join(sep),
         )
