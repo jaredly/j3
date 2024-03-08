@@ -16,7 +16,11 @@
 
 (deftype prim (pstr string) (pint int) (pbool bool))
 
-(deftype pat (pany) (pvar string) (pcon string (array string)))
+(deftype pat
+    (pany)
+        (pvar string)
+        (pint int)
+        (pcon string (array string)))
 
 (deftype type (tvar int) (tapp type type) (tcon string))
 
@@ -158,6 +162,13 @@
                                           (let [(, pat body) case]
                                               (match pat
                                                   (pany)           (++ ["true ? " (compile body) " : " otherwise])
+                                                  (pint int)       (++
+                                                                       ["$target === "
+                                                                           (int-to-string int)
+                                                                           " ? "
+                                                                           (compile body)
+                                                                           " : "
+                                                                           otherwise])
                                                   (pvar name)      (++ ["true ? ((" (sanitize name) ") => " (compile body) ")($target)"])
                                                   (pcon name args) (++
                                                                        ["$target.type == \""
@@ -203,7 +214,12 @@
         (@
             (let [one 1 two 2]
                 (+ 1 2)))
-            3)])
+            3)
+        (,
+        (@
+            (match 2
+                2 1))
+            1)])
 
 (eval (compile (@ (+ 2 3))))
 

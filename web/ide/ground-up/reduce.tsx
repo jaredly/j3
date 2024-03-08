@@ -620,7 +620,6 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     }
     const update = actionToUpdate(state, action);
     if (!update) {
-        // console.warn('acrtion acannot be an update', action);
         return state;
     }
     const next = reduceUpdate(state, update);
@@ -628,7 +627,6 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (item) {
         next.history = state.history.concat([item]);
     }
-    // console.log('verifying state', next, action);
     try {
         verifyState(next);
     } catch (err) {

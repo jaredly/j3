@@ -10,9 +10,12 @@ import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { RenderProps } from '../../custom/types';
 import { FullEvalator, bootstrap, repr } from './Evaluators';
-import { findTops, reduce } from './reduce';
+import { findTops, loadState, reduce, urlForId, valueToString } from './reduce';
 import { goLeftUntil, selectEnd } from '../../../src/state/navigate';
 import { Path } from '../../store';
+import { parseExpr, parseStmt, stmt } from './round-1/parse';
+import { evalExpr } from './round-1/bootstrap';
+import { sanitize } from './round-1/builtins';
 
 export type Results = {
     display: Display;
@@ -20,27 +23,130 @@ export type Results = {
     hashNames: { [idx: number]: string };
 };
 
+const loadEv = async (
+    id: string,
+): Promise<void | FullEvalator<any, any, any>> => {
+    const res = await fetch(urlForId(id) + '.js');
+    if (res.status !== 200) return console.log('Nope', res.status);
+    const data = new Function(await res.text())();
+    if (data.type === 'full') {
+        return data;
+    }
+    if (data.type === 'bootstrap') {
+        let benv = bootstrap.init();
+        data.stmts.forEach((stmt: any) => {
+            benv = bootstrap.addStatement(stmt, benv).env;
+        });
+        const san: { [key: string]: any } = {};
+        Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
+        const envArgs = '{' + Object.keys(san).join(', ') + '}';
+        return {
+            init() {
+                return [];
+            },
+            addStatement(stmt: stmt, env: string[]) {
+                if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
+                    env.push(benv['compile-st'](stmt));
+                    return { env, display: 'compiled.' };
+                }
+                if (stmt.type === 'sexpr') {
+                    let raw;
+                    try {
+                        raw =
+                            env.join('\n') +
+                            '\nreturn ' +
+                            benv['compile-st'](stmt);
+                    } catch (err) {
+                        console.error(err);
+                        return {
+                            env,
+                            display:
+                                'Compilation failed: ' + (err as Error).message,
+                        };
+                    }
+                    try {
+                        const res = new Function(envArgs, raw)(san);
+                        return { env, display: valueToString(res) };
+                    } catch (err) {
+                        console.log(raw);
+                        return {
+                            env,
+                            display:
+                                'Error evaluating! ' + (err as Error).message,
+                        };
+                    }
+                }
+                return { env, display: 'idk' };
+            },
+            parse(node, errors) {
+                const ctx = { errors, display: {} };
+                const stmt = parseStmt(node, ctx) as stmt & { loc: number };
+                if (Object.keys(ctx.errors).length || !stmt) {
+                    return;
+                }
+                stmt.loc = node.loc;
+                return stmt;
+            },
+            parseExpr(node, errors) {
+                const ctx = { errors, display: {} };
+                return parseExpr(node, ctx);
+            },
+            evaluate(expr, env) {
+                return evalExpr(expr, env);
+            },
+        };
+        // first we have to pass everything through the bootstrapping.
+    }
+    // we have `compile-st` and `compile`.
+    // ELSE do ... a thing
+};
+
+const useEvaluator = (name?: string) => {
+    const [evaluator, setEvaluator] = useState(
+        (): FullEvalator<any, any, any> | null | void => {
+            switch (name) {
+                case ':bootstrap:':
+                    return bootstrap;
+                case ':repr:':
+                    return repr;
+            }
+            return null;
+        },
+    );
+
+    useEffect(() => {
+        if (name?.endsWith('.json')) {
+            loadEv(name).then(setEvaluator);
+        }
+    }, [name]);
+
+    return evaluator;
+};
+
 export const GroundUp = ({
     id,
     initial,
     save,
+    listing,
 }: {
     id: string;
     initial: NUIState;
+    listing: string[] | null;
     save: (state: NUIState) => void;
 }) => {
     const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
 
     const [debug, setDebug] = useState(true);
 
-    const evaluator: FullEvalator<any, any, any> | undefined = useMemo(() => {
-        switch (state.evaluator) {
-            case ':bootstrap:':
-                return bootstrap;
-            case ':repr:':
-                return repr;
-        }
-    }, [state.evaluator]);
+    const evaluator = useEvaluator(state.evaluator);
+    // const evaluator: FullEvalator<any, any, any> | undefined = useMemo(() => {
+    //     switch (state.evaluator) {
+    //         case ':bootstrap:':
+    //             return bootstrap;
+    //         case ':repr:':
+    //             return repr;
+    //     }
+    // }, [state.evaluator]);
 
     useEffect(() => {
         // @ts-ignore
@@ -109,78 +215,8 @@ export const GroundUp = ({
         }
     }, [state.at, state.map, state.regs]);
 
-    // const { produce: evaluated, results } = useMemo(() => {
-    //     const all = findTops(state);
-
-    //     const results = newResults();
-    //     const produce: { [key: number]: string } = {};
-    //     all.forEach((t) => (produce[t.top] = ''));
-    //     try {
-    //         const stmts = all.map((t) => fromMCST(t.top, state.map));
-    //         const env: { [key: string]: any } = {
-    //             '+': (a: number) => (b: number) => a + b,
-    //             'replace-all': (a: string) => (b: string) => (c: string) =>
-    //                 a.replaceAll(b, c),
-    //         };
-    //         const parsed = bootstrapParse(stmts, results);
-
-    //         parsed.forEach((stmt) => {
-    //             if (stmt.type === 'sdeftype') {
-    //                 results.tops[(stmt as any).loc] = {
-    //                     summary: stmt[0],
-    //                     data: [],
-    //                     failed: false,
-    //                 };
-    //                 addTypeConstructors(stmt, env);
-    //                 produce[(stmt as any).loc] = `type with ${
-    //                     unwrapArray(stmt[1]).length
-    //                 } constructors`;
-    //                 return;
-    //             }
-    //             if (stmt.type === 'sdef') {
-    //                 results.tops[(stmt as any).loc] = {
-    //                     summary: stmt[0],
-    //                     data: [],
-    //                     failed: false,
-    //                 };
-
-    //                 const res = evalExpr(stmt[1], env);
-    //                 env[stmt[0]] = res;
-    //                 produce[(stmt as any).loc] =
-    //                     typeof res === 'function'
-    //                         ? `<function>`
-    //                         : JSON.stringify(res);
-    //                 // produce[(stmt as any).loc] +=
-    //                 //     '\n\nAST: ' + JSON.stringify(stmt);
-    //                 if (stmt[0] === 'builtins') {
-    //                     Object.assign(env, extractBuiltins(res));
-    //                 }
-    //             }
-    //         });
-
-    //         if (env['compile-st']) {
-    //             let prelude = '';
-    //             prelude += `const {${Object.keys(env)
-    //                 .filter((k) => sanitize(k) === k)
-    //                 .join(', ')}} = env;\n{`;
-
-    //             selfCompileAndEval(parsed, env, prelude, produce);
-    //         } else {
-    //             bootstrapEval(parsed, env, produce);
-    //         }
-    //     } catch (err) {
-    //         console.error('Something didnt work', err);
-    //     }
-
-    //     all.map(({ top }) => {
-    //         layout(top, 0, state.map, results.display, results.hashNames, true);
-    //     });
-
-    //     return { produce, results };
-    // }, [state.map, state.nsMap, state.cards]);
-
     const start = state.at.length ? state.at[0].start : null;
-    const selTop = start?.[1].idx;
+    // const selTop = start?.[1].idx;
 
     return (
         <div style={{ padding: 16, cursor: 'text' }}>
@@ -220,7 +256,15 @@ export const GroundUp = ({
                         <option value={''}>No evaluator</option>
                         <option value={':repr:'}>REPR</option>
                         <option value={':bootstrap:'}>Bootstrap</option>
-                        {/* {...files} */}
+                        {listing
+                            ?.filter((n) => n.endsWith('.json'))
+                            .map((name, i) =>
+                                name === id ? null : (
+                                    <option value={name} key={name}>
+                                        {name}
+                                    </option>
+                                ),
+                            )}
                     </select>
                 </div>
                 {debug ? (

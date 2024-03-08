@@ -21,7 +21,7 @@ export const Outside = () => {
             <div>
                 <div>
                     {listing
-                        ?.filter((k) => !k.endsWith('.clj'))
+                        ?.filter((k) => k.endsWith('.json'))
                         .map((name) => (
                             <a
                                 href={'#' + name}
@@ -49,7 +49,11 @@ export const Outside = () => {
                         Close
                     </a>
                 </div>
-                <Loader id={hash.slice(1)} key={hash.slice(1)} />
+                <Loader
+                    id={hash.slice(1)}
+                    key={hash.slice(1)}
+                    listing={listing}
+                />
             </div>
         );
     }
@@ -100,7 +104,13 @@ export const Outside = () => {
     );
 };
 
-export const Loader = ({ id }: { id: string }) => {
+export const Loader = ({
+    id,
+    listing,
+}: {
+    id: string;
+    listing: null | string[];
+}) => {
     const save = useMemo(
         () => debounce<NUIState>((state) => saveState(id, state), 500),
         [id],
@@ -126,7 +136,7 @@ export const Loader = ({ id }: { id: string }) => {
 
     return (
         <div>
-            <GroundUp id={id} save={save} initial={initial} />
+            <GroundUp id={id} listing={listing} save={save} initial={initial} />
         </div>
     );
 };

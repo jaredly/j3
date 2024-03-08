@@ -14,6 +14,7 @@ import { ListLikeContents, fromMCST, toMCST } from './src/types/mcst';
 import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
 import { findTops } from './web/ide/ground-up/reduce';
+import { bootstrap } from './web/ide/ground-up/Evaluators';
 
 const base = path.join(__dirname, 'data');
 
@@ -35,6 +36,21 @@ const readBody = (readable: IncomingMessage) => {
     });
 };
 
+const fileToJs = (state: NUIState) => {
+    if (!state.evaluator || state.evaluator === ':repr:') return;
+    if (state.evaluator === ':bootstrap:') {
+        return `return {type: 'bootstrap', stmts: ${JSON.stringify(
+            findTops(state)
+                .map((stmt) =>
+                    bootstrap.parse(fromMCST(stmt.top, state.map), {}),
+                )
+                .filter(Boolean),
+            null,
+            2,
+        )}}`;
+    }
+};
+
 const serializeFile = (raw: string) => {
     const state: NUIState = JSON.parse(raw);
     const all = findTops(state);
@@ -48,10 +64,13 @@ const serializeFile = (raw: string) => {
         }
     });
 
-    return all
-        .map((id) => renderNodeToString(id.top, state.map, 0, display))
-        .join('\n\n')
-        .replaceAll(/[“”]/g, '"');
+    return {
+        clj: all
+            .map((id) => renderNodeToString(id.top, state.map, 0, display))
+            .join('\n\n')
+            .replaceAll(/[“”]/g, '"'),
+        js: fileToJs(state),
+    };
 };
 
 const deserializeFile = (raw: string) => {
@@ -118,7 +137,11 @@ createServer(async (req, res) => {
         const state = await readBody(req);
         writeFileSync(full, state);
         try {
-            writeFileSync(full.replace('.json', '.clj'), serializeFile(state));
+            const { clj, js } = serializeFile(state);
+            writeFileSync(full.replace('.json', '.clj'), clj);
+            if (js) {
+                writeFileSync(full + '.js', js);
+            }
         } catch (err) {
             console.log('Agh what');
             console.error(err);
@@ -148,12 +171,20 @@ createServer(async (req, res) => {
             });
             return res.end(JSON.stringify(readdirSync(full)));
         }
+        const raw = readFileSync(full, 'utf-8');
+        if (full.endsWith('.js')) {
+            res.writeHead(200, {
+                'Content-type': 'script/javascript',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'content-type',
+            });
+            return res.end(raw);
+        }
         res.writeHead(200, {
             'Content-type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Headers': 'content-type',
         });
-        const raw = readFileSync(full, 'utf-8');
         const v = deserializeFile(raw);
         return res.end(JSON.stringify(v));
     }
