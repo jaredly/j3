@@ -662,7 +662,7 @@ export function generateRawPasteUpdate(
             tmp = { ...tmp, map: { ...tmp.map } };
             applyMods(tctx, tmp.map, state.nidx);
 
-            if (update?.autoComplete) {
+            if (update && 'autoComplete' in update && update.autoComplete) {
                 const mods = infer(tctx, tmp.map);
                 Object.keys(mods).forEach((id) => {
                     applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);

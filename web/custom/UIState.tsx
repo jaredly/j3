@@ -21,6 +21,10 @@ export type NUIState = {
     nsMap: { [key: number]: SandboxNamespace };
     // Ok here's where it gets real.
     evaluator?: string;
+    // config?: {
+    //     evaluator: string,
+    //     // info ... about ... what kind of evaluator I would be.
+    // }
     // you pull up the file ... and
     // evaluate it n stuff
 } & State;
@@ -201,6 +205,7 @@ export type Action =
 
 /** Actions that can be turned into a StateChange | UIStatechange */
 export type UpdatableAction =
+    | { type: 'config:evaluator'; id: string }
     | { type: 'hover'; path: Path[] }
     | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
     | { type: 'copy'; items: ClipboardItem[] }

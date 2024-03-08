@@ -109,16 +109,21 @@ export const parseByCharacter = (
             continue;
         }
         if (key === 'Paste') {
-            state = applyUpdate(
-                state,
-                0,
-                paste(
-                    state,
-                    ctx?.results.hashNames ?? {},
-                    clipboard,
-                    ctx != null,
-                ),
+            throw new Error(
+                'I dont think this code is used anymore. if so, need to use UIState pls',
             );
+
+            // state = applyUpdate(
+            //     state,
+            //     0,
+            //     paste(
+            //         state,
+            //         ctx?.results.hashNames ?? {},
+            //         clipboard,
+            //         ctx != null,
+            //     ),
+            // );
+
             continue;
         }
 
@@ -152,7 +157,7 @@ export const parseByCharacter = (
 
         const prevMap = state.map;
 
-        if (ctx && update?.autoComplete) {
+        if (ctx && update && 'autoComplete' in update && update.autoComplete) {
             state = autoCompleteIfNeeded(state, ctx.results.display);
         }
 
@@ -176,7 +181,12 @@ export const parseByCharacter = (
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map, state.nidx);
 
-            if ((!kind || kind === 'expr') && update?.autoComplete) {
+            if (
+                (!kind || kind === 'expr') &&
+                update &&
+                'autoComplete' in update &&
+                update?.autoComplete
+            ) {
                 // Now we do like inference, right?
                 const mods = infer(ctx, state.map);
                 Object.keys(mods).forEach((id) => {

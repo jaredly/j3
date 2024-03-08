@@ -28,6 +28,22 @@ export type FullEvalator<Env, Stmt, Expr> = {
     evaluate(expr: Expr, env: Env): any;
 };
 
+export const repr: FullEvalator<void, Node, Node> = {
+    init() {},
+    parse(node: Node, errors: Errors) {
+        return node;
+    },
+    parseExpr(node: Node, errors: Errors) {
+        return node;
+    },
+    addStatement(stmt, env) {
+        return { env, display: JSON.stringify(stmt) };
+    },
+    evaluate(expr, env) {
+        return null;
+    },
+};
+
 export const bootstrap: FullEvalator<
     { [key: string]: any },
     stmt & { loc: number },

@@ -101,6 +101,7 @@ const actionToUpdate = (
         case 'paste': {
             return paste(state, state.ctx, action.items, true);
         }
+        case 'config:evaluator':
         case 'namespace-rename':
             return action;
         // case 'collapse':
@@ -691,6 +692,8 @@ export const reduceUpdate = (
         //         },
         //     };
         // return state;
+        case 'config:evaluator':
+            return { ...state, evaluator: update.id };
         default:
             const _: never = update;
             throw new Error('nope update');

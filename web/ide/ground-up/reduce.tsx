@@ -144,6 +144,8 @@ export const reduceUpdate = (
                 });
             }
             return state;
+        case 'config:evaluator':
+            return { ...state, evaluator: update.id };
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
             return state;
@@ -157,6 +159,8 @@ export const actionToUpdate = (
     action: UpdatableAction,
 ): StateChange | UIStateChange | void => {
     switch (action.type) {
+        case 'config:evaluator':
+            return action;
         case 'hover':
             return { type: 'ui', hover: action.path };
         case 'menu':

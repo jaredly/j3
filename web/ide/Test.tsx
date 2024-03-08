@@ -220,6 +220,8 @@ export const reduceUpdate = (
             };
         case 'menu':
             return { ...state, menu: update.menu };
+        case 'config:evaluator':
+            return { ...state, evaluator: update.id };
         case 'select':
         case 'update':
             state = { ...state, ...applyUpdate(state, 0, update) };

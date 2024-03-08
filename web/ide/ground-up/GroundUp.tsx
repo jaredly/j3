@@ -9,7 +9,7 @@ import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { RenderProps } from '../../custom/types';
-import { bootstrap } from './Evaluators';
+import { FullEvalator, bootstrap, repr } from './Evaluators';
 import { findTops, reduce } from './reduce';
 import { goLeftUntil, selectEnd } from '../../../src/state/navigate';
 import { Path } from '../../store';
@@ -33,7 +33,14 @@ export const GroundUp = ({
 
     const [debug, setDebug] = useState(true);
 
-    const evaluator = bootstrap;
+    const evaluator: FullEvalator<any, any, any> | undefined = useMemo(() => {
+        switch (state.evaluator) {
+            case ':bootstrap:':
+                return bootstrap;
+            case ':repr:':
+                return repr;
+        }
+    }, [state.evaluator]);
 
     useEffect(() => {
         // @ts-ignore
@@ -47,30 +54,35 @@ export const GroundUp = ({
     const { produce, results, env } = useMemo(() => {
         const results: Results = { display: {}, errors: {}, hashNames: {} };
         const produce: { [key: string]: JSX.Element | string } = {};
+        // if (!evaluator) return { produce, results, env: null };
 
-        let env = evaluator.init();
+        let env = evaluator?.init();
         findTops(state).forEach(({ top, hidden }) => {
             if (hidden) return;
             // console.log('process top', top);
             const stmt = fromMCST(top, state.map);
-            const errs: Results['errors'] = {};
-            const ast = evaluator.parse(stmt, errs);
-            Object.assign(results.errors, errs);
-            if (ast) {
-                const res = evaluator.addStatement(ast, env);
-                env = res.env;
-                produce[stmt.loc] = res.display;
-                // console.log('good', res.display);
+            if (evaluator) {
+                const errs: Results['errors'] = {};
+                const ast = evaluator.parse(stmt, errs);
+                Object.assign(results.errors, errs);
+                if (ast) {
+                    const res = evaluator.addStatement(ast, env!);
+                    env = res.env;
+                    produce[stmt.loc] = res.display;
+                    // console.log('good', res.display);
+                } else {
+                    console.log('not parsed');
+                    produce[stmt.loc] = 'not parsed';
+                }
             } else {
-                console.log('not parsed');
-                produce[stmt.loc] = 'not parsed';
+                produce[stmt.loc] = 'No evaluator';
             }
 
             layout(top, 0, state.map, results.display, results.hashNames, true);
         });
 
         return { results, produce, env };
-    }, [state.map, state.nsMap, state.cards]);
+    }, [state.map, state.nsMap, state.cards, evaluator]);
 
     useEffect(() => {
         const path = state.at[0]?.start;
@@ -194,6 +206,23 @@ export const GroundUp = ({
                 <button onClick={() => setDebug(!debug)}>
                     {debug ? 'Debug on' : 'Debug off'}
                 </button>
+                <div>
+                    {state.evaluator ?? 'Non set'}
+                    <select
+                        value={state.evaluator ?? 'bootstrap'}
+                        onChange={(evt) => {
+                            dispatch({
+                                type: 'config:evaluator',
+                                id: evt.target.value,
+                            });
+                        }}
+                    >
+                        <option value={''}>No evaluator</option>
+                        <option value={':repr:'}>REPR</option>
+                        <option value={':bootstrap:'}>Bootstrap</option>
+                        {/* {...files} */}
+                    </select>
+                </div>
                 {debug ? (
                     <div
                         style={{
@@ -238,8 +267,8 @@ const showPath = (path: Path[]) => {
     return (
         <table>
             <tbody>
-                {path.map((item) => (
-                    <tr>
+                {path.map((item, i) => (
+                    <tr key={i}>
                         <td style={{ width: '3em', display: 'inline-block' }}>
                             {item.idx}
                         </td>

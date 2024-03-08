@@ -2,11 +2,7 @@ import React from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import {
-    getNestedNodes,
-    NNode,
-    stringColor,
-} from '../../src/state/getNestedNodes';
+import { getNestedNodes, NNode } from '../../src/state/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
@@ -52,6 +48,7 @@ const specials = [
     'match',
 ];
 
+export const stringColor = '#ff9b00';
 export const colors: {
     [key: string]: string;
 } = {

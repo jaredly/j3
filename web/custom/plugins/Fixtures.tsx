@@ -130,6 +130,13 @@ const parse = (node: Node): Data | void => {
     }
 };
 
+const findLastIndex = <T,>(arr: T[], f: (t: T) => boolean) => {
+    for (let i = arr.length - 1; i >= 0; i--) {
+        if (f(arr[i])) return i;
+    }
+    return -1;
+};
+
 export const fixturePlugin: NamespacePlugin<any> = {
     id: 'fixture',
     title: 'Fixture tests',
@@ -142,7 +149,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
         const node = fromMCST(path[tid + 1].idx, map);
         const parsed = parse(node);
         if (!parsed) return null;
-        const cidx = path.findLastIndex((p) => p.type === 'child');
+        const cidx = findLastIndex(path, (p) => p.type === 'child');
         if (cidx === -1) return null;
         const child = path[cidx] as Extract<Path, { type: 'child' }>;
 

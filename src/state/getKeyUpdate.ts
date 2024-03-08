@@ -64,6 +64,7 @@ export type StateSelect = {
 export type StateChange =
     | StateUpdate
     | StateSelect
+    | { type: 'config:evaluator'; id: string }
     | { type: 'full-select'; at: State['at']; autoComplete?: boolean }
     | void
     | {
@@ -182,6 +183,8 @@ export const applyUpdate = (
         };
     } else if (update.type === 'menu') {
         return { ...state, menu: update.menu };
+    } else if (update.type === 'config:evaluator') {
+        return state;
     }
     if (update.type === 'full-select') {
         return { ...state, at: update.at };
