@@ -30,6 +30,7 @@ import { emptyMap } from '../../../src/parse/parse';
 import { eq_eq } from '../infer/mini/infer';
 import { transformNode } from '../../../src/types/transform-cst';
 import { newResults } from '../Test';
+import { Path } from '../../store';
 
 // const modifyNs = (
 //     card: Card,
@@ -676,10 +677,10 @@ export const verifyState = (state: NUIState) => {
     }
 };
 
-export const findTops = (state: NUIState) => {
-    let all: { top: number; hidden?: boolean }[] = [];
+export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
+    let all: { top: number; hidden?: boolean; path: Path[] }[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
-    const add = (id: number) => {
+    const add = (id: number, path: Path[]) => {
         const ns = state.nsMap[id];
         if (ns.type === 'normal') {
             if (!seen[ns.top]) {
@@ -687,12 +688,24 @@ export const findTops = (state: NUIState) => {
                 all.push({
                     top: ns.top,
                     hidden: ns.hidden || ns.plugin != null,
+                    path: [...path, { type: 'ns-top', idx: id }],
                 });
             }
-            ns.children.forEach(add);
+            ns.children.forEach((child, i) =>
+                add(child, [
+                    ...path,
+                    {
+                        type: 'ns',
+                        at: i,
+                        idx: id,
+                    },
+                ]),
+            );
         }
     };
-    state.cards.forEach((card) => add(card.top));
+    state.cards.forEach((card, i) =>
+        add(card.top, [{ type: 'card', idx: -1, card: i }]),
+    );
 
     return all;
 };

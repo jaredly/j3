@@ -62,7 +62,7 @@ export function HiddenInput({
             }}
             onCopy={(evt) => {
                 evt.preventDefault();
-                const items = collectClipboard(state.map, state.at, hashNames);
+                const items = collectClipboard(state, hashNames);
                 if (!items.length) {
                     return;
                 }

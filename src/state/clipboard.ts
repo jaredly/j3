@@ -13,6 +13,7 @@ import {
     ListLikeContents,
     Map,
     MNodeExtra,
+    NsMap,
     toMCST,
 } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
@@ -37,7 +38,7 @@ import { applyInferMod, infer } from '../infer/infer';
 import { CstCtx } from '../to-ast/library';
 import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
 import { NUIState } from '../../web/custom/UIState';
-import { reduceUpdate } from '../../web/ide/ground-up/reduce';
+import { findTops, reduceUpdate } from '../../web/ide/ground-up/reduce';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -329,22 +330,21 @@ export const clipboardText = (
 };
 
 export const collectClipboard = (
-    map: Map,
-    selections: State['at'],
+    state: NUIState,
     hashNames: { [key: number]: string },
 ) => {
     const items: ClipboardItem[] = [];
-    selections.forEach(({ start, end }) => {
+    state.at.forEach(({ start, end }) => {
         if (end) {
             [start, end] = orderStartAndEnd(start, end);
-            items.push(collectNodes(map, start, end, hashNames));
+            items.push(collectNodes(state, start, end, hashNames));
         }
     });
     return items;
 };
 
 export const collectNodes = (
-    map: Map,
+    state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>,
     start: Path[],
     end: Path[],
     hashNames: { [idx: number]: string },
@@ -353,10 +353,10 @@ export const collectNodes = (
         const slast = start[start.length - 1];
         const elast = end[end.length - 1];
         if (slast.idx === elast.idx) {
-            const node = fromMCST(slast.idx, map);
+            const node = fromMCST(slast.idx, state.map);
             if ('text' in node || node.type === 'hash') {
                 const text = splitGraphemes(
-                    hashNames[node.loc] ?? idText(node, map) ?? '',
+                    hashNames[node.loc] ?? idText(node, state.map) ?? '',
                 );
                 const sloc =
                     slast.type === 'subtext'
@@ -389,127 +389,137 @@ export const collectNodes = (
     const collected: Node[] = [];
     let waiting: { node: Node; children: Node[] }[] = [];
 
-    transformNode(fromMCST(-1, map), {
-        pre(node, path) {
-            const isatom = 'text' in node || node.type === 'hash';
-            const status = selectionStatus(path, start, end, map);
-            if (!status) {
-                return false;
-            }
-            let collect = waiting.length
-                ? waiting[waiting.length - 1].children
-                : collected;
-            if (
-                status.type === 'full' ||
-                (status.type === 'partial' && isatom)
-            ) {
-                collect.push(node);
-                return false;
-            }
-            if (
-                node.type === 'recordAccess' ||
-                node.type === 'string' ||
-                node.type === 'annot'
-            ) {
-                waiting.push({ node, children: [] });
-            }
-            if (status.type === 'partial' && 'values' in node) {
-                waiting.push({ node, children: [] });
-            }
-        },
-        post(node) {
-            if (waiting.length && waiting[waiting.length - 1].node === node) {
-                const children = waiting.pop()!.children;
-                switch (node.type) {
-                    case 'annot': {
-                        if (children.length === 1) {
-                            node = children[0];
-                        }
-                        // Otherwise, we keep both. it's fine
-                        break;
-                    }
-                    case 'recordAccess': {
-                        let first = children.length
-                            ? children[0]
-                            : {
-                                  type: 'blank' as const,
-                                  loc: -2,
-                              };
-                        const kids = children.slice(1) as (accessText &
-                            NodeExtra)[];
-                        if (first.type !== 'identifier') {
-                            first = {
-                                type: 'identifier',
-                                text: (first as accessText).text,
-                                loc: first.loc,
-                            };
-                        }
-                        if (!kids.length) {
-                            node = first;
-                        } else {
-                            node = {
-                                ...node,
-                                target: first,
-                                items: kids,
-                            };
-                        }
-                        break;
-                    }
-                    case 'string': {
-                        if (
-                            children.length === 1 &&
-                            children[0].type !== 'stringText'
-                        ) {
-                            node = children[0];
+    findTops(state).forEach((top) => {
+        transformNode(fromMCST(top.top, state.map), {
+            pre(node, path) {
+                const isatom = 'text' in node || node.type === 'hash';
+                const status = selectionStatus(
+                    [...top.path, ...path],
+                    start,
+                    end,
+                    state.map,
+                );
+                if (!status) {
+                    return false;
+                }
+                let collect = waiting.length
+                    ? waiting[waiting.length - 1].children
+                    : collected;
+                if (
+                    status.type === 'full' ||
+                    (status.type === 'partial' && isatom)
+                ) {
+                    collect.push(node);
+                    return false;
+                }
+                if (
+                    node.type === 'recordAccess' ||
+                    node.type === 'string' ||
+                    node.type === 'annot'
+                ) {
+                    waiting.push({ node, children: [] });
+                }
+                if (status.type === 'partial' && 'values' in node) {
+                    waiting.push({ node, children: [] });
+                }
+            },
+            post(node) {
+                if (
+                    waiting.length &&
+                    waiting[waiting.length - 1].node === node
+                ) {
+                    const children = waiting.pop()!.children;
+                    switch (node.type) {
+                        case 'annot': {
+                            if (children.length === 1) {
+                                node = children[0];
+                            }
+                            // Otherwise, we keep both. it's fine
                             break;
                         }
-                        if (
-                            !children.length ||
-                            children[0].type !== 'stringText'
-                        ) {
-                            children.unshift({
-                                type: 'stringText',
-                                text: '',
-                                loc: -2,
-                            });
+                        case 'recordAccess': {
+                            let first = children.length
+                                ? children[0]
+                                : {
+                                      type: 'blank' as const,
+                                      loc: -2,
+                                  };
+                            const kids = children.slice(1) as (accessText &
+                                NodeExtra)[];
+                            if (first.type !== 'identifier') {
+                                first = {
+                                    type: 'identifier',
+                                    text: (first as accessText).text,
+                                    loc: first.loc,
+                                };
+                            }
+                            if (!kids.length) {
+                                node = first;
+                            } else {
+                                node = {
+                                    ...node,
+                                    target: first,
+                                    items: kids,
+                                };
+                            }
+                            break;
                         }
-                        const templates: {
-                            expr: Node;
-                            suffix: stringText & NodeExtra;
-                        }[] = [];
-                        for (let i = 1; i < children.length; i += 2) {
-                            templates.push({
-                                expr: children[i],
-                                suffix:
-                                    children[i + 1]?.type === 'stringText'
-                                        ? (children[i + 1] as stringText &
-                                              NodeExtra)
-                                        : {
-                                              type: 'stringText',
-                                              text: '',
-                                              loc: -2,
-                                          },
-                            });
+                        case 'string': {
+                            if (
+                                children.length === 1 &&
+                                children[0].type !== 'stringText'
+                            ) {
+                                node = children[0];
+                                break;
+                            }
+                            if (
+                                !children.length ||
+                                children[0].type !== 'stringText'
+                            ) {
+                                children.unshift({
+                                    type: 'stringText',
+                                    text: '',
+                                    loc: -2,
+                                });
+                            }
+                            const templates: {
+                                expr: Node;
+                                suffix: stringText & NodeExtra;
+                            }[] = [];
+                            for (let i = 1; i < children.length; i += 2) {
+                                templates.push({
+                                    expr: children[i],
+                                    suffix:
+                                        children[i + 1]?.type === 'stringText'
+                                            ? (children[i + 1] as stringText &
+                                                  NodeExtra)
+                                            : {
+                                                  type: 'stringText',
+                                                  text: '',
+                                                  loc: -2,
+                                              },
+                                });
+                            }
+                            node = {
+                                ...node,
+                                first: children[0] as stringText & NodeExtra,
+                                templates,
+                            };
+                            break;
                         }
-                        node = {
-                            ...node,
-                            first: children[0] as stringText & NodeExtra,
-                            templates,
-                        };
-                        break;
+                        default:
+                            node = { ...(node as any), values: children };
+                            break;
                     }
-                    default:
-                        node = { ...(node as any), values: children };
-                        break;
+                    node = { ...node, loc: -2 };
+                    if (waiting.length) {
+                        waiting[waiting.length - 1].children.push(node);
+                    } else {
+                        collected.push(node);
+                    }
                 }
-                node = { ...node, loc: -2 };
-                if (waiting.length) {
-                    waiting[waiting.length - 1].children.push(node);
-                } else {
-                    collected.push(node);
-                }
-            }
-        },
+            },
+        });
     });
 
     while (waiting.length) {

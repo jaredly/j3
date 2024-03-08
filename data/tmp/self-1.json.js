@@ -3,7 +3,7 @@ return {type: 'bootstrap', stmts: [
     "0": "builtins",
     "1": {
       "0": {
-        "0": "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n",
+        "0": "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n",
         "type": "pstr"
       },
       "type": "eprim"
@@ -318,28 +318,45 @@ return {type: 'bootstrap', stmts: [
           },
           "1": {
             "0": {
-              "0": "pcon",
+              "0": "pprim",
               "1": {
                 "0": {
-                  "0": "string",
+                  "0": "prim",
                   "type": "tcon"
                 },
                 "1": {
-                  "0": {
-                    "0": "string",
-                    "type": "tcon"
-                  },
-                  "1": {
-                    "type": "nil"
-                  },
-                  "type": "cons"
+                  "type": "nil"
                 },
                 "type": "cons"
               },
               "type": ","
             },
             "1": {
-              "type": "nil"
+              "0": {
+                "0": "pcon",
+                "1": {
+                  "0": {
+                    "0": "string",
+                    "type": "tcon"
+                  },
+                  "1": {
+                    "0": {
+                      "0": "string",
+                      "type": "tcon"
+                    },
+                    "1": {
+                      "type": "nil"
+                    },
+                    "type": "cons"
+                  },
+                  "type": "cons"
+                },
+                "type": ","
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
             },
             "type": "cons"
           },
@@ -2116,8 +2133,15 @@ return {type: 'bootstrap', stmts: [
                                       "type": "evar"
                                     },
                                     "1": {
-                                      "0": "name2",
-                                      "type": "evar"
+                                      "0": {
+                                        "0": "sanitize",
+                                        "type": "evar"
+                                      },
+                                      "1": {
+                                        "0": "name2",
+                                        "type": "evar"
+                                      },
+                                      "type": "eapp"
                                     },
                                     "type": "eapp"
                                   },
@@ -3326,34 +3350,47 @@ return {type: 'bootstrap', stmts: [
                       },
                       "1": {
                         "0": {
-                          "0": {
-                            "0": {
-                              "0": "if",
-                              "type": "evar"
-                            },
-                            "1": {
-                              "0": "bool",
-                              "type": "evar"
-                            },
-                            "type": "eapp"
-                          },
-                          "1": {
-                            "0": {
-                              "0": "true",
-                              "type": "pstr"
-                            },
-                            "type": "eprim"
-                          },
-                          "type": "eapp"
+                          "0": "bool",
+                          "type": "evar"
                         },
                         "1": {
                           "0": {
-                            "0": "false",
-                            "type": "pstr"
+                            "0": {
+                              "0": true,
+                              "type": "pbool"
+                            },
+                            "1": {
+                              "0": {
+                                "0": "true",
+                                "type": "pstr"
+                              },
+                              "type": "eprim"
+                            },
+                            "type": ","
                           },
-                          "type": "eprim"
+                          "1": {
+                            "0": {
+                              "0": {
+                                "0": false,
+                                "type": "pbool"
+                              },
+                              "1": {
+                                "0": {
+                                  "0": "false",
+                                  "type": "pstr"
+                                },
+                                "type": "eprim"
+                              },
+                              "type": ","
+                            },
+                            "1": {
+                              "type": "nil"
+                            },
+                            "type": "cons"
+                          },
+                          "type": "cons"
                         },
-                        "type": "eapp"
+                        "type": "ematch"
                       },
                       "type": ","
                     },
@@ -4129,9 +4166,9 @@ return {type: 'bootstrap', stmts: [
                                                 "1": {
                                                   "0": {
                                                     "0": {
-                                                      "0": "pint",
+                                                      "0": "pprim",
                                                       "1": {
-                                                        "0": "int",
+                                                        "0": "prim",
                                                         "1": {
                                                           "type": "nil"
                                                         },
@@ -4141,57 +4178,26 @@ return {type: 'bootstrap', stmts: [
                                                     },
                                                     "1": {
                                                       "0": {
-                                                        "0": "++",
+                                                        "0": "prim",
                                                         "type": "evar"
                                                       },
                                                       "1": {
                                                         "0": {
                                                           "0": {
-                                                            "0": "cons",
-                                                            "type": "evar"
-                                                          },
-                                                          "1": {
-                                                            "0": {
-                                                              "0": "$target === ",
-                                                              "type": "pstr"
-                                                            },
-                                                            "type": "eprim"
-                                                          },
-                                                          "type": "eapp"
-                                                        },
-                                                        "1": {
-                                                          "0": {
-                                                            "0": {
-                                                              "0": "cons",
-                                                              "type": "evar"
-                                                            },
+                                                            "0": "pint",
                                                             "1": {
-                                                              "0": {
-                                                                "0": "int-to-string",
-                                                                "type": "evar"
-                                                              },
+                                                              "0": "int",
                                                               "1": {
-                                                                "0": "int",
-                                                                "type": "evar"
+                                                                "type": "nil"
                                                               },
-                                                              "type": "eapp"
+                                                              "type": "cons"
                                                             },
-                                                            "type": "eapp"
+                                                            "type": "pcon"
                                                           },
                                                           "1": {
                                                             "0": {
-                                                              "0": {
-                                                                "0": "cons",
-                                                                "type": "evar"
-                                                              },
-                                                              "1": {
-                                                                "0": {
-                                                                  "0": " ? ",
-                                                                  "type": "pstr"
-                                                                },
-                                                                "type": "eprim"
-                                                              },
-                                                              "type": "eapp"
+                                                              "0": "++",
+                                                              "type": "evar"
                                                             },
                                                             "1": {
                                                               "0": {
@@ -4201,14 +4207,10 @@ return {type: 'bootstrap', stmts: [
                                                                 },
                                                                 "1": {
                                                                   "0": {
-                                                                    "0": "compile",
-                                                                    "type": "evar"
+                                                                    "0": "$target === ",
+                                                                    "type": "pstr"
                                                                   },
-                                                                  "1": {
-                                                                    "0": "body",
-                                                                    "type": "evar"
-                                                                  },
-                                                                  "type": "eapp"
+                                                                  "type": "eprim"
                                                                 },
                                                                 "type": "eapp"
                                                               },
@@ -4220,7 +4222,125 @@ return {type: 'bootstrap', stmts: [
                                                                   },
                                                                   "1": {
                                                                     "0": {
-                                                                      "0": " : ",
+                                                                      "0": "int-to-string",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": "int",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "type": "eapp"
+                                                                },
+                                                                "1": {
+                                                                  "0": {
+                                                                    "0": {
+                                                                      "0": "cons",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": " ? ",
+                                                                        "type": "pstr"
+                                                                      },
+                                                                      "type": "eprim"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": {
+                                                                        "0": "cons",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": "compile",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": "body",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": {
+                                                                          "0": "cons",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": " : ",
+                                                                            "type": "pstr"
+                                                                          },
+                                                                          "type": "eprim"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": {
+                                                                            "0": "cons",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": "otherwise",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": "nil",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "type": "eapp"
+                                                                },
+                                                                "type": "eapp"
+                                                              },
+                                                              "type": "eapp"
+                                                            },
+                                                            "type": "eapp"
+                                                          },
+                                                          "type": ","
+                                                        },
+                                                        "1": {
+                                                          "0": {
+                                                            "0": {
+                                                              "0": "pbool",
+                                                              "1": {
+                                                                "0": "bool",
+                                                                "1": {
+                                                                  "type": "nil"
+                                                                },
+                                                                "type": "cons"
+                                                              },
+                                                              "type": "pcon"
+                                                            },
+                                                            "1": {
+                                                              "0": {
+                                                                "0": "++",
+                                                                "type": "evar"
+                                                              },
+                                                              "1": {
+                                                                "0": {
+                                                                  "0": {
+                                                                    "0": "cons",
+                                                                    "type": "evar"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": "$target === ",
                                                                       "type": "pstr"
                                                                     },
                                                                     "type": "eprim"
@@ -4234,14 +4354,122 @@ return {type: 'bootstrap', stmts: [
                                                                       "type": "evar"
                                                                     },
                                                                     "1": {
-                                                                      "0": "otherwise",
-                                                                      "type": "evar"
+                                                                      "0": {
+                                                                        "0": "bool",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": {
+                                                                            "0": true,
+                                                                            "type": "pbool"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": {
+                                                                              "0": "true",
+                                                                              "type": "pstr"
+                                                                            },
+                                                                            "type": "eprim"
+                                                                          },
+                                                                          "type": ","
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": {
+                                                                              "type": "pany"
+                                                                            },
+                                                                            "1": {
+                                                                              "0": {
+                                                                                "0": "false",
+                                                                                "type": "pstr"
+                                                                              },
+                                                                              "type": "eprim"
+                                                                            },
+                                                                            "type": ","
+                                                                          },
+                                                                          "1": {
+                                                                            "type": "nil"
+                                                                          },
+                                                                          "type": "cons"
+                                                                        },
+                                                                        "type": "cons"
+                                                                      },
+                                                                      "type": "ematch"
                                                                     },
                                                                     "type": "eapp"
                                                                   },
                                                                   "1": {
-                                                                    "0": "nil",
-                                                                    "type": "evar"
+                                                                    "0": {
+                                                                      "0": {
+                                                                        "0": "cons",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": " ? ",
+                                                                          "type": "pstr"
+                                                                        },
+                                                                        "type": "eprim"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": {
+                                                                          "0": "cons",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": "compile",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": "body",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": {
+                                                                            "0": "cons",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": {
+                                                                              "0": " : ",
+                                                                              "type": "pstr"
+                                                                            },
+                                                                            "type": "eprim"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": {
+                                                                              "0": "cons",
+                                                                              "type": "evar"
+                                                                            },
+                                                                            "1": {
+                                                                              "0": "otherwise",
+                                                                              "type": "evar"
+                                                                            },
+                                                                            "type": "eapp"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": "nil",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "type": "eapp"
                                                                   },
                                                                   "type": "eapp"
                                                                 },
@@ -4249,22 +4477,25 @@ return {type: 'bootstrap', stmts: [
                                                               },
                                                               "type": "eapp"
                                                             },
-                                                            "type": "eapp"
+                                                            "type": ","
                                                           },
-                                                          "type": "eapp"
+                                                          "1": {
+                                                            "type": "nil"
+                                                          },
+                                                          "type": "cons"
                                                         },
-                                                        "type": "eapp"
+                                                        "type": "cons"
                                                       },
-                                                      "type": "eapp"
+                                                      "type": "ematch"
                                                     },
                                                     "type": ","
                                                   },
                                                   "1": {
                                                     "0": {
                                                       "0": {
-                                                        "0": "pvar",
+                                                        "0": "pint",
                                                         "1": {
-                                                          "0": "name",
+                                                          "0": "int",
                                                           "1": {
                                                             "type": "nil"
                                                           },
@@ -4285,7 +4516,7 @@ return {type: 'bootstrap', stmts: [
                                                             },
                                                             "1": {
                                                               "0": {
-                                                                "0": "true ? ((",
+                                                                "0": "$target === ",
                                                                 "type": "pstr"
                                                               },
                                                               "type": "eprim"
@@ -4300,11 +4531,11 @@ return {type: 'bootstrap', stmts: [
                                                               },
                                                               "1": {
                                                                 "0": {
-                                                                  "0": "sanitize",
+                                                                  "0": "int-to-string",
                                                                   "type": "evar"
                                                                 },
                                                                 "1": {
-                                                                  "0": "name",
+                                                                  "0": "int",
                                                                   "type": "evar"
                                                                 },
                                                                 "type": "eapp"
@@ -4319,7 +4550,7 @@ return {type: 'bootstrap', stmts: [
                                                                 },
                                                                 "1": {
                                                                   "0": {
-                                                                    "0": ") => ",
+                                                                    "0": " ? ",
                                                                     "type": "pstr"
                                                                   },
                                                                   "type": "eprim"
@@ -4353,7 +4584,7 @@ return {type: 'bootstrap', stmts: [
                                                                     },
                                                                     "1": {
                                                                       "0": {
-                                                                        "0": ")($target)",
+                                                                        "0": " : ",
                                                                         "type": "pstr"
                                                                       },
                                                                       "type": "eprim"
@@ -4361,8 +4592,22 @@ return {type: 'bootstrap', stmts: [
                                                                     "type": "eapp"
                                                                   },
                                                                   "1": {
-                                                                    "0": "nil",
-                                                                    "type": "evar"
+                                                                    "0": {
+                                                                      "0": {
+                                                                        "0": "cons",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": "otherwise",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": "nil",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "type": "eapp"
                                                                   },
                                                                   "type": "eapp"
                                                                 },
@@ -4381,15 +4626,11 @@ return {type: 'bootstrap', stmts: [
                                                     "1": {
                                                       "0": {
                                                         "0": {
-                                                          "0": "pcon",
+                                                          "0": "pbool",
                                                           "1": {
-                                                            "0": "name",
+                                                            "0": "bool",
                                                             "1": {
-                                                              "0": "args",
-                                                              "1": {
-                                                                "type": "nil"
-                                                              },
-                                                              "type": "cons"
+                                                              "type": "nil"
                                                             },
                                                             "type": "cons"
                                                           },
@@ -4408,7 +4649,7 @@ return {type: 'bootstrap', stmts: [
                                                               },
                                                               "1": {
                                                                 "0": {
-                                                                  "0": "$target.type == \\\"",
+                                                                  "0": "$target === (",
                                                                   "type": "pstr"
                                                                 },
                                                                 "type": "eprim"
@@ -4422,8 +4663,47 @@ return {type: 'bootstrap', stmts: [
                                                                   "type": "evar"
                                                                 },
                                                                 "1": {
-                                                                  "0": "name",
-                                                                  "type": "evar"
+                                                                  "0": {
+                                                                    "0": "bool",
+                                                                    "type": "evar"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": {
+                                                                        "0": true,
+                                                                        "type": "pbool"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": "true",
+                                                                          "type": "pstr"
+                                                                        },
+                                                                        "type": "eprim"
+                                                                      },
+                                                                      "type": ","
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": {
+                                                                          "type": "pany"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": "false",
+                                                                            "type": "pstr"
+                                                                          },
+                                                                          "type": "eprim"
+                                                                        },
+                                                                        "type": ","
+                                                                      },
+                                                                      "1": {
+                                                                        "type": "nil"
+                                                                      },
+                                                                      "type": "cons"
+                                                                    },
+                                                                    "type": "cons"
+                                                                  },
+                                                                  "type": "ematch"
                                                                 },
                                                                 "type": "eapp"
                                                               },
@@ -4435,7 +4715,7 @@ return {type: 'bootstrap', stmts: [
                                                                   },
                                                                   "1": {
                                                                     "0": {
-                                                                      "0": "\\\" ? ",
+                                                                      "0": ")  ? ",
                                                                       "type": "pstr"
                                                                     },
                                                                     "type": "eprim"
@@ -4450,258 +4730,12 @@ return {type: 'bootstrap', stmts: [
                                                                     },
                                                                     "1": {
                                                                       "0": {
-                                                                        "0": "snd",
+                                                                        "0": "compile",
                                                                         "type": "evar"
                                                                       },
                                                                       "1": {
-                                                                        "0": {
-                                                                          "0": {
-                                                                            "0": {
-                                                                              "0": "reduce",
-                                                                              "type": "evar"
-                                                                            },
-                                                                            "1": {
-                                                                              "0": {
-                                                                                "0": {
-                                                                                  "0": ",",
-                                                                                  "type": "evar"
-                                                                                },
-                                                                                "1": {
-                                                                                  "0": {
-                                                                                    "0": 0,
-                                                                                    "type": "pint"
-                                                                                  },
-                                                                                  "type": "eprim"
-                                                                                },
-                                                                                "type": "eapp"
-                                                                              },
-                                                                              "1": {
-                                                                                "0": {
-                                                                                  "0": "compile",
-                                                                                  "type": "evar"
-                                                                                },
-                                                                                "1": {
-                                                                                  "0": "body",
-                                                                                  "type": "evar"
-                                                                                },
-                                                                                "type": "eapp"
-                                                                              },
-                                                                              "type": "eapp"
-                                                                            },
-                                                                            "type": "eapp"
-                                                                          },
-                                                                          "1": {
-                                                                            "0": "args",
-                                                                            "type": "evar"
-                                                                          },
-                                                                          "type": "eapp"
-                                                                        },
-                                                                        "1": {
-                                                                          "0": "inner",
-                                                                          "1": {
-                                                                            "0": "name",
-                                                                            "1": {
-                                                                              "0": {
-                                                                                "0": "inner",
-                                                                                "type": "evar"
-                                                                              },
-                                                                              "1": {
-                                                                                "0": {
-                                                                                  "0": {
-                                                                                    "0": ",",
-                                                                                    "1": {
-                                                                                      "0": "i",
-                                                                                      "1": {
-                                                                                        "0": "inner",
-                                                                                        "1": {
-                                                                                          "type": "nil"
-                                                                                        },
-                                                                                        "type": "cons"
-                                                                                      },
-                                                                                      "type": "cons"
-                                                                                    },
-                                                                                    "type": "pcon"
-                                                                                  },
-                                                                                  "1": {
-                                                                                    "0": {
-                                                                                      "0": {
-                                                                                        "0": ",",
-                                                                                        "type": "evar"
-                                                                                      },
-                                                                                      "1": {
-                                                                                        "0": {
-                                                                                          "0": {
-                                                                                            "0": "+",
-                                                                                            "type": "evar"
-                                                                                          },
-                                                                                          "1": {
-                                                                                            "0": "i",
-                                                                                            "type": "evar"
-                                                                                          },
-                                                                                          "type": "eapp"
-                                                                                        },
-                                                                                        "1": {
-                                                                                          "0": {
-                                                                                            "0": 1,
-                                                                                            "type": "pint"
-                                                                                          },
-                                                                                          "type": "eprim"
-                                                                                        },
-                                                                                        "type": "eapp"
-                                                                                      },
-                                                                                      "type": "eapp"
-                                                                                    },
-                                                                                    "1": {
-                                                                                      "0": {
-                                                                                        "0": "++",
-                                                                                        "type": "evar"
-                                                                                      },
-                                                                                      "1": {
-                                                                                        "0": {
-                                                                                          "0": {
-                                                                                            "0": "cons",
-                                                                                            "type": "evar"
-                                                                                          },
-                                                                                          "1": {
-                                                                                            "0": {
-                                                                                              "0": "((",
-                                                                                              "type": "pstr"
-                                                                                            },
-                                                                                            "type": "eprim"
-                                                                                          },
-                                                                                          "type": "eapp"
-                                                                                        },
-                                                                                        "1": {
-                                                                                          "0": {
-                                                                                            "0": {
-                                                                                              "0": "cons",
-                                                                                              "type": "evar"
-                                                                                            },
-                                                                                            "1": {
-                                                                                              "0": {
-                                                                                                "0": "sanitize",
-                                                                                                "type": "evar"
-                                                                                              },
-                                                                                              "1": {
-                                                                                                "0": "name",
-                                                                                                "type": "evar"
-                                                                                              },
-                                                                                              "type": "eapp"
-                                                                                            },
-                                                                                            "type": "eapp"
-                                                                                          },
-                                                                                          "1": {
-                                                                                            "0": {
-                                                                                              "0": {
-                                                                                                "0": "cons",
-                                                                                                "type": "evar"
-                                                                                              },
-                                                                                              "1": {
-                                                                                                "0": {
-                                                                                                  "0": ") => ",
-                                                                                                  "type": "pstr"
-                                                                                                },
-                                                                                                "type": "eprim"
-                                                                                              },
-                                                                                              "type": "eapp"
-                                                                                            },
-                                                                                            "1": {
-                                                                                              "0": {
-                                                                                                "0": {
-                                                                                                  "0": "cons",
-                                                                                                  "type": "evar"
-                                                                                                },
-                                                                                                "1": {
-                                                                                                  "0": "inner",
-                                                                                                  "type": "evar"
-                                                                                                },
-                                                                                                "type": "eapp"
-                                                                                              },
-                                                                                              "1": {
-                                                                                                "0": {
-                                                                                                  "0": {
-                                                                                                    "0": "cons",
-                                                                                                    "type": "evar"
-                                                                                                  },
-                                                                                                  "1": {
-                                                                                                    "0": {
-                                                                                                      "0": ")($target[",
-                                                                                                      "type": "pstr"
-                                                                                                    },
-                                                                                                    "type": "eprim"
-                                                                                                  },
-                                                                                                  "type": "eapp"
-                                                                                                },
-                                                                                                "1": {
-                                                                                                  "0": {
-                                                                                                    "0": {
-                                                                                                      "0": "cons",
-                                                                                                      "type": "evar"
-                                                                                                    },
-                                                                                                    "1": {
-                                                                                                      "0": {
-                                                                                                        "0": "int-to-string",
-                                                                                                        "type": "evar"
-                                                                                                      },
-                                                                                                      "1": {
-                                                                                                        "0": "i",
-                                                                                                        "type": "evar"
-                                                                                                      },
-                                                                                                      "type": "eapp"
-                                                                                                    },
-                                                                                                    "type": "eapp"
-                                                                                                  },
-                                                                                                  "1": {
-                                                                                                    "0": {
-                                                                                                      "0": {
-                                                                                                        "0": "cons",
-                                                                                                        "type": "evar"
-                                                                                                      },
-                                                                                                      "1": {
-                                                                                                        "0": {
-                                                                                                          "0": "])",
-                                                                                                          "type": "pstr"
-                                                                                                        },
-                                                                                                        "type": "eprim"
-                                                                                                      },
-                                                                                                      "type": "eapp"
-                                                                                                    },
-                                                                                                    "1": {
-                                                                                                      "0": "nil",
-                                                                                                      "type": "evar"
-                                                                                                    },
-                                                                                                    "type": "eapp"
-                                                                                                  },
-                                                                                                  "type": "eapp"
-                                                                                                },
-                                                                                                "type": "eapp"
-                                                                                              },
-                                                                                              "type": "eapp"
-                                                                                            },
-                                                                                            "type": "eapp"
-                                                                                          },
-                                                                                          "type": "eapp"
-                                                                                        },
-                                                                                        "type": "eapp"
-                                                                                      },
-                                                                                      "type": "eapp"
-                                                                                    },
-                                                                                    "type": "eapp"
-                                                                                  },
-                                                                                  "type": ","
-                                                                                },
-                                                                                "1": {
-                                                                                  "type": "nil"
-                                                                                },
-                                                                                "type": "cons"
-                                                                              },
-                                                                              "type": "ematch"
-                                                                            },
-                                                                            "type": "elambda"
-                                                                          },
-                                                                          "type": "elambda"
-                                                                        },
-                                                                        "type": "eapp"
+                                                                        "0": "body",
+                                                                        "type": "evar"
                                                                       },
                                                                       "type": "eapp"
                                                                     },
@@ -4755,7 +4789,506 @@ return {type: 'bootstrap', stmts: [
                                                         "type": ","
                                                       },
                                                       "1": {
-                                                        "type": "nil"
+                                                        "0": {
+                                                          "0": {
+                                                            "0": "pvar",
+                                                            "1": {
+                                                              "0": "name",
+                                                              "1": {
+                                                                "type": "nil"
+                                                              },
+                                                              "type": "cons"
+                                                            },
+                                                            "type": "pcon"
+                                                          },
+                                                          "1": {
+                                                            "0": {
+                                                              "0": "++",
+                                                              "type": "evar"
+                                                            },
+                                                            "1": {
+                                                              "0": {
+                                                                "0": {
+                                                                  "0": "cons",
+                                                                  "type": "evar"
+                                                                },
+                                                                "1": {
+                                                                  "0": {
+                                                                    "0": "true ? ((",
+                                                                    "type": "pstr"
+                                                                  },
+                                                                  "type": "eprim"
+                                                                },
+                                                                "type": "eapp"
+                                                              },
+                                                              "1": {
+                                                                "0": {
+                                                                  "0": {
+                                                                    "0": "cons",
+                                                                    "type": "evar"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": "sanitize",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": "name",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "type": "eapp"
+                                                                },
+                                                                "1": {
+                                                                  "0": {
+                                                                    "0": {
+                                                                      "0": "cons",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": ") => ",
+                                                                        "type": "pstr"
+                                                                      },
+                                                                      "type": "eprim"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": {
+                                                                        "0": "cons",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": "compile",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": "body",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": {
+                                                                          "0": "cons",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": ")($target)",
+                                                                            "type": "pstr"
+                                                                          },
+                                                                          "type": "eprim"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": "nil",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "type": "eapp"
+                                                                },
+                                                                "type": "eapp"
+                                                              },
+                                                              "type": "eapp"
+                                                            },
+                                                            "type": "eapp"
+                                                          },
+                                                          "type": ","
+                                                        },
+                                                        "1": {
+                                                          "0": {
+                                                            "0": {
+                                                              "0": "pcon",
+                                                              "1": {
+                                                                "0": "name",
+                                                                "1": {
+                                                                  "0": "args",
+                                                                  "1": {
+                                                                    "type": "nil"
+                                                                  },
+                                                                  "type": "cons"
+                                                                },
+                                                                "type": "cons"
+                                                              },
+                                                              "type": "pcon"
+                                                            },
+                                                            "1": {
+                                                              "0": {
+                                                                "0": "++",
+                                                                "type": "evar"
+                                                              },
+                                                              "1": {
+                                                                "0": {
+                                                                  "0": {
+                                                                    "0": "cons",
+                                                                    "type": "evar"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": "$target.type == \\\"",
+                                                                      "type": "pstr"
+                                                                    },
+                                                                    "type": "eprim"
+                                                                  },
+                                                                  "type": "eapp"
+                                                                },
+                                                                "1": {
+                                                                  "0": {
+                                                                    "0": {
+                                                                      "0": "cons",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": "name",
+                                                                      "type": "evar"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "1": {
+                                                                    "0": {
+                                                                      "0": {
+                                                                        "0": "cons",
+                                                                        "type": "evar"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": "\\\" ? ",
+                                                                          "type": "pstr"
+                                                                        },
+                                                                        "type": "eprim"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "1": {
+                                                                      "0": {
+                                                                        "0": {
+                                                                          "0": "cons",
+                                                                          "type": "evar"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": "snd",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": {
+                                                                              "0": {
+                                                                                "0": {
+                                                                                  "0": "reduce",
+                                                                                  "type": "evar"
+                                                                                },
+                                                                                "1": {
+                                                                                  "0": {
+                                                                                    "0": {
+                                                                                      "0": ",",
+                                                                                      "type": "evar"
+                                                                                    },
+                                                                                    "1": {
+                                                                                      "0": {
+                                                                                        "0": 0,
+                                                                                        "type": "pint"
+                                                                                      },
+                                                                                      "type": "eprim"
+                                                                                    },
+                                                                                    "type": "eapp"
+                                                                                  },
+                                                                                  "1": {
+                                                                                    "0": {
+                                                                                      "0": "compile",
+                                                                                      "type": "evar"
+                                                                                    },
+                                                                                    "1": {
+                                                                                      "0": "body",
+                                                                                      "type": "evar"
+                                                                                    },
+                                                                                    "type": "eapp"
+                                                                                  },
+                                                                                  "type": "eapp"
+                                                                                },
+                                                                                "type": "eapp"
+                                                                              },
+                                                                              "1": {
+                                                                                "0": "args",
+                                                                                "type": "evar"
+                                                                              },
+                                                                              "type": "eapp"
+                                                                            },
+                                                                            "1": {
+                                                                              "0": "inner",
+                                                                              "1": {
+                                                                                "0": "name",
+                                                                                "1": {
+                                                                                  "0": {
+                                                                                    "0": "inner",
+                                                                                    "type": "evar"
+                                                                                  },
+                                                                                  "1": {
+                                                                                    "0": {
+                                                                                      "0": {
+                                                                                        "0": ",",
+                                                                                        "1": {
+                                                                                          "0": "i",
+                                                                                          "1": {
+                                                                                            "0": "inner",
+                                                                                            "1": {
+                                                                                              "type": "nil"
+                                                                                            },
+                                                                                            "type": "cons"
+                                                                                          },
+                                                                                          "type": "cons"
+                                                                                        },
+                                                                                        "type": "pcon"
+                                                                                      },
+                                                                                      "1": {
+                                                                                        "0": {
+                                                                                          "0": {
+                                                                                            "0": ",",
+                                                                                            "type": "evar"
+                                                                                          },
+                                                                                          "1": {
+                                                                                            "0": {
+                                                                                              "0": {
+                                                                                                "0": "+",
+                                                                                                "type": "evar"
+                                                                                              },
+                                                                                              "1": {
+                                                                                                "0": "i",
+                                                                                                "type": "evar"
+                                                                                              },
+                                                                                              "type": "eapp"
+                                                                                            },
+                                                                                            "1": {
+                                                                                              "0": {
+                                                                                                "0": 1,
+                                                                                                "type": "pint"
+                                                                                              },
+                                                                                              "type": "eprim"
+                                                                                            },
+                                                                                            "type": "eapp"
+                                                                                          },
+                                                                                          "type": "eapp"
+                                                                                        },
+                                                                                        "1": {
+                                                                                          "0": {
+                                                                                            "0": "++",
+                                                                                            "type": "evar"
+                                                                                          },
+                                                                                          "1": {
+                                                                                            "0": {
+                                                                                              "0": {
+                                                                                                "0": "cons",
+                                                                                                "type": "evar"
+                                                                                              },
+                                                                                              "1": {
+                                                                                                "0": {
+                                                                                                  "0": "((",
+                                                                                                  "type": "pstr"
+                                                                                                },
+                                                                                                "type": "eprim"
+                                                                                              },
+                                                                                              "type": "eapp"
+                                                                                            },
+                                                                                            "1": {
+                                                                                              "0": {
+                                                                                                "0": {
+                                                                                                  "0": "cons",
+                                                                                                  "type": "evar"
+                                                                                                },
+                                                                                                "1": {
+                                                                                                  "0": {
+                                                                                                    "0": "sanitize",
+                                                                                                    "type": "evar"
+                                                                                                  },
+                                                                                                  "1": {
+                                                                                                    "0": "name",
+                                                                                                    "type": "evar"
+                                                                                                  },
+                                                                                                  "type": "eapp"
+                                                                                                },
+                                                                                                "type": "eapp"
+                                                                                              },
+                                                                                              "1": {
+                                                                                                "0": {
+                                                                                                  "0": {
+                                                                                                    "0": "cons",
+                                                                                                    "type": "evar"
+                                                                                                  },
+                                                                                                  "1": {
+                                                                                                    "0": {
+                                                                                                      "0": ") => ",
+                                                                                                      "type": "pstr"
+                                                                                                    },
+                                                                                                    "type": "eprim"
+                                                                                                  },
+                                                                                                  "type": "eapp"
+                                                                                                },
+                                                                                                "1": {
+                                                                                                  "0": {
+                                                                                                    "0": {
+                                                                                                      "0": "cons",
+                                                                                                      "type": "evar"
+                                                                                                    },
+                                                                                                    "1": {
+                                                                                                      "0": "inner",
+                                                                                                      "type": "evar"
+                                                                                                    },
+                                                                                                    "type": "eapp"
+                                                                                                  },
+                                                                                                  "1": {
+                                                                                                    "0": {
+                                                                                                      "0": {
+                                                                                                        "0": "cons",
+                                                                                                        "type": "evar"
+                                                                                                      },
+                                                                                                      "1": {
+                                                                                                        "0": {
+                                                                                                          "0": ")($target[",
+                                                                                                          "type": "pstr"
+                                                                                                        },
+                                                                                                        "type": "eprim"
+                                                                                                      },
+                                                                                                      "type": "eapp"
+                                                                                                    },
+                                                                                                    "1": {
+                                                                                                      "0": {
+                                                                                                        "0": {
+                                                                                                          "0": "cons",
+                                                                                                          "type": "evar"
+                                                                                                        },
+                                                                                                        "1": {
+                                                                                                          "0": {
+                                                                                                            "0": "int-to-string",
+                                                                                                            "type": "evar"
+                                                                                                          },
+                                                                                                          "1": {
+                                                                                                            "0": "i",
+                                                                                                            "type": "evar"
+                                                                                                          },
+                                                                                                          "type": "eapp"
+                                                                                                        },
+                                                                                                        "type": "eapp"
+                                                                                                      },
+                                                                                                      "1": {
+                                                                                                        "0": {
+                                                                                                          "0": {
+                                                                                                            "0": "cons",
+                                                                                                            "type": "evar"
+                                                                                                          },
+                                                                                                          "1": {
+                                                                                                            "0": {
+                                                                                                              "0": "])",
+                                                                                                              "type": "pstr"
+                                                                                                            },
+                                                                                                            "type": "eprim"
+                                                                                                          },
+                                                                                                          "type": "eapp"
+                                                                                                        },
+                                                                                                        "1": {
+                                                                                                          "0": "nil",
+                                                                                                          "type": "evar"
+                                                                                                        },
+                                                                                                        "type": "eapp"
+                                                                                                      },
+                                                                                                      "type": "eapp"
+                                                                                                    },
+                                                                                                    "type": "eapp"
+                                                                                                  },
+                                                                                                  "type": "eapp"
+                                                                                                },
+                                                                                                "type": "eapp"
+                                                                                              },
+                                                                                              "type": "eapp"
+                                                                                            },
+                                                                                            "type": "eapp"
+                                                                                          },
+                                                                                          "type": "eapp"
+                                                                                        },
+                                                                                        "type": "eapp"
+                                                                                      },
+                                                                                      "type": ","
+                                                                                    },
+                                                                                    "1": {
+                                                                                      "type": "nil"
+                                                                                    },
+                                                                                    "type": "cons"
+                                                                                  },
+                                                                                  "type": "ematch"
+                                                                                },
+                                                                                "type": "elambda"
+                                                                              },
+                                                                              "type": "elambda"
+                                                                            },
+                                                                            "type": "eapp"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "1": {
+                                                                        "0": {
+                                                                          "0": {
+                                                                            "0": "cons",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": {
+                                                                              "0": " : ",
+                                                                              "type": "pstr"
+                                                                            },
+                                                                            "type": "eprim"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "1": {
+                                                                          "0": {
+                                                                            "0": {
+                                                                              "0": "cons",
+                                                                              "type": "evar"
+                                                                            },
+                                                                            "1": {
+                                                                              "0": "otherwise",
+                                                                              "type": "evar"
+                                                                            },
+                                                                            "type": "eapp"
+                                                                          },
+                                                                          "1": {
+                                                                            "0": "nil",
+                                                                            "type": "evar"
+                                                                          },
+                                                                          "type": "eapp"
+                                                                        },
+                                                                        "type": "eapp"
+                                                                      },
+                                                                      "type": "eapp"
+                                                                    },
+                                                                    "type": "eapp"
+                                                                  },
+                                                                  "type": "eapp"
+                                                                },
+                                                                "type": "eapp"
+                                                              },
+                                                              "type": "eapp"
+                                                            },
+                                                            "type": ","
+                                                          },
+                                                          "1": {
+                                                            "type": "nil"
+                                                          },
+                                                          "type": "cons"
+                                                        },
+                                                        "type": "cons"
                                                       },
                                                       "type": "cons"
                                                     },
@@ -5312,8 +5845,113 @@ return {type: 'bootstrap', stmts: [
                       "type": "eapp"
                     },
                     "1": {
-                      "0": "nil",
-                      "type": "evar"
+                      "0": {
+                        "0": {
+                          "0": "cons",
+                          "type": "evar"
+                        },
+                        "1": {
+                          "0": {
+                            "0": {
+                              "0": ",",
+                              "type": "evar"
+                            },
+                            "1": {
+                              "0": {
+                                "0": "a/b",
+                                "1": {
+                                  "0": {
+                                    "0": 2,
+                                    "type": "pint"
+                                  },
+                                  "type": "eprim"
+                                },
+                                "2": {
+                                  "0": "a/b",
+                                  "type": "evar"
+                                },
+                                "type": "elet"
+                              },
+                              "type": "equot"
+                            },
+                            "type": "eapp"
+                          },
+                          "1": {
+                            "0": {
+                              "0": 2,
+                              "type": "pint"
+                            },
+                            "type": "eprim"
+                          },
+                          "type": "eapp"
+                        },
+                        "type": "eapp"
+                      },
+                      "1": {
+                        "0": {
+                          "0": {
+                            "0": "cons",
+                            "type": "evar"
+                          },
+                          "1": {
+                            "0": {
+                              "0": {
+                                "0": ",",
+                                "type": "evar"
+                              },
+                              "1": {
+                                "0": {
+                                  "0": {
+                                    "0": {
+                                      "0": true,
+                                      "type": "pbool"
+                                    },
+                                    "type": "eprim"
+                                  },
+                                  "1": {
+                                    "0": {
+                                      "0": {
+                                        "0": true,
+                                        "type": "pbool"
+                                      },
+                                      "1": {
+                                        "0": {
+                                          "0": 1,
+                                          "type": "pint"
+                                        },
+                                        "type": "eprim"
+                                      },
+                                      "type": ","
+                                    },
+                                    "1": {
+                                      "type": "nil"
+                                    },
+                                    "type": "cons"
+                                  },
+                                  "type": "ematch"
+                                },
+                                "type": "equot"
+                              },
+                              "type": "eapp"
+                            },
+                            "1": {
+                              "0": {
+                                "0": 1,
+                                "type": "pint"
+                              },
+                              "type": "eprim"
+                            },
+                            "type": "eapp"
+                          },
+                          "type": "eapp"
+                        },
+                        "1": {
+                          "0": "nil",
+                          "type": "evar"
+                        },
+                        "type": "eapp"
+                      },
+                      "type": "eapp"
                     },
                     "type": "eapp"
                   },
@@ -5378,486 +6016,5 @@ return {type: 'bootstrap', stmts: [
     },
     "type": "sexpr",
     "loc": 3631
-  },
-  {
-    "0": "type-check",
-    "1": {
-      "0": {
-        "0": "# Type Check",
-        "type": "pstr"
-      },
-      "type": "eprim"
-    },
-    "type": "sdef",
-    "loc": 3650
-  },
-  {
-    "0": "tfn",
-    "1": {
-      "0": "arg",
-      "1": {
-        "0": "body",
-        "1": {
-          "0": {
-            "0": {
-              "0": "tapp",
-              "type": "evar"
-            },
-            "1": {
-              "0": {
-                "0": {
-                  "0": "tapp",
-                  "type": "evar"
-                },
-                "1": {
-                  "0": {
-                    "0": "tcon",
-                    "type": "evar"
-                  },
-                  "1": {
-                    "0": {
-                      "0": "->",
-                      "type": "pstr"
-                    },
-                    "type": "eprim"
-                  },
-                  "type": "eapp"
-                },
-                "type": "eapp"
-              },
-              "1": {
-                "0": "arg",
-                "type": "evar"
-              },
-              "type": "eapp"
-            },
-            "type": "eapp"
-          },
-          "1": {
-            "0": "body",
-            "type": "evar"
-          },
-          "type": "eapp"
-        },
-        "type": "elambda"
-      },
-      "type": "elambda"
-    },
-    "type": "sdef",
-    "loc": 3709
-  },
-  {
-    "0": "empty-subst",
-    "1": {
-      "0": "nil",
-      "type": "evar"
-    },
-    "type": "sdef",
-    "loc": 3730
-  },
-  {
-    "0": "var-set",
-    "1": {
-      "0": "env",
-      "1": {
-        "0": "name",
-        "1": {
-          "0": "value",
-          "1": {
-            "0": {
-              "0": {
-                "0": ",",
-                "type": "evar"
-              },
-              "1": {
-                "0": {
-                  "0": {
-                    "0": {
-                      "0": "map-set",
-                      "type": "evar"
-                    },
-                    "1": {
-                      "0": {
-                        "0": "fst",
-                        "type": "evar"
-                      },
-                      "1": {
-                        "0": "env",
-                        "type": "evar"
-                      },
-                      "type": "eapp"
-                    },
-                    "type": "eapp"
-                  },
-                  "1": {
-                    "0": "name",
-                    "type": "evar"
-                  },
-                  "type": "eapp"
-                },
-                "1": {
-                  "0": "value",
-                  "type": "evar"
-                },
-                "type": "eapp"
-              },
-              "type": "eapp"
-            },
-            "1": {
-              "0": {
-                "0": "snd",
-                "type": "evar"
-              },
-              "1": {
-                "0": "env",
-                "type": "evar"
-              },
-              "type": "eapp"
-            },
-            "type": "eapp"
-          },
-          "type": "elambda"
-        },
-        "type": "elambda"
-      },
-      "type": "elambda"
-    },
-    "type": "sdef",
-    "loc": 3738
-  },
-  {
-    "0": "var-get",
-    "1": {
-      "0": "env",
-      "1": {
-        "0": "name",
-        "1": {
-          "0": {
-            "0": {
-              "0": "map-get",
-              "type": "evar"
-            },
-            "1": {
-              "0": {
-                "0": "fst",
-                "type": "evar"
-              },
-              "1": {
-                "0": "env",
-                "type": "evar"
-              },
-              "type": "eapp"
-            },
-            "type": "eapp"
-          },
-          "1": {
-            "0": "name",
-            "type": "evar"
-          },
-          "type": "eapp"
-        },
-        "type": "elambda"
-      },
-      "type": "elambda"
-    },
-    "type": "sdef",
-    "loc": 3758
-  },
-  {
-    "0": "tc-get",
-    "1": {
-      "0": "env",
-      "1": {
-        "0": "name",
-        "1": {
-          "0": {
-            "0": {
-              "0": "map-get",
-              "type": "evar"
-            },
-            "1": {
-              "0": {
-                "0": "snd",
-                "type": "evar"
-              },
-              "1": {
-                "0": "env",
-                "type": "evar"
-              },
-              "type": "eapp"
-            },
-            "type": "eapp"
-          },
-          "1": {
-            "0": "name",
-            "type": "evar"
-          },
-          "type": "eapp"
-        },
-        "type": "elambda"
-      },
-      "type": "elambda"
-    },
-    "type": "sdef",
-    "loc": 3778
-  },
-  {
-    "0": "make-type",
-    "1": {
-      "0": "tname",
-      "1": {
-        "0": "count",
-        "1": {
-          "0": "loop",
-          "1": {
-            "0": "type",
-            "1": {
-              "0": "count",
-              "1": {
-                "0": {
-                  "0": {
-                    "0": {
-                      "0": ">=",
-                      "type": "evar"
-                    },
-                    "1": {
-                      "0": {
-                        "0": 0,
-                        "type": "pint"
-                      },
-                      "type": "eprim"
-                    },
-                    "type": "eapp"
-                  },
-                  "1": {
-                    "0": "count",
-                    "type": "evar"
-                  },
-                  "type": "eapp"
-                },
-                "1": {
-                  "0": {
-                    "0": {
-                      "0": true,
-                      "type": "pbool"
-                    },
-                    "1": {
-                      "0": {
-                        "0": {
-                          "0": ",",
-                          "type": "evar"
-                        },
-                        "1": {
-                          "0": "type",
-                          "type": "evar"
-                        },
-                        "type": "eapp"
-                      },
-                      "1": {
-                        "0": "nil",
-                        "type": "evar"
-                      },
-                      "type": "eapp"
-                    },
-                    "type": ","
-                  },
-                  "1": {
-                    "0": {
-                      "0": {
-                        "0": false,
-                        "type": "pbool"
-                      },
-                      "1": {
-                        "0": "var",
-                        "1": {
-                          "0": "newTV",
-                          "type": "evar"
-                        },
-                        "2": {
-                          "0": {
-                            "0": {
-                              "0": {
-                                "0": "loop",
-                                "type": "evar"
-                              },
-                              "1": {
-                                "0": {
-                                  "0": {
-                                    "0": "tapp",
-                                    "type": "evar"
-                                  },
-                                  "1": {
-                                    "0": "type",
-                                    "type": "evar"
-                                  },
-                                  "type": "eapp"
-                                },
-                                "1": {
-                                  "0": "var",
-                                  "type": "evar"
-                                },
-                                "type": "eapp"
-                              },
-                              "type": "eapp"
-                            },
-                            "1": {
-                              "0": {
-                                "0": {
-                                  "0": "-",
-                                  "type": "evar"
-                                },
-                                "1": {
-                                  "0": "count",
-                                  "type": "evar"
-                                },
-                                "type": "eapp"
-                              },
-                              "1": {
-                                "0": {
-                                  "0": 1,
-                                  "type": "pint"
-                                },
-                                "type": "eprim"
-                              },
-                              "type": "eapp"
-                            },
-                            "type": "eapp"
-                          },
-                          "1": {
-                            "0": {
-                              "0": {
-                                "0": ",",
-                                "1": {
-                                  "0": "type",
-                                  "1": {
-                                    "0": "vbls",
-                                    "1": {
-                                      "type": "nil"
-                                    },
-                                    "type": "cons"
-                                  },
-                                  "type": "cons"
-                                },
-                                "type": "pcon"
-                              },
-                              "1": {
-                                "0": {
-                                  "0": {
-                                    "0": ",",
-                                    "type": "evar"
-                                  },
-                                  "1": {
-                                    "0": "type",
-                                    "type": "evar"
-                                  },
-                                  "type": "eapp"
-                                },
-                                "1": {
-                                  "0": {
-                                    "0": {
-                                      "0": "cons",
-                                      "type": "evar"
-                                    },
-                                    "1": {
-                                      "0": "var",
-                                      "type": "evar"
-                                    },
-                                    "type": "eapp"
-                                  },
-                                  "1": {
-                                    "0": "vbls",
-                                    "type": "evar"
-                                  },
-                                  "type": "eapp"
-                                },
-                                "type": "eapp"
-                              },
-                              "type": ","
-                            },
-                            "1": {
-                              "type": "nil"
-                            },
-                            "type": "cons"
-                          },
-                          "type": "ematch"
-                        },
-                        "type": "elet"
-                      },
-                      "type": ","
-                    },
-                    "1": {
-                      "type": "nil"
-                    },
-                    "type": "cons"
-                  },
-                  "type": "cons"
-                },
-                "type": "ematch"
-              },
-              "type": "elambda"
-            },
-            "type": "elambda"
-          },
-          "2": {
-            "0": {
-              "0": {
-                "0": "loop",
-                "type": "evar"
-              },
-              "1": {
-                "0": {
-                  "0": "tcon",
-                  "type": "evar"
-                },
-                "1": {
-                  "0": "tname",
-                  "type": "evar"
-                },
-                "type": "eapp"
-              },
-              "type": "eapp"
-            },
-            "1": {
-              "0": "count",
-              "type": "evar"
-            },
-            "type": "eapp"
-          },
-          "type": "elet"
-        },
-        "type": "elambda"
-      },
-      "type": "elambda"
-    },
-    "type": "sdef",
-    "loc": 3791
-  },
-  {
-    "0": {
-      "0": {
-        "0": {
-          "0": "make-type",
-          "type": "evar"
-        },
-        "1": {
-          "0": {
-            "0": "hi",
-            "type": "pstr"
-          },
-          "type": "eprim"
-        },
-        "type": "eapp"
-      },
-      "1": {
-        "0": {
-          "0": 21,
-          "type": "pint"
-        },
-        "type": "eprim"
-      },
-      "type": "eapp"
-    },
-    "type": "sexpr",
-    "loc": 3853
   }
 ]}

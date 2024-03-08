@@ -12,7 +12,12 @@ export const renderNodeToString = (
     if (!map[top]) {
         return `MISSING NODE`;
     }
-    const nnode = getNestedNodes(map[top], map, undefined, display[top].layout);
+    const nnode = getNestedNodes(
+        map[top],
+        map,
+        undefined,
+        display[top]?.layout,
+    );
     return renderNNode(nnode, map, left, display);
 };
 

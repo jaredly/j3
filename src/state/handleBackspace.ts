@@ -26,7 +26,7 @@ export function handleBackspace(
 ): StateChange {
     if (selection.end) {
         const [start, end] = orderStartAndEnd(selection.start, selection.end);
-        const item = collectNodes(map, start, end, hashNames);
+        const item = collectNodes({ map, nsMap, cards }, start, end, hashNames);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {

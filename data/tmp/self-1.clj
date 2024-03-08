@@ -1,6 +1,6 @@
 (def builtins
     ; this is a comment my folks
-        "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
+        "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
 (def ast "# AST")
 
@@ -20,6 +20,7 @@
     (pany)
         (pvar string)
         (pint int)
+        (pprim prim)
         (pcon string (array string)))
 
 (deftype type (tvar int) (tapp type type) (tcon string))
@@ -96,7 +97,7 @@
                                           (let [(, name2 args) case]
                                               (++
                                                   ["const "
-                                                      name2
+                                                      (sanitize name2)
                                                       " = "
                                                       (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
                                                       "({type: \""
@@ -143,9 +144,9 @@
         (eprim prim)          (match prim
                                   (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
                                   (pint int)    (int-to-string int)
-                                  (pbool bool)  (if bool
-                                                    "true"
-                                                        "false"))
+                                  (pbool bool)  (match bool
+                                                    true  "true"
+                                                    false "false"))
         (evar name)           (sanitize name)
         (equot inner)         (jsonify inner)
         (elambda name body)   (++ ["(" (sanitize name) ") => " (compile body)])
@@ -162,10 +163,36 @@
                                           (let [(, pat body) case]
                                               (match pat
                                                   (pany)           (++ ["true ? " (compile body) " : " otherwise])
+                                                  (pprim prim)     (match prim
+                                                                       (pint int)   (++
+                                                                                        ["$target === "
+                                                                                            (int-to-string int)
+                                                                                            " ? "
+                                                                                            (compile body)
+                                                                                            " : "
+                                                                                            otherwise])
+                                                                       (pbool bool) (++
+                                                                                        ["$target === "
+                                                                                            (match bool
+                                                                                            true "true"
+                                                                                            _    "false")
+                                                                                            " ? "
+                                                                                            (compile body)
+                                                                                            " : "
+                                                                                            otherwise]))
                                                   (pint int)       (++
                                                                        ["$target === "
                                                                            (int-to-string int)
                                                                            " ? "
+                                                                           (compile body)
+                                                                           " : "
+                                                                           otherwise])
+                                                  (pbool bool)     (++
+                                                                       ["$target === ("
+                                                                           (match bool
+                                                                           true "true"
+                                                                           _    "false")
+                                                                           ")  ? "
                                                                            (compile body)
                                                                            " : "
                                                                            otherwise])
@@ -219,31 +246,17 @@
         (@
             (match 2
                 2 1))
+            1)
+        (,
+        (@
+            (let [a/b 2]
+                a/b))
+            2)
+        (,
+        (@
+            (match true
+                true 1
+                2))
             1)])
 
 (eval (compile (@ (+ 2 3))))
-
-(def type-check "# Type Check")
-
-(defn tfn [arg body] (tapp (tapp (tcon "->") arg) body))
-
-(def empty-subst [])
-
-(defn var-set [env name value]
-    (, (map-set (fst env) name value) (snd env)))
-
-(defn var-get [env name] (map-get (fst env) name))
-
-(defn tc-get [env name] (map-get (snd env) name))
-
-(defn make-type [tname count]
-    (let [loop
-        (fn [type count]
-        (match (>= 0 count)
-            true  (, type [])
-            false (let [var (newTV) (, type vbls) (loop (tapp type var) (- count 1))]
-                      (, type [var ..vbls]))))]
-        (loop (tcon tname) count)))
-
-(make-type "hi" 21)
-

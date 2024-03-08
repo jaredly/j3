@@ -1,6 +1,6 @@
 (def builtins
     ;  this is a comment my folks
-        "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
+        "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
 (def ast "# AST")
 
@@ -108,6 +108,68 @@
                                                               args
                                                               (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
                                                       "});"])))))))
+
+(defn compile [expr]
+    (match expr
+        (eprim prim)          (match prim
+                                  (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
+                                  (pint int)    (int-to-string int)
+                                  (pbool bool)  (if bool
+                                                    "true"
+                                                        "false"))
+        (evar name)           (sanitize name)
+        (equot inner)         (jsonify inner)
+        (elambda name body)   (++ ["(" (sanitize name) ") => " (compile body)])
+        (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
+        (eapp fn arg)         (match fn
+                                  (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
+                                  _              (++ [(compile fn) "(" (compile arg) ")"]))
+        (ematch target cases) (++
+                                  ["(($target) => "
+                                      (foldr
+                                      "fatal('ran out of cases: ' + JSON.stringify($target))"
+                                          cases
+                                          (fn [otherwise case]
+                                          (let [(, pat body) case]
+                                              (match pat
+                                                  (pany)           (++ ["true ? " (compile body) " : " otherwise])
+                                                  (pint int)       (++
+                                                                       ["$target === "
+                                                                           (int-to-string int)
+                                                                           " ? "
+                                                                           (compile body)
+                                                                           " : "
+                                                                           otherwise])
+                                                  (pvar name)      (++ ["true ? ((" (sanitize name) ") => " (compile body) ")($target)"])
+                                                  (pcon name args) (++
+                                                                       ["$target.type == \""
+                                                                           name
+                                                                           "\" ? "
+                                                                           (snd
+                                                                           (reduce
+                                                                               (, 0 (compile body))
+                                                                                   args
+                                                                                   (fn [inner name]
+                                                                                   (let [(, i inner) inner]
+                                                                                       (,
+                                                                                           (+ i 1)
+                                                                                               (++
+                                                                                               ["(("
+                                                                                                   (sanitize name)
+                                                                                                   ") => "
+                                                                                                   inner
+                                                                                                   ")($target["
+                                                                                                   (int-to-string i)
+                                                                                                   "])"]))))))
+                                                                           " : "
+                                                                           otherwise])))))
+                                      ")("
+                                      (compile target)
+                                      ")"])))
+
+(def a/b 2)
+
+a/b
 
 (def util "# util")
 

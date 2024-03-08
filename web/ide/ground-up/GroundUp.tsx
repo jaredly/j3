@@ -46,8 +46,16 @@ const loadEv = async (
             },
             addStatement(stmt: stmt, env: string[]) {
                 if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                    env.push(benv['compile-st'](stmt));
-                    return { env, display: 'compiled.' };
+                    try {
+                        env.push(benv['compile-st'](stmt));
+                        return { env, display: 'compiled.' };
+                    } catch (err) {
+                        console.error(err);
+                        return {
+                            env,
+                            display: 'Failed ' + (err as Error).message,
+                        };
+                    }
                 }
                 if (stmt.type === 'sexpr') {
                     let raw;
