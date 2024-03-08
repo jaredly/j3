@@ -1,4 +1,90 @@
 
+# Grand Plan
+
+1. basic bootstrap, bare bones AST
+2. (self-1) basic self-compile, same AST
+3. (self-2) self-compile the self-compile (no code change prolly)
+4. (parse-1) self-parse, no real error handling or source mapping
+  - Need to do a `generate CST -> jCST` person
+
+...
+?. Once we have effects, orr maybe just basic monads,
+
+
+
+ok so what if, you could like "tag" a toplevel definition.
+with an arbitrary tag like ":parser".
+And then there was .. a macro or something, to say
+"grab me the array of definitions that match this tag".
+That would be pretty dope actually? I think?
+it would want to be namespaced
+and probably ...
+
+
+
+
+OK so I would love to have fancy automatic (type-checked)
+magic for a `(@matcher (@ (if :cond :yes :no)))` kind of thing,
+that produces a function
+`(fn [node] [None (Some {cond Node yes Node no Node})])`
+
+anyway
+that'll have to come later
+I mean
+maybe I'll
+...
+hrm
+ok so I do need type checking at some point
+anddd gotta be nominal types until I get structural
+so that's a little vexing.
+
+ohwait
+I could do
+
+`(@matcher (@ (if :cond :yes :no)) (fn [cond yes no] (tif cond yes no)))`
+That won't require custom types n stuff.
+Ok so it's somewhat approachable.
+
+but yeah, first I need to move the parser to jerd
+yeah.
+
+
+
+
+
+
+
+Ok, so I want to be able to use `if`s.
+
+Which means.
+I need to be able to change the AST
+which means
+I need to do the parsing in - universe
+which means
+I need to autogen translation code, and syntax, for the CST
+
+right?
+
+`export type tapply = {type: 'tapply', target: Node, values: Node[]}`
+becomes
+`(cst/tapply node (array node))`
+->
+`{type: 'cst/apply', 0: node.target, 1: wrapArray(nodes.values)}`
+right?
+
+also, string|number => is just string.
+
+
+
+
+
+
+
+
+
+
+------------
+
 
 - [x] BUG backspace on the output of a fixture puts us in a BAD path, where deleting the (, )
   tuple deletes more than it should.

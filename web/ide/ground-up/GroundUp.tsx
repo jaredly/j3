@@ -65,10 +65,11 @@ const loadEv = async (
                         };
                     }
                     try {
-                        const res = new Function(envArgs, raw)(san);
+                        const res = new Function(envArgs, '{' + raw + '}')(san);
                         return { env, display: valueToString(res) };
                     } catch (err) {
                         console.log(raw);
+                        console.error(err);
                         return {
                             env,
                             display:
