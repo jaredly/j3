@@ -7,10 +7,16 @@
 4. (parse-1) self-parse, no real error handling or source mapping
   - Need to do a `generate CST -> jCST` person
 
+WHAT IF
+I ... do some imports?
+
 ...
 ?. Once we have effects, orr maybe just basic monads,
 
 
+- [ ] BUG paste with strings with `${}` doesn't work right! Need to fix the lexer
+- [ ] BUG paste "\\\\" doesn't close correctly. Need to check the number of '\\' and only
+  block closure if it's odd.
 
 ok so what if, you could like "tag" a toplevel definition.
 with an arbitrary tag like ":parser".

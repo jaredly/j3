@@ -1,6 +1,6 @@
 import React from 'react';
 import { Node } from '../../../src/types/cst';
-import { NamespacePlugin } from '../UIState';
+import { Action, NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
 import { valueToString } from '../../ide/ground-up/reduce';
@@ -278,6 +278,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
         results: {
             [key: number]: { expected: any; found: any; error?: string };
         },
+        dispatch: React.Dispatch<Action>,
     ): NNode | void {
         const data = parse(node);
         if (!data) return;
@@ -344,11 +345,11 @@ export const fixturePlugin: NamespacePlugin<any> = {
                                                       text: ' ',
                                                   },
                                                   {
-                                                      type: 'punct',
-                                                      color: 'purple',
-                                                      text: statusMessage(
+                                                      type: 'dom',
+                                                      node: statusMessage(
                                                           item,
                                                           results,
+                                                          dispatch,
                                                       ),
                                                   },
                                               ],
@@ -394,15 +395,55 @@ function statusMessage(
             error?: string | undefined;
         };
     },
-): string {
-    if (!item.input) return 'no input';
+    dispatch: React.Dispatch<Action>,
+): JSX.Element | null {
+    if (!item.input) return <span style={{ color: 'purple' }}>no input</span>;
     const res = results[item.input.node.loc];
-    if (!res) return '';
-    if (res.error) return res.error;
+    if (!res) return null;
+    if (res.error) return <span style={{ color: 'red' }}>{res.error}</span>;
     if (!equal(res.expected, res.found)) {
-        return valueToString(results[item.input.node.loc]?.found);
+        return (
+            <span
+                style={{ color: 'purple', cursor: 'pointer' }}
+                onClick={() => {
+                    // So ... we want .... the .. evaluator? to tell us, how to turn a [value]
+                    // into a [CST]. Right? Seems about right.
+                    console.log(res.found);
+                    dispatch({
+                        type: 'select',
+                        at: [
+                            {
+                                start: [
+                                    {
+                                        type: 'start',
+                                        idx: item.output!.node.loc,
+                                    },
+                                ],
+                                end: [
+                                    { type: 'end', idx: item.output!.node.loc },
+                                ],
+                            },
+                        ],
+                    });
+                    dispatch({
+                        type: 'paste',
+                        items: [
+                            {
+                                type: 'text',
+                                trusted: false,
+                                text: valueToString(
+                                    results[item.input!.node.loc].found,
+                                ),
+                            },
+                        ],
+                    });
+                }}
+            >
+                {valueToString(results[item.input.node.loc]?.found)}
+            </span>
+        );
     }
-    return '';
+    return null;
 }
 
 function statusIndicator(

@@ -110,11 +110,7 @@ const loadEv = async (
                     raw = benv['compile'](expr);
                 } catch (err) {
                     console.error(err);
-                    return {
-                        env,
-                        display:
-                            'Compilation failed: ' + (err as Error).message,
-                    };
+                    return 'Compilation failed: ' + (err as Error).message;
                 }
                 try {
                     const res = new Function(
@@ -126,10 +122,9 @@ const loadEv = async (
                     console.log(raw);
                     console.error(err);
                     return (
-                        'Error evaluating! ' +
-                        (err as Error).message +
-                        '\n' +
-                        raw
+                        'Error evaluating! ' + (err as Error).message
+                        // '\n' +
+                        // raw
                     );
                 }
             },

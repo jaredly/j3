@@ -98,14 +98,12 @@ export const parseByCharacter = (
 
             [start, end] = orderStartAndEnd(start, end);
 
-            clipboard = [
-                collectNodes(
-                    state.map,
-                    start,
-                    end,
-                    ctx?.results.hashNames ?? {},
-                ),
-            ];
+            throw new Error(
+                'I dont think this code is used anymore. if so, need to use UIState pls',
+            );
+            // clipboard = [
+            //     collectNodes(state, start, end, ctx?.results.hashNames ?? {}),
+            // ];
             continue;
         }
         if (key === 'Paste') {

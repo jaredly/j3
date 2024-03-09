@@ -55,6 +55,7 @@ export const bootstrap: FullEvalator<
             '<': (a: number) => (b: number) => a < b,
             '<=': (a: number) => (b: number) => a <= b,
             '>': (a: number) => (b: number) => a > b,
+            valueToString,
             '>=': (a: number) => (b: number) => a >= b,
             nil: { type: 'nil' },
             cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),

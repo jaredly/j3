@@ -42,7 +42,7 @@ const PluginRender = ({
         [ev, env, expanded],
     );
     const rn = useMemo(
-        () => plugin.render(expanded, results),
+        () => plugin.render(expanded, results, props.dispatch),
         [expanded, results],
     );
     if (!rn) return <Render map={map} {...props} />;

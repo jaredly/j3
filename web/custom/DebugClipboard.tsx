@@ -25,7 +25,7 @@ export function DebugClipboard({
                     const [start, end] = orderStartAndEnd(sel.start, sel.end);
 
                     return collectNodes(
-                        state.map,
+                        state,
                         start,
                         end,
                         ctx.results.hashNames,

@@ -120,7 +120,12 @@ describe('a test', () => {
                     throw new Error('could not second postopath');
                 }
 
-                const collected = collectNodes(data, firstPath, secondPath, {});
+                const collected = collectNodes(
+                    { map: data, nsMap: {}, cards: [] },
+                    firstPath,
+                    secondPath,
+                    {},
+                );
                 const printed = clipboardText([collected], {}, ' ');
                 if (printed !== output) {
                     console.log(firstPath);

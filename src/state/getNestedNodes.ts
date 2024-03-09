@@ -18,7 +18,7 @@ export type NNode =
     | { type: 'text'; text: string }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | { type: 'ref'; id: number; path: PathChild; ancestors?: Path[] }
-    | { type: 'dom'; node: JSX.Element }
+    | { type: 'dom'; node: JSX.Element | null }
     // | {type: 'sub-path', path: PathChild, child: NNode}
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 

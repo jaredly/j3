@@ -212,7 +212,7 @@
                                               (fn [case]
                                               (let [(, pat body) case]
                                                   (compile-pat pat "$target" "return ${(compile body)}")))))
-                                  }\nthrow new Error('Failed to match' + JSON.stringify($target))})(${
+                                  }\nthrow new Error('Failed to match. ' + valueToString($target))})(${
                                   (compile target)
                                   })"))
 

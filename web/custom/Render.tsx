@@ -166,7 +166,7 @@ export const Render = React.memo(
 
 export const RenderNNode = (
     props: RenderProps & { nnode: NNode },
-): JSX.Element => {
+): JSX.Element | null => {
     const { nnode, reg, idx, path, display, map, dispatch } = props;
     const node = map[idx];
 

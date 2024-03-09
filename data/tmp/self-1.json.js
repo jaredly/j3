@@ -5378,7 +5378,7 @@ return {type: 'bootstrap', stmts: [
                                   },
                                   "type": "eapp"
                                 },
-                                "1": "\\nthrow new Error('Failed to match' + JSON.stringify($target))})(",
+                                "1": "\\nthrow new Error('Failed to match. ' + valueToString($target))})(",
                                 "type": ","
                               },
                               "1": {

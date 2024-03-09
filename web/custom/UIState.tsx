@@ -163,7 +163,11 @@ export type NamespacePlugin<T> = {
     title: string;
     test(node: Node): boolean;
     process(node: Node, evaluate: (node: Node) => any): T;
-    render(node: Node, results: T): NNode | void;
+    render(
+        node: Node,
+        results: T,
+        dispatch: React.Dispatch<Action>,
+    ): NNode | void;
     newNodeAfter(
         path: Path[],
         map: Map,
