@@ -210,6 +210,10 @@ export const GroundUp = ({
             if (hidden) return;
             // console.log('process top', top);
             const stmt = fromMCST(top, state.map);
+            if (stmt.type === 'blank') {
+                produce[stmt.loc] = ' ';
+                return;
+            }
             if (evaluator) {
                 const errs: Results['errors'] = {};
                 const ast = evaluator.parse(stmt, errs);

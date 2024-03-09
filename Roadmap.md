@@ -1,11 +1,36 @@
 
+# N4xt up
+
+- [ ] perfff only render what changes, for crying out loud
+  - So, have a `Context` to access a `store`, that keeps track of the current `state`
+    and has listeners for nodes and stuff
+- [ ] TRACE ok so I think what I want is for it to be *separate* from the AST
+  because having e.g. the capacity to drop a trace on literally anything (e.g. a pattern)
+  would complicate things a ton.
+  So, a compiler would just have access to a `map` (ok so we need `map`s) that would tell you
+  whether a given `loc` had a `trace` on it.
+  which means my parser needs to be preserving locs? yes that's what it means. Should be quick.
+- [ ] Let's get self-2 (or parse-1) working as an Evaluator, that can then save the .js to disk.
+
 # Grand Plan
 
-1. basic bootstrap, bare bones AST
-2. (self-1) basic self-compile, same AST
-3. (self-2) self-compile the self-compile (no code change prolly)
-4. (parse-1) self-parse, no real error handling or source mapping
-  - Need to do a `generate CST -> jCST` person
+1. [x] basic bootstrap, bare bones AST
+2. [x] (self-1) basic self-compile, same AST
+3. [x] (self-2) self-compile the self-compile (no code change prolly)
+4. [x] (parse-1) self-parse, no real error handling or source mapping
+  - [x] Need to do a `generate CST -> jCST` person
+  - yassss now we have destructuring of fn arguments baked into the parser! which is nice.
+
+- [ ] add basic fallthrough cases everywhere.
+- [ ] use parse-1 as an evaluator
+- [ ] start ... into typing? yeah that sounds about right.
+  pleease give us some type checking. we needs it badly.
+  also autocomplete, right?
+
+
+(equot ...)
+... do I have the capacity to do a ...
+
 
 WHAT IF
 I ... do some imports?

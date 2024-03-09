@@ -37,11 +37,15 @@ export const Outside = () => {
                                 href={'#' + title}
                                 style={{
                                     display: 'inline-block',
-                                    padding: '8px 16px',
+                                    padding: '8px 0px 8px 16px',
                                     color:
-                                        hash === '#' + name
+                                        hash === '#' + title
                                             ? 'yellow'
                                             : 'white',
+                                    textDecoration:
+                                        hash === '#' + title
+                                            ? 'none'
+                                            : 'underline',
                                 }}
                             >
                                 {title}
@@ -53,12 +57,19 @@ export const Outside = () => {
                                     );
                                     // location.hash = '';
                                 }}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: 'inherit',
+                                    cursor: 'pointer',
+                                }}
                             >
                                 &times;
                             </button>
                         </span>
                     ))}
                     <select
+                        style={{ marginLeft: 16 }}
                         value=""
                         onChange={(evt) => {
                             const title = evt.target.value;
@@ -69,6 +80,7 @@ export const Outside = () => {
                         <option value="">Open file</option>
                         {listing
                             ?.filter((k) => k.endsWith('.json'))
+                            .filter((k) => !recent.find((f) => f.title === k))
                             .map((file) => (
                                 <option key={file} value={file}>
                                     {file}

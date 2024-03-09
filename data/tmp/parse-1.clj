@@ -1,3 +1,6 @@
+(def builtins
+    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
+
 (def parsing "# Parsing")
 
 (deftype cst
@@ -19,7 +22,8 @@
 (defn parse-type [type]
     (match type
         (cst/identifier id _) (tcon id)
-        (cst/list items _)    (tapps (map items parse-type))))
+        (cst/list items _)    (tapps (map items parse-type))
+        _                     (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
 (parse-type
     (cst/list [(cst/identifier "hi" _) (cst/identifier "ho" _)] 1))
@@ -29,7 +33,8 @@
 (defn pairs [array]
     (match array
         []               []
-        [one two ..rest] [(, one two) ..(pairs rest)]))
+        [one two ..rest] [(, one two) ..(pairs rest)]
+        _                (fatal "Pairs given odd number ${(valueToString array)}")))
 
 (defn parse-pat [pat]
     (match pat
@@ -38,7 +43,8 @@
                                                           (some int) (pprim (pint int))
                                                           _          (pvar id)
                                                           )
-        (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))))
+        (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))
+        _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
 (defn parse-expr [cst]
     (match cst
@@ -55,6 +61,8 @@
         (cst/identifier id _)                                            (match (string-to-int id)
                                                                              (some int) (eprim (pint int))
                                                                              (none)     (evar id))
+        (cst/list [(cst/identifier "@" _) body] _)                       (equot (parse-expr body))
+        (cst/list [(cst/identifier "@@" _) body] _)                      (equotquot body)
         (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  _)  (foldr
                                                                              (parse-expr body)
                                                                                  args
@@ -112,7 +120,9 @@
                 1))
             (ematch
             (eapp (eapp (evar ",") (eprim (pint 2))) (eprim (pint 3)))
-                [(, (pcon "," [(pvar "a") (pvar "b")]) (eprim (pint 1)))]))])
+                [(, (pcon "," [(pvar "a") (pvar "b")]) (eprim (pint 1)))]))
+        (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 3110)))
+        (, (@@ (@ 1)) (equot (eprim (pint 1))))])
 
 
 
@@ -173,6 +183,8 @@
     (eprim prim)
         (estr first (array (, expr string)))
         (evar string)
+        (equot expr)
+        (equotquot cst)
         (elambda string expr)
         (eapp expr expr)
         (ematch expr (array (, pat expr))))

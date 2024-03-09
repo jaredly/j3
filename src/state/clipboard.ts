@@ -244,8 +244,12 @@ export const paste = (
         const item = items[0];
         switch (item.type) {
             case 'text': {
-                if (item.trusted) {
-                    const path = state.at[0].start;
+                const path = state.at[0].start;
+                if (
+                    item.trusted ||
+                    (path[path.length - 1].type === 'subtext' &&
+                        path[path.length - 2]?.type === 'text')
+                ) {
                     return insertText(
                         item.text,
                         state.map,
