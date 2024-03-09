@@ -60,10 +60,7 @@ const loadEv = async (
                 if (stmt.type === 'sexpr') {
                     let raw;
                     try {
-                        raw =
-                            env.join('\n') +
-                            '\nreturn ' +
-                            benv['compile-st'](stmt);
+                        raw = benv['compile-st'](stmt);
                     } catch (err) {
                         console.error(err);
                         return {
@@ -73,15 +70,22 @@ const loadEv = async (
                         };
                     }
                     try {
-                        const res = new Function(envArgs, '{' + raw + '}')(san);
+                        const res = new Function(
+                            envArgs,
+                            '{' + env.join('\n') + '\nreturn ' + raw + '}',
+                        )(san);
                         return { env, display: valueToString(res) };
                     } catch (err) {
+                        console.log(envArgs);
                         console.log(raw);
                         console.error(err);
                         return {
                             env,
                             display:
-                                'Error evaluating! ' + (err as Error).message,
+                                'Error evaluating! ' +
+                                (err as Error).message +
+                                '\n' +
+                                raw,
                         };
                     }
                 }
@@ -103,7 +107,7 @@ const loadEv = async (
             evaluate(expr, env) {
                 let raw;
                 try {
-                    raw = env.join('\n') + '\nreturn ' + benv['compile'](expr);
+                    raw = benv['compile'](expr);
                 } catch (err) {
                     console.error(err);
                     return {
@@ -113,12 +117,20 @@ const loadEv = async (
                     };
                 }
                 try {
-                    const res = new Function(envArgs, '{' + raw + '}')(san);
+                    const res = new Function(
+                        envArgs,
+                        '{' + env.join('\n') + '\nreturn ' + raw + '}',
+                    )(san);
                     return res;
                 } catch (err) {
                     console.log(raw);
                     console.error(err);
-                    return 'Error evaluating! ' + (err as Error).message;
+                    return (
+                        'Error evaluating! ' +
+                        (err as Error).message +
+                        '\n' +
+                        raw
+                    );
                 }
             },
         };
@@ -144,6 +156,15 @@ const useEvaluator = (name?: string) => {
     useEffect(() => {
         if (name?.endsWith('.json')) {
             loadEv(name).then(setEvaluator);
+        } else {
+            switch (name) {
+                case ':bootstrap:':
+                    setEvaluator(bootstrap);
+                    break;
+                case ':repr:':
+                    setEvaluator(repr);
+                    break;
+            }
         }
     }, [name]);
 

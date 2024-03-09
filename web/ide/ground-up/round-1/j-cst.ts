@@ -3,15 +3,15 @@ import { filterNulls } from '../../../custom/reduce';
 import { arr, filterBlanks, wrapArray } from './parse';
 
 export type jcst =
-    | { type: 'list'; 0: arr<jcst>; 1: number }
-    | { type: 'array'; 0: arr<jcst>; 1: number }
+    | { type: 'cst/list'; 0: arr<jcst>; 1: number }
+    | { type: 'cst/array'; 0: arr<jcst>; 1: number }
     | {
-          type: 'string';
+          type: 'cst/string';
           0: string;
           1: arr<{ type: ','; 0: jcst; 1: string; 2: number }>;
           2: number;
       }
-    | { type: 'identifier'; 0: string; 1: number };
+    | { type: 'cst/identifier'; 0: string; 1: number };
 
 `
 (deftype cst
@@ -25,10 +25,10 @@ export type jcst =
 export const toJCST = (node: Node): jcst | null => {
     switch (node.type) {
         case 'identifier':
-            return { type: 'identifier', 0: node.text, 1: node.loc };
+            return { type: 'cst/identifier', 0: node.text, 1: node.loc };
         case 'list':
             return {
-                type: 'list',
+                type: 'cst/list',
                 0: wrapArray(
                     filterBlanks(node.values).map(toJCST).filter(filterNulls),
                 ),
@@ -36,7 +36,7 @@ export const toJCST = (node: Node): jcst | null => {
             };
         case 'array':
             return {
-                type: 'array',
+                type: 'cst/array',
                 0: wrapArray(
                     filterBlanks(node.values).map(toJCST).filter(filterNulls),
                 ),
@@ -46,7 +46,7 @@ export const toJCST = (node: Node): jcst | null => {
             const parsed = node.templates.map((item) => toJCST(item.expr));
             if (parsed.some((p) => !p)) return null;
             return {
-                type: 'string',
+                type: 'cst/string',
                 0: node.first.text,
                 1: wrapArray(
                     node.templates.map((item, i) => ({
