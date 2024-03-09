@@ -30,33 +30,34 @@
 
 (defn parse-expr [cst]
     (match cst
-        (cst/identifier "true" _)                                                                                                                                                                                                                                                                           (eprim (pbool true))
-        (cst/identifier "false" _)                                                                                                                                                                                                                                                                          (eprim (pbool false))
-        (cst/string first templates _)                                                                                                                                                                                                                                                                      (estr
-                                                                                                                                                                                                                                                                                                                first
-                                                                                                                                                                                                                                                                                                                    (map
-                                                                                                                                                                                                                                                                                                                    templates
-                                                                                                                                                                                                                                                                                                                        (fn [tpl]
-                                                                                                                                                                                                                                                                                                                        (let [(, expr string) tpl]
-                                                                                                                                                                                                                                                                                                                            (, (parse-expr expr) string)))))
-                                                                                                                                                                                                                                                                                                            
-        (cst/identifier id _)                                                                                                                                                                                                                                                                               (match (string-to-int id)
-                                                                                                                                                                                                                                                                                                                (some int) (eprim (pint int))
-                                                                                                                                                                                                                                                                                                                (none)     (evar id))
-        (cst/list
-            [(cst/identifier "fn" _) (cst/array args _) body]
-                (foldl
-                (parse-expr body)
-                    args
-                    (fn [body arg]
-                    (match arg
-                        (cst/identifier name _) (elambda name body))))) ))
+        (cst/identifier "true" _)                                       (eprim (pbool true))
+        (cst/identifier "false" _)                                      (eprim (pbool false))
+        (cst/string first templates _)                                  (estr
+                                                                            first
+                                                                                (map
+                                                                                templates
+                                                                                    (fn [tpl]
+                                                                                    (let [(, expr string) tpl]
+                                                                                        (, (parse-expr expr) string)))))
+                                                                        
+        (cst/identifier id _)                                           (match (string-to-int id)
+                                                                            (some int) (eprim (pint int))
+                                                                            (none)     (evar id))
+        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  _) (foldr
+                                                                            (parse-expr body)
+                                                                                args
+                                                                                (fn [body arg]
+                                                                                (match arg
+                                                                                    (cst/identifier name _) (elambda name body))))))
 
 (,
     parse-expr
         [(, (@@ true) (eprim (pbool true)))
         (, (@@ "hi") (estr "hi" []))
-        (, (@@ 12) (eprim (pint 12)))])
+        (, (@@ 12) (eprim (pint 12)))
+        (, (@@ abc) (evar "abc"))
+        (, (@@ (fn [a] 1)) (elambda "a" (eprim (pint 1))))
+        (, (@@ (fn [a b] 2)) (elambda "a" (elambda "b" (eprim (pint 2)))))])
 
 (parse-expr (@@ (fn [a] 1)))
 
