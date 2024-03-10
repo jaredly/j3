@@ -8,18 +8,16 @@ import { NUIState } from '../../custom/UIState';
 
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
-import { RenderProps } from '../../custom/types';
 import { FullEvalator, bootstrap, repr } from './Evaluators';
-import { findTops, loadState, reduce, urlForId, valueToString } from './reduce';
-import { goLeftUntil, selectEnd } from '../../../src/state/navigate';
+import { findTops, reduce, urlForId, valueToString } from './reduce';
+import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
 import { parseExpr, parseStmt, stmt } from './round-1/parse';
-import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 
 export type Results = {
     display: Display;
-    errors: RenderProps['errors'];
+    errors: { [key: string]: string[] };
     hashNames: { [idx: number]: string };
 };
 

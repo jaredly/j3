@@ -15,13 +15,14 @@ import { NsReg, Drag } from './useNSDrag';
 import { fromMCST } from '../../src/types/mcst';
 import { FullEvalator, bootstrap } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
+import { useExpanded, useNode } from './Store';
 
 const empty = {};
 
 const PluginRender = ({
     ns,
     plugin,
-    map,
+    // map,
     env,
     ev,
     ...props
@@ -31,7 +32,9 @@ const PluginRender = ({
     ns: RealizedNamespace;
     plugin: NamespacePlugin<any>;
 }) => {
-    const expanded = useMemo(() => fromMCST(ns.top, map), [ns.top, map]);
+    const values = useNode(props.idx, props.path);
+    const expanded = useExpanded(props.idx);
+    // const expanded = useMemo(() => fromMCST(ns.top, map), [ns.top, map]);
     const results = useMemo(
         () =>
             plugin.process(expanded, (node) => {
@@ -42,11 +45,11 @@ const PluginRender = ({
         [ev, env, expanded],
     );
     const rn = useMemo(
-        () => plugin.render(expanded, results, props.dispatch),
+        () => plugin.render(expanded, results, values.dispatch),
         [expanded, results],
     );
-    if (!rn) return <Render map={map} {...props} />;
-    return <RenderNNode {...props} nnode={rn} map={map} />;
+    if (!rn) return <Render {...props} />;
+    return <RenderNNode {...props} values={values} nnode={rn} />;
 };
 
 export function NSTop({
@@ -129,14 +132,14 @@ export function NSTop({
                                     }
                                     debug={false}
                                     idx={ns.top}
-                                    map={state.map}
-                                    reg={reg}
+                                    // reg={reg}
+                                    // map={state.map}
                                     firstLineOnly={ns.collapsed}
-                                    display={results.display ?? empty}
-                                    hashNames={results.hashNames ?? empty}
-                                    errors={results.errors ?? empty}
-                                    dispatch={dispatch}
-                                    selection={selections}
+                                    // display={results.display ?? empty}
+                                    // hashNames={results.hashNames ?? empty}
+                                    // errors={results.errors ?? empty}
+                                    // selection={selections}
+                                    // dispatch={dispatch}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },
                                     ])}
@@ -145,14 +148,14 @@ export function NSTop({
                                 <Render
                                     debug={false}
                                     idx={ns.top}
-                                    map={state.map}
-                                    reg={reg}
+                                    // reg={reg}
+                                    // map={state.map}
                                     firstLineOnly={ns.collapsed}
-                                    display={results.display ?? empty}
-                                    hashNames={results.hashNames ?? empty}
-                                    errors={results.errors ?? empty}
-                                    dispatch={dispatch}
-                                    selection={selections}
+                                    // display={results.display ?? empty}
+                                    // hashNames={results.hashNames ?? empty}
+                                    // errors={results.errors ?? empty}
+                                    // selection={selections}
+                                    // dispatch={dispatch}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },
                                     ])}

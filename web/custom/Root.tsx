@@ -95,14 +95,14 @@ export function Root({
                             <Render
                                 debug={debug}
                                 idx={top}
-                                map={state.map}
-                                reg={reg}
-                                display={results?.display ?? empty}
-                                hashNames={results?.hashNames ?? empty}
+                                // map={state.map}
+                                // reg={reg}
+                                // display={results?.display ?? empty}
+                                // hashNames={results?.hashNames ?? empty}
                                 // STOPSHIP this is disabled for a minute
-                                errors={empty} // results?.errors ?? empty}
-                                dispatch={dispatch}
-                                selection={selections}
+                                // errors={empty} // results?.errors ?? empty}
+                                // dispatch={dispatch}
+                                // selection={selections}
                                 path={[
                                     {
                                         idx: state.root,

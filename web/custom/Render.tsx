@@ -6,6 +6,7 @@ import { getNestedNodes, NNode } from '../../src/state/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
+import { useNode, Values } from './Store';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -107,19 +108,14 @@ export const textStyle = (
 
 export const Render = React.memo(
     (props: RenderProps) => {
-        const { idx, map, display, hashNames, path } = props;
-        const nnode = getNestedNodes(
-            map[idx],
-            map,
-            hashNames[idx],
-            display[idx]?.layout,
-        );
+        const values = useNode(props.idx, props.path);
+        const { node, nnode, display } = values;
+        const { idx, path } = props;
 
         if (path.length > 1000) {
             return <span>DEEP</span>;
         }
 
-        const node = map[idx];
         return props.debug ? (
             <span style={{ display: 'flex' }}>
                 <span
@@ -128,11 +124,11 @@ export const Render = React.memo(
                         fontSize: '50%',
                         lineHeight: '20px',
                     }}
-                    data-display={JSON.stringify(props.display[idx])}
+                    data-display={JSON.stringify(display)}
                 >
                     {idx}
                 </span>
-                <RenderNNode {...props} nnode={nnode} />
+                <RenderNNode {...props} nnode={nnode} values={values} />
                 {node.type === 'hash' ? (
                     <span
                         style={{
@@ -146,7 +142,7 @@ export const Render = React.memo(
                 ) : null}
             </span>
         ) : (
-            <RenderNNode {...props} nnode={nnode} />
+            <RenderNNode {...props} nnode={nnode} values={values} />
         );
     },
     // (prevProps: RenderProps, nextProps: RenderProps) => {
@@ -165,20 +161,16 @@ export const Render = React.memo(
 );
 
 export const RenderNNode = (
-    props: RenderProps & { nnode: NNode },
+    props: RenderProps & { nnode: NNode; values: Values },
 ): JSX.Element | null => {
-    const { nnode, reg, idx, path, display, map, dispatch } = props;
-    const node = map[idx];
+    const { nnode, idx, path } = props;
+    const { reg, display, dispatch, node, selection, errors } = props.values;
 
-    const isSelected = props.selection.some(
-        (s) =>
-            s.start[s.start.length - 1].idx === idx ||
-            (s.end && s.end[s.end.length - 1].idx === idx),
-    );
+    const edgeSelected = selection?.edge;
 
-    const coverageLevel = isCoveredBySelection(props.selection, path, map);
+    const coverageLevel = selection?.coverage;
 
-    const errors = props.errors[node.loc];
+    // const errors = props.errors[node.loc];
 
     const errorStyle = errors?.length
         ? {
@@ -270,7 +262,7 @@ export const RenderNNode = (
                             rainbow[path.length % rainbow.length],
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
-                        fontVariationSettings: isSelected ? '"wght" 900' : '',
+                        fontVariationSettings: edgeSelected ? '"wght" 900' : '',
                         ...selectStyle,
                         ...errorStyle,
                     }}
@@ -315,8 +307,8 @@ export const RenderNNode = (
                 body = nnode.text;
                 if (
                     nnode.text.length > 1 &&
-                    (display[idx]?.style?.type === 'id' ||
-                        display[idx]?.style?.type === 'unresolved')
+                    (props.values.display?.style?.type === 'id' ||
+                        props.values.display?.style?.type === 'unresolved')
                 ) {
                     const nss = splitNamespaces(nnode.text);
                     if (nss.length) {
@@ -344,7 +336,7 @@ export const RenderNNode = (
                 <span
                     ref={(node) => reg(node, idx, path)}
                     style={{
-                        ...textStyle(node, display[idx]),
+                        ...textStyle(node, props.values.display),
                         ...selectStyle,
                         ...errorStyle,
                         whiteSpace: 'pre',
@@ -375,14 +367,14 @@ export const RenderNNode = (
         case 'ref':
             return (
                 <Render
-                    map={map}
-                    display={display}
-                    errors={props.errors}
-                    dispatch={dispatch}
-                    reg={reg}
-                    hashNames={props.hashNames}
+                    // map={map}
+                    // display={display}
+                    // errors={props.errors}
+                    // dispatch={dispatch}
+                    // reg={reg}
+                    // hashNames={props.hashNames}
+                    // selection={props.selection}
                     idx={nnode.id}
-                    selection={props.selection}
                     debug={props.debug}
                     path={path.concat([
                         ...(nnode.ancestors ?? []),
