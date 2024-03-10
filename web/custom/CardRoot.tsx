@@ -128,7 +128,7 @@ function selectionAction(
     }
 }
 
-function normalizeSelections(at: Cursor[]): Cursor[] {
+export function normalizeSelections(at: Cursor[]): Cursor[] {
     return at
         .filter((s) => s.end)
         .map(({ start, end }) => {
@@ -137,7 +137,7 @@ function normalizeSelections(at: Cursor[]): Cursor[] {
         });
 }
 
-function useRegs(state: NUIState): Reg {
+export function useRegs(state: NUIState): Reg {
     return useCallback((node, idx, path, loc) => {
         if (!state.regs[idx]) {
             state.regs[idx] = {};

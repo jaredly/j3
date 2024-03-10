@@ -14,6 +14,7 @@ import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
 import { parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
+import { WithStore, useStore } from '../../custom/Store';
 
 export type Results = {
     display: Display;
@@ -190,11 +191,6 @@ export const GroundUp = ({
     // }, [state.evaluator]);
 
     useEffect(() => {
-        // @ts-ignore
-        window.state = state;
-    }, [state]);
-
-    useEffect(() => {
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
@@ -235,6 +231,15 @@ export const GroundUp = ({
         return { results, produce, env };
     }, [state.map, state.nsMap, state.cards, evaluator]);
 
+    const store = useStore(state, results, dispatch);
+
+    useEffect(() => {
+        // @ts-ignore
+        window.state = state;
+        // @ts-ignore
+        window.store = store;
+    }, [state]);
+
     useEffect(() => {
         const path = state.at[0]?.start;
         try {
@@ -272,18 +277,20 @@ export const GroundUp = ({
                 menu={undefined}
                 hashNames={{}}
             />
-            {state.cards.map((_, i) => (
-                <CardRoot
-                    state={state}
-                    key={i}
-                    ev={evaluator}
-                    dispatch={dispatch}
-                    card={i}
-                    results={results}
-                    produce={produce}
-                    env={env}
-                />
-            ))}
+            <WithStore store={store}>
+                {state.cards.map((_, i) => (
+                    <CardRoot
+                        state={state}
+                        key={i}
+                        ev={evaluator}
+                        dispatch={dispatch}
+                        card={i}
+                        results={results}
+                        produce={produce}
+                        env={env}
+                    />
+                ))}
+            </WithStore>
             <div style={{ position: 'absolute', top: 4, right: 4 }}>
                 <button onClick={() => setDebug(!debug)}>
                     {debug ? 'Debug on' : 'Debug off'}

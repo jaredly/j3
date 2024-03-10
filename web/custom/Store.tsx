@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {
     createContext,
     useContext,
@@ -17,6 +18,7 @@ import { Path } from '../store';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import equal from 'fast-deep-equal';
 import { useLatest } from './useNSDrag';
+import { normalizeSelections, useRegs } from './CardRoot';
 
 type NUIResults = {
     errors: { [loc: number]: string[] };
@@ -34,6 +36,90 @@ type Store = {
         fn: (state: NUIState, results: NUIResults) => void,
     ): () => void;
     everyChange(fn: (state: NUIState) => void): () => void;
+};
+
+export const useStore = (
+    state: NUIState,
+    results: NUIResults,
+    dispatch: React.Dispatch<Action>,
+) => {
+    const lstate = useLatest(state);
+    const lresults = useLatest(results);
+    const reg = useRegs(state);
+
+    const nodeListeners = useRef<{
+        [key: string]: ((state: NUIState, results: NUIResults) => void)[];
+    }>({});
+    const everyListeners = useRef<((state: NUIState) => void)[]>([]);
+
+    const store = useMemo<Store>(() => {
+        return {
+            dispatch,
+            getState() {
+                return lstate.current;
+            },
+            getResults() {
+                return lresults.current;
+            },
+            reg,
+            onChange(idx, fn) {
+                if (!nodeListeners.current[idx]) {
+                    nodeListeners.current[idx] = [];
+                }
+                nodeListeners.current[idx].push(fn);
+                return () => {
+                    const at = nodeListeners.current[idx].indexOf(fn);
+                    if (at !== -1) {
+                        nodeListeners.current[idx].splice(at, 1);
+                    }
+                };
+            },
+            everyChange(fn) {
+                everyListeners.current.push(fn);
+                return () => {
+                    const idx = everyListeners.current.indexOf(fn);
+                    if (idx !== -1) {
+                        everyListeners.current.splice(idx, 1);
+                    }
+                };
+            },
+        };
+    }, []);
+
+    const prevState = useRef(state);
+    const prevResults = useRef(results);
+    useEffect(() => {
+        everyListeners.current.forEach((f) => f(state));
+
+        const selChange: { [key: number]: boolean } = {};
+        if (state.at !== prevState.current.at) {
+            prevState.current.at.forEach((cursor) => {
+                cursor.start.forEach((item) => (selChange[item.idx] = true));
+                cursor.end?.forEach((item) => (selChange[item.idx] = true));
+            });
+            state.at.forEach((cursor) => {
+                cursor.start.forEach((item) => (selChange[item.idx] = true));
+                cursor.end?.forEach((item) => (selChange[item.idx] = true));
+            });
+        }
+
+        Object.keys(nodeListeners.current).forEach((k) => {
+            const idx = +k;
+            let changed =
+                selChange[idx] ||
+                state.map[idx] !== prevState.current.map[idx] ||
+                !equal(results.errors[idx], prevResults.current.errors[idx]) ||
+                !equal(results.display[idx], prevResults.current.display[idx]);
+            if (changed) {
+                nodeListeners.current[idx].forEach((fn) => fn(state, results));
+            }
+        });
+
+        prevState.current = state;
+        prevResults.current = results;
+    }, [state, results]);
+
+    return store;
 };
 
 const noopStore: Store = {
@@ -57,7 +143,17 @@ const noopStore: Store = {
     },
 };
 
-const ctx = createContext<Store>(noopStore);
+const StoreCtx = createContext<Store>(noopStore);
+
+export const WithStore = ({
+    store,
+    children,
+}: {
+    store: Store;
+    children: JSX.Element[] | JSX.Element;
+}) => {
+    return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>;
+};
 
 export type Values = {
     node: MNode;
@@ -82,12 +178,13 @@ export const getValues = (
     state: NUIState,
     results: NUIResults,
 ): Values => {
-    const edgeSelected = state.at.some(
+    const sel = normalizeSelections(state.at);
+    const edgeSelected = sel.some(
         (s) =>
             s.start[s.start.length - 1].idx === idx ||
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
-    const coverageLevel = isCoveredBySelection(state.at, path, state.map);
+    const coverageLevel = isCoveredBySelection(sel, path, state.map);
     const nnode = getNestedNodes(
         state.map[idx],
         state.map,
@@ -118,22 +215,24 @@ export const useMemoEqual = <T,>(fn: () => T, deps: any[]): T => {
 };
 
 export const useExpanded = (idx: number): Node => {
-    const store = useContext(ctx);
+    const store = useContext(StoreCtx);
     const [v, setV] = useState(() => fromMCST(idx, store.getState().map));
     const latest = useLatest(v);
     useEffect(
         () =>
             store.everyChange((state) => {
                 const nw = fromMCST(idx, state.map);
+                if (!equal(nw, latest.current)) {
+                    setV(nw);
+                }
             }),
         [idx],
     );
-    const state = store.getState();
-    return useMemoEqual(() => fromMCST(idx, state.map), [idx, state.map]);
+    return v;
 };
 
 export const useNode = (idx: number, path: Path[]): Values => {
-    const store = useContext(ctx);
+    const store = useContext(StoreCtx);
     const [state, setState] = useState(
         getValues(idx, path, store, store.getState(), store.getResults()),
     );

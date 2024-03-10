@@ -7,6 +7,7 @@ import { isCoveredBySelection } from './isCoveredBySelection';
 import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
 import { useNode, Values } from './Store';
+import equal from 'fast-deep-equal';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -145,6 +146,7 @@ export const Render = React.memo(
             <RenderNNode {...props} nnode={nnode} values={values} />
         );
     },
+    (prev, next) => equal(prev, next),
     // (prevProps: RenderProps, nextProps: RenderProps) => {
     //     for (let key of Object.keys(prevProps)) {
     //         if (
