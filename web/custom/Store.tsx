@@ -66,7 +66,7 @@ const getResults = (
         env: null,
     };
     // const produce: { [key: string]: JSX.Element | string } = {};
-    if (!evaluator) return results;
+    // if (!evaluator) return results;
 
     results.env = evaluator?.init();
     findTops(state).forEach(({ top, hidden }) => {

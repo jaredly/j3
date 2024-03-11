@@ -1,6 +1,9 @@
 
 # N4xt up
 
+- [ ] perff ok so I'm still rerendering ... too much stuff
+
+
 - [x] perfff only render what changes, for crying out loud
   - So, have a `Context` to access a `store`, that keeps track of the current `state`
     and has listeners for nodes and stuff
