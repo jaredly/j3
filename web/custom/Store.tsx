@@ -24,6 +24,8 @@ import { debounce, findTops, reduce } from '../ide/ground-up/reduce';
 import { Results, loadEv } from '../ide/ground-up/GroundUp';
 import { FullEvalator, bootstrap, repr } from '../ide/ground-up/Evaluators';
 import { layout } from '../../src/layout';
+import { goRight } from '../../src/state/navigate';
+import { cmpFullPath } from '../../src/state/path';
 
 type NUIResults = {
     errors: { [loc: number]: string[] };
@@ -46,10 +48,21 @@ type Store = {
     everyChange(fn: (state: NUIState) => void): () => void;
 };
 
-const allNodesBetween = (start: Path[], end: Path[], map: Map): number[] => {
-    const found: number[] = [];
+const allNodesBetween = (
+    start: Path[],
+    end: Path[],
+    state: NUIState,
+): number[] => {
+    const found: number[] = [start[start.length - 1].idx];
 
-    // STOPSHIP start here!
+    while (cmpFullPath(start, end) < 0) {
+        const sel = goRight(start, state.map, state.nsMap, state.cards);
+        if (!sel) break;
+        found.push(start[start.length - 1].idx);
+        start = sel.selection;
+    }
+
+    found.push(end[end.length - 1].idx);
 
     return found;
 };
@@ -201,7 +214,7 @@ export const useStore = (
                                 cursor.start,
                                 cursor.end,
                             );
-                            allNodesBetween(start, end, prevState.map).forEach(
+                            allNodesBetween(start, end, prevState).forEach(
                                 (idx) => (selChange[idx] = true),
                             );
                         }
@@ -219,7 +232,7 @@ export const useStore = (
                                 cursor.start,
                                 cursor.end,
                             );
-                            allNodesBetween(start, end, state.map).forEach(
+                            allNodesBetween(start, end, state).forEach(
                                 (idx) => (selChange[idx] = true),
                             );
                         }
