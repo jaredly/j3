@@ -187,56 +187,9 @@ export const GroundUp = ({
     const store = useStore(initial);
     const { state, results } = useGlobalState(store);
 
-    // const evaluator = useEvaluator(state.evaluator);
-    // const evaluator: FullEvalator<any, any, any> | undefined = useMemo(() => {
-    //     switch (state.evaluator) {
-    //         case ':bootstrap:':
-    //             return bootstrap;
-    //         case ':repr:':
-    //             return repr;
-    //     }
-    // }, [state.evaluator]);
-
     useEffect(() => {
         save({ ...state, regs: {} });
     }, [state.map, id]);
-
-    // const { produce, results, env } = useMemo(() => {
-    //     const results: Results = { display: {}, errors: {}, hashNames: {} };
-    //     const produce: { [key: string]: JSX.Element | string } = {};
-    //     // if (!evaluator) return { produce, results, env: null };
-
-    //     let env = evaluator?.init();
-    //     findTops(state).forEach(({ top, hidden }) => {
-    //         if (hidden) return;
-    //         // console.log('process top', top);
-    //         const stmt = fromMCST(top, state.map);
-    //         if (stmt.type === 'blank') {
-    //             produce[stmt.loc] = ' ';
-    //             return;
-    //         }
-    //         if (evaluator) {
-    //             const errs: Results['errors'] = {};
-    //             const ast = evaluator.parse(stmt, errs);
-    //             Object.assign(results.errors, errs);
-    //             if (ast) {
-    //                 const res = evaluator.addStatement(ast, env!);
-    //                 env = res.env;
-    //                 produce[stmt.loc] = res.display;
-    //                 // console.log('good', res.display);
-    //             } else {
-    //                 console.log('not parsed');
-    //                 produce[stmt.loc] = 'not parsed ' + JSON.stringify(errs);
-    //             }
-    //         } else {
-    //             produce[stmt.loc] = 'No evaluator';
-    //         }
-
-    //         layout(top, 0, state.map, results.display, results.hashNames, true);
-    //     });
-
-    //     return { results, produce, env };
-    // }, [state.map, state.nsMap, state.cards, evaluator]);
 
     useEffect(() => {
         // @ts-ignore

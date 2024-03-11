@@ -68,7 +68,7 @@ const getResults = (
     // const produce: { [key: string]: JSX.Element | string } = {};
     if (!evaluator) return results;
 
-    let env = evaluator?.init();
+    results.env = evaluator?.init();
     findTops(state).forEach(({ top, hidden }) => {
         if (hidden) return;
         // console.log('process top', top);
@@ -82,8 +82,8 @@ const getResults = (
             const ast = evaluator.parse(stmt, errs);
             Object.assign(results.errors, errs);
             if (ast) {
-                const res = evaluator.addStatement(ast, env!);
-                env = res.env;
+                const res = evaluator.addStatement(ast, results.env!);
+                results.env = res.env;
                 results.produce[stmt.loc] = res.display;
                 // console.log('good', res.display);
             } else {
