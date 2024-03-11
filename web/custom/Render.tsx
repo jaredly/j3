@@ -116,6 +116,7 @@ export const Render = React.memo(
         if (path.length > 1000) {
             return <span>DEEP</span>;
         }
+        console.log('render', props.idx);
 
         return props.debug ? (
             <span style={{ display: 'flex' }}>

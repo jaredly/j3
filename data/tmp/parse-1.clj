@@ -91,7 +91,7 @@
 (,
     parse-expr
         [(, (@@ true) (eprim (pbool true)))
-        (, (@@ "hi") (estr "hi" []))
+        (, (@@ " hi") (estr "hi" []))
         (, (@@ 12) (eprim (pint 12)))
         (,
         (@@

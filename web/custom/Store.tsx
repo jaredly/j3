@@ -11,7 +11,7 @@ import { Action, NUIState, UIState } from './UIState';
 import { Display } from '../../src/to-ast/library';
 import { NNode, getNestedNodes } from '../../src/state/getNestedNodes';
 import { Node } from '../../src/types/cst';
-import { MNode, fromMCST } from '../../src/types/mcst';
+import { MNode, Map, fromMCST } from '../../src/types/mcst';
 import { Reg } from './types';
 import { CoverageLevel } from '../../src/state/clipboard';
 import { Path } from '../store';
@@ -19,6 +19,7 @@ import { isCoveredBySelection } from './isCoveredBySelection';
 import equal from 'fast-deep-equal';
 import { useLatest } from './useNSDrag';
 import { normalizeSelections, useRegs } from './CardRoot';
+import { orderStartAndEnd } from '../../src/parse/parse';
 
 type NUIResults = {
     errors: { [loc: number]: string[] };
@@ -36,6 +37,14 @@ type Store = {
         fn: (state: NUIState, results: NUIResults) => void,
     ): () => void;
     everyChange(fn: (state: NUIState) => void): () => void;
+};
+
+const allNodesBetween = (start: Path[], end: Path[], map: Map): number[] => {
+    const found: number[] = [];
+
+    // STOPSHIP start here!
+
+    return found;
 };
 
 export const useStore = (
@@ -88,7 +97,7 @@ export const useStore = (
 
     const prevState = useRef(state);
     const prevResults = useRef(results);
-    useEffect(() => {
+    React.useLayoutEffect(() => {
         everyListeners.current.forEach((f) => f(state));
 
         const selChange: { [key: number]: boolean } = {};
@@ -96,13 +105,41 @@ export const useStore = (
             prevState.current.at.forEach((cursor) => {
                 cursor.start.forEach((item) => (selChange[item.idx] = true));
                 cursor.end?.forEach((item) => (selChange[item.idx] = true));
+
+                if (cursor.end) {
+                    const [start, end] = orderStartAndEnd(
+                        cursor.start,
+                        cursor.end,
+                    );
+                    allNodesBetween(start, end, prevState.current.map).forEach(
+                        (idx) => (selChange[idx] = true),
+                    );
+                }
             });
             state.at.forEach((cursor) => {
                 cursor.start.forEach((item) => (selChange[item.idx] = true));
                 cursor.end?.forEach((item) => (selChange[item.idx] = true));
+
+                if (cursor.end) {
+                    const [start, end] = orderStartAndEnd(
+                        cursor.start,
+                        cursor.end,
+                    );
+                    allNodesBetween(start, end, state.map).forEach(
+                        (idx) => (selChange[idx] = true),
+                    );
+                }
             });
+
+            // WE NEED
+            // TO
+            // ...
+            // .....
+
+            // `allNodesBetween(path[], path[], nsMap[], map)`
         }
 
+        console.log('handle up');
         Object.keys(nodeListeners.current).forEach((k) => {
             const idx = +k;
             let changed =
@@ -111,6 +148,7 @@ export const useStore = (
                 !equal(results.errors[idx], prevResults.current.errors[idx]) ||
                 !equal(results.display[idx], prevResults.current.display[idx]);
             if (changed) {
+                console.log('ok', idx);
                 nodeListeners.current[idx].forEach((fn) => fn(state, results));
             }
         });
