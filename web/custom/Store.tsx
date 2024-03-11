@@ -210,7 +210,7 @@ export const useStore = (
                     // `allNodesBetween(path[], path[], nsMap[], map)`
                 }
 
-                console.log('handle up');
+                // console.log('handle up');
                 Object.keys(nodeListeners).forEach((k) => {
                     const idx = +k;
                     let changed =
@@ -219,7 +219,7 @@ export const useStore = (
                         !equal(results.errors[idx], prevResults.errors[idx]) ||
                         !equal(results.display[idx], prevResults.display[idx]);
                     if (changed) {
-                        console.log('ok', idx);
+                        // console.log('ok', idx);
                         nodeListeners[idx].forEach((fn) => fn(state, results));
                     }
                 });

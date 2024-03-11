@@ -146,7 +146,7 @@ export function NSTop({
                                 />
                             ) : (
                                 <Render
-                                    debug={true}
+                                    debug={false}
                                     idx={ns.top}
                                     // reg={reg}
                                     // map={state.map}
