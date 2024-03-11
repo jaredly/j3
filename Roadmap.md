@@ -1,7 +1,10 @@
 
 # N4xt up
 
-- [ ] perff ok so I'm still rerendering ... too much stuff
+- [ ] perff ok so I'm still doing ... too much stuff
+  - [ ] ah ok, so I'm doing getResults on everything.
+    OK folks. Here's the story.
+    - [ ] First off, gotta not do new results for selection changes.
 
 
 - [x] perfff only render what changes, for crying out loud

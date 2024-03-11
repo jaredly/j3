@@ -103,19 +103,19 @@ const getResults = (
 
 const loadEvaluator = (
     ev: string | undefined,
-    fn: (ev: FullEvalator<any, any, any> | null) => void,
+    fn: (ev: FullEvalator<any, any, any> | null, async: boolean) => void,
 ) => {
     switch (ev) {
         case ':bootstrap:':
-            return fn(bootstrap);
+            return fn(bootstrap, false);
         case ':repr:':
-            return fn(repr);
+            return fn(repr, false);
         default:
             if (ev?.endsWith('.json')) {
-                fn(null); // clear it out
-                loadEv(ev).then(fn);
+                fn(null, false); // clear it out
+                loadEv(ev).then((ev) => fn(ev, true));
             } else {
-                fn(null);
+                fn(null, false);
             }
     }
 };
@@ -138,23 +138,39 @@ export const useStore = (
         let state = initialState;
         let evaluator: FullEvalator<any, any, any> | null = null;
 
-        loadEvaluator(state.evaluator, (ev) => {
+        loadEvaluator(state.evaluator, (ev, async) => {
             evaluator = ev;
+            if (async) {
+                results = getResults(state, evaluator);
+                everyListeners.forEach((f) => f(state));
+            }
         });
 
         let results = getResults(state, evaluator);
 
         return {
             dispatch(action) {
+                const a = performance.now();
                 let nextState = reduce(state, action);
+                const b = performance.now();
                 if (nextState.evaluator !== state.evaluator) {
                     loadEvaluator(
                         nextState.evaluator,
                         // TODO: ... if this happens async, we should re-trigger ... the "oneverychange"
-                        (ev) => (evaluator = ev),
+                        (ev, async) => {
+                            evaluator = ev;
+                            if (async) {
+                                results = getResults(state, evaluator);
+                                everyListeners.forEach((f) => f(state));
+                            }
+                        },
                     );
                 }
-                let nextResults = getResults(nextState, evaluator);
+                let nextResults = results;
+                if (nextState.map !== state.map) {
+                    nextResults = getResults(nextState, evaluator);
+                }
+                const c = performance.now();
 
                 let prevState = state;
                 let prevResults = results;
@@ -209,8 +225,8 @@ export const useStore = (
 
                     // `allNodesBetween(path[], path[], nsMap[], map)`
                 }
+                const d = performance.now();
 
-                // console.log('handle up');
                 Object.keys(nodeListeners).forEach((k) => {
                     const idx = +k;
                     let changed =
@@ -219,15 +235,22 @@ export const useStore = (
                         !equal(results.errors[idx], prevResults.errors[idx]) ||
                         !equal(results.display[idx], prevResults.display[idx]);
                     if (changed) {
-                        // console.log('ok', idx);
                         nodeListeners[idx].forEach((fn) => fn(state, results));
                     }
                 });
+
+                const e = performance.now();
 
                 // prevState = state;
                 // prevResults = results;
 
                 everyListeners.forEach((f) => f(state));
+                const f = performance.now();
+                // console.log(
+                //     `Reduce ${b - a}\nResults ${c - b}\nSelection calc ${
+                //         d - c
+                //     }\nListeners ${e - d}\nEverylisteners ${f - e}`,
+                // );
             },
             getEvaluator: () => evaluator,
             getState: () => state,
