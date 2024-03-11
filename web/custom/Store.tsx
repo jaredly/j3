@@ -20,17 +20,24 @@ import equal from 'fast-deep-equal';
 import { useLatest } from './useNSDrag';
 import { normalizeSelections, useRegs } from './CardRoot';
 import { orderStartAndEnd } from '../../src/parse/parse';
+import { findTops, reduce } from '../ide/ground-up/reduce';
+import { Results, loadEv } from '../ide/ground-up/GroundUp';
+import { FullEvalator, bootstrap, repr } from '../ide/ground-up/Evaluators';
+import { layout } from '../../src/layout';
 
 type NUIResults = {
     errors: { [loc: number]: string[] };
     display: Display;
     hashNames: { [loc: string]: string };
+    produce: { [key: string]: JSX.Element | string };
+    env: any;
 };
 
 type Store = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
     getResults(): NUIResults;
+    getEvaluator(): FullEvalator<any, any, any> | null;
     reg: Reg;
     onChange(
         idx: number,
@@ -47,115 +54,218 @@ const allNodesBetween = (start: Path[], end: Path[], map: Map): number[] => {
     return found;
 };
 
-export const useStore = (
+const getResults = (
     state: NUIState,
-    results: NUIResults,
-    dispatch: React.Dispatch<Action>,
+    evaluator: FullEvalator<any, any, any> | null,
 ) => {
-    const lstate = useLatest(state);
-    const lresults = useLatest(results);
-    const reg = useRegs(state);
+    const results: NUIResults = {
+        display: {},
+        errors: {},
+        hashNames: {},
+        produce: {},
+        env: null,
+    };
+    // const produce: { [key: string]: JSX.Element | string } = {};
+    if (!evaluator) return results;
 
-    const nodeListeners = useRef<{
-        [key: string]: ((state: NUIState, results: NUIResults) => void)[];
-    }>({});
-    const everyListeners = useRef<((state: NUIState) => void)[]>([]);
+    let env = evaluator?.init();
+    findTops(state).forEach(({ top, hidden }) => {
+        if (hidden) return;
+        // console.log('process top', top);
+        const stmt = fromMCST(top, state.map);
+        if (stmt.type === 'blank') {
+            results.produce[stmt.loc] = ' ';
+            return;
+        }
+        if (evaluator) {
+            const errs: Results['errors'] = {};
+            const ast = evaluator.parse(stmt, errs);
+            Object.assign(results.errors, errs);
+            if (ast) {
+                const res = evaluator.addStatement(ast, env!);
+                env = res.env;
+                results.produce[stmt.loc] = res.display;
+                // console.log('good', res.display);
+            } else {
+                console.log('not parsed');
+                results.produce[stmt.loc] =
+                    'not parsed ' + JSON.stringify(errs);
+            }
+        } else {
+            results.produce[stmt.loc] = 'No evaluator';
+        }
+
+        layout(top, 0, state.map, results.display, results.hashNames, true);
+    });
+
+    return results;
+};
+
+const loadEvaluator = (
+    ev: string | undefined,
+    fn: (ev: FullEvalator<any, any, any> | null) => void,
+) => {
+    switch (ev) {
+        case ':bootstrap:':
+            return fn(bootstrap);
+        case ':repr:':
+            return fn(repr);
+        default:
+            if (ev?.endsWith('.json')) {
+                fn(null); // clear it out
+                loadEv(ev).then(fn);
+            } else {
+                fn(null);
+            }
+    }
+};
+
+export const useStore = (
+    initialState: NUIState,
+    // state: NUIState,
+    // results: NUIResults,
+    // dispatch: React.Dispatch<Action>,
+) => {
+    // const lstate = useLatest(state);
+    // const lresults = useLatest(results);
+    // const reg = useRegs(state);
 
     const store = useMemo<Store>(() => {
+        const nodeListeners: {
+            [key: string]: ((state: NUIState, results: NUIResults) => void)[];
+        } = {};
+        const everyListeners: ((state: NUIState) => void)[] = [];
+        let state = initialState;
+        let evaluator: FullEvalator<any, any, any> | null = null;
+
+        loadEvaluator(state.evaluator, (ev) => {
+            evaluator = ev;
+        });
+
+        let results = getResults(state, evaluator);
+
         return {
-            dispatch,
-            getState() {
-                return lstate.current;
-            },
-            getResults() {
-                return lresults.current;
-            },
-            reg,
-            onChange(idx, fn) {
-                if (!nodeListeners.current[idx]) {
-                    nodeListeners.current[idx] = [];
+            dispatch(action) {
+                let nextState = reduce(state, action);
+                if (nextState.evaluator !== state.evaluator) {
+                    loadEvaluator(
+                        nextState.evaluator,
+                        // TODO: ... if this happens async, we should re-trigger ... the "oneverychange"
+                        (ev) => (evaluator = ev),
+                    );
                 }
-                nodeListeners.current[idx].push(fn);
+                let nextResults = getResults(nextState, evaluator);
+
+                let prevState = state;
+                let prevResults = results;
+                state = nextState;
+                results = nextResults;
+
+                // Send out the infos
+
+                const selChange: { [key: number]: boolean } = {};
+                if (state.at !== prevState.at) {
+                    prevState.at.forEach((cursor) => {
+                        cursor.start.forEach(
+                            (item) => (selChange[item.idx] = true),
+                        );
+                        cursor.end?.forEach(
+                            (item) => (selChange[item.idx] = true),
+                        );
+
+                        if (cursor.end) {
+                            const [start, end] = orderStartAndEnd(
+                                cursor.start,
+                                cursor.end,
+                            );
+                            allNodesBetween(start, end, prevState.map).forEach(
+                                (idx) => (selChange[idx] = true),
+                            );
+                        }
+                    });
+                    state.at.forEach((cursor) => {
+                        cursor.start.forEach(
+                            (item) => (selChange[item.idx] = true),
+                        );
+                        cursor.end?.forEach(
+                            (item) => (selChange[item.idx] = true),
+                        );
+
+                        if (cursor.end) {
+                            const [start, end] = orderStartAndEnd(
+                                cursor.start,
+                                cursor.end,
+                            );
+                            allNodesBetween(start, end, state.map).forEach(
+                                (idx) => (selChange[idx] = true),
+                            );
+                        }
+                    });
+
+                    // WE NEED
+                    // TO
+                    // ...
+                    // .....
+
+                    // `allNodesBetween(path[], path[], nsMap[], map)`
+                }
+
+                console.log('handle up');
+                Object.keys(nodeListeners).forEach((k) => {
+                    const idx = +k;
+                    let changed =
+                        selChange[idx] ||
+                        state.map[idx] !== prevState.map[idx] ||
+                        !equal(results.errors[idx], prevResults.errors[idx]) ||
+                        !equal(results.display[idx], prevResults.display[idx]);
+                    if (changed) {
+                        console.log('ok', idx);
+                        nodeListeners[idx].forEach((fn) => fn(state, results));
+                    }
+                });
+
+                // prevState = state;
+                // prevResults = results;
+
+                everyListeners.forEach((f) => f(state));
+            },
+            getEvaluator: () => evaluator,
+            getState: () => state,
+            getResults: () => results,
+            reg(node, idx, path, loc) {
+                if (!state.regs[idx]) {
+                    state.regs[idx] = {};
+                }
+                state.regs[idx][loc ?? 'main'] = node ? { node, path } : null;
+            },
+            onChange(idx, fn) {
+                if (!nodeListeners[idx]) {
+                    nodeListeners[idx] = [];
+                }
+                nodeListeners[idx].push(fn);
                 return () => {
-                    const at = nodeListeners.current[idx].indexOf(fn);
+                    const at = nodeListeners[idx].indexOf(fn);
                     if (at !== -1) {
-                        nodeListeners.current[idx].splice(at, 1);
+                        nodeListeners[idx].splice(at, 1);
                     }
                 };
             },
             everyChange(fn) {
-                everyListeners.current.push(fn);
+                everyListeners.push(fn);
                 return () => {
-                    const idx = everyListeners.current.indexOf(fn);
+                    const idx = everyListeners.indexOf(fn);
                     if (idx !== -1) {
-                        everyListeners.current.splice(idx, 1);
+                        everyListeners.splice(idx, 1);
                     }
                 };
             },
         };
     }, []);
 
-    const prevState = useRef(state);
-    const prevResults = useRef(results);
-    React.useLayoutEffect(() => {
-        everyListeners.current.forEach((f) => f(state));
-
-        const selChange: { [key: number]: boolean } = {};
-        if (state.at !== prevState.current.at) {
-            prevState.current.at.forEach((cursor) => {
-                cursor.start.forEach((item) => (selChange[item.idx] = true));
-                cursor.end?.forEach((item) => (selChange[item.idx] = true));
-
-                if (cursor.end) {
-                    const [start, end] = orderStartAndEnd(
-                        cursor.start,
-                        cursor.end,
-                    );
-                    allNodesBetween(start, end, prevState.current.map).forEach(
-                        (idx) => (selChange[idx] = true),
-                    );
-                }
-            });
-            state.at.forEach((cursor) => {
-                cursor.start.forEach((item) => (selChange[item.idx] = true));
-                cursor.end?.forEach((item) => (selChange[item.idx] = true));
-
-                if (cursor.end) {
-                    const [start, end] = orderStartAndEnd(
-                        cursor.start,
-                        cursor.end,
-                    );
-                    allNodesBetween(start, end, state.map).forEach(
-                        (idx) => (selChange[idx] = true),
-                    );
-                }
-            });
-
-            // WE NEED
-            // TO
-            // ...
-            // .....
-
-            // `allNodesBetween(path[], path[], nsMap[], map)`
-        }
-
-        console.log('handle up');
-        Object.keys(nodeListeners.current).forEach((k) => {
-            const idx = +k;
-            let changed =
-                selChange[idx] ||
-                state.map[idx] !== prevState.current.map[idx] ||
-                !equal(results.errors[idx], prevResults.current.errors[idx]) ||
-                !equal(results.display[idx], prevResults.current.display[idx]);
-            if (changed) {
-                console.log('ok', idx);
-                nodeListeners.current[idx].forEach((fn) => fn(state, results));
-            }
-        });
-
-        prevState.current = state;
-        prevResults.current = results;
-    }, [state, results]);
+    // const prevState = useRef(state);
+    // const prevResults = useRef(results);
+    // React.useLayoutEffect(() => {
+    // }, [state, results]);
 
     return store;
 };
@@ -165,6 +275,9 @@ const noopStore: Store = {
         throw new Error('');
     },
     getResults() {
+        throw new Error('');
+    },
+    getEvaluator() {
         throw new Error('');
     },
     getState() {
@@ -268,6 +381,26 @@ export const useExpanded = (idx: number): Node => {
     );
     return v;
 };
+
+export const useGlobalState = (store: Store) => {
+    const [state, setState] = useState({
+        state: store.getState(),
+        results: store.getResults(),
+    });
+    useEffect(
+        () =>
+            store.everyChange(() =>
+                setState({
+                    state: store.getState(),
+                    results: store.getResults(),
+                }),
+            ),
+        [],
+    );
+    return state;
+};
+
+export const useGetStore = () => useContext(StoreCtx);
 
 export const useNode = (idx: number, path: Path[]): Values => {
     const store = useContext(StoreCtx);

@@ -4,9 +4,20 @@
 - [x] perfff only render what changes, for crying out loud
   - So, have a `Context` to access a `store`, that keeps track of the current `state`
     and has listeners for nodes and stuff
-- [ ] BUG WHY does edit not work
+- [x] BUG WHY does edit not work
   - AHHH hrmm.
   - So, I think it's the fact that we're doing useEffect, and it's happening too late.
+  - Yeah, we're delayed.
+  - Soooo options:
+    - have the Cursors do a jitter if it can't be in the place at one time,
+      wait a sec to try again.
+      - that might make my auto-find-a-valid-pos code be weird. Will have to tie it in.
+
+  - [x] ah hah hah hah
+    yes folks. here we are.
+    instead of React.useReducer
+    NAILED IT. So good.
+
 - [ ] INNER SEL we needs it
 - [ ] TRACE ok so I think what I want is for it to be *separate* from the AST
   because having e.g. the capacity to drop a trace on literally anything (e.g. a pattern)

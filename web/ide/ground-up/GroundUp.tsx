@@ -14,7 +14,7 @@ import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
 import { parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
-import { WithStore, useStore } from '../../custom/Store';
+import { WithStore, useGlobalState, useStore } from '../../custom/Store';
 
 export type Results = {
     display: Display;
@@ -22,11 +22,14 @@ export type Results = {
     hashNames: { [idx: number]: string };
 };
 
-const loadEv = async (
+export const loadEv = async (
     id: string,
-): Promise<void | FullEvalator<any, any, any>> => {
+): Promise<null | FullEvalator<any, any, any>> => {
     const res = await fetch(urlForId(id) + '.js');
-    if (res.status !== 200) return console.log('Nope', res.status);
+    if (res.status !== 200) {
+        console.log('Nope', res.status);
+        return null;
+    }
     const data = new Function(await res.text())();
     if (data.type === 'full') {
         return data;
@@ -132,6 +135,7 @@ const loadEv = async (
     }
     // we have `compile-st` and `compile`.
     // ELSE do ... a thing
+    return null;
 };
 
 const useEvaluator = (name?: string) => {
@@ -176,11 +180,14 @@ export const GroundUp = ({
     listing: string[] | null;
     save: (state: NUIState) => void;
 }) => {
-    const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
+    // const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
 
     const [debug, setDebug] = useState(true);
 
-    const evaluator = useEvaluator(state.evaluator);
+    const store = useStore(initial);
+    const { state, results } = useGlobalState(store);
+
+    // const evaluator = useEvaluator(state.evaluator);
     // const evaluator: FullEvalator<any, any, any> | undefined = useMemo(() => {
     //     switch (state.evaluator) {
     //         case ':bootstrap:':
@@ -194,44 +201,42 @@ export const GroundUp = ({
         save({ ...state, regs: {} });
     }, [state.map, id]);
 
-    const { produce, results, env } = useMemo(() => {
-        const results: Results = { display: {}, errors: {}, hashNames: {} };
-        const produce: { [key: string]: JSX.Element | string } = {};
-        // if (!evaluator) return { produce, results, env: null };
+    // const { produce, results, env } = useMemo(() => {
+    //     const results: Results = { display: {}, errors: {}, hashNames: {} };
+    //     const produce: { [key: string]: JSX.Element | string } = {};
+    //     // if (!evaluator) return { produce, results, env: null };
 
-        let env = evaluator?.init();
-        findTops(state).forEach(({ top, hidden }) => {
-            if (hidden) return;
-            // console.log('process top', top);
-            const stmt = fromMCST(top, state.map);
-            if (stmt.type === 'blank') {
-                produce[stmt.loc] = ' ';
-                return;
-            }
-            if (evaluator) {
-                const errs: Results['errors'] = {};
-                const ast = evaluator.parse(stmt, errs);
-                Object.assign(results.errors, errs);
-                if (ast) {
-                    const res = evaluator.addStatement(ast, env!);
-                    env = res.env;
-                    produce[stmt.loc] = res.display;
-                    // console.log('good', res.display);
-                } else {
-                    console.log('not parsed');
-                    produce[stmt.loc] = 'not parsed ' + JSON.stringify(errs);
-                }
-            } else {
-                produce[stmt.loc] = 'No evaluator';
-            }
+    //     let env = evaluator?.init();
+    //     findTops(state).forEach(({ top, hidden }) => {
+    //         if (hidden) return;
+    //         // console.log('process top', top);
+    //         const stmt = fromMCST(top, state.map);
+    //         if (stmt.type === 'blank') {
+    //             produce[stmt.loc] = ' ';
+    //             return;
+    //         }
+    //         if (evaluator) {
+    //             const errs: Results['errors'] = {};
+    //             const ast = evaluator.parse(stmt, errs);
+    //             Object.assign(results.errors, errs);
+    //             if (ast) {
+    //                 const res = evaluator.addStatement(ast, env!);
+    //                 env = res.env;
+    //                 produce[stmt.loc] = res.display;
+    //                 // console.log('good', res.display);
+    //             } else {
+    //                 console.log('not parsed');
+    //                 produce[stmt.loc] = 'not parsed ' + JSON.stringify(errs);
+    //             }
+    //         } else {
+    //             produce[stmt.loc] = 'No evaluator';
+    //         }
 
-            layout(top, 0, state.map, results.display, results.hashNames, true);
-        });
+    //         layout(top, 0, state.map, results.display, results.hashNames, true);
+    //     });
 
-        return { results, produce, env };
-    }, [state.map, state.nsMap, state.cards, evaluator]);
-
-    const store = useStore(state, results, dispatch);
+    //     return { results, produce, env };
+    // }, [state.map, state.nsMap, state.cards, evaluator]);
 
     useEffect(() => {
         // @ts-ignore
@@ -253,7 +258,7 @@ export const GroundUp = ({
                     state.regs,
                 );
                 if (left) {
-                    return dispatch({
+                    return store.dispatch({
                         type: 'select',
                         at: [{ start: left.selection }],
                     });
@@ -273,7 +278,7 @@ export const GroundUp = ({
             <HiddenInput
                 display={results.display}
                 state={state}
-                dispatch={dispatch}
+                dispatch={store.dispatch}
                 menu={undefined}
                 hashNames={{}}
             />
@@ -282,12 +287,12 @@ export const GroundUp = ({
                     <CardRoot
                         state={state}
                         key={i}
-                        ev={evaluator}
-                        dispatch={dispatch}
+                        ev={store.getEvaluator()}
+                        dispatch={store.dispatch}
                         card={i}
                         results={results}
-                        produce={produce}
-                        env={env}
+                        produce={results.produce}
+                        env={results.env}
                     />
                 ))}
             </WithStore>
@@ -300,7 +305,7 @@ export const GroundUp = ({
                     <select
                         value={state.evaluator ?? ''}
                         onChange={(evt) => {
-                            dispatch({
+                            store.dispatch({
                                 type: 'config:evaluator',
                                 id: evt.target.value,
                             });
@@ -339,7 +344,7 @@ export const GroundUp = ({
             </div>
             <Hover
                 state={state}
-                dispatch={dispatch}
+                dispatch={store.dispatch}
                 calc={() => {
                     for (let i = state.hover.length - 1; i >= 0; i--) {
                         const last = state.hover[i].idx;
