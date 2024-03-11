@@ -1,10 +1,11 @@
 
 # N4xt up
 
-- [ ] perff ok so I'm still doing ... too much stuff
-  - [ ] ah ok, so I'm doing getResults on everything.
+- [x] perff ok so I'm still doing ... too much stuff
+  - [x] ah ok, so I'm doing getResults on everything.
     OK folks. Here's the story.
-    - [ ] First off, gotta not do new results for selection changes.
+    - [x] First off, gotta not do new results for selection changes.
+    - [x] for betters, we'll need to ... debounce ... the getResults. ok y'all.
 
 
 - [x] perfff only render what changes, for crying out loud

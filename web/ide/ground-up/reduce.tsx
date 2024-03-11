@@ -478,8 +478,9 @@ export const valueToString = (v: any): string => {
 };
 /**
  * Debounce a function.
+ *
+ * hm will this work
  */
-
 export const debounce = <T,>(
     fn: (arg: T) => Promise<void>,
     time: number,
@@ -495,7 +496,7 @@ export const debounce = <T,>(
         }
         const now = Date.now();
 
-        if (wait) {
+        while (wait != null) {
             await wait;
             // console.log('waited');
         }
@@ -504,6 +505,7 @@ export const debounce = <T,>(
             last = now;
             // console.log('calling immediate');
             wait = fn(arg);
+            wait.then(() => (wait = null));
             return;
         }
         tid = setTimeout(() => {
@@ -511,6 +513,7 @@ export const debounce = <T,>(
             last = now;
             // console.log('calling delayed');
             wait = fn(arg);
+            wait.then(() => (wait = null));
         }, time);
     };
 };

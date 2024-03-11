@@ -20,7 +20,7 @@ import equal from 'fast-deep-equal';
 import { useLatest } from './useNSDrag';
 import { normalizeSelections, useRegs } from './CardRoot';
 import { orderStartAndEnd } from '../../src/parse/parse';
-import { findTops, reduce } from '../ide/ground-up/reduce';
+import { debounce, findTops, reduce } from '../ide/ground-up/reduce';
 import { Results, loadEv } from '../ide/ground-up/GroundUp';
 import { FullEvalator, bootstrap, repr } from '../ide/ground-up/Evaluators';
 import { layout } from '../../src/layout';
@@ -138,6 +138,11 @@ export const useStore = (
         let state = initialState;
         let evaluator: FullEvalator<any, any, any> | null = null;
 
+        const updateResults = debounce(async () => {
+            results = getResults(state, evaluator);
+            everyListeners.forEach((f) => f(state));
+        }, 200);
+
         loadEvaluator(state.evaluator, (ev, async) => {
             evaluator = ev;
             if (async) {
@@ -167,15 +172,17 @@ export const useStore = (
                     );
                 }
                 let nextResults = results;
-                if (nextState.map !== state.map) {
-                    nextResults = getResults(nextState, evaluator);
-                }
                 const c = performance.now();
 
                 let prevState = state;
                 let prevResults = results;
                 state = nextState;
                 results = nextResults;
+
+                if (prevState.map !== state.map) {
+                    // nextResults = getResults(nextState, evaluator);
+                    updateResults(0);
+                }
 
                 // Send out the infos
 
@@ -427,19 +434,28 @@ export const useGetStore = () => useContext(StoreCtx);
 
 export const useNode = (idx: number, path: Path[]): Values => {
     const store = useContext(StoreCtx);
-    const [state, setState] = useState(
+    let [state, setState] = useState(
         getValues(idx, path, store, store.getState(), store.getResults()),
     );
     const lpath = useRef(path);
     if (lpath.current !== path && !equal(lpath.current, path)) {
-        throw new Error(
-            `path was different, I guess I need to account for it.`,
+        lpath.current = path;
+        state = getValues(
+            idx,
+            path,
+            store,
+            store.getState(),
+            store.getResults(),
         );
+
+        // throw new Error(
+        //     `path was different, I guess I need to account for it.`,
+        // );
     }
     useEffect(() => {
         return store.onChange(idx, (state, results) => {
             setState(getValues(idx, path, store, state, results));
         });
-    }, [idx]);
+    }, [idx, lpath.current]);
     return state;
 };
