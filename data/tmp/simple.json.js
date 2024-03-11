@@ -34,6 +34,25 @@ return {type: 'bootstrap', stmts: [
   },
   {
     "0": {
+      "0": "asd",
+      "type": "evar"
+    },
+    "type": "sexpr",
+    "loc": 58
+  },
+  {
+    "0": {
+      "0": {
+        "0": 45,
+        "type": "pint"
+      },
+      "type": "eprim"
+    },
+    "type": "sexpr",
+    "loc": 64
+  },
+  {
+    "0": {
       "0": {
         "0": 4,
         "type": "pint"

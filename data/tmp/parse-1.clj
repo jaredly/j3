@@ -57,7 +57,6 @@
                                                                                      (fn [tpl]
                                                                                      (let [(, expr string) tpl]
                                                                                          (, (parse-expr expr) string)))))
-                                                                         
         (cst/identifier id _)                                            (match (string-to-int id)
                                                                              (some int) (eprim (pint int))
                                                                              (none)     (evar id))
@@ -106,7 +105,6 @@
             (elambda
             "$fn-arg"
                 (ematch (evar "$fn-arg") [(, (pcon "," [(pvar "a") (pvar "b")]) (evar "a"))])))
-        (, (@@ 12) (eprim (pint 12)))
         (, (@@ (+ 1 2)) (eapp (eapp (evar "+") (eprim (pint 1))) (eprim (pint 2))))
         (, (@@ (int-to-string 23)) (eapp (evar "int-to-string") (eprim (pint 23))))
         (,
@@ -248,18 +246,6 @@
 (foldr nil [1 2 3 4] consr)
 
 (def compilation "# compilation")
-
-(defn literal-constr [name args]
-    (++
-        ["({type: \""
-            name
-            "\""
-            (++ (mapi 0 args (fn [i arg] (++ [", " (int-to-string i) ": " arg]))))
-            "})"]))
-
-(literal-constr "cons" ["0"])
-
-
 
 (defn compile-st [stmt]
     (match stmt

@@ -25,7 +25,7 @@
     instead of React.useReducer
     NAILED IT. So good.
 
-- [ ] INNER SEL we needs it
+- [x] INNER SEL we needs it
 - [ ] TRACE ok so I think what I want is for it to be *separate* from the AST
   because having e.g. the capacity to drop a trace on literally anything (e.g. a pattern)
   would complicate things a ton.
