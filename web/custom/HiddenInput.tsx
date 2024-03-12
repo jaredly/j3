@@ -135,10 +135,10 @@ export function HiddenInput({
                                 got?.start?.node;
 
                             if (n) {
-                                n.style.backgroundColor = 'rgba(255,0,0,0.3)';
+                                n.style.backgroundColor = 'rgba(255,0,0,0.9)';
                                 setTimeout(() => {
                                     n.style.backgroundColor = 'unset';
-                                }, 500);
+                                }, 5000);
                             }
                         }
                     }

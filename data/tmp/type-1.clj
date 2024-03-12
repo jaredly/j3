@@ -66,7 +66,8 @@
     (match type
         (tvar n _)   (set/add set/nil n)
         (tcon _ _)   set/nil
-        (tapp a b _) (set/merge (type-free a) (type-free b))))
+        (tapp a b _) (set/merge (type-free a) (type-free b))
+        ))
 
 (defn type-apply [subst type]
     (match type
@@ -187,11 +188,11 @@
         (ematch target cases l)           (let [(,, s1 t1 nidx)
                                               (t-expr tenv target nidx)
                                               t'
-                                              (generalize (tenv-apply s1 tenv) t1)
-                                              ; 
-                                              ]
-                                              )
+                                              (generalize (tenv-apply s1 tenv) t1)]
+                                              (fatal "nope"))
         _                                 (fatal "cannot infer type for ${(valueToString expr)}")))
+
+761
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)]
@@ -220,6 +221,11 @@
 (,
     (infer basic)
         [(, (@ +) "(int) -> (int) -> int")
+        (,
+        (@
+            (let [a 1]
+                a))
+            )
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(a:0) -> a:0")
         (, (@ (fn [a] (+ 2 a))) "(int) -> int")

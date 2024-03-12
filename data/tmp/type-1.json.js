@@ -591,7 +591,25 @@ let target = $target[0];
 let cases = $target[1];
 {
 let l = $target[2];
-return let(cons($co$co(s1)(t1)(nidx))(cons(t_expr(tenv)(target)(nidx))(cons(t$qu)(cons(generalize(tenv_apply(s1)(tenv))(t1))(nil)))))
+return (() => {const $target = t_expr(tenv)(target)(nidx);
+if ($target.type === ",,") {
+{
+let s1 = $target[0];
+{
+let t1 = $target[1];
+{
+let nidx = $target[2];
+return (() => {const $target = generalize(tenv_apply(s1)(tenv))(t1);
+{
+let t$qu = $target;
+return fatal("nope")
+};
+throw new Error('let pattern not matched 2269. ' + valueToString($target));})()
+}
+}
+}
+};
+throw new Error('let pattern not matched 2259. ' + valueToString($target));})()
 }
 }
 }
