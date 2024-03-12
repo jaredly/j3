@@ -479,6 +479,25 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                 return inner ? { type: 'equot', 0: inner } : undefined;
             }
 
+            if (
+                values.length === 2 &&
+                values[0].type === 'identifier' &&
+                values[0].text === "@@'"
+            ) {
+                const inner = toJCST(values[1]);
+                return inner
+                    ? {
+                          type: 'eapp',
+                          0: {
+                              type: 'eapp',
+                              0: { type: 'evar', 0: ',' },
+                              1: { type: 'equot', 0: inner },
+                          },
+                          1: { type: 'eprim', 0: { type: 'pint', 0: 42 } },
+                      }
+                    : undefined;
+            }
+
             // if (values.length > 1 && values[0].type === 'identifier' && values[0].text === ',') {
             //     const inner = values.slice(1).map(p => parseExpr(p, ctx))
             //     if (!inner.every(Boolean)) return

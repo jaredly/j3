@@ -438,53 +438,80 @@
                                (pat-loop target args 0 inner)
                                }\n}"))
 
-(defn compile [expr trace]
+(defn expr-loc [expr]
     (match expr
-        (estr first tpls l)      (match tpls
-                                     [] "\"${(escape-string (unescape-string first))}\""
-                                     _  "`${
-                                            (escape-string (unescape-string first))
-                                            }${
-                                            (join
-                                                ""
-                                                    (map
-                                                    tpls
-                                                        (fn [item]
-                                                        (let [(,, expr suffix l) item]
-                                                            "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))
-                                            }`")
-        (eprim prim l)           (match prim
-                                     (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
-                                     (pint int)    (int-to-string int)
-                                     (pbool bool)  (match bool
-                                                       true  "true"
-                                                       false "false"))
-        (evar name l)            (sanitize name)
-        (equot inner l)          (jsonify inner)
-        (elambda name nl body l) (++ ["(" (sanitize name) ") => " (compile body)])
-        (elet pat init body l)   "(() => {const $target = ${
-                                     (compile init)
-                                     };\n${
-                                     (compile-pat pat "$target" "return ${(compile body)}")
-                                     };\nthrow new Error('let pattern not matched ${
-                                     (pat-loc pat)
-                                     }. ' + valueToString($target));})()"
-        (eapp fn arg l)          (match fn
-                                     (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
-                                     _              (++ [(compile fn) "(" (compile arg) ")"]))
-        (ematch target cases l)  "(($target) => {\n${
-                                     (join
-                                         "\n"
-                                             (map
-                                             cases
-                                                 (fn [case]
-                                                 (let [(, pat body) case]
-                                                     (compile-pat pat "$target" "return ${(compile body)}")))))
-                                     }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
-                                     l
-                                     }');})(${
-                                     (compile target)
-                                     })"))
+        (estr _ _ l)      l
+        (eprim _ l)       l
+        (evar _ l)        l
+        (equot _ l)       l
+        (elambda _ _ _ l) l
+        (elet _ _ _ l)    l
+        (eapp _ _ l)      l
+        (ematch _ _ l)    l))
+
+(defn trace-wrap [loc trace js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "l"))
+
+(defn trace-and [loc trace value js] 1)
+
+(defn compile [expr trace]
+    (trace-wrap
+        (expr-loc expr)
+            trace
+            (match expr
+            (estr first tpls l)      (match tpls
+                                         [] "\"${(escape-string (unescape-string first))}\""
+                                         _  "`${
+                                                (escape-string (unescape-string first))
+                                                }${
+                                                (join
+                                                    ""
+                                                        (map
+                                                        tpls
+                                                            (fn [item]
+                                                            (let [(,, expr suffix l) item]
+                                                                "${${
+                                                                    (compile expr trace)
+                                                                    }}${
+                                                                    (escape-string (unescape-string suffix))
+                                                                    }"))))
+                                                }`")
+            (eprim prim l)           (match prim
+                                         (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
+                                         (pint int)    (int-to-string int)
+                                         (pbool bool)  (match bool
+                                                           true  "true"
+                                                           false "false"))
+            (evar name l)            (sanitize name)
+            (equot inner l)          (jsonify inner)
+            (elambda name nl body l) (++ ["(" (sanitize name) ") => " (compile body trace)])
+            (elet pat init body l)   "(() => {const $target = ${
+                                         (compile init trace)
+                                         };\n${
+                                         (compile-pat pat "$target" "return ${(compile body trace)}")
+                                         };\nthrow new Error('let pattern not matched ${
+                                         (pat-loc pat)
+                                         }. ' + valueToString($target));})()"
+            (eapp fn arg l)          (match fn
+                                         (elambda name) (++ ["(" (compile fn trace) ")(" (compile arg trace) ")"])
+                                         _              (++ [(compile fn trace) "(" (compile arg trace) ")"]))
+            (ematch target cases l)  "(($target) => {\n${
+                                         (join
+                                             "\n"
+                                                 (map
+                                                 cases
+                                                     (fn [case]
+                                                     (let [(, pat body) case]
+                                                         (compile-pat pat "$target" "return ${(compile body trace)}")))))
+                                         }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
+                                         l
+                                         }');})(${
+                                         (compile target trace)
+                                         })")))
+
+(@@' 12)
 
 (compile
     (parse-expr

@@ -30,6 +30,35 @@ export const toJCST = (node: Node): jcst | null => {
         case 'list': {
             const values = filterBlanks(node.values).map(toJCST);
             if (!values.every(Boolean)) return null;
+            if (
+                values[0]?.type === 'cst/identifier' &&
+                values[0][0] === "@@'"
+            ) {
+                // MAGIC
+                return {
+                    type: 'cst/list',
+                    0: wrapArray([
+                        { type: 'cst/identifier', 0: ',', 1: node.loc },
+                        {
+                            type: 'cst/list',
+                            0: wrapArray([
+                                { type: 'cst/identifier', 0: '@@', 1: -1 },
+                                ...(values.slice(1) as jcst[]),
+                            ]),
+                            1: node.loc,
+                        },
+                        {
+                            type: 'cst/list',
+                            0: wrapArray([
+                                { type: 'cst/identifier', 0: '@@', 1: -1 },
+                                ['lol'],
+                            ]),
+                            1: node.loc,
+                        },
+                    ]),
+                    1: node.loc,
+                };
+            }
             return {
                 type: 'cst/list',
                 0: wrapArray(values as jcst[]),

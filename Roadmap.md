@@ -10,6 +10,8 @@ PLAN:
 - the ... compiler ... gets a map ...
   and any expr might want to be wrapped.
 
+(@@' abc) -> gives you (, (@@ abc) (map of any traces))
+
 # Typeings!
 
 I think perf is in a reasonable spot.

@@ -6241,5 +6241,23 @@ return {type: 'bootstrap', stmts: [
     },
     "type": "sexpr",
     "loc": 3631
+  },
+  {
+    "0": {
+      "0": {
+        "0": "@@'",
+        "type": "evar"
+      },
+      "1": {
+        "0": {
+          "0": 1,
+          "type": "pint"
+        },
+        "type": "eprim"
+      },
+      "type": "eapp"
+    },
+    "type": "sexpr",
+    "loc": 4506
   }
 ]}
