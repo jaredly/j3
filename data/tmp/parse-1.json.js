@@ -978,7 +978,7 @@ return compile_pat(pat)("\$target")(`return ${compile(body)}`)
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target));})(${compile(target)})`
+throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
 }
 }
 }

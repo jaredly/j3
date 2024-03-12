@@ -446,7 +446,9 @@
                                                  (fn [case]
                                                  (let [(, pat body) case]
                                                      (compile-pat pat "$target" "return ${(compile body)}")))))
-                                     }\nthrow new Error('failed to match ' + jsonify($target));})(${
+                                     }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
+                                     l
+                                     }');})(${
                                      (compile target)
                                      })"))
 

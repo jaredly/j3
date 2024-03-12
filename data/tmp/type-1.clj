@@ -83,6 +83,8 @@
 (defn tenv-free [tenv]
     (foldr set/nil (map (map/values tenv) type-free) type-free))
 
+761
+
 (tenv-free (map/set (map/nil) "lol" (tvar 1 1)))
 
 (map/set (map/nil) "lol" (tvar 1 1))
