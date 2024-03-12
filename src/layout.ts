@@ -12,6 +12,7 @@ export const calculateLayout = (
     hashNames: Ctx['hashNames'],
     map: Map,
     recursive = false,
+    parentCtx?: ParentCtx,
 ): Layout => {
     if (!node) debugger;
     switch (node.type) {
@@ -64,12 +65,14 @@ export const calculateLayout = (
                     tightFirst: 0,
                     pos,
                     cw,
-                    pairs: display[node.loc]?.style?.type === 'let-pairs',
+                    pairs: parentCtx === 'let',
+                    // display[node.loc]?.style?.type === 'let-pairs',
                 };
             }
             return { type: 'flat', width: cw - pos, pos };
         }
         case 'list': {
+            const firstName = idName(map[node.values[0]]);
             const cw = childWidth(
                 node.values,
                 recursive,
@@ -77,8 +80,8 @@ export const calculateLayout = (
                 display,
                 hashNames,
                 map,
+                firstName === 'let' ? 'let' : undefined,
             );
-            const firstName = idName(map[node.values[0]]);
             if (
                 cw === false ||
                 cw > maxWidth ||
@@ -215,6 +218,8 @@ function howTight(item?: Map[0]) {
     return 1;
 }
 
+type ParentCtx = 'let';
+
 export const layout = (
     idx: number,
     pos: number,
@@ -222,6 +227,7 @@ export const layout = (
     display: Ctx['display'],
     hashNames: Ctx['hashNames'],
     recursive = false,
+    parentCtx?: ParentCtx,
 ): Layout => {
     const item = display[idx] ?? (display[idx] = {});
     return (item.layout = calculateLayout(
@@ -231,6 +237,7 @@ export const layout = (
         hashNames,
         map,
         recursive,
+        parentCtx,
     ));
 };
 
@@ -241,11 +248,15 @@ function childWidth(
     display: Ctx['display'],
     hashNames: Ctx['hashNames'],
     map: Map,
+    parent?: ParentCtx,
     spacer = 1,
 ) {
     let total = pos;
     let first = true;
-    for (let idx of children) {
+    for (let i = 0; i < children.length; i++) {
+        let idx = children[i];
+        let parentCtx: ParentCtx | undefined =
+            parent === 'let' && idx === 1 ? 'let' : undefined;
         if (first) {
             first = false;
         } else {
@@ -254,12 +265,23 @@ function childWidth(
         let { layout: l } = display[idx] ?? {};
         if (!l || l.pos !== total) {
             // gotta relayout
-            l = layout(idx, total, map, display, hashNames, recursive);
+            l = layout(
+                idx,
+                total,
+                map,
+                display,
+                hashNames,
+                recursive,
+                parentCtx,
+            );
         }
         // Break out, relayout everything for multi-bit
         if (l.type === 'multiline' || total >= maxWidth) {
-            for (let idx of children) {
-                layout(idx, pos, map, display, hashNames, recursive);
+            for (let i = 0; i < children.length; i++) {
+                let idx = children[i];
+                let parentCtx: ParentCtx | undefined =
+                    parent === 'let' && idx === 1 ? 'let' : undefined;
+                layout(idx, pos, map, display, hashNames, recursive, parentCtx);
             }
             return false;
         } else {
@@ -267,8 +289,11 @@ function childWidth(
         }
     }
     if (total >= maxWidth) {
-        for (let idx of children) {
-            layout(idx, pos, map, display, hashNames, recursive);
+        for (let i = 0; i < children.length; i++) {
+            let idx = children[i];
+            let parentCtx: ParentCtx | undefined =
+                parent === 'let' && idx === 1 ? 'let' : undefined;
+            layout(idx, pos, map, display, hashNames, recursive, parentCtx);
         }
     }
     return total;

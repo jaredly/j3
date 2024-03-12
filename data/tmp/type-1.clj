@@ -184,6 +184,7 @@
                                               (,, s2 t2 nidx)
                                               (t-expr (tenv-apply s1 env'') body nidx)]
                                               (,, (compose-subst s1 s2) t2 nidx))
+        (ematch target cases l)           1
         _                                 (fatal "cannot infer type for ${(valueToString expr)}")))
 
 (defn infer [tenv expr]

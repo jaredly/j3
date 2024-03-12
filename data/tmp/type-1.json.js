@@ -582,6 +582,18 @@ throw new Error('let pattern not matched 1923. ' + valueToString($target));})()
 }
 }
 }
+if ($target.type === "ematch") {
+{
+let target = $target[0];
+{
+let cases = $target[1];
+{
+let l = $target[2];
+return 1
+}
+}
+}
+}
 return fatal(`cannot infer type for ${valueToString(expr)}`)
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1664');})(expr);
 
