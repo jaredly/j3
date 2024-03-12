@@ -2,7 +2,14 @@
 // Step 2: use the bootstrap evaluator + state => a new evaluator
 
 import { Node } from '../../../src/types/cst';
-import { addTypeConstructors, extractBuiltins, valueToString } from './reduce';
+import { fromMCST } from '../../../src/types/mcst';
+import { NUIState } from '../../custom/UIState';
+import {
+    addTypeConstructors,
+    extractBuiltins,
+    findTops,
+    valueToString,
+} from './reduce';
 import { evalExpr } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 import {
@@ -26,6 +33,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
         env: Env,
     ): { env: Env; display: JSX.Element | string };
     evaluate(expr: Expr, env: Env): any;
+    toFile?(state: NUIState): { js: string; errors: Errors };
 };
 
 export const repr: FullEvalator<void, Node, Node> = {
@@ -135,5 +143,20 @@ export const bootstrap: FullEvalator<
                 }
             }
         }
+    },
+    toFile(state: NUIState) {
+        const errors: Errors = {};
+        return {
+            js: `return {type: 'bootstrap', stmts: ${JSON.stringify(
+                findTops(state)
+                    .map((stmt) =>
+                        bootstrap.parse(fromMCST(stmt.top, state.map), errors),
+                    )
+                    .filter(Boolean),
+                null,
+                2,
+            )}}`,
+            errors,
+        };
     },
 };

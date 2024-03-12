@@ -34,6 +34,8 @@
   which means my parser needs to be preserving locs? yes that's what it means. Should be quick.
 - [ ] Let's get self-2 (or parse-1) working as an Evaluator, that can then save the .js to disk.
 
+- [ ] attt some point, I'd like to represent the JS AST so I can do some optimizing passes? idk could be fun
+
 # Grand Plan
 
 1. [x] basic bootstrap, bare bones AST

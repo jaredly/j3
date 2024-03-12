@@ -15,6 +15,7 @@ import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
 import { findTops } from './web/ide/ground-up/reduce';
 import { bootstrap } from './web/ide/ground-up/Evaluators';
+import { evaluatorFromText } from './web/ide/ground-up/loadEv';
 
 const base = path.join(__dirname, 'data');
 
@@ -48,6 +49,19 @@ const fileToJs = (state: NUIState) => {
             null,
             2,
         )}}`;
+    }
+    if (state.evaluator.endsWith('.json')) {
+        const evjs = readFileSync(`data/tmp/${state.evaluator}.js`, 'utf-8');
+        const ev = evaluatorFromText(evjs);
+        if (ev?.toFile) {
+            const res = ev.toFile(state);
+            if (Object.keys(res.errors).length) {
+                console.log(`Failed to turn to file`, res.errors);
+                return;
+            }
+            console.log('Done to js');
+            return res.js;
+        }
     }
 };
 

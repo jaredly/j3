@@ -9,164 +9,16 @@ import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { FullEvalator, bootstrap, repr } from './Evaluators';
-import { findTops, reduce, urlForId, valueToString } from './reduce';
+import { findTops, reduce } from './reduce';
 import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
-import { parseExpr, parseStmt, stmt } from './round-1/parse';
-import { sanitize } from './round-1/builtins';
 import { WithStore, useGlobalState, useStore } from '../../custom/Store';
+import { loadEv } from './loadEv';
 
 export type Results = {
     display: Display;
     errors: { [key: string]: string[] };
     hashNames: { [idx: number]: string };
-};
-
-export const loadEv = async (
-    id: string,
-): Promise<null | FullEvalator<any, any, any>> => {
-    const res = await fetch(urlForId(id) + '.js');
-    if (res.status !== 200) {
-        console.log('Nope', res.status);
-        return null;
-    }
-    const data = new Function(await res.text())();
-    if (data.type === 'full') {
-        return data;
-    }
-    if (data.type === 'bootstrap') {
-        let benv = bootstrap.init();
-        data.stmts.forEach((stmt: any) => {
-            benv = bootstrap.addStatement(stmt, benv).env;
-        });
-        const san: { [key: string]: any } = {};
-        Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
-        const envArgs = '{' + Object.keys(san).join(', ') + '}';
-        return {
-            init() {
-                return [];
-            },
-            addStatement(stmt: stmt, env: string[]) {
-                if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                    try {
-                        env.push(benv['compile-st'](stmt));
-                        return { env, display: 'compiled.' };
-                    } catch (err) {
-                        console.error(err);
-                        return {
-                            env,
-                            display: 'Failed ' + (err as Error).message,
-                        };
-                    }
-                }
-                if (stmt.type === 'sexpr') {
-                    let raw;
-                    try {
-                        raw = benv['compile-st'](stmt);
-                    } catch (err) {
-                        console.error(err);
-                        return {
-                            env,
-                            display:
-                                'Compilation failed: ' + (err as Error).message,
-                        };
-                    }
-                    try {
-                        const res = new Function(
-                            envArgs,
-                            '{' + env.join('\n') + '\nreturn ' + raw + '}',
-                        )(san);
-                        return { env, display: valueToString(res) };
-                    } catch (err) {
-                        console.log(envArgs);
-                        console.log(raw);
-                        console.error(err);
-                        return {
-                            env,
-                            display:
-                                'Error evaluating! ' +
-                                (err as Error).message +
-                                '\n' +
-                                raw,
-                        };
-                    }
-                }
-                return { env, display: 'idk' };
-            },
-            parse(node, errors) {
-                const ctx = { errors, display: {} };
-                const stmt = parseStmt(node, ctx) as stmt & { loc: number };
-                if (Object.keys(ctx.errors).length || !stmt) {
-                    return;
-                }
-                stmt.loc = node.loc;
-                return stmt;
-            },
-            parseExpr(node, errors) {
-                const ctx = { errors, display: {} };
-                return parseExpr(node, ctx);
-            },
-            evaluate(expr, env) {
-                let raw;
-                try {
-                    raw = benv['compile'](expr);
-                } catch (err) {
-                    console.error(err);
-                    return 'Compilation failed: ' + (err as Error).message;
-                }
-                try {
-                    const res = new Function(
-                        envArgs,
-                        '{' + env.join('\n') + '\nreturn ' + raw + '}',
-                    )(san);
-                    return res;
-                } catch (err) {
-                    console.log(raw);
-                    console.error(err);
-                    return (
-                        'Error evaluating! ' + (err as Error).message
-                        // '\n' +
-                        // raw
-                    );
-                }
-            },
-        };
-        // first we have to pass everything through the bootstrapping.
-    }
-    // we have `compile-st` and `compile`.
-    // ELSE do ... a thing
-    return null;
-};
-
-const useEvaluator = (name?: string) => {
-    const [evaluator, setEvaluator] = useState(
-        (): FullEvalator<any, any, any> | null | void => {
-            switch (name) {
-                case ':bootstrap:':
-                    return bootstrap;
-                case ':repr:':
-                    return repr;
-            }
-            return null;
-        },
-    );
-
-    useEffect(() => {
-        if (name?.endsWith('.json')) {
-            loadEv(name).then(setEvaluator);
-        } else {
-            switch (name) {
-                case ':bootstrap:':
-                    setEvaluator(bootstrap);
-                    break;
-                case ':repr:':
-                    setEvaluator(repr);
-                    break;
-            }
-        }
-    }, [name]);
-
-    return evaluator;
 };
 
 export const GroundUp = ({

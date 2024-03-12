@@ -1,6 +1,35 @@
 (def builtins
     "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
+(def ast "# AST")
+
+(deftype (array a) (nil) (cons a (array a)))
+
+(deftype expr
+    (eprim prim)
+        (estr first (array (, expr string)))
+        (evar string)
+        (equot expr)
+        (equotquot cst)
+        (elambda string expr)
+        (eapp expr expr)
+        (ematch expr (array (, pat expr))))
+
+(deftype prim (pint int) (pbool bool))
+
+(deftype pat
+    (pany)
+        (pvar string)
+        (pcon string (array pat))
+        (pprim prim))
+
+(deftype type (tvar int) (tapp type type) (tcon string))
+
+(deftype stmt
+    (sdeftype string (array (, string (array type))))
+        (sdef string expr)
+        (sexpr expr))
+
 (def parsing "# Parsing")
 
 (deftype cst
@@ -172,35 +201,6 @@
 (deftype (option a) (some a) (none))
 
 (string-to-int "11")
-
-(def ast "# AST")
-
-(deftype (array a) (nil) (cons a (array a)))
-
-(deftype expr
-    (eprim prim)
-        (estr first (array (, expr string)))
-        (evar string)
-        (equot expr)
-        (equotquot cst)
-        (elambda string expr)
-        (eapp expr expr)
-        (ematch expr (array (, pat expr))))
-
-(deftype prim (pint int) (pbool bool))
-
-(deftype pat
-    (pany)
-        (pvar string)
-        (pcon string (array pat))
-        (pprim prim))
-
-(deftype type (tvar int) (tapp type type) (tcon string))
-
-(deftype stmt
-    (sdeftype string (array (, string (array type))))
-        (sdef string expr)
-        (sexpr expr))
 
 (def prelude "# prelude")
 
