@@ -32,7 +32,7 @@ const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1});
 const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1});
 const cst$slidentifier = (v0) => (v1) => ({type: "cst/identifier", 0: v0, 1: v1});
 const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2});
-const tapps = (items) => (($target) => {if ($target.type === "cons") {
+const tapps = (items) => (l) => (($target) => {if ($target.type === "cons") {
 {
 let one = $target[0];
 if ($target[1].type === "nil") {
@@ -45,7 +45,7 @@ if ($target.type === "cons") {
 let one = $target[0];
 {
 let rest = $target[1];
-return tapp(one)(tapps(rest))
+return tapp(one)(tapps(rest)(l))(l)
 }
 }
 }
@@ -54,13 +54,19 @@ throw new Error('Failed to match. ' + valueToString($target))})(items);
 const parse_type = (type) => (($target) => {if ($target.type === "cst/identifier") {
 {
 let id = $target[0];
-return tcon(id)
+{
+let l = $target[1];
+return tcon(id)(l)
+}
 }
 }
 if ($target.type === "cst/list") {
 {
 let items = $target[0];
-return tapps(map(items)(parse_type))
+{
+let l = $target[1];
+return tapps(map(items)(parse_type))(l)
+}
 }
 }
 return fatal(`(parse-type) Invalid type ${valueToString(type)}`)
@@ -419,20 +425,26 @@ return eapp(eapp(evar("cons")(l))(parse_expr(one))(l))(parse_array(rest)(l))(l)
 }
 throw new Error('Failed to match. ' + valueToString($target))})(args);
 
-const mk_deftype = (id) => (items) => sdeftype(id)(map(items)((constr) => (($target) => {if ($target.type === "cst/list") {
+const mk_deftype = (id) => (li) => (items) => (l) => sdeftype(id)(li)(map(items)((constr) => (($target) => {if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
 {
 let name = $target[0][0][0];
 {
+let ni = $target[0][0][1];
+{
 let args = $target[0][1];
-return $co(name)(map(args)(parse_type))
+{
+let l = $target[1];
+return $co$co$co(name)(ni)(map(args)(parse_type))(l)
 }
 }
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})(constr)));
+}
+}
+throw new Error('Failed to match. ' + valueToString($target))})(constr)))(l);
 
 const parse_stmt = (cst) => (($target) => {if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
@@ -514,8 +526,14 @@ if ($target[0][1][0].type === "cst/identifier") {
 {
 let id = $target[0][1][0][0];
 {
+let li = $target[0][1][0][1];
+{
 let items = $target[0][1][1];
-return mk_deftype(id)(items)
+{
+let l = $target[1];
+return mk_deftype(id)(li)(items)(l)
+}
+}
 }
 }
 }
@@ -535,8 +553,14 @@ if ($target[0][1][0][0][0].type === "cst/identifier") {
 {
 let id = $target[0][1][0][0][0][0];
 {
+let li = $target[0][1][0][0][0][1];
+{
 let items = $target[0][1][1];
-return mk_deftype(id)(items)
+{
+let l = $target[1];
+return mk_deftype(id)(li)(items)(l)
+}
+}
 }
 }
 }

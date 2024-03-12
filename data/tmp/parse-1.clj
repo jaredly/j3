@@ -40,19 +40,19 @@
         (cst/identifier string int)
         (cst/string string (array (,, cst string int)) int))
 
-(defn tapps [items]
+(defn tapps [items l]
     (match items
         [one]        one
-        [one ..rest] (tapp one (tapps rest))))
+        [one ..rest] (tapp one (tapps rest l) l)))
 
 (defn parse-type [type]
     (match type
-        (cst/identifier id _) (tcon id)
-        (cst/list items _)    (tapps (map items parse-type))
+        (cst/identifier id l) (tcon id l)
+        (cst/list items l)    (tapps (map items parse-type) l)
         _                     (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
 (parse-type
-    (cst/list [(cst/identifier "hi" _) (cst/identifier "ho" _)] 1))
+    (cst/list [(cst/identifier "hi" 1) (cst/identifier "ho" 2)] 1))
 
 (foldl 0 [1 2] +)
 
@@ -217,14 +217,16 @@
 
 (parse-expr (@@ (fn [a] 1)))
 
-(defn mk-deftype [id items]
+(defn mk-deftype [id li items l]
     (sdeftype
         id
+            li
             (map
             items
                 (fn [constr]
                 (match constr
-                    (cst/list [(cst/identifier name _) ..args]) (, name (map args parse-type)))))))
+                    (cst/list [(cst/identifier name ni) ..args] l) (,,, name ni (map args parse-type) l))))
+            l))
 
 (defn parse-stmt [cst]
     (match cst
@@ -241,13 +243,13 @@
                                                                                                                                                                                     (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c))
                                                                                                                                                                                     c)
         (cst/list
-            [(cst/identifier "deftype" _) (cst/identifier id _) ..items]
-                _)                                                               (mk-deftype id items)
+            [(cst/identifier "deftype" _) (cst/identifier id li) ..items]
+                l)                                                              (mk-deftype id li items l)
         (cst/list
             [(cst/identifier "deftype" _)
-                (cst/list [(cst/identifier id _) .._])
+                (cst/list [(cst/identifier id li) .._])
                 ..items]
-                _)              (mk-deftype id items)
+                l)             (mk-deftype id li items l)
         _                                                                                                                                                                   (sexpr (parse-expr cst))))
 
 (,
@@ -255,10 +257,20 @@
         [(, (@@ (def a 2)) (sdef "a" 1302 (eprim (pint 2 1303) 1303) 1300))
         (,
         (@@ (deftype what (one int) (two bool)))
-            (sdeftype "what" [(, "one" [(tcon "int")]) (, "two" [(tcon "bool")])]))
+            (sdeftype
+            "what"
+                1335
+                [(,,, "one" 1337 [(tcon "int" 1338)] 1336)
+                (,,, "two" 1340 [(tcon "bool" 1341)] 1339)]
+                1333))
         (,
         (@@ (deftype (array a) (nil) (cons (array a))))
-            (sdeftype "array" [(, "nil" []) (, "cons" [(tapp (tcon "array") (tcon "a"))])]))
+            (sdeftype
+            "array"
+                1486
+                [(,,, "nil" 1489 [] 1488)
+                (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
+                1483))
         (,
         (@@ (+ 1 2))
             (sexpr
