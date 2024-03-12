@@ -163,7 +163,7 @@ let one = $target[0][0];
 let rest = $target[0][1];
 {
 let l = $target[1];
-return pcon("cons")(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))
+return pcon("cons")(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
 }
 }
 }
@@ -821,15 +821,20 @@ const compile = (expr) => (($target) => {if ($target.type === "estr") {
 let first = $target[0];
 {
 let tpls = $target[1];
+{
+let l = $target[2];
 return (($target) => {if ($target.type === "nil") {
 return `\"${escape_string(unescape_string(first))}\"`
 }
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",") {
+return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
 {
 let expr = $target[0];
 {
 let suffix = $target[1];
+{
+let l = $target[2];
 return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+}
 }
 }
 }
@@ -838,9 +843,12 @@ throw new Error('Failed to match. ' + valueToString($target))})(tpls)
 }
 }
 }
+}
 if ($target.type === "eprim") {
 {
 let prim = $target[0];
+{
+let l = $target[1];
 return (($target) => {if ($target.type === "pstr") {
 {
 let string = $target[0];
@@ -868,24 +876,37 @@ throw new Error('Failed to match. ' + valueToString($target))})(bool)
 throw new Error('Failed to match. ' + valueToString($target))})(prim)
 }
 }
+}
 if ($target.type === "evar") {
 {
 let name = $target[0];
+{
+let l = $target[1];
 return sanitize(name)
+}
 }
 }
 if ($target.type === "equot") {
 {
 let inner = $target[0];
+{
+let l = $target[1];
 return jsonify(inner)
+}
 }
 }
 if ($target.type === "elambda") {
 {
 let name = $target[0];
 {
-let body = $target[1];
+let nl = $target[1];
+{
+let body = $target[2];
+{
+let l = $target[3];
 return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
+}
+}
 }
 }
 }
@@ -896,7 +917,10 @@ let name = $target[0];
 let init = $target[1];
 {
 let body = $target[2];
+{
+let l = $target[3];
 return $pl$pl(cons("((")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(cons(")(")(cons(compile(init))(cons(")")(nil))))))))
+}
 }
 }
 }
@@ -906,6 +930,8 @@ if ($target.type === "eapp") {
 let fn = $target[0];
 {
 let arg = $target[1];
+{
+let l = $target[2];
 return (($target) => {if ($target.type === "elambda") {
 {
 let name = $target[0];
@@ -917,11 +943,14 @@ throw new Error('Failed to match. ' + valueToString($target))})(fn)
 }
 }
 }
+}
 if ($target.type === "ematch") {
 {
 let target = $target[0];
 {
 let cases = $target[1];
+{
+let l = $target[2];
 return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
 {
 let pat = $target[0];
@@ -932,6 +961,7 @@ return compile_pat(pat)("\$target")(`return ${compile(body)}`)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target));})(${compile(target)})`
+}
 }
 }
 }

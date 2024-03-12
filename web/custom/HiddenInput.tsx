@@ -133,7 +133,6 @@ export function HiddenInput({
                                 got?.main?.node ??
                                 got?.outside?.node ??
                                 got?.start?.node;
-                            // const n = getRegNode(num, state.regs);
 
                             if (n) {
                                 n.style.backgroundColor = 'rgba(255,0,0,0.3)';

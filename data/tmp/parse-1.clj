@@ -73,7 +73,7 @@
                                                           )
         (cst/array [] l)                              (pcon "nil" [] l)
         (cst/array [(cst/spread inner _)] _)          (parse-pat inner)
-        (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array rest l))])
+        (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array rest l))] l)
         (cst/list [(cst/identifier name _) ..rest] l) (pcon name (map rest parse-pat) l)
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
@@ -412,43 +412,43 @@
 
 (defn compile [expr]
     (match expr
-        (estr first tpls)     (match tpls
-                                  [] "\"${(escape-string (unescape-string first))}\""
-                                  _  "`${
-                                         (escape-string (unescape-string first))
-                                         }${
-                                         (join
-                                             ""
-                                                 (map
-                                                 tpls
-                                                     (fn [item]
-                                                     (let [(, expr suffix) item]
-                                                         "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))
-                                         }`")
-        (eprim prim)          (match prim
-                                  (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
-                                  (pint int)    (int-to-string int)
-                                  (pbool bool)  (match bool
-                                                    true  "true"
-                                                    false "false"))
-        (evar name)           (sanitize name)
-        (equot inner)         (jsonify inner)
-        (elambda name body)   (++ ["(" (sanitize name) ") => " (compile body)])
-        (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
-        (eapp fn arg)         (match fn
-                                  (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
-                                  _              (++ [(compile fn) "(" (compile arg) ")"]))
-        (ematch target cases) "(($target) => {\n${
-                                  (join
-                                      "\n"
-                                          (map
-                                          cases
-                                              (fn [case]
-                                              (let [(, pat body) case]
-                                                  (compile-pat pat "$target" "return ${(compile body)}")))))
-                                  }\nthrow new Error('failed to match ' + jsonify($target));})(${
-                                  (compile target)
-                                  })"))
+        (estr first tpls l)      (match tpls
+                                     [] "\"${(escape-string (unescape-string first))}\""
+                                     _  "`${
+                                            (escape-string (unescape-string first))
+                                            }${
+                                            (join
+                                                ""
+                                                    (map
+                                                    tpls
+                                                        (fn [item]
+                                                        (let [(,, expr suffix l) item]
+                                                            "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))
+                                            }`")
+        (eprim prim l)           (match prim
+                                     (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
+                                     (pint int)    (int-to-string int)
+                                     (pbool bool)  (match bool
+                                                       true  "true"
+                                                       false "false"))
+        (evar name l)            (sanitize name)
+        (equot inner l)          (jsonify inner)
+        (elambda name nl body l) (++ ["(" (sanitize name) ") => " (compile body)])
+        (elet name init body l)  (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
+        (eapp fn arg l)          (match fn
+                                     (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
+                                     _              (++ [(compile fn) "(" (compile arg) ")"]))
+        (ematch target cases l)  "(($target) => {\n${
+                                     (join
+                                         "\n"
+                                             (map
+                                             cases
+                                                 (fn [case]
+                                                 (let [(, pat body) case]
+                                                     (compile-pat pat "$target" "return ${(compile body)}")))))
+                                     }\nthrow new Error('failed to match ' + jsonify($target));})(${
+                                     (compile target)
+                                     })"))
 
 (compile
     (parse-expr
@@ -471,7 +471,7 @@
                 (pany)      "any"
                 (pvar name) name))
             "any")
-        (, (@@ "a${2}b") "a${2}b")
+        (, (@@ "a${2}b") "a2b")
         (, (@@ ((fn [a] (+ a 2)) 21)) 23)
         (,
         (@@
@@ -498,5 +498,7 @@
         (, (@@ "${${1}") "${1")])
 
 (compile (parse-expr (@@ (fn [a] b))))
+
+(parse-expr (@@ (fn [a] b)))
 
 4135
