@@ -27,7 +27,7 @@
 (deftype type (tvar int int) (tapp type type int) (tcon string int))
 
 (deftype stmt
-    (sdeftype string (array (,,, string int (array type) int)) int)
+    (sdeftype string int (array (,,, string int (array type) int)) int)
         (sdef string int expr int)
         (sexpr expr))
 
@@ -228,29 +228,31 @@
 
 (defn parse-stmt [cst]
     (match cst
-        (cst/list [(cst/identifier "def" _) (cst/identifier id _) value] _)                                                                                                (sdef id (parse-expr value))
+        (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)                                                                                                (sdef id li (parse-expr value) l)
         (cst/list
             [(cst/identifier "defn" a)
-                (cst/identifier id _)
+                (cst/identifier id li)
                 (cst/array args b)
                 body]
                 c) (sdef
-                                                                                                                                                                               id
-                                                                                                                                                                                   (parse-expr
-                                                                                                                                                                                   (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c)))
+                                                                                                                                                                                id
+                                                                                                                                                                                    li
+                                                                                                                                                                                    (parse-expr
+                                                                                                                                                                                    (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c))
+                                                                                                                                                                                    c)
         (cst/list
             [(cst/identifier "deftype" _) (cst/identifier id _) ..items]
-                _)                                                              (mk-deftype id items)
+                _)                                                               (mk-deftype id items)
         (cst/list
             [(cst/identifier "deftype" _)
                 (cst/list [(cst/identifier id _) .._])
                 ..items]
-                _)             (mk-deftype id items)
-        _                                                                                                                                                                  (sexpr (parse-expr cst))))
+                _)              (mk-deftype id items)
+        _                                                                                                                                                                   (sexpr (parse-expr cst))))
 
 (,
     parse-stmt
-        [(, (@@ (def a 2)) (sdef "a" (eprim (pint 2))))
+        [(, (@@ (def a 2)) (sdef "a" 1302 (eprim (pint 2 1303) 1303) 1300))
         (,
         (@@ (deftype what (one int) (two bool)))
             (sdeftype "what" [(, "one" [(tcon "int")]) (, "two" [(tcon "bool")])]))
@@ -264,7 +266,9 @@
                 (eapp (evar "+" 1969) (eprim (pint 1 1970) 1970) 1968)
                     (eprim (pint 2 1971) 1971)
                     1968)))
-        (, (@@ (defn a [m] m)) (sdef "a" (elambda "m" (evar "m"))))])
+        (,
+        (@@ (defn a [m] m))
+            (sdef "a" 2051 (elambda "m" 2055 (evar "m" 2053) 2049) 2049))])
 
 (deftype (option a) (some a) (none))
 

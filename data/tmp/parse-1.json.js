@@ -22,7 +22,7 @@ const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1});
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
-const sdeftype = (v0) => (v1) => (v2) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2});
+const sdeftype = (v0) => (v1) => (v2) => (v3) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3});
 const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3});
 const sexpr = (v0) => ({type: "sexpr", 0: v0});
 const parsing = "# Parsing";
@@ -442,11 +442,17 @@ if ($target[0][1].type === "cons") {
 if ($target[0][1][0].type === "cst/identifier") {
 {
 let id = $target[0][1][0][0];
+{
+let li = $target[0][1][0][1];
 if ($target[0][1][1].type === "cons") {
 {
 let value = $target[0][1][1][0];
 if ($target[0][1][1][1].type === "nil") {
-return sdef(id)(parse_expr(value))
+{
+let l = $target[1];
+return sdef(id)(li)(parse_expr(value))(l)
+}
+}
 }
 }
 }
@@ -467,6 +473,8 @@ if ($target[0][1].type === "cons") {
 if ($target[0][1][0].type === "cst/identifier") {
 {
 let id = $target[0][1][0][0];
+{
+let li = $target[0][1][0][1];
 if ($target[0][1][1].type === "cons") {
 if ($target[0][1][1][0].type === "cst/array") {
 {
@@ -479,7 +487,8 @@ let body = $target[0][1][1][1][0];
 if ($target[0][1][1][1][1].type === "nil") {
 {
 let c = $target[1];
-return sdef(id)(parse_expr(cst$sllist(cons(cst$slidentifier("fn")(a))(cons(cst$slarray(args)(b))(cons(body)(nil))))(c)))
+return sdef(id)(li)(parse_expr(cst$sllist(cons(cst$slidentifier("fn")(a))(cons(cst$slarray(args)(b))(cons(body)(nil))))(c)))(c)
+}
 }
 }
 }
