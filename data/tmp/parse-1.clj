@@ -21,6 +21,7 @@
     (pany)
         (pvar string)
         (pcon string (array pat))
+        (pstr string)
         (pprim prim))
 
 (deftype type (tvar int) (tapp type type) (tcon string))
@@ -68,12 +69,15 @@
 (defn parse-pat [pat]
     (match pat
         (cst/identifier "_" _)                        (pany)
+        (cst/string first [] _)                       (pstr first)
         (cst/identifier id _)                         (match (string-to-int id)
                                                           (some int) (pprim (pint int))
                                                           _          (pvar id)
                                                           )
         (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
+
+(parse-pat (@@ 1))
 
 (defn parse-expr [cst]
     (match cst
@@ -348,7 +352,7 @@
                                                      (fn [item]
                                                      (let [(, expr suffix) item]
                                                          "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))
-                                         }")
+                                         }`")
         (eprim prim)          (match prim
                                   (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
                                   (pint int)    (int-to-string int)

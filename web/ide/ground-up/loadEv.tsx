@@ -58,27 +58,47 @@ export const evaluatorFromText = (
                     }
                 },
                 addStatement(stmt, env) {
-                    try {
-                        if (stmt.type === 'sexpr') {
-                            const js = data['compile'](stmt[0]);
-                            const fn = new Function(
+                    if (stmt.type === 'sexpr') {
+                        let js;
+                        try {
+                            js = data['compile'](stmt[0]);
+                        } catch (err) {
+                            return {
+                                env,
+                                display: `Compilation Error: ${
+                                    (err as Error).message
+                                }`,
+                            };
+                        }
+                        let fn;
+                        try {
+                            fn = new Function(
                                 envArgs,
                                 env.join('\n') + '\nreturn ' + js,
                             );
-                            try {
-                                return {
-                                    env,
-                                    display: valueToString(fn(san)),
-                                };
-                            } catch (err) {
-                                return {
-                                    env,
-                                    display: `Runtime error: ${
-                                        (err as Error).message
-                                    }`,
-                                };
-                            }
+                        } catch (err) {
+                            return {
+                                env,
+                                display: `JS Syntax Error: ${
+                                    (err as Error).message
+                                }\n${js}`,
+                            };
                         }
+                        try {
+                            return {
+                                env,
+                                display: valueToString(fn(san)),
+                            };
+                        } catch (err) {
+                            return {
+                                env,
+                                display: `Runtime error: ${
+                                    (err as Error).message
+                                }`,
+                            };
+                        }
+                    }
+                    try {
                         const js = data['compile_stmt'](stmt);
                         const fn = new Function(envArgs, js);
                         env.push(js);
@@ -88,7 +108,7 @@ export const evaluatorFromText = (
                             env,
                             display: `Compilation Error: ${
                                 (err as Error).message
-                            }`,
+                            }\n${js}`,
                         };
                     }
                 },

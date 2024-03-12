@@ -17,6 +17,7 @@ const pbool = (v0) => ({type: "pbool", 0: v0});
 const pany = ({type: "pany"});
 const pvar = (v0) => ({type: "pvar", 0: v0});
 const pcon = (v0) => (v1) => ({type: "pcon", 0: v0, 1: v1});
+const pstr = (v0) => ({type: "pstr", 0: v0});
 const pprim = (v0) => ({type: "pprim", 0: v0});
 const tvar = (v0) => ({type: "tvar", 0: v0});
 const tapp = (v0) => (v1) => ({type: "tapp", 0: v0, 1: v1});
@@ -99,6 +100,14 @@ throw new Error('Failed to match. ' + valueToString($target))})(array);
 const parse_pat = (pat) => (($target) => {if ($target.type === "cst/identifier") {
 if ($target[0] === "_"){
 return pany
+}
+}
+if ($target.type === "cst/string") {
+{
+let first = $target[0];
+if ($target[1].type === "nil") {
+return pstr(first)
+}
 }
 }
 if ($target.type === "cst/identifier") {
@@ -685,7 +694,7 @@ return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}`
+throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
 throw new Error('Failed to match. ' + valueToString($target))})(tpls)
 }
 }
@@ -779,7 +788,7 @@ return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if (
 let pat = $target[0];
 {
 let body = $target[1];
-return compile_pat(pat)("\$target")("return \${(compile body)}")
+return compile_pat(pat)("\$target")(`return ${compile(body)}`)
 }
 }
 }
