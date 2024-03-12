@@ -100,6 +100,14 @@ return pany(l)
 }
 }
 }
+if ($target.type === "cst/identifier") {
+if ($target[0] === "true"){
+{
+let l = $target[1];
+return pprim(pbool(true)(l))(l)
+}
+}
+}
 if ($target.type === "cst/string") {
 {
 let first = $target[0];
@@ -929,4 +937,6 @@ throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow
 }
 throw new Error('Failed to match. ' + valueToString($target))})(expr);
 
-return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loop, prelude, quot, replaces, snd, tapps, unescape_string, util}
+const run = (v) => eval(compile(parse_expr(v)));
+
+return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loop, prelude, quot, replaces, run, snd, tapps, unescape_string, util}

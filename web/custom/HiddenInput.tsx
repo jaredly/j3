@@ -124,8 +124,8 @@ export function HiddenInput({
 
                 if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                     if (evt.altKey) {
-                        const sel = state.hover[state.hover.length - 1].idx;
-                        const node = state.map[sel];
+                        const sel = state.hover[state.hover.length - 1]?.idx;
+                        const node = sel ? state.map[sel] : null;
                         if (node?.type === 'identifier') {
                             const num = +node.text;
                             const got = state.regs[num];

@@ -65,6 +65,7 @@
 (defn parse-pat [pat]
     (match pat
         (cst/identifier "_" l)                        (pany l)
+        (cst/identifier "true" l)                     (pprim (pbool true l) l)
         (cst/string first [] l)                       (pstr first l)
         (cst/identifier id l)                         (match (string-to-int id)
                                                           (some int) (pprim (pint int l) l)
@@ -455,3 +456,47 @@
             (match 2
                 1 2))
             ))
+
+(defn run [v] (eval (compile (parse-expr v))))
+
+(,
+    run
+        [(, (@@ 1) 1)
+        (, (@@ "hello") "hello")
+        (, (@@ "\"") "\"")
+        (, (@@ (+ 2 3)) 5)
+        (,
+        (@@
+            (match (pany)
+                (pany)      "any"
+                (pvar name) name))
+            "any")
+        (, (@@ "a${2}b") "a${2}b")
+        (, (@@ ((fn [a] (+ a 2)) 21)) 23)
+        (,
+        (@@
+            (let [one 1 two 2]
+                (+ 1 2)))
+            3)
+        (,
+        (@@
+            (match 2
+                2 1))
+            1)
+        (,
+        (@@
+            (let [a/b 2]
+                a/b))
+            2)
+        (,
+        (@@
+            (match true
+                true 1
+                2    3))
+            1)
+        (, (@@  "`${1}") "`1")
+        (, (@@ "${${1}") "${1")])
+
+(compile (parse-expr (@@ (fn [a] b))))
+
+4135
