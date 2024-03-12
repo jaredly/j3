@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { layout } from '../../../src/layout';
 import { fromMCST } from '../../../src/types/mcst';
 import { Cursors, isValidCursorLocation } from '../../custom/Cursors';
@@ -39,7 +39,12 @@ export const GroundUp = ({
     const store = useStore(initial);
     const { state, results } = useGlobalState(store);
 
+    let first = useRef(true);
     useEffect(() => {
+        if (first.current) {
+            first.current = false;
+            return;
+        }
         save({ ...state, regs: {} });
     }, [state.map, state.nsMap, state.cards, state.evaluator, id]);
 
