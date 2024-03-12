@@ -1,4 +1,25 @@
 
+# Typeings!
+
+I think perf is in a reasonable spot.
+Now let's do Algo-W step-by-step!
+For that it looks like I'll want:
+- maps! I mean I don't *neeed* them strictly, but it would be nice.
+anddd sets? like why not, right?
+
+```
+(set/nil)
+(set/add s k)
+(set/rm s k)
+(set/merge a b)
+(set/diff a b)
+
+(map/nil)
+(map/add m k v)
+(map/get m k)
+(map/merge a b)
+```
+
 # N4xt up
 
 - [x] perff ok so I'm still doing ... too much stuff

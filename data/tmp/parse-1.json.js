@@ -123,6 +123,25 @@ return pvar(id)
 throw new Error('Failed to match. ' + valueToString($target))})(string_to_int(id))
 }
 }
+if ($target.type === "cst/array") {
+if ($target[0].type === "nil") {
+return pcon("nil")(nil)
+}
+}
+if ($target.type === "cst/array") {
+if ($target[0].type === "cons") {
+{
+let one = $target[0][0];
+{
+let rest = $target[0][1];
+{
+let l = $target[1];
+return pcon("cons")(cons(parse_pat(one))(cons(parse_pat(cst$slarray(re)))(nil)))
+}
+}
+}
+}
+}
 if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {

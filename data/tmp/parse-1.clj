@@ -74,6 +74,8 @@
                                                           (some int) (pprim (pint int))
                                                           _          (pvar id)
                                                           )
+        (cst/array [] _)                              (pcon "nil" [])
+        (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array re))])
         (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
