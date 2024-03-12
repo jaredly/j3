@@ -591,7 +591,7 @@ let target = $target[0];
 let cases = $target[1];
 {
 let l = $target[2];
-return 1
+return let(cons($co$co(s1)(t1)(nidx))(cons(t_expr(tenv)(target)(nidx))(cons(t$qu)(cons(generalize(tenv_apply(s1)(tenv))(t1))(nil)))))
 }
 }
 }
