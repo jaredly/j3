@@ -1,6 +1,14 @@
 
 
-- [ ] I want let to be recursible
+- [x] I want let to be recursible
+
+# TRACE
+I'm done not having insight
+when I could have it so *easy
+
+PLAN:
+- the ... compiler ... gets a map ...
+  and any expr might want to be wrapped.
 
 # Typeings!
 

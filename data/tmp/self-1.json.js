@@ -6226,7 +6226,7 @@ return {type: 'bootstrap', stmts: [
             },
             "1": {
               "0": {
-                "0": 3,
+                "0": 3333333333333333,
                 "type": "pint"
               },
               "type": "eprim"

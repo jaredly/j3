@@ -218,6 +218,8 @@
 
 (infer basic (@ (+ 2 3)))
 
+1
+
 (,
     (infer basic)
         [(, (@ +) "(int) -> (int) -> int")

@@ -911,7 +911,7 @@ return `if (${target}.type === \"${name}\") {\n${pat_loop(target)(args)(0)(inner
 }
 throw new Error('Failed to match. ' + valueToString($target))})(pat);
 
-const compile = (expr) => (($target) => {if ($target.type === "estr") {
+const compile = (expr) => (trace) => (($target) => {if ($target.type === "estr") {
 {
 let first = $target[0];
 {
@@ -1062,6 +1062,6 @@ throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow
 }
 throw new Error('Failed to match. ' + valueToString($target))})(expr);
 
-const run = (v) => eval(compile(parse_expr(v)));
+const run = (v) => eval(compile(parse_expr(v))(map$slnil));
 
 return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loc, pat_loop, prelude, quot, replaces, run, snd, tapps, unescape_string, util}

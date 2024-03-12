@@ -438,7 +438,7 @@
                                (pat-loop target args 0 inner)
                                }\n}"))
 
-(defn compile [expr]
+(defn compile [expr trace]
     (match expr
         (estr first tpls l)      (match tpls
                                      [] "\"${(escape-string (unescape-string first))}\""
@@ -491,20 +491,22 @@
         (@@
             (match 2
                 1 2))
-            ))
+            )
+        map/nil)
 
 (compile
     (parse-expr
         (@@
             (let [a 1 b 2]
-                (+ a b)))))
+                (+ a b))))
+        map/nil)
 
 (parse-expr
     (@@
         (let [a 1 b 2]
             a)))
 
-(defn run [v] (eval (compile (parse-expr v))))
+(defn run [v] (eval (compile (parse-expr v) map/nil)))
 
 (,
     run

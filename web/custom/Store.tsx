@@ -134,6 +134,42 @@ const loadEvaluator = (
     }
 };
 
+const adaptiveBounce = (fn: () => void) => {
+    let lastRun = Date.now();
+    let lastCost = 0;
+    // let lastCall = Date.now()
+    let tid: NodeJS.Timeout | null = null;
+
+    const run = () => {
+        tid = null;
+        lastRun = Date.now();
+        const start = performance.now();
+        fn();
+        lastCost = performance.now() - start;
+    };
+
+    return () => {
+        // const sinceLast = Date.now() - lastCall
+        // lastCall = Date.now()
+        if (lastCost < 10) {
+            return run();
+        }
+        // We can update, like every 200ms
+        if (lastCost < 50) {
+            let wait = 200;
+            if (tid) return;
+            if (Date.now() - lastRun > wait) {
+                return run();
+            }
+            tid = setTimeout(run, Date.now() - lastRun - wait);
+            return;
+        }
+        // Otherwise, wait until a pause
+        if (tid) clearTimeout(tid);
+        tid = setTimeout(run, 200);
+    };
+};
+
 export const useStore = (
     initialState: NUIState,
     // state: NUIState,
@@ -152,10 +188,10 @@ export const useStore = (
         let state = initialState;
         let evaluator: FullEvalator<any, any, any> | null = null;
 
-        const updateResults = debounce(async () => {
+        const updateResults = adaptiveBounce(() => {
             results = getResults(state, evaluator);
             everyListeners.forEach((f) => f(state));
-        }, 200);
+        });
 
         loadEvaluator(state.evaluator, (ev, async) => {
             evaluator = ev;
@@ -195,7 +231,7 @@ export const useStore = (
 
                 if (prevState.map !== state.map) {
                     // nextResults = getResults(nextState, evaluator);
-                    updateResults(0);
+                    updateResults();
                 }
 
                 // Send out the infos
