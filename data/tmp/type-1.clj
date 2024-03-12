@@ -101,7 +101,18 @@
     (let [(, subst nidx) (free-for-vars vars (map/nil) nidx)]
         (, (apply subst t) nidx)))
 
-(defn mgu [t1 t2]
+(defn mgu [t1 t2 nidx]
     (match (, t1 t2)
-        (, (tapp l r) (tapp l' r')) 
-        _                           _))
+        (, (tapp l r) (tapp l' r')) (let [(, s1 nidx)
+                                        (mgu l l' nidx)
+                                        (, s2 nidx)
+                                        (mgu (type-apply s1 r) (type-apply s1 r') nidx)]
+                                        (, (compose-subst s1 s2) nidx))
+        (, (tvar u _) t)            (var-bind u t nidx)
+        (, t (tvar u _))            (var-bind u t nidx)
+        (, (tcon a _) (tcon b _))   (if (= a b)
+                                        map/nil
+                                            (fatal "cant unify"))
+        _                           (fatal "cant unify ${(valueToString t1)} ${(valueToString t2)}")))
+
+(defn var-bind [u t nidx] )

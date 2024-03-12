@@ -181,6 +181,7 @@ function builtins() {
 
         'set/nil': [],
         'set/add': (s: any[]) => (v: any) => [v, ...s],
+        'set/has': (s: any[]) => (v: any) => s.includes(v),
         'set/rm': (s: any[]) => (v: any) => s.filter((i) => i !== v),
         // NOTE this is only working for primitives
         'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),

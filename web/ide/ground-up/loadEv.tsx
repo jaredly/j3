@@ -45,9 +45,10 @@ export const evaluatorFromText = (
                     try {
                         return data['parse_stmt'](j);
                     } catch (err) {
-                        errors[node.loc] = [
-                            'ParseStmt failed: ' + (err as Error).message,
-                        ];
+                        // This is just looking annoying.
+                        // errors[node.loc] = [
+                        //     'ParseStmt failed: ' + (err as Error).message,
+                        // ];
                     }
                 },
                 parseExpr(node, errors) {
