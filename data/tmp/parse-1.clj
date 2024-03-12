@@ -6,14 +6,14 @@
 (deftype (array a) (nil) (cons a (array a)))
 
 (deftype expr
-    (eprim prim)
-        (estr first (array (, expr string)))
-        (evar string)
-        (equot expr)
-        (equotquot cst)
-        (elambda string expr)
-        (eapp expr expr)
-        (ematch expr (array (, pat expr))))
+    (eprim prim int)
+        (estr first (array (, expr string int)) int)
+        (evar string int)
+        (equot expr int)
+        (equotquot cst int)
+        (elambda string expr int)
+        (eapp expr expr int)
+        (ematch expr (array (, pat expr int)) int))
 
 (deftype prim (pint int) (pbool bool))
 
@@ -75,11 +75,12 @@
                                                           _          (pvar id)
                                                           )
         (cst/array [] _)                              (pcon "nil" [])
+        (cst/array [(cst/spread inner _)] _)          (parse-pat inner)
         (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array rest l))])
         (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
-(parse-pat (@@ [1 2]))
+(parse-pat (@@ [1 2 ..a]))
 
 (defn parse-expr [cst]
     (match cst
@@ -121,14 +122,18 @@
                                                                              (parse-expr target)
                                                                                  args
                                                                                  (fn [target arg] (eapp target (parse-expr arg))))
-        (cst/array args)                                                 (foldr
-                                                                             (evar "nil")
-                                                                                 args
-                                                                                 (fn [arr item] (eapp (eapp (evar "cons") (parse-expr item)) arr)))))
+        (cst/array args)                                                 (parse-array args)))
+
+(defn parse-array [args]
+    (match args
+        []                   (evar "nil")
+        [(cst/spread inner)] (parse-expr inner)
+        [one ..rest]         (eapp (eapp (evar "cons") (parse-expr one)) (parse-array rest))))
 
 (,
     parse-expr
         [(, (@@ true) (eprim (pbool true)))
+        (, (@@ [1 ..b]) (eapp (eapp (evar "cons") (eprim (pint 1))) (evar "b")))
         (, (@@ "hi") (estr "hi" []))
         (,
         (@@ [1 2])
@@ -376,7 +381,7 @@
                                               (fn [case]
                                               (let [(, pat body) case]
                                                   (compile-pat pat "$target" "return ${(compile body)}")))))
-                                  }\nthrow new Error('failed to match');})(${
+                                  }\nthrow new Error('failed to match ' + jsonify($target));})(${
                                   (compile target)
                                   })"))
 

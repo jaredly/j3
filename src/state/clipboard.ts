@@ -657,9 +657,9 @@ export function generateRawPasteUpdate(
         //     tmp = autoCompleteIfNeeded(tmp, tctx.results.display);
         // }
 
-        console.log('up', update, tmp);
+        // console.log('up', update, tmp);
         tmp = reduceUpdate(tmp, update);
-        console.log('mod', tmp);
+        // console.log('mod', tmp);
         // applyUpdate(tmp, 0, update);
 
         if (tctx) {

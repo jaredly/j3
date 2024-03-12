@@ -19,6 +19,7 @@ import {
     parseStmt,
     stmt,
     unwrapArray,
+    wrapArray,
 } from './round-1/parse';
 
 // export type BasicEvaluator<T> = {};
@@ -156,6 +157,7 @@ function builtins() {
         '++': (items: arr<string>) => unwrapArray(items).join(''),
         'map/nil': [],
         'map/set': (m: [any, any][]) => (k: any) => (v: any) => [[k, v], ...m],
+        'map/rm': (m: [any, any][]) => (k: any) => m.filter((i) => i[0] !== k),
         'map/get': (m: [any, any][]) => (k: any) => {
             const found = m.find((i) => i[0] === k);
             if (found != null) {
@@ -163,7 +165,10 @@ function builtins() {
             }
             return { type: 'none' };
         },
+        'map/map': (fn: (k: any) => any) => (map: [any, any][]) =>
+            map.map(([k, v]) => [k, fn(v)]),
         'map/merge': (a: [any, any][]) => (b: [any, any][]) => [...a, ...b],
+        'map/values': (m: [any, any][]) => wrapArray(m.map((i) => i[1])),
 
         'set/nil': [],
         'set/add': (s: any[]) => (v: any) => [v, ...s],
@@ -172,6 +177,7 @@ function builtins() {
         'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),
         'set/merge': (a: any[]) => (b: any[]) => [...a, ...b],
 
+        jsonify: (m: any) => JSON.stringify(m),
         // Meta stuff
         valueToString,
         eval: (v: string) => {

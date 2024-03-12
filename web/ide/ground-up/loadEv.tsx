@@ -40,8 +40,10 @@ export const evaluatorFromText = (
                     return [];
                 },
                 parse(node, errors) {
+                    const j = toJCST(node);
+                    if (!j) return;
                     try {
-                        return data['parse_stmt'](toJCST(node));
+                        return data['parse_stmt'](j);
                     } catch (err) {
                         errors[node.loc] = [
                             'ParseStmt failed: ' + (err as Error).message,
@@ -49,8 +51,10 @@ export const evaluatorFromText = (
                     }
                 },
                 parseExpr(node, errors) {
+                    const j = toJCST(node);
+                    if (!j) return;
                     try {
-                        return data['parse_expr'](toJCST(node));
+                        return data['parse_expr'](j);
                     } catch (err) {
                         errors[node.loc] = [
                             'parse-expr failed: ' + (err as Error).message,
@@ -94,7 +98,7 @@ export const evaluatorFromText = (
                                 env,
                                 display: `Runtime error: ${
                                     (err as Error).message
-                                }`,
+                                }\n${js}\n${env.join('\n')}`,
                             };
                         }
                     }

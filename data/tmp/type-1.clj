@@ -28,19 +28,35 @@
         (sdef string expr int)
         (sexpr expr int))
 
-(defn concat [a b]
-    (match a
-        []         b
-        [a]        [a ..b]
-        [a ..rest] [a ..(concat rest b)]))
+(def prelude "# Prelude")
 
-(deftype scheme (scheme (array string) type))
+(defn map [values f]
+    (match values
+        []           []
+        [one ..rest] [(f one) ..(map rest f)]))
+
+(defn mapi [i values f]
+    (match values
+        []           []
+        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+
+(defn foldl [init items f]
+    (match items
+        []           init
+        [one ..rest] (foldl (f init one) rest f)))
+
+(defn foldr [init items f]
+    (match items
+        []           init
+        [one ..rest] (f (foldr init rest f) one)))
+
+(deftype scheme (scheme (set string) type))
 
 (defn type-free [type]
     (match type
-        (tvar n _)   [n]
-        (tcon _ _)   []
-        (tapp a b _) (concat (type-types a) (type-types b))))
+        (tvar n _)   (set/add set/nil n)
+        (tcon _ _)   set/nil
+        (tapp a b _) (set/merge (type-types a) (type-types b))))
 
 (defn type-apply [subst type]
     (match type
@@ -50,13 +66,26 @@
         (tapp a b c) (tapp (type-apply subst a) (type-apply subst b) c)
         _            type))
 
-(defn scheme-free [(scheme vbls type)]
-    (set-without (type-free type) vbls))
+(defn scheme-free [(scheme vbls type)] (set/rm (type-free type) vbls))
 
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
-(map/nil)
+(defn compose-subst [s1 s2]
+    (map/merge (map/map (type-apply s1) s2) s1))
+
+; type-env = (map string scheme)
+
+; subst = (map string type)
+
+(defn remove [tenv var] (map/rm tenv var))
+
+(defn tenv-free [tenv]
+    (foldr set/nil (map (map/values tenv) type-free) type-free))
+
+(tenv-free (map/set (map/nil) "lol" (tvar 1 1)))
+
+(map/set (map/nil) "lol" (tvar 1 1))
 
 (map/set (map/nil) 1 2)
 

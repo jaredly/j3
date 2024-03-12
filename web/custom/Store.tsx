@@ -373,6 +373,17 @@ export const getValues = (
     state: NUIState,
     results: NUIResults,
 ): Values => {
+    if (!state.map[idx]) {
+        return {
+            // errors: {},
+            dispatch() {},
+            display: {},
+            // selection: null,
+            reg() {},
+            node: { type: 'blank', loc: -1 },
+            nnode: { type: 'text', text: '' },
+        };
+    }
     const sel = normalizeSelections(state.at);
     const edgeSelected = sel.some(
         (s) =>
@@ -448,7 +459,7 @@ export const useGetStore = () => useContext(StoreCtx);
 
 export const useNode = (idx: number, path: Path[]): Values => {
     const store = useContext(StoreCtx);
-    let [state, setState] = useState(
+    let [state, setState] = useState(() =>
         getValues(idx, path, store, store.getState(), store.getResults()),
     );
     const lpath = useRef(path);

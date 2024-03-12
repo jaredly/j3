@@ -5,6 +5,7 @@ import { arr, filterBlanks, wrapArray } from './parse';
 export type jcst =
     | { type: 'cst/list'; 0: arr<jcst>; 1: number }
     | { type: 'cst/array'; 0: arr<jcst>; 1: number }
+    | { type: 'cst/spread'; 0: jcst; 1: number }
     | {
           type: 'cst/string';
           0: string;
@@ -26,22 +27,27 @@ export const toJCST = (node: Node): jcst | null => {
     switch (node.type) {
         case 'identifier':
             return { type: 'cst/identifier', 0: node.text, 1: node.loc };
-        case 'list':
+        case 'list': {
+            const values = filterBlanks(node.values).map(toJCST);
+            if (!values.every(Boolean)) return null;
             return {
                 type: 'cst/list',
-                0: wrapArray(
-                    filterBlanks(node.values).map(toJCST).filter(filterNulls),
-                ),
+                0: wrapArray(values as jcst[]),
                 1: node.loc,
             };
-        case 'array':
+        }
+        case 'spread':
+            const inner = toJCST(node.contents);
+            return inner ? { type: 'cst/spread', 0: inner, 1: node.loc } : null;
+        case 'array': {
+            const values = filterBlanks(node.values).map(toJCST);
+            if (!values.every(Boolean)) return null;
             return {
                 type: 'cst/array',
-                0: wrapArray(
-                    filterBlanks(node.values).map(toJCST).filter(filterNulls),
-                ),
+                0: wrapArray(values as jcst[]),
                 1: node.loc,
             };
+        }
         case 'string':
             const parsed = node.templates.map((item) => toJCST(item.expr));
             if (parsed.some((p) => !p)) return null;

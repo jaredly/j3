@@ -4,14 +4,14 @@ const ast = "# AST";
 
 const nil = ({type: "nil"});
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
-const eprim = (v0) => ({type: "eprim", 0: v0});
-const estr = (v0) => (v1) => ({type: "estr", 0: v0, 1: v1});
-const evar = (v0) => ({type: "evar", 0: v0});
-const equot = (v0) => ({type: "equot", 0: v0});
-const equotquot = (v0) => ({type: "equotquot", 0: v0});
-const elambda = (v0) => (v1) => ({type: "elambda", 0: v0, 1: v1});
-const eapp = (v0) => (v1) => ({type: "eapp", 0: v0, 1: v1});
-const ematch = (v0) => (v1) => ({type: "ematch", 0: v0, 1: v1});
+const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
+const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
+const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
+const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1});
+const equotquot = (v0) => (v1) => ({type: "equotquot", 0: v0, 1: v1});
+const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2});
+const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2});
+const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2});
 const pint = (v0) => ({type: "pint", 0: v0});
 const pbool = (v0) => ({type: "pbool", 0: v0});
 const pany = ({type: "pany"});
@@ -126,6 +126,18 @@ throw new Error('Failed to match. ' + valueToString($target))})(string_to_int(id
 if ($target.type === "cst/array") {
 if ($target[0].type === "nil") {
 return pcon("nil")(nil)
+}
+}
+if ($target.type === "cst/array") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/spread") {
+{
+let inner = $target[0][0][0];
+if ($target[0][1].type === "nil") {
+return parse_pat(inner)
+}
+}
+}
 }
 }
 if ($target.type === "cst/array") {
@@ -335,10 +347,34 @@ return foldl(parse_expr(target))(args)((target) => (arg) => eapp(target)(parse_e
 if ($target.type === "cst/array") {
 {
 let args = $target[0];
-return foldr(evar("nil"))(args)((arr) => (item) => eapp(eapp(evar("cons"))(parse_expr(item)))(arr))
+return parse_array(args)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target))})(cst);
+
+const parse_array = (args) => (($target) => {if ($target.type === "nil") {
+return evar("nil")
+}
+if ($target.type === "cons") {
+if ($target[0].type === "cst/spread") {
+{
+let inner = $target[0][0];
+if ($target[1].type === "nil") {
+return parse_expr(inner)
+}
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return eapp(eapp(evar("cons"))(parse_expr(one)))(parse_array(rest))
+}
+}
+}
+throw new Error('Failed to match. ' + valueToString($target))})(args);
 
 const mk_deftype = (id) => (items) => sdeftype(id)(map(items)((constr) => (($target) => {if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
@@ -811,10 +847,10 @@ return compile_pat(pat)("\$target")(`return ${compile(body)}`)
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match');})(${compile(target)})`
+throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target));})(${compile(target)})`
 }
 }
 }
 throw new Error('Failed to match. ' + valueToString($target))})(expr);
 
-return {type: 'fns', ast, better_match, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loop, prelude, quot, replaces, snd, tapps, unescape_string, util}
+return {type: 'fns', ast, better_match, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loop, prelude, quot, replaces, snd, tapps, unescape_string, util}

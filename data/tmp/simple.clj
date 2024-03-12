@@ -1,26 +1,14 @@
-1
+(defn foldr [init items f]
+    (match items
+        []           init
+        [one ..rest] (f (foldr init rest f) one)))
 
-2
+(foldr 0 [1 2] +)
 
-3
+[1 2]
 
-45
+(@ [1 2])
 
-4
-
-(def a 1)
-
-(+ 2 a)
-
-[1 2 3]
-
-"a ${23}"
-
-(match "a"
-      "a"
-    2)
-
-"`hi${a}`"
-
-"${${a}"
-
+(match [1 2]
+    []        1
+    [a ..asd] 2)
