@@ -7,13 +7,13 @@
 
 (deftype expr
     (eprim prim int)
-        (estr first (array (, expr string int)) int)
+        (estr first (array (,, expr string int)) int)
         (evar string int)
         (equot expr int)
         (equotquot cst int)
         (elambda string int expr int)
         (eapp expr expr int)
-        (ematch expr (array (, pat expr int)) int))
+        (ematch expr (array (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
 
@@ -27,7 +27,7 @@
 (deftype type (tvar int int) (tapp type type int) (tcon string int))
 
 (deftype stmt
-    (sdeftype string (array (, string int (array type) int)) int)
+    (sdeftype string (array (,,, string int (array type) int)) int)
         (sdef string int expr int)
         (sexpr expr))
 
@@ -38,7 +38,7 @@
         (cst/array (array cst) int)
         (cst/spread cst int)
         (cst/identifier string int)
-        (cst/string string (array (, cst string int)) int))
+        (cst/string string (array (,, cst string int)) int))
 
 (defn tapps [items]
     (match items
@@ -64,16 +64,16 @@
 
 (defn parse-pat [pat]
     (match pat
-        (cst/identifier "_" _)                        (pany)
-        (cst/string first [] _)                       (pstr first)
-        (cst/identifier id _)                         (match (string-to-int id)
-                                                          (some int) (pprim (pint int))
-                                                          _          (pvar id)
+        (cst/identifier "_" l)                        (pany l)
+        (cst/string first [] l)                       (pstr first l)
+        (cst/identifier id l)                         (match (string-to-int id)
+                                                          (some int) (pprim (pint int l) l)
+                                                          _          (pvar id l)
                                                           )
-        (cst/array [] _)                              (pcon "nil" [])
+        (cst/array [] l)                              (pcon "nil" [] l)
         (cst/array [(cst/spread inner _)] _)          (parse-pat inner)
         (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array rest l))])
-        (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))
+        (cst/list [(cst/identifier name _) ..rest] l) (pcon name (map rest parse-pat) l)
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
 (parse-pat (@@ [1 2 ..a]))
@@ -87,8 +87,8 @@
                                                                                  (map
                                                                                  templates
                                                                                      (fn [tpl]
-                                                                                     (let [(, expr string l) tpl]
-                                                                                         (, (parse-expr expr) string l))))
+                                                                                     (let [(,, expr string l) tpl]
+                                                                                         (,, (parse-expr expr) string l))))
                                                                                  l)
         (cst/identifier id l)                                            (match (string-to-int id)
                                                                              (some int) (eprim (pint int l) l)
@@ -104,7 +104,7 @@
                                                                                      _                       (elambda
                                                                                                                  "$fn-arg"
                                                                                                                      -1
-                                                                                                                     (ematch (evar "$fn-arg") [(, (parse-pat arg) body)])
+                                                                                                                     (ematch (evar "$fn-arg" -1) [(, (parse-pat arg) body)] b)
                                                                                                                      b))))
         (cst/list [(cst/identifier "match" _) target ..cases] l)         (ematch
                                                                              (parse-expr target)
@@ -114,40 +114,53 @@
                                                                                      (let [(, pat expr) case]
                                                                                          (, (parse-pat pat) (parse-expr expr)))))
                                                                                  l)
-        (cst/list [(cst/identifier "let" _) (cst/array inits _) body] _) (foldl
+        (cst/list [(cst/identifier "let" _) (cst/array inits _) body] l) (foldl
                                                                              (parse-expr body)
                                                                                  (pairs inits)
                                                                                  (fn [body init]
-                                                                                 (let [(, pat value pl) init]
-                                                                                     (ematch (parse-expr value) [(, (parse-pat pat) body)]))))
-        (cst/list [target ..args])                                       (foldl
+                                                                                 (let [(, pat value) init]
+                                                                                     (ematch (parse-expr value) [(, (parse-pat pat) body)] l))))
+        (cst/list [target ..args] l)                                     (foldl
                                                                              (parse-expr target)
                                                                                  args
-                                                                                 (fn [target arg] (eapp target (parse-expr arg))))
-        (cst/array args)                                                 (parse-array args)))
+                                                                                 (fn [target arg] (eapp target (parse-expr arg) l)))
+        (cst/array args l)                                               (parse-array args l)))
 
-(defn parse-array [args]
+(defn parse-array [args l]
     (match args
-        []                   (evar "nil")
+        []                   (evar "nil" l)
         [(cst/spread inner)] (parse-expr inner)
-        [one ..rest]         (eapp (eapp (evar "cons") (parse-expr one)) (parse-array rest))))
+        [one ..rest]         (eapp (eapp (evar "cons" l) (parse-expr one) l) (parse-array rest l) l)))
 
 (,
     parse-expr
         [(, (@@ true) (eprim (pbool true 1163) 1163))
-        (, (@@ [1 ..b]) (eapp (eapp (evar "cons") (eprim (pint 1))) (evar "b")))
+        (,
+        (@@ [1 ..b])
+            (eapp
+            (eapp (evar "cons" 3401) (eprim (pint 1 3402) 3402) 3401)
+                (evar "b" 3403)
+                3401))
         (, (@@ "hi") (estr "hi" [] 1177))
+        (, (@@ "a${1}b") (estr "a" [(,, (eprim (pint 1 3610) 3610) "b" 3611)] 3608))
         (,
         (@@ [1 2])
             (eapp
-            (eapp (evar "cons") (eprim (pint 1)))
-                (eapp (eapp (evar "cons") (eprim (pint 2))) (evar "nil"))))
+            (eapp (evar "cons" 3238) (eprim (pint 1 3239) 3239) 3238)
+                (eapp
+                (eapp (evar "cons" 3238) (eprim (pint 2 3240) 3240) 3238)
+                    (evar "nil" 3238)
+                    3238)
+                3238))
         (, (@@ 12) (eprim (pint 12 1188) 1188))
         (,
         (@@
             (match 2
                 1 2))
-            (ematch (eprim (pint 2)) [(, (pprim (pint 1)) (eprim (pint 2)))]))
+            (ematch
+            (eprim (pint 2 2997) 2997)
+                [(, (pprim (pint 1 2998) 2998) (eprim (pint 2 2999) 2999))]
+                2995))
         (, (@@ abc) (evar "abc" 1200))
         (, (@@ (fn [a] 1)) (elambda "a" 1238 (eprim (pint 1 1239) 1239) 1235))
         (,
@@ -161,21 +174,42 @@
         (@@ (fn [(, a b)] a))
             (elambda
             "$fn-arg"
-                (ematch (evar "$fn-arg") [(, (pcon "," [(pvar "a") (pvar "b")]) (evar "a"))])))
-        (, (@@ (+ 1 2)) (eapp (eapp (evar "+") (eprim (pint 1))) (eprim (pint 2))))
-        (, (@@ (int-to-string 23)) (eapp (evar "int-to-string") (eprim (pint 23))))
+                -1
+                (ematch
+                (evar "$fn-arg" -1)
+                    [(, (pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911) (evar "a" 1915))]
+                    1908)
+                1908))
+        (,
+        (@@ (+ 1 2))
+            (eapp
+            (eapp (evar "+" 1519) (eprim (pint 1 1520) 1520) 1288)
+                (eprim (pint 2 1521) 1521)
+                1288))
+        (,
+        (@@ (int-to-string 23))
+            (eapp (evar "int-to-string" 1615) (eprim (pint 23 1616) 1616) 1614))
         (,
         (@@
             (let [x 2]
                 x))
-            (ematch (eprim (pint 2)) [(, (pvar "x") (evar "x"))]))
+            (ematch
+            (eprim (pint 2 1680) 1680)
+                [(, (pvar "x" 1679) (evar "x" 1681))]
+                1676))
         (,
         (@@
             (let [(, a b) (, 2 3)]
                 1))
             (ematch
-            (eapp (eapp (evar ",") (eprim (pint 2))) (eprim (pint 3)))
-                [(, (pcon "," [(pvar "a") (pvar "b")]) (eprim (pint 1)))]))
+            (eapp
+                (eapp (evar "," 1797) (eprim (pint 2 1798) 1798) 1796)
+                    (eprim (pint 3 1799) 1799)
+                    1796)
+                [(,
+                (pcon "," [(pvar "a" 1794) (pvar "b" 1795)] 1792)
+                    (eprim (pint 1 1800) 1800))]
+                1789))
         (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 3110) 3108))
         (, (@@ (@ 1)) (equot (eprim (pint 1 3124) 3124) 3122))])
 
@@ -223,7 +257,13 @@
         (,
         (@@ (deftype (array a) (nil) (cons (array a))))
             (sdeftype "array" [(, "nil" []) (, "cons" [(tapp (tcon "array") (tcon "a"))])]))
-        (, (@@ (+ 1 2)) (sexpr (eapp (eapp (evar "+") (eprim (pint 1))) (eprim (pint 2)))))
+        (,
+        (@@ (+ 1 2))
+            (sexpr
+            (eapp
+                (eapp (evar "+" 1969) (eprim (pint 1 1970) 1970) 1968)
+                    (eprim (pint 2 1971) 1971)
+                    1968)))
         (, (@@ (defn a [m] m)) (sdef "a" (elambda "m" (evar "m"))))])
 
 (deftype (option a) (some a) (none))

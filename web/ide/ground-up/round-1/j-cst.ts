@@ -9,7 +9,7 @@ export type jcst =
     | {
           type: 'cst/string';
           0: string;
-          1: arr<{ type: ','; 0: jcst; 1: string; 2: number }>;
+          1: arr<{ type: ',,'; 0: jcst; 1: string; 2: number }>;
           2: number;
       }
     | { type: 'cst/identifier'; 0: string; 1: number };
@@ -56,7 +56,7 @@ export const toJCST = (node: Node): jcst | null => {
                 0: node.first.text,
                 1: wrapArray(
                     node.templates.map((item, i) => ({
-                        type: ',',
+                        type: ',,',
                         0: parsed[i]!,
                         1: item.suffix.text,
                         2: item.suffix.loc,

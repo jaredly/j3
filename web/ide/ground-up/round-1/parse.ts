@@ -479,6 +479,12 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                 return inner ? { type: 'equot', 0: inner } : undefined;
             }
 
+            // if (values.length > 1 && values[0].type === 'identifier' && values[0].text === ',') {
+            //     const inner = values.slice(1).map(p => parseExpr(p, ctx))
+            //     if (!inner.every(Boolean)) return
+            //     return {type: 'eapp'}
+            // }
+
             // (a-fn ...args)
             if (!values.length) {
                 addError(ctx.errors, node.loc, 'empty list');
