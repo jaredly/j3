@@ -98,7 +98,7 @@ export const evaluatorFromText = (
                                 env,
                                 display: `Runtime error: ${
                                     (err as Error).message ?? err
-                                }\n${js}\n${env.join('\n')}`,
+                                }\n${js}`,
                             };
                         }
                     }

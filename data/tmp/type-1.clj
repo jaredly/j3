@@ -88,10 +88,20 @@
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
-(tenv-free (map/set (map/nil) "lol" (tvar 1 1)))
+(defn free-for-vars [vars coll nidx]
+    (match vars
+        []         (, coll nidx)
+        [v ..rest] (free-for-vars rest (map/set coll v nidx) (+ 1 nidx))))
 
-(map/set (map/nil) "lol" (tvar 1 1))
+(free-for-vars ["a" "b" "c"] (map/nil) 0)
 
-(map/set (map/nil) 1 2)
+1219
 
-(map/get (map/set (map/nil) 1 20) 1)
+(defn instantiate [(scheme vars t) nidx]
+    (let [(, subst nidx) (free-for-vars vars (map/nil) nidx)]
+        (, (apply subst t) nidx)))
+
+(defn mgu [t1 t2]
+    (match (, t1 t2)
+        (, (tapp l r) (tapp l' r')) 
+        _                           _))

@@ -11,6 +11,7 @@ const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1});
 const equotquot = (v0) => (v1) => ({type: "equotquot", 0: v0, 1: v1});
 const elambda = (v0) => (v1) => (v2) => (v3) => ({type: "elambda", 0: v0, 1: v1, 2: v2, 3: v3});
 const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2});
+const elet = (v0) => (v1) => (v2) => (v3) => ({type: "elet", 0: v0, 1: v1, 2: v2, 3: v3});
 const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2});
 const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1});
 const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1});
@@ -368,7 +369,7 @@ return foldl(parse_expr(body))(pairs(inits))((body) => (init) => (($target) => {
 let pat = $target[0];
 {
 let value = $target[1];
-return ematch(parse_expr(value))(cons($co(parse_pat(pat))(body))(nil))(l)
+return elet(parse_pat(pat))(parse_expr(value))(body)(l)
 }
 }
 }
@@ -930,14 +931,14 @@ return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(n
 }
 if ($target.type === "elet") {
 {
-let name = $target[0];
+let pat = $target[0];
 {
 let init = $target[1];
 {
 let body = $target[2];
 {
 let l = $target[3];
-return $pl$pl(cons("((")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(cons(")(")(cons(compile(init))(cons(")")(nil))))))))
+return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)}})()`
 }
 }
 }

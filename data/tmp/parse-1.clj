@@ -13,6 +13,7 @@
         (equotquot cst int)
         (elambda string int expr int)
         (eapp expr expr int)
+        (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
@@ -120,7 +121,7 @@
                                                                                  (pairs inits)
                                                                                  (fn [body init]
                                                                                  (let [(, pat value) init]
-                                                                                     (ematch (parse-expr value) [(, (parse-pat pat) body)] l))))
+                                                                                     (elet (parse-pat pat) (parse-expr value) body l))))
         (cst/list [target ..args] l)                                     (foldl
                                                                              (parse-expr target)
                                                                                  args
@@ -194,22 +195,18 @@
         (@@
             (let [x 2]
                 x))
-            (ematch
-            (eprim (pint 2 1680) 1680)
-                [(, (pvar "x" 1679) (evar "x" 1681))]
-                1676))
+            (elet (pvar "x" 1679) (eprim (pint 2 1680) 1680) (evar "x" 1681) 1676))
         (,
         (@@
             (let [(, a b) (, 2 3)]
                 1))
-            (ematch
-            (eapp
+            (elet
+            (pcon "," [(pvar "a" 1794) (pvar "b" 1795)] 1792)
+                (eapp
                 (eapp (evar "," 1797) (eprim (pint 2 1798) 1798) 1796)
                     (eprim (pint 3 1799) 1799)
                     1796)
-                [(,
-                (pcon "," [(pvar "a" 1794) (pvar "b" 1795)] 1792)
-                    (eprim (pint 1 1800) 1800))]
+                (eprim (pint 1 1800) 1800)
                 1789))
         (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 3110) 3108))
         (, (@@ (@ 1)) (equot (eprim (pint 1 3124) 3124) 3122))])
@@ -434,7 +431,11 @@
         (evar name l)            (sanitize name)
         (equot inner l)          (jsonify inner)
         (elambda name nl body l) (++ ["(" (sanitize name) ") => " (compile body)])
-        (elet name init body l)  (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
+        (elet pat init body l)   "(() => {const $target = ${
+                                     (compile init)
+                                     };\n${
+                                     (compile-pat pat "$target" "return ${(compile body)}")
+                                     }})()"
         (eapp fn arg l)          (match fn
                                      (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
                                      _              (++ [(compile fn) "(" (compile arg) ")"]))
