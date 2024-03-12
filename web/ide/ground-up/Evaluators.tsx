@@ -185,6 +185,9 @@ function builtins() {
         // NOTE this is only working for primitives
         'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),
         'set/merge': (a: any[]) => (b: any[]) => [...a, ...b],
+        'set/to-list': wrapArray,
+        'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
+            unwrapArray(a).map((i) => [i[0], i[1]]),
 
         jsonify: (m: any) => JSON.stringify(m),
         // Meta stuff

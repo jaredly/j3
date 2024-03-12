@@ -81,9 +81,12 @@
 (defn remove [tenv var] (map/rm tenv var))
 
 (defn tenv-free [tenv]
-    (foldr set/nil (map (map/values tenv) type-free) type-free))
+    (foldr set/nil (map (map/values tenv) type-free) set/merge))
 
-761
+(defn tenv-apply [subst tenv] (map/map (type-apply subst) tenv))
+
+(defn generalize [tenv t]
+    (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
 (tenv-free (map/set (map/nil) "lol" (tvar 1 1)))
 
