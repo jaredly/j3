@@ -148,6 +148,7 @@ export const Render = React.memo(
         );
     },
     (prev, next) => equal(prev, next),
+    // () => false,
     // (prevProps: RenderProps, nextProps: RenderProps) => {
     //     for (let key of Object.keys(prevProps)) {
     //         if (

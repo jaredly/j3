@@ -380,9 +380,6 @@ export const getValues = (
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
     const coverageLevel = isCoveredBySelection(sel, path, state.map);
-    // if (!state.map[idx]) {
-    //     debugger;
-    // }
     const nnode = getNestedNodes(
         state.map[idx],
         state.map,
@@ -471,6 +468,8 @@ export const useNode = (idx: number, path: Path[]): Values => {
     }
     useEffect(() => {
         return store.onChange(idx, (state, results) => {
+            // Node is being deleted, ignore. This'll unmount in a minute
+            if (!state.map[idx]) return;
             setState(getValues(idx, path, store, state, results));
         });
     }, [idx, lpath.current]);
