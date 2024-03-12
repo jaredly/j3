@@ -98,15 +98,26 @@ export const evaluatorFromText = (
                             };
                         }
                     }
+                    let js;
                     try {
-                        const js = data['compile_stmt'](stmt);
+                        js = data['compile_stmt'](stmt);
+                    } catch (err) {
+                        return {
+                            env,
+                            display: `Compilation Error: ${
+                                (err as Error).message
+                            }`,
+                        };
+                    }
+
+                    try {
                         const fn = new Function(envArgs, js);
                         env.push(js);
                         return { env, display: `compiled` };
                     } catch (err) {
                         return {
                             env,
-                            display: `Compilation Error: ${
+                            display: `JS Syntax Error: ${
                                 (err as Error).message
                             }\n${js}`,
                         };

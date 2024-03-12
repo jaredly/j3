@@ -7,6 +7,7 @@
     - [x] First off, gotta not do new results for selection changes.
     - [x] for betters, we'll need to ... debounce ... the getResults. ok y'all.
 
+- [ ]
 
 - [x] perfff only render what changes, for crying out loud
   - So, have a `Context` to access a `store`, that keeps track of the current `state`
@@ -32,7 +33,7 @@
   So, a compiler would just have access to a `map` (ok so we need `map`s) that would tell you
   whether a given `loc` had a `trace` on it.
   which means my parser needs to be preserving locs? yes that's what it means. Should be quick.
-- [ ] Let's get self-2 (or parse-1) working as an Evaluator, that can then save the .js to disk.
+- [x] Let's get self-2 (or parse-1) working as an Evaluator, that can then save the .js to disk.
 
 - [ ] attt some point, I'd like to represent the JS AST so I can do some optimizing passes? idk could be fun
 
@@ -46,10 +47,13 @@
   - yassss now we have destructuring of fn arguments baked into the parser! which is nice.
 
 - [ ] add basic fallthrough cases everywhere.
-- [ ] use parse-1 as an evaluator
+- [x] use parse-1 as an evaluator
 - [ ] start ... into typing? yeah that sounds about right.
   pleease give us some type checking. we needs it badly.
   also autocomplete, right?
+
+
+PROBLEM render memo, looks like.
 
 
 (equot ...)

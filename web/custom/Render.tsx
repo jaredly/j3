@@ -223,7 +223,11 @@ export const RenderNNode = (
                                 props.firstLineOnly && firstRenderable != -1
                             }
                             nnode={nnode}
-                            key={nnode.type === 'ref' ? 'id:' + nnode.id : i}
+                            key={
+                                nnode.type === 'ref'
+                                    ? 'id:' + nnode.id + ':' + i
+                                    : i
+                            }
                         />
                     ))}
                 </span>
@@ -377,6 +381,7 @@ export const RenderNNode = (
                     // reg={reg}
                     // hashNames={props.hashNames}
                     // selection={props.selection}
+                    key={nnode.id}
                     idx={nnode.id}
                     debug={props.debug}
                     path={path.concat([
