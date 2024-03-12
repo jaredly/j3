@@ -283,113 +283,101 @@ export const fixturePlugin: NamespacePlugin<any> = {
         const data = parse(node);
         if (!data) return;
         return {
-            type: 'vert',
+            type: 'horiz',
             children: [
+                { type: 'blinker', loc: 'start' },
                 {
-                    type: 'horiz',
+                    type: 'vert',
+                    style: {
+                        border: '1px solid #aaa',
+                        margin: '0 4px',
+                        padding: 8,
+                    },
                     children: [
-                        { type: 'blinker', loc: 'start' },
                         {
                             type: 'punct',
                             color: 'white',
-                            text: ' Fixture tests:',
+                            text: 'Fixture tests:',
                         },
-                    ],
-                },
-                ...(data.test ? ([data.test.child] as const) : []),
-                {
-                    type: 'pairs',
-                    firstLine: [],
-                    children: [
-                        [
-                            { type: 'punct', text: 'Input', color: 'gray' },
-                            {
-                                type: 'punct',
-                                text: 'Output',
-                                color: 'gray',
-                            },
-                        ],
-                        ...data.fixtures.map(
-                            (item, i): [NNode] | [NNode, NNode] =>
-                                item.type === 'unknown'
-                                    ? [item.child]
-                                    : [
-                                          {
-                                              type: 'horiz',
-                                              children: [
-                                                  item.input
-                                                      ? item.input.child
-                                                      : {
-                                                            type: 'dom',
-                                                            node: (
-                                                                <button>
-                                                                    Add input
-                                                                </button>
-                                                            ),
-                                                        },
+                        ...(data.test ? ([data.test.child] as const) : []),
+                        {
+                            type: 'pairs',
+                            firstLine: [],
+                            children: [
+                                [
+                                    {
+                                        type: 'punct',
+                                        text: 'Input',
+                                        color: 'gray',
+                                    },
+                                    {
+                                        type: 'punct',
+                                        text: 'Output',
+                                        color: 'gray',
+                                    },
+                                ],
+                                ...data.fixtures.map(
+                                    (item, i): [NNode] | [NNode, NNode] =>
+                                        item.type === 'unknown'
+                                            ? [item.child]
+                                            : [
+                                                  {
+                                                      type: 'horiz',
+                                                      children: [
+                                                          item.input
+                                                              ? item.input.child
+                                                              : {
+                                                                    type: 'dom',
+                                                                    node: (
+                                                                        <button>
+                                                                            Add
+                                                                            input
+                                                                        </button>
+                                                                    ),
+                                                                },
+                                                      ],
+                                                  },
+                                                  {
+                                                      type: 'horiz',
+                                                      children: [
+                                                          {
+                                                              type: 'punct',
+                                                              color: 'red',
+                                                              text: statusIndicator(
+                                                                  item,
+                                                                  results,
+                                                              ),
+                                                          },
+                                                          item.output
+                                                              ? item.output
+                                                                    .child
+                                                              : {
+                                                                    type: 'dom',
+                                                                    node: (
+                                                                        <button>
+                                                                            Output
+                                                                        </button>
+                                                                    ),
+                                                                },
+                                                          {
+                                                              type: 'punct',
+                                                              color: 'white',
+                                                              text: ' ',
+                                                          },
+                                                          {
+                                                              type: 'dom',
+                                                              node: statusMessage(
+                                                                  item,
+                                                                  results,
+                                                                  dispatch,
+                                                              ),
+                                                          },
+                                                      ],
+                                                  },
                                               ],
-                                          },
-                                          {
-                                              type: 'horiz',
-                                              children: [
-                                                  {
-                                                      type: 'punct',
-                                                      color: 'red',
-                                                      text: statusIndicator(
-                                                          item,
-                                                          results,
-                                                      ),
-                                                  },
-                                                  item.output
-                                                      ? item.output.child
-                                                      : {
-                                                            type: 'dom',
-                                                            node: (
-                                                                <button>
-                                                                    Output
-                                                                </button>
-                                                            ),
-                                                        },
-                                                  {
-                                                      type: 'punct',
-                                                      color: 'white',
-                                                      text: ' ',
-                                                  },
-                                                  {
-                                                      type: 'dom',
-                                                      node: statusMessage(
-                                                          item,
-                                                          results,
-                                                          dispatch,
-                                                      ),
-                                                  },
-                                              ],
-                                          },
-                                      ],
-                        ),
-
-                        [
-                            {
-                                type: 'dom',
-                                node: (
-                                    <button
-                                        style={{
-                                            cursor: 'pointer',
-                                            color: 'inherit',
-                                            padding: '8px 12px',
-                                            backgroundColor: 'transparent',
-                                            border: 'none',
-                                            opacity: 0.6,
-                                        }}
-                                        onMouseDown={(evt) => {
-                                            evt.stopPropagation();
-                                        }}
-                                    >
-                                        Add a test case
-                                    </button>
                                 ),
-                            },
-                        ],
+                            ],
+                        },
                     ],
                 },
                 { type: 'blinker', loc: 'end' },

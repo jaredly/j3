@@ -105,7 +105,7 @@ export const evaluatorFromText = (
                         try {
                             fn = new Function(
                                 envArgs,
-                                env.join('\n') + '\nreturn ' + js,
+                                '{' + env.join('\n') + '\nreturn ' + js + '}',
                             );
                         } catch (err) {
                             return {
@@ -142,7 +142,7 @@ export const evaluatorFromText = (
                     }
 
                     try {
-                        const fn = new Function(envArgs, js);
+                        const fn = new Function(envArgs, '{' + js + '}');
                         env.push(js);
                         return { env, display: `compiled` };
                     } catch (err) {
@@ -159,7 +159,7 @@ export const evaluatorFromText = (
                         const js = data['compile'](expr);
                         const fn = new Function(
                             envArgs,
-                            env.join('\n') + '\nreturn ' + js,
+                            '{' + env.join('\n') + '\nreturn ' + js + '}',
                         );
                         try {
                             return fn(san);

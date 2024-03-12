@@ -7,7 +7,7 @@ export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
 
 export type NNode =
-    | { type: 'horiz' | 'vert' | 'inline'; children: NNode[] }
+    | { type: 'horiz' | 'vert' | 'inline'; children: NNode[]; style?: any }
     | {
           type: 'pairs';
           firstLine: NNode[];

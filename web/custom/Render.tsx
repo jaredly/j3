@@ -209,6 +209,7 @@ export const RenderNNode = (
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
                         ...selectStyle,
                         ...errorStyle,
+                        ...(nnode.style ?? {}),
                     }}
                     ref={(node) => reg(node, idx, path, 'outside')}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}

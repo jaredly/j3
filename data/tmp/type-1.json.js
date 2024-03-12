@@ -1,5 +1,7 @@
 const ast = "# AST";
 
+const nil = ({type: "nil"});
+const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
