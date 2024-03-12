@@ -184,7 +184,7 @@
                                               (,, s2 t2 nidx)
                                               (t-expr (tenv-apply s1 env'') body nidx)]
                                               (,, (compose-subst s1 s2) t2 nidx))
-        _                                 (fatal "nopea")))
+        _                                 (fatal "cannot infer type for ${(valueToString expr)}")))
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)]
@@ -210,4 +210,15 @@
 
 (infer basic (@ (+ 2 3)))
 
-(, (infer basic) [(, (@ +) "(int) -> int") (, (@ 123) ) (,  )])
+(,
+    (infer basic)
+        [(, (@ +) "(int) -> (int) -> int")
+        (, (@ 123) "int")
+        (, (@ (fn [a] a)) "(a:0) -> a:0")
+        (, (@ (fn [a] (+ 2 a))) "(int) -> int")
+        (,
+        (@
+            (match 1
+                1 1))
+            )])
+

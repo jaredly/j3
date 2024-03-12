@@ -582,7 +582,7 @@ throw new Error('let pattern not matched 1923. ' + valueToString($target));})()
 }
 }
 }
-return fatal("nopea")
+return fatal(`cannot infer type for ${valueToString(expr)}`)
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1664');})(expr);
 
 const infer = (tenv) => (expr) => (() => {const $target = t_expr(tenv)(expr)(0);

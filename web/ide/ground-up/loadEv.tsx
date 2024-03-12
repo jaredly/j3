@@ -162,21 +162,12 @@ export const evaluatorFromText = (
                             env.join('\n') + '\nreturn ' + js,
                         );
                         try {
-                            return {
-                                env,
-                                display: valueToString(fn(san)),
-                            };
+                            return fn(san);
                         } catch (err) {
-                            return {
-                                env,
-                                display: `Error ${(err as Error).message}`,
-                            };
+                            return `Error ${(err as Error).message}`;
                         }
                     } catch (err) {
-                        return {
-                            env,
-                            display: `Error ${(err as Error).message}`,
-                        };
+                        return `Error ${(err as Error).message}`;
                     }
                 },
             };

@@ -285,6 +285,17 @@ export const fixturePlugin: NamespacePlugin<any> = {
         return {
             type: 'vert',
             children: [
+                {
+                    type: 'horiz',
+                    children: [
+                        { type: 'blinker', loc: 'start' },
+                        {
+                            type: 'punct',
+                            color: 'white',
+                            text: ' Fixture tests:',
+                        },
+                    ],
+                },
                 ...(data.test ? ([data.test.child] as const) : []),
                 {
                     type: 'pairs',
@@ -381,6 +392,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
                         ],
                     ],
                 },
+                { type: 'blinker', loc: 'end' },
             ],
         };
     },
