@@ -136,7 +136,7 @@ let one = $target[0][0];
 let rest = $target[0][1];
 {
 let l = $target[1];
-return pcon("cons")(cons(parse_pat(one))(cons(parse_pat(cst$slarray(re)))(nil)))
+return pcon("cons")(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))
 }
 }
 }

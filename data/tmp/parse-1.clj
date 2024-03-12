@@ -75,11 +75,11 @@
                                                           _          (pvar id)
                                                           )
         (cst/array [] _)                              (pcon "nil" [])
-        (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array re))])
+        (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array rest l))])
         (cst/list [(cst/identifier name _) ..rest] _) (pcon name (map rest parse-pat))
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
-(parse-pat (@@ 1))
+(parse-pat (@@ [1 2]))
 
 (defn parse-expr [cst]
     (match cst
