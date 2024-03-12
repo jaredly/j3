@@ -162,7 +162,7 @@ function builtins() {
             <a, b, c, d>(a: a) =>
             (b: b) =>
             (c: c) =>
-            (d: d) => ({ type: ',,', 0: a, 1: b, 2: c, 3: d }),
+            (d: d) => ({ type: ',,,', 0: a, 1: b, 2: c, 3: d }),
         '++': (items: arr<string>) => unwrapArray(items).join(''),
         'map/nil': [],
         'map/set': (m: [any, any][]) => (k: any) => (v: any) => [[k, v], ...m],

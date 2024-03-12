@@ -8,6 +8,7 @@ import {
 import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { UIState, Action, NUIState } from './UIState';
+import { getRegNode } from './Hover';
 // import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
@@ -122,6 +123,26 @@ export function HiddenInput({
                 }
 
                 if (evt.metaKey || evt.ctrlKey || evt.altKey) {
+                    if (evt.altKey) {
+                        const sel = state.hover[state.hover.length - 1].idx;
+                        const node = state.map[sel];
+                        if (node?.type === 'identifier') {
+                            const num = +node.text;
+                            const got = state.regs[num];
+                            const n =
+                                got?.main?.node ??
+                                got?.outside?.node ??
+                                got?.start?.node;
+                            // const n = getRegNode(num, state.regs);
+
+                            if (n) {
+                                n.style.backgroundColor = 'rgba(255,0,0,0.3)';
+                                setTimeout(() => {
+                                    n.style.backgroundColor = 'unset';
+                                }, 500);
+                            }
+                        }
+                    }
                     return;
                 }
 

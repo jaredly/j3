@@ -12,7 +12,7 @@ import { subRect } from './Cursors';
 import { Ctx } from '../../src/to-ast/library';
 import type { Error } from '../../src/types/types';
 
-const getRegNode = (idx: number, regs: UIState['regs']) => {
+export const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
     return got?.main?.node ?? got?.start?.node ?? got?.outside?.node;
 };
