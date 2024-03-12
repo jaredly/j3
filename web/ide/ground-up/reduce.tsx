@@ -547,6 +547,7 @@ const initialState = (): NUIState => {
 };
 export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 export const saveState = (id: string, state: NUIState) => {
+    console.log('doing a save');
     return fetch(urlForId(id), {
         method: 'POST',
         body: JSON.stringify(state),

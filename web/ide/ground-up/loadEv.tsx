@@ -3,6 +3,7 @@ import { findTops, urlForId, valueToString } from './reduce';
 import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
 import { fromMCST } from '../../../src/types/mcst';
+import { toJCST } from './round-1/j-cst';
 
 export const loadEv = async (
     id: string,
@@ -18,17 +19,115 @@ export const loadEv = async (
 export const evaluatorFromText = (
     text: string,
 ): FullEvalator<string[], stmt & { loc: number }, expr> | null => {
-    const data = new Function(text)();
+    const benv = bootstrap.init();
+    const san = sanitizedEnv(benv);
+    const envArgs = '{' + Object.keys(san).join(', ') + '}';
+
+    console.log(envArgs);
+    const data = new Function(envArgs, '{' + text + '}')(san);
     if (data.type === 'full') {
         return data;
+    }
+    if (data.type === 'fns') {
+        if (
+            data['parse_stmt'] &&
+            data['parse_expr'] &&
+            data['compile'] &&
+            data['compile_stmt']
+        ) {
+            return {
+                init(): string[] {
+                    return [];
+                },
+                parse(node, errors) {
+                    try {
+                        return data['parse_stmt'](toJCST(node));
+                    } catch (err) {
+                        errors[node.loc] = [
+                            'ParseStmt failed: ' + (err as Error).message,
+                        ];
+                    }
+                },
+                parseExpr(node, errors) {
+                    try {
+                        return data['parse_expr'](toJCST(node));
+                    } catch (err) {
+                        errors[node.loc] = [
+                            'parse-expr failed: ' + (err as Error).message,
+                        ];
+                    }
+                },
+                addStatement(stmt, env) {
+                    try {
+                        if (stmt.type === 'sexpr') {
+                            const js = data['compile'](stmt[0]);
+                            const fn = new Function(
+                                envArgs,
+                                env.join('\n') + '\nreturn ' + js,
+                            );
+                            try {
+                                return {
+                                    env,
+                                    display: valueToString(fn(san)),
+                                };
+                            } catch (err) {
+                                return {
+                                    env,
+                                    display: `Runtime error: ${
+                                        (err as Error).message
+                                    }`,
+                                };
+                            }
+                        }
+                        const js = data['compile_stmt'](stmt);
+                        const fn = new Function(envArgs, js);
+                        env.push(js);
+                        return { env, display: `compiled` };
+                    } catch (err) {
+                        return {
+                            env,
+                            display: `Compilation Error: ${
+                                (err as Error).message
+                            }`,
+                        };
+                    }
+                },
+                evaluate(expr, env) {
+                    try {
+                        const js = data['compile'](expr);
+                        const fn = new Function(
+                            envArgs,
+                            env.join('\n') + '\nreturn ' + js,
+                        );
+                        try {
+                            return {
+                                env,
+                                display: valueToString(fn(san)),
+                            };
+                        } catch (err) {
+                            return {
+                                env,
+                                display: `Error ${(err as Error).message}`,
+                            };
+                        }
+                    } catch (err) {
+                        return {
+                            env,
+                            display: `Error ${(err as Error).message}`,
+                        };
+                    }
+                },
+            };
+        } else {
+            console.log('NOPE', Object.keys(data));
+        }
     }
     if (data.type === 'bootstrap') {
         let benv = bootstrap.init();
         data.stmts.forEach((stmt: any) => {
             benv = bootstrap.addStatement(stmt, benv).env;
         });
-        const san: { [key: string]: any } = {};
-        Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
+        const san = sanitizedEnv(benv);
         const envArgs = '{' + Object.keys(san).join(', ') + '}';
         return {
             init(): string[] {
@@ -100,8 +199,9 @@ export const evaluatorFromText = (
                     }
                 });
                 env.push(
-                    `return {${names
+                    `return {type: 'fns', ${names
                         .map((name) => sanitize(name))
+                        .sort()
                         .join(', ')}}`,
                 );
                 return { js: env.join('\n'), errors };
@@ -150,3 +250,8 @@ export const evaluatorFromText = (
     // ELSE do ... a thing
     return null;
 };
+function sanitizedEnv(benv: { [key: string]: any }) {
+    const san: { [key: string]: any } = {};
+    Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
+    return san;
+}

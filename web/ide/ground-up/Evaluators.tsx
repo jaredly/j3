@@ -64,6 +64,11 @@ export const bootstrap: FullEvalator<
             '<=': (a: number) => (b: number) => a <= b,
             '>': (a: number) => (b: number) => a > b,
             valueToString,
+            string_to_int: (a: string) => {
+                var v = parseInt(a);
+                if (!isNaN(v) && '' + v === a) return { type: 'some', 0: v };
+                return { type: 'none' };
+            },
             '>=': (a: number) => (b: number) => a >= b,
             nil: { type: 'nil' },
             cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),
@@ -81,6 +86,9 @@ export const bootstrap: FullEvalator<
             ',':
                 <a, b>(a: a) =>
                 (b: b) => ({ type: ',', 0: a, 1: b }),
+            fatal: (v: string) => {
+                throw new Error(`Fatal runtime: ${v}`);
+            },
             sanitize,
             reduce:
                 <T, A>(init: T) =>

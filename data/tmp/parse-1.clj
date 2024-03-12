@@ -114,12 +114,21 @@
         (cst/list [target ..args])                                       (foldl
                                                                              (parse-expr target)
                                                                                  args
-                                                                                 (fn [target arg] (eapp target (parse-expr arg))))))
+                                                                                 (fn [target arg] (eapp target (parse-expr arg))))
+        (cst/array args)                                                 (foldr
+                                                                             (evar "nil")
+                                                                                 args
+                                                                                 (fn [arr item] (eapp (eapp (evar "cons") (parse-expr item)) arr)))))
 
 (,
     parse-expr
         [(, (@@ true) (eprim (pbool true)))
         (, (@@ "hi") (estr "hi" []))
+        (,
+        (@@ [1 2])
+            (eapp
+            (eapp (evar "cons") (eprim (pint 1)))
+                (eapp (eapp (evar "cons") (eprim (pint 2))) (evar "nil"))))
         (, (@@ 12) (eprim (pint 12)))
         (,
         (@@
@@ -184,7 +193,7 @@
                 (cst/list [(cst/identifier id _) .._])
                 ..items]
                 _)             (mk-deftype id items)
-        _                                                                                                                                                                  (parse-expr cst)))
+        _                                                                                                                                                                  (sexpr (parse-expr cst))))
 
 (,
     parse-stmt
@@ -195,7 +204,7 @@
         (,
         (@@ (deftype (array a) (nil) (cons (array a))))
             (sdeftype "array" [(, "nil" []) (, "cons" [(tapp (tcon "array") (tcon "a"))])]))
-        (, (@@ (+ 1 2)) (eapp (eapp (evar "+") (eprim (pint 1))) (eprim (pint 2))))
+        (, (@@ (+ 1 2)) (sexpr (eapp (eapp (evar "+") (eprim (pint 1))) (eprim (pint 2)))))
         (, (@@ (defn a [m] m)) (sdef "a" (elambda "m" (evar "m"))))])
 
 (deftype (option a) (some a) (none))
@@ -247,7 +256,7 @@
 
 (def compilation "# compilation")
 
-(defn compile-st [stmt]
+(defn compile-stmt [stmt]
     (match stmt
         (sexpr expr)          (compile expr)
         (sdef name body)      (++ ["const " (sanitize name) " = " (compile body) ";\n"])

@@ -304,6 +304,12 @@ return foldl(parse_expr(target))(args)((target) => (arg) => eapp(target)(parse_e
 }
 }
 }
+if ($target.type === "cst/array") {
+{
+let args = $target[0];
+return foldr(evar("nil"))(args)((arr) => (item) => eapp(eapp(evar("cons"))(parse_expr(item)))(arr))
+}
+}
 throw new Error('Failed to match. ' + valueToString($target))})(cst);
 
 const mk_deftype = (id) => (items) => sdeftype(id)(map(items)((constr) => (($target) => {if ($target.type === "cst/list") {
@@ -425,7 +431,7 @@ return mk_deftype(id)(items)
 }
 }
 }
-return parse_expr(cst)
+return sexpr(parse_expr(cst))
 throw new Error('Failed to match. ' + valueToString($target))})(cst);
 
 const some = (v0) => ({type: "some", 0: v0});
@@ -510,7 +516,7 @@ const consr = (a) => (b) => cons(b)(a);
 
 const compilation = "# compilation";
 
-const compile_st = (stmt) => (($target) => {if ($target.type === "sexpr") {
+const compile_stmt = (stmt) => (($target) => {if ($target.type === "sexpr") {
 {
 let expr = $target[0];
 return compile(expr)
@@ -783,4 +789,4 @@ throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow
 }
 throw new Error('Failed to match. ' + valueToString($target))})(expr);
 
-return {builtins, ast, parsing, better_match, tapps, parse_type, pairs, parse_pat, parse_expr, mk_deftype, parse_stmt, prelude, join, map, mapi, foldl, foldr, consr, compilation, compile_st, util, snd, fst, replaces, escape_string, unescape_string, quot, pat_loop, compile_pat, compile}
+return {type: 'fns', ast, better_match, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loop, prelude, quot, replaces, snd, tapps, unescape_string, util}

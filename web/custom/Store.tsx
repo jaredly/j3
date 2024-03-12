@@ -380,6 +380,9 @@ export const getValues = (
             (s.end && s.end[s.end.length - 1].idx === idx),
     );
     const coverageLevel = isCoveredBySelection(sel, path, state.map);
+    // if (!state.map[idx]) {
+    //     debugger;
+    // }
     const nnode = getNestedNodes(
         state.map[idx],
         state.map,

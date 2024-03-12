@@ -41,7 +41,7 @@ export const GroundUp = ({
 
     useEffect(() => {
         save({ ...state, regs: {} });
-    }, [state.map, id]);
+    }, [state.map, state.nsMap, state.cards, state.evaluator, id]);
 
     useEffect(() => {
         // @ts-ignore
