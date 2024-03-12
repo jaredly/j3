@@ -334,28 +334,28 @@
 
 (defn compile-stmt [stmt]
     (match stmt
-        (sexpr expr)          (compile expr)
-        (sdef name body)      (++ ["const " (sanitize name) " = " (compile body) ";\n"])
-        (sdeftype name cases) (join
-                                  "\n"
-                                      (map
-                                      cases
-                                          (fn [case]
-                                          (let [(, name2 args) case]
-                                              (++
-                                                  ["const "
-                                                      name2
-                                                      " = "
-                                                      (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
-                                                      "({type: \""
-                                                      name2
-                                                      "\""
-                                                      (++
-                                                      (mapi
-                                                          0
-                                                              args
-                                                              (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
-                                                      "});"])))))))
+        (sexpr expr)               (compile expr)
+        (sdef name nl body l)      (++ ["const " (sanitize name) " = " (compile body) ";\n"])
+        (sdeftype name nl cases l) (join
+                                       "\n"
+                                           (map
+                                           cases
+                                               (fn [case]
+                                               (let [(,,, name2 nl args l) case]
+                                                   (++
+                                                       ["const "
+                                                           name2
+                                                           " = "
+                                                           (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
+                                                           "({type: \""
+                                                           name2
+                                                           "\""
+                                                           (++
+                                                           (mapi
+                                                               0
+                                                                   args
+                                                                   (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
+                                                           "});"])))))))
 
 (def util "# util")
 
@@ -495,7 +495,13 @@
                 2    3))
             1)
         (, (@@  "`${1}") "`1")
-        (, (@@ "${${1}") "${1")])
+        (, (@@ "${${1}") "${1")
+        (,
+        (@@
+            (match [1]
+                []      []
+                [a ..b] a))
+            1)])
 
 (compile (parse-expr (@@ (fn [a] b))))
 

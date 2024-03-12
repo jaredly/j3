@@ -674,8 +674,14 @@ if ($target.type === "sdef") {
 {
 let name = $target[0];
 {
-let body = $target[1];
+let nl = $target[1];
+{
+let body = $target[2];
+{
+let l = $target[3];
 return $pl$pl(cons("const ")(cons(sanitize(name))(cons(" = ")(cons(compile(body))(cons(";\n")(nil))))))
+}
+}
 }
 }
 }
@@ -683,17 +689,29 @@ if ($target.type === "sdeftype") {
 {
 let name = $target[0];
 {
-let cases = $target[1];
-return join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
+let nl = $target[1];
+{
+let cases = $target[2];
+{
+let l = $target[3];
+return join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",,,") {
 {
 let name2 = $target[0];
 {
-let args = $target[1];
+let nl = $target[1];
+{
+let args = $target[2];
+{
+let l = $target[3];
 return $pl$pl(cons("const ")(cons(name2)(cons(" = ")(cons($pl$pl(mapi(0)(args)((i) => (_) => $pl$pl(cons("(v")(cons(int_to_string(i))(cons(") => ")(nil)))))))(cons("({type: \"")(cons(name2)(cons("\"")(cons($pl$pl(mapi(0)(args)((i) => (_) => $pl$pl(cons(", ")(cons(int_to_string(i))(cons(": v")(cons(int_to_string(i))(nil))))))))(cons("});")(nil))))))))))
 }
 }
 }
+}
+}
 throw new Error('Failed to match. ' + valueToString($target))})($case)))
+}
+}
 }
 }
 }
