@@ -62,6 +62,32 @@ export const evaluatorFromText = (
                         ];
                     }
                 },
+                toFile(state) {
+                    let env = this.init();
+                    const errors: Errors = {};
+                    const names: string[] = [];
+                    findTops(state).forEach((top) => {
+                        const node = fromMCST(top.top, state.map);
+                        if (node.type === 'blank') return;
+                        const parsed = this.parse(node, errors);
+                        if (!parsed) return;
+                        if (parsed.type === 'sdef') {
+                            names.push(parsed[0]);
+                        }
+                        try {
+                            env = this.addStatement(parsed, env).env;
+                        } catch (err) {
+                            console.error(err);
+                        }
+                    });
+                    env.push(
+                        `return {type: 'fns', ${names
+                            .map((name) => sanitize(name))
+                            .sort()
+                            .join(', ')}}`,
+                    );
+                    return { js: env.join('\n'), errors };
+                },
                 addStatement(stmt, env) {
                     if (stmt.type === 'sexpr') {
                         let js;

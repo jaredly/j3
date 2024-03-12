@@ -101,7 +101,7 @@ const getResults = (
                 results.produce[stmt.loc] = res.display;
                 // console.log('good', res.display);
             } else {
-                console.log('not parsed');
+                // console.log('not parsed');
                 results.produce[stmt.loc] =
                     'not parsed ' + JSON.stringify(errs);
             }

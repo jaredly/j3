@@ -97,6 +97,10 @@
                                                                              (none)     (evar id l))
         (cst/list [(cst/identifier "@" _) body] l)                       (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                      (equotquot body l)
+        (cst/list [(cst/identifier "if" _) cond yes no] l)               (ematch
+                                                                             (parse-expr cond)
+                                                                                 [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
+                                                                                 l)
         (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)  (foldr
                                                                              (parse-expr body)
                                                                                  args
@@ -116,7 +120,7 @@
                                                                                      (let [(, pat expr) case]
                                                                                          (, (parse-pat pat) (parse-expr expr)))))
                                                                                  l)
-        (cst/list [(cst/identifier "let" _) (cst/array inits _) body] l) (foldl
+        (cst/list [(cst/identifier "let" _) (cst/array inits _) body] l) (foldr
                                                                              (parse-expr body)
                                                                                  (pairs inits)
                                                                                  (fn [body init]
@@ -144,6 +148,16 @@
                 (evar "b" 3403)
                 3401))
         (, (@@ "hi") (estr "hi" [] 1177))
+        (,
+        (@@
+            (if (= a b)
+                a
+                    b))
+            (ematch
+            (eapp (eapp (evar "=" 4622) (evar "a" 4623) 4621) (evar "b" 4624) 4621)
+                [(, (pprim (pbool true 4619) 4619) (evar "a" 4625))
+                (, (pany 4619) (evar "b" 4626))]
+                4619))
         (, (@@ "a${1}b") (estr "a" [(,, (eprim (pint 1 3610) 3610) "b" 3611)] 3608))
         (,
         (@@ [1 2])
@@ -164,6 +178,15 @@
                 [(, (pprim (pint 1 2998) 2998) (eprim (pint 2 2999) 2999))]
                 2995))
         (, (@@ abc) (evar "abc" 1200))
+        (,
+        (@@
+            (let [a 1 b 2]
+                a))
+            (elet
+            (pvar "a" 4456)
+                (eprim (pint 1 4457) 4457)
+                (elet (pvar "b" 4458) (eprim (pint 2 4459) 4459) (evar "a" 4460) 4453)
+                4453))
         (, (@@ (fn [a] 1)) (elambda "a" 1238 (eprim (pint 1 1239) 1239) 1235))
         (,
         (@@ (fn [a b] 2))
@@ -391,21 +414,29 @@
                              "${target}[${i}]"
                              (pat-loop target rest (+ i 1) inner))))
 
+(defn pat-loc [pat]
+    (match pat
+        (pany l)     l
+        (pprim _ l)  l
+        (pstr _ l)   l
+        (pvar _ l)   l
+        (pcon _ _ l) l))
+
 (defn compile-pat [pat target inner]
     (match pat
-        (pany)           inner
-        (pprim prim)     (match prim
-                             (pint int)   "if (${target} === ${int}) {\n${inner}\n}"
-                             (pbool bool) "if (${target} === ${bool}) {\n${inner}\n}")
-        (pstr str)       "if (${target} === \"${str}\"){\n${inner}\n}"
-        (pvar name)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-        (pcon name args) "if (${
-                             target
-                             }.type === \"${
-                             name
-                             }\") {\n${
-                             (pat-loop target args 0 inner)
-                             }\n}"))
+        (pany l)           inner
+        (pprim prim l)     (match prim
+                               (pint int)   "if (${target} === ${int}) {\n${inner}\n}"
+                               (pbool bool) "if (${target} === ${bool}) {\n${inner}\n}")
+        (pstr str l)       "if (${target} === \"${str}\"){\n${inner}\n}"
+        (pvar name l)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
+        (pcon name args l) "if (${
+                               target
+                               }.type === \"${
+                               name
+                               }\") {\n${
+                               (pat-loop target args 0 inner)
+                               }\n}"))
 
 (defn compile [expr]
     (match expr
@@ -435,7 +466,9 @@
                                      (compile init)
                                      };\n${
                                      (compile-pat pat "$target" "return ${(compile body)}")
-                                     }})()"
+                                     };\nthrow new Error('let pattern not matched ${
+                                     (pat-loc pat)
+                                     }. ' + valueToString($target));})()"
         (eapp fn arg l)          (match fn
                                      (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
                                      _              (++ [(compile fn) "(" (compile arg) ")"]))
@@ -459,6 +492,17 @@
             (match 2
                 1 2))
             ))
+
+(compile
+    (parse-expr
+        (@@
+            (let [a 1 b 2]
+                (+ a b)))))
+
+(parse-expr
+    (@@
+        (let [a 1 b 2]
+            a)))
 
 (defn run [v] (eval (compile (parse-expr v))))
 

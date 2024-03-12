@@ -21,12 +21,22 @@
         (pstr string int)
         (pprim prim int))
 
-(deftype type (tvar int int) (tapp type type int) (tcon string int))
+(deftype type
+    (tvar string int)
+        (tapp type type int)
+        (tcon string int))
 
 (deftype stmt
     (sdeftype string (array (, string (array type int))) int)
         (sdef string expr int)
         (sexpr expr int))
+
+(defn type-to-string [t]
+    (match t
+        (tvar s _)                          s
+        (tcon s _)                          s
+        (tapp (tapp (tcon "->" _) a _) b _) "(${(type-to-string a)}) -> ${(type-to-string b)}"
+        (tapp a b _)                        "(${(type-to-string a)} ${(type-to-string b)})"))
 
 (def prelude "# Prelude")
 
@@ -56,7 +66,7 @@
     (match type
         (tvar n _)   (set/add set/nil n)
         (tcon _ _)   set/nil
-        (tapp a b _) (set/merge (type-types a) (type-types b))))
+        (tapp a b _) (set/merge (type-free a) (type-free b))))
 
 (defn type-apply [subst type]
     (match type
@@ -88,7 +98,8 @@
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
-(defn new-type-var [prefix nidx] (, "${prefix}:${nidx}" (+ 1 nidx)))
+(defn new-type-var [prefix nidx]
+    (, (tvar "${prefix}:${nidx}" -1) (+ 1 nidx)))
 
 (defn free-for-vars [vars coll nidx]
     (match vars
@@ -101,8 +112,8 @@
 1219
 
 (defn instantiate [(scheme vars t) nidx]
-    (let [(, subst nidx) (free-for-vars vars (map/nil) nidx)]
-        (, (apply subst t) nidx)))
+    (let [(, subst nidx) (free-for-vars (set/to-list vars) (map/nil) nidx)]
+        (, (type-apply subst t) nidx)))
 
 (defn mgu [t1 t2 nidx]
     (match (, t1 t2)
@@ -114,7 +125,7 @@
         (, (tvar u _) t)            (, (var-bind u t) nidx)
         (, t (tvar u _))            (, (var-bind u t) nidx)
         (, (tcon a _) (tcon b _))   (if (= a b)
-                                        map/nil
+                                        (, map/nil nidx)
                                             (fatal "cant unify"))
         _                           (fatal "cant unify ${(valueToString t1)} ${(valueToString t2)}")))
 
@@ -144,11 +155,11 @@
         (elambda name nl body l)          (let [(, tv nidx)
                                               (new-type-var name nidx)
                                               env'
-                                              (map/rm env name)
+                                              (map/rm tenv name)
                                               env''
                                               (map/merge env' (map/set map/nil name (scheme set/nil tv)))
-                                              (, s1 t1 nidx)
-                                              (t-expr env'' body)]
+                                              (,, s1 t1 nidx)
+                                              (t-expr env'' body nidx)]
                                               (,, s1 (tfn (type-apply s1 tv) t1 l) nidx))
         (eapp target arg l)               (let [(, tv nidx)
                                               (new-type-var "a" nidx)
@@ -167,15 +178,36 @@
                                               env'
                                               (map/rm tenv name)
                                               t'
-                                              (generalize (tenv-apply s1 env) t1)
+                                              (generalize (tenv-apply s1 tenv) t1)
                                               env''
                                               (map/set env' name t')
                                               (,, s2 t2 nidx)
                                               (t-expr (tenv-apply s1 env'') body nidx)]
-                                              (,, (compose-subst s1 s2) t2 nidx))))
+                                              (,, (compose-subst s1 s2) t2 nidx))
+        _                                 (fatal "nopea")))
 
-(defn infer [tenv expr nidx]
-    (let [(,, s t nidx) (t-expr tenv expr nidx)]
-        (, (type-apply s t) nidx)))
+(defn infer [tenv expr]
+    (let [(,, s t nidx) (t-expr tenv expr 0)]
+        (type-to-string (type-apply s t))))
 
-(infer map/nil (@ (fn [a] a)) 0)
+1476
+
+(infer map/nil (@ ((fn [a] a) 23)))
+
+(infer
+    map/nil
+        (@
+        (let [a 1]
+            a)))
+
+(def tint (tcon "int" -1))
+
+(def basic
+    (map/set
+        map/nil
+            "+"
+            (scheme set/nil (tfn tint (tfn tint tint -1) -1))))
+
+(infer basic (@ (+ 2 3)))
+
+(, (infer basic) [(, (@ +) "(int) -> int") (, (@ 123) ) (,  )])

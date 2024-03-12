@@ -288,6 +288,35 @@ return equotquot(body)(l)
 if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "if"){
+if ($target[0][1].type === "cons") {
+{
+let cond = $target[0][1][0];
+if ($target[0][1][1].type === "cons") {
+{
+let yes = $target[0][1][1][0];
+if ($target[0][1][1][1].type === "cons") {
+{
+let no = $target[0][1][1][1][0];
+if ($target[0][1][1][1][1].type === "nil") {
+{
+let l = $target[1];
+return ematch(parse_expr(cond))(cons($co(pprim(pbool(true)(l))(l))(parse_expr(yes)))(cons($co(pany(l))(parse_expr(no)))(nil)))(l)
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
 if ($target[0][0][0] === "fn"){
 if ($target[0][1].type === "cons") {
 if ($target[0][1][0].type === "cst/array") {
@@ -364,7 +393,7 @@ let body = $target[0][1][1][0];
 if ($target[0][1][1][1].type === "nil") {
 {
 let l = $target[1];
-return foldl(parse_expr(body))(pairs(inits))((body) => (init) => (($target) => {if ($target.type === ",") {
+return foldr(parse_expr(body))(pairs(inits))((body) => (init) => (($target) => {if ($target.type === ",") {
 {
 let pat = $target[0];
 {
@@ -791,12 +820,49 @@ return compile_pat(arg)(`${target}[${i}]`)(pat_loop(target)(rest)($pl(i)(1))(inn
 }
 throw new Error('Failed to match. ' + valueToString($target))})(args);
 
+const pat_loc = (pat) => (($target) => {if ($target.type === "pany") {
+{
+let l = $target[0];
+return l
+}
+}
+if ($target.type === "pprim") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "pstr") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "pvar") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "pcon") {
+{
+let l = $target[2];
+return l
+}
+}
+throw new Error('Failed to match. ' + valueToString($target))})(pat);
+
 const compile_pat = (pat) => (target) => (inner) => (($target) => {if ($target.type === "pany") {
+{
+let l = $target[0];
 return inner
+}
 }
 if ($target.type === "pprim") {
 {
 let prim = $target[0];
+{
+let l = $target[1];
 return (($target) => {if ($target.type === "pint") {
 {
 let int = $target[0];
@@ -812,16 +878,23 @@ return `if (${target} === ${bool}) {\n${inner}\n}`
 throw new Error('Failed to match. ' + valueToString($target))})(prim)
 }
 }
+}
 if ($target.type === "pstr") {
 {
 let str = $target[0];
+{
+let l = $target[1];
 return `if (${target} === \"${str}\"){\n${inner}\n}`
+}
 }
 }
 if ($target.type === "pvar") {
 {
 let name = $target[0];
+{
+let l = $target[1];
 return `{\nlet ${sanitize(name)} = ${target};\n${inner}\n}`
+}
 }
 }
 if ($target.type === "pcon") {
@@ -829,7 +902,10 @@ if ($target.type === "pcon") {
 let name = $target[0];
 {
 let args = $target[1];
+{
+let l = $target[2];
 return `if (${target}.type === \"${name}\") {\n${pat_loop(target)(args)(0)(inner)}\n}`
+}
 }
 }
 }
@@ -938,7 +1014,7 @@ let init = $target[1];
 let body = $target[2];
 {
 let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)}})()`
+return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
 }
 }
 }
@@ -988,4 +1064,4 @@ throw new Error('Failed to match. ' + valueToString($target))})(expr);
 
 const run = (v) => eval(compile(parse_expr(v)));
 
-return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loop, prelude, quot, replaces, run, snd, tapps, unescape_string, util}
+return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loc, pat_loop, prelude, quot, replaces, run, snd, tapps, unescape_string, util}

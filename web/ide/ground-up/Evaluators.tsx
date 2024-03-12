@@ -141,6 +141,7 @@ function builtins() {
         '<=': (a: number) => (b: number) => a <= b,
         '>': (a: number) => (b: number) => a > b,
         '>=': (a: number) => (b: number) => a >= b,
+        '=': (a: number) => (b: number) => a === b,
 
         'int-to-string': (a: number) => a + '',
         string_to_int: (a: string) => {
