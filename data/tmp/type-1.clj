@@ -88,10 +88,13 @@
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
+(defn new-type-var [prefix nidx] (, "${prefix}:${nidx}" (+ 1 nidx)))
+
 (defn free-for-vars [vars coll nidx]
     (match vars
         []         (, coll nidx)
-        [v ..rest] (free-for-vars rest (map/set coll v nidx) (+ 1 nidx))))
+        [v ..rest] (let [(, vn nidx) (new-type-var v nidx)]
+                       (free-for-vars rest (map/set coll v vn) nidx))))
 
 (free-for-vars ["a" "b" "c"] (map/nil) 0)
 
@@ -108,11 +111,71 @@
                                         (, s2 nidx)
                                         (mgu (type-apply s1 r) (type-apply s1 r') nidx)]
                                         (, (compose-subst s1 s2) nidx))
-        (, (tvar u _) t)            (var-bind u t nidx)
-        (, t (tvar u _))            (var-bind u t nidx)
+        (, (tvar u _) t)            (, (var-bind u t) nidx)
+        (, t (tvar u _))            (, (var-bind u t) nidx)
         (, (tcon a _) (tcon b _))   (if (= a b)
                                         map/nil
                                             (fatal "cant unify"))
         _                           (fatal "cant unify ${(valueToString t1)} ${(valueToString t2)}")))
 
-(defn var-bind [u t nidx] )
+(defn var-bind [u t]
+    (match t
+        (tvar v _) (if (= u v)
+                       map/nil
+                           (map/set map/nil u t))
+        _          (if (set/has (type-free t) u)
+                       (fatal "occurs check")
+                           (map/set map/nil u t))))
+
+(defn t-prim [prim]
+    (match prim
+        (pint _ l)  (tcon "int" l)
+        (pbool _ l) (tcon "bool" l)))
+
+(defn tfn [a b l] (tapp (tapp (tcon "->" l) a l) b l))
+
+(defn t-expr [tenv expr nidx]
+    (match expr
+        (evar n l)                        (match (map/get tenv n)
+                                              (none)       (fatal "Unbound variable ${n}")
+                                              (some found) (let [(, t nidx) (instantiate found nidx)]
+                                                               (,, (map/nil) t nidx)))
+        (eprim prim)                      (,, map/nil (t-prim prim) nidx)
+        (elambda name nl body l)          (let [(, tv nidx)
+                                              (new-type-var name nidx)
+                                              env'
+                                              (map/rm env name)
+                                              env''
+                                              (map/merge env' (map/set map/nil name (scheme set/nil tv)))
+                                              (, s1 t1 nidx)
+                                              (t-expr env'' body)]
+                                              (,, s1 (tfn (type-apply s1 tv) t1 l) nidx))
+        (eapp target arg l)               (let [(, tv nidx)
+                                              (new-type-var "a" nidx)
+                                              (,, s1 t1 nidx)
+                                              (t-expr tenv target nidx)
+                                              (,, s2 t2 nidx)
+                                              (t-expr (tenv-apply s1 tenv) arg nidx)
+                                              (, s3 nidx)
+                                              (mgu (type-apply s2 t1) (tfn t2 tv l) nidx)]
+                                              (,,
+                                                  (compose-subst s3 (compose-subst s2 s1))
+                                                      (type-apply s3 tv)
+                                                      nidx))
+        (elet (pvar name nl) init body l) (let [(,, s1 t1 nidx)
+                                              (t-expr tenv init nidx)
+                                              env'
+                                              (map/rm tenv name)
+                                              t'
+                                              (generalize (tenv-apply s1 env) t1)
+                                              env''
+                                              (map/set env' name t')
+                                              (,, s2 t2 nidx)
+                                              (t-expr (tenv-apply s1 env'') body nidx)]
+                                              (,, (compose-subst s1 s2) t2 nidx))))
+
+(defn infer [tenv expr nidx]
+    (let [(,, s t nidx) (t-expr tenv expr nidx)]
+        (, (type-apply s t) nidx)))
+
+(infer map/nil (@ (fn [a] a)) 0)
