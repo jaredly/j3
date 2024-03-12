@@ -155,22 +155,22 @@ function builtins() {
             (b: b) => ({ type: ',', 0: a, 1: b }),
         '++': (items: arr<string>) => unwrapArray(items).join(''),
         'map/nil': [],
-        'map/set': (m: [any, any][], k: any, v: any) => [[k, v], ...m],
-        'map/get': (m: [any, any][], k: any) => {
+        'map/set': (m: [any, any][]) => (k: any) => (v: any) => [[k, v], ...m],
+        'map/get': (m: [any, any][]) => (k: any) => {
             const found = m.find((i) => i[0] === k);
             if (found != null) {
                 return { type: 'some', 0: found[1] };
             }
             return { type: 'none' };
         },
-        'map/merge': (a: [any, any][], b: [any, any][]) => [...a, ...b],
+        'map/merge': (a: [any, any][]) => (b: [any, any][]) => [...a, ...b],
 
         'set/nil': [],
-        'set/add': (s: any[], v: any) => [v, ...s],
-        'set/rm': (s: any[], v: any) => s.filter((i) => i !== v),
+        'set/add': (s: any[]) => (v: any) => [v, ...s],
+        'set/rm': (s: any[]) => (v: any) => s.filter((i) => i !== v),
         // NOTE this is only working for primitives
-        'set/diff': (a: any[], b: any[]) => a.filter((i) => !b.includes(i)),
-        'set/merge': (a: any[], b: any[]) => [...a, ...b],
+        'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),
+        'set/merge': (a: any[]) => (b: any[]) => [...a, ...b],
 
         // Meta stuff
         valueToString,

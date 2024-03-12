@@ -57,3 +57,7 @@
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
 (map/nil)
+
+(map/set (map/nil) 1 2)
+
+(map/get (map/set (map/nil) 1 20) 1)
