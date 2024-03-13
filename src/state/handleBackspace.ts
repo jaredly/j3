@@ -120,11 +120,21 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
+    const isEmpty =
+        (node.type === 'comment' && node.text.length === 0) ||
+        node.type === 'blank';
+
     const gpath = fullPath[fullPath.length - 3];
-    if (ppath.type === 'ns-top' && gpath.type === 'ns' && atStart) {
-        if (node.type !== 'blank') {
-            return goLeft(selection.start, map, nsMap, cards);
-        }
+    if (
+        ppath.type === 'ns-top' &&
+        gpath.type === 'ns' &&
+        atStart &&
+        node.type === 'blank'
+    ) {
+        // debugger;
+        // if (!isEmpty) {
+        //     return goLeft(selection.start, map, nsMap, cards);
+        // }
         console.log('back', node);
         const left = goLeft(selection.start, map, nsMap, cards);
         if (!left) return;
@@ -180,7 +190,30 @@ export function handleBackspace(
                 selection: [...fullPath.slice(0, -3), gpath, flast],
             };
         }
+        if (parent.values.length === 1) {
+            const up = replacePath(
+                fullPath.slice(0, -2),
+                parent.values[0],
+                map,
+                nsMap,
+            );
+            if (up?.update) {
+                return {
+                    type: 'update',
+                    map: up.update,
+                    nsMap: up.nsMap,
+                    selection: [...fullPath.slice(0, -2), flast],
+                };
+            }
+        }
     }
+    // if (gpath?.type === 'ns-top') {
+    //     return {
+    //         type: 'update',
+    //         map: { [gpath.idx]: changed, [ppath.idx]: null },
+    //         selection: [...fullPath.slice(0, -3), gpath, flast],
+    //     };
+    // }
 
     if (node.type === 'accessText' && (atStart || node.text === '')) {
         if (parent.type !== 'recordAccess') {
@@ -559,6 +592,37 @@ export function handleBackspace(
             return um;
         }
     }
+
+    if (
+        flast.type === 'subtext' &&
+        node.type === 'identifier' &&
+        parent &&
+        'values' in parent &&
+        ppath.type === 'child' &&
+        ppath.at > 0
+    ) {
+        const pidx = parent.values[ppath.at - 1];
+        const prev = map[pidx];
+        if (prev.type === 'identifier') {
+            const pt = splitGraphemes(prev.text);
+            const values = parent.values.slice();
+            values.splice(ppath.at, 1);
+            return {
+                type: 'update',
+                map: {
+                    [pidx]: { ...prev, text: prev.text + node.text },
+                    [ppath.idx]: { ...parent, values },
+                    [node.loc]: null,
+                },
+                selection: fullPath.slice(0, -2).concat([
+                    { type: 'child', at: ppath.at - 1, idx: ppath.idx },
+                    { type: 'subtext', at: pt.length, idx: pidx },
+                ]),
+            };
+        }
+    }
+
+    return goLeft(selection.start, map, nsMap, cards);
 }
 
 export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {

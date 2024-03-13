@@ -51,7 +51,7 @@ specifiers:
   sqlite-parser: ^1.0.1
   ts-jest: ^29.0.3
   ts-node: ^10.9.1
-  typescript: ^4.9.4
+  typescript: 5.4.2
   vite: ^4.0.4
   vitest: ^0.34.5
   wa-sqlite: github:rhashimoto/wa-sqlite#breaking-changes
@@ -101,9 +101,9 @@ dependencies:
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
   sqlite-parser: 1.0.1
-  ts-jest: 29.0.3_v4vr7fvsidjxqrxyk4kqf62kne
-  ts-node: 10.9.1_awa2wsr5thmg3i7jqycphctjfq
-  typescript: 4.9.4
+  ts-jest: 29.0.3_y6ka5drt6d3hth75mbd5qgtvcm
+  ts-node: 10.9.1_ihxbezjkygjz4i33cewbpe7dw4
+  typescript: 5.4.2
   vite: 4.0.4_@types+node@18.11.18
   wa-sqlite: github.com/rhashimoto/wa-sqlite/cf825aebbc15b2b45424f5a3e0efd7a59d8f9970
 
@@ -4215,7 +4215,7 @@ packages:
       pretty-format: 29.3.1
       slash: 3.0.0
       strip-json-comments: 3.1.1
-      ts-node: 10.9.1_awa2wsr5thmg3i7jqycphctjfq
+      ts-node: 10.9.1_ihxbezjkygjz4i33cewbpe7dw4
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -5411,7 +5411,7 @@ packages:
       tslib: 2.5.2
     dev: false
 
-  /ts-jest/29.0.3_v4vr7fvsidjxqrxyk4kqf62kne:
+  /ts-jest/29.0.3_y6ka5drt6d3hth75mbd5qgtvcm:
     resolution: {integrity: sha512-Ibygvmuyq1qp/z3yTh9QTwVVAbFdDy/+4BtIQR2sp6baF2SJU/8CKK/hhnGIDY2L90Az2jIqTwZPnN2p+BweiQ==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     hasBin: true
@@ -5442,11 +5442,11 @@ packages:
       lodash.memoize: 4.1.2
       make-error: 1.3.6
       semver: 7.3.8
-      typescript: 4.9.4
+      typescript: 5.4.2
       yargs-parser: 21.1.1
     dev: false
 
-  /ts-node/10.9.1_awa2wsr5thmg3i7jqycphctjfq:
+  /ts-node/10.9.1_ihxbezjkygjz4i33cewbpe7dw4:
     resolution: {integrity: sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==}
     hasBin: true
     peerDependencies:
@@ -5472,7 +5472,7 @@ packages:
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 4.9.4
+      typescript: 5.4.2
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     dev: false
@@ -5496,9 +5496,9 @@ packages:
     engines: {node: '>=10'}
     dev: false
 
-  /typescript/4.9.4:
-    resolution: {integrity: sha512-Uz+dTXYzxXXbsFpM86Wh3dKCxrQqUcVMxwU54orwlJjOpO3ao8L7j5lH+dWfTwgCwIuM9GQ2kvVotzYJMXTBZg==}
-    engines: {node: '>=4.2.0'}
+  /typescript/5.4.2:
+    resolution: {integrity: sha512-+2/g0Fds1ERlP6JsakQQDXjZdZMM+rqpamFZJEKh4kwTIn3iDkgKtby0CeNd5ATNZ4Ry1ax15TMx0W2V+miizQ==}
+    engines: {node: '>=14.17'}
     hasBin: true
     dev: false
 

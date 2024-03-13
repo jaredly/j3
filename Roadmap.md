@@ -27,7 +27,16 @@ how do I trigger a rich text node? maybe ''? idk sounds fine to me.
 - [x] I want let to be recursible
 - [ ] meta changes appear to not be triggering a save?
 - [ ] errors change not triggering a rerender
+- [x] BUG backspace on empty comment not working
+- [x] FEAT please let me split an identifier, I need it desperately.
+- [x] FEAT ok backspace to join identifier
 
+
+##
+
+DID I ... do it wrong?
+Is `ns` like ... the wrong ... thing
+oh wait no. It is important that it be different. I'm pretty sure.
 
 
 

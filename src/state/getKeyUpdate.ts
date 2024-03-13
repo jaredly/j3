@@ -446,6 +446,21 @@ export const getKeyUpdate = (
             }
         }
 
+        if (node.type === 'identifier' && flast.type === 'subtext') {
+            const eme = splitGraphemes(node.text);
+            if (flast.at < eme.length) {
+                const nw = newId(eme.slice(flast.at), nidx(), 0);
+                const up = newNodeAfter(fullPath, map, nsMap, nw, nidx);
+                if (up) {
+                    up.map[flast.idx] = {
+                        ...node,
+                        text: eme.slice(0, flast.at).join(''),
+                    };
+                    return up;
+                }
+            }
+        }
+
         return newNodeAfter(fullPath, map, nsMap, newBlank(nidx()), nidx);
     }
 

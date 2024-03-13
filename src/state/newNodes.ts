@@ -114,7 +114,7 @@ export const newAccessText = (text: string[], idx: number): NewThing => {
     };
 };
 
-export const newId = (key: string[], idx: number): NewThing => {
+export const newId = (key: string[], idx: number, at?: number): NewThing => {
     return {
         map: {
             [idx]: {
@@ -124,7 +124,7 @@ export const newId = (key: string[], idx: number): NewThing => {
             },
         },
         idx,
-        selection: [{ idx, type: 'subtext', at: key.length }],
+        selection: [{ idx, type: 'subtext', at: at ?? key.length }],
     };
 };
 
