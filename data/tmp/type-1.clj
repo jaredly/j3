@@ -60,6 +60,8 @@
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
+(defn map-without [map set] (foldr map (set/to-list set) map/rm))
+
 (deftype scheme (scheme (set string) type))
 
 <dom node>
@@ -91,8 +93,27 @@
 
 (defn tenv-apply [subst tenv] (map/map (scheme-apply subst) tenv))
 
-(defn compose-subst [s1 s2]
-    (map/merge (map/map (type-apply s1) s2) s1))
+<dom node>
+
+(defn compose-subst [earlier later]
+    (map/merge (map/map (type-apply earlier) later) earlier))
+
+(def test-subst
+    (map/from-list [(, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))]))
+
+(,
+    (fn [x] (map/to-list (compose-subst test-subst (map/from-list x))))
+        [(,
+        [(, "x" (tvar "a" -1))]
+            [(, "x" (tcon "a-mapped" -1))
+            (, "a" (tcon "a-mapped" -1))
+            (, "b" (tvar "c" -1))])
+        (,
+        [(, "c" (tcon "int" -1))]
+            [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
+        (,
+        [(, "a" (tvar "b" -1))]
+            [(, "a" (tvar "c" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])])
 
 (defn remove [tenv var] (map/rm tenv var))
 
