@@ -178,7 +178,7 @@ export const actionToUpdate = (
             return { type: 'ui', hover: action.path };
         case 'menu':
             return { type: 'menu', menu: { selection: action.selection } };
-        case 'key':
+        case 'key': {
             if (!state.at.length) {
                 return;
             }
@@ -195,18 +195,61 @@ export const actionToUpdate = (
                     menu: { dismissed: true, selection: 0 },
                 };
             }
-            return getKeyUpdate(
-                action.key,
-                state.map,
-                state.nsMap,
-                state.cards,
-                state.at[0],
-                // TODO do I want some hashnames?
-                {},
-                state.nidx,
-                action.mods,
-                state.regs,
-            );
+            let common;
+            for (let cursor of state.at) {
+                const result = getKeyUpdate(
+                    action.key,
+                    state.map,
+                    state.nsMap,
+                    state.cards,
+                    cursor,
+                    // TODO do I want some hashnames?
+                    {},
+                    state.nidx,
+                    action.mods,
+                    state.regs,
+                );
+                if (state.at.length === 1) return result;
+                if (!result) return;
+                if (!common) {
+                    common = result;
+                    if (common.type === 'update') {
+                        common.at = [
+                            {
+                                start: common.selection,
+                                end: common.selectionEnd,
+                            },
+                        ];
+                    }
+                } else {
+                    if (result.type === 'update' && common.type === 'update') {
+                        for (let key of Object.keys(result.map)) {
+                            if (common.map[key]) return; // overlap, sorry
+                            common.map[key] = result.map[key];
+                        }
+                        if (result.nsMap) {
+                            for (let key of Object.keys(result.map)) {
+                                if (common.nsMap?.[key]) return; // overlap, sorry
+                                if (!common.nsMap) common.nsMap = {};
+                                common.nsMap[key] = result.nsMap[key];
+                            }
+                        }
+                        common.at!.push({
+                            start: result.selection,
+                            end: result.selectionEnd,
+                        });
+                        continue;
+                    } else if (
+                        result.type === 'select' &&
+                        common.type === 'select'
+                    ) {
+                        // erghhh `select` needs to allow multiplesssss
+                    }
+                    return;
+                }
+            }
+            return common;
+        }
         case 'select':
             // Ignore attempts to select the root node
             if (action.at.some((at) => isRootPath(at.start))) {

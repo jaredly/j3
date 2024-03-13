@@ -34,6 +34,7 @@ how do I trigger a rich text node? maybe ''? idk sounds fine to me.
 - [x] cmd-D to multicursor, you love to see it
 - [ ] subtle highlight things that are the same?
 - [x] select & type, replaces the selected. FINALLY
+- [x] MULTI EDIT YALL
 
 letsss do a little multicursor?
 

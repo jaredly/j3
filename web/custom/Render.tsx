@@ -27,12 +27,27 @@ export function getRainbowHashColor(hash: string | number) {
     return color;
 }
 
+// https://github.com/darkskyapp/string-hash/blob/master/index.js
+function fasthash(str: string) {
+    var hash = 5381,
+        i = str.length;
+
+    while (i) {
+        hash = (hash * 33) ^ str.charCodeAt(--i);
+    }
+
+    /* JavaScript does bitwise operations (like XOR, above) on 32-bit signed
+     * integers. Since we want the results to be always positive, convert the
+     * signed int to an unsigned by doing an unsigned bitshift. */
+    return hash >>> 0;
+}
+
 const nodeColor = (type: MNode['type'], text?: string | null) => {
     return specials.includes(text!)
         ? '#814d4d'
-        : // : type === 'identifier' && text != null
-          // ? getRainbowHashColor(parseInt(text, 32))
-          colors[type];
+        : type === 'identifier' && text != null
+        ? getRainbowHashColor(fasthash(text))
+        : colors[type];
 };
 
 const columnRecords = true;

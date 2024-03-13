@@ -47,6 +47,7 @@ export type StateUpdate = {
     map: UpdateMap;
     selection: Path[];
     selectionEnd?: Path[];
+    at?: Cursor[]; // overrides selection & selectionEnd
     autoComplete?: boolean;
     nsMap?: { [key: string]: SandboxNamespace | null };
 };
@@ -168,7 +169,7 @@ export const applyUpdate = (
     if (update.type === 'update' && isRootPath(update.selection)) {
         return state;
     }
-    const at = state.at.slice();
+    let at = state.at.slice();
     if (update.type === 'select') {
         at[i] = {
             start: update.selection,
@@ -176,10 +177,14 @@ export const applyUpdate = (
         };
         return { ...state, at };
     } else if (update.type === 'update') {
-        at[i] = {
-            start: update.selection,
-            end: update.selectionEnd,
-        };
+        if (update.at) {
+            at = update.at;
+        } else {
+            at[i] = {
+                start: update.selection,
+                end: update.selectionEnd,
+            };
+        }
         return {
             ...state,
             at,
