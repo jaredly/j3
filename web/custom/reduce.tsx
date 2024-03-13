@@ -235,6 +235,7 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
             smap[+k] = v;
         }
     });
+
     const nsMap = { ...state.nsMap };
     Object.entries(nitem.nsMap).forEach(([k, v]) => {
         if (v == null) {
@@ -244,9 +245,19 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
         }
     });
 
+    const meta = { ...state.meta };
+    Object.entries(nitem.meta).forEach(([k, v]) => {
+        if (v == null) {
+            delete meta[+k];
+        } else {
+            meta[+k] = v;
+        }
+    });
+
     return {
         ...state,
         nsMap,
+        meta,
         map: smap,
         at: nitem.at,
         history: state.history.concat([nitem]),

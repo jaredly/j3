@@ -3,7 +3,7 @@
 
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
-import { NUIState } from '../../custom/UIState';
+import { MetaDataMap, NUIState } from '../../custom/UIState';
 import {
     addTypeConstructors,
     extractBuiltins,
@@ -32,8 +32,9 @@ export type FullEvalator<Env, Stmt, Expr> = {
     addStatement(
         stmt: Stmt,
         env: Env,
+        meta: MetaDataMap,
     ): { env: Env; display: JSX.Element | string };
-    evaluate(expr: Expr, env: Env): any;
+    evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState): { js: string; errors: Errors };
 };
 
@@ -201,6 +202,9 @@ function builtins() {
             return new Function(k, 'return ' + v)(obj);
         },
         sanitize,
+        $trace(loc: number, info: any, value: any) {
+            return value;
+        },
         // Just handy
         'replace-all': (a: string) => (b: string) => (c: string) =>
             a.replaceAll(b, c),

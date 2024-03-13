@@ -1,6 +1,14 @@
 
 
 - [x] I want let to be recursible
+- [ ] meta changes appear to not be triggering a save?
+
+So now that i'm tracking the info, and even compiling it in ...
+I want to ... be able to mark ... a certain NSTop as the "trace focus". Right?
+and so, when executing this one, we'll turn traces on, and collect the stuff, and even like
+
+anddd probably allow you to hover a tracer, and have it render out everything it saw.
+Yes that sounds great.
 
 # TRACE
 I'm done not having insight

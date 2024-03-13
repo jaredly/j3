@@ -94,7 +94,11 @@ const getResults = (
             const ast = evaluator.parse(stmt, errs);
             Object.assign(results.errors, errs);
             if (ast) {
-                const res = evaluator.addStatement(ast, results.env!);
+                const res = evaluator.addStatement(
+                    ast,
+                    results.env!,
+                    state.meta,
+                );
                 results.env = res.env;
                 results.produce[stmt.loc] = res.display;
                 // console.log('good', res.display);
@@ -227,7 +231,10 @@ export const useStore = (
                 state = nextState;
                 results = nextResults;
 
-                if (prevState.map !== state.map) {
+                if (
+                    prevState.map !== state.map ||
+                    prevState.meta !== state.meta
+                ) {
                     // nextResults = getResults(nextState, evaluator);
                     updateResults();
                 }
@@ -287,6 +294,7 @@ export const useStore = (
                     let changed =
                         selChange[idx] ||
                         state.map[idx] !== prevState.map[idx] ||
+                        state.meta[idx] !== prevState.meta[idx] ||
                         !equal(results.errors[idx], prevResults.errors[idx]) ||
                         !equal(results.display[idx], prevResults.display[idx]);
                     if (changed) {

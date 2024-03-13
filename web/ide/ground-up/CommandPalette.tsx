@@ -28,7 +28,10 @@ export const CommandPalette = ({
         }
     }, [open]);
 
-    const commands = React.useMemo(() => getCommands(state, dispatch), [open]);
+    const commands = React.useMemo(
+        () => getCommands(state, dispatch),
+        [open, state],
+    );
 
     if (!open) return null;
 
@@ -41,6 +44,7 @@ export const CommandPalette = ({
                 display: 'flex',
                 flexDirection: 'column',
             }}
+            onClick={() => setOpen(false)}
         >
             <div
                 style={{
@@ -53,11 +57,12 @@ export const CommandPalette = ({
                     flexDirection: 'column',
                     flex: 1,
                 }}
+                onClick={(evt) => evt.stopPropagation()}
             >
                 <input
                     ref={ref}
                     placeholder="Search for commands"
-                    onBlur={() => setOpen(false)}
+                    // onBlur={() => setOpen(false)}
                     onKeyDown={(evt) => {
                         if (evt.key === 'Escape') {
                             setOpen(false);
@@ -75,12 +80,15 @@ export const CommandPalette = ({
                 {commands.map((cmd, i) => (
                     <button
                         key={i}
-                        onClick={() => cmd.action()}
+                        // onClick={() => cmd.action()}
                         style={{
                             padding: '24px 48px',
                             backgroundColor: 'none',
                         }}
-                        onMouseDown={(evt) => evt.preventDefault()}
+                        onMouseDown={(evt) => {
+                            evt.preventDefault();
+                            cmd.action();
+                        }}
                     >
                         {cmd.title}
                     </button>
@@ -96,7 +104,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
     const sel = state.at[0]?.start;
     if (sel) {
         const idx = sel[sel.length - 1].idx;
-        if (state.meta?.[idx]) {
+        if (state.meta?.[idx]?.trace) {
             commands.push({
                 title: 'Remove Trace',
                 action() {
@@ -110,6 +118,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
             commands.push({
                 title: 'Trace',
                 action() {
+                    console.log('diusplating');
                     dispatch({
                         type: 'meta',
                         meta: { [idx]: { trace: {} } },

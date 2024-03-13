@@ -75,7 +75,7 @@ export const evaluatorFromText = (
                             names.push(parsed[0]);
                         }
                         try {
-                            env = this.addStatement(parsed, env).env;
+                            env = this.addStatement(parsed, env, {}).env;
                         } catch (err) {
                             console.error(err);
                         }
@@ -88,11 +88,12 @@ export const evaluatorFromText = (
                     );
                     return { js: env.join('\n'), errors };
                 },
-                addStatement(stmt, env) {
+                addStatement(stmt, env, meta) {
+                    const mm = Object.entries(meta).map(([k, v]) => [+k, v]);
                     if (stmt.type === 'sexpr') {
                         let js;
                         try {
-                            js = data['compile'](stmt[0])([]);
+                            js = data['compile'](stmt[0])(mm);
                         } catch (err) {
                             return {
                                 env,
@@ -131,7 +132,7 @@ export const evaluatorFromText = (
                     }
                     let js;
                     try {
-                        js = data['compile_stmt'](stmt)([]);
+                        js = data['compile_stmt'](stmt)(mm);
                     } catch (err) {
                         return {
                             env,
@@ -144,7 +145,7 @@ export const evaluatorFromText = (
                     try {
                         const fn = new Function(envArgs, '{' + js + '}');
                         env.push(js);
-                        return { env, display: `compiled` };
+                        return { env, display: `compiled\n${js}` };
                     } catch (err) {
                         return {
                             env,
@@ -175,10 +176,11 @@ export const evaluatorFromText = (
             console.log('NOPE', Object.keys(data));
         }
     }
+
     if (data.type === 'bootstrap') {
         let benv = bootstrap.init();
         data.stmts.forEach((stmt: any) => {
-            benv = bootstrap.addStatement(stmt, benv).env;
+            benv = bootstrap.addStatement(stmt, benv, {}).env;
         });
         const san = sanitizedEnv(benv);
         const envArgs = '{' + Object.keys(san).join(', ') + '}';
@@ -246,7 +248,7 @@ export const evaluatorFromText = (
                         names.push(parsed[0]);
                     }
                     try {
-                        env = this.addStatement(parsed, env).env;
+                        env = this.addStatement(parsed, env, {}).env;
                     } catch (err) {
                         console.error(err);
                     }

@@ -117,6 +117,27 @@ export const Render = React.memo(
             return <span>DEEP</span>;
         }
         // console.log('render', props.idx);
+        const inner = <RenderNNode {...props} nnode={nnode} values={values} />;
+
+        if (values.meta?.trace) {
+            return (
+                <span>
+                    <span
+                        style={{
+                            position: 'absolute',
+                            borderRadius: 5,
+                            width: 5,
+                            height: 5,
+                            minHeight: 0,
+                            marginLeft: -5,
+                            backgroundColor: 'green',
+                            display: 'inline-block',
+                        }}
+                    ></span>
+                    {inner}
+                </span>
+            );
+        }
 
         return props.debug ? (
             <span style={{ display: 'flex' }}>
@@ -130,7 +151,7 @@ export const Render = React.memo(
                 >
                     {idx}
                 </span>
-                <RenderNNode {...props} nnode={nnode} values={values} />
+                {inner}
                 {node.type === 'hash' ? (
                     <span
                         style={{
@@ -144,7 +165,7 @@ export const Render = React.memo(
                 ) : null}
             </span>
         ) : (
-            <RenderNNode {...props} nnode={nnode} values={values} />
+            inner
         );
     },
     (prev, next) => equal(prev, next),

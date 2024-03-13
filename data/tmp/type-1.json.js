@@ -1,153 +1,4 @@
-const ast = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const ast = "# AST";
 
 const nil = ({type: "nil"});
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
@@ -172,3406 +23,398 @@ const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const sdeftype = (v0) => (v1) => (v2) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2});
 const sdef = (v0) => (v1) => (v2) => ({type: "sdef", 0: v0, 1: v1, 2: v2});
 const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1});
-const type_to_string = (trace) => (($target) => {if ($target.type === "estr") {
+const type_to_string = (t) => (($target) => {
+if ($target.type === "tvar") {
 {
-let first = $target[0];
+let s = $target[0];
+return s
+}
+}
+if ($target.type === "tcon") {
 {
-let tpls = $target[1];
+let s = $target[0];
+return s
+}
+}
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->"){
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+let a = $target[0][1];
 {
-let expr = $target[0];
+let b = $target[1];
+return `(${type_to_string(a)}) -> ${type_to_string(b)}`
+}
+}
+}
+}
+}
+}
+if ($target.type === "tapp") {
 {
-let suffix = $target[1];
+let a = $target[0];
 {
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let b = $target[1];
+return `(${type_to_string(a)} ${type_to_string(b)})`
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2105');})(t);
 
-const prelude = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const prelude = "# Prelude";
 
-const map = (trace) => (($target) => {if ($target.type === "estr") {
+const map = (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return nil
+}
+if ($target.type === "cons") {
 {
-let first = $target[0];
+let one = $target[0];
 {
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let rest = $target[1];
+return cons(f(one))(map(rest)(f))
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1012');})(values);
 
-const mapi = (trace) => (($target) => {if ($target.type === "estr") {
+const mapi = (i) => (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return nil
+}
+if ($target.type === "cons") {
 {
-let first = $target[0];
+let one = $target[0];
 {
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let rest = $target[1];
+return cons(f(i)(one))(mapi($pl(1)(i))(rest)(f))
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1042');})(values);
 
-const foldl = (trace) => (($target) => {if ($target.type === "estr") {
+const foldl = (init) => (items) => (f) => (($target) => {
+if ($target.type === "nil") {
+return init
+}
+if ($target.type === "cons") {
 {
-let first = $target[0];
+let one = $target[0];
 {
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let rest = $target[1];
+return foldl(f(init)(one))(rest)(f)
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1077');})(items);
 
-const foldr = (trace) => (($target) => {if ($target.type === "estr") {
+const foldr = (init) => (items) => (f) => (($target) => {
+if ($target.type === "nil") {
+return init
+}
+if ($target.type === "cons") {
 {
-let first = $target[0];
+let one = $target[0];
 {
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let rest = $target[1];
+return f(foldr(init)(rest)(f))(one)
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1114');})(items);
 
 const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1});
-const type_free = (trace) => (($target) => {if ($target.type === "estr") {
+const type_free = (type) => (($target) => {
+if ($target.type === "tvar") {
 {
-let first = $target[0];
+let n = $target[0];
+return set$sladd(set$slnil)(n)
+}
+}
+if ($target.type === "tcon") {
+return set$slnil
+}
+if ($target.type === "tapp") {
 {
-let tpls = $target[1];
+let a = $target[0];
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let b = $target[1];
+return set$slmerge(type_free(a))(type_free(b))
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 761');})(type);
 
-const type_apply = (trace) => (($target) => {if ($target.type === "estr") {
+const type_apply = (subst) => (type) => (($target) => {
+if ($target.type === "tvar") {
 {
-let first = $target[0];
+let n = $target[0];
+return (($target) => {
+if ($target.type === "none") {
+return type
+}
+if ($target.type === "some") {
 {
-let tpls = $target[1];
+let t = $target[0];
+return t
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 854');})(map$slget(subst)(n))
+}
+}
+if ($target.type === "tapp") {
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+let a = $target[0];
 {
-let expr = $target[0];
+let b = $target[1];
 {
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let c = $target[2];
+return tapp(type_apply(subst)(a))(type_apply(subst)(b))(c)
 }
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+return type
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 847');})(type);
 
-const scheme_free = (trace) => (($target) => {if ($target.type === "estr") {
+const scheme_free = ($fn_arg) => (($target) => {
+if ($target.type === "scheme") {
 {
-let first = $target[0];
+let vbls = $target[0];
 {
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let type = $target[1];
+return set$slrm(type_free(type))(vbls)
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 888');})($fn_arg);
 
-const scheme_apply = (trace) => (($target) => {if ($target.type === "estr") {
+const scheme_apply = (subst) => ($fn_arg) => (($target) => {
+if ($target.type === "scheme") {
 {
-let first = $target[0];
+let vbls = $target[0];
 {
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let type = $target[1];
+return scheme(vbls)(type_apply(map_without(subst)(vbls))(type))
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 905');})($fn_arg);
 
-const compose_subst = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const compose_subst = (s1) => (s2) => map$slmerge(map$slmap(type_apply(s1))(s2))(s1);
 
-const remove = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const remove = (tenv) => ($var) => map$slrm(tenv)($var);
 
-const tenv_free = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const tenv_free = (tenv) => foldr(set$slnil)(map(map$slvalues(tenv))(type_free))(set$slmerge);
 
-const tenv_apply = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const tenv_apply = (subst) => (tenv) => map$slmap(type_apply(subst))(tenv);
 
-const generalize = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const generalize = (tenv) => (t) => scheme(set$sldiff(type_free(t))(tenv_free(tenv)))(t);
 
-const new_type_var = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const new_type_var = (prefix) => (nidx) => $co(tvar(`${prefix}:${nidx}`)(-1))($pl(1)(nidx));
 
-const free_for_vars = (trace) => (($target) => {if ($target.type === "estr") {
+const free_for_vars = (vars) => (coll) => (nidx) => (($target) => {
+if ($target.type === "nil") {
+return $co(coll)(nidx)
+}
+if ($target.type === "cons") {
 {
-let first = $target[0];
+let v = $target[0];
 {
-let tpls = $target[1];
+let rest = $target[1];
+return (() => {const $target = new_type_var(v)(nidx);
+if ($target.type === ",") {
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+let vn = $target[0];
 {
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let nidx = $target[1];
+return free_for_vars(rest)(map$slset(coll)(v)(vn))(nidx)
+}
+}
+};
+throw new Error('let pattern not matched 1751. ' + valueToString($target));})()
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1219');})(vars);
 
-const instantiate = (trace) => (($target) => {if ($target.type === "estr") {
+const instantiate = ($fn_arg) => (($target) => {
+if ($target.type === "scheme") {
 {
-let first = $target[0];
+let vars = $target[0];
 {
-let tpls = $target[1];
+let t = $target[1];
+return (nidx) => (() => {const $target = free_for_vars(set$slto_list(vars))(map$slnil)(nidx);
+if ($target.type === ",") {
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+let subst = $target[0];
 {
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let nidx = $target[1];
+return $co(type_apply(subst)(t))(nidx)
+}
+}
+};
+throw new Error('let pattern not matched 1285. ' + valueToString($target));})()
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1136');})($fn_arg);
 
-const mgu = (trace) => (($target) => {if ($target.type === "estr") {
+const mgu = (t1) => (t2) => (nidx) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "tapp") {
 {
-let first = $target[0];
+let l = $target[0][0];
 {
-let tpls = $target[1];
+let r = $target[0][1];
+if ($target[1].type === "tapp") {
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+let l$qu = $target[1][0];
 {
-let expr = $target[0];
+let r$qu = $target[1][1];
+return (() => {const $target = mgu(l)(l$qu)(nidx);
+if ($target.type === ",") {
 {
-let suffix = $target[1];
+let s1 = $target[0];
 {
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
+let nidx = $target[1];
+return (() => {const $target = mgu(type_apply(s1)(r))(type_apply(s1)(r$qu))(nidx);
+if ($target.type === ",") {
 {
-let prim = $target[0];
+let s2 = $target[0];
 {
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
+let nidx = $target[1];
+return $co(compose_subst(s1)(s2))(nidx)
+}
+}
+};
+throw new Error('let pattern not matched 1485. ' + valueToString($target));})()
+}
+}
+};
+throw new Error('let pattern not matched 1476. ' + valueToString($target));})()
+}
+}
+}
+}
+}
+}
+}
+if ($target.type === ",") {
+if ($target[0].type === "tvar") {
 {
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
+let u = $target[0][0];
 {
-let int = $target[0];
-return int_to_string(int)
+let t = $target[1];
+return $co(var_bind(u)(t))(nidx)
 }
 }
-if ($target.type === "pbool") {
+}
+}
+if ($target.type === ",") {
 {
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
+let t = $target[0];
+if ($target[1].type === "tvar") {
 {
-let name = $target[0];
+let u = $target[1][0];
+return $co(var_bind(u)(t))(nidx)
+}
+}
+}
+}
+if ($target.type === ",") {
+if ($target[0].type === "tcon") {
 {
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
+let a = $target[0][0];
+if ($target[1].type === "tcon") {
 {
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
+let b = $target[1][0];
+return (($target) => {
+if ($target === true) {
+return $co(map$slnil)(nidx)
 }
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
+return fatal("cant unify")
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1541');})($eq(a)(b))
 }
 }
 }
 }
 }
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+return fatal(`cant unify ${valueToString(t1)} ${valueToString(t2)}`)
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1317');})($co(t1)(t2));
 
-const var_bind = (trace) => (($target) => {if ($target.type === "estr") {
+const var_bind = (u) => (t) => (($target) => {
+if ($target.type === "tvar") {
 {
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
+let v = $target[0];
+return (($target) => {
+if ($target === true) {
+return map$slnil
 }
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+return map$slset(map$slnil)(u)(t)
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1582');})($eq(u)(v))
 }
 }
+return (($target) => {
+if ($target === true) {
+return fatal("occurs check")
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+return map$slset(map$slnil)(u)(t)
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1597');})(set$slhas(type_free(t))(u))
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1575');})(t);
 
-const t_prim = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
+const t_prim = (prim) => (($target) => {
 if ($target.type === "pint") {
 {
-let int = $target[0];
-return int_to_string(int)
+let l = $target[1];
+return tcon("int")(l)
 }
 }
 if ($target.type === "pbool") {
 {
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
 let l = $target[1];
-return sanitize(name)
+return tcon("bool")(l)
 }
 }
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1633');})(prim);
 
-const tfn = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const tfn = (a) => (b) => (l) => tapp(tapp(tcon("->")(l))(a)(l))(b)(l);
 
-const t_expr = (trace) => (($target) => {if ($target.type === "estr") {
+const t_expr = (tenv) => (expr) => (nidx) => (($target) => {
+if ($target.type === "evar") {
 {
-let first = $target[0];
+let n = $target[0];
 {
-let tpls = $target[1];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "none") {
+return fatal(`Unbound variable ${n}`)
+}
+if ($target.type === "some") {
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+let found = $target[0];
+return (() => {const $target = instantiate(found)(nidx);
+if ($target.type === ",") {
 {
-let expr = $target[0];
+let t = $target[0];
 {
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let nidx = $target[1];
+return $co$co(map$slnil)(t)(nidx)
 }
 }
+};
+throw new Error('let pattern not matched 1693. ' + valueToString($target));})()
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1671');})(map$slget(tenv)(n))
 }
 }
 }
 if ($target.type === "eprim") {
 {
 let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
+return $co$co(map$slnil)(t_prim(prim))(nidx)
 }
 }
 if ($target.type === "elambda") {
@@ -3583,22 +426,40 @@ let nl = $target[1];
 let body = $target[2];
 {
 let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
+return (() => {const $target = new_type_var(name)(nidx);
+if ($target.type === ",") {
 {
-let pat = $target[0];
+let tv = $target[0];
 {
-let init = $target[1];
+let nidx = $target[1];
+return (() => {const $target = map$slrm(tenv)(name);
 {
-let body = $target[2];
+let env$qu = $target;
+return (() => {const $target = map$slmerge(env$qu)(map$slset(map$slnil)(name)(scheme(set$slnil)(tv)));
 {
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
+let env$qu$qu = $target;
+return (() => {const $target = t_expr(env$qu$qu)(body)(nidx);
+if ($target.type === ",,") {
+{
+let s1 = $target[0];
+{
+let t1 = $target[1];
+{
+let nidx = $target[2];
+return $co$co(s1)(tfn(type_apply(s1)(tv))(t1)(l))(nidx)
+}
+}
+}
+};
+throw new Error('let pattern not matched 1784. ' + valueToString($target));})()
+};
+throw new Error('let pattern not matched 1772. ' + valueToString($target));})()
+};
+throw new Error('let pattern not matched 1767. ' + valueToString($target));})()
+}
+}
+};
+throw new Error('let pattern not matched 1726. ' + valueToString($target));})()
 }
 }
 }
@@ -3606,19 +467,119 @@ return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target
 }
 if ($target.type === "eapp") {
 {
-let fn = $target[0];
+let target = $target[0];
 {
 let arg = $target[1];
 {
 let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
+return (() => {const $target = new_type_var("a")(nidx);
+if ($target.type === ",") {
 {
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
+let tv = $target[0];
+{
+let nidx = $target[1];
+return (() => {const $target = t_expr(tenv)(target)(nidx);
+if ($target.type === ",,") {
+{
+let s1 = $target[0];
+{
+let t1 = $target[1];
+{
+let nidx = $target[2];
+return (() => {const $target = t_expr(tenv_apply(s1)(tenv))(arg)(nidx);
+if ($target.type === ",,") {
+{
+let s2 = $target[0];
+{
+let t2 = $target[1];
+{
+let nidx = $target[2];
+return (() => {const $target = mgu(type_apply(s2)(t1))(tfn(t2)(tv)(l))(nidx);
+if ($target.type === ",") {
+{
+let s3 = $target[0];
+{
+let nidx = $target[1];
+return $co$co(compose_subst(s3)(compose_subst(s2)(s1)))(type_apply(s3)(tv))(nidx)
 }
 }
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
+};
+throw new Error('let pattern not matched 1851. ' + valueToString($target));})()
+}
+}
+}
+};
+throw new Error('let pattern not matched 1837. ' + valueToString($target));})()
+}
+}
+}
+};
+throw new Error('let pattern not matched 1828. ' + valueToString($target));})()
+}
+}
+};
+throw new Error('let pattern not matched 1819. ' + valueToString($target));})()
+}
+}
+}
+}
+if ($target.type === "elet") {
+if ($target[0].type === "pvar") {
+{
+let name = $target[0][0];
+{
+let nl = $target[0][1];
+{
+let init = $target[1];
+{
+let body = $target[2];
+{
+let l = $target[3];
+return (() => {const $target = t_expr(tenv)(init)(nidx);
+if ($target.type === ",,") {
+{
+let s1 = $target[0];
+{
+let t1 = $target[1];
+{
+let nidx = $target[2];
+return (() => {const $target = map$slrm(tenv)(name);
+{
+let env$qu = $target;
+return (() => {const $target = generalize(tenv_apply(s1)(tenv))(t1);
+{
+let t$qu = $target;
+return (() => {const $target = map$slset(env$qu)(name)(t$qu);
+{
+let env$qu$qu = $target;
+return (() => {const $target = t_expr(tenv_apply(s1)(env$qu$qu))(body)(nidx);
+if ($target.type === ",,") {
+{
+let s2 = $target[0];
+{
+let t2 = $target[1];
+{
+let nidx = $target[2];
+return $co$co(compose_subst(s1)(s2))(t2)(nidx)
+}
+}
+}
+};
+throw new Error('let pattern not matched 1953. ' + valueToString($target));})()
+};
+throw new Error('let pattern not matched 1947. ' + valueToString($target));})()
+};
+throw new Error('let pattern not matched 1938. ' + valueToString($target));})()
+};
+throw new Error('let pattern not matched 1933. ' + valueToString($target));})()
+}
+}
+}
+};
+throw new Error('let pattern not matched 1923. ' + valueToString($target));})()
+}
+}
+}
 }
 }
 }
@@ -3630,473 +591,49 @@ let target = $target[0];
 let cases = $target[1];
 {
 let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
+return (() => {const $target = t_expr(tenv)(target)(nidx);
+if ($target.type === ",,") {
 {
-let pat = $target[0];
+let s1 = $target[0];
 {
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
+let t1 = $target[1];
+{
+let nidx = $target[2];
+return (() => {const $target = generalize(tenv_apply(s1)(tenv))(t1);
+{
+let t$qu = $target;
+return fatal("nope")
+};
+throw new Error('let pattern not matched 2269. ' + valueToString($target));})()
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
+};
+throw new Error('let pattern not matched 2259. ' + valueToString($target));})()
 }
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+return fatal(`cannot infer type for ${valueToString(expr)}`)
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1664');})(expr);
 
-const infer = (trace) => (($target) => {if ($target.type === "estr") {
+const infer = (tenv) => (expr) => (() => {const $target = t_expr(tenv)(expr)(0);
+if ($target.type === ",,") {
 {
-let first = $target[0];
+let s = $target[0];
 {
-let tpls = $target[1];
+let t = $target[1];
 {
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
+let nidx = $target[2];
+return type_to_string(type_apply(s)(t))
 }
 }
 }
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+};
+throw new Error('let pattern not matched 1987. ' + valueToString($target));})();
 
-const tint = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const tint = tcon("int")(-1);
 
-const basic = (trace) => (($target) => {if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
-}
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return `\${${compile(expr)}}${escape_string(unescape_string(suffix))}`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(item)))}\``
-throw new Error('Failed to match. ' + valueToString($target))})(tpls)
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return int_to_string(int)
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return (($target) => {if ($target === true) {
-return "true"
-}
-if ($target === false) {
-return "false"
-}
-throw new Error('Failed to match. ' + valueToString($target))})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(prim)
-}
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return sanitize(name)
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return jsonify(inner)
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(compile(body))(nil)))))
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return `(() => {const \$target = ${compile(init)};\n${compile_pat(pat)("\$target")(`return ${compile(body)}`)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return (($target) => {if ($target.type === "elambda") {
-{
-let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn))(cons(")(")(cons(compile(arg))(cons(")")(nil))))))
-}
-}
-return $pl$pl(cons(compile(fn))(cons("(")(cons(compile(arg))(cons(")")(nil)))))
-throw new Error('Failed to match. ' + valueToString($target))})(fn)
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return compile_pat(pat)("\$target")(`return ${compile(body)}`)
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)})`
-}
-}
-}
-}
-throw new Error('Failed to match. ' + valueToString($target))})(expr);
+const basic = map$slset(map$slnil)("+")(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)));
 
 return {type: 'fns', ast, basic, compose_subst, foldl, foldr, free_for_vars, generalize, infer, instantiate, map, mapi, mgu, new_type_var, prelude, remove, scheme_apply, scheme_free, t_expr, t_prim, tenv_apply, tenv_free, tfn, tint, type_apply, type_free, type_to_string, var_bind}

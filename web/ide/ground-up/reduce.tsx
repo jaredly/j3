@@ -159,6 +159,7 @@ export const reduceUpdate = (
                     meta[+key] = value;
                 }
             });
+            console.log('met aupdate', meta);
             return { ...state, meta };
         }
         default:
@@ -220,6 +221,8 @@ export const actionToUpdate = (
             // console.log(res);
             return res;
         }
+        case 'meta':
+            return action;
         case 'ns': {
             return {
                 type: 'update',
@@ -558,13 +561,12 @@ const initialState = (): NUIState => {
     };
 };
 export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
-export const saveState = (id: string, state: NUIState) => {
-    // console.log('doing a save');
-    return fetch(urlForId(id), {
+export const saveState = async (id: string, state: NUIState) => {
+    await fetch(urlForId(id), {
         method: 'POST',
         body: JSON.stringify(state),
         headers: { 'Content-type': 'application/json' },
-    }).then(() => {});
+    });
 };
 export function loadState(state: NUIState = initialState()) {
     let idx =
@@ -641,6 +643,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     }
     const update = actionToUpdate(state, action);
     if (!update) {
+        console.log(`Unable to turn action into update`, action);
         return state;
     }
     const next = reduceUpdate(state, update);

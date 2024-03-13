@@ -406,13 +406,14 @@
         (eprim prim) (match prim
                          (pstr string) (++ ["{type: "]))))
 
-(defn pat-loop [target args i inner]
+(defn pat-loop [target args i inner trace]
     (match args
         []           inner
         [arg ..rest] (compile-pat
                          arg
                              "${target}[${i}]"
-                             (pat-loop target rest (+ i 1) inner))))
+                             (pat-loop target rest (+ i 1) inner trace)
+                             trace)))
 
 (defn pat-loc [pat]
     (match pat
@@ -422,21 +423,25 @@
         (pvar _ l)   l
         (pcon _ _ l) l))
 
-(defn compile-pat [pat target inner]
-    (match pat
-        (pany l)           inner
-        (pprim prim l)     (match prim
-                               (pint int)   "if (${target} === ${int}) {\n${inner}\n}"
-                               (pbool bool) "if (${target} === ${bool}) {\n${inner}\n}")
-        (pstr str l)       "if (${target} === \"${str}\"){\n${inner}\n}"
-        (pvar name l)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-        (pcon name args l) "if (${
-                               target
-                               }.type === \"${
-                               name
-                               }\") {\n${
-                               (pat-loop target args 0 inner)
-                               }\n}"))
+(defn compile-pat [pat target inner trace]
+    (trace-and-block
+        (pat-loc pat)
+            trace
+            target
+            (match pat
+            (pany l)           inner
+            (pprim prim l)     (match prim
+                                   (pint int)   "if (${target} === ${int}) {\n${inner}\n}"
+                                   (pbool bool) "if (${target} === ${bool}) {\n${inner}\n}")
+            (pstr str l)       "if (${target} === \"${str}\"){\n${inner}\n}"
+            (pvar name l)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
+            (pcon name args l) "if (${
+                                   target
+                                   }.type === \"${
+                                   name
+                                   }\") {\n${
+                                   (pat-loop target args 0 inner trace)
+                                   }\n}")))
 
 (defn expr-loc [expr]
     (match expr
@@ -452,9 +457,17 @@
 (defn trace-wrap [loc trace js]
     (match (map/get trace loc)
         (none)      js
-        (some info) "$trace(${js})"))
+        (some info) "$trace(${loc}, ${(jsonify info)}, ${js})"))
 
-(defn trace-and [loc trace value js] 1)
+(defn trace-and [loc trace value js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "($trace(${loc}, ${(jsonify info)}, ${value}), ${js})"))
+
+(defn trace-and-block [loc trace value js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "$trace(${loc}, ${(jsonify info)}, ${value});\n${js}"))
 
 (defn compile [expr trace]
     (trace-wrap
@@ -486,11 +499,15 @@
                                                            false "false"))
             (evar name l)            (sanitize name)
             (equot inner l)          (jsonify inner)
-            (elambda name nl body l) (++ ["(" (sanitize name) ") => " (compile body trace)])
+            (elambda name nl body l) (++
+                                         ["("
+                                             (sanitize name)
+                                             ") => "
+                                             (trace-and nl trace (sanitize name) (compile body trace))])
             (elet pat init body l)   "(() => {const $target = ${
                                          (compile init trace)
                                          };\n${
-                                         (compile-pat pat "$target" "return ${(compile body trace)}")
+                                         (compile-pat pat "$target" "return ${(compile body trace)}" trace)
                                          };\nthrow new Error('let pattern not matched ${
                                          (pat-loc pat)
                                          }. ' + valueToString($target));})()"
@@ -504,7 +521,7 @@
                                                  cases
                                                      (fn [case]
                                                      (let [(, pat body) case]
-                                                         (compile-pat pat "$target" "return ${(compile body trace)}")))))
+                                                         (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
                                          }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
                                          l
                                          }');})(${

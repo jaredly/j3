@@ -40,7 +40,7 @@ const PluginRender = ({
             plugin.process(expanded, (node) => {
                 const errors = {};
                 const expr = ev.parseExpr(node, errors);
-                return ev.evaluate(expr, env);
+                return ev.evaluate(expr, env, {});
             }),
         [ev, env, expanded],
     );
