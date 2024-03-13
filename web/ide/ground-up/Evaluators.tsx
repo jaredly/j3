@@ -24,6 +24,59 @@ import {
 
 // export type BasicEvaluator<T> = {};
 
+export class LocError extends Error {
+    locs: { loc: number; row: number; col: number }[] = [];
+    js: string;
+    constructor(source: Error, js: string) {
+        super(source.message);
+        this.js = js;
+        const locs: { row: number; col: number }[] = [];
+        source.stack!.replace(/<anonymous>:(\d+):(\d+)/g, (a, row, col) => {
+            locs.push({ row: +row, col: +col });
+            return '';
+        });
+
+        const lines = js.split('\n');
+
+        locs.forEach(({ row, col }) => {
+            if (row - 1 >= lines.length) {
+                return console.error('Row out of bounds?', row, lines.length);
+            }
+
+            for (let i = row - 1; i >= 0; i--) {
+                let line = lines[i];
+                const found: { num?: number; col: number; end: boolean }[] = [];
+                line.replaceAll(
+                    /\/\*(<)?(\d+)\*\//g,
+                    (_, end, num, col) => (
+                        found.push({ num: +num, col, end: !!end }), ''
+                    ),
+                );
+                line.replaceAll(/\/\*!\*\//g, (_, col) => {
+                    found.push({ col, end: false });
+                    return '';
+                });
+                found.sort((a, b) => a.col - b.col);
+                const start = found.findLast((f) => f.col <= col && !f.end);
+                const end = found.find((f) => f.col >= col && f.end);
+                if (start) {
+                    if (start.num == null) return; // skip
+                    this.locs.push({ loc: start.num, col, row });
+                    return;
+                }
+                if (end) {
+                    if (end.num == null) return; // skip
+                    // this.locs.push(end.num);
+                    this.locs.push({ loc: end.num, col, row });
+                    return;
+                }
+            }
+
+            console.error(`Cant symbolicate`, { row, col });
+        });
+    }
+}
+
 export type Errors = { [key: number]: string[] };
 export type FullEvalator<Env, Stmt, Expr> = {
     init(): Env;
@@ -33,7 +86,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
         stmt: Stmt,
         env: Env,
         meta: MetaDataMap,
-    ): { env: Env; display: JSX.Element | string };
+    ): { env: Env; display: JSX.Element | string | LocError };
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState): { js: string; errors: Errors };
 };

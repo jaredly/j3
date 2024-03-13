@@ -23,7 +23,12 @@ import { orderStartAndEnd } from '../../src/parse/parse';
 import { debounce, findTops, reduce } from '../ide/ground-up/reduce';
 import { Results } from '../ide/ground-up/GroundUp';
 import { loadEv } from '../ide/ground-up/loadEv';
-import { FullEvalator, bootstrap, repr } from '../ide/ground-up/Evaluators';
+import {
+    FullEvalator,
+    LocError,
+    bootstrap,
+    repr,
+} from '../ide/ground-up/Evaluators';
 import { layout } from '../../src/layout';
 import { goRight } from '../../src/state/navigate';
 import { cmpFullPath } from '../../src/state/path';
@@ -32,7 +37,7 @@ type NUIResults = {
     errors: { [loc: number]: string[] };
     display: Display;
     hashNames: { [loc: string]: string };
-    produce: { [key: string]: JSX.Element | string };
+    produce: { [key: string]: JSX.Element | string | LocError };
     env: any;
 };
 

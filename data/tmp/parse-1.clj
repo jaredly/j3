@@ -514,10 +514,10 @@
                                                  (compile-pat pat "$target" "return ${(compile body trace)}" trace)
                                                  };\nthrow new Error('let pattern not matched ${
                                                  (pat-loc pat)
-                                                 }. ' + valueToString($target));})()"
+                                                 }. ' + valueToString($target));})(/*!*/)"
                     (eapp fn arg l)          (match fn
-                                                 (elambda name) "(${(compile fn trace)})(${(compile arg trace)})"
-                                                 _              "${(compile fn trace)}(${(compile arg trace)})")
+                                                 (elambda name) "(${(compile fn trace)})(/*${l}*/${(compile arg trace)})"
+                                                 _              "${(compile fn trace)}(/*${l}*/${(compile arg trace)})")
                     (ematch target cases l)  "(($target) => {\n${
                                                  (join
                                                      "\n"
@@ -528,7 +528,7 @@
                                                                  (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
                                                  }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
                                                  l
-                                                 }');})(${
+                                                 }');})(/*!*/${
                                                  (compile target trace)
                                                  })")))))
 

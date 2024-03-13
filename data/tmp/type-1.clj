@@ -85,14 +85,14 @@
 (defn compose-subst [s1 s2]
     (map/merge (map/map (type-apply s1) s2) s1))
 
-; type-env = (map string scheme)
+; 
 
-; subst = (map string type)
+; 
 
 (defn remove [tenv var] (map/rm tenv var))
 
 (defn tenv-free [tenv]
-    (foldr set/nil (map (map/values tenv) type-free) set/merge))
+    (foldr set/nil (map (map/values tenv) scheme-free) set/merge))
 
 (defn tenv-apply [subst tenv] (map/map (type-apply subst) tenv))
 
@@ -218,7 +218,11 @@
 
 (infer basic (@ (+ 2 3)))
 
-1
+(infer
+    basic
+        (@
+        (let [a 1]
+            a)))
 
 (,
     (infer basic)
@@ -227,7 +231,7 @@
         (@
             (let [a 1]
                 a))
-            )
+            "int")
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(a:0) -> a:0")
         (, (@ (fn [a] (+ 2 a))) "(int) -> int")

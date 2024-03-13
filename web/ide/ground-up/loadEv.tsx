@@ -1,4 +1,4 @@
-import { Errors, FullEvalator, bootstrap } from './Evaluators';
+import { Errors, FullEvalator, LocError, bootstrap } from './Evaluators';
 import { findTops, urlForId, valueToString } from './reduce';
 import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
@@ -103,11 +103,10 @@ export const evaluatorFromText = (
                             };
                         }
                         let fn;
+                        const fullSource =
+                            '{' + env.join('\n') + '\nreturn ' + js + '}';
                         try {
-                            fn = new Function(
-                                envArgs,
-                                '{' + env.join('\n') + '\nreturn ' + js + '}',
-                            );
+                            fn = new Function(envArgs, fullSource);
                         } catch (err) {
                             return {
                                 env,
@@ -122,11 +121,17 @@ export const evaluatorFromText = (
                                 display: valueToString(fn(san)),
                             };
                         } catch (err) {
+                            const locs: { row: number; col: number }[] = [];
+                            (err as Error).stack!.replace(
+                                /<anonymous>:(\d+):(\d+)/g,
+                                (a, row, col) => {
+                                    locs.push({ row: +row, col: +col });
+                                    return '';
+                                },
+                            );
                             return {
                                 env,
-                                display: `Runtime error: ${
-                                    (err as Error).message ?? err
-                                }\n${js}`,
+                                display: new LocError(err as Error, fn + ''),
                             };
                         }
                     }
@@ -145,7 +150,7 @@ export const evaluatorFromText = (
                     try {
                         const fn = new Function(envArgs, '{' + js + '}');
                         env.push(js);
-                        return { env, display: `compiled\n${js}` };
+                        return { env, display: `compiled` };
                     } catch (err) {
                         return {
                             env,

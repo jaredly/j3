@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Path } from '../../src/state/path';
 import { UIState, RegMap } from './UIState';
@@ -19,6 +19,24 @@ export const Cursors = ({
     );
 
     const tid = useRef(null as null | NodeJS.Timeout);
+
+    useEffect(() => {
+        const first = at[0].start;
+        const got = first[first.length - 1].idx;
+        const found = regs[got]?.main ?? regs[got]?.outside;
+        if (found) {
+            const box = found.node.getBoundingClientRect();
+            console.log(box.top);
+            if (box.top < 0 || box.bottom > window.innerHeight) {
+                const dist =
+                    box.top < 0 ? -box.top : box.bottom - window.innerHeight;
+                found.node.scrollIntoView({
+                    behavior: dist > 300 ? 'smooth' : 'instant',
+                    block: 'nearest',
+                });
+            }
+        }
+    }, [at]);
 
     useLayoutEffect(() => {
         if (tid.current != null) {

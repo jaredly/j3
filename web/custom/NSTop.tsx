@@ -13,7 +13,7 @@ import { Results } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { NsReg, Drag } from './useNSDrag';
 import { fromMCST } from '../../src/types/mcst';
-import { FullEvalator, bootstrap } from '../ide/ground-up/Evaluators';
+import { FullEvalator, LocError, bootstrap } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
 import { useExpanded, useNode } from './Store';
 
@@ -76,7 +76,7 @@ export function NSTop({
     results: Results;
     ns: RealizedNamespace;
     selections: Cursor[];
-    produce: { [key: number]: string | JSX.Element };
+    produce: { [key: number]: string | JSX.Element | LocError };
     drag: Drag;
 }) {
     const source = useMemo(() => {
@@ -171,7 +171,11 @@ export function NSTop({
                                         opacity: 0.5,
                                     }}
                                 >
-                                    {produce[ns.top] ?? 'hrm'}
+                                    {renderProduce(
+                                        produce[ns.top],
+                                        state,
+                                        dispatch,
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -209,3 +213,62 @@ export function NSTop({
         </div>
     );
 }
+
+const renderProduce = (
+    value: LocError | string | JSX.Element,
+    state: NUIState,
+    dispatch: React.Dispatch<Action>,
+) => {
+    if (value instanceof LocError) {
+        return (
+            <div>
+                Traceback: {value.message}
+                {value.locs.map((n, i) => (
+                    <div
+                        className="hover"
+                        key={i}
+                        onMouseEnter={() => {
+                            const got = state.regs[n.loc];
+                            const node = got?.main ?? got?.outside;
+                            if (!node) return;
+                            node.node.style.backgroundColor = 'red';
+                        }}
+                        onClick={() => {
+                            const got = state.regs[n.loc];
+                            const node = got?.main ?? got?.outside;
+                            if (!node) return alert('nope');
+                            dispatch({
+                                type: 'select',
+                                at: [{ start: node.path }],
+                            });
+                        }}
+                        onMouseLeave={() => {
+                            const got = state.regs[n.loc];
+                            const node = got?.main ?? got?.outside;
+                            if (!node) return;
+                            node.node.style.backgroundColor = 'unset';
+                        }}
+                    >
+                        idx: {n.loc} ({n.row}:{n.col})
+                    </div>
+                ))}
+                {/* <pre>
+                    {value.js
+                        .split('\n')
+                        .map(
+                            (l, i) => `${(i + 1 + '').padStart(3, ' ')} : ${l}`,
+                        )
+                        .join('\n')}
+                </pre> */}
+            </div>
+        );
+    }
+    if (value instanceof Error) {
+        return <div>Error {value.message}</div>;
+    }
+    if (typeof value === 'string') {
+        return value;
+    }
+    if (!value) return '';
+    return value;
+};

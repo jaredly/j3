@@ -1093,7 +1093,7 @@ let init = $target[1];
 let body = $target[2];
 {
 let l = $target[3];
-return `(() => {const \$target = ${compile(init)(trace)};\n${compile_pat(pat)("\$target")(`return ${compile(body)(trace)}`)(trace)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})()`
+return `(() => {const \$target = ${compile(init)(trace)};\n${compile_pat(pat)("\$target")(`return ${compile(body)(trace)}`)(trace)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})(/*!*/)`
 }
 }
 }
@@ -1109,10 +1109,10 @@ let l = $target[2];
 return (($target) => {if ($target.type === "elambda") {
 {
 let name = $target[0];
-return `(${compile(fn)(trace)})(${compile(arg)(trace)})`
+return `(${compile(fn)(trace)})(/*${l}*/${compile(arg)(trace)})`
 }
 }
-return `${compile(fn)(trace)}(${compile(arg)(trace)})`
+return `${compile(fn)(trace)}(/*${l}*/${compile(arg)(trace)})`
 throw new Error('Failed to match. ' + valueToString($target))})(fn)
 }
 }
@@ -1134,7 +1134,7 @@ return compile_pat(pat)("\$target")(`return ${compile(body)(trace)}`)(trace)
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(${compile(target)(trace)})`
+throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${l}');})(/*!*/${compile(target)(trace)})`
 }
 }
 }

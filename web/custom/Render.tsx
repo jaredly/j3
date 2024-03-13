@@ -121,7 +121,19 @@ export const Render = React.memo(
 
         if (values.meta?.trace) {
             return (
-                <span>
+                <span style={{ display: 'flex' }}>
+                    {props.debug ? (
+                        <span
+                            style={{
+                                opacity: 0.5,
+                                fontSize: '50%',
+                                lineHeight: '20px',
+                            }}
+                            data-display={JSON.stringify(display)}
+                        >
+                            {idx}
+                        </span>
+                    ) : null}
                     <span
                         style={{
                             position: 'absolute',
