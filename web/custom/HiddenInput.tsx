@@ -122,26 +122,27 @@ export function HiddenInput({
                     return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
                 }
 
-                if (evt.metaKey || evt.ctrlKey || evt.altKey) {
-                    if (evt.altKey) {
-                        const sel = state.hover[state.hover.length - 1]?.idx;
-                        const node = sel ? state.map[sel] : null;
-                        if (node?.type === 'identifier') {
-                            const num = +node.text;
-                            const got = state.regs[num];
-                            const n =
-                                got?.main?.node ??
-                                got?.outside?.node ??
-                                got?.start?.node;
+                if (evt.key === 'Alt') {
+                    const sel = state.hover[state.hover.length - 1]?.idx;
+                    const node = sel ? state.map[sel] : null;
+                    if (node?.type === 'identifier') {
+                        const num = +node.text;
+                        const got = state.regs[num];
+                        const n =
+                            got?.main?.node ??
+                            got?.outside?.node ??
+                            got?.start?.node;
 
-                            if (n) {
-                                n.style.backgroundColor = 'rgba(255,0,0,0.9)';
-                                setTimeout(() => {
-                                    n.style.backgroundColor = 'unset';
-                                }, 5000);
-                            }
+                        if (n) {
+                            n.style.backgroundColor = 'rgba(255,0,0,0.9)';
+                            setTimeout(() => {
+                                n.style.backgroundColor = 'unset';
+                            }, 5000);
                         }
                     }
+                }
+
+                if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                     return;
                 }
 

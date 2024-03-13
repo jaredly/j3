@@ -694,10 +694,10 @@ const consr = (a) => (b) => cons(b)(a);
 
 const compilation = "# compilation";
 
-const compile_stmt = (stmt) => (($target) => {if ($target.type === "sexpr") {
+const compile_stmt = (stmt) => (trace) => (($target) => {if ($target.type === "sexpr") {
 {
 let expr = $target[0];
-return compile(expr)
+return compile(expr)(trace)
 }
 }
 if ($target.type === "sdef") {
@@ -709,7 +709,7 @@ let nl = $target[1];
 let body = $target[2];
 {
 let l = $target[3];
-return $pl$pl(cons("const ")(cons(sanitize(name))(cons(" = ")(cons(compile(body))(cons(";\n")(nil))))))
+return $pl$pl(cons("const ")(cons(sanitize(name))(cons(" = ")(cons(compile(body)(trace))(cons(";\n")(nil))))))
 }
 }
 }
@@ -967,7 +967,7 @@ return js
 if ($target.type === "some") {
 {
 let info = $target[0];
-return "l"
+return `\$trace(${js})`
 }
 }
 throw new Error('Failed to match. ' + valueToString($target))})(map$slget(trace)(loc));

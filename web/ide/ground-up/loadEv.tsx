@@ -92,7 +92,7 @@ export const evaluatorFromText = (
                     if (stmt.type === 'sexpr') {
                         let js;
                         try {
-                            js = data['compile'](stmt[0]);
+                            js = data['compile'](stmt[0])([]);
                         } catch (err) {
                             return {
                                 env,
@@ -131,7 +131,7 @@ export const evaluatorFromText = (
                     }
                     let js;
                     try {
-                        js = data['compile_stmt'](stmt);
+                        js = data['compile_stmt'](stmt)([]);
                     } catch (err) {
                         return {
                             env,
@@ -156,7 +156,7 @@ export const evaluatorFromText = (
                 },
                 evaluate(expr, env) {
                     try {
-                        const js = data['compile'](expr);
+                        const js = data['compile'](expr)([]);
                         const fn = new Function(
                             envArgs,
                             '{' + env.join('\n') + '\nreturn ' + js + '}',

@@ -12,6 +12,10 @@ PLAN:
 
 (@@' abc) -> gives you (, (@@ abc) (map of any traces))
 
+META:
+- trace?
+- (also) we can do a `coverage` dealio
+
 # Typeings!
 
 I think perf is in a reasonable spot.

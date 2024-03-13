@@ -352,10 +352,10 @@
 
 (def compilation "# compilation")
 
-(defn compile-stmt [stmt]
+(defn compile-stmt [stmt trace]
     (match stmt
-        (sexpr expr)               (compile expr)
-        (sdef name nl body l)      (++ ["const " (sanitize name) " = " (compile body) ";\n"])
+        (sexpr expr)               (compile expr trace)
+        (sdef name nl body l)      (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
         (sdeftype name nl cases l) (join
                                        "\n"
                                            (map
@@ -452,7 +452,7 @@
 (defn trace-wrap [loc trace js]
     (match (map/get trace loc)
         (none)      js
-        (some info) "l"))
+        (some info) "$trace(${js})"))
 
 (defn trace-and [loc trace value js] 1)
 

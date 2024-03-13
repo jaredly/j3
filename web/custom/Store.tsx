@@ -7,7 +7,7 @@ import {
     useRef,
     useState,
 } from 'react';
-import { Action, NUIState, UIState } from './UIState';
+import { Action, MetaData, NUIState, UIState } from './UIState';
 import { Display } from '../../src/to-ast/library';
 import { NNode, getNestedNodes } from '../../src/state/getNestedNodes';
 import { Node } from '../../src/types/cst';
@@ -79,8 +79,6 @@ const getResults = (
         produce: {},
         env: null,
     };
-    // const produce: { [key: string]: JSX.Element | string } = {};
-    // if (!evaluator) return results;
 
     results.env = evaluator?.init();
     findTops(state).forEach(({ top, hidden }) => {
@@ -390,6 +388,7 @@ export type Values = {
     node: MNode;
     nnode: NNode;
 
+    meta: MetaData | null;
     display: Display[0];
     errors?: string[];
 
@@ -414,6 +413,7 @@ export const getValues = (
             // errors: {},
             dispatch() {},
             display: {},
+            meta: null,
             // selection: null,
             reg() {},
             node: { type: 'blank', loc: -1 },
@@ -437,6 +437,7 @@ export const getValues = (
     return {
         errors: results.errors[idx],
         dispatch: store.dispatch,
+        meta: state.meta?.[idx] ?? null,
         display: results.display[idx],
         selection: coverageLevel
             ? { edge: edgeSelected, coverage: coverageLevel }

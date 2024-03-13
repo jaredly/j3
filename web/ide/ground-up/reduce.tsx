@@ -572,6 +572,10 @@ export function loadState(state: NUIState = initialState()) {
             .concat(Object.keys(state.nsMap || {}))
             .reduce((a, b) => Math.max(a, +b), 0) + 1;
 
+    if (!state.meta) {
+        state.meta = {};
+    }
+
     if (!state.nsMap) {
         state.nsMap = {};
         state.cards.forEach((card) => {

@@ -17,6 +17,7 @@ export type MetaData = {
         name?: string;
         latest?: boolean;
     };
+    coverage?: boolean;
 };
 
 export type MetaDataMap = { [key: number]: MetaData };

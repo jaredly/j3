@@ -14,6 +14,7 @@ import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
 import { WithStore, useGlobalState, useStore } from '../../custom/Store';
 import { loadEv } from './loadEv';
+import { CommandPalette } from './CommandPalette';
 
 export type Results = {
     display: Display;
@@ -167,6 +168,7 @@ export const GroundUp = ({
                 }}
             />
             <Cursors at={state.at} regs={state.regs} />
+            <CommandPalette state={state} dispatch={store.dispatch} />
             {/* {selTop ? JSON.stringify(results.tops[selTop].data) : null} */}
             {/* {selTop != null ? <ViewJson v={results.tops[selTop].data} /> : null} */}
             {/* {JSON.stringify(state.at)} */}
