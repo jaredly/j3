@@ -55,7 +55,7 @@ export const Cursors = ({
                 //     return;
                 // }
                 const res: any = [];
-                const box = calcCursorPos(at.start, regs, true);
+                const box = calcCursorPos(at.end ?? at.start, regs, true);
                 if (box) {
                     res.push({
                         x: box.left,
@@ -64,17 +64,17 @@ export const Cursors = ({
                         color: box.color,
                     });
                 }
-                if (at.end) {
-                    const box2 = calcCursorPos(at.end, regs, true);
-                    if (box2) {
-                        res.push({
-                            x: box2.left,
-                            y: box2.top,
-                            h: box2.height,
-                            color: box2.color,
-                        });
-                    }
-                }
+                // if (at.end) {
+                //     const box2 = calcCursorPos(at.end, regs, true);
+                //     if (box2) {
+                //         res.push({
+                //             x: box2.left,
+                //             y: box2.top,
+                //             h: box2.height,
+                //             color: box2.color,
+                //         });
+                //     }
+                // }
                 return res;
             }),
         );

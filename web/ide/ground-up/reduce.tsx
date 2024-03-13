@@ -1,6 +1,8 @@
 import { layout } from '../../../src/layout';
 import {
     StateChange,
+    StateSelect,
+    StateUpdate,
     applyUpdate,
     getKeyUpdate,
     isRootPath,
@@ -195,7 +197,7 @@ export const actionToUpdate = (
                     menu: { dismissed: true, selection: 0 },
                 };
             }
-            let common;
+            let common: StateChange = undefined;
             for (let cursor of state.at) {
                 const result = getKeyUpdate(
                     action.key,
@@ -221,6 +223,17 @@ export const actionToUpdate = (
                             },
                         ];
                     }
+                    if (common.type === 'select') {
+                        common = {
+                            type: 'full-select',
+                            at: [
+                                {
+                                    start: common.selection,
+                                    end: common.selectionEnd,
+                                },
+                            ],
+                        };
+                    }
                 } else {
                     if (result.type === 'update' && common.type === 'update') {
                         for (let key of Object.keys(result.map)) {
@@ -241,9 +254,14 @@ export const actionToUpdate = (
                         continue;
                     } else if (
                         result.type === 'select' &&
-                        common.type === 'select'
+                        common.type === 'full-select'
                     ) {
                         // erghhh `select` needs to allow multiplesssss
+                        common.at.push({
+                            start: result.selection,
+                            end: result.selectionEnd,
+                        });
+                        continue;
                     }
                     return;
                 }
