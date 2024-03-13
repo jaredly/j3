@@ -62,12 +62,21 @@
 
 (deftype scheme (scheme (set string) type))
 
+<dom node>
+
 (defn type-free [type]
     (match type
         (tvar n _)   (set/add set/nil n)
         (tcon _ _)   set/nil
         (tapp a b _) (set/merge (type-free a) (type-free b))
         ))
+
+(defn scheme-free [(scheme vbls type)] (set/rm (type-free type) vbls))
+
+(defn tenv-free [tenv]
+    (foldr set/nil (map (map/values tenv) scheme-free) set/merge))
+
+<dom node>
 
 (defn type-apply [subst type]
     (match type
@@ -77,24 +86,15 @@
         (tapp a b c) (tapp (type-apply subst a) (type-apply subst b) c)
         _            type))
 
-(defn scheme-free [(scheme vbls type)] (set/rm (type-free type) vbls))
-
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
+
+(defn tenv-apply [subst tenv] (map/map (scheme-apply subst) tenv))
 
 (defn compose-subst [s1 s2]
     (map/merge (map/map (type-apply s1) s2) s1))
 
-; 
-
-; 
-
 (defn remove [tenv var] (map/rm tenv var))
-
-(defn tenv-free [tenv]
-    (foldr set/nil (map (map/values tenv) scheme-free) set/merge))
-
-(defn tenv-apply [subst tenv] (map/map (type-apply subst) tenv))
 
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
