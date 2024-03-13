@@ -1,8 +1,35 @@
 
 
+# Literate literating. Pretty please.
+
+This will require:
+- ordering things by dependencies, so we don't get out of order issues.
+  This will also allow us to do ~minimal compilations, and only update "results" that need updating.
+
+### STEP 1
+Make a Node type that is "rich text". It can be flagged as either a comment, or something that should be ... ... ... represented as actually a thing.
+I might want to Store as [blocknote_json] or whatever, and then have it represented as either (a) a comment (b) markdown or (c) some in-universe rich representation like unison has. And that would be selectable on the node, I should think.
+
+RELATED a little bit, I want to be able to `;` comment out any arbitrary node.
+Like, would that mean that `;` comments become obsolete? Or ...
+Maybe `;;` two semis means "old and boring comment", whereas `;` is just a "this can comment something out".
+
+anddd
+
+how do I trigger a rich text node? maybe ''? idk sounds fine to me.
+
+
+- [ ] DRAG and DROP any arbitrary node pleeeeease and thank you.
+  Would it be just like 'press a key'? Hm yeah I like that. alt+click? sure
+
+##
+
 - [x] I want let to be recursible
 - [ ] meta changes appear to not be triggering a save?
 - [ ] errors change not triggering a rerender
+
+
+
 
 # Source Mappppppp
 
