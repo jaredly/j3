@@ -1,3 +1,4 @@
+import equal from 'fast-deep-equal';
 import {
     Card,
     MetaDataUpdateMap,
@@ -625,7 +626,15 @@ export const getKeyUpdate = (
         }
     }
 
-    return insertText(key, map, nsMap, fullPath, hashNames, nidx);
+    return insertText(
+        key,
+        map,
+        nsMap,
+        fullPath,
+        hashNames,
+        nidx,
+        selection.end ? selection.start : undefined,
+    );
 };
 
 export const insertText = (
@@ -635,6 +644,7 @@ export const insertText = (
     fullPath: Path[],
     hashNames: { [idx: number]: string },
     nidx: () => number,
+    start?: Path[],
 ) => {
     const flast = fullPath[fullPath.length - 1];
     const node = map[flast.idx];
@@ -651,6 +661,10 @@ export const insertText = (
         node.type === 'comment' ||
         node.type === 'hash'
     ) {
+        const multi =
+            start && equal(start.slice(0, -1), fullPath.slice(0, -1))
+                ? start[start.length - 1]
+                : undefined;
         return updateText(
             node,
             pos,
@@ -659,6 +673,7 @@ export const insertText = (
             fullPath.slice(0, -1),
             map,
             hashNames[idx],
+            multi?.type === 'subtext' ? multi.at : undefined,
         );
     }
 
@@ -710,10 +725,16 @@ function updateText(
     path: Path[],
     map: Map,
     hashName?: string,
+    posEnd?: number,
 ): StateUpdate {
     const raw = hashName ?? idText(node, map) ?? '';
     let text = splitGraphemes(raw);
-    if (pos === 0) {
+    let dest = pos + input.length;
+    if (posEnd != null) {
+        const [left, right] = posEnd > pos ? [pos, posEnd] : [posEnd, pos];
+        text.splice(left, right - left, ...input);
+        dest = left + input.length;
+    } else if (pos === 0) {
         text.unshift(...input);
     } else if (pos === text.length) {
         text.push(...input);
@@ -732,13 +753,7 @@ function updateText(
                           text: text.join(''),
                       },
         },
-        selection: path.concat([
-            {
-                idx,
-                type: 'subtext',
-                at: pos + input.length,
-            },
-        ]),
+        selection: path.concat([{ idx, type: 'subtext', at: dest }]),
     };
 }
 

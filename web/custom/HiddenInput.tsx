@@ -125,6 +125,17 @@ export function HiddenInput({
                     return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
                 }
 
+                if (evt.key === 'Escape' && state.at.length > 0) {
+                    return dispatch({
+                        type: 'select',
+                        at: [
+                            {
+                                start: state.at[0].start,
+                            },
+                        ],
+                    });
+                }
+
                 if (evt.metaKey && evt.key === 'd') {
                     evt.preventDefault();
                     const sel = state.at[0];
