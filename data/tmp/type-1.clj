@@ -118,10 +118,9 @@
 
 (defn mgu [t1 t2 nidx]
     (match (, t1 t2)
-        (, (tapp l r) (tapp l' r')) (let [(, s1 nidx)
-                                        (mgu l l' nidx)
-                                        (, s2 nidx)
-                                        (mgu (type-apply s1 r) (type-apply s1 r') nidx)]
+        (, (tapp l r) (tapp l' r')) (let [
+                                        (, s1 nidx) (mgu l l' nidx)
+                                        (, s2 nidx) (mgu (type-apply s1 r) (type-apply s1 r') nidx)]
                                         (, (compose-subst s1 s2) nidx))
         (, (tvar u _) t)            (, (var-bind u t) nidx)
         (, t (tvar u _))            (, (var-bind u t) nidx)
@@ -148,58 +147,64 @@
 
 (defn t-expr [tenv expr nidx]
     (match expr
-        (evar n l)                        (match (map/get tenv n)
-                                              (none)       (fatal "Unbound variable ${n}")
+        (evar name l)                     (match (map/get tenv name)
+                                              (none)       (fatal "Unbound variable ${name}")
                                               (some found) (let [(, t nidx) (instantiate found nidx)]
                                                                (,, (map/nil) t nidx)))
         (eprim prim)                      (,, map/nil (t-prim prim) nidx)
-        (elambda name nl body l)          (let [(, tv nidx)
-                                              (new-type-var name nidx)
-                                              env'
-                                              (map/rm tenv name)
-                                              env''
-                                              (map/merge env' (map/set map/nil name (scheme set/nil tv)))
-                                              (,, s1 t1 nidx)
-                                              (t-expr env'' body nidx)]
-                                              (,, s1 (tfn (type-apply s1 tv) t1 l) nidx))
-        (eapp target arg l)               (let [(, tv nidx)
-                                              (new-type-var "a" nidx)
-                                              (,, s1 t1 nidx)
-                                              (t-expr tenv target nidx)
-                                              (,, s2 t2 nidx)
-                                              (t-expr (tenv-apply s1 tenv) arg nidx)
-                                              (, s3 nidx)
-                                              (mgu (type-apply s2 t1) (tfn t2 tv l) nidx)]
+        (elambda name nl body l)          (let [
+                                              (, arg-type nidx)              (new-type-var name nidx)
+                                              env-with-name                  (map/merge tenv (map/set map/nil name (scheme set/nil arg-type)))
+                                              (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
                                               (,,
-                                                  (compose-subst s3 (compose-subst s2 s1))
-                                                      (type-apply s3 tv)
+                                                  body-subst
+                                                      (tfn (type-apply body-subst arg-type) body-type l)
                                                       nidx))
-        (elet (pvar name nl) init body l) (let [(,, s1 t1 nidx)
-                                              (t-expr tenv init nidx)
-                                              env'
-                                              (map/rm tenv name)
-                                              t'
-                                              (generalize (tenv-apply s1 tenv) t1)
-                                              env''
-                                              (map/set env' name t')
-                                              (,, s2 t2 nidx)
-                                              (t-expr (tenv-apply s1 env'') body nidx)]
-                                              (,, (compose-subst s1 s2) t2 nidx))
-        (elet pat init body l)            (let ([,, ]))
-        (ematch target cases l)           (let [(,, s1 t1 nidx)
-                                              (t-expr tenv target nidx)
-                                              t'
-                                              (generalize (tenv-apply s1 tenv) t1)]
+        (eapp target arg l)               (let [
+                                              (, result-var nidx)                (new-type-var "a" nidx)
+                                              (,, target-subst target-type nidx) (t-expr tenv target nidx)
+                                              (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
+                                              (, unified-subst nidx)             (mgu
+                                                                                     (type-apply arg-subst target-type)
+                                                                                         (tfn arg-type result-var l)
+                                                                                         nidx)]
+                                              (,,
+                                                  (compose-subst
+                                                      unified-subst
+                                                          (compose-subst arg-subst target-subst))
+                                                      (type-apply unified-subst result-var)
+                                                      nidx))
+        (elet (pvar name nl) init body l) (let [
+                                              (,, init-subst init-type nidx) (t-expr tenv init nidx)
+                                              init-scheme                    (generalize (tenv-apply init-subst tenv) init-type)
+                                              env-with-name                  (map/set tenv name init-scheme)
+                                              e2                             (tenv-apply init-subst env-with-name)
+                                              (,, body-subst body-type nidx) (t-expr e2 body nidx)]
+                                              (,, (compose-subst init-subst body-subst) body-type nidx))
+        (elet pat init body l)            (let [
+                                              (,, init-subst init-type nidx) (t-expr tenv init nidx)
+                                              (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
+                                              (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)
+                                              (, unified-subst nidx)         (mgu init-type pat-type nidx)]
+                                              (,,
+                                                  (compose-subst
+                                                      unified-subst
+                                                          (compose-subst init-subst body-subst))
+                                                      body-type
+                                                      nidx))
+        (ematch target cases l)           (let [
+                                              (,, s1 t1 nidx) (t-expr tenv target nidx)
+                                              t'              (generalize (tenv-apply s1 tenv) t1)]
                                               (fatal "nope"))
         _                                 (fatal "cannot infer type for ${(valueToString expr)}")))
 
-761
+(defn t-pat [tenv pat nidx]
+    (match pat
+        (pvar name nl) (let [])))
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)]
         (type-to-string (type-apply s t))))
-
-1476
 
 (infer map/nil (@ ((fn [a] a) 23)))
 
@@ -213,9 +218,18 @@
 
 (def basic
     (map/set
-        map/nil
-            "+"
-            (scheme set/nil (tfn tint (tfn tint tint -1) -1))))
+        (map/set
+            map/nil
+                "+"
+                (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+            ","
+            (scheme
+            (set/add set/nil "a")
+                (tfn (tvar "a" -1)
+                (tfn (tvar "a" -1)
+                    (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "a" -1) -1)
+                        -1)
+                    -1))))
 
 (infer basic (@ (+ 2 3)))
 
@@ -247,3 +261,4 @@
                 1 1))
             )])
 
+1987

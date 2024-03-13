@@ -62,7 +62,7 @@ export const CommandPalette = ({
                 <input
                     ref={ref}
                     placeholder="Search for commands"
-                    // onBlur={() => setOpen(false)}
+                    onBlur={() => setOpen(false)}
                     onKeyDown={(evt) => {
                         if (evt.key === 'Escape') {
                             setOpen(false);
@@ -125,6 +125,34 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
                     });
                 },
             });
+        }
+        const node = state.map[idx];
+        if (node?.type === 'identifier') {
+            const num = +node.text;
+            if (!isNaN(num) && num + '' === node.text && state.map[num]) {
+                const got = state.regs[num]?.main ?? state.regs[num]?.outside;
+                if (got) {
+                    commands.push({
+                        title: 'Jump to idx',
+                        action() {
+                            dispatch({
+                                type: 'select',
+                                at: [{ start: got.path }],
+                            });
+                        },
+                    });
+                } else {
+                    commands.push({
+                        title: 'Cannot jump to idx',
+                        action() {
+                            // dispatch({
+                            //     type: 'select',
+                            //     at: [{ start: got.path }],
+                            // });
+                        },
+                    });
+                }
+            }
         }
     }
 

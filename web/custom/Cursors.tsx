@@ -21,6 +21,7 @@ export const Cursors = ({
     const tid = useRef(null as null | NodeJS.Timeout);
 
     useEffect(() => {
+        if (!at.length) return;
         const first = at[0].start;
         const got = first[first.length - 1].idx;
         const found = regs[got]?.main ?? regs[got]?.outside;

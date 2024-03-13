@@ -256,7 +256,7 @@ function childWidth(
     for (let i = 0; i < children.length; i++) {
         let idx = children[i];
         let parentCtx: ParentCtx | undefined =
-            parent === 'let' && idx === 1 ? 'let' : undefined;
+            parent === 'let' && i === 1 ? 'let' : undefined;
         if (first) {
             first = false;
         } else {
@@ -280,7 +280,7 @@ function childWidth(
             for (let i = 0; i < children.length; i++) {
                 let idx = children[i];
                 let parentCtx: ParentCtx | undefined =
-                    parent === 'let' && idx === 1 ? 'let' : undefined;
+                    parent === 'let' && i === 1 ? 'let' : undefined;
                 layout(idx, pos, map, display, hashNames, recursive, parentCtx);
             }
             return false;
@@ -292,7 +292,7 @@ function childWidth(
         for (let i = 0; i < children.length; i++) {
             let idx = children[i];
             let parentCtx: ParentCtx | undefined =
-                parent === 'let' && idx === 1 ? 'let' : undefined;
+                parent === 'let' && i === 1 ? 'let' : undefined;
             layout(idx, pos, map, display, hashNames, recursive, parentCtx);
         }
     }

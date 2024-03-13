@@ -8,7 +8,10 @@
 
 - add comments
 - then we can do whatsit
-- [ ] ok also, I want to be able to /comment out/ a node, like clojure.
+- [x] ok also, I want to be able to /comment out/ a node, like clojure.
+
+- [ ] Fixtures, let's be able to reorder them by dragging
+- [ ] HOVER PAIRS pleeeeease
 
 
 So now that i'm tracking the info, and even compiling it in ...
