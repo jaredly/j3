@@ -31,6 +31,9 @@ how do I trigger a rich text node? maybe ''? idk sounds fine to me.
 - [x] FEAT please let me split an identifier, I need it desperately.
 - [x] FEAT ok backspace to join identifier
 
+- [x] cmd-D to multicursor, you love to see it
+
+letsss do a little multicursor?
 
 ##
 

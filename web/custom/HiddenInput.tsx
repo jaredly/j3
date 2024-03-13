@@ -9,6 +9,9 @@ import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { UIState, Action, NUIState } from './UIState';
 import { getRegNode } from './Hover';
+import equal from 'fast-deep-equal';
+import { splitGraphemes } from '../../src/parse/parse';
+import { goRight } from '../../src/state/navigate';
 // import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
@@ -120,6 +123,101 @@ export function HiddenInput({
             onKeyDown={(evt) => {
                 if (evt.key === 'z' && (evt.metaKey || evt.ctrlKey)) {
                     return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
+                }
+
+                if (evt.metaKey && evt.key === 'd') {
+                    evt.preventDefault();
+                    const sel = state.at[0];
+                    if (!sel) return;
+                    const last = sel.start[sel.start.length - 1];
+                    if (last.type !== 'subtext') return;
+                    if (sel.end) {
+                        if (last.at !== 0) return;
+                        if (sel.end.length !== sel.start.length) return;
+                        const lend = sel.end[sel.end.length - 1];
+                        if (lend.type !== 'subtext') return;
+                        if (
+                            !equal(sel.start.slice(0, -1), sel.end.slice(0, -1))
+                        )
+                            return;
+                        const node = state.map[last.idx];
+                        if (node.type !== 'identifier') return;
+                        const eme = splitGraphemes(node.text);
+                        if (lend.at !== eme.length) return;
+                        // TODO do another sel
+                        // let next = sel.start
+                        let current = state.at[state.at.length - 1].start;
+                        for (let i = 0; i < 10000; i++) {
+                            const next = goRight(
+                                current,
+                                state.map,
+                                state.nsMap,
+                                state.cards,
+                            );
+                            if (!next) return;
+                            const last =
+                                next.selection[next.selection.length - 1];
+                            const candidate = state.map[last.idx];
+                            if (
+                                candidate.type === 'identifier' &&
+                                candidate.text === node.text
+                            ) {
+                                return dispatch({
+                                    type: 'select',
+                                    at: state.at.concat([
+                                        {
+                                            start: next.selection
+                                                .slice(0, -1)
+                                                .concat([
+                                                    {
+                                                        type: 'subtext',
+                                                        idx: candidate.loc,
+                                                        at: 0,
+                                                    },
+                                                ]),
+                                            end: next.selection
+                                                .slice(0, -1)
+                                                .concat([
+                                                    {
+                                                        type: 'subtext',
+                                                        idx: candidate.loc,
+                                                        at: eme.length,
+                                                    },
+                                                ]),
+                                        },
+                                    ]),
+                                });
+                            }
+                            current = next.selection;
+                        }
+                    }
+
+                    const node = state.map[last.idx];
+                    if (node.type === 'identifier') {
+                        const text = node.text;
+                        const eme = splitGraphemes(text);
+                        return dispatch({
+                            type: 'select',
+                            at: [
+                                {
+                                    start: sel.start.slice(0, -1).concat([
+                                        {
+                                            type: 'subtext',
+                                            idx: node.loc,
+                                            at: 0,
+                                        },
+                                    ]),
+                                    end: sel.start.slice(0, -1).concat([
+                                        {
+                                            type: 'subtext',
+                                            idx: node.loc,
+                                            at: eme.length,
+                                        },
+                                    ]),
+                                },
+                            ],
+                        });
+                    }
                 }
 
                 if (evt.key === 'Alt') {
