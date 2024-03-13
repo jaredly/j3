@@ -994,7 +994,9 @@ return `\$trace(${loc}, ${jsonify(info)}, ${value});\n${js}`
 }
 throw new Error('Failed to match. ' + valueToString($target))})(map$slget(trace)(loc));
 
-const compile = (expr) => (trace) => trace_wrap(expr_loc(expr))(trace)((($target) => {if ($target.type === "estr") {
+const source_map = (loc) => (js) => `/*${loc}*/${js}/*<${loc}*/`;
+
+const compile = (expr) => (trace) => ((loc) => source_map(loc)(trace_wrap(loc)(trace)((($target) => {if ($target.type === "estr") {
 {
 let first = $target[0];
 {
@@ -1027,13 +1029,7 @@ if ($target.type === "eprim") {
 let prim = $target[0];
 {
 let l = $target[1];
-return (($target) => {if ($target.type === "pstr") {
-{
-let string = $target[0];
-return $pl$pl(cons("\"")(cons(escape_string(unescape_string(string)))(cons("\"")(nil))))
-}
-}
-if ($target.type === "pint") {
+return (($target) => {if ($target.type === "pint") {
 {
 let int = $target[0];
 return int_to_string(int)
@@ -1113,10 +1109,10 @@ let l = $target[2];
 return (($target) => {if ($target.type === "elambda") {
 {
 let name = $target[0];
-return $pl$pl(cons("(")(cons(compile(fn)(trace))(cons(")(")(cons(compile(arg)(trace))(cons(")")(nil))))))
+return `(${compile(fn)(trace)})(${compile(arg)(trace)})`
 }
 }
-return $pl$pl(cons(compile(fn)(trace))(cons("(")(cons(compile(arg)(trace))(cons(")")(nil)))))
+return `${compile(fn)(trace)}(${compile(arg)(trace)})`
 throw new Error('Failed to match. ' + valueToString($target))})(fn)
 }
 }
@@ -1143,8 +1139,8 @@ throw new Error('Failed to match. ' + valueToString($target))})($case)))}\nthrow
 }
 }
 }
-throw new Error('Failed to match. ' + valueToString($target))})(expr));
+throw new Error('Failed to match. ' + valueToString($target))})(expr))))(expr_loc(expr));
 
 const run = (v) => eval(compile(parse_expr(v))(map$slnil));
 
-return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, expr_loc, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loc, pat_loop, prelude, quot, replaces, run, snd, tapps, trace_and, trace_and_block, trace_wrap, unescape_string, util}
+return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, expr_loc, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loc, pat_loop, prelude, quot, replaces, run, snd, source_map, tapps, trace_and, trace_and_block, trace_wrap, unescape_string, util}

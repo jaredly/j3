@@ -1,6 +1,6 @@
 (defn foldr [init items f]
     (match items
-        []           init
+        []           (fatal "nope")
         [one ..rest] (f (foldr init rest f) one)))
 
 (foldr 0 [1 2] +)

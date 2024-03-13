@@ -1,6 +1,6 @@
 const foldr = (init) => (items) => (f) => (($target) => {
 if ($target.type === "nil") {
-return init
+return fatal("nope")
 }
 if ($target.type === "cons") {
 {

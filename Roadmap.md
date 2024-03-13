@@ -2,6 +2,14 @@
 
 - [x] I want let to be recursible
 - [ ] meta changes appear to not be triggering a save?
+- [ ] errors change not triggering a rerender
+
+# Source Mappppppp
+
+- add comments
+- then we can do whatsit
+- [ ] ok also, I want to be able to /comment out/ a node, like clojure.
+
 
 So now that i'm tracking the info, and even compiling it in ...
 I want to ... be able to mark ... a certain NSTop as the "trace focus". Right?

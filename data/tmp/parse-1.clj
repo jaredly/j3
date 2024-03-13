@@ -469,64 +469,68 @@
         (none)      js
         (some info) "$trace(${loc}, ${(jsonify info)}, ${value});\n${js}"))
 
+(defn source-map [loc js] "/*${loc}*/${js}/*<${loc}*/")
+
 (defn compile [expr trace]
-    (trace-wrap
-        (expr-loc expr)
-            trace
-            (match expr
-            (estr first tpls l)      (match tpls
-                                         [] "\"${(escape-string (unescape-string first))}\""
-                                         _  "`${
-                                                (escape-string (unescape-string first))
-                                                }${
-                                                (join
-                                                    ""
-                                                        (map
-                                                        tpls
-                                                            (fn [item]
-                                                            (let [(,, expr suffix l) item]
-                                                                "${${
-                                                                    (compile expr trace)
-                                                                    }}${
-                                                                    (escape-string (unescape-string suffix))
-                                                                    }"))))
-                                                }`")
-            (eprim prim l)           (match prim
-                                         (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
-                                         (pint int)    (int-to-string int)
-                                         (pbool bool)  (match bool
-                                                           true  "true"
-                                                           false "false"))
-            (evar name l)            (sanitize name)
-            (equot inner l)          (jsonify inner)
-            (elambda name nl body l) (++
-                                         ["("
-                                             (sanitize name)
-                                             ") => "
-                                             (trace-and nl trace (sanitize name) (compile body trace))])
-            (elet pat init body l)   "(() => {const $target = ${
-                                         (compile init trace)
-                                         };\n${
-                                         (compile-pat pat "$target" "return ${(compile body trace)}" trace)
-                                         };\nthrow new Error('let pattern not matched ${
-                                         (pat-loc pat)
-                                         }. ' + valueToString($target));})()"
-            (eapp fn arg l)          (match fn
-                                         (elambda name) (++ ["(" (compile fn trace) ")(" (compile arg trace) ")"])
-                                         _              (++ [(compile fn trace) "(" (compile arg trace) ")"]))
-            (ematch target cases l)  "(($target) => {\n${
-                                         (join
-                                             "\n"
-                                                 (map
-                                                 cases
-                                                     (fn [case]
-                                                     (let [(, pat body) case]
-                                                         (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
-                                         }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
-                                         l
-                                         }');})(${
-                                         (compile target trace)
-                                         })")))
+    (let [loc (expr-loc expr)]
+        (source-map
+            loc
+                (trace-wrap
+                loc
+                    trace
+                    (match expr
+                    (estr first tpls l)      (match tpls
+                                                 [] "\"${(escape-string (unescape-string first))}\""
+                                                 _  "`${
+                                                        (escape-string (unescape-string first))
+                                                        }${
+                                                        (join
+                                                            ""
+                                                                (map
+                                                                tpls
+                                                                    (fn [item]
+                                                                    (let [(,, expr suffix l) item]
+                                                                        "${${
+                                                                            (compile expr trace)
+                                                                            }}${
+                                                                            (escape-string (unescape-string suffix))
+                                                                            }"))))
+                                                        }`")
+                    (eprim prim l)           (match prim
+                                                 (pint int)   (int-to-string int)
+                                                 (pbool bool) (match bool
+                                                                  true  "true"
+                                                                  false "false"))
+                    (evar name l)            (sanitize name)
+                    (equot inner l)          (jsonify inner)
+                    (elambda name nl body l) (++
+                                                 ["("
+                                                     (sanitize name)
+                                                     ") => "
+                                                     (trace-and nl trace (sanitize name) (compile body trace))])
+                    (elet pat init body l)   "(() => {const $target = ${
+                                                 (compile init trace)
+                                                 };\n${
+                                                 (compile-pat pat "$target" "return ${(compile body trace)}" trace)
+                                                 };\nthrow new Error('let pattern not matched ${
+                                                 (pat-loc pat)
+                                                 }. ' + valueToString($target));})()"
+                    (eapp fn arg l)          (match fn
+                                                 (elambda name) "(${(compile fn trace)})(${(compile arg trace)})"
+                                                 _              "${(compile fn trace)}(${(compile arg trace)})")
+                    (ematch target cases l)  "(($target) => {\n${
+                                                 (join
+                                                     "\n"
+                                                         (map
+                                                         cases
+                                                             (fn [case]
+                                                             (let [(, pat body) case]
+                                                                 (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
+                                                 }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
+                                                 l
+                                                 }');})(${
+                                                 (compile target trace)
+                                                 })")))))
 
 (@@' 12)
 
