@@ -48,6 +48,8 @@ export const yankFromSandboxToLibrary = (
             {
                 map: update,
                 prev,
+                meta: {},
+                metaPrev: {},
                 nsMap: {},
                 nsPrev: {},
                 at: [{ start: nselect }],

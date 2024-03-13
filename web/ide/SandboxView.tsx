@@ -103,6 +103,7 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     }
     return {
         map: sandbox.map,
+        meta: {},
         nsMap: {},
         cards: [
             // {

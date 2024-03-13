@@ -74,6 +74,7 @@ export const uiState = (state: State): UIState => {
         nidx: state.nidx,
         root: -1,
         nsMap: {},
+        meta: {},
         cards: [
             {
                 path: [],

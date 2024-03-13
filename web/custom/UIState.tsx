@@ -12,6 +12,16 @@ import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
 import { Map, NsMap } from '../../src/types/mcst';
 
+export type MetaData = {
+    trace?: {
+        name?: string;
+        latest?: boolean;
+    };
+};
+
+export type MetaDataMap = { [key: number]: MetaData };
+export type MetaDataUpdateMap = { [key: number]: MetaData | null };
+
 export type NUIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
@@ -19,7 +29,7 @@ export type NUIState = {
     history: HistoryItem[];
     cards: Card[];
     nsMap: { [key: number]: SandboxNamespace };
-    // Ok here's where it gets real.
+    meta: MetaDataMap;
     evaluator?: string;
     // config?: {
     //     evaluator: string,
@@ -217,6 +227,7 @@ export type UpdatableAction =
     | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
     // expr:def expr:deftype
     | { type: 'key'; key: string; mods: Mods }
+    | { type: 'meta'; meta: NUIState['meta'] }
     | {
           type: 'ns';
           selection?: Path[];

@@ -6226,7 +6226,7 @@ return {type: 'bootstrap', stmts: [
             },
             "1": {
               "0": {
-                "0": 3333333333333333,
+                "0": 3,
                 "type": "pint"
               },
               "type": "eprim"
@@ -6245,12 +6245,23 @@ return {type: 'bootstrap', stmts: [
   {
     "0": {
       "0": {
-        "0": "@@'",
-        "type": "evar"
+        "0": {
+          "0": ",",
+          "type": "evar"
+        },
+        "1": {
+          "0": {
+            "0": "1",
+            "1": 4509,
+            "type": "cst/identifier"
+          },
+          "type": "equot"
+        },
+        "type": "eapp"
       },
       "1": {
         "0": {
-          "0": 1,
+          "0": 42,
           "type": "pint"
         },
         "type": "eprim"

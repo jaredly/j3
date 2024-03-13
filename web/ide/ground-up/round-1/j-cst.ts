@@ -47,14 +47,14 @@ export const toJCST = (node: Node): jcst | null => {
                             ]),
                             1: node.loc,
                         },
-                        {
-                            type: 'cst/list',
-                            0: wrapArray([
-                                { type: 'cst/identifier', 0: '@@', 1: -1 },
-                                ['lol'],
-                            ]),
-                            1: node.loc,
-                        },
+                        // {
+                        //     type: 'cst/list',
+                        //     0: wrapArray([
+                        //         { type: 'cst/identifier', 0: '@@', 1: -1 },
+                        //         ['lol'],
+                        //     ]),
+                        //     1: node.loc,
+                        // },
                     ]),
                     1: node.loc,
                 };

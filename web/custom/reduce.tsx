@@ -24,6 +24,7 @@ import {
     Action,
     Card,
     DualAction,
+    MetaDataUpdateMap,
     NUIState,
     SandboxNamespace,
     UIState,
@@ -103,6 +104,7 @@ const actionToUpdate = (
         }
         case 'config:evaluator':
         case 'namespace-rename':
+        case 'meta':
             return action;
         // case 'collapse':
         //     return action;
@@ -213,6 +215,8 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
     }
     const nitem: HistoryItem = {
         id: state.history.length,
+        meta: undid.metaPrev,
+        metaPrev: undid.meta,
         revert: undid.id,
         prev: undid.map,
         map: undid.prev,
@@ -304,277 +308,9 @@ export const findAdded = <T,>(shorter: T[], longer: T[]) => {
     }
 };
 
-// export const applyCardChange = (
-//     changes: HistoryItem['cardChange'],
-//     cards: Card[],
-// ) => {
-//     if (!changes.length) return cards;
-//     cards = cards.slice();
-//     changes.forEach((change) => {
-//         if (change.type === 'card') {
-//             if (!change.next) {
-//                 cards.splice(change.idx, 1);
-//             } else if (!change.prev) {
-//                 cards.splice(change.idx, 0, change.next);
-//             } else {
-//                 cards[change.idx] = {
-//                     ...cards[change.idx],
-//                     path: change.next.path,
-//                 };
-//             }
-//             return;
-//         }
-//         const { path, ns: next, prev } = change;
-//         const cidx = path[0];
-//         cards[cidx] = { ...cards[cidx] };
-//         let at = (cards[cidx].ns = { ...cards[cidx].ns });
-//         at.children = at.children.slice();
-//         for (let i = 1; i < path.length - 1; i++) {
-//             const child = (at.children[i] = { ...at.children[i] });
-//             if (child.type !== 'normal') {
-//                 throw new Error('invalid card ns change');
-//             }
-//             at = child;
-//             at.children = at.children.slice();
-//         }
-
-//         const last = path[path.length - 1];
-//         if (next && prev) {
-//             console.log(`replacing`, at, last);
-//             const cur = at.children[last];
-//             if (cur.type === 'normal' && next.type === 'normal') {
-//                 at.children[last] = {
-//                     ...cur,
-//                     top: next.top,
-//                     hidden: next.hidden,
-//                     collapsed: next.collapsed,
-//                 };
-//             } else {
-//                 at.children[last] = next;
-//             }
-//         } else if (next) {
-//             console.log(`> adding to`, at, last, next);
-//             at.children.splice(last, 0, next);
-//             console.log('< ', at);
-//         } else if (prev) {
-//             console.log(`removing from`, at, last);
-//             at.children.splice(last, 1);
-//             console.log('< ', at);
-//         }
-//         console.log(cards[cidx]);
-//     });
-//     console.log('applied changes');
-//     return cards;
-// };
-
-// export const nsDiffs = (
-//     path: number[],
-//     prev?: SandboxNamespace,
-//     next?: SandboxNamespace,
-// ): HistoryItem['cardChange'] => {
-//     if (prev === next) return [];
-//     if (
-//         !prev ||
-//         !next ||
-//         prev.type !== next.type ||
-//         (prev.type === 'normal' &&
-//             next.type === 'normal' &&
-//             (prev.top !== next.top ||
-//                 prev.hidden !== next.hidden ||
-//                 prev.collapsed !== next.collapsed))
-//     ) {
-//         return [{ type: 'ns', path, ns: next, prev }];
-//     }
-//     if (prev.type === 'placeholder' || next.type === 'placeholder') {
-//         return prev.hash !== next.hash
-//             ? [{ type: 'ns', path, ns: next, prev }]
-//             : [];
-//     }
-//     if (prev.top !== next.top) {
-//         return [{ type: 'ns', path, ns: next, prev }];
-//     }
-
-//     if (prev.children.length < next.children.length) {
-//         const added = findAdded(prev.children, next.children);
-//         if (added) {
-//             return added.map((add) => ({
-//                 type: 'ns',
-//                 path: path.concat([add.i]),
-//                 ns: add.item,
-//             }));
-//         }
-//     }
-
-//     if (prev.children.length > next.children.length) {
-//         const removed = findAdded(next.children, prev.children);
-//         if (removed) {
-//             return removed.map((add) => ({
-//                 type: 'ns',
-//                 path: path.concat([add.ti]),
-//                 prev: add.item,
-//             }));
-//         }
-//     }
-
-//     if (prev.children.length === next.children.length) {
-//         const change: HistoryItem['cardChange'] = [];
-//         for (let i = 0; i < prev.children.length; i++) {
-//             change.push(
-//                 ...nsDiffs(
-//                     path.concat([i]),
-//                     prev.children[i],
-//                     next.children[i],
-//                 ),
-//             );
-//         }
-//         return change;
-//     }
-
-//     throw new Error(
-//         'couldnt figure out hte difference between the two namespaces',
-//     );
-//     // const change: HistoryItem['cardChange'] = [];
-//     // let pi = 0
-//     // let ni = 0
-//     // while (pi < prev.children.length && ni < next.children.length) {
-
-//     // }
-//     // for (;pi < prev.children.length; pi++) {
-//     //     change.push({path: path.concat([pi]), prev: prev.children[pi], type: 'ns'})
-//     // }
-//     // for (;ni < next.children.length; ni++) {
-//     //     change.push({path: path.concat([ni]), next: next.children[ni], type: 'ns'})
-//     // }
-
-//     // // fallback
-//     // for (
-//     //     let i = 0;
-//     //     i < Math.max(prev.children.length, next.children.length);
-//     //     i++
-//     // ) {
-//     //     if (prev.children[i] !== next.children[i]) {
-//     //         change.push(
-//     //             ...nsDiffs(
-//     //                 path.concat([i]),
-//     //                 prev.children[i],
-//     //                 next.children[i],
-//     //             ),
-//     //         );
-//     //     }
-//     // }
-//     // return change;
-// };
-
-// export const getNs = (path: number[], state: NUIState) => {
-//     let ns = state.cards[path[0]].ns;
-//     for (let i = 1; i < path.length; i++) {
-//         const child = ns.children[path[i]];
-//         if (child?.type !== 'normal') {
-//             return;
-//         }
-//         ns = child;
-//     }
-//     return ns;
-// };
-
-// export const nsUpdateToCardChange = (
-//     nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
-//     prev: NUIState,
-//     next: NUIState,
-// ): HistoryItem['cardChange'][0] | undefined => {
-//     switch (nsUpdate.type) {
-//         case 'add': {
-//             let path = nsUpdate.path;
-//             if (nsUpdate.after) {
-//                 path = path.slice();
-//                 path[path.length - 1] += 1;
-//             }
-//             return {
-//                 type: 'ns',
-//                 path,
-//                 ns: nsUpdate.ns,
-//             };
-//         }
-//         case 'replace': {
-//             const pns = getNs(nsUpdate.path, prev);
-//             const ns = getNs(nsUpdate.path, next);
-//             if (!pns || !ns) return;
-//             return {
-//                 type: 'ns',
-//                 path: nsUpdate.path,
-//                 ns,
-//                 prev: pns,
-//             };
-//         }
-//         case 'rm': {
-//             const pns = getNs(nsUpdate.path, prev);
-//             return {
-//                 type: 'ns',
-//                 path: nsUpdate.path,
-//                 prev: pns,
-//             };
-//         }
-//     }
-// };
-
 export const filterNulls = <T,>(
     value: T,
 ): value is Exclude<T, null | undefined> => value != null;
-
-// export const calcCardChange = (
-//     state: NUIState,
-//     next: NUIState,
-//     action: Action,
-// ): HistoryItem['cardChange'] => {
-//     const change: HistoryItem['cardChange'] = [];
-
-//     if (action.type === 'ns') {
-//         return action.nsUpdate
-//             .map((update) => nsUpdateToCardChange(update, state, next))
-//             .filter(filterNulls);
-//     }
-
-//     if (state.cards.length !== next.cards.length) {
-//         if (state.cards.length < next.cards.length) {
-//             const added = findAdded(state.cards, next.cards);
-//             if (added) {
-//                 return added.map((add) => ({
-//                     type: 'card',
-//                     idx: add.i,
-//                     next: add.item,
-//                 }));
-//             }
-//         } else {
-//             const removed = findAdded(state.cards, next.cards);
-//             if (removed) {
-//                 return removed.map((add) => ({
-//                     type: 'card',
-//                     idx: add.ti,
-//                     prev: add.item,
-//                 }));
-//             }
-//         }
-//         throw new Error('cant figure out the add/removal of cards');
-//     }
-
-//     for (let i = 0; i < state.cards.length; i++) {
-//         const prev = state.cards[i];
-//         const card = next.cards[i];
-//         if (prev === card) continue;
-//         if (prev.path !== card.path) {
-//             change.push({
-//                 type: 'card',
-//                 idx: i,
-//                 prev: { ...prev, ns: { ...prev.ns, children: [] } },
-//                 next: { ...card, ns: { ...card.ns, children: [] } },
-//             });
-//         } else {
-//             change.push(...nsDiffs([i], prev.ns, card.ns));
-//         }
-//     }
-
-//     return change;
-// };
 
 export const calcHistoryItem = (
     state: NUIState,
@@ -585,12 +321,10 @@ export const calcHistoryItem = (
     if (next.map === state.map) {
         return null;
     }
+    let changed = false;
+
     const update: UpdateMap = {};
     const prev: UpdateMap = {};
-    const nsUpdate: NsUpdateMap = {};
-    const nsPrev: NsUpdateMap = {};
-
-    let changed = false;
     Object.keys(next.map).forEach((k) => {
         if (next.map[+k] !== state.map[+k]) {
             changed = true;
@@ -606,6 +340,8 @@ export const calcHistoryItem = (
         }
     });
 
+    const nsUpdate: NsUpdateMap = {};
+    const nsPrev: NsUpdateMap = {};
     Object.keys(next.nsMap).forEach((k) => {
         if (next.nsMap[+k] !== state.nsMap[+k]) {
             changed = true;
@@ -621,6 +357,23 @@ export const calcHistoryItem = (
         }
     });
 
+    const meta: MetaDataUpdateMap = {};
+    const metaPrev: MetaDataUpdateMap = {};
+    Object.keys(next.meta).forEach((k) => {
+        if (next.meta[+k] !== state.meta[+k]) {
+            changed = true;
+            meta[+k] = next.meta[+k];
+            metaPrev[+k] = state.meta[+k] || null;
+        }
+    });
+    Object.keys(state.meta).forEach((k) => {
+        if (!next.meta[+k]) {
+            changed = true;
+            meta[+k] = null;
+            metaPrev[+k] = state.meta[+k];
+        }
+    });
+
     if (!changed) {
         return null;
     }
@@ -628,6 +381,8 @@ export const calcHistoryItem = (
         at: next.at,
         prevAt: state.at,
         prev,
+        meta,
+        metaPrev,
         map: update,
         nsMap: nsUpdate,
         nsPrev: nsPrev,
@@ -683,17 +438,19 @@ export const reduceUpdate = (
                 ...state,
                 ctx: { ...state.ctx, global: { ...state.ctx.global, library } },
             };
-        // case 'collapse':
-        //     return {
-        //         ...state,
-        //         collapse: {
-        //             ...state.collapse,
-        //             [update.top]: !state.collapse[update.top],
-        //         },
-        //     };
-        // return state;
         case 'config:evaluator':
             return { ...state, evaluator: update.id };
+        case 'meta': {
+            const meta = { ...state.meta };
+            Object.entries(update.meta).forEach(([key, value]) => {
+                if (value == null) {
+                    delete meta[+key];
+                } else {
+                    meta[+key] = value;
+                }
+            });
+            return { ...state, meta };
+        }
         default:
             const _: never = update;
             throw new Error('nope update');

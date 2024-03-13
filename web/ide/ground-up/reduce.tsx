@@ -150,6 +150,17 @@ export const reduceUpdate = (
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
             return state;
+        case 'meta': {
+            const meta = { ...state.meta };
+            Object.entries(update.meta).forEach(([key, value]) => {
+                if (value == null) {
+                    delete meta[+key];
+                } else {
+                    meta[+key] = value;
+                }
+            });
+            return { ...state, meta };
+        }
         default:
             const _: never = update;
             throw new Error('nope update');
@@ -522,6 +533,7 @@ const initialState = (): NUIState => {
     return {
         map,
         root: -1,
+        meta: {},
         history: [],
         nidx: () => 0,
         clipboard: [],

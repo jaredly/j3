@@ -227,11 +227,9 @@ export const reduceUpdate = (
             state = { ...state, ...applyUpdate(state, 0, update) };
             return state;
         case 'namespace-rename':
-            console.warn('ignoring namespace rename');
+        case 'meta':
+            console.warn('ignoring ', update.type);
             return state;
-        // return state;
-        // case 'collapse':
-        //     return state;
         default:
             const _: never = update;
             throw new Error('nope update');
@@ -389,6 +387,7 @@ export function loadState(k: string): NUIState {
     return {
         map,
         nsMap: {}, // STOPSHIP
+        meta: {},
         root: -1,
         history: [],
         nidx: () => idx++,
@@ -404,6 +403,7 @@ export function stateFromMap(map: NUIState['map']): NUIState {
     let idx = Object.keys(map).reduce((a, b) => Math.max(a, +b), 0) + 1;
     return {
         map,
+        meta: {},
         nsMap: {}, // STOPSHIP
         root: -1,
         history: [],

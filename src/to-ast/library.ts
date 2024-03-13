@@ -6,7 +6,11 @@ import { HashedTree } from '../db/hash-tree';
 import { Cursor, NsUpdateMap, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
 import { InferMod } from '../infer/infer';
-import { Card, SandboxNamespace } from '../../web/custom/UIState';
+import {
+    Card,
+    MetaDataUpdateMap,
+    SandboxNamespace,
+} from '../../web/custom/UIState';
 
 export type Display = {
     [idx: number]: {
@@ -101,6 +105,8 @@ export type HistoryItem = {
     prev: UpdateMap;
     nsMap: NsUpdateMap;
     nsPrev: NsUpdateMap;
+    meta: MetaDataUpdateMap;
+    metaPrev: MetaDataUpdateMap;
     at: Cursor[];
     prevAt: Cursor[];
     ts: number;

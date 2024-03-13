@@ -1,5 +1,7 @@
 import {
     Card,
+    MetaDataUpdateMap,
+    NUIState,
     RealizedNamespace,
     RegMap,
     SandboxNamespace,
@@ -65,6 +67,7 @@ export type StateChange =
     | StateUpdate
     | StateSelect
     | { type: 'config:evaluator'; id: string }
+    | { type: 'meta'; meta: MetaDataUpdateMap }
     | { type: 'full-select'; at: State['at']; autoComplete?: boolean }
     | void
     | {
@@ -188,6 +191,10 @@ export const applyUpdate = (
     }
     if (update.type === 'full-select') {
         return { ...state, at: update.at };
+    }
+    if (update.type === 'meta') {
+        console.warn('Trying to apply meta update, but were not NUIState');
+        return state;
     }
     let _: never = update;
     throw new Error(`unexpected update`);
