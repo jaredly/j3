@@ -292,6 +292,19 @@ export const actionToUpdate = (
                 nsMap: action.nsMap,
             };
         }
+        case 'rich': {
+            const node = state.map[action.idx];
+            if (node.type === 'rich-text') {
+                return {
+                    type: 'update',
+                    map: {
+                        [action.idx]: { ...node, contents: action.content },
+                    },
+                    selection: state.at[0].start,
+                };
+            }
+            return;
+        }
         // case 'collapse':
         //     return action;
         // case 'namespace-rename':

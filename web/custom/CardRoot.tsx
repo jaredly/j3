@@ -64,6 +64,12 @@ export function CardRoot({
         <div
             {...dragProps}
             onMouseDown={(evt) => {
+                let current = evt.target as HTMLElement;
+                while (current && current !== document.body) {
+                    if (current.classList.contains('rich-text')) return;
+                    current = current.parentElement!;
+                }
+
                 let action = selectionAction(evt, state.at, state.regs);
                 if (action) {
                     dispatch(action);
@@ -188,6 +194,12 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
             if ((evt.target as HTMLElement).getAttribute('data-handle')) {
                 return;
             }
+            let current = evt.target as HTMLElement;
+            while (current && current !== document.body) {
+                if (current.classList.contains('rich-text')) return;
+                current = current.parentElement!;
+            }
+
             setDrag(true);
         },
     };

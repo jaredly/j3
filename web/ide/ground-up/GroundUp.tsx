@@ -60,7 +60,7 @@ export const GroundUp = ({
         const path = state.at[0]?.start;
         try {
             if (path && !isValidCursorLocation(path, state.regs)) {
-                console.log('Not valid sorry');
+                console.log('Not valid sorry', path);
                 const left = goLeftUntil(
                     path,
                     state.map,

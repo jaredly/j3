@@ -193,6 +193,7 @@ export const pathSelForNode = (
                 { idx, ...node.path },
             ];
             const cnode = map[node.id];
+            if (!cnode) return [];
             switch (cnode.type) {
                 case 'array':
                 case 'list':

@@ -186,7 +186,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'rich-text':
-            return { type: 'rich-text', form, lexicalJSON: form.lexicalJSON };
+            return { type: 'rich-text', form, lexicalJSON: form.contents };
         case 'attachment':
             if (!form.file) {
                 return { type: 'unresolved', form, reason: 'empty attachment' };

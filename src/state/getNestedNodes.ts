@@ -1,7 +1,11 @@
+import { LexicalEditor } from 'lexical';
 import { idText } from '../parse/parse';
 import { Layout, MCString, MNode, MNodeExtra, Map } from '../types/mcst';
 import { Path, PathChild } from './path';
 import { ONode } from './types';
+import React from 'react';
+import { LexicalFolks } from '../../web/custom/Lexical';
+import { Store } from '../../web/custom/Store';
 
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
@@ -18,7 +22,13 @@ export type NNode =
     | { type: 'text'; text: string }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | { type: 'ref'; id: number; path: PathChild; ancestors?: Path[] }
-    | { type: 'dom'; node: JSX.Element | null }
+    | {
+          type: 'dom';
+          node:
+              | JSX.Element
+              | null
+              | ((path: Path[], idx: number) => JSX.Element);
+      }
     // | {type: 'sub-path', path: PathChild, child: NNode}
     | { type: 'blinker'; loc: 'start' | 'inside' | 'end' };
 
@@ -246,11 +256,33 @@ export const getNestedNodes = (
         case 'accessText':
         case 'stringText':
         case 'attachment':
-        case 'rich-text':
         case 'hash':
             return {
                 type: 'text',
-                text: text ?? idText(node, map) ?? '🚨',
+                text:
+                    text ??
+                    idText(node, map) ??
+                    '🚨 getNestedNodes cant find text',
+            };
+        case 'rich-text':
+            return {
+                type: 'dom',
+                node: (path, idx) =>
+                    React.createElement(LexicalFolks, {
+                        initial: node.contents,
+                        path,
+                        idx,
+                        // store,
+                        // onChange(value) {
+                        //     // store.dispatch({ type: '' })
+                        // },
+                        // onSelect(v) {
+                        //     store.dispatch({
+                        //         type: 'select',
+                        //         at: [{ start: path }],
+                        //     });
+                        // },
+                    }), //<LexicalFolks value={node.lexicalJSON} />
             };
         default:
             let _: never = node;

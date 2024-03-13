@@ -573,6 +573,9 @@ export const RenderNNode = (
                 </span>
             );
         case 'dom':
+            if (typeof nnode.node === 'function') {
+                return nnode.node(path, idx);
+            }
             return nnode.node;
         case 'indent':
             return (

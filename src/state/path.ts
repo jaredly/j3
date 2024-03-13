@@ -6,6 +6,7 @@ export type PathChild =
     | { type: 'ns-top' }
     | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
+    | { type: 'rich-text'; sel: any }
     | { type: 'expr' | 'text' | 'attribute'; at: number }
     | { type: 'annot-target' | 'annot-annot' }
     | { type: 'tapply-target' }
@@ -30,6 +31,7 @@ export const cmpPath = (one: Path, two: Path): number => {
             case 'spread-contents':
             case 'tapply-target':
             case 'ns-top':
+            case 'rich-text':
                 return 0;
             case 'subtext':
             case 'attribute':

@@ -278,6 +278,20 @@ export const getKeyUpdate = (
     const text = splitGraphemes(textRaw);
     const idx = flast.idx;
 
+    if (textRaw === "'" && key === "'" && node.type === 'identifier') {
+        return replaceWith(fullPath, {
+            map: {
+                [idx]: {
+                    type: 'rich-text',
+                    contents: null,
+                    loc: idx,
+                },
+            },
+            idx,
+            selection: [{ idx, type: 'rich-text', sel: 0 }],
+        });
+    }
+
     if (key === 'ArrowLeft') {
         let flast = fullPath[fullPath.length - 1];
         if ('text' in node || node.type === 'hash') {

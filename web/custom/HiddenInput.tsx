@@ -27,11 +27,11 @@ export function HiddenInput({
     hashNames: { [hash: string]: string };
     display: Ctx['display'];
 }) {
-    useEffect(() => {
-        if (document.activeElement !== hiddenInput.current) {
-            hiddenInput.current?.focus();
-        }
-    }, [state.at]);
+    // useEffect(() => {
+    //     if (document.activeElement !== hiddenInput.current) {
+    //         hiddenInput.current?.focus();
+    //     }
+    // }, [state.at]);
 
     useEffect(() => {
         window.addEventListener(

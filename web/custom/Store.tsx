@@ -41,7 +41,7 @@ type NUIResults = {
     env: any;
 };
 
-type Store = {
+export type Store = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
     getResults(): NUIResults;

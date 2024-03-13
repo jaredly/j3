@@ -27,7 +27,6 @@ export const Cursors = ({
         const found = regs[got]?.main ?? regs[got]?.outside;
         if (found) {
             const box = found.node.getBoundingClientRect();
-            console.log(box.top);
             if (box.top < 0 || box.bottom > window.innerHeight) {
                 const dist =
                     box.top < 0 ? -box.top : box.bottom - window.innerHeight;
@@ -133,13 +132,14 @@ export const calcCursorPos = (
     relative?: boolean,
 ): void | { left: number; top: number; height: number; color?: string } => {
     const last = fullPath[fullPath.length - 1];
+    if (last.type === 'rich-text') return;
     // const loc = pathPos(fullPath)
     const idx = last.idx;
     // const { idx, loc } = sel;
     const nodes = regs[idx];
     if (!nodes) {
         console.error('no nodes, sorry');
-        console.log(regs);
+        // console.log(regs);
         return;
     }
     try {
@@ -225,6 +225,7 @@ export const isValidCursorLocation = (
     regs: RegMap,
 ): boolean => {
     const last = fullPath[fullPath.length - 1];
+    if (last.type === 'rich-text') return true;
     // const loc = pathPos(fullPath)
     const idx = last.idx;
     // const { idx, loc } = sel;

@@ -244,6 +244,9 @@ function builtins() {
         'set/to-list': wrapArray,
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
             unwrapArray(a).map((i) => [i[0], i[1]]),
+        'map/to-list': (a: [any, any][]) =>
+            wrapArray(a.map(([k, v]) => ({ type: ',', 0: k, 1: v }))),
+        // unwrapArray(a).map((i) => [i[0], i[1]]),
 
         jsonify: (m: any) => JSON.stringify(m),
         // Meta stuff

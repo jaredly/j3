@@ -1,5 +1,11 @@
 import equal from 'fast-deep-equal';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    DOMElement,
+    useCallback,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { sexp } from '../../progress/sexp';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Cursor } from '../../src/state/getKeyUpdate';
@@ -218,5 +224,15 @@ function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
             document.removeEventListener('mouseup', up, { capture: true });
         };
     }, [drag]);
-    return { onMouseDownCapture: () => setDrag(true) };
+    return {
+        onMouseDownCapture: (evt: React.MouseEvent) => {
+            let current = evt.target as HTMLElement;
+            while (current && current !== document.body) {
+                if (current.classList.contains('rich-text')) return;
+                current = current.parentElement!;
+            }
+            console.log('graddding');
+            setDrag(true);
+        },
+    };
 }

@@ -38,7 +38,7 @@ export type Attachment = {
 
 export type RichText = {
     type: 'rich-text';
-    lexicalJSON: any;
+    contents: any;
 };
 
 export type NodeContents =
@@ -99,9 +99,6 @@ export type CString = {
 };
 
 export type NodeExtra = {
-    // tannot?: Node;
-    // tapply?: Node;
-    // decorators: { [key: string]: Node[] };
     loc: Loc;
 };
 export type Node = NodeContents & NodeExtra;

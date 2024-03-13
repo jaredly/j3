@@ -229,6 +229,7 @@ export type UpdatableAction =
     // expr:def expr:deftype
     | { type: 'key'; key: string; mods: Mods }
     | { type: 'meta'; meta: NUIState['meta'] }
+    | { type: 'rich'; idx: number; content: any }
     | {
           type: 'ns';
           selection?: Path[];
