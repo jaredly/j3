@@ -185,6 +185,7 @@
                                               (,, s2 t2 nidx)
                                               (t-expr (tenv-apply s1 env'') body nidx)]
                                               (,, (compose-subst s1 s2) t2 nidx))
+        (elet pat init body l)            (let ([,, ]))
         (ematch target cases l)           (let [(,, s1 t1 nidx)
                                               (t-expr tenv target nidx)
                                               t'
@@ -232,6 +233,11 @@
             (let [a 1]
                 a))
             "int")
+        (,
+        (@
+            (let [(, a b) (, 2 3)]
+                a))
+            )
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(a:0) -> a:0")
         (, (@ (fn [a] (+ 2 a))) "(int) -> int")

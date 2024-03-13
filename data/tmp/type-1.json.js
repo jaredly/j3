@@ -584,6 +584,21 @@ throw new Error('let pattern not matched 1923. ' + valueToString($target));})(/*
 }
 }
 }
+if ($target.type === "elet") {
+{
+let pat = $target[0];
+{
+let init = $target[1];
+{
+let body = $target[2];
+{
+let l = $target[3];
+return /*2347*//*2355*/let/*<2355*/(/*2347*//*2357*//*2357*//*2357*/cons/*<2357*/(/*2357*//*2358*/$co$co/*<2358*/)/*<2357*/(/*2357*//*2357*/nil/*<2357*/)/*<2357*/)/*<2347*/
+}
+}
+}
+}
+}
 if ($target.type === "ematch") {
 {
 let target = $target[0];
