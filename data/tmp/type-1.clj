@@ -140,34 +140,41 @@
 
 (make-subst-for-vars ["a" "b" "c"] (map/nil) 0)
 
-1219
+<dom node>
 
 (defn instantiate [(scheme vars t) nidx]
     (let [
         (, subst nidx) (make-subst-for-vars (set/to-list vars) (map/nil) nidx)]
         (, (type-apply subst t) nidx)))
 
+(instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)
+
+<dom node>
+
 (defn unify [t1 t2 nidx]
     (match (, t1 t2)
-        (, (tapp l r) (tapp l' r')) (let [
-                                        (, s1 nidx) (unify l l' nidx)
-                                        (, s2 nidx) (unify (type-apply s1 r) (type-apply s1 r') nidx)]
-                                        (, (compose-subst s1 s2) nidx))
-        (, (tvar u _) t)            (, (var-bind u t) nidx)
-        (, t (tvar u _))            (, (var-bind u t) nidx)
-        (, (tcon a _) (tcon b _))   (if (= a b)
-                                        (, map/nil nidx)
-                                            (fatal "cant unify"))
-        _                           (fatal "cant unify ${(valueToString t1)} ${(valueToString t2)}")))
+        (, (tapp target-1 arg-1) (tapp target-2 arg-2)) (let [
+                                                            (, target-subst nidx) (unify target-1 target-2 nidx)
+                                                            (, arg-subst nidx)    (unify
+                                                                                      (type-apply target-subst arg-1)
+                                                                                          (type-apply target-subst arg-2)
+                                                                                          nidx)]
+                                                            (, (compose-subst target-subst arg-subst) nidx))
+        (, (tvar var _) t)                              (, (var-bind var t) nidx)
+        (, t (tvar var _))                              (, (var-bind var t) nidx)
+        (, (tcon a la) (tcon b lb))                     (if (= a b)
+                                                            (, map/nil nidx)
+                                                                (fatal "cant unify  ${a} (${la}) and ${b} (${lb})"))
+        _                                               (fatal "cant unify ${(valueToString t1)} ${(valueToString t2)}")))
 
-(defn var-bind [u t]
-    (match t
-        (tvar v _) (if (= u v)
+(defn var-bind [var type]
+    (match type
+        (tvar v _) (if (= var v)
                        map/nil
-                           (map/set map/nil u t))
-        _          (if (set/has (type-free t) u)
+                           (map/set map/nil var type))
+        _          (if (set/has (type-free type) var)
                        (fatal "occurs check")
-                           (map/set map/nil u t))))
+                           (map/set map/nil var type))))
 
 (defn t-prim [prim]
     (match prim

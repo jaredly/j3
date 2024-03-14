@@ -28,7 +28,11 @@ export function HiddenInput({
     display: Ctx['display'];
 }) {
     useEffect(() => {
-        if (document.activeElement !== hiddenInput.current) {
+        if (
+            document.activeElement !== hiddenInput.current &&
+            !document.activeElement?.classList.contains('bn-editor')
+        ) {
+            console.log(document.activeElement);
             hiddenInput.current?.focus();
         }
     }, [state.at]);
@@ -122,6 +126,8 @@ export function HiddenInput({
             }}
             onKeyDown={(evt) => {
                 if (evt.key === 'z' && (evt.metaKey || evt.ctrlKey)) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
                     return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
                 }
 
