@@ -1,6 +1,6 @@
 import React from 'react';
 import { Node } from '../../../src/types/cst';
-import { Action, NamespacePlugin } from '../UIState';
+import { Action, MetaDataMap, NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
 import { valueToString } from '../../ide/ground-up/reduce';
@@ -229,7 +229,12 @@ export const fixturePlugin: NamespacePlugin<any> = {
         // if ... this ... is ...
         return null;
     },
-    process(node: Node, evaluate: (node: Node) => any) {
+    process(
+        node: Node,
+        meta: MetaDataMap,
+        evaluate: (node: Node) => any,
+        setTracing: (loc: number | null) => void,
+    ) {
         const data = parse(node);
         if (!data) return {};
         let test: null | Function = null;
@@ -251,6 +256,9 @@ export const fixturePlugin: NamespacePlugin<any> = {
                 item.input?.node.type !== 'blank'
             ) {
                 try {
+                    if (meta[item.input.node.loc]?.traceTop) {
+                        setTracing(item.input.node.loc);
+                    }
                     results[item.input.node.loc] = {
                         expected:
                             item.output?.node.type !== 'blank'
@@ -268,6 +276,9 @@ export const fixturePlugin: NamespacePlugin<any> = {
                         found: null,
                         error: (err as Error).message,
                     };
+                }
+                if (meta[item.input.node.loc]?.traceTop) {
+                    setTracing(null);
                 }
             }
         });

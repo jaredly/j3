@@ -23,7 +23,7 @@ export const evaluatorFromText = (
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
 
-    console.log(envArgs);
+    // console.log(envArgs);
     const data = new Function(envArgs, '{' + text + '}')(san);
     if (data.type === 'full') {
         return data;
@@ -125,7 +125,7 @@ export const evaluatorFromText = (
                                 withTracing(traceMap, stmt[1], san);
                             }
                             const value = fn(san);
-                            san.$trace = old;
+                            san.$setTracer(null);
                             return {
                                 env,
                                 display: valueToString(value),
@@ -170,7 +170,14 @@ export const evaluatorFromText = (
                         };
                     }
                 },
-                evaluate(expr, env, meta, traceMap) {
+                setTracing(idx, traceMap) {
+                    if (idx != null) {
+                        withTracing(traceMap, idx, san);
+                    } else {
+                        san.$setTracer(null);
+                    }
+                },
+                evaluate(expr, env, meta) {
                     const mm = Object.entries(meta)
                         .map(([k, v]) => [+k, v.trace])
                         .filter((k) => k[1]);
@@ -182,16 +189,7 @@ export const evaluatorFromText = (
                             '{' + env.join('\n') + '\nreturn ' + js + '}',
                         );
                         try {
-                            const ea = expr as any;
-                            const eloc = ea[3] ?? ea[2] ?? ea[1];
-                            const old = san.$trace;
-                            if (meta[eloc]?.traceTop) {
-                                withTracing(traceMap, eloc, san);
-                            }
-
-                            const value = fn(san);
-                            san.$trace = old;
-                            return value;
+                            return fn(san);
                         } catch (err) {
                             return `Error ${(err as Error).message}`;
                         }
@@ -216,6 +214,7 @@ export const evaluatorFromText = (
             init(): string[] {
                 return [];
             },
+            setTracing(idx, traceMap) {},
             addStatement(stmt: stmt, env) {
                 if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
                     try {
@@ -341,15 +340,13 @@ function withTracing(
 ) {
     let count = 0;
     const trace: { [key: number]: any[] } = (traceMap[loc] = {});
-    const old = san.$trace;
-    san.$trace = (loc: number, info: any, value: any) => {
+    san.$setTracer((loc: number, value: any) => {
         if (!trace[loc]) {
             trace[loc] = [];
         }
         trace[loc].push({ value, at: count++ });
         return value;
-    };
-    return old;
+    });
 }
 
 function sanitizedEnv(benv: { [key: string]: any }) {

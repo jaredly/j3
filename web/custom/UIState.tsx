@@ -177,7 +177,12 @@ export type NamespacePlugin<T> = {
     id: string;
     title: string;
     test(node: Node): boolean;
-    process(node: Node, evaluate: (node: Node) => any): T;
+    process(
+        node: Node,
+        meta: MetaDataMap,
+        evaluate: (node: Node) => any,
+        setTracing: (idx: number | null) => void,
+    ): T;
     render(
         node: Node,
         results: T,

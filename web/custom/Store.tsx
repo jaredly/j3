@@ -93,7 +93,6 @@ const getResults = (
     results.env = evaluator?.init();
     findTops(state).forEach(({ top, hidden, plugin }) => {
         if (hidden) return;
-        console.log('process top', top, plugin);
         const stmt = fromMCST(top, state.map);
         if (stmt.type === 'blank') {
             results.produce[stmt.loc] = ' ';
@@ -107,9 +106,9 @@ const getResults = (
                     results.produce[stmt.loc] = `plugin ${plugin} not found`;
                     return;
                 }
-                console.log('doing ap lugin resulst', stmt.loc);
                 results.pluginResults[stmt.loc] = pl.process(
                     fromMCST(top, state.map),
+                    state.meta,
                     (node) => {
                         const errors = {};
                         const expr = evaluator.parseExpr(node, errors);
@@ -117,9 +116,9 @@ const getResults = (
                             expr,
                             results.env,
                             state.meta,
-                            results.traces,
                         );
                     },
+                    (idx) => evaluator.setTracing(idx, results.traces),
                 );
             } else {
                 const errs: Results['errors'] = {};

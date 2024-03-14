@@ -88,12 +88,11 @@ export type FullEvalator<Env, Stmt, Expr> = {
         meta: MetaDataMap,
         trace: { [loc: number]: { [loc: number]: any[] } },
     ): { env: Env; display: JSX.Element | string | LocError };
-    evaluate(
-        expr: Expr,
-        env: Env,
-        meta: MetaDataMap,
+    setTracing(
+        idx: number | null,
         traceMap: { [loc: number]: { [loc: number]: any[] } },
-    ): any;
+    ): void;
+    evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState): { js: string; errors: Errors };
 };
 
@@ -105,6 +104,7 @@ export const repr: FullEvalator<void, Node, Node> = {
     parseExpr(node: Node, errors: Errors) {
         return node;
     },
+    setTracing(idx) {},
     addStatement(stmt, env) {
         return { env, display: JSON.stringify(stmt) };
     },
@@ -137,6 +137,7 @@ export const bootstrap: FullEvalator<
     evaluate(expr, env) {
         return evalExpr(expr, env);
     },
+    setTracing(idx) {},
     addStatement(stmt, env) {
         switch (stmt.type) {
             case 'sdef': {
@@ -193,6 +194,7 @@ export const bootstrap: FullEvalator<
 };
 
 function builtins() {
+    let tracer: null | ((loc: number, v: any) => void) = null;
     let env = {
         // Math
         '+': (a: number) => (b: number) => a + b,
@@ -265,7 +267,13 @@ function builtins() {
             return new Function(k, 'return ' + v)(obj);
         },
         sanitize,
+        $setTracer(nw: null | ((loc: number, value: any) => void)) {
+            console.log('SET TRACRE', !!nw);
+            tracer = nw;
+        },
         $trace(loc: number, info: any, value: any) {
+            console.log('TRACE MAYBE', tracer, loc, value);
+            tracer?.(loc, value);
             return value;
         },
         // Just handy
