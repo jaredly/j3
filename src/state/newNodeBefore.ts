@@ -156,7 +156,7 @@ export const newNodeBefore = (
             ...newThing,
             selection: path
                 .slice(0, i)
-                .concat({ idx: parent.idx, type: 'child', at: at + 1 })
+                .concat({ idx: parent.idx, type: 'child', at: at })
                 .concat(newThing.selection),
         };
     }

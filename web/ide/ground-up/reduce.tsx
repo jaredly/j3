@@ -780,9 +780,13 @@ export const verifyState = (state: NUIState) => {
     }
 
     state.at.forEach((cursor) => {
-        verifyPath(cursor.start, state);
-        if (cursor.end) {
-            verifyPath(cursor.end, state);
+        try {
+            verifyPath(cursor.start, state);
+            if (cursor.end) {
+                verifyPath(cursor.end, state);
+            }
+        } catch (err) {
+            throw new Error(`Invalid path ${JSON.stringify(cursor)}`);
         }
     });
 };
