@@ -64,6 +64,10 @@
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
+(foldr 0 [1 2 3] (fn [a b] b))
+
+(foldl 0 [1 2 3] (fn [a b] b))
+
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
 <dom node>
@@ -262,12 +266,18 @@
                                                (,, value-subst value-type nidx) (t-expr tenv init nidx)
                                                (,, pat-type bindings nidx)      (t-pat tenv pat nidx)
                                                (, unified-subst nidx)           (unify value-type pat-type nidx)
-                                               bindings                         (map/map (type-apply unified-subst) bindings)
-                                               bound-env                        (foldl
+                                               bindings                         (map/map
+                                                                                    (type-apply (compose-subst value-subst unified-subst))
+                                                                                        bindings)
+                                               schemes                          (map/map (scheme set/nil) bindings)
+                                               schemes                          (map/map
+                                                                                    (generalize
+                                                                                        (tenv-apply (compose-subst value-subst unified-subst) tenv))
+                                                                                        bindings)
+                                               bound-env                        (foldr
                                                                                     (tenv-apply value-subst tenv)
-                                                                                        (map/to-list bindings)
-                                                                                        (fn [tenv (, name type)]
-                                                                                        (tenv/set-type tenv name (generalize tenv type))))
+                                                                                        (map/to-list schemes)
+                                                                                        (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme)))
                                                (,, body-subst body-type nidx)   (t-expr
                                                                                     (tenv-apply (compose-subst unified-subst value-subst) bound-env)
                                                                                         body
@@ -368,17 +378,24 @@
                 1 1))
             )
         ; Exploration
-        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (x:4:6) -> x:4:6)")
-        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(x:4:13) -> x:4:13")
-        (, (@ (fn [n] (let [(, a b) (, 1 (fn [x] n)) m (n 2)] b))) )
+        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (x:4:7) -> x:4:7)")
+        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(x:4:14) -> x:4:14")
+        (,
+        (@ (let [m (, 1 (fn [x] x)) (, a b) m z (b 2)] (, m b)))
+            "((, ((, int) (x:4:21) -> x:4:21)) (x:4:7:23) -> x:4:7:23)")
+        (,
+        (@ (fn [n] (let [(, a b) (, 1 (fn [x] n)) m (n 2)] b)))
+            "((int) -> m:11) -> (x:5:12) -> (int) -> m:11")
         ; Tests from the paper
-        (, (@ (let [id (fn [x] x)] id)) "(x:0:2) -> x:0:2")
-        (, (@ (let [id (fn [x] x)] (id id))) "(x:0:5) -> x:0:5")
-        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(x:0:5) -> x:0:5")
-        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(x:0:2) -> x:0:2")
+        (, (@ (let [id (fn [x] x)] id)) "(x:0:3) -> x:0:3")
+        (, (@ (let [id (fn [x] x)] (id id))) "(x:0:6) -> x:0:6")
+        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(y:1:7) -> y:1:7")
+        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(y:1:4) -> y:1:4")
+        (, (@ (fn [x] (let [y x] y))) "(y:1) -> y:1")
+        (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(b:6) -> b:6")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
         (, (@ (let [id (fn [x] (x x))] id)) )
-        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> a:1) -> a:1")
+        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> x:3) -> x:3:4")
         (, (@ (2 2)) )])
 
 198
