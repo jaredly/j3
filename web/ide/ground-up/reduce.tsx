@@ -775,7 +775,12 @@ export const verifyState = (state: NUIState) => {
 };
 
 export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
-    let all: { top: number; hidden?: boolean; path: Path[] }[] = [];
+    let all: {
+        top: number;
+        hidden?: boolean;
+        path: Path[];
+        plugin?: string;
+    }[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
     const add = (id: number, path: Path[]) => {
         const ns = state.nsMap[id];
@@ -784,8 +789,9 @@ export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
                 seen[ns.top] = true;
                 all.push({
                     top: ns.top,
-                    hidden: ns.hidden || ns.plugin != null,
+                    hidden: ns.hidden,
                     path: [...path, { type: 'ns-top', idx: id }],
+                    plugin: ns.plugin,
                 });
             }
             ns.children.forEach((child, i) =>

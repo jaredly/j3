@@ -37,25 +37,29 @@ const PluginRender = ({
     const expanded = useExpanded(props.idx);
     const store = useGetStore();
     // const expanded = useMemo(() => fromMCST(ns.top, map), [ns.top, map]);
-    const results = useMemo(
-        () =>
-            plugin.process(expanded, (node) => {
-                const errors = {};
-                const expr = ev.parseExpr(node, errors);
-                return ev.evaluate(
-                    expr,
-                    env,
-                    store.getState().meta,
-                    store.getResults().traces,
-                );
-            }),
-        [ev, env, expanded],
-    );
+    const results = store.getResults().pluginResults[props.idx];
+    // console.log('RESULTS', results);
+    // const results = useMemo(
+    //     () =>
+    //         plugin.process(expanded, (node) => {
+    //             const errors = {};
+    //             const expr = ev.parseExpr(node, errors);
+    //             return ev.evaluate(
+    //                 expr,
+    //                 env,
+    //                 store.getState().meta,
+    //                 store.getResults().traces,
+    //             );
+    //         }),
+    //     [ev, env, expanded],
+    // );
     const rn = useMemo(
-        () => plugin.render(expanded, results, values.dispatch),
+        () =>
+            results ? plugin.render(expanded, results, values.dispatch) : null,
         [expanded, results],
     );
-    if (!rn) return <Render {...props} />;
+    if (!results) return <div>NO RESULTS</div>;
+    if (!rn || !results) return <Render {...props} />;
     return <RenderNNode {...props} values={values} nnode={rn} />;
 };
 

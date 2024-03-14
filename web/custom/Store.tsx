@@ -32,6 +32,7 @@ import {
 import { layout } from '../../src/layout';
 import { goRight } from '../../src/state/navigate';
 import { cmpFullPath } from '../../src/state/path';
+import { plugins } from './plugins';
 
 type NUIResults = {
     errors: { [loc: number]: string[] };
@@ -40,6 +41,7 @@ type NUIResults = {
     produce: { [key: string]: JSX.Element | string | LocError };
     env: any;
     traces: { [loc: number]: { [loc: number]: any[] } };
+    pluginResults: { [nsLoc: number]: any };
 };
 
 export type Store = {
@@ -85,35 +87,59 @@ const getResults = (
         produce: {},
         env: null,
         traces: {},
+        pluginResults: {},
     };
 
     results.env = evaluator?.init();
-    findTops(state).forEach(({ top, hidden }) => {
+    findTops(state).forEach(({ top, hidden, plugin }) => {
         if (hidden) return;
-        // console.log('process top', top);
+        console.log('process top', top, plugin);
         const stmt = fromMCST(top, state.map);
         if (stmt.type === 'blank') {
             results.produce[stmt.loc] = ' ';
             return;
         }
         if (evaluator) {
-            const errs: Results['errors'] = {};
-            const ast = evaluator.parse(stmt, errs);
-            Object.assign(results.errors, errs);
-            if (ast) {
-                const res = evaluator.addStatement(
-                    ast,
-                    results.env!,
-                    state.meta,
-                    results.traces,
+            if (plugin) {
+                results.produce[stmt.loc] = 'evaluated by plugin';
+                const pl = plugins.find((p) => p.id === plugin);
+                if (!pl) {
+                    results.produce[stmt.loc] = `plugin ${plugin} not found`;
+                    return;
+                }
+                console.log('doing ap lugin resulst', stmt.loc);
+                results.pluginResults[stmt.loc] = pl.process(
+                    fromMCST(top, state.map),
+                    (node) => {
+                        const errors = {};
+                        const expr = evaluator.parseExpr(node, errors);
+                        return evaluator.evaluate(
+                            expr,
+                            results.env,
+                            state.meta,
+                            results.traces,
+                        );
+                    },
                 );
-                results.env = res.env;
-                results.produce[stmt.loc] = res.display;
-                // console.log('good', res.display);
             } else {
-                // console.log('not parsed');
-                results.produce[stmt.loc] =
-                    'not parsed ' + JSON.stringify(errs);
+                const errs: Results['errors'] = {};
+                const ast = evaluator.parse(stmt, errs);
+                Object.assign(results.errors, errs);
+                if (ast) {
+                    const res = evaluator.addStatement(
+                        ast,
+                        results.env!,
+                        state.meta,
+                        results.traces,
+                    );
+                    results.env = res.env;
+                    results.produce[stmt.loc] = res.display;
+                    // console.log('good', res.display);
+                } else {
+                    // console.log('not parsed');
+                    results.produce[stmt.loc] =
+                        'not parsed ' + JSON.stringify(errs);
+                }
             }
         } else {
             results.produce[stmt.loc] = 'No evaluator';

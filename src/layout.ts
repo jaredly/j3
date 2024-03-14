@@ -85,7 +85,7 @@ export const calculateLayout = (
             if (
                 cw === false ||
                 cw > maxWidth ||
-                (firstName === 'let' && node.values.length > 2) ||
+                // (firstName === 'let' && node.values.length > 2) ||
                 firstName === 'switch' ||
                 firstName === 'match' ||
                 firstName === 'if'

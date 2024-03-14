@@ -120,16 +120,12 @@ export const evaluatorFromText = (
                             };
                         }
                         try {
-                            let inner = san;
+                            let old = san.$trace;
                             if (meta[stmt[1]]?.traceTop) {
-                                inner = withTracing(
-                                    traceMap,
-                                    stmt[1],
-                                    inner,
-                                    san,
-                                );
+                                withTracing(traceMap, stmt[1], san);
                             }
-                            const value = fn(inner);
+                            const value = fn(san);
+                            san.$trace = old;
                             return {
                                 env,
                                 display: valueToString(value),
@@ -186,14 +182,16 @@ export const evaluatorFromText = (
                             '{' + env.join('\n') + '\nreturn ' + js + '}',
                         );
                         try {
-                            let inner = san;
                             const ea = expr as any;
                             const eloc = ea[3] ?? ea[2] ?? ea[1];
+                            const old = san.$trace;
                             if (meta[eloc]?.traceTop) {
-                                inner = withTracing(traceMap, eloc, inner, san);
+                                withTracing(traceMap, eloc, san);
                             }
 
-                            return fn(inner);
+                            const value = fn(san);
+                            san.$trace = old;
+                            return value;
                         } catch (err) {
                             return `Error ${(err as Error).message}`;
                         }
@@ -339,22 +337,19 @@ export const evaluatorFromText = (
 function withTracing(
     traceMap: { [loc: number]: { [loc: number]: any[] } },
     loc: number,
-    inner: { [key: string]: any },
     san: { [key: string]: any },
 ) {
     let count = 0;
     const trace: { [key: number]: any[] } = (traceMap[loc] = {});
-    inner = {
-        ...san,
-        $trace: (loc: number, info: any, value: any) => {
-            if (!trace[loc]) {
-                trace[loc] = [];
-            }
-            trace[loc].push({ value, at: count++ });
-            return value;
-        },
+    const old = san.$trace;
+    san.$trace = (loc: number, info: any, value: any) => {
+        if (!trace[loc]) {
+            trace[loc] = [];
+        }
+        trace[loc].push({ value, at: count++ });
+        return value;
     };
-    return inner;
+    return old;
 }
 
 function sanitizedEnv(benv: { [key: string]: any }) {
