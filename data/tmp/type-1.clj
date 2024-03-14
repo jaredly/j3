@@ -1,4 +1,5 @@
-<dom node>
+(** ## Our AST
+    Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
 (deftype expr
     (eprim prim int)
@@ -36,7 +37,8 @@
         (tapp (tapp (tcon "->" _) a _) b _) "(${(type-to-string a)}) -> ${(type-to-string b)}"
         (tapp a b _)                        "(${(type-to-string a)} ${(type-to-string b)})"))
 
-<dom node>
+(** ## Prelude
+    some handy functions **)
 
 (defn map [values f]
     (match values
@@ -70,7 +72,7 @@
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
-<dom node>
+(** ## Types for inference **)
 
 (deftype scheme (scheme (set string) type))
 
@@ -101,7 +103,11 @@
 (defn tenv/set-type [(tenv types cons names) k v]
     (tenv (map/set types k v) cons names))
 
-<dom node>
+(** ## Finding "free" type variables
+    The *-free functions are about finding unbound type variables.
+    - type-free: types cannot contain bindings, so every tvar is unbound
+    - scheme-free: a scheme contains a list of bound variables and a type, so it returns all tvars in the type that are not listed in the bound variables list
+    - tenv-free: a type environment maps a list of variable names to schemes, so it returns all unbound tvars in all of the schemes. **)
 
 (defn type-free [type]
     (match type
@@ -121,7 +127,11 @@
         [(, (scheme (set/from-list ["a"]) (tvar "a" -1)) [])
         (, (scheme (set/from-list []) (tvar "a" -1)) ["a"])])
 
-<dom node>
+(** ## Applying type substitutions
+    A subst maps type variable names to types
+    - type-apply: any tvar that appears in subst gets swapped out
+    - scheme-apply: remove any substitutions that apply to its list of bound variables, and then do the substitution
+    - tenv-apply: apply a subst to all schemes **)
 
 (defn type-apply [subst type]
     (match type
@@ -137,7 +147,8 @@
 (defn tenv-apply [subst (tenv types cons names)]
     (tenv (map/map (scheme-apply subst) types) cons names))
 
-<dom node>
+(** ## Composing substitution maps
+    Note that compose-subst is not commutative. The later map will get the earlier substitutions applied to it, and then any conflicts go to later. **)
 
 (defn compose-subst [earlier later]
     (map/merge (map/map (type-apply earlier) later) earlier))
@@ -147,22 +158,23 @@
 
 (,
     (fn [x] (map/to-list (compose-subst earlier-subst (map/from-list x))))
-        [<dom node>
+        [(** x gets the "a" substitution applied to it **)
         (,
         [(, "x" (tvar "a" -1))]
             [(, "x" (tcon "a-mapped" -1))
             (, "a" (tcon "a-mapped" -1))
             (, "b" (tvar "c" -1))])
-        <dom node>
+        (** c does not get applied to b in earlier **)
         (,
         [(, "c" (tcon "int" -1))]
             [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
-        <dom node>
+        (** a gets the "b" substitution applied to it, and then overrides the "a" from earlier **)
         (,
         [(, "a" (tvar "b" -1))]
             [(, "a" (tvar "c" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])])
 
-<dom node>
+(** ## Generalizing
+    This is where we take a type and turn it into a scheme, so we need to be able to know what variables should be reported as "free" at the level of the type. **)
 
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
@@ -178,7 +190,8 @@
 
 (make-subst-for-vars ["a" "b" "c"] (map/nil) 0)
 
-<dom node>
+(** ## Instantiate
+    This takes a scheme and generates fresh type variables for everything bound within it. **)
 
 (defn instantiate [(scheme vars t) nidx]
     (let [
@@ -187,7 +200,9 @@
 
 (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)
 
-<dom node>
+(** ## Unification
+    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we add it to the subst, otherwise we recurse.
+    The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
 (defn unify [t1 t2 nidx]
     (match (, t1 t2)
@@ -224,12 +239,16 @@
 
 (defn t-expr [tenv expr nidx]
     (match expr
-        <dom node>
+        (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
         (evar name l)                       (match (tenv/type tenv name)
                                                 (none)       (fatal "Unbound variable ${name}")
                                                 (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
         (eprim prim)                        (,, map/nil (t-prim prim) nidx)
-        <dom node>
+        (** For lambdas (fn [name] body)
+            - create a type variable to represent the type of the argument
+            - add the type variable to the typing environment
+            - infer the body, using the augmented environment
+            - if the body's subst has some binding for our arg variable, use that **)
         (elambda name nl body l)            (let [
                                                 (, arg-type nidx)              (new-type-var name nidx)
                                                 env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
@@ -238,7 +257,12 @@
                                                     body-subst
                                                         (tfn (type-apply body-subst arg-type) body-type l)
                                                         nidx))
-        <dom node>
+        (** Function application (target arg)
+            - create a type variable to represent the return value of the function application
+            - infer the target type
+            - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
+            - unify the target type with a function (arg type) => return value type variable
+            - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
         (eapp target arg l)                 (let [
                                                 (, result-var nidx)                (new-type-var "a" nidx)
                                                 (,, target-subst target-type nidx) (t-expr tenv target nidx)
@@ -253,7 +277,12 @@
                                                             (compose-subst arg-subst target-subst))
                                                         (type-apply unified-subst result-var)
                                                         nidx))
-        <dom node>
+        (** Let: simple version, where the pattern is just a pvar
+            - infer the type of the value being bound
+            - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
+            - apply any subst that we learned from inferring the value to our type environment, producing a new tenv (?) Seems like this ought to be equivalent to doing tenv-apply to tenv and then adding the name. It's impossible for the value-subst to produce ... something that would apply to the value-type, right??? right??
+            - infer the type of the body, using the tenv that has both the name bound to the generalized inferred type, as well as any substitutions that resulted from inferring the type of the bound value.
+            - compose the substitutions from the body with those from the value **)
         ;(elet (pvar name nl) value body 1) ;(let [
                                                 (,, value-subst value-type nidx) (t-expr tenv value nidx)
                                                 value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
@@ -261,7 +290,10 @@
                                                 e2                               (tenv-apply value-subst env-with-name)
                                                 (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
                                                 (,, (compose-subst body-subst value-subst) body-type nidx))
-        <dom node>
+        (** Let: complex version! Now with a whole lot of polymorphism!
+            - infer the type of the value
+            - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
+            - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
         (elet pat init body l)              (let [
                                                 (,, value-subst value-type nidx) (t-expr tenv init nidx)
                                                 (,, pat-type bindings nidx)      (t-pat tenv pat nidx)
@@ -306,7 +338,7 @@
                                                                    (none)   (fatal "Unknown constructor: ${name}")
                                                                    (some v) v)
                                 (,, tres tsubst nidx)          (instantiate (scheme free cres) nidx)
-                                <dom node>
+                                (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
                                 cargs                          (map cargs (type-apply tsubst))
                                 zipped                         (zip args cargs)
                                 (,, subst bindings nidx)       (foldl

@@ -20,6 +20,7 @@ export type NNode =
     | { type: 'indent'; child: NNode }
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
+    | { type: 'rich-text'; contents: any }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
     | {
           type: 'ref';
@@ -79,6 +80,7 @@ export const unnestNodes = (node: NNode): ONode[] => {
                 },
             ];
         case 'dom':
+        case 'rich-text':
             return [];
         case 'ref':
         case 'blinker':
@@ -292,25 +294,26 @@ export const getNestedNodes = (
                     '🚨 getNestedNodes cant find text',
             };
         case 'rich-text':
-            return {
-                type: 'dom',
-                node: (path, idx) =>
-                    React.createElement(LexicalFolks, {
-                        initial: node.contents,
-                        path,
-                        idx,
-                        // store,
-                        // onChange(value) {
-                        //     // store.dispatch({ type: '' })
-                        // },
-                        // onSelect(v) {
-                        //     store.dispatch({
-                        //         type: 'select',
-                        //         at: [{ start: path }],
-                        //     });
-                        // },
-                    }), //<LexicalFolks value={node.lexicalJSON} />
-            };
+            return { type: 'rich-text', contents: node.contents };
+        // return {
+        //     type: 'dom',
+        //     node: (path, idx) =>
+        //         React.createElement(LexicalFolks, {
+        //             initial: node.contents,
+        //             path,
+        //             idx,
+        //             // store,
+        //             // onChange(value) {
+        //             //     // store.dispatch({ type: '' })
+        //             // },
+        //             // onSelect(v) {
+        //             //     store.dispatch({
+        //             //         type: 'select',
+        //             //         at: [{ start: path }],
+        //             //     });
+        //             // },
+        //         }), //<LexicalFolks value={node.lexicalJSON} />
+        // };
         default:
             let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);
