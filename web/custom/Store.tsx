@@ -541,8 +541,9 @@ export const useNode = (idx: number, path: Path[]): Values => {
     let [state, setState] = useState(() =>
         getValues(idx, path, store, store.getState(), store.getResults()),
     );
+    const diff = state.node.loc !== idx;
     const lpath = useRef(path);
-    if (lpath.current !== path && !equal(lpath.current, path)) {
+    if ((lpath.current !== path && !equal(lpath.current, path)) || diff) {
         lpath.current = path;
         state = getValues(
             idx,
@@ -551,11 +552,19 @@ export const useNode = (idx: number, path: Path[]): Values => {
             store.getState(),
             store.getResults(),
         );
+        console.warn(`path was different~ ahhh`);
+        // setState(state);
 
         // throw new Error(
         //     `path was different, I guess I need to account for it.`,
         // );
     }
+    useEffect(() => {
+        if (diff) {
+            setState(state);
+        }
+    }, [diff]);
+    // useMemo(() =)
     useEffect(() => {
         return store.onChange(idx, (state, results) => {
             // Node is being deleted, ignore. This'll unmount in a minute

@@ -887,11 +887,14 @@ const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
             }
             return state.map[node.templates[p.at - 1].expr];
         case 'attribute':
+            if (node.type === 'recordAccess') {
+                return state.map[node.items[p.at - 1]];
+            }
         case 'annot-annot':
         case 'annot-target':
         case 'tapply-target':
         case 'record-target':
-            throw new Error(`not handled atm ${node.type} ${p.type}`);
+            throw new Error(`not handled atm node=${node.type} path=${p.type}`);
         case 'spread-contents':
             if (!('contents' in node)) {
                 throw new Error(`contents? ${node.type}`);

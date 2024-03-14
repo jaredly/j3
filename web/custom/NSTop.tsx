@@ -209,7 +209,7 @@ export function NSTop({
                                     drag={drag}
                                     nsReg={nsReg}
                                     produce={produce}
-                                    key={i}
+                                    key={child.top + ':' + i}
                                     ns={child}
                                     path={path.concat({
                                         type: 'ns' as const,

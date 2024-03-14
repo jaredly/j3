@@ -120,9 +120,30 @@ export function handleBackspace(
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
-    const isEmpty =
-        (node.type === 'comment' && node.text.length === 0) ||
-        node.type === 'blank';
+    // const isEmpty =
+    //     (node.type === 'comment' && node.text.length === 0) ||
+    //     node.type === 'blank';
+
+    if (
+        atStart &&
+        ppath.type === 'spread-contents' &&
+        (parent.type === 'spread' || parent.type === 'comment-node')
+    ) {
+        const up = replacePath(
+            fullPath.slice(0, -2),
+            parent.contents,
+            map,
+            nsMap,
+        );
+        if (up?.update) {
+            return {
+                type: 'update',
+                map: up.update,
+                nsMap: up.nsMap,
+                selection: [...fullPath.slice(0, -2), flast],
+            };
+        }
+    }
 
     const gpath = fullPath[fullPath.length - 3];
     if (
@@ -172,6 +193,7 @@ export function handleBackspace(
         };
     }
 
+    // Unwrap a list or array
     if (
         ppath.type === 'child' &&
         ppath.at === 0 &&
