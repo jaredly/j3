@@ -48,6 +48,12 @@
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
 
+(defn zip [one two]
+    (match (, one two)
+        (, [] [])               []
+        (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
+        _                       []))
+
 (defn foldl [init items f]
     (match items
         []           init
@@ -173,7 +179,7 @@
 (defn instantiate [(scheme vars t) nidx]
     (let [
         (, subst nidx) (make-subst-for-vars (set/to-list vars) (map/nil) nidx)]
-        (, (type-apply subst t) nidx)))
+        (,, (type-apply subst t) subst nidx)))
 
 (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)
 
@@ -217,7 +223,7 @@
         <dom node>
         (evar name l)                      (match (tenv/type tenv name)
                                                (none)       (fatal "Unbound variable ${name}")
-                                               (some found) (let [(, t nidx) (instantiate found nidx)]
+                                               (some found) (let [(,, t _ nidx) (instantiate found nidx)]
                                                                 (,, map/nil t nidx)))
         (eprim prim)                       (,, map/nil (t-prim prim) nidx)
         <dom node>
@@ -247,18 +253,18 @@
         <dom node>
         (elet (pvar name nl) value body l) (let [
                                                (,, value-subst value-type nidx) (t-expr tenv value nidx)
-                                               init-scheme                      (generalize (tenv-apply value-subst tenv) value-type)
-                                               env-with-name                    (tenv/set-type tenv name init-scheme)
+                                               value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
+                                               env-with-name                    (tenv/set-type tenv name value-scheme)
                                                e2                               (tenv-apply value-subst env-with-name)
                                                (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
                                                (,, (compose-subst body-subst value-subst) body-type nidx))
         <dom node>
         (elet pat init body l)             (let [
                                                (,, init-subst init-type nidx) (t-expr tenv init nidx)
-                                               init-scheme                    (generalize (tenv-apply value-subst tenv) value-type)
+                                               init-scheme                    (generalize (tenv-apply init-subst tenv) init-type)
                                                (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
-                                               (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)
-                                               (, unified-subst nidx)         (unify init-type pat-type nidx)]
+                                               (, unified-subst nidx)         (unify init-type pat-type nidx)
+                                               (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)]
                                                (,,
                                                    (compose-subst
                                                        unified-subst
@@ -273,7 +279,28 @@
 
 (defn t-pat [tenv pat nidx]
     (match pat
-        (pvar name nl) (let [])))
+        (pvar name nl)      (let [(, var nidx) (new-type-var name nidx)]
+                                (,, var (tenv/set-type tenv name (scheme set/nil var)) nidx))
+        (pstr _ nl)         (,, (tcon "string" nl) tenv nidx)
+        (pprim (pbool _) l) (,, (tcon "bool" l) tenv nidx)
+        (pprim (pint _) l)  (,, (tcon "int" l) tenv nidx)
+        (pcon name args l)  (let [
+                                (tconstructor free cargs cres) (match (tenv/con tenv name)
+                                                                   (none)   (fatal "Unknown constructor: ${name}")
+                                                                   (some v) v)
+                                (,, tres tsubst nidx)          (instantiate (scheme free cres) nidx)
+                                <dom node>
+                                cargs                          (map cargs (type-apply tsubst))
+                                zipped                         (zip args cargs)
+                                (,, subst tenv nidx)           (foldl
+                                                                   (,, map/nil tenv nidx)
+                                                                       zipped
+                                                                       (fn [(,, subst tenv nidx) (, arg carg)]
+                                                                       (let [
+                                                                           (,, pat-type tenv nidx) (t-pat tenv arg nidx)
+                                                                           (, unified-subst nidx)  (unify pat-type carg nidx)]
+                                                                           (,, (compose-subst unified-subst subst) tenv nidx))))]
+                                (,, (type-apply subst tres) tenv nidx))))
 
 (def tenv/nil (tenv map/nil map/nil map/nil))
 
@@ -304,10 +331,18 @@
                             (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
                                 -1)
                             -1)))])
-            map/nil
+            (map/from-list
+            [(,
+                ","
+                    (tconstructor
+                    (set/from-list ["a" "b"])
+                        [(tvar "a" -1) (tvar "b" -1)]
+                        (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))])
             map/nil))
 
 (infer basic (@ (+ 2 3)))
+
+3633
 
 (infer
     basic
