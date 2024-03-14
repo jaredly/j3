@@ -181,58 +181,77 @@ export const GroundUp = ({
                         </div>
                         <table>
                             <tbody>
-                                {Object.entries(traces).map(([key, values]) => (
-                                    <tr
-                                        key={key}
-                                        onMouseEnter={() => {
-                                            const node =
-                                                state.regs[+key]?.main ??
-                                                state.regs[+key]?.outside;
-                                            if (node) {
-                                                node.node.style.backgroundColor =
-                                                    'red';
-                                            }
-                                        }}
-                                        onMouseLeave={() => {
-                                            const node =
-                                                state.regs[+key]?.main ??
-                                                state.regs[+key]?.outside;
-                                            if (node) {
-                                                node.node.style.backgroundColor =
-                                                    'unset';
-                                            }
-                                        }}
-                                    >
-                                        <td>
-                                            <div
-                                                onClick={() => {
-                                                    const path = pathForIdx(
-                                                        +key,
-                                                        state.regs,
-                                                        state.map,
-                                                    );
-                                                    if (path) {
-                                                        store.dispatch({
-                                                            type: 'select',
-                                                            at: [
-                                                                { start: path },
-                                                            ],
-                                                        });
+                                {Object.entries(traces)
+                                    .sort((a, b) => a[1][0].at - b[1][0].at)
+                                    .map(([key, values]) => {
+                                        const node = state.map[+key];
+                                        return (
+                                            <tr
+                                                key={key}
+                                                style={{ marginBottom: 5 }}
+                                                onMouseEnter={() => {
+                                                    const node =
+                                                        state.regs[+key]
+                                                            ?.main ??
+                                                        state.regs[+key]
+                                                            ?.outside;
+                                                    if (node) {
+                                                        node.node.style.backgroundColor =
+                                                            'rgba(255,0,0,0.5)';
+                                                    }
+                                                }}
+                                                onMouseLeave={() => {
+                                                    const node =
+                                                        state.regs[+key]
+                                                            ?.main ??
+                                                        state.regs[+key]
+                                                            ?.outside;
+                                                    if (node) {
+                                                        node.node.style.backgroundColor =
+                                                            'unset';
                                                     }
                                                 }}
                                             >
-                                                {key}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {values.map((v, i) => (
-                                                <div key={i}>
-                                                    {valueToString(v)}
-                                                </div>
-                                            ))}
-                                        </td>
-                                    </tr>
-                                ))}
+                                                <td>
+                                                    <div
+                                                        onClick={() => {
+                                                            const path =
+                                                                pathForIdx(
+                                                                    +key,
+                                                                    state.regs,
+                                                                    state.map,
+                                                                );
+                                                            if (path) {
+                                                                store.dispatch({
+                                                                    type: 'select',
+                                                                    at: [
+                                                                        {
+                                                                            start: path,
+                                                                        },
+                                                                    ],
+                                                                });
+                                                            }
+                                                        }}
+                                                    >
+                                                        {node.type ===
+                                                        'identifier'
+                                                            ? node.text
+                                                            : key}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {values.map((v, i) => (
+                                                        <div key={i}>
+                                                            {v.at}
+                                                            {valueToString(
+                                                                v.value,
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>

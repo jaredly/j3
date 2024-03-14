@@ -122,8 +122,9 @@ export const evaluatorFromText = (
                         try {
                             let inner = san;
                             if (meta[stmt[1]]?.traceTop) {
-                                console.log('TOP TRACE');
-                                console.log(mm);
+                                // console.log('TOP TRACE');
+                                // console.log(mm);
+                                let count = 0;
                                 const trace: { [key: number]: any[] } =
                                     (traceMap[stmt[1]] = {});
                                 inner = {
@@ -136,7 +137,7 @@ export const evaluatorFromText = (
                                         if (!trace[loc]) {
                                             trace[loc] = [];
                                         }
-                                        trace[loc].push(value);
+                                        trace[loc].push({ value, at: count++ });
                                         return value;
                                     },
                                 };
