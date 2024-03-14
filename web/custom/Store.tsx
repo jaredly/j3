@@ -39,6 +39,7 @@ type NUIResults = {
     hashNames: { [loc: string]: string };
     produce: { [key: string]: JSX.Element | string | LocError };
     env: any;
+    traces: { [loc: number]: { [loc: number]: any[] } };
 };
 
 export type Store = {
@@ -83,6 +84,7 @@ const getResults = (
         hashNames: {},
         produce: {},
         env: null,
+        traces: {},
     };
 
     results.env = evaluator?.init();
@@ -103,6 +105,7 @@ const getResults = (
                     ast,
                     results.env!,
                     state.meta,
+                    results.traces,
                 );
                 results.env = res.env;
                 results.produce[stmt.loc] = res.display;

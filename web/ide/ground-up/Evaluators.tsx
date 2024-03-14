@@ -86,6 +86,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
         stmt: Stmt,
         env: Env,
         meta: MetaDataMap,
+        trace: { [loc: number]: { [loc: number]: any[] } },
     ): { env: Env; display: JSX.Element | string | LocError };
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState): { js: string; errors: Errors };

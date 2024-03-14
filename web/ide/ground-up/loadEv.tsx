@@ -75,7 +75,7 @@ export const evaluatorFromText = (
                             names.push(parsed[0]);
                         }
                         try {
-                            env = this.addStatement(parsed, env, {}).env;
+                            env = this.addStatement(parsed, env, {}, {}).env;
                         } catch (err) {
                             console.error(err);
                         }
@@ -88,10 +88,11 @@ export const evaluatorFromText = (
                     );
                     return { js: env.join('\n'), errors };
                 },
-                addStatement(stmt, env, meta) {
-                    console.log('add stmt', meta[stmt.loc]);
+                addStatement(stmt, env, meta, traceMap) {
+                    // console.log('add stmt', stmt., meta[stmt.loc]);
                     const mm = Object.entries(meta).map(([k, v]) => [+k, v]);
                     if (stmt.type === 'sexpr') {
+                        // console.log('add stmt', meta[stmt[1]]);
                         let js;
                         try {
                             js = data['compile'](stmt[0])(mm);
@@ -117,10 +118,26 @@ export const evaluatorFromText = (
                             };
                         }
                         try {
-                            if (meta[stmt.loc]?.traceTop) {
+                            let inner = san;
+                            if (meta[stmt[1]]?.traceTop) {
                                 console.log('TOP TRACE');
+                                const trace: { [key: number]: any[] } =
+                                    (traceMap[stmt[1]] = {});
+                                inner = {
+                                    ...san,
+                                    $trace: (
+                                        loc: number,
+                                        info: any,
+                                        value: any,
+                                    ) => {
+                                        if (!trace[loc]) {
+                                            trace[loc] = [];
+                                        }
+                                        trace[loc].push(value);
+                                    },
+                                };
                             }
-                            const value = fn(san);
+                            const value = fn(inner);
                             return {
                                 env,
                                 display: valueToString(value),
@@ -190,7 +207,7 @@ export const evaluatorFromText = (
     if (data.type === 'bootstrap') {
         let benv = bootstrap.init();
         data.stmts.forEach((stmt: any) => {
-            benv = bootstrap.addStatement(stmt, benv, {}).env;
+            benv = bootstrap.addStatement(stmt, benv, {}, {}).env;
         });
         const san = sanitizedEnv(benv);
         const envArgs = '{' + Object.keys(san).join(', ') + '}';
@@ -258,7 +275,7 @@ export const evaluatorFromText = (
                         names.push(parsed[0]);
                     }
                     try {
-                        env = this.addStatement(parsed, env, {}).env;
+                        env = this.addStatement(parsed, env, {}, {}).env;
                     } catch (err) {
                         console.error(err);
                     }

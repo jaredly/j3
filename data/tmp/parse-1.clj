@@ -30,7 +30,7 @@
 (deftype stmt
     (sdeftype string int (array (,,, string int (array type) int)) int)
         (sdef string int expr int)
-        (sexpr expr))
+        (sexpr expr int))
 
 (def parsing "# Parsing")
 
@@ -271,7 +271,14 @@
                 (cst/list [(cst/identifier id li) .._])
                 ..items]
                 l)             (mk-deftype id li items l)
-        _                                                                                                                                                                   (sexpr (parse-expr cst))))
+        _                                                                                                                                                                   (sexpr
+                                                                                                                                                                                (parse-expr cst)
+                                                                                                                                                                                    (match cst
+                                                                                                                                                                                    (cst/list _ l)       l
+                                                                                                                                                                                    (cst/identifier _ l) l
+                                                                                                                                                                                    (cst/array _ l)      l
+                                                                                                                                                                                    (cst/string _ _ l)   l
+                                                                                                                                                                                    (cst/spread _ l)     l))))
 
 (,
     parse-stmt
@@ -298,7 +305,8 @@
             (eapp
                 (eapp (evar "+" 1969) (eprim (pint 1 1970) 1970) 1968)
                     (eprim (pint 2 1971) 1971)
-                    1968)))
+                    1968)
+                1968))
         (,
         (@@ (defn a [m] m))
             (sdef "a" 2051 (elambda "m" 2055 (evar "m" 2053) 2049) 2049))])
@@ -354,7 +362,7 @@
 
 (defn compile-stmt [stmt trace]
     (match stmt
-        (sexpr expr)               (compile expr trace)
+        (sexpr expr l)             (compile expr trace)
         (sdef name nl body l)      (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
         (sdeftype name nl cases l) (join
                                        "\n"

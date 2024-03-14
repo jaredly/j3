@@ -75,7 +75,7 @@ export type stmt =
           1: arr<{ type: ','; 0: string; 1: arr<type_> }>;
       }
     | { type: 'sdef'; 0: string; 1: expr }
-    | { type: 'sexpr'; 0: expr };
+    | { type: 'sexpr'; 0: expr; 1: number };
 
 export type node =
     | { type: 'nid'; 0: string }
@@ -242,7 +242,7 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
             }
     }
     const inner = parseExpr(node, ctx);
-    return inner ? { type: 'sexpr', 0: inner } : undefined;
+    return inner ? { type: 'sexpr', 0: inner, 1: node.loc } : undefined;
 };
 
 // Don't need this until we can self-host

@@ -264,7 +264,7 @@ export const RenderNNode = (
                     ref={(node) => reg(node, idx, path, 'outside')}
                     onMouseEnter={() => dispatch({ type: 'hover', path })}
                 >
-                    {props.debug ? nnode.type : null}
+                    {/* {props.debug ? nnode.type : null} */}
                     {(props.firstLineOnly && firstRenderable != -1
                         ? nnode.children.slice(0, firstRenderable + 1)
                         : nnode.children

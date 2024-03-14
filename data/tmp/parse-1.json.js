@@ -25,7 +25,7 @@ const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const sdeftype = (v0) => (v1) => (v2) => (v3) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3});
 const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3});
-const sexpr = (v0) => ({type: "sexpr", 0: v0});
+const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1});
 const parsing = "# Parsing";
 
 const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1});
@@ -609,7 +609,37 @@ return mk_deftype(id)(li)(items)(l)
 }
 }
 }
-return sexpr(parse_expr(cst))
+return sexpr(parse_expr(cst))((($target) => {if ($target.type === "cst/list") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/identifier") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/array") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/string") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "cst/spread") {
+{
+let l = $target[1];
+return l
+}
+}
+throw new Error('Failed to match. ' + valueToString($target))})(cst))
 throw new Error('Failed to match. ' + valueToString($target))})(cst);
 
 const some = (v0) => ({type: "some", 0: v0});
@@ -697,7 +727,10 @@ const compilation = "# compilation";
 const compile_stmt = (stmt) => (trace) => (($target) => {if ($target.type === "sexpr") {
 {
 let expr = $target[0];
+{
+let l = $target[1];
 return compile(expr)(trace)
+}
 }
 }
 if ($target.type === "sdef") {
