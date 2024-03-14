@@ -309,6 +309,7 @@ export const nodeToPattern = (
         }
         case 'hash':
         case 'comment':
+        case 'comment-node':
         case 'annot':
         case 'string':
         case 'stringText':

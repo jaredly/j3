@@ -245,6 +245,18 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'end' },
                 ],
             };
+        case 'comment-node':
+            return {
+                type: 'horiz',
+                children: [
+                    { type: 'punct', color: '#4eb94e', text: ';' },
+                    {
+                        type: 'ref',
+                        id: node.contents,
+                        path: { type: 'spread-contents' },
+                    },
+                ],
+            };
         case 'comment':
             return {
                 type: 'horiz',

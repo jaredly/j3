@@ -124,6 +124,7 @@ export const calculateLayout = (
                 : { type: 'flat', width: node.text.length + 1, pos };
         case 'rich-text':
             return { type: 'multiline', pos, tightFirst: 0, cw: false };
+        case 'comment-node':
         case 'spread': {
             const cw = childWidth(
                 [node.contents],

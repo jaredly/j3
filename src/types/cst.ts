@@ -51,6 +51,7 @@ export type NodeContents =
     | { type: 'record'; values: Node[] }
     | NodeArray
     | { type: 'comment'; text: string }
+    | { type: 'comment-node'; contents: Node }
 
     // special
     | { type: 'annot'; target: Node; annot: Node }

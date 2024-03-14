@@ -76,6 +76,7 @@ export const transformNode = (
         case 'hash':
         case 'blank':
         case 'comment':
+        case 'comment-node':
         case 'accessText':
         case 'stringText':
         case 'attachment':

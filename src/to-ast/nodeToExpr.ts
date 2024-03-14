@@ -176,6 +176,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             };
         }
 
+        case 'comment-node':
         case 'comment':
         case 'blank':
             console.log(form);

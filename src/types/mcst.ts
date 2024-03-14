@@ -49,6 +49,7 @@ export type MNodeContents =
 
     // list-like
     | { type: 'comment'; text: string }
+    | { type: 'comment-node'; contents: number }
     | MCSpread
     | MCAnnot
     | MCRecordAccess
@@ -134,6 +135,7 @@ export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
                 values: node.values.map((arg) => fromMCST(arg, map)),
             };
         case 'spread':
+        case 'comment-node':
             return { ...node, contents: fromMCST(node.contents, map) };
         default:
             return node;
@@ -190,6 +192,7 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
                 values: node.values.map((arg) => toMCST(arg, map)),
             };
         case 'spread':
+        case 'comment-node':
             return { ...node, contents: toMCST(node.contents, map) };
         default:
             return node;
