@@ -223,8 +223,7 @@
         <dom node>
         (evar name l)                      (match (tenv/type tenv name)
                                                (none)       (fatal "Unbound variable ${name}")
-                                               (some found) (let [(,, t _ nidx) (instantiate found nidx)]
-                                                                (,, map/nil t nidx)))
+                                               (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
         (eprim prim)                       (,, map/nil (t-prim prim) nidx)
         <dom node>
         (elambda name nl body l)           (let [
@@ -253,7 +252,6 @@
         <dom node>
         (elet (pvar name nl) value body 1) (let [
                                                (,, value-subst value-type nidx) (t-expr tenv value nidx)
-                                               ; DISABLED for fun and profit?
                                                value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
                                                env-with-name                    (tenv/set-type tenv name value-scheme)
                                                e2                               (tenv-apply value-subst env-with-name)
@@ -320,16 +318,11 @@
 (def tenv/nil (tenv map/nil map/nil map/nil))
 
 (defn infer [tenv expr]
-    (let [(,, s t nidx) (t-expr tenv expr 0)]
-        (type-apply s t)))
+    (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
 
 (infer tenv/nil (@ ((fn [a] a) 23)))
 
-(infer
-    tenv/nil
-        (@
-        (let [a 1]
-            a)))
+(infer tenv/nil (@ (let [a 1] a)))
 
 (def tint (tcon "int" -1))
 
@@ -359,25 +352,13 @@
 
 3633
 
-(infer
-    basic
-        (@
-        (let [a 1]
-            a)))
+(infer basic (@ (let [a 1] a)))
 
 (,
     (fn [x] (type-to-string (infer basic x)))
         [(, (@ +) "(int) -> (int) -> int")
-        (,
-        (@
-            (let [a 1]
-                a))
-            "int")
-        (,
-        (@
-            (let [(, a b) (, 2 true)]
-                (, a b)))
-            "((, int) bool)")
+        (, (@ (let [a 1] a)) "int")
+        (, (@ (let [(, a b) (, 2 true)] (, a b))) "((, int) bool)")
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(a:0) -> a:0")
         (, (@ (fn [a] (+ 2 a))) "(int) -> int")
@@ -387,50 +368,16 @@
                 1 1))
             )
         ; Exploration
-        (,
-        (@
-            (let [mid (, 1 (fn [x] x))]
-                mid))
-            "((, int) (x:4:6) -> x:4:6)")
+        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (x:4:6) -> x:4:6)")
+        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(x:4:13) -> x:4:13")
+        (, (@ (fn [n] (let [(, a b) (, 1 (fn [x] n)) m (n 2)] b))) )
         ; Tests from the paper
-        (,
-        (@
-            (let [id (fn [x] x)]
-                id))
-            "(x:0:2) -> x:0:2")
-        (,
-        (@
-            (let [id (fn [x] x)]
-                (id id)))
-            "(x:0:5) -> x:0:5")
-        (,
-        (@
-            (let [
-                id (fn [x]
-                       (let [y x]
-                           y))]
-                (id id)))
-            "(x:0:5) -> x:0:5")
-        (,
-        (@
-            (let [
-                id (fn [x]
-                       (let [y x]
-                           y))]
-                ((id id) 2)))
-            "int")
-        (,
-        (@
-            (let [id (fn [x] (x x))]
-                id))
-            )
-        (,
-        (@
-            (fn [m]
-                (let [y m]
-                    (let [x (y true)]
-                        x))))
-            "((bool) -> a:1) -> a:1")
+        (, (@ (let [id (fn [x] x)] id)) "(x:0:2) -> x:0:2")
+        (, (@ (let [id (fn [x] x)] (id id))) "(x:0:5) -> x:0:5")
+        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(x:0:5) -> x:0:5")
+        (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
+        (, (@ (let [id (fn [x] (x x))] id)) )
+        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> a:1) -> a:1")
         (, (@ (2 2)) )])
 
-1987
+198

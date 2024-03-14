@@ -268,11 +268,11 @@ function builtins() {
         },
         sanitize,
         $setTracer(nw: null | ((loc: number, value: any) => void)) {
-            console.log('SET TRACRE', !!nw);
+            // console.log('SET TRACRE', !!nw);
             tracer = nw;
         },
         $trace(loc: number, info: any, value: any) {
-            console.log('TRACE MAYBE', tracer, loc, value);
+            // console.log('TRACE MAYBE', tracer, loc, value);
             tracer?.(loc, value);
             return value;
         },

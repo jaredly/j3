@@ -89,6 +89,7 @@ const getResults = (
         traces: {},
         pluginResults: {},
     };
+    console.log('getting results');
 
     results.env = evaluator?.init();
     findTops(state).forEach(({ top, hidden, plugin }) => {

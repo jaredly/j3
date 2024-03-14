@@ -8,11 +8,11 @@ import { NUIState } from '../../custom/UIState';
 
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
-import { FullEvalator, bootstrap, repr } from './Evaluators';
+import { FullEvalator, LocError, bootstrap, repr } from './Evaluators';
 import { findTops, reduce, valueToString } from './reduce';
 import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
-import { WithStore, useGlobalState, useStore } from '../../custom/Store';
+import { Store, WithStore, useGlobalState, useStore } from '../../custom/Store';
 import { loadEv } from './loadEv';
 import { CommandPalette, pathForIdx } from './CommandPalette';
 
@@ -160,102 +160,7 @@ export const GroundUp = ({
                         {JSON.stringify(state.hover)} */}
                     </div>
                 ) : null}
-                {Object.entries(results.traces).map(([top, traces]) => (
-                    <div key={top}>
-                        <div
-                            onClick={() => {
-                                const path = pathForIdx(
-                                    +top,
-                                    state.regs,
-                                    state.map,
-                                );
-                                if (path) {
-                                    store.dispatch({
-                                        type: 'select',
-                                        at: [{ start: path }],
-                                    });
-                                }
-                            }}
-                        >
-                            Top trace: {top}
-                        </div>
-                        <table>
-                            <tbody>
-                                {Object.entries(traces)
-                                    .sort((a, b) => a[1][0].at - b[1][0].at)
-                                    .map(([key, values]) => {
-                                        const node = state.map[+key];
-                                        return (
-                                            <tr
-                                                key={key}
-                                                style={{ marginBottom: 5 }}
-                                                onMouseEnter={() => {
-                                                    const node =
-                                                        state.regs[+key]
-                                                            ?.main ??
-                                                        state.regs[+key]
-                                                            ?.outside;
-                                                    if (node) {
-                                                        node.node.style.backgroundColor =
-                                                            'rgba(255,0,0,0.5)';
-                                                    }
-                                                }}
-                                                onMouseLeave={() => {
-                                                    const node =
-                                                        state.regs[+key]
-                                                            ?.main ??
-                                                        state.regs[+key]
-                                                            ?.outside;
-                                                    if (node) {
-                                                        node.node.style.backgroundColor =
-                                                            'unset';
-                                                    }
-                                                }}
-                                            >
-                                                <td>
-                                                    <div
-                                                        onClick={() => {
-                                                            const path =
-                                                                pathForIdx(
-                                                                    +key,
-                                                                    state.regs,
-                                                                    state.map,
-                                                                );
-                                                            if (path) {
-                                                                store.dispatch({
-                                                                    type: 'select',
-                                                                    at: [
-                                                                        {
-                                                                            start: path,
-                                                                        },
-                                                                    ],
-                                                                });
-                                                            }
-                                                        }}
-                                                    >
-                                                        {node.type ===
-                                                        'identifier'
-                                                            ? node.text
-                                                            : key}
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    {values.map((v, i) => (
-                                                        <div key={i}>
-                                                            {v.at}
-                                                            {valueToString(
-                                                                v.value,
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                            </tbody>
-                        </table>
-                    </div>
-                ))}
+                {renderTraces(results, state, store)}
             </div>
             <Hover
                 state={state}
@@ -306,6 +211,7 @@ const showPath = (path: Path[]) => {
         </table>
     );
 };
+
 const ShowAt = ({ at }: { at: NUIState['at'] }) => {
     return (
         <>
@@ -319,3 +225,108 @@ const ShowAt = ({ at }: { at: NUIState['at'] }) => {
         </>
     );
 };
+
+function renderTraces(
+    results: {
+        errors: { [loc: number]: string[] };
+        display: Display;
+        hashNames: { [loc: string]: string };
+        produce: {
+            [key: string]: string | JSX.Element | LocError;
+        };
+        env: any;
+        traces: { [loc: number]: { [loc: number]: any[] } };
+        pluginResults: { [nsLoc: number]: any };
+    },
+    state: NUIState,
+    store: Store,
+): React.ReactNode {
+    return Object.entries(results.traces).map(([top, traces]) => (
+        <div key={top} style={{ maxWidth: 500 }}>
+            <div
+                onClick={() => {
+                    const path = pathForIdx(+top, state.regs, state.map);
+                    if (path) {
+                        store.dispatch({
+                            type: 'select',
+                            at: [{ start: path }],
+                        });
+                    }
+                }}
+            >
+                Top trace: {top}
+            </div>
+            <table>
+                <tbody>
+                    {Object.entries(traces)
+                        .flatMap(([k, v]) => v.map((v) => [k, v]))
+                        .sort((a, b) => a[1].at - b[1].at)
+                        .map(([key, value], i) => {
+                            const node = state.map[+key];
+                            return (
+                                <tr
+                                    key={i}
+                                    style={{ marginBottom: 5 }}
+                                    onMouseEnter={() => {
+                                        const node =
+                                            state.regs[+key]?.main ??
+                                            state.regs[+key]?.outside;
+                                        if (node) {
+                                            node.node.style.backgroundColor =
+                                                'rgba(255,0,0,0.5)';
+                                        }
+                                    }}
+                                    onMouseLeave={() => {
+                                        const node =
+                                            state.regs[+key]?.main ??
+                                            state.regs[+key]?.outside;
+                                        if (node) {
+                                            node.node.style.backgroundColor =
+                                                'unset';
+                                        }
+                                    }}
+                                >
+                                    <td>
+                                        <div
+                                            onClick={() => {
+                                                const path = pathForIdx(
+                                                    +key,
+                                                    state.regs,
+                                                    state.map,
+                                                );
+                                                if (path) {
+                                                    store.dispatch({
+                                                        type: 'select',
+                                                        at: [
+                                                            {
+                                                                start: path,
+                                                            },
+                                                        ],
+                                                    });
+                                                }
+                                            }}
+                                        >
+                                            {node.type === 'identifier'
+                                                ? node.text
+                                                : key}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span
+                                            style={{
+                                                display: 'inline-block',
+                                                marginRight: 8,
+                                            }}
+                                        >
+                                            {value.at + ' '}
+                                        </span>
+                                        {valueToString(value.value)}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                </tbody>
+            </table>
+        </div>
+    ));
+}
