@@ -264,7 +264,7 @@
                                                (, unified-subst nidx)           (unify value-type pat-type nidx)
                                                bindings                         (map/map (type-apply unified-subst) bindings)
                                                bound-env                        (foldl
-                                                                                    tenv
+                                                                                    (tenv-apply value-subst tenv)
                                                                                         (map/to-list bindings)
                                                                                         (fn [tenv (, name type)]
                                                                                         (tenv/set-type tenv name (generalize tenv type))))
@@ -375,6 +375,7 @@
         (, (@ (let [id (fn [x] x)] id)) "(x:0:2) -> x:0:2")
         (, (@ (let [id (fn [x] x)] (id id))) "(x:0:5) -> x:0:5")
         (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(x:0:5) -> x:0:5")
+        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(x:0:2) -> x:0:2")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
         (, (@ (let [id (fn [x] (x x))] id)) )
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> a:1) -> a:1")
