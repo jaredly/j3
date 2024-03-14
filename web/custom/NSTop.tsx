@@ -16,6 +16,7 @@ import { fromMCST } from '../../src/types/mcst';
 import { FullEvalator, LocError, bootstrap } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
 import { useExpanded, useNode } from './Store';
+import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const empty = {};
 
@@ -234,12 +235,15 @@ const renderProduce = (
                             node.node.style.backgroundColor = 'red';
                         }}
                         onClick={() => {
-                            const got = state.regs[n.loc];
-                            const node = got?.main ?? got?.outside;
-                            if (!node) return alert('nope');
+                            const path = pathForIdx(
+                                n.loc,
+                                state.regs,
+                                state.map,
+                            );
+                            if (!path) return alert('nope');
                             dispatch({
                                 type: 'select',
-                                at: [{ start: node.path }],
+                                at: [{ start: path }],
                             });
                         }}
                         onMouseLeave={() => {

@@ -9,12 +9,12 @@ import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { FullEvalator, bootstrap, repr } from './Evaluators';
-import { findTops, reduce } from './reduce';
+import { findTops, reduce, valueToString } from './reduce';
 import { goLeftUntil } from '../../../src/state/navigate';
 import { Path } from '../../store';
 import { WithStore, useGlobalState, useStore } from '../../custom/Store';
 import { loadEv } from './loadEv';
-import { CommandPalette } from './CommandPalette';
+import { CommandPalette, pathForIdx } from './CommandPalette';
 
 export type Results = {
     display: Display;
@@ -107,7 +107,15 @@ export const GroundUp = ({
                     />
                 ))}
             </WithStore>
-            <div style={{ position: 'absolute', top: 4, right: 4 }}>
+            <div
+                style={{
+                    position: 'fixed',
+                    top: 4,
+                    right: 4,
+                    backgroundColor: 'black',
+                    padding: 16,
+                }}
+            >
                 <button onClick={() => setDebug(!debug)}>
                     {debug ? 'Debug on' : 'Debug off'}
                 </button>
@@ -152,6 +160,63 @@ export const GroundUp = ({
                         {JSON.stringify(state.hover)} */}
                     </div>
                 ) : null}
+                {Object.entries(results.traces).map(([top, traces]) => (
+                    <div key={top}>
+                        <div
+                            onClick={() => {
+                                const path = pathForIdx(
+                                    +top,
+                                    state.regs,
+                                    state.map,
+                                );
+                                if (path) {
+                                    store.dispatch({
+                                        type: 'select',
+                                        at: [{ start: path }],
+                                    });
+                                }
+                            }}
+                        >
+                            Top trace: {top}
+                        </div>
+                        <table>
+                            <tbody>
+                                {Object.entries(traces).map(([key, values]) => (
+                                    <tr key={key}>
+                                        <td>
+                                            <div
+                                                onClick={() => {
+                                                    const path = pathForIdx(
+                                                        +key,
+                                                        state.regs,
+                                                        state.map,
+                                                    );
+                                                    if (path) {
+                                                        store.dispatch({
+                                                            type: 'select',
+                                                            at: [
+                                                                { start: path },
+                                                            ],
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {key}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {values.map((v, i) => (
+                                                <div key={i}>
+                                                    {valueToString(v)}
+                                                </div>
+                                            ))}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ))}
             </div>
             <Hover
                 state={state}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import * as React from 'react';
-import { Action, NUIState } from '../../custom/UIState';
+import { Action, NUIState, RegMap } from '../../custom/UIState';
+import { selectStart } from '../../../src/state/navigate';
+import { Map } from '../../../src/types/mcst';
 
 export const CommandPalette = ({
     state,
@@ -154,14 +156,14 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
         if (node?.type === 'identifier') {
             const num = +node.text;
             if (!isNaN(num) && num + '' === node.text && state.map[num]) {
-                const got = state.regs[num]?.main ?? state.regs[num]?.outside;
-                if (got) {
+                const path = pathForIdx(num, state.regs, state.map);
+                if (path) {
                     commands.push({
                         title: 'Jump to idx',
                         action() {
                             dispatch({
                                 type: 'select',
-                                at: [{ start: got.path }],
+                                at: [{ start: path }],
                             });
                         },
                     });
@@ -181,4 +183,9 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
     }
 
     return commands;
+};
+
+export const pathForIdx = (num: number, regs: RegMap, map: Map) => {
+    const got = regs[num]?.main ?? regs[num]?.outside;
+    return got ? selectStart(num, got.path, map) : null;
 };

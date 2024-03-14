@@ -90,7 +90,9 @@ export const evaluatorFromText = (
                 },
                 addStatement(stmt, env, meta, traceMap) {
                     // console.log('add stmt', stmt., meta[stmt.loc]);
-                    const mm = Object.entries(meta).map(([k, v]) => [+k, v]);
+                    const mm = Object.entries(meta)
+                        .map(([k, v]) => [+k, v.trace])
+                        .filter((k) => k[1]);
                     if (stmt.type === 'sexpr') {
                         // console.log('add stmt', meta[stmt[1]]);
                         let js;
@@ -121,6 +123,7 @@ export const evaluatorFromText = (
                             let inner = san;
                             if (meta[stmt[1]]?.traceTop) {
                                 console.log('TOP TRACE');
+                                console.log(mm);
                                 const trace: { [key: number]: any[] } =
                                     (traceMap[stmt[1]] = {});
                                 inner = {
@@ -134,6 +137,7 @@ export const evaluatorFromText = (
                                             trace[loc] = [];
                                         }
                                         trace[loc].push(value);
+                                        return value;
                                     },
                                 };
                             }

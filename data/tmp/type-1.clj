@@ -263,14 +263,22 @@
         (elet pat init body l)             (let [
                                                (,, value-subst value-type nidx) (t-expr tenv init nidx)
                                                init-scheme                      (generalize (tenv-apply value-subst tenv) value-type)
-                                               (,, pat-type bound-env nidx)     (t-pat tenv pat nidx)
+                                               (,, pat-type bindings nidx)      (t-pat tenv pat nidx)
+                                               bound-env                        (foldl
+                                                                                    tenv
+                                                                                        (map/to-list bindings)
+                                                                                        (fn [tenv (, name type)]
+                                                                                        (tenv/set-type tenv name (generalize tenv type))))
                                                (, unified-subst nidx)           (unify value-type pat-type nidx)
-                                               (,, body-subst body-type nidx)   (t-expr (tenv-apply value-subst bound-env) body nidx)]
+                                               (,, body-subst body-type nidx)   (t-expr
+                                                                                    (tenv-apply (compose-subst unified-subst value-subst) bound-env)
+                                                                                        body
+                                                                                        nidx)]
                                                (,,
                                                    (compose-subst
                                                        unified-subst
                                                            (compose-subst value-subst body-subst))
-                                                       body-type
+                                                       (type-apply unified-subst body-type)
                                                        nidx))
         (ematch target cases l)            (let [
                                                (,, s1 t1 nidx) (t-expr tenv target nidx)
