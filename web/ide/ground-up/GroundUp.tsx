@@ -182,7 +182,27 @@ export const GroundUp = ({
                         <table>
                             <tbody>
                                 {Object.entries(traces).map(([key, values]) => (
-                                    <tr key={key}>
+                                    <tr
+                                        key={key}
+                                        onMouseEnter={() => {
+                                            const node =
+                                                state.regs[+key]?.main ??
+                                                state.regs[+key]?.outside;
+                                            if (node) {
+                                                node.node.style.backgroundColor =
+                                                    'red';
+                                            }
+                                        }}
+                                        onMouseLeave={() => {
+                                            const node =
+                                                state.regs[+key]?.main ??
+                                                state.regs[+key]?.outside;
+                                            if (node) {
+                                                node.node.style.backgroundColor =
+                                                    'unset';
+                                            }
+                                        }}
+                                    >
                                         <td>
                                             <div
                                                 onClick={() => {
