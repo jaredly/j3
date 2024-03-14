@@ -1,4 +1,19 @@
 
+# RICH TEXT NODES
+
+we already have a rich-text, for what it might be worth.
+'' ya know
+- [x] so rich, such text
+
+- [ ] oof I really need to trim down my stored files. Like, maybe do aggressive history item collapsing?
+  - [ ] FIRST Basic history collapsing, where all changes to the same node that have fewer than 200ms between them just get collapsed.
+    - ALSO ~all adjacent changes to a rich-text just get collapsed ... because I don't have a more memory-performant way of storing changes to them. Although it's definitely possible.
+  - [ ] SECOND Aggressive collapsing that maybe only triggers once the state gets larger than (idk) 3mb or something
+    - Could be "by namespace". Like, going back (1000 changes) or (1 day) or (3mb), whichever is ... more ...
+      we collapse all changes that happen within a given namespace together into one historyitem.
+    - Yeah I like that quite a lot.
+
+Ok, so type constructors.
 
 # Literate literating. Pretty please.
 

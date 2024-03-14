@@ -44,6 +44,7 @@ export const LexicalFolks = ({
         const configured = editor._tiptapEditor.extensionManager.extensions;
         const ext = configured.find((e) => e.name === 'trailingNode');
         console.log(ext);
+        ext!.config.addProseMirrorPlugins = () => [];
         window.ext = ext;
         // if (idx !== -1) {
         //     configured.splice(idx, 1);

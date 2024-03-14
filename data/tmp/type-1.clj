@@ -60,7 +60,30 @@
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
+<dom node>
+
 (deftype scheme (scheme (set string) type))
+
+(deftype tconstructor
+    (tconstructor
+        ; free variables
+            (set string)
+            ; arguments
+            (array type)
+            ; the resulting type
+            type))
+
+(deftype tenv
+    (tenv
+        (map string scheme)
+            (map string tconstructor)
+            (map string (set string))))
+
+(defn tenv/type [(tenv types _ _) key] (map/get types key))
+
+(defn tenv/con [(tenv _ cons _) key] (map/get cons key))
+
+(defn tenv/names [(tenv _ _ names) key] (map/get names key))
 
 <dom node>
 
@@ -187,58 +210,61 @@
 (defn t-expr [tenv expr nidx]
     (match expr
         <dom node>
-        (evar name l)                     (match (map/get tenv name)
-                                              (none)       (fatal "Unbound variable ${name}")
-                                              (some found) (let [(, t nidx) (instantiate found nidx)]
-                                                               (,, map/nil t nidx)))
-        (eprim prim)                      (,, map/nil (t-prim prim) nidx)
+        (evar name l)                      (match (map/get tenv name)
+                                               (none)       (fatal "Unbound variable ${name}")
+                                               (some found) (let [(, t nidx) (instantiate found nidx)]
+                                                                (,, map/nil t nidx)))
+        (eprim prim)                       (,, map/nil (t-prim prim) nidx)
         <dom node>
-        (elambda name nl body l)          (let [
-                                              (, arg-type nidx)              (new-type-var name nidx)
-                                              env-with-name                  (map/set tenv name (scheme set/nil arg-type))
-                                              (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
-                                              (,,
-                                                  body-subst
-                                                      (tfn (type-apply body-subst arg-type) body-type l)
-                                                      nidx))
+        (elambda name nl body l)           (let [
+                                               (, arg-type nidx)              (new-type-var name nidx)
+                                               env-with-name                  (map/set tenv name (scheme set/nil arg-type))
+                                               (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
+                                               (,,
+                                                   body-subst
+                                                       (tfn (type-apply body-subst arg-type) body-type l)
+                                                       nidx))
         <dom node>
-        (eapp target arg l)               (let [
-                                              (, result-var nidx)                (new-type-var "a" nidx)
-                                              (,, target-subst target-type nidx) (t-expr tenv target nidx)
-                                              (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
-                                              (, unified-subst nidx)             (unify
-                                                                                     (type-apply arg-subst target-type)
-                                                                                         (tfn arg-type result-var l)
-                                                                                         nidx)]
-                                              (,,
-                                                  (compose-subst
-                                                      unified-subst
-                                                          (compose-subst arg-subst target-subst))
-                                                      (type-apply unified-subst result-var)
-                                                      nidx))
-        (elet (pvar name nl) init body l) (let [
-                                              (,, init-subst init-type nidx) (t-expr tenv init nidx)
-                                              init-scheme                    (generalize (tenv-apply init-subst tenv) init-type)
-                                              env-with-name                  (map/set tenv name init-scheme)
-                                              e2                             (tenv-apply init-subst env-with-name)
-                                              (,, body-subst body-type nidx) (t-expr e2 body nidx)]
-                                              (,, (compose-subst body-subst init-subst) body-type nidx))
-        (elet pat init body l)            (let [
-                                              (,, init-subst init-type nidx) (t-expr tenv init nidx)
-                                              (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
-                                              (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)
-                                              (, unified-subst nidx)         (unify init-type pat-type nidx)]
-                                              (,,
-                                                  (compose-subst
-                                                      unified-subst
-                                                          (compose-subst init-subst body-subst))
-                                                      body-type
-                                                      nidx))
-        (ematch target cases l)           (let [
-                                              (,, s1 t1 nidx) (t-expr tenv target nidx)
-                                              t'              (generalize (tenv-apply s1 tenv) t1)]
-                                              (fatal "nope"))
-        _                                 (fatal "cannot infer type for ${(valueToString expr)}")))
+        (eapp target arg l)                (let [
+                                               (, result-var nidx)                (new-type-var "a" nidx)
+                                               (,, target-subst target-type nidx) (t-expr tenv target nidx)
+                                               (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
+                                               (, unified-subst nidx)             (unify
+                                                                                      (type-apply arg-subst target-type)
+                                                                                          (tfn arg-type result-var l)
+                                                                                          nidx)]
+                                               (,,
+                                                   (compose-subst
+                                                       unified-subst
+                                                           (compose-subst arg-subst target-subst))
+                                                       (type-apply unified-subst result-var)
+                                                       nidx))
+        <dom node>
+        (elet (pvar name nl) value body l) (let [
+                                               (,, value-subst value-type nidx) (t-expr tenv value nidx)
+                                               init-scheme                      (generalize (tenv-apply value-subst tenv) value-type)
+                                               env-with-name                    (map/set tenv name init-scheme)
+                                               e2                               (tenv-apply value-subst env-with-name)
+                                               (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
+                                               (,, (compose-subst body-subst value-subst) body-type nidx))
+        <dom node>
+        (elet pat init body l)             (let [
+                                               (,, init-subst init-type nidx) (t-expr tenv init nidx)
+                                               init-scheme                    (generalize (tenv-apply value-subst tenv) value-type)
+                                               (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
+                                               (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)
+                                               (, unified-subst nidx)         (unify init-type pat-type nidx)]
+                                               (,,
+                                                   (compose-subst
+                                                       unified-subst
+                                                           (compose-subst init-subst body-subst))
+                                                       body-type
+                                                       nidx))
+        (ematch target cases l)            (let [
+                                               (,, s1 t1 nidx) (t-expr tenv target nidx)
+                                               t'              (generalize (tenv-apply s1 tenv) t1)]
+                                               (fatal "nope"))
+        _                                  (fatal "cannot infer type for ${(valueToString expr)}")))
 
 (defn t-pat [tenv pat nidx]
     (match pat
@@ -266,10 +292,10 @@
                 (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
             ","
             (scheme
-            (set/add set/nil "a")
+            (set/from-list ["a" "b"])
                 (tfn (tvar "a" -1)
-                (tfn (tvar "a" -1)
-                    (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "a" -1) -1)
+                (tfn (tvar "b" -1)
+                    (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
                         -1)
                     -1))))
 
@@ -302,6 +328,12 @@
             (match 1
                 1 1))
             )
+        ; Exploration
+        (,
+        (@
+            (let [mid (, 1 (fn [x] x))]
+                mid))
+            "((, int) (x:4:6) -> x:4:6)")
         ; Tests from the paper
         (,
         (@
