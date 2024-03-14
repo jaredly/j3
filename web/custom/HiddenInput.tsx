@@ -32,7 +32,7 @@ export function HiddenInput({
             document.activeElement !== hiddenInput.current &&
             !document.activeElement?.classList.contains('bn-editor')
         ) {
-            console.log(document.activeElement);
+            // console.log(document.activeElement);
             hiddenInput.current?.focus();
         }
     }, [state.at]);

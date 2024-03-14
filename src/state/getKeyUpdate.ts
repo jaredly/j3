@@ -546,18 +546,30 @@ export const getKeyUpdate = (
         );
     }
 
-    if (key === ';' && node.type === 'blank') {
-        return replaceWith(fullPath.slice(0, -1), {
-            map: {
-                [idx]: {
-                    type: 'comment',
-                    text: '',
-                    loc: idx,
+    if (key === ';') {
+        if (node.type === 'blank') {
+            return replaceWith(fullPath.slice(0, -1), {
+                map: {
+                    [idx]: {
+                        type: 'comment',
+                        text: '',
+                        loc: idx,
+                    },
                 },
-            },
-            idx: idx,
-            selection: [{ idx, type: 'text', at: 0 }],
-        });
+                idx: idx,
+                selection: [{ idx, type: 'text', at: 0 }],
+            });
+        }
+        if (node.type === 'list' || node.type === 'array') {
+            const n = nidx();
+            return replacePathWith(fullPath.slice(0, -1), map, nsMap, {
+                map: {
+                    [n]: { type: 'comment-node', loc: n, contents: idx },
+                },
+                idx: n,
+                selection: [{ idx: n, type: 'start' }],
+            });
+        }
     }
 
     if (key === '.') {

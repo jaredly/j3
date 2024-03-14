@@ -1,20 +1,17 @@
-import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { layout } from '../../../src/layout';
-import { fromMCST } from '../../../src/types/mcst';
+import React, { useEffect, useRef, useState } from 'react';
 import { Cursors, isValidCursorLocation } from '../../custom/Cursors';
 import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover } from '../../custom/Hover';
 import { NUIState } from '../../custom/UIState';
 
+import { goLeftUntil } from '../../../src/state/navigate';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
-import { FullEvalator, LocError, bootstrap, repr } from './Evaluators';
-import { findTops, reduce, valueToString } from './reduce';
-import { goLeftUntil } from '../../../src/state/navigate';
-import { Path } from '../../store';
 import { Store, WithStore, useGlobalState, useStore } from '../../custom/Store';
-import { loadEv } from './loadEv';
+import { Path } from '../../store';
 import { CommandPalette, pathForIdx } from './CommandPalette';
+import { LocError } from './Evaluators';
+import { valueToString } from './reduce';
 
 export type Results = {
     display: Display;

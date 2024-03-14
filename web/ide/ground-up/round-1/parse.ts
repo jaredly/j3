@@ -567,6 +567,7 @@ export function filterBlanks(arg0: Node[]) {
         (a) =>
             a.type !== 'blank' &&
             a.type !== 'comment' &&
+            a.type !== 'comment-node' &&
             a.type !== 'rich-text',
     );
 }

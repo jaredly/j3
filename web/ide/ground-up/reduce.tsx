@@ -8,10 +8,16 @@ import {
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
 import { CompilationResults, Ctx } from '../../../src/to-ast/library';
-import { ListLikeContents, fromMCST, fromMNode } from '../../../src/types/mcst';
+import {
+    ListLikeContents,
+    MNode,
+    fromMCST,
+    fromMNode,
+} from '../../../src/types/mcst';
 import {
     Action,
     NUIState,
+    RealizedNamespace,
     SandboxNamespace,
     UpdatableAction,
 } from '../../custom/UIState';
@@ -771,6 +777,116 @@ export const verifyState = (state: NUIState) => {
                 seen[ns.top] = ns.id;
             }
         });
+    }
+
+    state.at.forEach((cursor) => {
+        verifyPath(cursor.start, state);
+        if (cursor.end) {
+            verifyPath(cursor.end, state);
+        }
+    });
+};
+
+export const verifyPath = (path: Path[], state: NUIState) => {
+    if (path.length < 2) throw new Error(`path of length ${path.length}`);
+    if (path[0].type !== 'card') throw new Error('first not a card');
+    const card = state.cards[path[0].card];
+    if (card.top !== path[1].idx) {
+        throw new Error(`path card top : ${card.top} vs ${path[1].idx}`);
+    }
+    if (path[1].type !== 'ns') throw new Error('not ns');
+    let ns = state.nsMap[card.top];
+    // let ns = (state.nsMap[card.top] as RealizedNamespace).children[path[1].at]
+    // state.nsMap[path[1].at]
+    let i = 1;
+    let node: MNode | null = null;
+    for (; i < path.length; i++) {
+        if (!ns || ns.type !== 'normal') throw new Error('placeholder ns');
+        if (path[i].idx !== ns.id) {
+            throw new Error(`ns ${i} - ${ns.id} vs ${path[i].idx}`);
+        }
+        const p = path[i];
+        if (p.type === 'ns') {
+            ns = state.nsMap[ns.children[p.at]];
+            continue;
+        }
+        if (path[i].type === 'ns-top') {
+            node = state.map[ns.top];
+            i++;
+            break;
+        }
+    }
+    if (!node) {
+        throw new Error('no node');
+    }
+    for (; i < path.length; i++) {
+        if (!node || node.loc !== path[i].idx) {
+            throw new Error(`node bad ${node?.loc} vs ${path[i].idx}`);
+        }
+        const p = path[i];
+        switch (p.type) {
+            case 'ns':
+            case 'card':
+            case 'ns-top':
+                throw new Error('invalid placement ' + p.type);
+            case 'child':
+                if (!('values' in node)) {
+                    throw new Error(`child, of node ${node.type}`);
+                }
+                node = state.map[node.values[p.at]];
+                continue;
+            case 'text':
+                if (node.type !== 'string') {
+                    throw new Error(`node not string ${node.type}`);
+                }
+                if (p.at === 0) {
+                    node = state.map[node.first];
+                    continue;
+                }
+                if (p.at >= node.templates.length - 1) {
+                    throw new Error(
+                        `not enough templates ${node.templates.length} vs text@${p.at}`,
+                    );
+                }
+                node = state.map[node.templates[p.at - 1].suffix];
+                continue;
+            case 'expr':
+                if (node.type !== 'string') {
+                    throw new Error(`node not string ${node.type}`);
+                }
+                if (p.at === 0) {
+                    throw new Error(`cant do expr@0 in string`);
+                    continue;
+                }
+                if (p.at >= node.templates.length - 1) {
+                    throw new Error(
+                        `not enough templates ${node.templates.length} vs text@${p.at}`,
+                    );
+                }
+                node = state.map[node.templates[p.at - 1].expr];
+                continue;
+            case 'attribute':
+            case 'annot-annot':
+            case 'annot-target':
+            case 'tapply-target':
+            case 'record-target':
+                throw new Error(`not handled atm ${node.type} ${p.type}`);
+            case 'spread-contents':
+                if (!('contents' in node)) {
+                    throw new Error(`contents? ${node.type}`);
+                }
+                node = state.map[node.contents];
+                continue;
+            // return;
+            case 'rich-text':
+            case 'subtext':
+            case 'inside':
+            case 'start':
+            case 'end':
+                if (i !== path.length - 1) {
+                    throw new Error(`non terminal ${p.type}`);
+                }
+        }
     }
 };
 

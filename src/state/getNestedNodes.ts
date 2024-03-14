@@ -249,6 +249,7 @@ export const getNestedNodes = (
             return {
                 type: 'horiz',
                 children: [
+                    { type: 'blinker', loc: 'start' },
                     { type: 'punct', color: '#4eb94e', text: ';' },
                     {
                         type: 'ref',
@@ -261,6 +262,7 @@ export const getNestedNodes = (
             return {
                 type: 'horiz',
                 children: [
+                    { type: 'blinker', loc: 'start' },
                     { type: 'punct', color: '#4eb94e', text: '; ' },
                     {
                         type: 'text',
