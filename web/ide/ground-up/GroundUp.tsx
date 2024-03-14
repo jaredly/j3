@@ -94,6 +94,7 @@ export const GroundUp = ({
                 {state.cards.map((_, i) => (
                     <CardRoot
                         state={state}
+                        debug={debug}
                         key={i}
                         ev={store.getEvaluator()}
                         dispatch={store.dispatch}

@@ -24,9 +24,11 @@ export function CardRoot({
     dispatch,
     results,
     produce,
+    debug,
     env,
     ev,
 }: {
+    debug: boolean;
     env: any;
     card: number;
     state: NUIState;
@@ -78,6 +80,7 @@ export function CardRoot({
         >
             <NSTop
                 reg={reg}
+                debug={debug}
                 ev={ev}
                 nsReg={nsReg}
                 drag={dragObj}

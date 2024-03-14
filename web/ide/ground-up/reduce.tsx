@@ -786,7 +786,11 @@ export const verifyState = (state: NUIState) => {
                 verifyPath(cursor.end, state);
             }
         } catch (err) {
-            throw new Error(`Invalid path ${JSON.stringify(cursor)}`);
+            throw new Error(
+                `${(err as Error).message}\n\nInvalid path ${JSON.stringify(
+                    cursor,
+                )}`,
+            );
         }
     });
 };
@@ -824,73 +828,85 @@ export const verifyPath = (path: Path[], state: NUIState) => {
         throw new Error('no node');
     }
     for (; i < path.length; i++) {
-        if (!node || node.loc !== path[i].idx) {
-            throw new Error(`node bad ${node?.loc} vs ${path[i].idx}`);
-        }
         const p = path[i];
-        switch (p.type) {
-            case 'ns':
-            case 'card':
-            case 'ns-top':
-                throw new Error('invalid placement ' + p.type);
-            case 'child':
-                if (!('values' in node)) {
-                    throw new Error(`child, of node ${node.type}`);
-                }
-                node = state.map[node.values[p.at]];
-                continue;
-            case 'text':
-                if (node.type !== 'string') {
-                    throw new Error(`node not string ${node.type}`);
-                }
-                if (p.at === 0) {
-                    node = state.map[node.first];
-                    continue;
-                }
-                if (p.at >= node.templates.length - 1) {
-                    throw new Error(
-                        `not enough templates ${node.templates.length} vs text@${p.at}`,
-                    );
-                }
-                node = state.map[node.templates[p.at - 1].suffix];
-                continue;
-            case 'expr':
-                if (node.type !== 'string') {
-                    throw new Error(`node not string ${node.type}`);
-                }
-                if (p.at === 0) {
-                    throw new Error(`cant do expr@0 in string`);
-                    continue;
-                }
-                if (p.at >= node.templates.length - 1) {
-                    throw new Error(
-                        `not enough templates ${node.templates.length} vs text@${p.at}`,
-                    );
-                }
-                node = state.map[node.templates[p.at - 1].expr];
-                continue;
-            case 'attribute':
-            case 'annot-annot':
-            case 'annot-target':
-            case 'tapply-target':
-            case 'record-target':
-                throw new Error(`not handled atm ${node.type} ${p.type}`);
-            case 'spread-contents':
-                if (!('contents' in node)) {
-                    throw new Error(`contents? ${node.type}`);
-                }
-                node = state.map[node.contents];
-                continue;
-            // return;
-            case 'rich-text':
-            case 'subtext':
-            case 'inside':
-            case 'start':
-            case 'end':
-                if (i !== path.length - 1) {
-                    throw new Error(`non terminal ${p.type}`);
-                }
+        if (node.loc !== p.idx) {
+            throw new Error(
+                `Node loc doesn't match path idx node:${node.loc} vs path:${
+                    p.idx
+                } - ${JSON.stringify(p)}`,
+            );
         }
+        try {
+            node = advance(p, node, state, i === path.length - 1);
+            if (!node) throw new Error(`Node returned doesn't exist...`);
+        } catch (err) {
+            throw new Error(
+                `Bad path item ${i} : ${JSON.stringify(p)}\n${
+                    (err as Error).message
+                }`,
+            );
+        }
+    }
+};
+
+const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
+    switch (p.type) {
+        case 'ns':
+        case 'card':
+        case 'ns-top':
+            throw new Error('invalid placement ' + p.type);
+        case 'child':
+            if (!('values' in node)) {
+                throw new Error(`child, of node ${node.type}`);
+            }
+            return state.map[node.values[p.at]];
+        case 'text':
+            if (node.type !== 'string') {
+                throw new Error(`node not string ${node.type}`);
+            }
+            if (p.at === 0) {
+                return state.map[node.first];
+            }
+            if (p.at >= node.templates.length - 1) {
+                throw new Error(
+                    `not enough templates ${node.templates.length} vs text@${p.at}`,
+                );
+            }
+            return state.map[node.templates[p.at - 1].suffix];
+        case 'expr':
+            if (node.type !== 'string') {
+                throw new Error(`node not string ${node.type}`);
+            }
+            if (p.at === 0) {
+                throw new Error(`cant do expr@0 in string`);
+            }
+            if (p.at >= node.templates.length - 1) {
+                throw new Error(
+                    `not enough templates ${node.templates.length} vs text@${p.at}`,
+                );
+            }
+            return state.map[node.templates[p.at - 1].expr];
+        case 'attribute':
+        case 'annot-annot':
+        case 'annot-target':
+        case 'tapply-target':
+        case 'record-target':
+            throw new Error(`not handled atm ${node.type} ${p.type}`);
+        case 'spread-contents':
+            if (!('contents' in node)) {
+                throw new Error(`contents? ${node.type}`);
+            }
+            return state.map[node.contents];
+        // return;
+        case 'rich-text':
+        case 'subtext':
+        case 'inside':
+        case 'start':
+        case 'end':
+            if (!isLast) {
+                throw new Error(`non terminal ${p.type}`);
+            }
+            return node;
     }
 };
 

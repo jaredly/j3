@@ -76,6 +76,7 @@ export function NSTop({
     drag,
     env,
     ev,
+    debug,
 }: {
     ev: FullEvalator<any, any, any> | void | null;
     env: any;
@@ -89,6 +90,7 @@ export function NSTop({
     selections: Cursor[];
     produce: { [key: number]: string | JSX.Element | LocError };
     drag: Drag;
+    debug: boolean;
 }) {
     const source = useMemo(() => {
         const last = path[path.length - 1];
@@ -157,7 +159,7 @@ export function NSTop({
                                 />
                             ) : (
                                 <Render
-                                    debug={false}
+                                    debug={debug}
                                     idx={ns.top}
                                     // reg={reg}
                                     // map={state.map}
@@ -201,6 +203,7 @@ export function NSTop({
                             child.type === 'normal' ? (
                                 <NSTop
                                     env={env}
+                                    debug={debug}
                                     ev={ev}
                                     reg={reg}
                                     drag={drag}

@@ -641,7 +641,7 @@ export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {
                 type: 'update',
                 map: { [gp.idx]: { ...gpnode, values } },
                 selection: path
-                    .slice(0, -1)
+                    .slice(0, -2)
                     .concat({
                         idx: gp.idx,
                         type: 'child',
