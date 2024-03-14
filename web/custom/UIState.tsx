@@ -17,6 +17,10 @@ export type MetaData = {
         name?: string;
         latest?: boolean;
     };
+    // This is currently probably only respected by the Fixture dealio
+    // and maybe the toplevel whatsits
+    // but it probably won't be inspected & dealt with if it's embedded deep somewhere.
+    traceTop?: { name?: string };
     coverage?: boolean;
 };
 

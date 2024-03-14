@@ -116,9 +116,13 @@ export const evaluatorFromText = (
                             };
                         }
                         try {
+                            if (meta[stmt.loc]?.traceTop) {
+                                console.log('TOP TRACE');
+                            }
+                            const value = fn(san);
                             return {
                                 env,
-                                display: valueToString(fn(san)),
+                                display: valueToString(value),
                             };
                         } catch (err) {
                             const locs: { row: number; col: number }[] = [];

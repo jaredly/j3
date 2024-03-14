@@ -134,7 +134,7 @@ export const Render = React.memo(
         // console.log('render', props.idx);
         const inner = <RenderNNode {...props} nnode={nnode} values={values} />;
 
-        if (values.meta?.trace) {
+        if (values.meta?.trace || values.meta?.traceTop) {
             return (
                 <span style={{ display: 'flex' }}>
                     {props.debug ? (
@@ -157,7 +157,9 @@ export const Render = React.memo(
                             height: 5,
                             minHeight: 0,
                             marginLeft: -5,
-                            backgroundColor: 'green',
+                            backgroundColor: values.meta?.traceTop
+                                ? 'red'
+                                : 'green',
                             display: 'inline-block',
                         }}
                     ></span>

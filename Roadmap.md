@@ -1,4 +1,29 @@
 
+# TRACES
+once again, I am at the mercy
+
+So
+
+(1) have a `traces` list(?) that indicates a list of LOCs that are my tracy boys
+herm I mean I guess I could just use the meta. because, I can have multiple.
+it ... feels more ephemeral than that though? idk, maybe it's fine.
+(like I wouldn't want it in the undo stack? Is that weird? I'll leave it in, it's fine.)
+because I can have multiple things I'm tracing, ya know.
+
+OK
+Also, relatedly, probably, it would be very nice to be able to say
+"trace this /function call/" by which I mean trace all the args for me.
+And so I could, if I wanted to, and the args were all serializable, I could
+say "pop this trace out into the editor, so I can .. play with it" yes indeed.
+You could even like make fixture tests out of it.
+
+
+OOOH META CAN BE USED TO MANUALLY MULTILINE.
+
+ALSO meta can be used to say "hey this ~array of lists, let's do table view my dawg"
+I mean, tables could even have ... hrm ... like ... ok so it could have, "view functions" applied to them. hrm.
+
+
 # RICH TEXT NODES
 
 we already have a rich-text, for what it might be worth.
@@ -14,6 +39,15 @@ we already have a rich-text, for what it might be worth.
     - Yeah I like that quite a lot.
 
 Ok, so type constructors.
+Could I just do
+```
+evar - [string int] - expr
+cons - [a] - (array a)
+; OK so
+tconfig = (tconfig (set string) (array type) type)
+tenv = (tenv (map string scheme) (map string tconfig) (map string (set string)))
+```
+I'll ... need to ... hang on to ... the free variables.
 
 # Literate literating. Pretty please.
 

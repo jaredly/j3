@@ -104,13 +104,15 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
     const sel = state.at[0]?.start;
     if (sel) {
         const idx = sel[sel.length - 1].idx;
-        if (state.meta?.[idx]?.trace) {
+        const meta = state.meta[idx];
+
+        if (meta?.trace) {
             commands.push({
                 title: 'Remove Trace',
                 action() {
                     dispatch({
                         type: 'meta',
-                        meta: { [idx]: { trace: undefined } },
+                        meta: { [idx]: { ...meta, trace: undefined } },
                     });
                 },
             });
@@ -118,14 +120,36 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
             commands.push({
                 title: 'Trace',
                 action() {
-                    console.log('diusplating');
                     dispatch({
                         type: 'meta',
-                        meta: { [idx]: { trace: {} } },
+                        meta: { [idx]: { ...(meta ?? {}), trace: {} } },
                     });
                 },
             });
         }
+
+        if (meta?.traceTop) {
+            commands.push({
+                title: 'Turn off Trace Top',
+                action() {
+                    dispatch({
+                        type: 'meta',
+                        meta: { [idx]: { ...meta, traceTop: undefined } },
+                    });
+                },
+            });
+        } else {
+            commands.push({
+                title: 'Set Trace Top',
+                action() {
+                    dispatch({
+                        type: 'meta',
+                        meta: { [idx]: { ...(meta ?? {}), traceTop: {} } },
+                    });
+                },
+            });
+        }
+
         const node = state.map[idx];
         if (node?.type === 'identifier') {
             const num = +node.text;

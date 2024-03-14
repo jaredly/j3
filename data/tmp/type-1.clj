@@ -36,7 +36,7 @@
         (tapp (tapp (tcon "->" _) a _) b _) "(${(type-to-string a)}) -> ${(type-to-string b)}"
         (tapp a b _)                        "(${(type-to-string a)} ${(type-to-string b)})"))
 
-(def prelude "# Prelude")
+<dom node>
 
 (defn map [values f]
     (match values
@@ -143,17 +143,17 @@
 
 (,
     (fn [x] (map/to-list (compose-subst earlier-subst (map/from-list x))))
-        [; x gets the \"a\" substitution applied to it
+        [<dom node>
         (,
         [(, "x" (tvar "a" -1))]
             [(, "x" (tcon "a-mapped" -1))
             (, "a" (tcon "a-mapped" -1))
             (, "b" (tvar "c" -1))])
-        ; c *does not* get applied to b in `earlier`
+        <dom node>
         (,
         [(, "c" (tcon "int" -1))]
             [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
-        ; a gets the \"b\" subtitution applied to it, and then overrides the \"a\" from `earlier`
+        <dom node>
         (,
         [(, "a" (tvar "b" -1))]
             [(, "a" (tvar "c" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])])
@@ -251,8 +251,9 @@
                                                        (type-apply unified-subst result-var)
                                                        nidx))
         <dom node>
-        (elet (pvar name nl) value body l) (let [
+        (elet (pvar name nl) value body 1) (let [
                                                (,, value-subst value-type nidx) (t-expr tenv value nidx)
+                                               ; DISABLED for fun and profit?
                                                value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
                                                env-with-name                    (tenv/set-type tenv name value-scheme)
                                                e2                               (tenv-apply value-subst env-with-name)
@@ -260,15 +261,15 @@
                                                (,, (compose-subst body-subst value-subst) body-type nidx))
         <dom node>
         (elet pat init body l)             (let [
-                                               (,, init-subst init-type nidx) (t-expr tenv init nidx)
-                                               init-scheme                    (generalize (tenv-apply init-subst tenv) init-type)
-                                               (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
-                                               (, unified-subst nidx)         (unify init-type pat-type nidx)
-                                               (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)]
+                                               (,, value-subst value-type nidx) (t-expr tenv init nidx)
+                                               init-scheme                      (generalize (tenv-apply value-subst tenv) value-type)
+                                               (,, pat-type bound-env nidx)     (t-pat tenv pat nidx)
+                                               (, unified-subst nidx)           (unify value-type pat-type nidx)
+                                               (,, body-subst body-type nidx)   (t-expr (tenv-apply value-subst bound-env) body nidx)]
                                                (,,
                                                    (compose-subst
                                                        unified-subst
-                                                           (compose-subst init-subst body-subst))
+                                                           (compose-subst value-subst body-subst))
                                                        body-type
                                                        nidx))
         (ematch target cases l)            (let [
@@ -280,7 +281,7 @@
 (defn t-pat [tenv pat nidx]
     (match pat
         (pvar name nl)      (let [(, var nidx) (new-type-var name nidx)]
-                                (,, var (tenv/set-type tenv name (scheme set/nil var)) nidx))
+                                (,, var (tenv/set-type tenv name (generalize tenv var)) nidx))
         (pstr _ nl)         (,, (tcon "string" nl) tenv nidx)
         (pprim (pbool _) l) (,, (tcon "bool" l) tenv nidx)
         (pprim (pint _) l)  (,, (tcon "int" l) tenv nidx)
@@ -361,7 +362,7 @@
         (,
         (@
             (let [(, a b) (, 2 3)]
-                a))
+                (, a b)))
             )
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(a:0) -> a:0")
