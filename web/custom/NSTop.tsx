@@ -15,7 +15,7 @@ import { NsReg, Drag } from './useNSDrag';
 import { fromMCST } from '../../src/types/mcst';
 import { FullEvalator, LocError, bootstrap } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
-import { useExpanded, useNode } from './Store';
+import { useExpanded, useGetStore, useNode } from './Store';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const empty = {};
@@ -35,13 +35,19 @@ const PluginRender = ({
 }) => {
     const values = useNode(props.idx, props.path);
     const expanded = useExpanded(props.idx);
+    const store = useGetStore();
     // const expanded = useMemo(() => fromMCST(ns.top, map), [ns.top, map]);
     const results = useMemo(
         () =>
             plugin.process(expanded, (node) => {
                 const errors = {};
                 const expr = ev.parseExpr(node, errors);
-                return ev.evaluate(expr, env, {});
+                return ev.evaluate(
+                    expr,
+                    env,
+                    store.getState().meta,
+                    store.getResults().traces,
+                );
             }),
         [ev, env, expanded],
     );

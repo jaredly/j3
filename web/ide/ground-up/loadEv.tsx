@@ -122,25 +122,12 @@ export const evaluatorFromText = (
                         try {
                             let inner = san;
                             if (meta[stmt[1]]?.traceTop) {
-                                // console.log('TOP TRACE');
-                                // console.log(mm);
-                                let count = 0;
-                                const trace: { [key: number]: any[] } =
-                                    (traceMap[stmt[1]] = {});
-                                inner = {
-                                    ...san,
-                                    $trace: (
-                                        loc: number,
-                                        info: any,
-                                        value: any,
-                                    ) => {
-                                        if (!trace[loc]) {
-                                            trace[loc] = [];
-                                        }
-                                        trace[loc].push({ value, at: count++ });
-                                        return value;
-                                    },
-                                };
+                                inner = withTracing(
+                                    traceMap,
+                                    stmt[1],
+                                    inner,
+                                    san,
+                                );
                             }
                             const value = fn(inner);
                             return {
@@ -187,15 +174,26 @@ export const evaluatorFromText = (
                         };
                     }
                 },
-                evaluate(expr, env) {
+                evaluate(expr, env, meta, traceMap) {
+                    const mm = Object.entries(meta)
+                        .map(([k, v]) => [+k, v.trace])
+                        .filter((k) => k[1]);
+
                     try {
-                        const js = data['compile'](expr)([]);
+                        const js = data['compile'](expr)(mm);
                         const fn = new Function(
                             envArgs,
                             '{' + env.join('\n') + '\nreturn ' + js + '}',
                         );
                         try {
-                            return fn(san);
+                            let inner = san;
+                            const ea = expr as any;
+                            const eloc = ea[3] ?? ea[2] ?? ea[1];
+                            if (meta[eloc]?.traceTop) {
+                                inner = withTracing(traceMap, eloc, inner, san);
+                            }
+
+                            return fn(inner);
                         } catch (err) {
                             return `Error ${(err as Error).message}`;
                         }
@@ -337,6 +335,28 @@ export const evaluatorFromText = (
     // ELSE do ... a thing
     return null;
 };
+
+function withTracing(
+    traceMap: { [loc: number]: { [loc: number]: any[] } },
+    loc: number,
+    inner: { [key: string]: any },
+    san: { [key: string]: any },
+) {
+    let count = 0;
+    const trace: { [key: number]: any[] } = (traceMap[loc] = {});
+    inner = {
+        ...san,
+        $trace: (loc: number, info: any, value: any) => {
+            if (!trace[loc]) {
+                trace[loc] = [];
+            }
+            trace[loc].push({ value, at: count++ });
+            return value;
+        },
+    };
+    return inner;
+}
+
 function sanitizedEnv(benv: { [key: string]: any }) {
     const san: { [key: string]: any } = {};
     Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
