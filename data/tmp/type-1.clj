@@ -3,13 +3,13 @@
 
 (deftype expr
     (eprim prim int)
-        (estr first (array (, expr string int)) int)
+        (estr first (array (,, expr string int)) int)
         (evar string int)
         (equot expr int)
         (equotquot cst int)
         (elambda string int expr int)
         (eapp expr expr int)
-        (ematch expr (array (, pat expr int)) int))
+        (ematch expr (array (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
 
@@ -283,7 +283,7 @@
             - apply any subst that we learned from inferring the value to our type environment, producing a new tenv (?) Seems like this ought to be equivalent to doing tenv-apply to tenv and then adding the name. It's impossible for the value-subst to produce ... something that would apply to the value-type, right??? right??
             - infer the type of the body, using the tenv that has both the name bound to the generalized inferred type, as well as any substitutions that resulted from inferring the type of the bound value.
             - compose the substitutions from the body with those from the value **)
-        ;(elet (pvar name nl) value body 1) ;(let [
+        ;(elet (pvar name nl) value body l) ;(let [
                                                 (,, value-subst value-type nidx) (t-expr tenv value nidx)
                                                 value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
                                                 env-with-name                    (tenv/set-type tenv name value-scheme)
@@ -294,37 +294,49 @@
             - infer the type of the value
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
-        (elet pat init body l)              (let [
-                                                (,, value-subst value-type nidx) (t-expr tenv init nidx)
-                                                (,, pat-type bindings nidx)      (t-pat tenv pat nidx)
-                                                (, unified-subst nidx)           (unify value-type pat-type nidx)
-                                                bindings                         (map/map
-                                                                                     (type-apply (compose-subst value-subst unified-subst))
-                                                                                         bindings)
-                                                schemes                          (map/map (scheme set/nil) bindings)
-                                                schemes                          (map/map
-                                                                                     (generalize
-                                                                                         (tenv-apply (compose-subst value-subst unified-subst) tenv))
-                                                                                         bindings)
-                                                bound-env                        (foldr
-                                                                                     (tenv-apply value-subst tenv)
-                                                                                         (map/to-list schemes)
-                                                                                         (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme)))
-                                                (,, body-subst body-type nidx)   (t-expr
-                                                                                     (tenv-apply (compose-subst unified-subst value-subst) bound-env)
-                                                                                         body
-                                                                                         nidx)]
-                                                (,,
-                                                    (compose-subst
-                                                        unified-subst
-                                                            (compose-subst value-subst body-subst))
-                                                        (type-apply unified-subst body-type)
-                                                        nidx))
+        (elet pat init body l)              (let [res (t-expr tenv init nidx)] (pat-and-body tenv pat body res))
         (ematch target cases l)             (let [
-                                                (,, s1 t1 nidx) (t-expr tenv target nidx)
-                                                t'              (generalize (tenv-apply s1 tenv) t1)]
-                                                (fatal "nope"))
+                                                (, result-var nidx)                (new-type-var "match-res" nidx)
+                                                (,, target-subst target-type nidx) (t-expr tenv target nidx)
+                                                what-not                           (foldr
+                                                                                       (,, target-subst result-var nidx)
+                                                                                           cases
+                                                                                           (fn [(,, subst result nidx) (, pat body)]
+                                                                                           (let [
+                                                                                               (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
+                                                                                               (, unified-subst nidx) (unify result body nidx)]
+                                                                                               (,,
+                                                                                                   (compose-subst subst unified-subst)
+                                                                                                       (type-apply unified-subst result)
+                                                                                                       nidx))))]
+                                                what-not)
         _                                   (fatal "cannot infer type for ${(valueToString expr)}")))
+
+(defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
+    (let [
+        (,, pat-type bindings nidx)    (t-pat tenv pat nidx)
+        (, unified-subst nidx)         (unify value-type pat-type nidx)
+        bindings                       (map/map
+                                           (type-apply (compose-subst value-subst unified-subst))
+                                               bindings)
+        schemes                        (map/map
+                                           (generalize
+                                               (tenv-apply (compose-subst value-subst unified-subst) tenv))
+                                               bindings)
+        bound-env                      (foldr
+                                           (tenv-apply value-subst tenv)
+                                               (map/to-list schemes)
+                                               (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme)))
+        (,, body-subst body-type nidx) (t-expr
+                                           (tenv-apply (compose-subst unified-subst value-subst) bound-env)
+                                               body
+                                               nidx)]
+        (,,
+            (compose-subst
+                unified-subst
+                    (compose-subst value-subst body-subst))
+                (type-apply unified-subst body-type)
+                nidx)))
 
 (defn t-pat [tenv pat nidx]
     (match pat
@@ -396,6 +408,12 @@
 
 (infer basic (@ (let [a 1] a)))
 
+(infer
+    basic
+        (@
+        (match 1
+            1 1)))
+
 (,
     (fn [x] (type-to-string (infer basic x)))
         [(, (@ +) "(int) -> (int) -> int")
@@ -408,7 +426,7 @@
         (@
             (match 1
                 1 1))
-            )
+            "int")
         ; Exploration
         (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (x:4:7) -> x:4:7)")
         (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(x:4:14) -> x:4:14")

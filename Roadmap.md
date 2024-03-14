@@ -24,6 +24,8 @@ ALSO meta can be used to say "hey this ~array of lists, let's do table view my d
 I mean, tables could even have ... hrm ... like ... ok so it could have, "view functions" applied to them. hrm.
 
 - [ ] let's select a rich-text, ya know
+- [ ] OOH OOH, cmd-backspace to delete the whole word? maybe? idk
+  and then normal backspace won't delete a whole list or things
 
 
 # RICH TEXT NODES
