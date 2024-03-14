@@ -242,6 +242,7 @@ function builtins() {
         'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),
         'set/merge': (a: any[]) => (b: any[]) => [...a, ...b],
         'set/to-list': wrapArray,
+        'set/from-list': unwrapArray,
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
             unwrapArray(a).map((i) => [i[0], i[1]]),
         'map/to-list': (a: [any, any][]) =>

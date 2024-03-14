@@ -71,12 +71,16 @@
         (tapp a b _) (set/merge (type-free a) (type-free b))
         ))
 
-(defn scheme-free [(scheme vbls type)] (set/rm (type-free type) vbls))
+(defn scheme-free [(scheme vbls type)]
+    (set/diff (type-free type) vbls))
 
 (defn tenv-free [tenv]
     (foldr set/nil (map (map/values tenv) scheme-free) set/merge))
 
-(, scheme-free [(, (scheme (set/from-list ["a"]) (tvar "a" -1)) )])
+(,
+    (fn [a] (set/to-list (scheme-free a)))
+        [(, (scheme (set/from-list ["a"]) (tvar "a" -1)) [])
+        (, (scheme (set/from-list []) (tvar "a" -1)) ["a"])])
 
 <dom node>
 
@@ -98,11 +102,11 @@
 (defn compose-subst [earlier later]
     (map/merge (map/map (type-apply earlier) later) earlier))
 
-(def test-subst
+(def earlier-subst
     (map/from-list [(, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))]))
 
 (,
-    (fn [x] (map/to-list (compose-subst test-subst (map/from-list x))))
+    (fn [x] (map/to-list (compose-subst earlier-subst (map/from-list x))))
         [; x gets the \"a\" substitution applied to it
         (,
         [(, "x" (tvar "a" -1))]
