@@ -1,6 +1,4 @@
-(def ast "# AST")
-
-(deftype (array a) (nil) (cons a (array a)))
+<dom node>
 
 (deftype expr
     (eprim prim int)
@@ -78,6 +76,8 @@
 (defn tenv-free [tenv]
     (foldr set/nil (map (map/values tenv) scheme-free) set/merge))
 
+(, scheme-free [(, (scheme (set/from-list ["a"]) (tvar "a" -1)) )])
+
 <dom node>
 
 (defn type-apply [subst type]
@@ -103,19 +103,24 @@
 
 (,
     (fn [x] (map/to-list (compose-subst test-subst (map/from-list x))))
-        [(,
+        [; x gets the \"a\" substitution applied to it
+        (,
         [(, "x" (tvar "a" -1))]
             [(, "x" (tcon "a-mapped" -1))
             (, "a" (tcon "a-mapped" -1))
             (, "b" (tvar "c" -1))])
+        ; c *does not* get applied to b in `earlier`
         (,
         [(, "c" (tcon "int" -1))]
             [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
+        ; a gets the \"b\" subtitution applied to it, and then overrides the \"a\" from `earlier`
         (,
         [(, "a" (tvar "b" -1))]
             [(, "a" (tvar "c" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])])
 
 (defn remove [tenv var] (map/rm tenv var))
+
+<dom node>
 
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
@@ -225,7 +230,7 @@
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)]
-        (type-to-string (type-apply s t))))
+        (type-apply s t)))
 
 (infer map/nil (@ ((fn [a] a) 23)))
 
@@ -261,7 +266,7 @@
             a)))
 
 (,
-    (infer basic)
+    (fn [x] (type-to-string (infer basic x)))
         [(, (@ +) "(int) -> (int) -> int")
         (,
         (@
