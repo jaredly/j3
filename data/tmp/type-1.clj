@@ -264,14 +264,12 @@
                                                (,, value-subst value-type nidx) (t-expr tenv init nidx)
                                                (,, pat-type bindings nidx)      (t-pat tenv pat nidx)
                                                (, unified-subst nidx)           (unify value-type pat-type nidx)
+                                               bindings                         (map/map (type-apply unified-subst) bindings)
                                                bound-env                        (foldl
                                                                                     tenv
                                                                                         (map/to-list bindings)
                                                                                         (fn [tenv (, name type)]
-                                                                                        (tenv/set-type
-                                                                                            tenv
-                                                                                                name
-                                                                                                (generalize tenv (type-apply unified-subst type)))))
+                                                                                        (tenv/set-type tenv name (generalize tenv type))))
                                                (,, body-subst body-type nidx)   (t-expr
                                                                                     (tenv-apply (compose-subst unified-subst value-subst) bound-env)
                                                                                         body
@@ -316,7 +314,7 @@
                                                                                    nidx))))]
                                 (,,
                                     (type-apply subst tres)
-                                        (map/map bindings (type-apply subst))
+                                        (map/map (type-apply subst) bindings)
                                         nidx))))
 
 (def tenv/nil (tenv map/nil map/nil map/nil))
@@ -377,9 +375,9 @@
             "int")
         (,
         (@
-            (let [(, a b) (, 2 3)]
+            (let [(, a b) (, 2 true)]
                 (, a b)))
-            )
+            "((, int) bool)")
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(a:0) -> a:0")
         (, (@ (fn [a] (+ 2 a))) "(int) -> int")
