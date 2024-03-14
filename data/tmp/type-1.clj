@@ -262,7 +262,6 @@
         <dom node>
         (elet pat init body l)             (let [
                                                (,, value-subst value-type nidx) (t-expr tenv init nidx)
-                                               init-scheme                      (generalize (tenv-apply value-subst tenv) value-type)
                                                (,, pat-type bindings nidx)      (t-pat tenv pat nidx)
                                                (, unified-subst nidx)           (unify value-type pat-type nidx)
                                                bound-env                        (foldl
@@ -272,7 +271,7 @@
                                                                                         (tenv/set-type
                                                                                             tenv
                                                                                                 name
-                                                                                                (generalize tenv (type-apply unified-sub type)))))
+                                                                                                (generalize tenv (type-apply unified-subst type)))))
                                                (,, body-subst body-type nidx)   (t-expr
                                                                                     (tenv-apply (compose-subst unified-subst value-subst) bound-env)
                                                                                         body
