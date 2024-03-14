@@ -85,6 +85,12 @@
 
 (defn tenv/names [(tenv _ _ names) key] (map/get names key))
 
+(defn tenv/rm [(tenv types cons names) var]
+    (tenv (map/rm types var) cons names))
+
+(defn tenv/set-type [(tenv types cons names) k v]
+    (tenv (map/set types k v) cons names))
+
 <dom node>
 
 (defn type-free [type]
@@ -97,8 +103,8 @@
 (defn scheme-free [(scheme vbls type)]
     (set/diff (type-free type) vbls))
 
-(defn tenv-free [tenv]
-    (foldr set/nil (map (map/values tenv) scheme-free) set/merge))
+(defn tenv-free [(tenv types _ _)]
+    (foldr set/nil (map (map/values types) scheme-free) set/merge))
 
 (,
     (fn [a] (set/to-list (scheme-free a)))
@@ -118,7 +124,8 @@
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
-(defn tenv-apply [subst tenv] (map/map (scheme-apply subst) tenv))
+(defn tenv-apply [subst (tenv types cons names)]
+    (tenv (map/map (scheme-apply subst) types) cons names))
 
 <dom node>
 
@@ -144,8 +151,6 @@
         (,
         [(, "a" (tvar "b" -1))]
             [(, "a" (tvar "c" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])])
-
-(defn remove [tenv var] (map/rm tenv var))
 
 <dom node>
 
@@ -210,7 +215,7 @@
 (defn t-expr [tenv expr nidx]
     (match expr
         <dom node>
-        (evar name l)                      (match (map/get tenv name)
+        (evar name l)                      (match (tenv/type tenv name)
                                                (none)       (fatal "Unbound variable ${name}")
                                                (some found) (let [(, t nidx) (instantiate found nidx)]
                                                                 (,, map/nil t nidx)))
@@ -218,7 +223,7 @@
         <dom node>
         (elambda name nl body l)           (let [
                                                (, arg-type nidx)              (new-type-var name nidx)
-                                               env-with-name                  (map/set tenv name (scheme set/nil arg-type))
+                                               env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
                                                (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
                                                (,,
                                                    body-subst
@@ -243,7 +248,7 @@
         (elet (pvar name nl) value body l) (let [
                                                (,, value-subst value-type nidx) (t-expr tenv value nidx)
                                                init-scheme                      (generalize (tenv-apply value-subst tenv) value-type)
-                                               env-with-name                    (map/set tenv name init-scheme)
+                                               env-with-name                    (tenv/set-type tenv name init-scheme)
                                                e2                               (tenv-apply value-subst env-with-name)
                                                (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
                                                (,, (compose-subst body-subst value-subst) body-type nidx))
@@ -270,14 +275,16 @@
     (match pat
         (pvar name nl) (let [])))
 
+(def tenv/nil (tenv map/nil map/nil map/nil))
+
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)]
         (type-apply s t)))
 
-(infer map/nil (@ ((fn [a] a) 23)))
+(infer tenv/nil (@ ((fn [a] a) 23)))
 
 (infer
-    map/nil
+    tenv/nil
         (@
         (let [a 1]
             a)))
@@ -285,19 +292,20 @@
 (def tint (tcon "int" -1))
 
 (def basic
-    (map/set
-        (map/set
+    (tenv
+        (map/from-list
+            [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                (,
+                ","
+                    (scheme
+                    (set/from-list ["a" "b"])
+                        (tfn (tvar "a" -1)
+                        (tfn (tvar "b" -1)
+                            (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
+                                -1)
+                            -1)))])
             map/nil
-                "+"
-                (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-            ","
-            (scheme
-            (set/from-list ["a" "b"])
-                (tfn (tvar "a" -1)
-                (tfn (tvar "b" -1)
-                    (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
-                        -1)
-                    -1))))
+            map/nil))
 
 (infer basic (@ (+ 2 3)))
 
