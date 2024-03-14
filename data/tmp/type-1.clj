@@ -281,10 +281,10 @@
 (defn t-pat [tenv pat nidx]
     (match pat
         (pvar name nl)      (let [(, var nidx) (new-type-var name nidx)]
-                                (,, var (tenv/set-type tenv name (generalize tenv var)) nidx))
-        (pstr _ nl)         (,, (tcon "string" nl) tenv nidx)
-        (pprim (pbool _) l) (,, (tcon "bool" l) tenv nidx)
-        (pprim (pint _) l)  (,, (tcon "int" l) tenv nidx)
+                                (,, var (map/set map/nil name var) nidx))
+        (pstr _ nl)         (,, (tcon "string" nl) map/nil nidx)
+        (pprim (pbool _) l) (,, (tcon "bool" l) map/nil nidx)
+        (pprim (pint _) l)  (,, (tcon "int" l) map/nil nidx)
         (pcon name args l)  (let [
                                 (tconstructor free cargs cres) (match (tenv/con tenv name)
                                                                    (none)   (fatal "Unknown constructor: ${name}")
@@ -293,15 +293,21 @@
                                 <dom node>
                                 cargs                          (map cargs (type-apply tsubst))
                                 zipped                         (zip args cargs)
-                                (,, subst tenv nidx)           (foldl
-                                                                   (,, map/nil tenv nidx)
+                                (,, subst bindings nidx)       (foldl
+                                                                   (,, map/nil map/nil nidx)
                                                                        zipped
-                                                                       (fn [(,, subst tenv nidx) (, arg carg)]
+                                                                       (fn [(,, subst bindings nidx) (, arg carg)]
                                                                        (let [
-                                                                           (,, pat-type tenv nidx) (t-pat tenv arg nidx)
-                                                                           (, unified-subst nidx)  (unify pat-type carg nidx)]
-                                                                           (,, (compose-subst unified-subst subst) tenv nidx))))]
-                                (,, (type-apply subst tres) tenv nidx))))
+                                                                           (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
+                                                                           (, unified-subst nidx)      (unify pat-type carg nidx)]
+                                                                           (,,
+                                                                               (compose-subst unified-subst subst)
+                                                                                   (map/merge bindings pat-bind)
+                                                                                   nidx))))]
+                                (,,
+                                    (type-apply subst tres)
+                                        (map/map bindings (type-apply subst))
+                                        nidx))))
 
 (def tenv/nil (tenv map/nil map/nil map/nil))
 
