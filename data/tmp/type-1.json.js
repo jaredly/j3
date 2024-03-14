@@ -630,66 +630,6 @@ throw new Error('let pattern not matched 1819. ' + valueToString($target));})(/*
 }
 }
 if ($target.type === "elet") {
-if ($target[0].type === "pvar") {
-{
-let name = $target[0][0];
-{
-let nl = $target[0][1];
-{
-let value = $target[1];
-{
-let body = $target[2];
-if ($target[3] === 1) {
-return /*1920*/(() => {const $target = /*1928*//*1928*//*1928*//*1929*/t_expr/*<1929*/(/*1928*//*1930*/tenv/*<1930*/)/*<1928*/(/*1928*//*1931*/value/*<1931*/)/*<1928*/(/*1928*//*1932*/nidx/*<1932*/)/*<1928*/;
-if ($target.type === ",,") {
-{
-let value_subst = $target[0];
-{
-let value_type = $target[1];
-{
-let nidx = $target[2];
-return /*1920*/(() => {const $target = /*1940*//*1940*//*1941*/generalize/*<1941*/(/*1940*//*1942*//*1942*//*1943*/tenv_apply/*<1943*/(/*1942*//*1944*/value_subst/*<1944*/)/*<1942*/(/*1942*//*1945*/tenv/*<1945*/)/*<1942*/)/*<1940*/(/*1940*//*1946*/value_type/*<1946*/)/*<1940*/;
-{
-let value_scheme = $target;
-return /*1920*/(() => {const $target = /*1948*//*1948*//*1948*//*1949*/tenv$slset_type/*<1949*/(/*1948*//*1950*/tenv/*<1950*/)/*<1948*/(/*1948*//*1951*/name/*<1951*/)/*<1948*/(/*1948*//*1952*/value_scheme/*<1952*/)/*<1948*/;
-{
-let env_with_name = $target;
-return /*1920*/(() => {const $target = /*2489*//*2489*//*2490*/tenv_apply/*<2490*/(/*2489*//*2491*/value_subst/*<2491*/)/*<2489*/(/*2489*//*2492*/env_with_name/*<2492*/)/*<2489*/;
-{
-let e2 = $target;
-return /*1920*/(() => {const $target = /*1958*//*1958*//*1958*//*1959*/t_expr/*<1959*/(/*1958*//*1960*/e2/*<1960*/)/*<1958*/(/*1958*//*1966*/body/*<1966*/)/*<1958*/(/*1958*//*1967*/nidx/*<1967*/)/*<1958*/;
-if ($target.type === ",,") {
-{
-let body_subst = $target[0];
-{
-let body_type = $target[1];
-{
-let nidx = $target[2];
-return /*1968*//*1968*//*1968*//*1969*/$co$co/*<1969*/(/*1968*//*1970*//*1970*//*1971*/compose_subst/*<1971*/(/*1970*//*1972*/body_subst/*<1972*/)/*<1970*/(/*1970*//*1973*/value_subst/*<1973*/)/*<1970*/)/*<1968*/(/*1968*//*1974*/body_type/*<1974*/)/*<1968*/(/*1968*//*1975*/nidx/*<1975*/)/*<1968*/
-}
-}
-}
-};
-throw new Error('let pattern not matched 1953. ' + valueToString($target));})(/*!*/)/*<1920*/
-};
-throw new Error('let pattern not matched 2488. ' + valueToString($target));})(/*!*/)/*<1920*/
-};
-throw new Error('let pattern not matched 1947. ' + valueToString($target));})(/*!*/)/*<1920*/
-};
-throw new Error('let pattern not matched 1938. ' + valueToString($target));})(/*!*/)/*<1920*/
-}
-}
-}
-};
-throw new Error('let pattern not matched 1923. ' + valueToString($target));})(/*!*/)/*<1920*/
-}
-}
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
 {
 let pat = $target[0];
 {

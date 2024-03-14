@@ -32,7 +32,7 @@ export const GroundUp = ({
 }) => {
     // const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
 
-    const [debug, setDebug] = useState(true);
+    const [debug, setDebug] = useState(false);
 
     const store = useStore(initial);
     const { state, results } = useGlobalState(store);

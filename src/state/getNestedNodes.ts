@@ -21,7 +21,13 @@ export type NNode =
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
     | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
-    | { type: 'ref'; id: number; path: PathChild; ancestors?: Path[] }
+    | {
+          type: 'ref';
+          id: number;
+          path: PathChild;
+          ancestors?: Path[];
+          style?: any;
+      }
     | {
           type: 'dom';
           node:
@@ -255,6 +261,7 @@ export const getNestedNodes = (
                         type: 'ref',
                         id: node.contents,
                         path: { type: 'spread-contents' },
+                        style: { fontStyle: 'italic', opacity: 0.6 },
                     },
                 ],
             };

@@ -423,16 +423,9 @@ export const RenderNNode = (
                 </span>
             );
         }
-        case 'ref':
-            return (
+        case 'ref': {
+            const child = (
                 <Render
-                    // map={map}
-                    // display={display}
-                    // errors={props.errors}
-                    // dispatch={dispatch}
-                    // reg={reg}
-                    // hashNames={props.hashNames}
-                    // selection={props.selection}
                     key={nnode.id}
                     idx={nnode.id}
                     debug={props.debug}
@@ -442,6 +435,14 @@ export const RenderNNode = (
                     ])}
                 />
             );
+            return nnode.style ? (
+                <span key={nnode.id} style={nnode.style}>
+                    {child}
+                </span>
+            ) : (
+                child
+            );
+        }
         case 'pairs':
             const oneColor = 'transparent';
             const twoColor = 'rgba(100,100,100,0.1)';
