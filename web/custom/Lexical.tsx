@@ -43,14 +43,10 @@ export const LexicalFolks = ({
     React.useMemo(() => {
         const configured = editor._tiptapEditor.extensionManager.extensions;
         const ext = configured.find((e) => e.name === 'trailingNode');
-        console.log(ext);
-        ext!.config.addProseMirrorPlugins = () => [];
-        window.ext = ext;
-        // if (idx !== -1) {
-        //     configured.splice(idx, 1);
-        // }
+        if (ext) {
+            ext.config.addProseMirrorPlugins = () => [];
+        }
     }, []);
-    // editor._tiptapEditor.extensionStorage;
     // @ts-ignore
     window.editor = editor;
     // useEditorSelectionChange(() => {

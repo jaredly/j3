@@ -261,7 +261,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
                             : evaluate(item.input.node),
                     };
                 } catch (err) {
-                    console.error(err);
+                    // console.error(err);
                     // failed
                     results[item.input.node.loc] = {
                         expected: null,

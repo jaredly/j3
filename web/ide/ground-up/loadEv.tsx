@@ -89,6 +89,7 @@ export const evaluatorFromText = (
                     return { js: env.join('\n'), errors };
                 },
                 addStatement(stmt, env, meta) {
+                    console.log('add stmt', meta[stmt.loc]);
                     const mm = Object.entries(meta).map(([k, v]) => [+k, v]);
                     if (stmt.type === 'sexpr') {
                         let js;
