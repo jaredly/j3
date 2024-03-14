@@ -201,6 +201,7 @@
                                                   body-subst
                                                       (tfn (type-apply body-subst arg-type) body-type l)
                                                       nidx))
+        <dom node>
         (eapp target arg l)               (let [
                                               (, result-var nidx)                (new-type-var "a" nidx)
                                               (,, target-subst target-type nidx) (t-expr tenv target nidx)

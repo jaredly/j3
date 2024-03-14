@@ -40,6 +40,16 @@ export const LexicalFolks = ({
         placeholders: { default: '...' },
         initialContent: initial,
     });
+    React.useMemo(() => {
+        const configured = editor._tiptapEditor.extensionManager.extensions;
+        const ext = configured.find((e) => e.name === 'trailingNode');
+        console.log(ext);
+        window.ext = ext;
+        // if (idx !== -1) {
+        //     configured.splice(idx, 1);
+        // }
+    }, []);
+    // editor._tiptapEditor.extensionStorage;
     // @ts-ignore
     window.editor = editor;
     // useEditorSelectionChange(() => {
