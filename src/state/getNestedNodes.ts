@@ -156,7 +156,7 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'start' },
                     { type: 'brace', text: '{', at: 'start' },
                     ...(layout?.type === 'multiline'
-                        ? [recordPairs(node.values, layout)]
+                        ? [recordPairs(node.values, layout, map)]
                         : withCommas(node.values)),
                     { type: 'brace', text: '}', at: 'end' },
                     { type: 'blinker', loc: 'end' },
@@ -170,7 +170,13 @@ export const getNestedNodes = (
                     { type: 'brace', text: '(', at: 'start' },
                     ...(layout?.type === 'multiline'
                         ? layout.pairs
-                            ? [recordPairs(node.values, layout) satisfies NNode]
+                            ? [
+                                  recordPairs(
+                                      node.values,
+                                      layout,
+                                      map,
+                                  ) satisfies NNode,
+                              ]
                             : [
                                   renderList(
                                       node,
@@ -191,7 +197,7 @@ export const getNestedNodes = (
                     // ...withCommas(node.values),
                     ...(layout?.type === 'multiline'
                         ? layout.pairs
-                            ? [recordPairs(node.values, layout)]
+                            ? [recordPairs(node.values, layout, map)]
                             : [
                                   renderList(
                                       node,
@@ -461,7 +467,7 @@ function withCommas(values: number[]): NNode[] {
     );
 }
 
-const recordPairs = (nodes: number[], layout?: Layout): NNode => {
+const recordPairs = (nodes: number[], layout: Layout, map: Map): NNode => {
     if (!nodes.length) {
         return { type: 'blinker', loc: 'inside' };
     }
@@ -486,7 +492,13 @@ const recordPairs = (nodes: number[], layout?: Layout): NNode => {
             continue;
         }
         // if this is a single-line thing, +=1, otherwise +=2
-        if (i < nodes.length - 1) {
+        const next = map[nodes[i]];
+        if (next?.type === 'comment' || next?.type === 'rich-text') {
+            pairs.push([
+                { type: 'ref', id: nodes[i], path: { type: 'child', at: i } },
+            ]);
+            i += 1;
+        } else if (i < nodes.length - 1) {
             pairs.push([
                 { type: 'ref', id: nodes[i], path: { type: 'child', at: i } },
                 {

@@ -186,14 +186,16 @@
 
 (defn t-expr [tenv expr nidx]
     (match expr
+        <dom node>
         (evar name l)                     (match (map/get tenv name)
                                               (none)       (fatal "Unbound variable ${name}")
                                               (some found) (let [(, t nidx) (instantiate found nidx)]
-                                                               (,, (map/nil) t nidx)))
+                                                               (,, map/nil t nidx)))
         (eprim prim)                      (,, map/nil (t-prim prim) nidx)
+        <dom node>
         (elambda name nl body l)          (let [
                                               (, arg-type nidx)              (new-type-var name nidx)
-                                              env-with-name                  (map/merge tenv (map/set map/nil name (scheme set/nil arg-type)))
+                                              env-with-name                  (map/set tenv name (scheme set/nil arg-type))
                                               (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
                                               (,,
                                                   body-subst

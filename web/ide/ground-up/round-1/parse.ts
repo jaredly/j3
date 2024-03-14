@@ -563,5 +563,10 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
     addError(ctx.errors, node.loc, 'unexpected expr ' + JSON.stringify(node));
 };
 export function filterBlanks(arg0: Node[]) {
-    return arg0.filter((a) => a.type !== 'blank' && a.type !== 'comment');
+    return arg0.filter(
+        (a) =>
+            a.type !== 'blank' &&
+            a.type !== 'comment' &&
+            a.type !== 'rich-text',
+    );
 }
