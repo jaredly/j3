@@ -164,8 +164,9 @@
         (, t (tvar var _))                              (, (var-bind var t) nidx)
         (, (tcon a la) (tcon b lb))                     (if (= a b)
                                                             (, map/nil nidx)
-                                                                (fatal "cant unify  ${a} (${la}) and ${b} (${lb})"))
-        _                                               (fatal "cant unify ${(valueToString t1)} ${(valueToString t2)}")))
+                                                                (fatal "cant unify ${a} (${la}) and ${b} (${lb})"))
+        _                                               (fatal
+                                                            "cant unify ${(type-to-string t1)} and ${(type-to-string t2)}")))
 
 (defn var-bind [var type]
     (match type
@@ -218,7 +219,7 @@
                                               env-with-name                  (map/set tenv name init-scheme)
                                               e2                             (tenv-apply init-subst env-with-name)
                                               (,, body-subst body-type nidx) (t-expr e2 body nidx)]
-                                              (,, (compose-subst init-subst body-subst) body-type nidx))
+                                              (,, (compose-subst body-subst init-subst) body-type nidx))
         (elet pat init body l)            (let [
                                               (,, init-subst init-type nidx) (t-expr tenv init nidx)
                                               (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
@@ -297,6 +298,46 @@
         (@
             (match 1
                 1 1))
-            )])
+            )
+        ; Tests from the paper
+        (,
+        (@
+            (let [id (fn [x] x)]
+                id))
+            "(x:0:2) -> x:0:2")
+        (,
+        (@
+            (let [id (fn [x] x)]
+                (id id)))
+            "(x:0:5) -> x:0:5")
+        (,
+        (@
+            (let [
+                id (fn [x]
+                       (let [y x]
+                           y))]
+                (id id)))
+            "(x:0:5) -> x:0:5")
+        (,
+        (@
+            (let [
+                id (fn [x]
+                       (let [y x]
+                           y))]
+                ((id id) 2)))
+            "int")
+        (,
+        (@
+            (let [id (fn [x] (x x))]
+                id))
+            )
+        (,
+        (@
+            (fn [m]
+                (let [y m]
+                    (let [x (y true)]
+                        x))))
+            "((bool) -> a:1) -> a:1")
+        (, (@ (2 2)) )])
 
 1987
