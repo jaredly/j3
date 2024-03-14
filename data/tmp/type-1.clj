@@ -132,25 +132,26 @@
 (defn new-type-var [prefix nidx]
     (, (tvar "${prefix}:${nidx}" -1) (+ 1 nidx)))
 
-(defn free-for-vars [vars coll nidx]
+(defn make-subst-for-vars [vars coll nidx]
     (match vars
         []         (, coll nidx)
         [v ..rest] (let [(, vn nidx) (new-type-var v nidx)]
-                       (free-for-vars rest (map/set coll v vn) nidx))))
+                       (make-subst-for-vars rest (map/set coll v vn) nidx))))
 
-(free-for-vars ["a" "b" "c"] (map/nil) 0)
+(make-subst-for-vars ["a" "b" "c"] (map/nil) 0)
 
 1219
 
 (defn instantiate [(scheme vars t) nidx]
-    (let [(, subst nidx) (free-for-vars (set/to-list vars) (map/nil) nidx)]
+    (let [
+        (, subst nidx) (make-subst-for-vars (set/to-list vars) (map/nil) nidx)]
         (, (type-apply subst t) nidx)))
 
-(defn mgu [t1 t2 nidx]
+(defn unify [t1 t2 nidx]
     (match (, t1 t2)
         (, (tapp l r) (tapp l' r')) (let [
-                                        (, s1 nidx) (mgu l l' nidx)
-                                        (, s2 nidx) (mgu (type-apply s1 r) (type-apply s1 r') nidx)]
+                                        (, s1 nidx) (unify l l' nidx)
+                                        (, s2 nidx) (unify (type-apply s1 r) (type-apply s1 r') nidx)]
                                         (, (compose-subst s1 s2) nidx))
         (, (tvar u _) t)            (, (var-bind u t) nidx)
         (, t (tvar u _))            (, (var-bind u t) nidx)
@@ -194,7 +195,7 @@
                                               (, result-var nidx)                (new-type-var "a" nidx)
                                               (,, target-subst target-type nidx) (t-expr tenv target nidx)
                                               (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
-                                              (, unified-subst nidx)             (mgu
+                                              (, unified-subst nidx)             (unify
                                                                                      (type-apply arg-subst target-type)
                                                                                          (tfn arg-type result-var l)
                                                                                          nidx)]
@@ -215,7 +216,7 @@
                                               (,, init-subst init-type nidx) (t-expr tenv init nidx)
                                               (,, pat-type bound-env nidx)   (t-pat tenv pat nidx)
                                               (,, body-subst body-type nidx) (t-expr (tenv-apply init-subst bound-env) body nidx)
-                                              (, unified-subst nidx)         (mgu init-type pat-type nidx)]
+                                              (, unified-subst nidx)         (unify init-type pat-type nidx)]
                                               (,,
                                                   (compose-subst
                                                       unified-subst
