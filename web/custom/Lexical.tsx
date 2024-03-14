@@ -34,6 +34,7 @@ export const LexicalFolks = ({
     path: Path[];
     idx: number;
 }) => {
+    // const state = useNode
     const store = useGetStore();
     // Creates a new editor instance.
     const editor = useCreateBlockNote({

@@ -23,6 +23,8 @@ OOOH META CAN BE USED TO MANUALLY MULTILINE.
 ALSO meta can be used to say "hey this ~array of lists, let's do table view my dawg"
 I mean, tables could even have ... hrm ... like ... ok so it could have, "view functions" applied to them. hrm.
 
+- [ ] let's select a rich-text, ya know
+
 
 # RICH TEXT NODES
 
