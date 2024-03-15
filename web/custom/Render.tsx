@@ -430,6 +430,7 @@ export const RenderNNode = (
                     initial={nnode.contents}
                     idx={props.idx}
                     path={props.path}
+                    reg={reg}
                 />
             );
         }

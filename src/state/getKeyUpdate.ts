@@ -279,7 +279,7 @@ export const getKeyUpdate = (
     const idx = flast.idx;
 
     if (textRaw === "'" && key === "'" && node.type === 'identifier') {
-        return replaceWith(fullPath, {
+        return replaceWith(fullPath.slice(0, -1), {
             map: {
                 [idx]: {
                     type: 'rich-text',

@@ -294,7 +294,14 @@ export const getNestedNodes = (
                     '🚨 getNestedNodes cant find text',
             };
         case 'rich-text':
-            return { type: 'rich-text', contents: node.contents };
+            return {
+                type: 'horiz',
+                children: [
+                    { type: 'blinker', loc: 'start' },
+                    { type: 'rich-text', contents: node.contents },
+                    { type: 'blinker', loc: 'end' },
+                ],
+            };
         // return {
         //     type: 'dom',
         //     node: (path, idx) =>

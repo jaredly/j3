@@ -25,6 +25,7 @@ I mean, tables could even have ... hrm ... like ... ok so it could have, "view f
 
 # BUGS
 - [ ] let's select a rich-text, ya know
+- [x] ok at least we can delete rich texts
 - [ ] OOH OOH, cmd-backspace to delete the whole word? maybe? idk
   and then normal backspace won't delete a whole list or things
 - [ ] NEWNODEAFTER from the Fixture plugin isn't working now
