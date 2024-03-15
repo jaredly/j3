@@ -7,8 +7,8 @@ export const maybeMerge = (
     reverted: boolean,
 ): HistoryItem | void => {
     if (!prev || reverted) return;
-    if (Object.keys(next.nsMap).length) return;
-    if (Object.keys(next.meta).length) return;
+    if (next.nsMap && Object.keys(next.nsMap).length) return;
+    if (next.meta && Object.keys(next.meta).length) return;
     if (prev.revert != null || next.revert != null) return;
     const pchanged = Object.keys(prev.map);
     const nchanged = Object.keys(next.map);

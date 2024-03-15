@@ -88,9 +88,7 @@
                                                                              first
                                                                                  (map
                                                                                  templates
-                                                                                     (fn [tpl]
-                                                                                     (let [(,, expr string l) tpl]
-                                                                                         (,, (parse-expr expr) string l))))
+                                                                                     (fn [tpl] (let [(,, expr string l) tpl] (,, (parse-expr expr) string l))))
                                                                                  l)
         (cst/identifier id l)                                            (match (string-to-int id)
                                                                              (some int) (eprim (pint int l) l)
@@ -116,9 +114,7 @@
                                                                              (parse-expr target)
                                                                                  (map
                                                                                  (pairs cases)
-                                                                                     (fn [case]
-                                                                                     (let [(, pat expr) case]
-                                                                                         (, (parse-pat pat) (parse-expr expr)))))
+                                                                                     (fn [case] (let [(, pat expr) case] (, (parse-pat pat) (parse-expr expr)))))
                                                                                  l)
         (cst/list [(cst/identifier "let" _) (cst/array inits _) body] l) (foldr
                                                                              (parse-expr body)
@@ -179,9 +175,7 @@
                 2995))
         (, (@@ abc) (evar "abc" 1200))
         (,
-        (@@
-            (let [a 1 b 2]
-                a))
+        (@@ (let [a 1 b 2] a))
             (elet
             (pvar "a" 4456)
                 (eprim (pint 1 4457) 4457)
@@ -215,14 +209,10 @@
         (@@ (int-to-string 23))
             (eapp (evar "int-to-string" 1615) (eprim (pint 23 1616) 1616) 1614))
         (,
-        (@@
-            (let [x 2]
-                x))
+        (@@ (let [x 2] x))
             (elet (pvar "x" 1679) (eprim (pint 2 1680) 1680) (evar "x" 1681) 1676))
         (,
-        (@@
-            (let [(, a b) (, 2 3)]
-                1))
+        (@@ (let [(, a b) (, 2 3)] 1))
             (elet
             (pcon "," [(pvar "a" 1794) (pvar "b" 1795)] 1792)
                 (eapp
@@ -251,34 +241,34 @@
 
 (defn parse-stmt [cst]
     (match cst
-        (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)                                                                                                (sdef id li (parse-expr value) l)
+        (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)      (sdef id li (parse-expr value) l)
         (cst/list
             [(cst/identifier "defn" a)
                 (cst/identifier id li)
                 (cst/array args b)
                 body]
                 c) (sdef
-                                                                                                                                                                                id
-                                                                                                                                                                                    li
-                                                                                                                                                                                    (parse-expr
-                                                                                                                                                                                    (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c))
-                                                                                                                                                                                    c)
+                                                                                      id
+                                                                                          li
+                                                                                          (parse-expr
+                                                                                          (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c))
+                                                                                          c)
         (cst/list
             [(cst/identifier "deftype" _) (cst/identifier id li) ..items]
-                l)                                                              (mk-deftype id li items l)
+                l) (mk-deftype id li items l)
         (cst/list
             [(cst/identifier "deftype" _)
                 (cst/list [(cst/identifier id li) .._])
                 ..items]
-                l)             (mk-deftype id li items l)
-        _                                                                                                                                                                   (sexpr
-                                                                                                                                                                                (parse-expr cst)
-                                                                                                                                                                                    (match cst
-                                                                                                                                                                                    (cst/list _ l)       l
-                                                                                                                                                                                    (cst/identifier _ l) l
-                                                                                                                                                                                    (cst/array _ l)      l
-                                                                                                                                                                                    (cst/string _ _ l)   l
-                                                                                                                                                                                    (cst/spread _ l)     l))))
+                l) (mk-deftype id li items l)
+        _                                                                         (sexpr
+                                                                                      (parse-expr cst)
+                                                                                          (match cst
+                                                                                          (cst/list _ l)       l
+                                                                                          (cst/identifier _ l) l
+                                                                                          (cst/array _ l)      l
+                                                                                          (cst/string _ _ l)   l
+                                                                                          (cst/spread _ l)     l))))
 
 (,
     parse-stmt
@@ -387,13 +377,9 @@
 
 (def util "# util")
 
-(defn snd [tuple]
-    (let [(, _ v) tuple]
-        v))
+(defn snd [tuple] (let [(, _ v) tuple] v))
 
-(defn fst [tuple]
-    (let [(, v _) tuple]
-        v))
+(defn fst [tuple] (let [(, v _) tuple] v))
 
 (defn replaces [target repl]
     (match repl
@@ -550,17 +536,9 @@
             )
         map/nil)
 
-(compile
-    (parse-expr
-        (@@
-            (let [a 1 b 2]
-                (+ a b))))
-        map/nil)
+(compile (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil)
 
-(parse-expr
-    (@@
-        (let [a 1 b 2]
-            a)))
+(parse-expr (@@ (let [a 1 b 2] a)))
 
 (defn run [v] (eval (compile (parse-expr v) map/nil)))
 
@@ -578,21 +556,13 @@
             "any")
         (, (@@ "a${2}b") "a2b")
         (, (@@ ((fn [a] (+ a 2)) 21)) 23)
-        (,
-        (@@
-            (let [one 1 two 2]
-                (+ 1 2)))
-            3)
+        (, (@@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@@
             (match 2
                 2 1))
             1)
-        (,
-        (@@
-            (let [a/b 2]
-                a/b))
-            2)
+        (, (@@ (let [a/b 2] a/b)) 2)
         (,
         (@@
             (match true
@@ -612,4 +582,4 @@
 
 (parse-expr (@@ (fn [a] b)))
 
-4135
+413

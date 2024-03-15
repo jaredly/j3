@@ -112,13 +112,9 @@
 
 (def util "# util")
 
-(defn snd [tuple]
-    (let [(, _ v) tuple]
-        v))
+(defn snd [tuple] (let [(, _ v) tuple] v))
 
-(defn fst [tuple]
-    (let [(, v _) tuple]
-        v))
+(defn fst [tuple] (let [(, v _) tuple] v))
 
 (defn replaces [target repl]
     (match repl
@@ -232,21 +228,13 @@
             "any")
         (, (@ "a${2}b") "a2b")
         (, (@ ((fn [a] (+ a 2)) 21)) 23)
-        (,
-        (@
-            (let [one 1 two 2]
-                (+ 1 2)))
-            3)
+        (, (@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@
             (match 2
                 2 1))
             1)
-        (,
-        (@
-            (let [a/b 2]
-                a/b))
-            2)
+        (, (@ (let [a/b 2] a/b)) 2)
         (,
         (@
             (match true
@@ -260,3 +248,4 @@
 
 (@@' 1)
 
+1
