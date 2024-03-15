@@ -16,6 +16,7 @@ import { layout } from './src/layout';
 import { findTops } from './web/ide/ground-up/reduce';
 import { bootstrap } from './web/ide/ground-up/Evaluators';
 import { evaluatorFromText } from './web/ide/ground-up/loadEv';
+import { compressState } from './web/custom/compressState';
 
 const base = path.join(__dirname, 'data');
 
@@ -65,8 +66,7 @@ const fileToJs = (state: NUIState) => {
     }
 };
 
-const serializeFile = (raw: string) => {
-    const state: NUIState = JSON.parse(raw);
+const serializeFile = (state: NUIState) => {
     const all = findTops(state);
     // const tops = (state.map[-1] as ListLikeContents).values;
     const display = {};
@@ -148,8 +148,10 @@ createServer(async (req, res) => {
             return res.end('Need an end ok');
         }
         mkdirSync(path.dirname(full), { recursive: true });
-        const state = await readBody(req);
-        writeFileSync(full, state);
+        let state = JSON.parse(await readBody(req));
+        // state = compressState(state)
+
+        writeFileSync(full, JSON.stringify(state));
         try {
             const { clj, js } = serializeFile(state);
             writeFileSync(full.replace('.json', '.clj'), clj);
