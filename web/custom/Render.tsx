@@ -8,7 +8,7 @@ import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
 import { useNode, Values } from './Store';
 import equal from 'fast-deep-equal';
-import { LexicalFolks } from './Lexical';
+import { RichText } from './RichText';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -426,7 +426,7 @@ export const RenderNNode = (
         }
         case 'rich-text': {
             return (
-                <LexicalFolks
+                <RichText
                     initial={nnode.contents}
                     idx={props.idx}
                     path={props.path}

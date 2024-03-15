@@ -23,9 +23,15 @@ OOOH META CAN BE USED TO MANUALLY MULTILINE.
 ALSO meta can be used to say "hey this ~array of lists, let's do table view my dawg"
 I mean, tables could even have ... hrm ... like ... ok so it could have, "view functions" applied to them. hrm.
 
+# BUGS
 - [ ] let's select a rich-text, ya know
 - [ ] OOH OOH, cmd-backspace to delete the whole word? maybe? idk
   and then normal backspace won't delete a whole list or things
+- [ ] NEWNODEAFTER from the Fixture plugin isn't working now
+
+# NExt step:
+- [ ] history collapsing, really now
+- [ ] fix the history regression, probably by checking timestamps on the most recent history item.
 
 
 # RICH TEXT NODES

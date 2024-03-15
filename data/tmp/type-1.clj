@@ -297,19 +297,18 @@
         (elet pat init body l)              (let [res (t-expr tenv init nidx)] (pat-and-body tenv pat body res))
         (ematch target cases l)             (let [
                                                 (, result-var nidx)                (new-type-var "match-res" nidx)
-                                                (,, target-subst target-type nidx) (t-expr tenv target nidx)
-                                                what-not                           (foldr
-                                                                                       (,, target-subst result-var nidx)
-                                                                                           cases
-                                                                                           (fn [(,, subst result nidx) (, pat body)]
-                                                                                           (let [
-                                                                                               (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
-                                                                                               (, unified-subst nidx) (unify result body nidx)]
-                                                                                               (,,
-                                                                                                   (compose-subst subst unified-subst)
-                                                                                                       (type-apply unified-subst result)
-                                                                                                       nidx))))]
-                                                what-not)
+                                                (,, target-subst target-type nidx) (t-expr tenv target nidx)]
+                                                (foldr
+                                                    (,, target-subst result-var nidx)
+                                                        cases
+                                                        (fn [(,, subst result nidx) (, pat body)]
+                                                        (let [
+                                                            (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
+                                                            (, unified-subst nidx) (unify result body nidx)]
+                                                            (,,
+                                                                (compose-subst subst unified-subst)
+                                                                    (type-apply unified-subst result)
+                                                                    nidx)))))
         _                                   (fatal "cannot infer type for ${(valueToString expr)}")))
 
 (defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]

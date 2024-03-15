@@ -4,7 +4,7 @@ import { Layout, MCString, MNode, MNodeExtra, Map } from '../types/mcst';
 import { Path, PathChild } from './path';
 import { ONode } from './types';
 import React from 'react';
-import { LexicalFolks } from '../../web/custom/Lexical';
+import { RichText } from '../../web/custom/RichText';
 import { Store } from '../../web/custom/Store';
 
 export const stringColor = '#ff9b00';
