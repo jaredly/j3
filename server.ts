@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import {
+    copyFileSync,
     existsSync,
     mkdirSync,
     readFileSync,
@@ -151,6 +152,11 @@ createServer(async (req, res) => {
         let state = JSON.parse(await readBody(req));
         state = compressState(state);
 
+        const raw = JSON.stringify(state);
+        if (existsSync(full) && raw.length < statSync(full).size) {
+            console.warn(`Got smaller??`);
+            copyFileSync(full, full + '.bak-' + Date.now());
+        }
         writeFileSync(full, JSON.stringify(state));
         try {
             const { clj, js } = serializeFile(state);

@@ -649,6 +649,12 @@ export const saveState = async (id: string, state: NUIState) => {
     });
 };
 export function loadState(state: NUIState = initialState()) {
+    console.log(
+        `Loaded state, modified at: `,
+        new Date(
+            state.history[state.history.length - 1].ts,
+        ).toLocaleTimeString(),
+    );
     let idx =
         Object.keys(state.map)
             .concat(Object.keys(state.nsMap || {}))
