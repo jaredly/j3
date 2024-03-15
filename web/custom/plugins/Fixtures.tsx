@@ -153,6 +153,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
         if (cidx === -1) return null;
         const child = path[cidx] as Extract<Path, { type: 'child' }>;
 
+        // cursor is in the "test" section, and we need to make a new first fixture
         if (
             child.idx === node.loc &&
             child.at === 1 &&
@@ -176,6 +177,7 @@ export const fixturePlugin: NamespacePlugin<any> = {
             );
         }
 
+        // Cursor is in a single-line fixture (probably a comment), make a new fixture after it
         if (child.idx === parsed.fxid) {
             const loc = path.slice(0, cidx - 1).concat([
                 { type: 'child', idx: child.idx, at: 2 },
@@ -195,14 +197,16 @@ export const fixturePlugin: NamespacePlugin<any> = {
             );
         }
 
+        // Cursor is in the output section of a fixture, need to make a new fixture after it.
         for (let i = 0; i < parsed.fixtures.length; i++) {
             const fx = parsed.fixtures[i];
             console.log('child', child.idx, fx.loc);
             if (child.idx === fx.loc && child.at === 2) {
                 const loc = path.slice(0, cidx - 1).concat([
-                    { type: 'child', idx: child.idx, at: 2 },
+                    // { type: 'child', idx: child.idx, at: 2 },
                     { type: 'child', idx: parsed.fxid, at: i },
                 ]);
+                console.log('new loc', loc);
                 return newNodeAfter(
                     loc,
                     map,

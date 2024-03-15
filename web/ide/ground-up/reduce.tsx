@@ -787,9 +787,9 @@ export const verifyState = (state: NUIState) => {
             }
         } catch (err) {
             throw new Error(
-                `${(err as Error).message}\n\nInvalid path ${JSON.stringify(
-                    cursor,
-                )}`,
+                `${(err as Error).message}\n\nInvalid path:\n${cursor.start
+                    .map((path) => JSON.stringify(path))
+                    .join('\n')}`,
             );
         }
     });
@@ -831,9 +831,9 @@ export const verifyPath = (path: Path[], state: NUIState) => {
         const p = path[i];
         if (node.loc !== p.idx) {
             throw new Error(
-                `Node loc doesn't match path idx node:${node.loc} vs path:${
-                    p.idx
-                } - ${JSON.stringify(p)}`,
+                `Node loc doesn't match path(${i}) idx node:${
+                    node.loc
+                } vs path:${p.idx} - ${JSON.stringify(p)}`,
             );
         }
         try {
