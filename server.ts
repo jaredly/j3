@@ -149,7 +149,7 @@ createServer(async (req, res) => {
         }
         mkdirSync(path.dirname(full), { recursive: true });
         let state = JSON.parse(await readBody(req));
-        // state = compressState(state)
+        state = compressState(state);
 
         writeFileSync(full, JSON.stringify(state));
         try {
