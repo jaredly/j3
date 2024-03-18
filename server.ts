@@ -40,6 +40,8 @@ const readBody = (readable: IncomingMessage) => {
 };
 
 const fileToJs = (state: NUIState) => {
+    if (!state.evaluator) return;
+
     if (!state.evaluator || state.evaluator === ':repr:') return;
     if (state.evaluator === ':bootstrap:') {
         return `return {type: 'bootstrap', stmts: ${JSON.stringify(
@@ -52,9 +54,12 @@ const fileToJs = (state: NUIState) => {
             2,
         )}}`;
     }
-    if (state.evaluator.endsWith('.json')) {
-        const evjs = readFileSync(`data/tmp/${state.evaluator}.js`, 'utf-8');
-        const ev = evaluatorFromText(evjs);
+    if (Array.isArray(state.evaluator)) {
+        const text = state.evaluator.map((id) =>
+            readFileSync(`data/tmp/${id}.js`, 'utf-8'),
+        );
+
+        const ev = evaluatorFromText(text);
         if (ev?.toFile) {
             const res = ev.toFile(state);
             if (Object.keys(res.errors).length) {

@@ -164,12 +164,12 @@ const loadEvaluator = (
             default:
                 if (ev?.endsWith('.json')) {
                     fn(null, false); // clear it out
-                    loadEv(ev).then((ev) => fn(ev, true));
+                    loadEv([ev]).then((ev) => fn(ev, true));
                 } else {
                     fn(null, false);
                 }
         }
-    } else {
+    } else if (ev) {
         loadEv(ev);
     }
 };

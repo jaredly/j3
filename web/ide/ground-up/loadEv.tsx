@@ -7,24 +7,27 @@ import { toJCST } from './round-1/j-cst';
 import { NUIState } from '../../custom/UIState';
 
 export const loadEv = async (
-    id: NonNullable<NUIState['evaluator']>,
+    ids: string[],
 ): Promise<null | FullEvalator<any, any, any>> => {
-    const res = await fetch(urlForId(id) + '.js');
-    if (res.status !== 200) {
-        console.log('Nope', res.status);
-        return null;
-    }
-    return evaluatorFromText(await res.text());
+    const res = await Promise.all(
+        ids.map((id) => fetch(urlForId(id) + '.js').then((res) => res.text())),
+    );
+
+    return evaluatorFromText(res);
 };
 
 export const evaluatorFromText = (
-    text: string,
+    text: string[],
 ): FullEvalator<string[], stmt & { loc: number }, expr> | null => {
     const benv = bootstrap.init();
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
 
-    const data = new Function(envArgs, '{' + text + '}')(san);
+    let data: any = {};
+    text.forEach((text) => {
+        const result = new Function(envArgs, '{' + text + '}')(san);
+        Object.assign(data, result);
+    });
     if (data.type === 'full') {
         return data;
     }
