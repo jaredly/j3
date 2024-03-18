@@ -79,6 +79,7 @@ export class LocError extends Error {
 
 export type Errors = { [key: number]: string[] };
 export type FullEvalator<Env, Stmt, Expr> = {
+    id: string;
     init(): Env;
     parse(node: Node, errors: Errors): Stmt | void;
     parseExpr(node: Node, errors: Errors): Expr | void;
@@ -97,6 +98,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
 };
 
 export const repr: FullEvalator<void, Node, Node> = {
+    id: 'repr',
     init() {},
     parse(node: Node, errors: Errors) {
         return node;
@@ -118,6 +120,7 @@ export const bootstrap: FullEvalator<
     stmt & { loc: number },
     expr
 > = {
+    id: 'bootstrap',
     init: () => {
         return builtins();
     },

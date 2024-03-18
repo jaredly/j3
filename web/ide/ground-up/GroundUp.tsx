@@ -79,7 +79,10 @@ export const GroundUp = ({
     }, [state.at, state.map, state.regs]);
 
     const start = state.at.length ? state.at[0].start : null;
-    // const selTop = start?.[1].idx;
+
+    useEffect(() => {
+        console.log('ev', store.getEvaluator());
+    }, [store.getEvaluator()]);
 
     return (
         <div style={{ padding: 16, cursor: 'text', marginBottom: 300 }}>

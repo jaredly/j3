@@ -13,10 +13,11 @@ export const loadEv = async (
         ids.map((id) => fetch(urlForId(id) + '.js').then((res) => res.text())),
     );
 
-    return evaluatorFromText(res);
+    return evaluatorFromText(ids.join(':'), res);
 };
 
 export const evaluatorFromText = (
+    id: string,
     text: string[],
 ): FullEvalator<string[], stmt & { loc: number }, expr> | null => {
     const benv = bootstrap.init();
@@ -32,17 +33,20 @@ export const evaluatorFromText = (
         return data;
     }
     if (data.type === 'fns') {
-        return fnsEvaluator(data, envArgs, san);
+        return fnsEvaluator(id, data, envArgs, san);
     }
 
     if (data.type === 'bootstrap') {
-        return bootstrapEvaluator(data);
+        return bootstrapEvaluator(id, data);
     }
 
     return null;
 };
 
-const bootstrapEvaluator = (data: any): FullEvalator<any, any, any> => {
+const bootstrapEvaluator = (
+    id: string,
+    data: any,
+): FullEvalator<any, any, any> => {
     let benv = bootstrap.init();
     data.stmts.forEach((stmt: any) => {
         benv = bootstrap.addStatement(stmt, benv, {}, {}).env;
@@ -50,6 +54,7 @@ const bootstrapEvaluator = (data: any): FullEvalator<any, any, any> => {
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
     return {
+        id,
         init(): string[] {
             return [];
         },
@@ -191,6 +196,7 @@ function sanitizedEnv(benv: { [key: string]: any }) {
 }
 
 export const fnsEvaluator = (
+    id: string,
     data: any,
     envArgs: string,
     san: any,
@@ -202,6 +208,7 @@ export const fnsEvaluator = (
         data['compile_stmt']
     ) {
         return {
+            id,
             init(): string[] {
                 return [];
             },

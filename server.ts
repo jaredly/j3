@@ -59,7 +59,7 @@ const fileToJs = (state: NUIState) => {
             readFileSync(`data/tmp/${id}.js`, 'utf-8'),
         );
 
-        const ev = evaluatorFromText(text);
+        const ev = evaluatorFromText(state.evaluator.join(':'), text);
         if (ev?.toFile) {
             const res = ev.toFile(state);
             if (Object.keys(res.errors).length) {
