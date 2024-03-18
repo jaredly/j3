@@ -89,7 +89,7 @@ const getResults = (
         traces: {},
         pluginResults: {},
     };
-    console.log('getting results');
+    console.log('getting results for', evaluator?.id);
 
     results.env = evaluator?.init();
     findTops(state).forEach(({ top, hidden, plugin }) => {
@@ -170,7 +170,7 @@ const loadEvaluator = (
                 }
         }
     } else if (ev) {
-        loadEv(ev);
+        loadEv(ev).then((ev) => fn(ev, true));
     }
 };
 
@@ -229,12 +229,14 @@ export const useStore = (
         let evaluator: FullEvalator<any, any, any> | null = null;
 
         const updateResults = adaptiveBounce(() => {
+            console.log('updating results');
             results = getResults(state, evaluator);
             everyListeners.forEach((f) => f(state));
         });
 
         loadEvaluator(state.evaluator, (ev, async) => {
             evaluator = ev;
+            console.log('loaded new', async);
             if (async) {
                 results = getResults(state, evaluator);
                 everyListeners.forEach((f) => f(state));
@@ -249,17 +251,11 @@ export const useStore = (
                 let nextState = reduce(state, action);
                 const b = performance.now();
                 if (nextState.evaluator !== state.evaluator) {
-                    loadEvaluator(
-                        nextState.evaluator,
-                        // TODO: ... if this happens async, we should re-trigger ... the "oneverychange"
-                        (ev, async) => {
-                            evaluator = ev;
-                            if (async) {
-                                results = getResults(state, evaluator);
-                                everyListeners.forEach((f) => f(state));
-                            }
-                        },
-                    );
+                    loadEvaluator(nextState.evaluator, (ev) => {
+                        evaluator = ev;
+                        results = getResults(state, evaluator);
+                        everyListeners.forEach((f) => f(state));
+                    });
                 }
                 let nextResults = results;
                 const c = performance.now();
