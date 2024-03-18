@@ -1,6 +1,7 @@
 {
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.4",
+        "@types/bun": "^1.0.8",
         "@types/d3": "^7.4.1",
         "peggy": "^2.0.1",
         "plot": "link:@types/@observablehq/plot",

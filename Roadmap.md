@@ -1,4 +1,30 @@
 
+# Plansies
+
+sooooo
+The source of the problem is multitudinous:
+- having separate files is definitely not the endgame
+- so everything needs to be in a single database
+- BUT I want to be able to load only part of the database, because it'll be big.
+  so: not loading the full history, not loading all definitions.
+- AND undo/redo needs to make sense in a world where I'm loading up some definitions,
+  editing them (possibly moving nodes between definitions), and then in another session
+  loading up one of the definitions but not the other ones, and wanting to do "UNDO"s on it,
+  or at least time travel.
+
+SO THE PLAN
+- each "toplevel" is ... its own .... database, roughly speaking.
+  has its own map, with its own IDs (nidx, etc). Because keeping IDs unique when only partially
+  loading the state sounds terrible.
+- ALSO they have their own history list. so every toplevel, has a unique history stack.
+  doing "undo" in an editor session, we look for the "most recent change" among all the loaded toplevels.
+BUT ALSO
+- there's an "editor state history stack", which records the pulling up & closing out of ... namespace roots(?)
+  and like the creation of namespaces, the moving of namespaces.
+  ugh I should probably be calling these things toplevels instead of namespaces.
+
+
+
 # OK FOlks now it's time to do ...
 TYPE CHECKING OK
 
