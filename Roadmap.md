@@ -1,4 +1,8 @@
 
+# OK FOlks now it's time to do ...
+TYPE CHECKING OK
+
+
 # TRACES
 once again, I am at the mercy
 
@@ -31,8 +35,10 @@ I mean, tables could even have ... hrm ... like ... ok so it could have, "view f
 - [x] NEWNODEAFTER from the Fixture plugin isn't working now
 
 # NExt step:
-- [ ] history collapsing, really now
-- [ ] fix the history regression, probably by checking timestamps on the most recent history item.
+- [x] history collapsing, really now
+- [x] fix the history regression, probably by checking timestamps on the most recent history item.
+  - OK I think a size check is sufficient. It looks like it's just a weird interaction between
+    my state loading/saving, and HMR. So it won't impact a production build.
 
 
 # RICH TEXT NODES
@@ -41,8 +47,8 @@ we already have a rich-text, for what it might be worth.
 '' ya know
 - [x] so rich, such text
 
-- [ ] oof I really need to trim down my stored files. Like, maybe do aggressive history item collapsing?
-  - [ ] FIRST Basic history collapsing, where all changes to the same node that have fewer than 200ms between them just get collapsed.
+- [x] oof I really need to trim down my stored files. Like, maybe do aggressive history item collapsing?
+  - [x] FIRST Basic history collapsing, where all changes to the same node that have fewer than 200ms between them just get collapsed.
     - ALSO ~all adjacent changes to a rich-text just get collapsed ... because I don't have a more memory-performant way of storing changes to them. Although it's definitely possible.
   - [ ] SECOND Aggressive collapsing that maybe only triggers once the state gets larger than (idk) 3mb or something
     - Could be "by namespace". Like, going back (1000 changes) or (1 day) or (3mb), whichever is ... more ...

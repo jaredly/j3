@@ -35,7 +35,14 @@ export type NUIState = {
     cards: Card[];
     nsMap: { [key: number]: SandboxNamespace };
     meta: MetaDataMap;
-    evaluator?: string;
+    evaluator?:
+        | string
+        | {
+              compile?: string;
+              parse?: string;
+              typecheck?: string;
+              // do I want one for an AST?
+          };
     // config?: {
     //     evaluator: string,
     //     // info ... about ... what kind of evaluator I would be.

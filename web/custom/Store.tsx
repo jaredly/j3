@@ -152,21 +152,25 @@ const getResults = (
 };
 
 const loadEvaluator = (
-    ev: string | undefined,
+    ev: NUIState['evaluator'],
     fn: (ev: FullEvalator<any, any, any> | null, async: boolean) => void,
 ) => {
-    switch (ev) {
-        case ':bootstrap:':
-            return fn(bootstrap, false);
-        case ':repr:':
-            return fn(repr, false);
-        default:
-            if (ev?.endsWith('.json')) {
-                fn(null, false); // clear it out
-                loadEv(ev).then((ev) => fn(ev, true));
-            } else {
-                fn(null, false);
-            }
+    if (typeof ev === 'string') {
+        switch (ev) {
+            case ':bootstrap:':
+                return fn(bootstrap, false);
+            case ':repr:':
+                return fn(repr, false);
+            default:
+                if (ev?.endsWith('.json')) {
+                    fn(null, false); // clear it out
+                    loadEv(ev).then((ev) => fn(ev, true));
+                } else {
+                    fn(null, false);
+                }
+        }
+    } else {
+        loadEv(ev);
     }
 };
 
