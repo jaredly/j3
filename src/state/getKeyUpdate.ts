@@ -68,7 +68,7 @@ export type StateSelect = {
 export type StateChange =
     | StateUpdate
     | StateSelect
-    | { type: 'config:evaluator'; id: string | string[] }
+    | { type: 'config:evaluator'; id: string | string[] | null }
     | { type: 'meta'; meta: MetaDataUpdateMap }
     | { type: 'full-select'; at: State['at']; autoComplete?: boolean }
     | void

@@ -224,47 +224,79 @@ function ShowEvaluators({
     if (!state.evaluator)
         return evSelect(
             null,
-            (id) => store.dispatch({ type: 'config:evaluator', id }),
+            (id) =>
+                store.dispatch({
+                    type: 'config:evaluator',
+                    id: id?.startsWith(':') ? id : id ? [id] : null,
+                }),
             listing,
+            true,
         );
     if (typeof state.evaluator === 'string') {
-        return evSelect(
-            state.evaluator,
-            (id) => store.dispatch({ type: 'config:evaluator', id }),
-            listing,
+        return (
+            <div>
+                {evSelect(
+                    state.evaluator,
+                    (id) =>
+                        store.dispatch({
+                            type: 'config:evaluator',
+                            id: id?.startsWith(':') ? id : id ? [id] : null,
+                        }),
+                    listing,
+                    true,
+                )}
+            </div>
         );
     }
 
     return (
-        <select
-            value={state.evaluator ?? ''}
-            onChange={(evt) => {
-                store.dispatch({
-                    type: 'config:evaluator',
-                    id: evt.target.value,
-                });
-            }}
-        >
-            <option value={''}>No evaluator</option>
-            <option value={':repr:'}>REPR</option>
-            <option value={':bootstrap:'}>Bootstrap</option>
-            {listing
-                ?.filter((n) => n.endsWith('.json'))
-                .map((name, i) =>
-                    name === id ? null : (
-                        <option value={name} key={name}>
-                            {name}
-                        </option>
-                    ),
-                )}
-        </select>
+        <div>
+            {state.evaluator.map((id, i) => (
+                <div key={id}>
+                    {evSelect(
+                        id,
+                        (id) => {
+                            const ev = (state.evaluator as string[]).slice();
+                            if (!id) {
+                                ev.splice(i, 1);
+                            } else {
+                                ev[i] = id;
+                            }
+                            if (!ev.length)
+                                return store.dispatch({
+                                    type: 'config:evaluator',
+                                    id: null,
+                                });
+                            store.dispatch({
+                                type: 'config:evaluator',
+                                id: ev,
+                            });
+                        },
+                        listing,
+                        false,
+                    )}
+                </div>
+            ))}
+            {evSelect(
+                null,
+                (id) => {
+                    if (!id) return;
+                    const ids = (state.evaluator as string[]).slice();
+                    ids.push(id);
+                    store.dispatch({ type: 'config:evaluator', id: ids });
+                },
+                listing,
+                false,
+            )}
+        </div>
     );
 }
 
 const evSelect = (
     ev: string | null,
-    onChange: (ev: string) => void,
+    onChange: (ev: string | null) => void,
     listing: string[] | null,
+    simples: boolean,
 ) => {
     return (
         <select
@@ -272,19 +304,22 @@ const evSelect = (
             onChange={(evt) => {
                 onChange(evt.target.value);
             }}
+            data-what={ev}
         >
-            <option value={''}>No evaluator</option>
-            <option value={':repr:'}>REPR</option>
-            <option value={':bootstrap:'}>Bootstrap</option>
+            <option value={''}>{ev ? 'Remove' : 'Add evaluator'}</option>
+            {simples ? (
+                <>
+                    <option value={':repr:'}>REPR</option>
+                    <option value={':bootstrap:'}>Bootstrap</option>
+                </>
+            ) : null}
             {listing
                 ?.filter((n) => n.endsWith('.json'))
-                .map((name, i) =>
-                    name === ev ? null : (
-                        <option value={name} key={name}>
-                            {name}
-                        </option>
-                    ),
-                )}
+                .map((name, i) => (
+                    <option value={name} key={name}>
+                        {name}
+                    </option>
+                ))}
         </select>
     );
 };

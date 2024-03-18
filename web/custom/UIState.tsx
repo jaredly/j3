@@ -35,7 +35,7 @@ export type NUIState = {
     cards: Card[];
     nsMap: { [key: number]: SandboxNamespace };
     meta: MetaDataMap;
-    evaluator?: string | string[];
+    evaluator?: string | string[] | null;
     // config?: {
     //     evaluator: string,
     //     // info ... about ... what kind of evaluator I would be.
@@ -229,7 +229,7 @@ export type Action =
 
 /** Actions that can be turned into a StateChange | UIStatechange */
 export type UpdatableAction =
-    | { type: 'config:evaluator'; id: string | string[] }
+    | { type: 'config:evaluator'; id: string | string[] | null }
     | { type: 'hover'; path: Path[] }
     | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
     | { type: 'copy'; items: ClipboardItem[] }
