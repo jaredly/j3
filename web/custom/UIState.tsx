@@ -229,7 +229,7 @@ export type Action =
 
 /** Actions that can be turned into a StateChange | UIStatechange */
 export type UpdatableAction =
-    | { type: 'config:evaluator'; id: string }
+    | { type: 'config:evaluator'; id: string | string[] }
     | { type: 'hover'; path: Path[] }
     | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
     | { type: 'copy'; items: ClipboardItem[] }
@@ -244,7 +244,6 @@ export type UpdatableAction =
           selection?: Path[];
           nsMap: { [key: number]: SandboxNamespace | null };
       }
-    // | { type: 'collapse'; top: number }
     | { type: 'paste'; items: ClipboardItem[] }
     | DualAction;
 

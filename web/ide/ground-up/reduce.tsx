@@ -154,10 +154,7 @@ export const reduceUpdate = (
             }
             return state;
         case 'config:evaluator':
-            return {
-                ...state,
-                evaluator: update.id.startsWith(':') ? update.id : [update.id],
-            };
+            return { ...state, evaluator: update.id };
         case 'namespace-rename':
             console.warn('ignoring namespace rename');
             return state;

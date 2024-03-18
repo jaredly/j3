@@ -118,29 +118,12 @@ export const GroundUp = ({
                     {debug ? 'Debug on' : 'Debug off'}
                 </button>
                 <div>
-                    {state.evaluator ?? 'Non set'}
-                    <select
-                        value={state.evaluator ?? ''}
-                        onChange={(evt) => {
-                            store.dispatch({
-                                type: 'config:evaluator',
-                                id: evt.target.value,
-                            });
-                        }}
-                    >
-                        <option value={''}>No evaluator</option>
-                        <option value={':repr:'}>REPR</option>
-                        <option value={':bootstrap:'}>Bootstrap</option>
-                        {listing
-                            ?.filter((n) => n.endsWith('.json'))
-                            .map((name, i) =>
-                                name === id ? null : (
-                                    <option value={name} key={name}>
-                                        {name}
-                                    </option>
-                                ),
-                            )}
-                    </select>
+                    <ShowEvaluators
+                        state={state}
+                        store={store}
+                        listing={listing}
+                        id={id}
+                    />
                 </div>
                 {debug ? (
                     <div
@@ -221,6 +204,85 @@ const ShowAt = ({ at }: { at: NUIState['at'] }) => {
                 </div>
             ))}
         </>
+    );
+};
+
+function ShowEvaluators({
+    state,
+    store,
+    listing,
+    id,
+}: {
+    state: NUIState;
+    store: Store;
+    listing: string[] | null;
+    id: string;
+}) {
+    if (!state.evaluator)
+        return evSelect(
+            null,
+            (id) => store.dispatch({ type: 'config:evaluator', id }),
+            listing,
+        );
+    if (typeof state.evaluator === 'string') {
+        return evSelect(
+            state.evaluator,
+            (id) => store.dispatch({ type: 'config:evaluator', id }),
+            listing,
+        );
+    }
+
+    return (
+        <select
+            value={state.evaluator ?? ''}
+            onChange={(evt) => {
+                store.dispatch({
+                    type: 'config:evaluator',
+                    id: evt.target.value,
+                });
+            }}
+        >
+            <option value={''}>No evaluator</option>
+            <option value={':repr:'}>REPR</option>
+            <option value={':bootstrap:'}>Bootstrap</option>
+            {listing
+                ?.filter((n) => n.endsWith('.json'))
+                .map((name, i) =>
+                    name === id ? null : (
+                        <option value={name} key={name}>
+                            {name}
+                        </option>
+                    ),
+                )}
+        </select>
+    );
+}
+
+const evSelect = (
+    ev: string | null,
+    onChange: (ev: string) => void,
+    listing: string[] | null,
+) => {
+    return (
+        <select
+            value={ev ?? ''}
+            onChange={(evt) => {
+                onChange(evt.target.value);
+            }}
+        >
+            <option value={''}>No evaluator</option>
+            <option value={':repr:'}>REPR</option>
+            <option value={':bootstrap:'}>Bootstrap</option>
+            {listing
+                ?.filter((n) => n.endsWith('.json'))
+                .map((name, i) =>
+                    name === ev ? null : (
+                        <option value={name} key={name}>
+                            {name}
+                        </option>
+                    ),
+                )}
+        </select>
     );
 };
 
