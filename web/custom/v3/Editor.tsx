@@ -3,9 +3,9 @@ import React from 'react';
 export const Editor = () => {
     return (
         <div>
-            {cards.map((id) => (
+            {/* {cards.map((id) => (
                 <Card />
-            ))}
+            ))} */}
         </div>
     );
 };

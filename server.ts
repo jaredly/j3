@@ -154,13 +154,20 @@ createServer(async (req, res) => {
             return res.end('Need an end ok');
         }
         mkdirSync(path.dirname(full), { recursive: true });
-        let state = JSON.parse(await readBody(req));
+        let state: NUIState = JSON.parse(await readBody(req));
         state = compressState(state);
 
         const raw = JSON.stringify(state);
-        if (existsSync(full) && raw.length < statSync(full).size) {
-            console.warn(`Got smaller??`);
-            copyFileSync(full, full + '.bak-' + Date.now());
+        if (existsSync(full)) {
+            const prev: NUIState = JSON.parse(readFileSync(full, 'utf-8'));
+            if (prev.history.length > state.history.length) {
+                console.warn(
+                    `AHH we lost some history somehow`,
+                    prev.history.length - state.history.length,
+                    'items',
+                );
+                copyFileSync(full, full + '.bak-' + Date.now());
+            }
         }
         writeFileSync(full, JSON.stringify(state));
         try {

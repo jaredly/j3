@@ -18,7 +18,7 @@ export const Cursors = ({
         [] as ({ x: number; y: number; h: number; color?: string } | null)[],
     );
 
-    const tid = useRef(null as null | NodeJS.Timeout);
+    const tid = useRef(null as null | Timer);
 
     useEffect(() => {
         if (!at.length) return;

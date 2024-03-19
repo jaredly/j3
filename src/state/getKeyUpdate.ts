@@ -450,7 +450,9 @@ export const getKeyUpdate = (
         if (nsTop) {
             const ns = nsMap[nsTop.idx];
             if (ns.type === 'normal' && ns.plugin) {
-                const plugin = plugins.find((p) => p.id === ns.plugin);
+                const pid =
+                    typeof ns.plugin === 'string' ? ns.plugin : ns.plugin.id;
+                const plugin = plugins.find((p) => p.id === pid);
                 if (plugin) {
                     const change = plugin.newNodeAfter(
                         fullPath,

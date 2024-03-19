@@ -22,7 +22,7 @@ const empty = {};
 
 const PluginRender = ({
     ns,
-    plugin,
+    // plugin,
     // map,
     env,
     ev,
@@ -31,8 +31,11 @@ const PluginRender = ({
     ev: FullEvalator<any, any, any>;
     env: any;
     ns: RealizedNamespace;
-    plugin: NamespacePlugin<any>;
+    // plugin: NamespacePlugin<any>;
 }) => {
+    const pid = typeof ns.plugin === 'string' ? ns.plugin : ns.plugin!.id;
+    const plugin = plugins.find((p) => p.id === pid)!;
+
     const values = useNode(props.idx, props.path);
     const expanded = useExpanded(props.idx);
     const store = useGetStore();
@@ -140,9 +143,9 @@ export function NSTop({
                                     ns={ns}
                                     env={env}
                                     ev={ev}
-                                    plugin={
-                                        plugins.find((p) => p.id === ns.plugin)!
-                                    }
+                                    // plugin={
+                                    //     plugins.find((p) => p.id === ns.plugin)!
+                                    // }
                                     debug={false}
                                     idx={ns.top}
                                     // reg={reg}

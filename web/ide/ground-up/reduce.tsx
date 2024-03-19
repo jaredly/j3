@@ -924,7 +924,7 @@ export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
         top: number;
         hidden?: boolean;
         path: Path[];
-        plugin?: string;
+        plugin?: RealizedNamespace['plugin'];
     }[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
     const add = (id: number, path: Path[]) => {

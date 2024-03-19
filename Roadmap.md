@@ -1,4 +1,11 @@
 
+# Back to inference for a sec
+
+So `nil` should have type `array a`, right?
+sounds legit
+
+Ok, it ~looks like we have generic type constructors working?
+
 # Plansies
 
 sooooo

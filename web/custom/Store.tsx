@@ -178,7 +178,7 @@ const adaptiveBounce = (fn: () => void) => {
     let lastRun = Date.now();
     let lastCost = 0;
     // let lastCall = Date.now()
-    let tid: NodeJS.Timeout | null = null;
+    let tid: Timer | null = null;
 
     const run = () => {
         tid = null;
