@@ -37,10 +37,7 @@ const PluginRender = ({
     const store = useGetStore();
     const results = store.getResults().pluginResults[props.idx];
     const rn = useMemo(
-        () =>
-            results
-                ? plugin.render(expanded, results, values.dispatch, ns)
-                : null,
+        () => (results ? plugin.render(expanded, results, store, ns) : null),
         [expanded, results, ns.plugin],
     );
     if (!results) return <div>NO RESULTS</div>;

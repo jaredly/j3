@@ -149,8 +149,18 @@ createServer(async (req, res) => {
         return res.end('Nope');
     }
     const full = path.join(base, req.url!);
+
     if (req.method === 'POST') {
+        res.writeHead(200, headers('application/json'));
+        if (!req.url!.startsWith('tmp/')) {
+            return res.end('Not in the tmp directory');
+        }
+
         console.log('posting', full);
+        if (full.endsWith('.js')) {
+            writeFileSync(full, await readBody(req));
+            return res.end('Saved ' + req.url!);
+        }
         if (!full.endsWith('.json')) {
             return res.end('Need an end ok');
         }
@@ -182,8 +192,9 @@ createServer(async (req, res) => {
             console.error(err);
         }
         res.writeHead(200, headers('application/json'));
-        return res.end('Saved');
+        return res.end('Saved ' + req.url!);
     }
+
     if (req.method === 'GET') {
         if (!existsSync(full)) {
             console.log('404 sorry', full);

@@ -13,7 +13,7 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
         return null;
     },
 
-    render(node, results, dispatch, ns) {
+    render(node, results, store, ns) {
         const options: string | null =
             typeof ns.plugin === 'string' ? null : ns.plugin?.options;
         return {
@@ -28,7 +28,7 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
                                 evt.stopPropagation();
                                 const name = prompt('Name to save it to');
                                 console.log(name);
-                                dispatch({
+                                store.dispatch({
                                     type: 'ns',
                                     nsMap: {
                                         [ns.id]: {
@@ -53,7 +53,13 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
         };
     },
 
-    process(node, meta, evaluate, setTracing, options) {
+    // So is this where ... we would kick things off?
+    // ORRR what if the `store` is responsible for
+    // keeping a map of evaluators,
+    // and we just do a thing where it's like
+    // "send your evaluator..."
+    // OK SO
+    process(node, state, evaluator, results, options) {
         return 1;
     },
 };

@@ -94,7 +94,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
         traceMap: { [loc: number]: { [loc: number]: any[] } },
     ): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
-    toFile?(state: NUIState): { js: string; errors: Errors };
+    toFile?(state: NUIState, target?: number): { js: string; errors: Errors };
 };
 
 export const repr: FullEvalator<void, Node, Node> = {
@@ -179,7 +179,8 @@ export const bootstrap: FullEvalator<
             }
         }
     },
-    toFile(state: NUIState) {
+    // We ignore the `target` here ... because we're just dumping everything
+    toFile(state: NUIState, target: number) {
         const errors: Errors = {};
         return {
             js: `return {type: 'bootstrap', stmts: ${JSON.stringify(

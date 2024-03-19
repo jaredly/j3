@@ -235,10 +235,22 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
     },
     process(
         node: Node,
-        meta: MetaDataMap,
-        evaluate: (node: Node) => any,
-        setTracing: (loc: number | null) => void,
-    ) {
+        { meta },
+        evaluator,
+        { traces, env },
+    ) // meta: MetaDataMap,
+    // evaluate: (node: Node) => any,
+    // setTracing: (loc: number | null) => void,
+
+    {
+        const setTracing = (idx: number | null) =>
+            evaluator.setTracing(idx, traces);
+        const evaluate = (node: Node) => {
+            const errors = {};
+            const expr = evaluator.parseExpr(node, errors);
+            return evaluator.evaluate(expr, env, meta);
+        };
+
         const data = parse(node);
         if (!data) return {};
         let test: null | Function = null;
@@ -293,7 +305,7 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
         results: {
             [key: number]: { expected: any; found: any; error?: string };
         },
-        dispatch: React.Dispatch<Action>,
+        store,
     ): NNode | void {
         const data = parse(node);
         if (!data) return;
@@ -384,7 +396,7 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
                                                               node: statusMessage(
                                                                   item,
                                                                   results,
-                                                                  dispatch,
+                                                                  store.dispatch,
                                                               ),
                                                           },
                                                       ],

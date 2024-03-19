@@ -314,7 +314,7 @@ const evSelect = (
                 </>
             ) : null}
             {listing
-                ?.filter((n) => n.endsWith('.json'))
+                ?.filter((n) => n.endsWith('.js'))
                 .map((name, i) => (
                     <option value={name} key={name}>
                         {name}

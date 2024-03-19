@@ -11,6 +11,8 @@ import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
 import { Map, NsMap } from '../../src/types/mcst';
+import { NUIResults, Store } from './Store';
+import { FullEvalator } from '../ide/ground-up/Evaluators';
 
 export type MetaData = {
     trace?: {
@@ -179,15 +181,18 @@ export type NamespacePlugin<Results, Options> = {
     test(node: Node): boolean;
     process(
         node: Node,
-        meta: MetaDataMap,
-        evaluate: (node: Node) => any,
-        setTracing: (idx: number | null) => void,
+        state: NUIState,
+        evaluator: FullEvalator<any, any, any>,
+        results: NUIResults,
+        // meta: MetaDataMap,
+        // evaluate: (node: Node) => any,
+        // setTracing: (idx: number | null) => void,
         options: Options,
     ): Results;
     render(
         node: Node,
         results: Results,
-        dispatch: React.Dispatch<Action>,
+        store: Store,
         ns: RealizedNamespace,
     ): NNode | void;
     newNodeAfter(

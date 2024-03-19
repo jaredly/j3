@@ -112,7 +112,7 @@ export const Outside = () => {
             <h3 style={{ paddingLeft: 24 }}>Pick a file to open</h3>
             <div>
                 {listing
-                    ?.filter((k) => !k.endsWith('.clj'))
+                    ?.filter((k) => k.endsWith('.json'))
                     .map((name) => (
                         <a
                             href={'#' + name}

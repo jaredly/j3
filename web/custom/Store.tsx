@@ -34,7 +34,7 @@ import { goRight } from '../../src/state/navigate';
 import { cmpFullPath } from '../../src/state/path';
 import { plugins } from './plugins';
 
-type NUIResults = {
+export type NUIResults = {
     errors: { [loc: number]: string[] };
     display: Display;
     hashNames: { [loc: string]: string };
@@ -112,17 +112,20 @@ const getResults = (
                 }
                 results.pluginResults[stmt.loc] = pl.process(
                     fromMCST(top, state.map),
-                    state.meta,
-                    (node) => {
-                        const errors = {};
-                        const expr = evaluator.parseExpr(node, errors);
-                        return evaluator.evaluate(
-                            expr,
-                            results.env,
-                            state.meta,
-                        );
-                    },
-                    (idx) => evaluator.setTracing(idx, results.traces),
+                    state,
+                    evaluator,
+                    results,
+                    // state.meta,
+                    // (node) => {
+                    //     const errors = {};
+                    //     const expr = evaluator.parseExpr(node, errors);
+                    //     return evaluator.evaluate(
+                    //         expr,
+                    //         results.env,
+                    //         state.meta,
+                    //     );
+                    // },
+                    // (idx) => evaluator.setTracing(idx, results.traces),
                     options,
                 );
             } else {

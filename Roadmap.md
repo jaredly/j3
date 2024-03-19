@@ -1,6 +1,10 @@
 
 # Back to inference for a sec
 
+STEP 1
+- bring back the `file to js` stuff
+- have the server report a listing of available `.js` files
+
 So `nil` should have type `array a`, right?
 sounds legit
 

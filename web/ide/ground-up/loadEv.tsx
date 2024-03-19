@@ -6,11 +6,13 @@ import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
 import { NUIState } from '../../custom/UIState';
 
+const jsUrl = (id: string) => urlForId(id) + (id.endsWith('.js') ? '' : '.js');
+
 export const loadEv = async (
     ids: string[],
 ): Promise<null | FullEvalator<any, any, any>> => {
     const res = await Promise.all(
-        ids.map((id) => fetch(urlForId(id) + '.js').then((res) => res.text())),
+        ids.map((id) => fetch(jsUrl(id)).then((res) => res.text())),
     );
 
     return evaluatorFromText(ids.join(':'), res);
@@ -106,7 +108,7 @@ const bootstrapEvaluator = (
             }
             return { env, display: 'idk' };
         },
-        toFile(state) {
+        toFile(state, target) {
             let env = this.init();
             const errors: Errors = {};
             const names: string[] = [];
