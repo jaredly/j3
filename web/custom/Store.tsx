@@ -102,9 +102,12 @@ const getResults = (
         if (evaluator) {
             if (plugin) {
                 results.produce[stmt.loc] = 'evaluated by plugin';
-                const pl = plugins.find((p) => p.id === plugin);
+                const pid = typeof plugin === 'string' ? plugin : plugin.id;
+                const options =
+                    typeof plugin === 'string' ? null : plugin.options;
+                const pl = plugins.find((p) => p.id === pid);
                 if (!pl) {
-                    results.produce[stmt.loc] = `plugin ${plugin} not found`;
+                    results.produce[stmt.loc] = `plugin ${pid} not found`;
                     return;
                 }
                 results.pluginResults[stmt.loc] = pl.process(
@@ -120,6 +123,7 @@ const getResults = (
                         );
                     },
                     (idx) => evaluator.setTracing(idx, results.traces),
+                    options,
                 );
             } else {
                 const errs: Results['errors'] = {};

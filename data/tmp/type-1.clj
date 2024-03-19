@@ -26,7 +26,12 @@
         (tcon string int))
 
 (deftype stmt
-    (sdeftype string int (array (,,, string int (array type) int)) int)
+    (sdeftype
+        string
+            int
+            (array (, string int))
+            (array (,,, string int (array type) int))
+            int)
         (sdef string int expr int)
         (sexpr expr int))
 
@@ -36,6 +41,8 @@
         (tcon s _)                          s
         (tapp (tapp (tcon "->" _) a _) b _) "(${(type-to-string a)}) -> ${(type-to-string b)}"
         (tapp a b _)                        "(${(type-to-string a)} ${(type-to-string b)})"))
+
+(type-to-string (tapp (tapp (tcon "->" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
 
 (** ## Prelude
     some handy functions **)
@@ -413,6 +420,8 @@
         (match 1
             1 1)))
 
+(defn infer-show [tenv x] (type-to-string (infer tenv x)))
+
 (,
     (fn [x] (type-to-string (infer basic x)))
         [(, (@ +) "(int) -> (int) -> int")
@@ -449,28 +458,28 @@
 
 (defn infer-stmt [tenv' stmt]
     (match stmt
-        (sdef name nl expr l)               (tenv/set-type tenv' name (generalize tenv' (infer tenv' expr)))
-        (sexpr expr l)                      (let [_ (infer tenv' expr)] tenv')
-        (sdeftype tname tnl constructors l) (let [
-                                                (tenv values cons types) tenv'
-                                                names                    (map constructors (fn [(,,, name nl args l)] name))
-                                                (, values cons)          (foldl
-                                                                             (, values cons)
-                                                                                 constructors
-                                                                                 (fn [(, values cons) (,,, name nl args l)]
-                                                                                 (let [
-                                                                                     free  (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))
-                                                                                     final (foldl
-                                                                                               (tcon tname tnl)
-                                                                                                   (set/to-list free)
-                                                                                                   (fn [body arg] (tapp body (tvar arg -1) l)))]
-                                                                                     (,
-                                                                                         (map/set
-                                                                                             values
-                                                                                                 name
-                                                                                                 (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
-                                                                                             (map/set cons name (tconstructor free args final))))))]
-                                                (tenv values cons (map/set types tname (set/from-list names))))))
+        (sdef name nl expr l)                    (tenv/set-type tenv' name (generalize tenv' (infer tenv' expr)))
+        (sexpr expr l)                           (let [_ (infer tenv' expr)] tenv')
+        (sdeftype tname tnl args constructors l) (let [
+                                                     (tenv values cons types) tenv'
+                                                     names                    (map constructors (fn [(,,, name nl args l)] name))
+                                                     final                    (foldl
+                                                                                  (tcon tname tnl)
+                                                                                      args
+                                                                                      (fn [body (, arg al)] (tapp body (tvar arg al) l)))
+                                                     (, values cons)          (foldl
+                                                                                  (, values cons)
+                                                                                      constructors
+                                                                                      (fn [(, values cons) (,,, name nl args l)]
+                                                                                      (let [
+                                                                                          free (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))]
+                                                                                          (,
+                                                                                              (map/set
+                                                                                                  values
+                                                                                                      name
+                                                                                                      (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                                                                  (map/set cons name (tconstructor free args final))))))]
+                                                     (tenv values cons (map/set types tname (set/from-list names))))))
 
 (infer-stmt basic (sdef "hi" 0 (@ 12) -1))
 
@@ -480,13 +489,16 @@
     tenv/nil
         (sdeftype "array" 10 [(,,, "nil" 0 [] 0) (,,, "cons" 0 [(tvar "a" 1)] 0)] -1))
 
-(infer
+(infer-show
     (infer-stmt
         tenv/nil
             (sdeftype
             "array"
                 10
+                [(, "a" 9)]
                 [(,,, "nil" 0 [] 0)
                 (,,, "cons" 0 [(tvar "a" 1) (tapp (tcon "array" 0) (tvar "a" 0) 0)] 0)]
                 -1))
-        (@ (cons true nil)))
+        (@ (cons 12 (cons true nil))))
+
+(,,, tenv/nil infer-stmt infer type-to-string)

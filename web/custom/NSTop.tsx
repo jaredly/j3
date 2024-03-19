@@ -18,12 +18,8 @@ import { plugins } from './plugins';
 import { useExpanded, useGetStore, useNode } from './Store';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
-const empty = {};
-
 const PluginRender = ({
     ns,
-    // plugin,
-    // map,
     env,
     ev,
     ...props
@@ -31,35 +27,21 @@ const PluginRender = ({
     ev: FullEvalator<any, any, any>;
     env: any;
     ns: RealizedNamespace;
-    // plugin: NamespacePlugin<any>;
 }) => {
     const pid = typeof ns.plugin === 'string' ? ns.plugin : ns.plugin!.id;
+    const options = typeof ns.plugin === 'string' ? null : ns.plugin!.options;
     const plugin = plugins.find((p) => p.id === pid)!;
 
     const values = useNode(props.idx, props.path);
     const expanded = useExpanded(props.idx);
     const store = useGetStore();
-    // const expanded = useMemo(() => fromMCST(ns.top, map), [ns.top, map]);
     const results = store.getResults().pluginResults[props.idx];
-    // console.log('RESULTS', results);
-    // const results = useMemo(
-    //     () =>
-    //         plugin.process(expanded, (node) => {
-    //             const errors = {};
-    //             const expr = ev.parseExpr(node, errors);
-    //             return ev.evaluate(
-    //                 expr,
-    //                 env,
-    //                 store.getState().meta,
-    //                 store.getResults().traces,
-    //             );
-    //         }),
-    //     [ev, env, expanded],
-    // );
     const rn = useMemo(
         () =>
-            results ? plugin.render(expanded, results, values.dispatch) : null,
-        [expanded, results],
+            results
+                ? plugin.render(expanded, results, values.dispatch, ns)
+                : null,
+        [expanded, results, ns.plugin],
     );
     if (!results) return <div>NO RESULTS</div>;
     if (!rn || !results) return <Render {...props} />;

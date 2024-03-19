@@ -137,7 +137,7 @@ const findLastIndex = <T,>(arr: T[], f: (t: T) => boolean) => {
     return -1;
 };
 
-export const fixturePlugin: NamespacePlugin<any> = {
+export const fixturePlugin: NamespacePlugin<any, any> = {
     id: 'fixture',
     title: 'Fixture tests',
     test: (node: Node) => {

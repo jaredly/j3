@@ -173,7 +173,7 @@ export type RealizedNamespace = {
     //
 };
 
-export type NamespacePlugin<T> = {
+export type NamespacePlugin<Results, Options> = {
     id: string;
     title: string;
     test(node: Node): boolean;
@@ -182,11 +182,13 @@ export type NamespacePlugin<T> = {
         meta: MetaDataMap,
         evaluate: (node: Node) => any,
         setTracing: (idx: number | null) => void,
-    ): T;
+        options: Options,
+    ): Results;
     render(
         node: Node,
-        results: T,
+        results: Results,
         dispatch: React.Dispatch<Action>,
+        ns: RealizedNamespace,
     ): NNode | void;
     newNodeAfter(
         path: Path[],
