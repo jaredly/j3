@@ -462,7 +462,7 @@
         (sexpr expr l)                           (let [_ (infer tenv' expr)] tenv')
         (sdeftype tname tnl args constructors l) (let [
                                                      (tenv values cons types) tenv'
-                                                     names                    (map constructors (fn [(,,, name nl args l)] name))
+                                                     names                    (map constructors (fn [(,,, name _ _ _)] name))
                                                      final                    (foldl
                                                                                   (tcon tname tnl)
                                                                                       args
@@ -499,6 +499,29 @@
                 [(,,, "nil" 0 [] 0)
                 (,,, "cons" 0 [(tvar "a" 1) (tapp (tcon "array" 0) (tvar "a" 0) 0)] 0)]
                 -1))
-        (@ (cons 12 (cons true nil))))
+        (@ (cons 12 (cons 2 nil))))
 
-(,,, tenv/nil infer-stmt infer type-to-string)
+(deftype evaluator (typecheck a b c d))
+
+(@! 12)
+
+1012
+
+(infer-stmt
+    tenv/nil
+        (sdeftype
+        "array"
+            1486
+            [(, "a" 1487)]
+            [(,,, "nil" 1489 [] 1488)
+            (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
+            1483))
+
+(defn several [stmts expr]
+    (let [env (foldl tenv/nil stmts infer-stmt)] (infer env expr)))
+
+(several [(@! (deftype (array a) (cons a (array a)) (nil)))] (@ (cons 1 nil)))
+
+(@! (deftype (array a) (cons a (array a)) (nil)))
+
+(typecheck tenv/nil infer-stmt infer type-to-string)

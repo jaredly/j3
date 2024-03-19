@@ -28,7 +28,12 @@
 (deftype type (tvar int int) (tapp type type int) (tcon string int))
 
 (deftype stmt
-    (sdeftype string int (array (,,, string int (array type) int)) int)
+    (sdeftype
+        string
+            int
+            (array (, string int))
+            (array (,,, string int (array type) int))
+            int)
         (sdef string int expr int)
         (sexpr expr int))
 
@@ -95,6 +100,7 @@
                                                                              (none)     (evar id l))
         (cst/list [(cst/identifier "@" _) body] l)                       (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                      (equotquot body l)
+        (cst/list [(cst/identifier "@!" _) body] l)                      (equot (parse-stmt body) l)
         (cst/list [(cst/identifier "if" _) cond yes no] l)               (ematch
                                                                              (parse-expr cond)
                                                                                  [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
@@ -228,10 +234,16 @@
 
 (parse-expr (@@ (fn [a] 1)))
 
-(defn mk-deftype [id li items l]
+(defn mk-deftype [id li args items l]
     (sdeftype
         id
             li
+            (map
+            args
+                (fn [arg]
+                (match arg
+                    (cst/identifier name l) (, name l)
+                    _                       (fatal "deftype type argument must be identifier"))))
             (map
             items
                 (fn [constr]
@@ -255,12 +267,12 @@
                                                                                           c)
         (cst/list
             [(cst/identifier "deftype" _) (cst/identifier id li) ..items]
-                l) (mk-deftype id li items l)
+                l) (mk-deftype id li [] items l)
         (cst/list
             [(cst/identifier "deftype" _)
-                (cst/list [(cst/identifier id li) .._])
+                (cst/list [(cst/identifier id li) ..args])
                 ..items]
-                l) (mk-deftype id li items l)
+                l) (mk-deftype id li args items l)
         _                                                                         (sexpr
                                                                                       (parse-expr cst)
                                                                                           (match cst
@@ -278,6 +290,7 @@
             (sdeftype
             "what"
                 1335
+                []
                 [(,,, "one" 1337 [(tcon "int" 1338)] 1336)
                 (,,, "two" 1340 [(tcon "bool" 1341)] 1339)]
                 1333))
@@ -286,6 +299,7 @@
             (sdeftype
             "array"
                 1486
+                [(, "a" 1487)]
                 [(,,, "nil" 1489 [] 1488)
                 (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
                 1483))
@@ -302,6 +316,8 @@
             (sdef "a" 2051 (elambda "m" 2055 (evar "m" 2053) 2049) 2049))])
 
 (deftype (option a) (some a) (none))
+
+(parse-expr (@@ (@! 12)))
 
 (string-to-int "11")
 
@@ -352,28 +368,28 @@
 
 (defn compile-stmt [stmt trace]
     (match stmt
-        (sexpr expr l)             (compile expr trace)
-        (sdef name nl body l)      (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
-        (sdeftype name nl cases l) (join
-                                       "\n"
-                                           (map
-                                           cases
-                                               (fn [case]
-                                               (let [(,,, name2 nl args l) case]
-                                                   (++
-                                                       ["const "
-                                                           name2
-                                                           " = "
-                                                           (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
-                                                           "({type: \""
-                                                           name2
-                                                           "\""
-                                                           (++
-                                                           (mapi
-                                                               0
-                                                                   args
-                                                                   (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
-                                                           "});"])))))))
+        (sexpr expr l)                      (compile expr trace)
+        (sdef name nl body l)               (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+        (sdeftype name nl type-arg cases l) (join
+                                                "\n"
+                                                    (map
+                                                    cases
+                                                        (fn [case]
+                                                        (let [(,,, name2 nl args l) case]
+                                                            (++
+                                                                ["const "
+                                                                    name2
+                                                                    " = "
+                                                                    (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
+                                                                    "({type: \""
+                                                                    name2
+                                                                    "\""
+                                                                    (++
+                                                                    (mapi
+                                                                        0
+                                                                            args
+                                                                            (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
+                                                                    "});"])))))))
 
 (def util "# util")
 
@@ -582,4 +598,13 @@
 
 (parse-expr (@@ (fn [a] b)))
 
-413
+(,
+    (fn [x] (compile-stmt (parse-stmt x) map/nil))
+        [(, (@@ (deftype (array a) (cons a (array a)) (nil))) )
+        (, (@@ (deftype face (red) (black))) )])
+
+(parse-stmt (@@ (deftype face (red))))
+
+(compile-stmt
+    (parse-stmt (@@ (deftype (array a) (cons a (array a)) (nil))))
+        map/nil)

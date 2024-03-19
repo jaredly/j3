@@ -1043,16 +1043,7 @@ return /*4583*/(() => {const $target = /*4595*//*4595*//*4596*/map/*<4596*/(/*45
 if ($target.type === ",,,") {
 {
 let name = $target[0];
-{
-let nl = $target[1];
-{
-let args = $target[2];
-{
-let l = $target[3];
 return /*4620*/name/*<4620*/
-}
-}
-}
 }
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 4598');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<4598*//*<4598*/)/*<4595*/;
@@ -1131,4 +1122,11 @@ throw new Error('let pattern not matched 4586. ' + valueToString($target));})(/*
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 4547');})(/*!*//*4549*/stmt/*<4549*/)/*<4547*//*<2197*//*<2197*/;
 
 const typecheck = (v0) => (v1) => (v2) => (v3) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3});
+const several = /*5087*/(stmts) => /*5087*/(expr) => /*5094*/(() => {const $target = /*5098*//*5098*//*5098*//*5099*/foldl/*<5099*/(/*5098*//*5100*/tenv$slnil/*<5100*/)/*<5098*/(/*5098*//*5101*/stmts/*<5101*/)/*<5098*/(/*5098*//*5102*/infer_stmt/*<5102*/)/*<5098*/;
+{
+let env = $target;
+return /*5109*//*5109*//*5110*/infer/*<5110*/(/*5109*//*5111*/env/*<5111*/)/*<5109*/(/*5109*//*5112*/expr/*<5112*/)/*<5109*/
+};
+throw new Error('let pattern not matched 5097. ' + valueToString($target));})(/*!*/)/*<5094*//*<5087*//*<5087*/;
+
 return /*4983*//*4983*//*4983*//*4983*//*5008*/typecheck/*<5008*/(/*4983*//*5009*/tenv$slnil/*<5009*/)/*<4983*/(/*4983*//*5010*/infer_stmt/*<5010*/)/*<4983*/(/*4983*//*5011*/infer/*<5011*/)/*<4983*/(/*4983*//*5012*/type_to_string/*<5012*/)/*<4983*/

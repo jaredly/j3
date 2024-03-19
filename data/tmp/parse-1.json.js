@@ -23,7 +23,7 @@ const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1});
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
-const sdeftype = (v0) => (v1) => (v2) => (v3) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3});
+const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
 const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3});
 const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1});
 const parsing = "# Parsing";
@@ -288,6 +288,25 @@ return equotquot(body)(l)
 if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@!"){
+if ($target[0][1].type === "cons") {
+{
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+{
+let l = $target[1];
+return equot(parse_stmt(body))(l)
+}
+}
+}
+}
+}
+}
+}
+}
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
 if ($target[0][0][0] === "if"){
 if ($target[0][1].type === "cons") {
 {
@@ -463,7 +482,17 @@ return eapp(eapp(evar("cons")(l))(parse_expr(one))(l))(parse_array(rest)(l))(l)
 }
 throw new Error('Failed to match. ' + valueToString($target))})(args);
 
-const mk_deftype = (id) => (li) => (items) => (l) => sdeftype(id)(li)(map(items)((constr) => (($target) => {if ($target.type === "cst/list") {
+const mk_deftype = (id) => (li) => (args) => (items) => (l) => sdeftype(id)(li)(map(args)((arg) => (($target) => {if ($target.type === "cst/identifier") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return $co(name)(l)
+}
+}
+}
+return fatal("deftype type argument must be identifier")
+throw new Error('Failed to match. ' + valueToString($target))})(arg)))(map(items)((constr) => (($target) => {if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
 {
@@ -569,7 +598,7 @@ let li = $target[0][1][0][1];
 let items = $target[0][1][1];
 {
 let l = $target[1];
-return mk_deftype(id)(li)(items)(l)
+return mk_deftype(id)(li)(nil)(items)(l)
 }
 }
 }
@@ -593,10 +622,13 @@ let id = $target[0][1][0][0][0][0];
 {
 let li = $target[0][1][0][0][0][1];
 {
+let args = $target[0][1][0][0][1];
+{
 let items = $target[0][1][1];
 {
 let l = $target[1];
-return mk_deftype(id)(li)(items)(l)
+return mk_deftype(id)(li)(args)(items)(l)
+}
 }
 }
 }
@@ -754,9 +786,11 @@ let name = $target[0];
 {
 let nl = $target[1];
 {
-let cases = $target[2];
+let type_arg = $target[2];
 {
-let l = $target[3];
+let cases = $target[3];
+{
+let l = $target[4];
 return join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",,,") {
 {
 let name2 = $target[0];
@@ -773,6 +807,7 @@ return $pl$pl(cons("const ")(cons(name2)(cons(" = ")(cons($pl$pl(mapi(0)(args)((
 }
 }
 throw new Error('Failed to match. ' + valueToString($target))})($case)))
+}
 }
 }
 }
