@@ -152,8 +152,8 @@ createServer(async (req, res) => {
 
     if (req.method === 'POST') {
         res.writeHead(200, headers('application/json'));
-        if (!req.url!.startsWith('tmp/')) {
-            return res.end('Not in the tmp directory');
+        if (!req.url!.startsWith('/tmp/')) {
+            return res.end('Not in the tmp directory: ' + req.url!);
         }
 
         console.log('posting', full);
