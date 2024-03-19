@@ -26,8 +26,8 @@
         (tcon string int))
 
 (deftype stmt
-    (sdeftype string (array (, string (array type int))) int)
-        (sdef string expr int)
+    (sdeftype string int (array (,,, string int (array type) int)) int)
+        (sdef string int expr int)
         (sexpr expr int))
 
 (defn type-to-string [t]
@@ -447,4 +447,19 @@
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> x:3) -> x:3:4")
         (, (@ (2 2)) )])
 
-1989
+(defn infer-stmt [tenv stmt]
+    (match stmt
+        (sdef name expr)             (tenv/set-type tenv name (generalize tenv (infer tenv expr)))
+        (sexpr expr)                 (let [_ (infer tenv expr)] tenv)
+        (sdeftype name constructors) (let [
+                                         (tenv values cons types) tenv
+                                         names                    (map constructors (fn [(,,, name nl args l)] name))
+                                         cons                     (foldl
+                                                                      cons
+                                                                          constructor
+                                                                          (fn [cons (,,, name nl args l)]
+                                                                          (let [
+                                                                              free (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))]
+                                                                              (map/set cons name (tconstructor free args)))))]
+                                         (tenv values cons (map/set types name (set/from-list names))))))
+

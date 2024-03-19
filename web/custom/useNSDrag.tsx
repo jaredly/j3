@@ -156,14 +156,8 @@ export const useNSDrag = (
                 }
 
                 const selection = tpath.concat([
-                    {
-                        type: 'ns-top',
-                        idx: nid,
-                    },
-                    {
-                        type: 'start',
-                        idx: moving.top,
-                    },
+                    { type: 'ns-top', idx: nid },
+                    { type: 'start', idx: moving.top },
                 ]);
 
                 if (target.idx === drag.source.idx) {
