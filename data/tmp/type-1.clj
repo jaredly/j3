@@ -44,6 +44,14 @@
 
 (type-to-string (tapp (tapp (tcon "->" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
 
+(defn type-with-free [type free]
+    (match type
+        (tvar _ _)   type
+        (tcon s l)   (if (set/has free s)
+                         (tvar s l)
+                             type)
+        (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
+
 (** ## Prelude
     some handy functions **)
 
@@ -458,28 +466,30 @@
 
 (defn infer-stmt [tenv' stmt]
     (match stmt
-        (sdef name nl expr l)                    (tenv/set-type tenv' name (generalize tenv' (infer tenv' expr)))
-        (sexpr expr l)                           (let [_ (infer tenv' expr)] tenv')
-        (sdeftype tname tnl args constructors l) (let [
-                                                     (tenv values cons types) tenv'
-                                                     names                    (map constructors (fn [(,,, name _ _ _)] name))
-                                                     final                    (foldl
-                                                                                  (tcon tname tnl)
-                                                                                      args
-                                                                                      (fn [body (, arg al)] (tapp body (tvar arg al) l)))
-                                                     (, values cons)          (foldl
-                                                                                  (, values cons)
-                                                                                      constructors
-                                                                                      (fn [(, values cons) (,,, name nl args l)]
-                                                                                      (let [
-                                                                                          free (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))]
-                                                                                          (,
-                                                                                              (map/set
-                                                                                                  values
-                                                                                                      name
-                                                                                                      (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
-                                                                                                  (map/set cons name (tconstructor free args final))))))]
-                                                     (tenv values cons (map/set types tname (set/from-list names))))))
+        (sdef name nl expr l)                     (tenv/set-type tenv' name (generalize tenv' (infer tenv' expr)))
+        (sexpr expr l)                            (let [_ (infer tenv' expr)] tenv')
+        (sdeftype tname tnl targs constructors l) (let [
+                                                      (tenv values cons types) tenv'
+                                                      names                    (map constructors (fn [(,,, name _ _ _)] name))
+                                                      final                    (foldl
+                                                                                   (tcon tname tnl)
+                                                                                       targs
+                                                                                       (fn [body (, arg al)] (tapp body (tvar arg al) l)))
+                                                      free-set                 (foldl set/nil targs (fn [free (, arg _)] (set/add free arg)))
+                                                      (, values cons)          (foldl
+                                                                                   (, values cons)
+                                                                                       constructors
+                                                                                       (fn [(, values cons) (,,, name nl args l)]
+                                                                                       (let [
+                                                                                           args (map args (fn [arg] (type-with-free arg free-set)))
+                                                                                           free (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))]
+                                                                                           (,
+                                                                                               (map/set
+                                                                                                   values
+                                                                                                       name
+                                                                                                       (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                                                                   (map/set cons name (tconstructor free args final))))))]
+                                                      (tenv values cons (map/set types tname (set/from-list names))))))
 
 (infer-stmt basic (sdef "hi" 0 (@ 12) -1))
 
