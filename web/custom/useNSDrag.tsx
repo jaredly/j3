@@ -121,18 +121,21 @@ export const useNSDrag = (
                 ] as NsPath;
                 console.log('dropping', target, drag.source);
                 // const nsMap: NsUpdateMap = {};
-                let tparent = state.nsMap[target.idx] as RealizedNamespace;
-                let children = tparent.children.slice();
-                const oparent = state.nsMap[
+                let targetParent = state.nsMap[target.idx] as RealizedNamespace;
+                let children = targetParent.children.slice();
+                const oldParent = state.nsMap[
                     drag.source.idx
                 ] as RealizedNamespace;
-                const nid = oparent.children[drag.source.at];
+                const nid = oldParent.children[drag.source.at];
+                const moving = state.nsMap[nid] as RealizedNamespace;
+                let tpath = drag.drop.path;
 
                 if (drag.drop.position === 'inside') {
                     let tid = children[target.at];
-                    tparent = state.nsMap[tid] as RealizedNamespace;
-                    children = tparent.children.slice();
+                    targetParent = state.nsMap[tid] as RealizedNamespace;
+                    children = targetParent.children.slice();
                     target = { type: 'ns', idx: tid, at: 0 };
+                    tpath = tpath.concat([target]);
                 }
 
                 if (target.idx === drag.source.idx) {
@@ -147,8 +150,8 @@ export const useNSDrag = (
                     dispatch({
                         type: 'ns',
                         nsMap: {
-                            [tparent.id]: {
-                                ...tparent,
+                            [targetParent.id]: {
+                                ...targetParent,
                                 children,
                             },
                         },
@@ -162,17 +165,27 @@ export const useNSDrag = (
                     dispatch({
                         type: 'ns',
                         nsMap: {
-                            [tparent.id]: {
-                                ...tparent,
+                            [targetParent.id]: {
+                                ...targetParent,
                                 children,
                             },
-                            [oparent.id]: {
-                                ...oparent,
-                                children: oparent.children.filter(
+                            [oldParent.id]: {
+                                ...oldParent,
+                                children: oldParent.children.filter(
                                     (id) => id !== nid,
                                 ),
                             },
                         },
+                        selection: tpath.concat([
+                            {
+                                type: 'ns-top',
+                                idx: nid,
+                            },
+                            {
+                                type: 'start',
+                                idx: moving.top,
+                            },
+                        ]),
                     });
                 }
             }

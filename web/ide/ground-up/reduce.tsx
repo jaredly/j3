@@ -579,7 +579,7 @@ export const debounce = <T,>(
     fn: (arg: T) => Promise<void>,
     time: number,
 ): ((arg: T) => void) => {
-    let tid = null as null | NodeJS.Timeout;
+    let tid = null as null | Timer;
     let last = Date.now();
     let wait = null as null | Promise<void>;
     return async (arg: T) => {
