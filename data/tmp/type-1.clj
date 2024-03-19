@@ -394,6 +394,8 @@
 
 (def tint (tcon "int" -1))
 
+(def tbool (tcon "bool" -1))
+
 (def basic
     (tenv
         (map/from-list
@@ -534,4 +536,26 @@
 
 (@! (deftype (array a) (cons a (array a)) (nil)))
 
-(typecheck tenv/nil infer-stmt infer type-to-string)
+(def builtin-env
+    (foldl
+        (tenv
+            (map/from-list
+                [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                    (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                    (, ">" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "<" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, ">=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "<=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))])
+                map/nil
+                map/nil)
+            [(@! (deftype (array a) (cons a (array a)) (nil)))
+            (@! (deftype (, a b) (, a b)))
+            (@! (deftype (,, a b c) (,, a b c)))
+            (@! (deftype (,,, a b c d) (,,, a b c d)))
+            (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
+            infer-stmt))
+
+(infer builtin-env (@ (, 1 2)))
+
+(typecheck builtin-env infer-stmt infer type-to-string)

@@ -1,4 +1,4 @@
-(deftype (array a) (cons a) (nil))
+(deftype (array a) (cons a (array a)) (nil))
 
 (defn foldr [init items f]
     (match items
@@ -15,9 +15,13 @@
 
 nil
 
+(cons 2 nil)
+
 (cons 1 (nil))
 
 (defn lol [x] (+ x 2))
+
+(lol 2)
 
 (@ [1 2])
 

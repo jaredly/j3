@@ -62,7 +62,8 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
     // OK SO
     process(node, state, evaluator, results, options) {
         if (!options || !options.endsWith('.js')) {
-            throw new Error(`Bad name`);
+            // throw new Error(`Bad name`);
+            return 1;
         }
         const text = evaluator.toFile?.(state, node.loc).js;
         fetch(urlForId(options), {
