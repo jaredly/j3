@@ -23,6 +23,11 @@ BUT ALSO
   and like the creation of namespaces, the moving of namespaces.
   ugh I should probably be calling these things toplevels instead of namespaces.
 
+each toplevel is like its own git branch, conceptually.
+
+um anyway, to prepare for this, I would want to:
+- refactor the getKeyUpdate logic to be less ... fragmented? idk
+-
 
 
 # OK FOlks now it's time to do ...
