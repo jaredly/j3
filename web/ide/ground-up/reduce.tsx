@@ -652,7 +652,7 @@ export function loadState(state: NUIState = initialState()) {
     console.log(
         `Loaded state, modified at: `,
         new Date(
-            state.history[state.history.length - 1].ts,
+            state.history[state.history.length - 1]?.ts,
         ).toLocaleTimeString(),
     );
     let idx =

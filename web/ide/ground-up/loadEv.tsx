@@ -21,7 +21,7 @@ export const loadEv = async (
 export const evaluatorFromText = (
     id: string,
     text: string[],
-): FullEvalator<string[], stmt & { loc: number }, expr> | null => {
+): FullEvalator<unknown, stmt & { loc: number }, expr> | null => {
     const benv = bootstrap.init();
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
@@ -29,7 +29,18 @@ export const evaluatorFromText = (
     let data: any = {};
     text.forEach((text) => {
         const result = new Function(envArgs, '{' + text + '}')(san);
-        Object.assign(data, result);
+        if (result.type === 'typecheck') {
+            const {
+                0: env_nil,
+                1: infer_stmt,
+                2: infer,
+                3: type_to_string,
+            } = result;
+            Object.assign(data, { env_nil, infer, infer_stmt, type_to_string });
+            console.log('um loading');
+        } else {
+            Object.assign(data, result);
+        }
     });
     if (data.type === 'full') {
         return data;
@@ -41,6 +52,8 @@ export const evaluatorFromText = (
     if (data.type === 'bootstrap') {
         return bootstrapEvaluator(id, data);
     }
+
+    console.log('no data sorry', data);
 
     return null;
 };
@@ -206,12 +219,17 @@ function sanitizedEnv(benv: { [key: string]: any }) {
     return san;
 }
 
+type FnsEnv = {
+    js: string[];
+    typeCheck: any;
+};
+
 export const fnsEvaluator = (
     id: string,
     data: any,
     envArgs: string,
     san: any,
-): FullEvalator<any, any, any> | null => {
+): FullEvalator<FnsEnv, any, any> | null => {
     if (
         data['parse_stmt'] &&
         data['parse_expr'] &&
@@ -220,8 +238,11 @@ export const fnsEvaluator = (
     ) {
         return {
             id,
-            init(): string[] {
-                return [];
+            init() {
+                return {
+                    js: [],
+                    typeCheck: data['env_nil'],
+                };
             },
             parse(node, errors) {
                 const j = toJCST(node);
@@ -274,23 +295,52 @@ export const fnsEvaluator = (
                     throw new Error(`tagtet wasnt a toplevel ${target}`);
                 }
                 if (ret) {
-                    env.push(`return ${ret}`);
+                    env.js.push(`return ${ret}`);
                 } else {
-                    env.push(
+                    env.js.push(
                         `return {type: 'fns', ${names
                             .map((name) => sanitize(name))
                             .sort()
                             .join(', ')}}`,
                     );
                 }
-                return { js: env.join('\n'), errors };
+                return { js: env.js.join('\n'), errors };
             },
             addStatement(stmt, env, meta, traceMap) {
                 // console.log('add stmt', stmt., meta[stmt.loc]);
                 const mm = Object.entries(meta)
                     .map(([k, v]) => [+k, v.trace])
                     .filter((k) => k[1]);
+
+                if (data['infer_stmt']) {
+                    // console.log('infer stmt', stmt, env.typeCheck);
+                    try {
+                        env.typeCheck = data['infer_stmt'](env.typeCheck)(stmt);
+                    } catch (err) {
+                        console.error(err);
+                        return {
+                            env,
+                            display: `Type Error ${(err as Error).message}`,
+                        };
+                    }
+                }
+
                 if (stmt.type === 'sexpr') {
+                    let type = null;
+                    if (data['infer']) {
+                        try {
+                            type = data['type_to_string'](
+                                data['infer'](env.typeCheck)(stmt[0]),
+                            );
+                        } catch (err) {
+                            console.error(err);
+                            return {
+                                env,
+                                display: `Type Error ${(err as Error).message}`,
+                            };
+                        }
+                    }
+
                     // console.log('add stmt', meta[stmt[1]]);
                     let js;
                     try {
@@ -305,7 +355,7 @@ export const fnsEvaluator = (
                     }
                     let fn;
                     const fullSource =
-                        '{' + env.join('\n') + '\nreturn ' + js + '}';
+                        '{' + env.js.join('\n') + '\nreturn ' + js + '}';
                     try {
                         fn = new Function(envArgs, fullSource);
                     } catch (err) {
@@ -325,7 +375,9 @@ export const fnsEvaluator = (
                         san.$setTracer(null);
                         return {
                             env,
-                            display: valueToString(value),
+                            display:
+                                valueToString(value) +
+                                (type ? '\nType: ' + type : ''),
                         };
                     } catch (err) {
                         const locs: { row: number; col: number }[] = [];
@@ -354,7 +406,7 @@ export const fnsEvaluator = (
 
                 try {
                     const fn = new Function(envArgs, '{' + js + '}');
-                    env.push(js);
+                    env.js.push(js);
                     return { env, display: `compiled` };
                 } catch (err) {
                     return {
@@ -377,11 +429,18 @@ export const fnsEvaluator = (
                     .map(([k, v]) => [+k, v.trace])
                     .filter((k) => k[1]);
 
+                let type = null;
+                if (data['infer']) {
+                    type = data['type_to_string'](
+                        data['infer'](env.typeCheck)(expr),
+                    );
+                }
+
                 try {
                     const js = data['compile'](expr)(mm);
                     const fn = new Function(
                         envArgs,
-                        '{' + env.join('\n') + '\nreturn ' + js + '}',
+                        '{' + env.js.join('\n') + '\nreturn ' + js + '}',
                     );
                     try {
                         return fn(san);

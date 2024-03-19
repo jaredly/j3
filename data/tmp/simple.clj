@@ -1,3 +1,5 @@
+(deftype (array a) (cons a) (nil))
+
 (defn foldr [init items f]
     (match items
         []           init
