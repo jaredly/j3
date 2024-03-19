@@ -74,7 +74,6 @@ const fileToJs = (state: NUIState) => {
 
 const serializeFile = (state: NUIState) => {
     const all = findTops(state);
-    // const tops = (state.map[-1] as ListLikeContents).values;
     const display = {};
     all.map((top) => {
         try {
@@ -137,14 +136,16 @@ const nowString = () => {
         .padStart(3, '0')}]`;
 };
 
+const headers = (mime: string) => ({
+    'Content-type': mime,
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'content-type',
+});
+
 createServer(async (req, res) => {
     console.log(nowString(), req.url, req.method);
     if (req.url?.includes('..')) {
-        res.writeHead(404, {
-            'Content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'content-type',
-        });
+        res.writeHead(404, headers('application/json'));
         return res.end('Nope');
     }
     const full = path.join(base, req.url!);
@@ -180,45 +181,25 @@ createServer(async (req, res) => {
             console.log('Agh what');
             console.error(err);
         }
-        res.writeHead(200, {
-            'Content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'content-type',
-        });
+        res.writeHead(200, headers('application/json'));
         return res.end('Saved');
     }
     if (req.method === 'GET') {
         if (!existsSync(full)) {
             console.log('404 sorry', full);
-            res.writeHead(404, {
-                'Content-type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'content-type',
-            });
+            res.writeHead(404, headers('application/json'));
             return res.end('Nope');
         }
         if (statSync(full).isDirectory()) {
-            res.writeHead(200, {
-                'Content-type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'content-type',
-            });
+            res.writeHead(200, headers('application/json'));
             return res.end(JSON.stringify(readdirSync(full)));
         }
         const raw = readFileSync(full, 'utf-8');
         if (full.endsWith('.js')) {
-            res.writeHead(200, {
-                'Content-type': 'script/javascript',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'content-type',
-            });
+            res.writeHead(200, headers('script/javascript'));
             return res.end(raw);
         }
-        res.writeHead(200, {
-            'Content-type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'content-type',
-        });
+        res.writeHead(200, headers('application/json'));
         const v = deserializeFile(raw);
         return res.end(JSON.stringify(v));
     }
