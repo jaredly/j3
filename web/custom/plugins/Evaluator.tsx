@@ -1,5 +1,6 @@
 import React from 'react';
 import { NamespacePlugin } from '../UIState';
+import { urlForId } from '../../ide/ground-up/reduce';
 
 export const evaluatorPlugin: NamespacePlugin<1, string> = {
     id: 'evaluator',
@@ -60,6 +61,15 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
     // "send your evaluator..."
     // OK SO
     process(node, state, evaluator, results, options) {
+        if (!options || !options.endsWith('.js')) {
+            throw new Error(`Bad name`);
+        }
+        const text = evaluator.toFile?.(state, node.loc).js;
+        fetch(urlForId(options), {
+            body: text,
+            method: 'POST',
+        });
+        // console.log(text);
         return 1;
     },
 };

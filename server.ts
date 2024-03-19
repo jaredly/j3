@@ -56,7 +56,10 @@ const fileToJs = (state: NUIState) => {
     }
     if (Array.isArray(state.evaluator)) {
         const text = state.evaluator.map((id) =>
-            readFileSync(`data/tmp/${id}.js`, 'utf-8'),
+            readFileSync(
+                `data/tmp/${id + (id.endsWith('.js') ? '' : '.js')}`,
+                'utf-8',
+            ),
         );
 
         const ev = evaluatorFromText(state.evaluator.join(':'), text);

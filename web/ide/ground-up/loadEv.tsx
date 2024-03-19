@@ -109,9 +109,15 @@ const bootstrapEvaluator = (
             return { env, display: 'idk' };
         },
         toFile(state, target) {
+            if (target != null) {
+                throw new Error(
+                    `bootstrap evaluator not equipped for target toFile`,
+                );
+            }
             let env = this.init();
             const errors: Errors = {};
             const names: string[] = [];
+            const rv = null;
             findTops(state).forEach((top) => {
                 const node = fromMCST(top.top, state.map);
                 if (node.type === 'blank') return;
@@ -120,6 +126,9 @@ const bootstrapEvaluator = (
                 if (parsed.type === 'sdef') {
                     names.push(parsed[0]);
                 }
+                // if (target && top.top === target) {
+                //     this.addStatement
+                // }
                 try {
                     env = this.addStatement(parsed, env, {}, {}).env;
                 } catch (err) {
@@ -237,10 +246,11 @@ export const fnsEvaluator = (
                     ];
                 }
             },
-            toFile(state) {
+            toFile(state, target) {
                 let env = this.init();
                 const errors: Errors = {};
                 const names: string[] = [];
+                let ret: null | string = null;
                 findTops(state).forEach((top) => {
                     const node = fromMCST(top.top, state.map);
                     if (node.type === 'blank') return;
@@ -249,18 +259,30 @@ export const fnsEvaluator = (
                     if (parsed.type === 'sdef') {
                         names.push(parsed[0]);
                     }
+                    if (parsed.type === 'sexpr') {
+                        if (top.top === target) {
+                            ret = data['compile'](parsed[0])([]);
+                        }
+                    }
                     try {
                         env = this.addStatement(parsed, env, {}, {}).env;
                     } catch (err) {
                         console.error(err);
                     }
                 });
-                env.push(
-                    `return {type: 'fns', ${names
-                        .map((name) => sanitize(name))
-                        .sort()
-                        .join(', ')}}`,
-                );
+                if (target != null && ret == null) {
+                    throw new Error(`tagtet wasnt a toplevel ${target}`);
+                }
+                if (ret) {
+                    env.push(`return ${ret}`);
+                } else {
+                    env.push(
+                        `return {type: 'fns', ${names
+                            .map((name) => sanitize(name))
+                            .sort()
+                            .join(', ')}}`,
+                    );
+                }
                 return { js: env.join('\n'), errors };
             },
             addStatement(stmt, env, meta, traceMap) {
