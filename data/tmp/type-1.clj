@@ -447,19 +447,46 @@
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> x:3) -> x:3:4")
         (, (@ (2 2)) )])
 
-(defn infer-stmt [tenv stmt]
+(defn infer-stmt [tenv' stmt]
     (match stmt
-        (sdef name expr)             (tenv/set-type tenv name (generalize tenv (infer tenv expr)))
-        (sexpr expr)                 (let [_ (infer tenv expr)] tenv)
-        (sdeftype name constructors) (let [
-                                         (tenv values cons types) tenv
-                                         names                    (map constructors (fn [(,,, name nl args l)] name))
-                                         cons                     (foldl
-                                                                      cons
-                                                                          constructor
-                                                                          (fn [cons (,,, name nl args l)]
-                                                                          (let [
-                                                                              free (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))]
-                                                                              (map/set cons name (tconstructor free args)))))]
-                                         (tenv values cons (map/set types name (set/from-list names))))))
+        (sdef name nl expr l)               (tenv/set-type tenv' name (generalize tenv' (infer tenv' expr)))
+        (sexpr expr l)                      (let [_ (infer tenv' expr)] tenv')
+        (sdeftype tname tnl constructors l) (let [
+                                                (tenv values cons types) tenv'
+                                                names                    (map constructors (fn [(,,, name nl args l)] name))
+                                                (, values cons)          (foldl
+                                                                             (, values cons)
+                                                                                 constructors
+                                                                                 (fn [(, values cons) (,,, name nl args l)]
+                                                                                 (let [
+                                                                                     free  (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))
+                                                                                     final (foldl
+                                                                                               (tcon tname tnl)
+                                                                                                   (set/to-list free)
+                                                                                                   (fn [body arg] (tapp body (tvar arg -1) l)))]
+                                                                                     (,
+                                                                                         (map/set
+                                                                                             values
+                                                                                                 name
+                                                                                                 (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                                                             (map/set cons name (tconstructor free args final))))))]
+                                                (tenv values cons (map/set types tname (set/from-list names))))))
 
+(infer-stmt basic (sdef "hi" 0 (@ 12) -1))
+
+(infer (infer-stmt basic (sdef "hi" 0 (@ 12) -1)) (@ hi))
+
+(infer-stmt
+    tenv/nil
+        (sdeftype "array" 10 [(,,, "nil" 0 [] 0) (,,, "cons" 0 [(tvar "a" 1)] 0)] -1))
+
+(infer
+    (infer-stmt
+        tenv/nil
+            (sdeftype
+            "array"
+                10
+                [(,,, "nil" 0 [] 0)
+                (,,, "cons" 0 [(tvar "a" 1) (tapp (tcon "array" 0) (tvar "a" 0) 0)] 0)]
+                -1))
+        (@ (cons true nil)))
