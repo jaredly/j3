@@ -136,7 +136,35 @@ export const useNSDrag = (
                     children = targetParent.children.slice();
                     target = { type: 'ns', idx: tid, at: 0 };
                     tpath = tpath.concat([target]);
+                } else {
+                    tpath = tpath.slice();
+                    const last = { ...tpath[tpath.length - 1] } as Extract<
+                        Path,
+                        { type: 'ns' }
+                    >;
+                    tpath[tpath.length - 1] = last;
+                    if (target.idx === drag.source.idx) {
+                        if (drag.source.at < target.at) {
+                            last.at -= 1;
+                        }
+                        if (drag.drop.position === 'after') {
+                            last.at += 1;
+                        }
+                    } else if (drag.drop.position === 'after') {
+                        last.at += 1;
+                    }
                 }
+
+                const selection = tpath.concat([
+                    {
+                        type: 'ns-top',
+                        idx: nid,
+                    },
+                    {
+                        type: 'start',
+                        idx: moving.top,
+                    },
+                ]);
 
                 if (target.idx === drag.source.idx) {
                     children.splice(drag.source.at, 1);
@@ -155,6 +183,7 @@ export const useNSDrag = (
                                 children,
                             },
                         },
+                        selection: selection,
                     });
                 } else {
                     children.splice(
@@ -176,16 +205,7 @@ export const useNSDrag = (
                                 ),
                             },
                         },
-                        selection: tpath.concat([
-                            {
-                                type: 'ns-top',
-                                idx: nid,
-                            },
-                            {
-                                type: 'start',
-                                idx: moving.top,
-                            },
-                        ]),
+                        selection,
                     });
                 }
             }
