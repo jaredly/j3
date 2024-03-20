@@ -718,6 +718,12 @@
 
 (defn externals-type [bound type] (set/diff (type-free type) bound))
 
+(defn names [stmt]
+    (match stmt
+        (sdef name _ _ _)               [name]
+        (sexpr _ _)                     []
+        (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name _ _ _)] name))))
+
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
@@ -746,11 +752,20 @@
                 (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
 
 (deftype evaluator
-    (typecheck builtin-env infer-stmt infer to-string externals))
+    (typecheck
+        builtin-env
+            infer-stmt
+            infer
+            to-string
+            externals
+            names))
+
+12
 
 (typecheck
     builtin-env
         infer-stmt
         infer
         type-to-string
-        externals-stmt)
+        externals-stmt
+        names)

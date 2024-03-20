@@ -85,6 +85,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
     parse(node: Node, errors: Errors): Stmt | void;
     parseExpr(node: Node, errors: Errors): Expr | void;
     dependencies(stmt: Stmt): { name: string; loc: number }[];
+    stmtNames(stmt: Stmt): string[];
     addStatement(
         stmt: Stmt,
         env: Env,
@@ -102,6 +103,7 @@ export const repr: FullEvalator<void, Node, Node> = {
     dependencies(stmt) {
         return [];
     },
+    stmtNames: () => [],
     parse(node: Node, errors: Errors) {
         return node;
     },
@@ -126,6 +128,7 @@ export const bootstrap: FullEvalator<
     init: () => {
         return builtins();
     },
+    stmtNames: () => [],
     dependencies: () => [],
     parse(node, errors) {
         const ctx = { errors, display: {} };

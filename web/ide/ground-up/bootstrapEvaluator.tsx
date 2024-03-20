@@ -25,9 +25,8 @@ export const bootstrapEvaluator = (
         init(): string[] {
             return [];
         },
-        dependencies(stmt) {
-            return [];
-        },
+        stmtNames: () => [],
+        dependencies: () => [],
         setTracing(idx, traceMap) {},
         addStatement(stmt: stmt, env) {
             if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {

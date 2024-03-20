@@ -37,12 +37,20 @@ export const fnsEvaluator = (
         },
         dependencies(stmt) {
             if (!data['externals_stmt']) {
+                console.log('no externals');
                 return [];
             }
             const deps = unwrapArray<{ type: ','; 0: string; 1: number }>(
                 data['externals_stmt'](stmt),
             );
             return deps.map((item) => ({ name: item[0], loc: item[1] }));
+        },
+        stmtNames(stmt) {
+            if (data['names']) {
+                return unwrapArray(data['names'](stmt));
+            }
+            console.log('no names');
+            return [];
         },
         parse(node, errors) {
             const j = toJCST(node);

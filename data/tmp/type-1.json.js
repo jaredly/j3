@@ -1886,6 +1886,31 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 6925');})(/*!*//
 
 const externals_type = /*7334*/(bound) => /*7334*/(type) => /*7342*//*7342*//*7346*/set$sldiff/*<7346*/(/*7342*//*7347*//*7349*/type_free/*<7349*/(/*7347*//*7350*/type/*<7350*/)/*<7347*/)/*<7342*/(/*7342*//*7352*/bound/*<7352*/)/*<7342*//*<7334*//*<7334*/;
 
+const names = /*7511*/(stmt) => /*7517*/(($target) => {
+if ($target.type === "sdef") {
+{
+let name = $target[0];
+return /*7526*//*7526*//*7526*/cons/*<7526*/(/*7526*//*7527*/name/*<7527*/)/*<7526*/(/*7526*//*7526*/nil/*<7526*/)/*<7526*/
+}
+}
+if ($target.type === "sexpr") {
+return /*7532*/nil/*<7532*/
+}
+if ($target.type === "sdeftype") {
+{
+let constructors = $target[3];
+return /*7540*//*7540*//*7541*/map/*<7541*/(/*7540*//*7542*/constructors/*<7542*/)/*<7540*/(/*7540*//*7543*/($fn_arg) => /*7543*/(($target) => {
+if ($target.type === ",,,") {
+{
+let name = $target[0];
+return /*7552*/name/*<7552*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7543');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<7543*//*<7543*/)/*<7540*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7517');})(/*!*//*7519*/stmt/*<7519*/)/*<7517*//*<7511*/;
+
 const externals_stmt = /*7289*/(stmt) => /*7505*//*7506*/bag$slto_list/*<7506*/(/*7505*//*7296*/(($target) => {
 if ($target.type === "sdeftype") {
 {
@@ -1943,5 +1968,5 @@ return /*6322*/`${/*6324*/k/*<6324*/} : ${/*6326*//*6328*/type_to_string_raw/*<6
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6315');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6315*//*<6315*/)/*<6313*/)/*<6330*//*<6304*/;
 
-const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
-return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, foldl, foldr, generalize, infer, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}
+const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5});
+return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, foldl, foldr, generalize, infer, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}
