@@ -35,12 +35,17 @@
         (sdef string int expr int)
         (sexpr expr int))
 
-(defn type-to-string [t]
+(defn tts-inner [t (, fmap idx)]
     (match t
-        (tvar s _)                          s
+        (tvar s _)                          (match (map/get fmap s)
+                                                (some s) (, s (, fmap idx))
+                                                none     )
         (tcon s _)                          s
         (tapp (tapp (tcon "->" _) a _) b _) "(${(type-to-string a)}) -> ${(type-to-string b)}"
         (tapp a b _)                        "(${(type-to-string a)} ${(type-to-string b)})"))
+
+(defn type-to-string [t]
+    (let [(, text _) (tts-inner t (, map/nil 0))] text))
 
 (type-to-string (tapp (tapp (tcon "->" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
 
@@ -309,7 +314,7 @@
             - infer the type of the value
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
-        (elet pat init body l)              (let [res (t-expr tenv init nidx)] (pat-and-body tenv pat body res))
+        (elet pat init body l)              (pat-and-body tenv pat body (t-expr tenv init nidx))
         (ematch target cases l)             (let [
                                                 (, result-var nidx)                (new-type-var "match-res" nidx)
                                                 (,, target-subst target-type nidx) (t-expr tenv target nidx)]
@@ -468,8 +473,19 @@
 
 (defn infer-stmt [tenv' stmt]
     (match stmt
-        (sdef name nl expr l)                     (tenv/set-type tenv' name (generalize tenv' (infer tenv' expr)))
-        (sexpr expr l)                            (let [_ (infer tenv' expr)] tenv')
+        (sdef name nl expr l)                     (let [
+                                                      nidx             0
+                                                      (, self nidx)    (new-type-var name nidx)
+                                                      self-bound       (tenv/set-type tenv' name (scheme set/nil self))
+                                                      (,, s t nidx)    (t-expr self-bound expr 0)
+                                                      (, u-subst nidx) (unify self t n)
+                                                      s2               (compose-subst s u-subst)
+                                                      t                (type-apply s t)]
+                                                      (tenv/set-type tenv' name (generalize tenv' t)))
+        (sexpr expr l)                            (let [
+                                                      (** this "infer" is for side-effects only **)
+                                                      _ (infer tenv' expr)]
+                                                      tenv')
         (sdeftype tname tnl targs constructors l) (let [
                                                       (tenv values cons types) tenv'
                                                       names                    (map constructors (fn [(,,, name _ _ _)] name))
@@ -493,7 +509,7 @@
                                                                                                    (map/set cons name (tconstructor free args final))))))]
                                                       (tenv values cons (map/set types tname (set/from-list names))))))
 
-(infer-stmt basic (sdef "hi" 0 (@ 12) -1))
+;(infer-stmt basic (sdef "hi" 0 (@ 12) -1))
 
 (infer (infer-stmt basic (sdef "hi" 0 (@ 12) -1)) (@ hi))
 
@@ -519,7 +535,7 @@
 
 1012
 
-(infer-stmt
+;(infer-stmt
     tenv/nil
         (sdeftype
         "array"
@@ -529,10 +545,15 @@
             (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
             1483))
 
-(defn several [stmts expr]
-    (let [env (foldl tenv/nil stmts infer-stmt)] (infer env expr)))
+(defn several [stmts expr tenv]
+    (let [env (foldl tenv stmts infer-stmt)] (infer env expr)))
 
-(several [(@! (deftype (array a) (cons a (array a)) (nil)))] (@ (cons 1 nil)))
+(several
+    [(@! (deftype (array a) (cons a (array a)) (nil)))]
+        (@ (cons 1 nil))
+        basic)
+
+(several [(@! (defn fib [x] (+ 1 (fib (+ 2 x)))))] (@ fib) basic)
 
 (@! (deftype (array a) (cons a (array a)) (nil)))
 

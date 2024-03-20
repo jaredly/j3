@@ -7,6 +7,8 @@
 
 (foldr 0 [1 2] +)
 
+foldr
+
 (match [1 2]
     []        1
     [a ..asd] 2)

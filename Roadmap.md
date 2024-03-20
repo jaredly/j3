@@ -1,4 +1,16 @@
 
+# Planning the Blog Posts / tutorials
+
+1) js parser + compiler
+2) j3 compiler
+3) j3 parser
+4) improvements to AST for nicer DX
+5) j3 type checker (HM)
+6) add "match" support, and type constructors
+7) support single-definition toplevel recursion
+8) support multi-definition recursion, this will require doing dependency analysis.
+
+
 # Back to inference for a sec
 
 STEP 1
