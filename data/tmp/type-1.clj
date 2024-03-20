@@ -557,9 +557,9 @@ tenv/nil
                                                       (,, s t nidx)    (t-expr self-bound expr 0)
                                                       selfed           (type-apply s self)
                                                       (, u-subst nidx) (unify selfed t nidx)
+                                                      (** We have to compose these substitutions in both directions. 🤔 **)
                                                       s2               (compose-subst u-subst (compose-subst u-subst s))
-                                                      t                (type-apply s2 t)
-                                                      sb               (type-apply s2 selfed)]
+                                                      t                (type-apply s2 t)]
                                                       (tenv/set-type tenv' name (generalize tenv' t)))
         (sexpr expr l)                            (let [
                                                       (** this "infer" is for side-effects only **)
@@ -588,8 +588,11 @@ tenv/nil
                                                                                                    (map/set cons name (tconstructor free args final))))))]
                                                       (tenv values cons (map/set types tname (set/from-list names))))))
 
-(defn several [stmts expr tenv]
-    (let [env (foldl tenv stmts infer-stmt)] (infer env expr)))
+(defn several [tenv stmts]
+    (match stmts
+        []               (fatal "Final stmt should be an expr")
+        [(sexpr expr _)] (infer tenv expr)
+        [one ..rest]     (several (infer-stmt tenv one) rest)))
 
 (def builtin-env
     (foldl
@@ -611,62 +614,33 @@ tenv/nil
             (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
             infer-stmt))
 
-[(,
-    (type-to-string
-        (several
-            [(@!
-                (defn foldr [init items f]
-                    (match items
-                        []           init
-                        [one ..rest] (f (foldr init rest f) one))))]
-                (@ foldr)
-                builtin-env))
-        "(fn [a (array b) (fn [a b] a)] a)")]
+2105
 
-;(infer-stmt basic (sdef "hi" 0 (@ 12) -1))
+3336
 
-(infer (infer-stmt basic (sdef "hi" 0 (@ 12) -1)) (@ hi))
-
-(infer-stmt
-    tenv/nil
-        (sdeftype "array" 10 [(,,, "nil" 0 [] 0) (,,, "cons" 0 [(tvar "a" 1)] 0)] -1))
-
-(infer-show
-    (infer-stmt
-        tenv/nil
-            (sdeftype
-            "array"
-                10
-                [(, "a" 9)]
-                [(,,, "nil" 0 [] 0)
-                (,,, "cons" 0 [(tvar "a" 1) (tapp (tcon "array" 0) (tvar "a" 0) 0)] 0)]
-                -1))
-        (@ (cons 12 (cons 2 nil))))
-
-(deftype evaluator (typecheck a b c d))
-
-(@! 12)
-
-"a \n b"
-
-1012
-
-;(infer-stmt
-    tenv/nil
-        (sdeftype
-        "array"
-            1486
-            [(, "a" 1487)]
-            [(,,, "nil" 1489 [] 1488)
-            (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
-            1483))
-
-(several
-    [(@! (deftype (array a) (cons a (array a)) (nil)))]
-        (@ (cons 1 nil))
-        basic)
-
-(several [(@! (defn fib [x] (+ 1 (fib (+ 2 x)))))] (@ fib) basic)
+(,
+    (fn [x] (type-to-string (several builtin-env x)))
+        [(,
+        [(@!
+            (defn foldr [init items f]
+                (match items
+                    []           init
+                    [one ..rest] (f (foldr init rest f) one))))
+            (@! foldr)]
+            "(fn [a (array b) (fn [a b] a)] a)")
+        (,
+        [(@!
+            (defn what [f a]
+                (if true
+                    (f (what f a))
+                        (f a))))
+            (@! what)]
+            "(fn [(fn [a] a) a] a)")
+        (,
+        [(@! (deftype (array2 a) (cons2 a (array2 a)) (nil2))) (@! (cons2 1 nil2))]
+            "(array2 int)")
+        (, [(@! (defn fib [x] (+ 1 (fib (+ 2 x))))) (@! fib)] "(fn [int] int)")
+        (, [(@! (, 1 2))] "(, int int)")])
 
 (defn subst-to-string [subst]
     (join
@@ -675,18 +649,6 @@ tenv/nil
             (map/to-list subst)
                 (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
 
-(type-to-string
-    (several
-        [(@!
-            (defn what [f a]
-                (if true
-                    (f (what f a))
-                        (f a))))]
-            (@ what)
-            basic))
-
-(@! (deftype (array a) (cons a (array a)) (nil)))
-
-(infer builtin-env (@ (, 1 2)))
+(deftype evaluator (typecheck a b c d))
 
 (typecheck builtin-env infer-stmt infer type-to-string)
