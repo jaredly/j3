@@ -329,7 +329,7 @@
     (match expr
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
         (evar name l)                       (match (tenv/type tenv name)
-                                                (none)       (fatal "Unbound variable ${name}")
+                                                (none)       (fatal "Unbound variable ${name} (${l})")
                                                 (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
         (equot _ l)                         (,, map/nil (tcon "ast" l) nidx)
         (eprim prim)                        (,, map/nil (t-prim prim) nidx)

@@ -234,6 +234,12 @@ const renderProduce = (
                 <button
                     key={idx}
                     onMouseDown={(evt) => evt.stopPropagation()}
+                    style={{
+                        color: 'inherit',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                    }}
                     onMouseEnter={() => {
                         const got = state.regs[loc];
                         const node = got?.main ?? got?.outside;

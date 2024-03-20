@@ -41,3 +41,14 @@ lol
 
 (@ [1 2])
 
+(** Mutual Recursive **)
+
+(defn even [x]
+    (if (= 0 x)
+        true
+            (odd (- x 1))))
+
+(defn odd [x]
+    (if (= 1 x)
+        true
+            (even (- x 1))))

@@ -803,7 +803,7 @@ let name = $target[0];
 let l = $target[1];
 return /*1671*/(($target) => {
 if ($target.type === "none") {
-return /*1680*//*1681*/fatal/*<1681*/(/*1680*//*1682*/`Unbound variable ${/*1684*/name/*<1684*/}`/*<1682*/)/*<1680*/
+return /*1680*//*1681*/fatal/*<1681*/(/*1680*//*1682*/`Unbound variable ${/*1684*/name/*<1684*/} (${/*6913*/l/*<6913*/})`/*<1682*/)/*<1680*/
 }
 if ($target.type === "some") {
 {

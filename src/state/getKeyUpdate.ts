@@ -448,6 +448,7 @@ export const getKeyUpdate = (
                     selection: fullPath.slice(-1),
                 },
                 nidx,
+                true,
             );
         }
 

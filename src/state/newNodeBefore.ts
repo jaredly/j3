@@ -103,6 +103,7 @@ export const newNodeBefore = (
     nsMap: NUIState['nsMap'],
     newThing: NewThing,
     nidx: () => number,
+    selAfter?: boolean,
 ): StateUpdate | void => {
     for (let i = path.length - 1; i >= 0; i--) {
         const parent = path[i];
@@ -156,7 +157,11 @@ export const newNodeBefore = (
             ...newThing,
             selection: path
                 .slice(0, i)
-                .concat({ idx: parent.idx, type: 'child', at: at + 1 })
+                .concat({
+                    idx: parent.idx,
+                    type: 'child',
+                    at: at + (selAfter ? 1 : 0),
+                })
                 .concat(newThing.selection),
         };
     }

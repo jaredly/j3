@@ -749,7 +749,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
         next.history = state.history.concat([item]);
     }
     try {
-        // verifyState(next);
+        verifyState(next);
     } catch (err) {
         console.warn(`Action failed`);
         console.log(action);
@@ -884,7 +884,7 @@ const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
             if (p.at === 0) {
                 return state.map[node.first];
             }
-            if (p.at >= node.templates.length - 1) {
+            if (p.at > node.templates.length) {
                 throw new Error(
                     `not enough templates ${node.templates.length} vs text@${p.at}`,
                 );
@@ -897,7 +897,7 @@ const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
             if (p.at === 0) {
                 throw new Error(`cant do expr@0 in string`);
             }
-            if (p.at >= node.templates.length - 1) {
+            if (p.at > node.templates.length) {
                 throw new Error(
                     `not enough templates ${node.templates.length} vs text@${p.at}`,
                 );
