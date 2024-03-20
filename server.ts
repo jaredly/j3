@@ -176,21 +176,22 @@ createServer(async (req, res) => {
         const raw = JSON.stringify(state);
         if (existsSync(full)) {
             const prev: NUIState = JSON.parse(readFileSync(full, 'utf-8'));
-            if (prev.history.length > state.history.length) {
+            const last = state.history[state.history.length - 1];
+            const plast = prev.history[prev.history.length - 1];
+            if (plast.ts > last.ts) {
                 console.warn(
-                    `AHH we lost some history somehow`,
-                    prev.history.length - state.history.length,
-                    'items',
+                    `AHH we lost some history somehow: plast vs last: `,
+                    new Date(plast.ts).toLocaleTimeString(),
+                    new Date(last.ts).toLocaleTimeString(),
+                    // prev.history.length - state.history.length,
+                    // 'items',
                 );
-                writeFileSync(
-                    full + '.bad-' + Date.now(),
-                    JSON.stringify(state),
-                );
+                writeFileSync(full + '.bad-' + Date.now(), raw);
                 res.writeHead(400, headers('text/plain'));
                 return res.end('History regression!');
             }
         }
-        writeFileSync(full, JSON.stringify(state));
+        writeFileSync(full, raw);
         try {
             const { clj, js } = serializeFile(state);
             writeFileSync(full.replace('.json', '.clj'), clj);

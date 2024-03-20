@@ -276,6 +276,7 @@
         (evar name l)                       (match (tenv/type tenv name)
                                                 (none)       (fatal "Unbound variable ${name}")
                                                 (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
+        (equot _ l)                         (,, map/nil (tcon "ast" l) nidx)
         (eprim prim)                        (,, map/nil (t-prim prim) nidx)
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
@@ -568,7 +569,7 @@
 
 (several [(@! (defn fib [x] (+ 1 (fib (+ 2 x)))))] (@ fib) basic)
 
-(several [(@! (defn what [f] (f (what f) 1)))] (@ what) basic)
+(type-to-string (several [(@! (defn what [f] (f (what f))))] (@ what) basic))
 
 (@! (deftype (array a) (cons a (array a)) (nil)))
 

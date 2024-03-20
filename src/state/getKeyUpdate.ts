@@ -40,7 +40,12 @@ import {
 import { Path } from './path';
 import { replacePathWith } from './replacePathWith';
 
-export const wrappable: Path['type'][] = ['spread-contents', 'expr', 'child'];
+export const wrappable: Path['type'][] = [
+    'spread-contents',
+    'expr',
+    'child',
+    'ns-top',
+];
 
 export type StateUpdate = {
     type: 'update';
