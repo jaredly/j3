@@ -510,6 +510,9 @@ export const getKeyUpdate = (
             if (parent.type === 'end') {
                 continue;
             }
+            if (parent.type === 'ns-top') {
+                break;
+            }
             const node = map[parent.idx];
             if (node.type === 'tapply') {
                 const sel = fullPath

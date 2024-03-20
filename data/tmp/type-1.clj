@@ -1,6 +1,27 @@
 (** ## Prelude
     some handy functions **)
 
+(deftype (option a) (some a) (none))
+
+(defn at [arr i default_]
+    (match arr
+        []           default_
+        [one ..rest] (if (= i 0)
+                         one
+                             (at rest (- i 1) default_))))
+
+(defn rev [arr col]
+    (match arr
+        []           col
+        [one]        [one ..col]
+        [one ..rest] (rev rest [one ..col])))
+
+(defn join [sep arr]
+    (match arr
+        []           ""
+        [one]        one
+        [one ..rest] "${one}${sep}${(join sep rest)}"))
+
 (defn map [values f]
     (match values
         []           []
@@ -60,10 +81,6 @@
         (tapp type type int)
         (tcon string int))
 
-(deftype (option a) (some a) (none))
-
-(def lol tcon)
-
 (deftype stmt
     (sdeftype
         string
@@ -74,14 +91,17 @@
         (sdef string int expr int)
         (sexpr expr int))
 
-(defn at [arr i default_]
-    (match arr
-        []           default_
-        [one ..rest] (if (= i 0)
-                         one
-                             (at rest (- i 1) default_))))
+(defn type-with-free [type free]
+    (match type
+        (tvar _ _)   type
+        (tcon s l)   (if (set/has free s)
+                         (tvar s l)
+                             type)
+        (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
 
-(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
+(** ## to-string functions for debugging **)
+
+(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o"])
 
 (defn unwrap-fn [t]
     (match t
@@ -92,20 +112,6 @@
     (match t
         (tapp a b _) (let [(, target args) (unwrap-app a)] (, target [b ..args]))
         _            (, t [])))
-
-(defn join [sep arr]
-    (match arr
-        []           ""
-        [one]        one
-        [one ..rest] "${one}${sep}${(join sep rest)}"))
-
-(defn rev [arr col]
-    (match arr
-        []           col
-        [one]        [one ..col]
-        [one ..rest] (rev rest [one ..col])))
-
-(rev [1 2 3] [])
 
 (defn tts-list [args free]
     (foldl
@@ -120,7 +126,7 @@
                                                 (match fmap
                                                     (some fmap) (match (map/get fmap s)
                                                                     (some s) (, s free)
-                                                                    none     (let [name (at letters idx "_")]
+                                                                    none     (let [name (at letters idx "_too_many_vbls_")]
                                                                                  (, name (, (some (map/set fmap s name)) (+ 1 idx)))))
                                                     _           (, s free)))
         (tcon s _)                          (, s free)
@@ -141,27 +147,14 @@
 (defn type-to-string [t]
     (let [(, text _) (tts-inner t (, (some map/nil) 0))] text))
 
+(,
+    type-to-string
+        [(, (@t (-> a (-> b c))) "(fn [a b] c)")
+        (, (@t (-> a b)) "(fn [a] b)")
+        (, (@t (cons a b)) "(cons a b)")])
+
 (defn type-to-string-raw [t]
     (let [(, text _) (tts-inner t (, none 0))] text))
-
-(type-to-string (tapp (tapp (tcon "->" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
-
-(type-to-string
-    (tapp (tapp (tcon "cons" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
-
-(type-to-string
-    (tapp
-        (tapp (tcon "->" 0) (tvar "a" 0) 0)
-            (tapp (tapp (tcon "->" 0) (tvar "b" 0) 0) (tvar "a" 0) 0)
-            0))
-
-(defn type-with-free [type free]
-    (match type
-        (tvar _ _)   type
-        (tcon s l)   (if (set/has free s)
-                         (tvar s l)
-                             type)
-        (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
 
 (** ## Types for inference **)
 
@@ -270,6 +263,9 @@
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
+(** ## Instantiate
+    This takes a scheme and generates fresh type variables for everything bound within it. **)
+
 (defn new-type-var [prefix nidx]
     (, (tvar "${prefix}:${nidx}" -1) (+ 1 nidx)))
 
@@ -280,9 +276,6 @@
                        (make-subst-for-vars rest (map/set coll v vn) nidx))))
 
 (make-subst-for-vars ["a" "b" "c"] (map/nil) 0)
-
-(** ## Instantiate
-    This takes a scheme and generates fresh type variables for everything bound within it. **)
 
 (defn instantiate [(scheme vars t) nidx]
     (let [
@@ -320,6 +313,8 @@
         _          (if (set/has (type-free type) var)
                        (fatal "occurs check")
                            (map/set map/nil var type))))
+
+(** ## Type Inference! **)
 
 (defn t-prim [prim]
     (match prim
@@ -461,12 +456,10 @@
                                         (map/map (type-apply subst) bindings)
                                         nidx))))
 
-(def tenv/nil (tenv map/nil map/nil map/nil))
-
-tenv/nil
-
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
+
+(def tenv/nil (tenv map/nil map/nil map/nil))
 
 (infer tenv/nil (@ ((fn [a] a) 23)))
 

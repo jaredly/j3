@@ -49,12 +49,19 @@
 (defn tapps [items l]
     (match items
         [one]        one
-        [one ..rest] (tapp one (tapps rest l) l)))
+        [one ..rest] (tapp (tapps rest l) one l)))
+
+(defn rev [arr col]
+    (match arr
+        []           col
+        [one]        [one ..col]
+        [one ..rest] (rev rest [one ..col])))
 
 (defn parse-type [type]
     (match type
         (cst/identifier id l) (tcon id l)
-        (cst/list items l)    (tapps (map items parse-type) l)
+        (cst/list [] l)       (fatal "(parse-type) with empty list")
+        (cst/list items l)    (tapps (rev (map items parse-type) []) l)
         _                     (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
 (parse-type
@@ -101,6 +108,8 @@
         (cst/list [(cst/identifier "@" _) body] l)                       (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                      (equotquot body l)
         (cst/list [(cst/identifier "@!" _) body] l)                      (equot (parse-stmt body) l)
+        (cst/list [(cst/identifier "@t" _) body] l)                      (equot (parse-type body) l)
+        (cst/list [(cst/identifier "@p" _) body] l)                      (equot (parse-pat body) l)
         (cst/list [(cst/identifier "if" _) cond yes no] l)               (ematch
                                                                              (parse-expr cond)
                                                                                  [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
@@ -150,6 +159,9 @@
                 (evar "b" 3403)
                 3401))
         (, (@@ "hi") (estr "hi" [] 1177))
+        (, (@@ (@t a)) (equot (tcon "a" 5333) 5331))
+        (, (@@ (@t (a b c))) )
+        (, (@@ (@p _)) (equot (pany 5349) 5346))
         (,
         (@@
             (if (= a b)

@@ -46,11 +46,33 @@ if ($target.type === "cons") {
 let one = $target[0];
 {
 let rest = $target[1];
-return tapp(one)(tapps(rest)(l))(l)
+return tapp(tapps(rest)(l))(one)(l)
 }
 }
 }
 throw new Error('Failed to match. ' + valueToString($target))})(items);
+
+const rev = (arr) => (col) => (($target) => {if ($target.type === "nil") {
+return col
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return cons(one)(col)
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return rev(rest)(cons(one)(col))
+}
+}
+}
+throw new Error('Failed to match. ' + valueToString($target))})(arr);
 
 const parse_type = (type) => (($target) => {if ($target.type === "cst/identifier") {
 {
@@ -62,11 +84,19 @@ return tcon(id)(l)
 }
 }
 if ($target.type === "cst/list") {
+if ($target[0].type === "nil") {
+{
+let l = $target[1];
+return fatal("(parse-type) with empty list")
+}
+}
+}
+if ($target.type === "cst/list") {
 {
 let items = $target[0];
 {
 let l = $target[1];
-return tapps(map(items)(parse_type))(l)
+return tapps(rev(map(items)(parse_type))(nil))(l)
 }
 }
 }
@@ -296,6 +326,44 @@ if ($target[0][1][1].type === "nil") {
 {
 let l = $target[1];
 return equot(parse_stmt(body))(l)
+}
+}
+}
+}
+}
+}
+}
+}
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@t"){
+if ($target[0][1].type === "cons") {
+{
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+{
+let l = $target[1];
+return equot(parse_type(body))(l)
+}
+}
+}
+}
+}
+}
+}
+}
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@p"){
+if ($target[0][1].type === "cons") {
+{
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+{
+let l = $target[1];
+return equot(parse_pat(body))(l)
 }
 }
 }
@@ -1211,4 +1279,4 @@ throw new Error('Failed to match. ' + valueToString($target))})(expr))))(expr_lo
 
 const run = (v) => eval(compile(parse_expr(v))(map$slnil));
 
-return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, expr_loc, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loc, pat_loop, prelude, quot, replaces, run, snd, source_map, tapps, trace_and, trace_and_block, trace_wrap, unescape_string, util}
+return {type: 'fns', ast, builtins, compilation, compile, compile_pat, compile_stmt, consr, escape_string, expr_loc, foldl, foldr, fst, join, map, mapi, mk_deftype, pairs, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, parsing, pat_loc, pat_loop, prelude, quot, replaces, rev, run, snd, source_map, tapps, trace_and, trace_and_block, trace_wrap, unescape_string, util}

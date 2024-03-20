@@ -1,23 +1,29 @@
 (deftype (array a) (cons a (array a)) (nil))
 
+(** Recursive functions **)
+
 (defn foldr [init items f]
     (match items
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
+foldr
+
+(foldr 0 [1 2] +)
+
 (defn what [f] (f (what f) 1))
 
 what
 
-(foldr 0 [1 2] +)
-
-foldr
+(** Basic syntax **)
 
 (match [1 2]
     []        1
     [a ..asd] 2)
 
 [1 2]
+
+"hello"
 
 nil
 
@@ -27,8 +33,9 @@ nil
 
 (defn lol [x] (+ x 2))
 
+lol
+
 (lol 2)
 
 (@ [1 2])
 
-(, lol [(, 2 4) (,  )])
