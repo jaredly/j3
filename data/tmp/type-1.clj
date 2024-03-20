@@ -457,7 +457,7 @@
         (, (@ (let [a 1] a)) "int")
         (, (@ (let [(, a b) (, 2 true)] (, a b))) "((, int) bool)")
         (, (@ 123) "int")
-        (, (@ (fn [a] a)) "(a:0) -> a:0")
+        (, (@ (fn [a] a)) "(a) -> a")
         (, (@ (fn [a] (+ 2 a))) "(int) -> int")
         (,
         (@
@@ -465,24 +465,24 @@
                 1 1))
             "int")
         ; Exploration
-        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (x:4:7) -> x:4:7)")
-        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(x:4:14) -> x:4:14")
+        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (a) -> a)")
+        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(a) -> a")
         (,
         (@ (let [m (, 1 (fn [x] x)) (, a b) m z (b 2)] (, m b)))
-            "((, ((, int) (x:4:21) -> x:4:21)) (x:4:7:23) -> x:4:7:23)")
+            "((, ((, int) (a) -> a)) (b) -> b)")
         (,
         (@ (fn [n] (let [(, a b) (, 1 (fn [x] n)) m (n 2)] b)))
-            "((int) -> m:11) -> (x:5:12) -> (int) -> m:11")
+            "((int) -> a) -> (b) -> (int) -> a")
         ; Tests from the paper
-        (, (@ (let [id (fn [x] x)] id)) "(x:0:3) -> x:0:3")
-        (, (@ (let [id (fn [x] x)] (id id))) "(x:0:6) -> x:0:6")
-        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(y:1:7) -> y:1:7")
-        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(y:1:4) -> y:1:4")
-        (, (@ (fn [x] (let [y x] y))) "(y:1) -> y:1")
-        (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(b:6) -> b:6")
+        (, (@ (let [id (fn [x] x)] id)) "(a) -> a")
+        (, (@ (let [id (fn [x] x)] (id id))) "(a) -> a")
+        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(a) -> a")
+        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(a) -> a")
+        (, (@ (fn [x] (let [y x] y))) "(a) -> a")
+        (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(a) -> a")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
         (, (@ (let [id (fn [x] (x x))] id)) )
-        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> x:3) -> x:3:4")
+        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> a) -> b")
         (, (@ (2 2)) )])
 
 (defn infer-stmt [tenv' stmt]
