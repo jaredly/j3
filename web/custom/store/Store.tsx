@@ -19,9 +19,7 @@ import { isCoveredBySelection } from '../isCoveredBySelection';
 import equal from 'fast-deep-equal';
 import { useLatest } from '../useNSDrag';
 import { normalizeSelections, useRegs } from '../CardRoot';
-import { orderStartAndEnd } from '../../../src/parse/parse';
-import { debounce, findTops, reduce } from '../../ide/ground-up/reduce';
-import { Results } from '../../ide/ground-up/GroundUp';
+import { debounce } from '../../ide/ground-up/reduce';
 import { loadEv } from '../../ide/ground-up/loadEv';
 import {
     FullEvalator,
@@ -30,10 +28,8 @@ import {
     bootstrap,
     repr,
 } from '../../ide/ground-up/Evaluators';
-import { layout } from '../../../src/layout';
 import { goRight } from '../../../src/state/navigate';
 import { cmpFullPath } from '../../../src/state/path';
-import { plugins } from '../plugins';
 
 export type NUIResults = {
     errors: { [loc: number]: string[] };
@@ -58,7 +54,7 @@ export type Store = {
     everyChange(fn: (state: NUIState) => void): () => void;
 };
 
-const allNodesBetween = (
+export const allNodesBetween = (
     start: Path[],
     end: Path[],
     state: NUIState,
@@ -77,89 +73,7 @@ const allNodesBetween = (
     return found;
 };
 
-const getResults = (
-    state: NUIState,
-    evaluator: FullEvalator<any, any, any> | null,
-) => {
-    const results: NUIResults = {
-        display: {},
-        errors: {},
-        hashNames: {},
-        produce: {},
-        env: null,
-        traces: {},
-        pluginResults: {},
-    };
-    console.log('getting results for', evaluator?.id);
-
-    results.env = evaluator?.init();
-    findTops(state).forEach(({ top, hidden, plugin }) => {
-        if (hidden) return;
-        const stmt = fromMCST(top, state.map);
-        if (stmt.type === 'blank') {
-            results.produce[stmt.loc] = ' ';
-            return;
-        }
-        if (evaluator) {
-            if (plugin) {
-                results.produce[stmt.loc] = 'evaluated by plugin';
-                const pid = typeof plugin === 'string' ? plugin : plugin.id;
-                const options =
-                    typeof plugin === 'string' ? null : plugin.options;
-                const pl = plugins.find((p) => p.id === pid);
-                if (!pl) {
-                    results.produce[stmt.loc] = `plugin ${pid} not found`;
-                    return;
-                }
-                results.pluginResults[stmt.loc] = pl.process(
-                    fromMCST(top, state.map),
-                    state,
-                    evaluator,
-                    results,
-                    // state.meta,
-                    // (node) => {
-                    //     const errors = {};
-                    //     const expr = evaluator.parseExpr(node, errors);
-                    //     return evaluator.evaluate(
-                    //         expr,
-                    //         results.env,
-                    //         state.meta,
-                    //     );
-                    // },
-                    // (idx) => evaluator.setTracing(idx, results.traces),
-                    options,
-                );
-            } else {
-                const errs: Results['errors'] = {};
-                const ast = evaluator.parse(stmt, errs);
-                Object.assign(results.errors, errs);
-                if (ast) {
-                    const res = evaluator.addStatement(
-                        ast,
-                        results.env!,
-                        state.meta,
-                        results.traces,
-                    );
-                    results.env = res.env;
-                    results.produce[stmt.loc] = res.display;
-                    // console.log('good', res.display);
-                } else {
-                    // console.log('not parsed');
-                    results.produce[stmt.loc] =
-                        'not parsed ' + JSON.stringify(errs);
-                }
-            }
-        } else {
-            results.produce[stmt.loc] = 'No evaluator';
-        }
-
-        layout(top, 0, state.map, results.display, results.hashNames, true);
-    });
-
-    return results;
-};
-
-const loadEvaluator = (
+export const loadEvaluator = (
     ev: NUIState['evaluator'],
     fn: (ev: FullEvalator<any, any, any> | null, async: boolean) => void,
 ) => {
@@ -182,7 +96,7 @@ const loadEvaluator = (
     }
 };
 
-const adaptiveBounce = (fn: () => void) => {
+export const adaptiveBounce = (fn: () => void) => {
     let lastRun = Date.now();
     let lastCost = 0;
     // let lastCall = Date.now()
@@ -216,186 +130,6 @@ const adaptiveBounce = (fn: () => void) => {
         if (tid) clearTimeout(tid);
         tid = setTimeout(run, 200);
     };
-};
-
-export const useStore = (
-    initialState: NUIState,
-    // state: NUIState,
-    // results: NUIResults,
-    // dispatch: React.Dispatch<Action>,
-) => {
-    // const lstate = useLatest(state);
-    // const lresults = useLatest(results);
-    // const reg = useRegs(state);
-
-    const store = useMemo<Store>(() => {
-        const nodeListeners: {
-            [key: string]: ((state: NUIState, results: NUIResults) => void)[];
-        } = {};
-        const everyListeners: ((state: NUIState) => void)[] = [];
-        let state = initialState;
-        let evaluator: FullEvalator<any, any, any> | null = null;
-
-        const updateResults = adaptiveBounce(() => {
-            console.log('updating results');
-            results = getResults(state, evaluator);
-            everyListeners.forEach((f) => f(state));
-        });
-
-        loadEvaluator(state.evaluator, (ev, async) => {
-            evaluator = ev;
-            console.log('loaded new', async);
-            if (async) {
-                results = getResults(state, evaluator);
-                everyListeners.forEach((f) => f(state));
-            }
-        });
-
-        let results = getResults(state, evaluator);
-
-        return {
-            dispatch(action) {
-                const a = performance.now();
-                let nextState = reduce(state, action);
-                const b = performance.now();
-                if (nextState.evaluator !== state.evaluator) {
-                    loadEvaluator(nextState.evaluator, (ev) => {
-                        evaluator = ev;
-                        results = getResults(state, evaluator);
-                        everyListeners.forEach((f) => f(state));
-                    });
-                }
-                let nextResults = results;
-                const c = performance.now();
-
-                let prevState = state;
-                let prevResults = results;
-                state = nextState;
-                results = nextResults;
-
-                if (
-                    prevState.map !== state.map ||
-                    prevState.meta !== state.meta
-                ) {
-                    // nextResults = getResults(nextState, evaluator);
-                    updateResults();
-                }
-
-                // Send out the infos
-
-                const selChange: { [key: number]: boolean } = {};
-                if (state.at !== prevState.at) {
-                    prevState.at.forEach((cursor) => {
-                        cursor.start.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-                        cursor.end?.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-
-                        if (cursor.end) {
-                            const [start, end] = orderStartAndEnd(
-                                cursor.start,
-                                cursor.end,
-                            );
-                            allNodesBetween(start, end, prevState).forEach(
-                                (idx) => (selChange[idx] = true),
-                            );
-                        }
-                    });
-                    state.at.forEach((cursor) => {
-                        cursor.start.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-                        cursor.end?.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-
-                        if (cursor.end) {
-                            const [start, end] = orderStartAndEnd(
-                                cursor.start,
-                                cursor.end,
-                            );
-                            allNodesBetween(start, end, state).forEach(
-                                (idx) => (selChange[idx] = true),
-                            );
-                        }
-                    });
-
-                    // WE NEED
-                    // TO
-                    // ...
-                    // .....
-
-                    // `allNodesBetween(path[], path[], nsMap[], map)`
-                }
-                const d = performance.now();
-
-                Object.keys(nodeListeners).forEach((k) => {
-                    const idx = +k;
-                    let changed =
-                        selChange[idx] ||
-                        state.map[idx] !== prevState.map[idx] ||
-                        state.meta[idx] !== prevState.meta[idx] ||
-                        !equal(results.errors[idx], prevResults.errors[idx]) ||
-                        !equal(results.display[idx], prevResults.display[idx]);
-                    if (changed) {
-                        nodeListeners[idx].forEach((fn) => fn(state, results));
-                    }
-                });
-
-                const e = performance.now();
-
-                // prevState = state;
-                // prevResults = results;
-
-                everyListeners.forEach((f) => f(state));
-                const f = performance.now();
-                // console.log(
-                //     `Reduce ${b - a}\nResults ${c - b}\nSelection calc ${
-                //         d - c
-                //     }\nListeners ${e - d}\nEverylisteners ${f - e}`,
-                // );
-            },
-            getEvaluator: () => evaluator,
-            getState: () => state,
-            getResults: () => results,
-            reg(node, idx, path, loc) {
-                if (!state.regs[idx]) {
-                    state.regs[idx] = {};
-                }
-                state.regs[idx][loc ?? 'main'] = node ? { node, path } : null;
-            },
-            onChange(idx, fn) {
-                if (!nodeListeners[idx]) {
-                    nodeListeners[idx] = [];
-                }
-                nodeListeners[idx].push(fn);
-                return () => {
-                    const at = nodeListeners[idx].indexOf(fn);
-                    if (at !== -1) {
-                        nodeListeners[idx].splice(at, 1);
-                    }
-                };
-            },
-            everyChange(fn) {
-                everyListeners.push(fn);
-                return () => {
-                    const idx = everyListeners.indexOf(fn);
-                    if (idx !== -1) {
-                        everyListeners.splice(idx, 1);
-                    }
-                };
-            },
-        };
-    }, []);
-
-    // const prevState = useRef(state);
-    // const prevResults = useRef(results);
-    // React.useLayoutEffect(() => {
-    // }, [state, results]);
-
-    return store;
 };
 
 const noopStore: Store = {
