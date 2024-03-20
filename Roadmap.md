@@ -1,4 +1,18 @@
 
+# ???????????
+
+WHAT IFFF
+
+ok so what would it be like
+if I did type inference on a given term
+and just "held all externals as variable"?
+Would that be super weird?
+Like, then the ... re-type-checking would be ... more cacheable, right?
+b/c I could just unify the externals with the inferred types of the externals.
+...
+OK so I'm guessing that type errors would be worse? hrm.
+
+
 # Tracing, with style
 
 - I want to be able to attach a ... formatter ... to a trace.

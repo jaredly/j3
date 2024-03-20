@@ -69,7 +69,6 @@ const fileToJs = (state: NUIState) => {
                 console.log(`Failed to turn to file`, res.errors);
                 return;
             }
-            console.log('Done to js');
             return res.js;
         }
     }

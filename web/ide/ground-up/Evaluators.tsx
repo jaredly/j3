@@ -268,7 +268,8 @@ function builtins() {
         'set/rm': (s: any[]) => (v: any) => s.filter((i) => i !== v),
         // NOTE this is only working for primitives
         'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),
-        'set/merge': (a: any[]) => (b: any[]) => [...a, ...b],
+        'set/merge': (a: any[]) => (b: any[]) =>
+            [...a, ...b.filter((x) => !a.includes(x))],
         'set/to-list': wrapArray,
         'set/from-list': unwrapArray,
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>

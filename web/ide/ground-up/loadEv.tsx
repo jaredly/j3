@@ -41,8 +41,15 @@ export const evaluatorFromText = (
                 1: infer_stmt,
                 2: infer,
                 3: type_to_string,
+                4: externals,
             } = result;
-            Object.assign(data, { env_nil, infer, infer_stmt, type_to_string });
+            Object.assign(data, {
+                env_nil,
+                infer,
+                infer_stmt,
+                type_to_string,
+                externals,
+            });
             console.log('um loading');
         } else {
             Object.assign(data, result);

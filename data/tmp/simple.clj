@@ -41,6 +41,12 @@ lol
 
 (@ [1 2])
 
+(** Wrong Order **)
+
+(def x y)
+
+(def y 10)
+
 (** Mutual Recursive **)
 
 (defn even [x]

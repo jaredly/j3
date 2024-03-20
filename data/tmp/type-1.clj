@@ -653,12 +653,12 @@
 
 (** ## Other analysis **)
 
-(deftype (bag a) (one a) (many (array (bag a))) empty)
+(deftype (bag a) (one a) (many (array (bag a))) (empty))
 
 (defn bag/and [first second]
     (match (, first second)
-        (, empty a)             a
-        (, a empty)             a
+        (, (empty) a)           a
+        (, a (empty))           a
         (, (many [a]) (many b)) (many [a ..b])
         (, (many a) (many [b])) (many [b ..a])
         _                       (many [first second])))
@@ -674,8 +674,6 @@
         (pstr string int)      set/nil
         (pprim prim int)       set/nil))
 
-(pat-names (@p (cons a a)))
-
 (defn externals [bound expr]
     (match expr
         (evar name l)               (if (set/has bound name)
@@ -689,7 +687,31 @@
         (eapp target arg int)       (bag/and (externals bound target) (externals bound arg))
         (ematch expr cases int)     (bag/and
                                         (externals bound expr)
-                                            (foldl empty cases (fn [bag (, pat body)] )))))
+                                            (foldl
+                                            empty
+                                                cases
+                                                (fn [bag (, pat body)]
+                                                (bag/and bag (externals (set/merge bound (pat-names pat)) body)))))))
+
+(defn externals-type [bound type] (set/diff (type-free type) bound))
+
+(defn externals-stmt [stmt]
+    (match stmt
+        (sdeftype string int free constructors int) empty
+        (sdef name int body int)                    (externals (set/add set/nil name) body)
+        (sexpr expr int)                            (externals set/nil expr)))
+
+(externals
+    set/nil
+        (@
+        (fn [x]
+            (+
+                x
+                    23
+                    (match hello
+                    (one a) a
+                    (two b) (+ b c)
+                    _       mx)))))
 
 (defn subst-to-string [subst]
     (join
@@ -698,6 +720,12 @@
             (map/to-list subst)
                 (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
 
-(deftype evaluator (typecheck a b c d))
+(deftype evaluator
+    (typecheck builtin-env infer-stmt infer to-string externals))
 
-(typecheck builtin-env infer-stmt infer type-to-string)
+(typecheck
+    builtin-env
+        infer-stmt
+        infer
+        type-to-string
+        externals-stmt)
