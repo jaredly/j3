@@ -44,6 +44,10 @@
 
 (def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
 
+(defn unwrap-app [t]
+    (match t
+        (tapp (tapp (tcon "->")))))
+
 (defn tts-inner [t free]
     (match t
         (tvar s _)                          (let [(, fmap idx) free]
@@ -53,7 +57,7 @@
                                                                  (, name (, (map/set fmap s name) (+ 1 idx))))))
         (tcon s _)                          (, s free)
         (tapp (tapp (tcon "->" _) a _) b _) (let [(, one free) (tts-inner a free) (, two free) (tts-inner b free)]
-                                                (, "(${one}) -> ${two}" free))
+                                                (, "(fn [${one}] ${two})" free))
         (tapp a b _)                        (let [(, one free) (tts-inner a free) (, two free) (tts-inner b free)]
                                                 (, "(${one} ${two})" free))))
 
