@@ -60,6 +60,8 @@
         (tapp type type int)
         (tcon string int))
 
+(def lol tcon)
+
 (deftype stmt
     (sdeftype
         string
@@ -453,6 +455,8 @@
 
 (def tenv/nil (tenv map/nil map/nil map/nil))
 
+tenv/nil
+
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
 
@@ -598,6 +602,8 @@
 
 (@! 12)
 
+"a \n b"
+
 1012
 
 ;(infer-stmt
@@ -619,6 +625,11 @@
         basic)
 
 (several [(@! (defn fib [x] (+ 1 (fib (+ 2 x)))))] (@ fib) basic)
+
+(defn subst-to-string [subst]
+    (join
+        "\n"
+            (map (map/to-list subst) (fn [(, k v)] "${k} : ${(type-to-string v)}"))))
 
 (type-to-string (several [(@! (defn what [f] (f (what f))))] (@ what) basic))
 

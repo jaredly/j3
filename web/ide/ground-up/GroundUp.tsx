@@ -12,6 +12,7 @@ import { Path } from '../../store';
 import { CommandPalette, pathForIdx } from './CommandPalette';
 import { LocError } from './Evaluators';
 import { valueToString } from './reduce';
+import { TraceMap } from './loadEv';
 
 export type Results = {
     display: Display;
@@ -333,14 +334,14 @@ function renderTraces(
             [key: string]: string | JSX.Element | LocError;
         };
         env: any;
-        traces: { [loc: number]: { [loc: number]: any[] } };
+        traces: TraceMap;
         pluginResults: { [nsLoc: number]: any };
     },
     state: NUIState,
     store: Store,
 ): React.ReactNode {
     return Object.entries(results.traces).map(([top, traces]) => (
-        <div key={top} style={{ maxWidth: 500 }}>
+        <div key={top} style={{ maxWidth: 500, overflow: 'auto' }}>
             <div
                 onClick={() => {
                     const path = pathForIdx(+top, state.regs, state.map);
@@ -357,7 +358,7 @@ function renderTraces(
             <table>
                 <tbody>
                     {Object.entries(traces)
-                        .flatMap(([k, v]) => v.map((v) => [k, v]))
+                        .flatMap(([k, v]) => v.map((v) => [k, v] as const))
                         .sort((a, b) => a[1].at - b[1].at)
                         .map(([key, value], i) => {
                             const node = state.map[+key];
@@ -409,7 +410,7 @@ function renderTraces(
                                                 : key}
                                         </div>
                                     </td>
-                                    <td>
+                                    <td style={{ whiteSpace: 'pre' }}>
                                         <span
                                             style={{
                                                 display: 'inline-block',
@@ -418,7 +419,7 @@ function renderTraces(
                                         >
                                             {value.at + ' '}
                                         </span>
-                                        {valueToString(value.value)}
+                                        {value.formatted}
                                     </td>
                                 </tr>
                             );

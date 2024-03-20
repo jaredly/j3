@@ -6,7 +6,7 @@ import { getNestedNodes, NNode } from '../../src/state/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
-import { useNode, Values } from './Store';
+import { useGetStore, useNode, Values } from './Store';
 import equal from 'fast-deep-equal';
 import { RichText } from './RichText';
 
@@ -128,6 +128,7 @@ export const Render = React.memo(
         const values = useNode(props.idx, props.path);
         const { node, nnode, display } = values;
         const { idx, path } = props;
+        const store = useGetStore();
 
         if (path.length > 1000) {
             return <span>DEEP</span>;
@@ -150,7 +151,7 @@ export const Render = React.memo(
                             {idx}
                         </span>
                     ) : null}
-                    <span
+                    <div
                         style={{
                             position: 'absolute',
                             borderRadius: 5,
@@ -162,8 +163,25 @@ export const Render = React.memo(
                                 ? 'red'
                                 : 'green',
                             display: 'inline-block',
+                            cursor: values.meta.trace ? 'pointer' : '',
                         }}
-                    ></span>
+                        onClick={() => {
+                            const formatter = prompt('formatter name:');
+                            store.dispatch({
+                                type: 'meta',
+                                meta: {
+                                    [idx]: {
+                                        ...values.meta,
+                                        trace: {
+                                            ...values.meta!.trace,
+                                            formatter,
+                                        },
+                                    },
+                                },
+                            });
+                            // props.
+                        }}
+                    ></div>
                     {inner}
                 </span>
             );

@@ -1,4 +1,9 @@
 
+# Tracing, with style
+
+- I want to be able to attach a ... formatter ... to a trace.
+- and this formatter should be in-world.
+
 # Planning the Blog Posts / tutorials
 
 1) js parser + compiler

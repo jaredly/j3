@@ -3,7 +3,8 @@
 
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
-import { MetaDataMap, NUIState } from '../../custom/UIState';
+import { MetaData, MetaDataMap, NUIState } from '../../custom/UIState';
+import { TraceMap } from './loadEv';
 import {
     addTypeConstructors,
     extractBuiltins,
@@ -87,12 +88,9 @@ export type FullEvalator<Env, Stmt, Expr> = {
         stmt: Stmt,
         env: Env,
         meta: MetaDataMap,
-        trace: { [loc: number]: { [loc: number]: any[] } },
+        trace: TraceMap,
     ): { env: Env; display: JSX.Element | string | LocError };
-    setTracing(
-        idx: number | null,
-        traceMap: { [loc: number]: { [loc: number]: any[] } },
-    ): void;
+    setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState, target?: number): { js: string; errors: Errors };
 };
@@ -198,7 +196,13 @@ export const bootstrap: FullEvalator<
 };
 
 function builtins() {
-    let tracer: null | ((loc: number, v: any) => void) = null;
+    let tracer:
+        | null
+        | ((
+              loc: number,
+              v: any,
+              info: NonNullable<MetaData['trace']>,
+          ) => void) = null;
     let env = {
         // Math
         '+': (a: number) => (b: number) => a + b,
@@ -277,7 +281,7 @@ function builtins() {
         },
         $trace(loc: number, info: any, value: any) {
             // console.log('TRACE MAYBE', tracer, loc, value);
-            tracer?.(loc, value);
+            tracer?.(loc, value, info);
             return value;
         },
         // Just handy

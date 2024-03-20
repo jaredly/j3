@@ -4,7 +4,7 @@ import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
 import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
-import { NUIState } from '../../custom/UIState';
+import { MetaData, NUIState } from '../../custom/UIState';
 
 const jsUrl = (id: string) => urlForId(id) + (id.endsWith('.js') ? '' : '.js');
 
@@ -197,20 +197,47 @@ const bootstrapEvaluator = (
     // first we have to pass everything through the bootstrapping.
 };
 
+export type TraceMap = {
+    [loc: number]: {
+        [loc: number]: { value: any; at: number; formatted: string }[];
+    };
+};
+
 function withTracing(
-    traceMap: { [loc: number]: { [loc: number]: any[] } },
+    traceMap: TraceMap,
     loc: number,
     san: { [key: string]: any },
+    env: FnsEnv,
 ) {
     let count = 0;
     const trace: { [key: number]: any[] } = (traceMap[loc] = {});
-    san.$setTracer((loc: number, value: any) => {
-        if (!trace[loc]) {
-            trace[loc] = [];
-        }
-        trace[loc].push({ value, at: count++ });
-        return value;
-    });
+    san.$setTracer(
+        (loc: number, value: any, info: NonNullable<MetaData['trace']>) => {
+            if (!trace[loc]) {
+                trace[loc] = [];
+            }
+            let formatter = info.formatter
+                ? env.values[info.formatter]
+                : valueToString;
+            let formatted = formatter(value);
+            if (typeof formatted !== 'string') {
+                console.warn(
+                    'not formatted',
+                    formatted,
+                    value,
+                    info.formatter,
+                    env.values[info.formatter],
+                );
+                formatted = 'bad format';
+            }
+            trace[loc].push({
+                value,
+                at: count++,
+                formatted,
+            });
+            return value;
+        },
+    );
 }
 
 function sanitizedEnv(benv: { [key: string]: any }) {
@@ -221,6 +248,7 @@ function sanitizedEnv(benv: { [key: string]: any }) {
 
 type FnsEnv = {
     js: string[];
+    values: { [key: string]: any };
     typeCheck: any;
 };
 
@@ -229,7 +257,7 @@ export const fnsEvaluator = (
     data: any,
     envArgs: string,
     san: any,
-): FullEvalator<FnsEnv, any, any> | null => {
+): FullEvalator<FnsEnv, stmt & { loc: number }, expr> | null => {
     if (
         data['parse_stmt'] &&
         data['parse_expr'] &&
@@ -241,6 +269,7 @@ export const fnsEvaluator = (
             init() {
                 return {
                     js: [],
+                    values: {},
                     typeCheck: data['env_nil'],
                 };
             },
@@ -307,13 +336,11 @@ export const fnsEvaluator = (
                 return { js: env.js.join('\n'), errors };
             },
             addStatement(stmt, env, meta, traceMap) {
-                // console.log('add stmt', stmt., meta[stmt.loc]);
                 const mm = Object.entries(meta)
                     .map(([k, v]) => [+k, v.trace])
                     .filter((k) => k[1]);
 
                 if (data['infer_stmt']) {
-                    // console.log('infer stmt', stmt, env.typeCheck);
                     try {
                         env.typeCheck = data['infer_stmt'](env.typeCheck)(stmt);
                     } catch (err) {
@@ -341,7 +368,6 @@ export const fnsEvaluator = (
                         }
                     }
 
-                    // console.log('add stmt', meta[stmt[1]]);
                     let js;
                     try {
                         js = data['compile'](stmt[0])(mm);
@@ -369,7 +395,7 @@ export const fnsEvaluator = (
                     try {
                         let old = san.$trace;
                         if (meta[stmt[1]]?.traceTop) {
-                            withTracing(traceMap, stmt[1], san);
+                            withTracing(traceMap, stmt[1], san, env);
                         }
                         const value = fn(san);
                         san.$setTracer(null);
@@ -394,6 +420,7 @@ export const fnsEvaluator = (
                         };
                     }
                 }
+
                 let js;
                 try {
                     js = data['compile_stmt'](stmt)(mm);
@@ -404,8 +431,26 @@ export const fnsEvaluator = (
                     };
                 }
 
+                let name = stmt.type === 'sdef' ? stmt[0] : null;
+
                 try {
-                    const fn = new Function(envArgs, '{' + js + '}');
+                    const fn = new Function(
+                        envArgs,
+                        `{${env.js.join('\n')};\n${js};\n${name ? 'return ' + sanitize(name) : ''}}`,
+                    );
+                    if (name) {
+                        try {
+                            env.values[name] = fn(san);
+                        } catch (err) {
+                            return {
+                                env,
+                                display: `JS Evaluation Error: ${
+                                    (err as Error).message
+                                }\n${js}`,
+                            };
+                        }
+                    }
+
                     env.js.push(js);
                     return { env, display: `compiled` };
                 } catch (err) {
@@ -417,9 +462,9 @@ export const fnsEvaluator = (
                     };
                 }
             },
-            setTracing(idx, traceMap) {
+            setTracing(idx, traceMap, env) {
                 if (idx != null) {
-                    withTracing(traceMap, idx, san);
+                    withTracing(traceMap, idx, san, env);
                 } else {
                     san.$setTracer(null);
                 }

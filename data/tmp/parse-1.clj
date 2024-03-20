@@ -411,6 +411,14 @@
 (defn unescape-string [string]
     (replaces string [(, "\\\"" "\"") (, "\\n" "\n") (, "\\\\" "\\")]))
 
+"\n"
+
+"\\n"
+
+(unescape-string (escape-string "\n"))
+
+(escape-string (unescape-string "\n"))
+
 (defn quot [expr]
     (match expr
         (eprim prim) (match prim
@@ -563,6 +571,7 @@
         [(, (@@ 1) 1)
         (, (@@ "hello") "hello")
         (, (@@ "\"") "\"")
+        (, (@@ "\n") "\n")
         (, (@@ (+ 2 3)) 5)
         (,
         (@@

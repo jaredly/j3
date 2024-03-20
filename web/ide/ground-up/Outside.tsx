@@ -30,7 +30,14 @@ export const Outside = () => {
     if (hash) {
         return (
             <div>
-                <div>
+                <div
+                    style={{
+                        position: 'sticky',
+                        top: 0,
+                        backgroundColor: 'black',
+                        zIndex: 100,
+                    }}
+                >
                     {recent.map(({ title }) => (
                         <span key={title}>
                             <a

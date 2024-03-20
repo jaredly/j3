@@ -1,11 +1,6 @@
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { type ClipboardItem } from '../../src/state/clipboard';
-import {
-    State,
-    Mods,
-    StateUpdate,
-    StateChange,
-} from '../../src/state/getKeyUpdate';
+import { State, Mods, StateChange } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
@@ -18,6 +13,7 @@ export type MetaData = {
     trace?: {
         name?: string;
         latest?: boolean;
+        formatter?: string | null;
     };
     // This is currently probably only respected by the Fixture dealio
     // and maybe the toplevel whatsits

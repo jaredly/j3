@@ -229,22 +229,11 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
         console.log(child.idx, parsed.test?.node.loc);
 
         console.log('parsed', path, node, parsed);
-        // console.log('checkiong', path, node);
-        // if ... this ... is ...
         return null;
     },
-    process(
-        node: Node,
-        { meta },
-        evaluator,
-        { traces, env },
-    ) // meta: MetaDataMap,
-    // evaluate: (node: Node) => any,
-    // setTracing: (loc: number | null) => void,
-
-    {
+    process(node: Node, { meta }, evaluator, { traces, env }) {
         const setTracing = (idx: number | null) =>
-            evaluator.setTracing(idx, traces);
+            evaluator.setTracing(idx, traces, env);
         const evaluate = (node: Node) => {
             const errors = {};
             const expr = evaluator.parseExpr(node, errors);

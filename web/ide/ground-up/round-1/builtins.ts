@@ -12,6 +12,7 @@ const sanMap = {
     ',': '$co',
     '/': '$sl',
     ';': '$semi',
+    '@': '$at',
 };
 
 const kwds = 'case var if return';

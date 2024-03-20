@@ -1,17 +1,13 @@
-abcdefg
+"\""
 
-12345667890
+"\n"
 
-(ok here we go [and things])
+"\\n"
 
-and
+"'"
 
-what
+"\\"
 
-is
+"\\"
 
-one
-
-two
-
-threeq
+"`"
