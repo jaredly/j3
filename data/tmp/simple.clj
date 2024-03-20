@@ -23,7 +23,9 @@ what
 
 [1 2]
 
-"hello"
+"hello ${"folks"}"
+
+[1 "hi"]
 
 nil
 

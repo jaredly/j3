@@ -25,6 +25,14 @@ import {
 
 // export type BasicEvaluator<T> = {};
 
+export class MyEvalError extends Error {
+    source: Error;
+    constructor(name: string, source: Error) {
+        super(name);
+        this.source = source;
+    }
+}
+
 export class LocError extends Error {
     locs: { loc: number; row: number; col: number }[] = [];
     js: string;
@@ -89,7 +97,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
         env: Env,
         meta: MetaDataMap,
         trace: TraceMap,
-    ): { env: Env; display: JSX.Element | string | LocError };
+    ): { env: Env; display: JSX.Element | string | LocError | MyEvalError };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState, target?: number): { js: string; errors: Errors };

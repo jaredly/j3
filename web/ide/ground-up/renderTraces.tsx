@@ -3,7 +3,7 @@ import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
 import { Store } from '../../custom/Store';
 import { pathForIdx } from './CommandPalette';
-import { LocError } from './Evaluators';
+import { LocError, MyEvalError } from './Evaluators';
 import { TraceMap } from './loadEv';
 
 export function renderTraces(
@@ -12,7 +12,7 @@ export function renderTraces(
         display: Display;
         hashNames: { [loc: string]: string };
         produce: {
-            [key: string]: string | JSX.Element | LocError;
+            [key: string]: string | JSX.Element | LocError | MyEvalError;
         };
         env: any;
         traces: TraceMap;
@@ -51,8 +51,8 @@ export function renderTraces(
                                         state.regs[+key]?.main ??
                                         state.regs[+key]?.outside;
                                     if (node) {
-                                        node.node.style.backgroundColor =
-                                            'rgba(255,0,0,0.5)';
+                                        node.node.style.outline =
+                                            '1px solid red';
                                     }
                                 }}
                                 onMouseLeave={() => {
@@ -60,8 +60,7 @@ export function renderTraces(
                                         state.regs[+key]?.main ??
                                         state.regs[+key]?.outside;
                                     if (node) {
-                                        node.node.style.backgroundColor =
-                                            'unset';
+                                        node.node.style.outline = 'unset';
                                     }
                                 }}
                             >

@@ -13,7 +13,12 @@ import { Results } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { NsReg, Drag } from './useNSDrag';
 import { fromMCST } from '../../src/types/mcst';
-import { FullEvalator, LocError, bootstrap } from '../ide/ground-up/Evaluators';
+import {
+    MyEvalError,
+    FullEvalator,
+    LocError,
+    bootstrap,
+} from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
 import { useExpanded, useGetStore, useNode } from './Store';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
@@ -70,7 +75,7 @@ export function NSTop({
     results: Results;
     ns: RealizedNamespace;
     selections: Cursor[];
-    produce: { [key: number]: string | JSX.Element | LocError };
+    produce: { [key: number]: string | JSX.Element | LocError | MyEvalError };
     drag: Drag;
     debug: boolean;
 }) {
@@ -163,7 +168,8 @@ export function NSTop({
                                     style={{
                                         whiteSpace: 'pre',
                                         fontSize: '80%',
-                                        opacity: 0.5,
+                                        // opacity: 0.5,
+                                        color: 'rgba(255,255,255,0.5)',
                                     }}
                                 >
                                     {renderProduce(
@@ -211,10 +217,60 @@ export function NSTop({
 }
 
 const renderProduce = (
-    value: LocError | string | JSX.Element,
+    value: LocError | string | JSX.Element | MyEvalError,
     state: NUIState,
     dispatch: React.Dispatch<Action>,
 ) => {
+    if (value instanceof MyEvalError) {
+        let at = 0;
+        let parts: JSX.Element[] = [];
+        const msg = value.source.message;
+        msg.replace(/\d+/g, (match, idx) => {
+            if (idx > at) {
+                parts.push(<span key={at}>{msg.slice(at, idx)}</span>);
+            }
+            const loc = +match;
+            parts.push(
+                <button
+                    key={idx}
+                    onMouseDown={(evt) => evt.stopPropagation()}
+                    onMouseEnter={() => {
+                        const got = state.regs[loc];
+                        const node = got?.main ?? got?.outside;
+                        if (!node) return;
+                        node.node.style.outline = '1px solid red';
+                    }}
+                    onClick={() => {
+                        const path = pathForIdx(loc, state.regs, state.map);
+                        if (!path) return alert('nope');
+                        dispatch({
+                            type: 'select',
+                            at: [{ start: path }],
+                        });
+                    }}
+                    onMouseLeave={() => {
+                        const got = state.regs[loc];
+                        const node = got?.main ?? got?.outside;
+                        if (!node) return;
+                        node.node.style.outline = 'unset';
+                    }}
+                >
+                    {match}
+                </button>,
+            );
+            at = idx + match.length;
+            return '';
+        });
+        if (at < msg.length) {
+            parts.push(<span key={at}>{msg.slice(at)}</span>);
+        }
+        return (
+            <div style={{ color: 'rgb(255,50,50)' }}>
+                {value.message + '\n'}
+                {parts}
+            </div>
+        );
+    }
     if (value instanceof LocError) {
         return (
             <div>

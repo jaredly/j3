@@ -26,6 +26,7 @@ import { loadEv } from '../ide/ground-up/loadEv';
 import {
     FullEvalator,
     LocError,
+    MyEvalError,
     bootstrap,
     repr,
 } from '../ide/ground-up/Evaluators';
@@ -38,7 +39,7 @@ export type NUIResults = {
     errors: { [loc: number]: string[] };
     display: Display;
     hashNames: { [loc: string]: string };
-    produce: { [key: string]: JSX.Element | string | LocError };
+    produce: { [key: string]: JSX.Element | string | LocError | MyEvalError };
     env: any;
     traces: { [loc: number]: { [loc: number]: any[] } };
     pluginResults: { [nsLoc: number]: any };

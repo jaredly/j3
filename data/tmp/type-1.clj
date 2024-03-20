@@ -54,6 +54,8 @@
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
+,
+
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
@@ -331,6 +333,17 @@
                                                 (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
         (equot _ l)                         (,, map/nil (tcon "ast" l) nidx)
         (eprim prim)                        (,, map/nil (t-prim prim) nidx)
+        (estr first templates l)            (let [
+                                                string-type    (tcon "string" l)
+                                                (, subst nidx) (foldr
+                                                                   (, map/nil nidx)
+                                                                       templates
+                                                                       (fn [(, subst nidx) (,, expr suffix sl)]
+                                                                       (let [
+                                                                           (,, s2 t nidx) (t-expr tenv expr nidx)
+                                                                           (, s3 nidx)    (unify t string-type nidx)]
+                                                                           (, (compose-subst s3 (compose-subst s2 subst)) nidx))))]
+                                                (,, subst string-type nidx))
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
             - add the type variable to the typing environment
@@ -510,6 +523,9 @@
 (,
     (infer-show basic)
         [(, (@ +) "(fn [int int] int)")
+        (, (@ "") "string")
+        (, (@ "hi ${"ho"}") "string")
+        (, (@ (fn [x] "hi ${x}")) "(fn [string] string)")
         (, (@ (let [a 1] a)) "int")
         (, (@ (let [(, a b) (, 2 true)] (, a b))) "(, int bool)")
         (, (@ 123) "int")

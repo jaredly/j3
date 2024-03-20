@@ -1,4 +1,10 @@
-import { Errors, FullEvalator, LocError, bootstrap } from './Evaluators';
+import {
+    Errors,
+    MyEvalError,
+    FullEvalator,
+    LocError,
+    bootstrap,
+} from './Evaluators';
 import { findTops, urlForId, valueToString } from './reduce';
 import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
@@ -347,7 +353,10 @@ export const fnsEvaluator = (
                         console.error(err);
                         return {
                             env,
-                            display: `Type Error ${(err as Error).message}`,
+                            display: new MyEvalError(
+                                `Type Error`,
+                                err as Error,
+                            ),
                         };
                     }
                 }
@@ -363,7 +372,10 @@ export const fnsEvaluator = (
                             console.error(err);
                             return {
                                 env,
-                                display: `Type Error ${(err as Error).message}`,
+                                display: new MyEvalError(
+                                    `Type Error`,
+                                    err as Error,
+                                ),
                             };
                         }
                     }
@@ -374,9 +386,10 @@ export const fnsEvaluator = (
                     } catch (err) {
                         return {
                             env,
-                            display: `Compilation Error: ${
-                                (err as Error).message
-                            }`,
+                            display: new MyEvalError(
+                                `Compilation Error`,
+                                err as Error,
+                            ),
                         };
                     }
                     let fn;

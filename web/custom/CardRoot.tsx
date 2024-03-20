@@ -16,7 +16,11 @@ import { Action, NUIState, RealizedNamespace } from './UIState';
 import { Reg } from './types';
 import { useNSDrag } from './useNSDrag';
 import { closestSelection } from './verticalMove';
-import { FullEvalator, LocError } from '../ide/ground-up/Evaluators';
+import {
+    MyEvalError,
+    FullEvalator,
+    LocError,
+} from '../ide/ground-up/Evaluators';
 
 export function CardRoot({
     state,
@@ -34,7 +38,7 @@ export function CardRoot({
     state: NUIState;
     dispatch: React.Dispatch<Action>;
     results: Results;
-    produce: { [key: number]: string | JSX.Element | LocError };
+    produce: { [key: number]: string | JSX.Element | LocError | MyEvalError };
     ev: FullEvalator<any, any, any> | void | null;
 }) {
     const selections = React.useMemo(
