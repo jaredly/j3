@@ -1,7 +1,7 @@
 import React from 'react';
 import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
-import { Store } from '../../custom/Store';
+import { Store } from '../../custom/store/Store';
 import { pathForIdx } from './CommandPalette';
 import { LocError, MyEvalError } from './Evaluators';
 import { TraceMap } from './loadEv';

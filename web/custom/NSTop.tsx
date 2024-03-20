@@ -20,7 +20,7 @@ import {
     bootstrap,
 } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
-import { useExpanded, useGetStore, useNode } from './Store';
+import { useExpanded, useGetStore, useNode } from './store/Store';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const PluginRender = ({

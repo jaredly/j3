@@ -663,6 +663,29 @@
         (, (many a) (many [b])) (many [b ..a])
         _                       (many [first second])))
 
+(defn concat [one two]
+    (match one
+        []           two
+        [one]        [one ..two]
+        [one ..rest] [one ..(concat rest two)]))
+
+(defn bag/to-list [bag]
+    (match bag
+        (empty)     []
+        (one a)     [a]
+        (many bags) (foldl
+                        []
+                            bags
+                            (fn [res bag]
+                            (match bag
+                                (empty) res
+                                (one a) [a ..res]
+                                _       (concat (bag/to-list bag) res))))))
+
+(,
+    bag/to-list
+        [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [10 2 1])])
+
 (defn pat-names [pat]
     (match pat
         (pany _)               set/nil
@@ -696,22 +719,24 @@
 (defn externals-type [bound type] (set/diff (type-free type) bound))
 
 (defn externals-stmt [stmt]
-    (match stmt
-        (sdeftype string int free constructors int) empty
-        (sdef name int body int)                    (externals (set/add set/nil name) body)
-        (sexpr expr int)                            (externals set/nil expr)))
+    (bag/to-list
+        (match stmt
+            (sdeftype string int free constructors int) empty
+            (sdef name int body int)                    (externals (set/add set/nil name) body)
+            (sexpr expr int)                            (externals set/nil expr))))
 
-(externals
-    set/nil
-        (@
-        (fn [x]
-            (+
-                x
-                    23
-                    (match hello
-                    (one a) a
-                    (two b) (+ b c)
-                    _       mx)))))
+(bag/to-list
+    (externals
+        set/nil
+            (@
+            (fn [x]
+                (+
+                    x
+                        23
+                        (match hello
+                        (one a) a
+                        (two b) (+ b c)
+                        _       mx))))))
 
 (defn subst-to-string [subst]
     (join

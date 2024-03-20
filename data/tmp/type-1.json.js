@@ -1675,6 +1675,58 @@ return /*7120*//*7121*/many/*<7121*/(/*7120*//*7122*//*7122*//*7122*/cons/*<7122
 return /*7129*//*7130*/many/*<7130*/(/*7129*//*7131*//*7131*//*7131*/cons/*<7131*/(/*7131*//*7138*/first/*<7138*/)/*<7131*/(/*7131*//*7131*//*7131*//*7131*/cons/*<7131*/(/*7131*//*7139*/second/*<7139*/)/*<7131*/(/*7131*//*7131*/nil/*<7131*/)/*<7131*/)/*<7131*/)/*<7129*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 7073');})(/*!*//*7075*//*7075*//*7076*/$co/*<7076*/(/*7075*//*7077*/first/*<7077*/)/*<7075*/(/*7075*//*7078*/second/*<7078*/)/*<7075*/)/*<7073*//*<7061*//*<7061*/;
 
+const concat = /*7401*/(one) => /*7401*/(two) => /*7408*/(($target) => {
+if ($target.type === "nil") {
+return /*7412*/two/*<7412*/
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return /*7416*//*7416*//*7416*/cons/*<7416*/(/*7416*//*7417*/one/*<7417*/)/*<7416*/(/*7416*//*7418*/two/*<7418*/)/*<7416*/
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return /*7428*//*7428*//*7428*/cons/*<7428*/(/*7428*//*7429*/one/*<7429*/)/*<7428*/(/*7428*//*7430*//*7430*//*7434*/concat/*<7434*/(/*7430*//*7437*/rest/*<7437*/)/*<7430*/(/*7430*//*7438*/two/*<7438*/)/*<7430*/)/*<7428*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7408');})(/*!*//*7410*/one/*<7410*/)/*<7408*//*<7401*//*<7401*/;
+
+const bag$slto_list = /*7377*/(bag) => /*7383*/(($target) => {
+if ($target.type === "empty") {
+return /*7390*/nil/*<7390*/
+}
+if ($target.type === "one") {
+{
+let a = $target[0];
+return /*7395*//*7395*//*7395*/cons/*<7395*/(/*7395*//*7400*/a/*<7400*/)/*<7395*/(/*7395*//*7395*/nil/*<7395*/)/*<7395*/
+}
+}
+if ($target.type === "many") {
+{
+let bags = $target[0];
+return /*7441*//*7441*//*7441*//*7442*/foldl/*<7442*/(/*7441*//*7443*/nil/*<7443*/)/*<7441*/(/*7441*//*7444*/bags/*<7444*/)/*<7441*/(/*7441*//*7445*/(res) => /*7445*/(bag) => /*7450*/(($target) => {
+if ($target.type === "empty") {
+return /*7455*/res/*<7455*/
+}
+if ($target.type === "one") {
+{
+let a = $target[0];
+return /*7459*//*7459*//*7459*/cons/*<7459*/(/*7459*//*7460*/a/*<7460*/)/*<7459*/(/*7459*//*7461*/res/*<7461*/)/*<7459*/
+}
+}
+return /*7468*//*7468*//*7469*/concat/*<7469*/(/*7468*//*7470*//*7471*/bag$slto_list/*<7471*/(/*7470*//*7472*/bag/*<7472*/)/*<7470*/)/*<7468*/(/*7468*//*7473*/res/*<7473*/)/*<7468*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7450');})(/*!*//*7452*/bag/*<7452*/)/*<7450*//*<7445*//*<7445*/)/*<7441*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7383');})(/*!*//*7385*/bag/*<7385*/)/*<7383*//*<7377*/;
+
 const pat_names = /*7177*/(pat) => /*7183*/(($target) => {
 if ($target.type === "pany") {
 return /*7208*/set$slnil/*<7208*/
@@ -1834,7 +1886,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 6925');})(/*!*//
 
 const externals_type = /*7334*/(bound) => /*7334*/(type) => /*7342*//*7342*//*7346*/set$sldiff/*<7346*/(/*7342*//*7347*//*7349*/type_free/*<7349*/(/*7347*//*7350*/type/*<7350*/)/*<7347*/)/*<7342*/(/*7342*//*7352*/bound/*<7352*/)/*<7342*//*<7334*//*<7334*/;
 
-const externals_stmt = /*7289*/(stmt) => /*7296*/(($target) => {
+const externals_stmt = /*7289*/(stmt) => /*7505*//*7506*/bag$slto_list/*<7506*/(/*7505*//*7296*/(($target) => {
 if ($target.type === "sdeftype") {
 {
 let string = $target[0];
@@ -1877,7 +1929,7 @@ return /*7368*//*7368*//*7369*/externals/*<7369*/(/*7368*//*7370*/set$slnil/*<73
 }
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 7296');})(/*!*//*7299*/stmt/*<7299*/)/*<7296*//*<7289*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7296');})(/*!*//*7299*/stmt/*<7299*/)/*<7296*/)/*<7505*//*<7289*/;
 
 const subst_to_string = /*6304*/(subst) => /*6330*//*6330*//*6331*/join/*<6331*/(/*6330*//*6334*/"\n"/*<6334*/)/*<6330*/(/*6330*//*6313*//*6313*//*6314*/map/*<6314*/(/*6313*//*6310*//*6311*/map$slto_list/*<6311*/(/*6310*//*6312*/subst/*<6312*/)/*<6310*/)/*<6313*/(/*6313*//*6315*/($fn_arg) => /*6315*/(($target) => {
 if ($target.type === ",") {
@@ -1892,4 +1944,4 @@ return /*6322*/`${/*6324*/k/*<6324*/} : ${/*6326*//*6328*/type_to_string_raw/*<6
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6315');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6315*//*<6315*/)/*<6313*/)/*<6330*//*<6304*/;
 
 const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
-return {type: 'fns', at, bag$sland, basic, builtin_env, compose_subst, earlier_subst, externals, externals_stmt, externals_type, foldl, foldr, generalize, infer, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}
+return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, foldl, foldr, generalize, infer, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}

@@ -7,7 +7,12 @@ import { NUIState } from '../../custom/UIState';
 import { goLeftUntil } from '../../../src/state/navigate';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
-import { Store, WithStore, useGlobalState, useStore } from '../../custom/Store';
+import {
+    Store,
+    WithStore,
+    useGlobalState,
+    useStore,
+} from '../../custom/store/Store';
 import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
 import { valueToString } from './reduce';

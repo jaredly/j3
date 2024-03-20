@@ -6,7 +6,7 @@ import { getNestedNodes, NNode } from '../../src/state/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
-import { useGetStore, useNode, Values } from './Store';
+import { useGetStore, useNode, Values } from './store/Store';
 import equal from 'fast-deep-equal';
 import { RichText } from './RichText';
 

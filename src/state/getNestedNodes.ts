@@ -5,7 +5,7 @@ import { Path, PathChild } from './path';
 import { ONode } from './types';
 import React from 'react';
 import { RichText } from '../../web/custom/RichText';
-import { Store } from '../../web/custom/Store';
+import { Store } from '../../web/custom/store/Store';
 
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';

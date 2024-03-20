@@ -6,7 +6,7 @@ import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
 import { Map, NsMap } from '../../src/types/mcst';
-import { NUIResults, Store } from './Store';
+import { NUIResults, Store } from './store/Store';
 import { FullEvalator } from '../ide/ground-up/Evaluators';
 
 export type MetaData = {
