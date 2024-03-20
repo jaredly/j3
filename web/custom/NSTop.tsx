@@ -18,6 +18,7 @@ import {
     FullEvalator,
     LocError,
     bootstrap,
+    Display,
 } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
 import { useExpanded, useGetStore, useNode } from './store/Store';
@@ -75,7 +76,7 @@ export function NSTop({
     results: Results;
     ns: RealizedNamespace;
     selections: Cursor[];
-    produce: { [key: number]: string | JSX.Element | LocError | MyEvalError };
+    produce: { [key: number]: Display };
     drag: Drag;
     debug: boolean;
 }) {
@@ -217,7 +218,7 @@ export function NSTop({
 }
 
 const renderProduce = (
-    value: LocError | string | JSX.Element | MyEvalError,
+    value: Display,
     state: NUIState,
     dispatch: React.Dispatch<Action>,
 ) => {

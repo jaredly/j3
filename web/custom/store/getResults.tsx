@@ -78,15 +78,12 @@ export const getResults = <Env, Stmt, Expr>(
 
     results.env = evaluator.init();
     sorted.forEach((group) => {
-        if (group.length > 1) {
-            for (let node of group) {
-                if (node.top.plugin) {
-                    results.produce[node.node.loc] =
-                        'plugin cant be part of dependency cycle';
-                }
-            }
-        }
-        group.forEach(({ top: { plugin }, node, stmt, names }) => {
+        if (group.length === 1) {
+            const {
+                top: { plugin },
+                node,
+                stmt,
+            } = group[0];
             if (plugin) {
                 results.produce[node.loc] = 'evaluated by plugin';
                 const pid = typeof plugin === 'string' ? plugin : plugin.id;
@@ -105,18 +102,36 @@ export const getResults = <Env, Stmt, Expr>(
                     options,
                 );
             } else {
-                if (node) {
-                    const res = evaluator.addStatement(
-                        stmt,
-                        results.env!,
-                        state.meta,
-                        results.traces,
-                    );
-                    results.env = res.env;
-                    results.produce[node.loc] = res.display;
-                }
+                const res = evaluator.addStatement(
+                    stmt,
+                    results.env!,
+                    state.meta,
+                    results.traces,
+                );
+                results.env = res.env;
+                results.produce[node.loc] = res.display;
             }
-        });
+            return;
+        }
+
+        if (!evaluator.addStatements) {
+            group.forEach((node) => {
+                results.produce[node.id] = `Evaluator can't handle cycles`;
+            });
+        } else {
+            const stmts: { [key: number]: Stmt } = {};
+            group.forEach((node) => {
+                stmts[node.id] = node.stmt;
+            });
+            const { env, display } = evaluator.addStatements(
+                stmts,
+                results.env!,
+                state.meta,
+                results.traces,
+            );
+            results.env = env;
+            Object.assign(results.produce, display);
+        }
     });
 
     // findTops(state).forEach(({ top, hidden, plugin }) => {

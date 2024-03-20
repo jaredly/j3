@@ -20,6 +20,7 @@ import {
     MyEvalError,
     FullEvalator,
     LocError,
+    Display,
 } from '../ide/ground-up/Evaluators';
 
 export function CardRoot({
@@ -38,7 +39,7 @@ export function CardRoot({
     state: NUIState;
     dispatch: React.Dispatch<Action>;
     results: Results;
-    produce: { [key: number]: string | JSX.Element | LocError | MyEvalError };
+    produce: { [key: number]: Display };
     ev: FullEvalator<any, any, any> | void | null;
 }) {
     const selections = React.useMemo(

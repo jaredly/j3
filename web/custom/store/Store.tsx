@@ -27,6 +27,7 @@ import {
     MyEvalError,
     bootstrap,
     repr,
+    Display as Produce,
 } from '../../ide/ground-up/Evaluators';
 import { goRight } from '../../../src/state/navigate';
 import { cmpFullPath } from '../../../src/state/path';
@@ -35,7 +36,7 @@ export type NUIResults = {
     errors: { [loc: number]: string[] };
     display: Display;
     hashNames: { [loc: string]: string };
-    produce: { [key: string]: JSX.Element | string | LocError | MyEvalError };
+    produce: { [key: string]: Produce };
     env: any;
     traces: { [loc: number]: { [loc: number]: any[] } };
     pluginResults: { [nsLoc: number]: any };

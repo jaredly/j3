@@ -79,6 +79,8 @@ export class LocError extends Error {
 }
 
 export type Errors = { [key: number]: string[] };
+export type Display = JSX.Element | string | LocError | MyEvalError;
+
 export type FullEvalator<Env, Stmt, Expr> = {
     id: string;
     init(): Env;
@@ -86,12 +88,18 @@ export type FullEvalator<Env, Stmt, Expr> = {
     parseExpr(node: Node, errors: Errors): Expr | void;
     dependencies(stmt: Stmt): { name: string; loc: number }[];
     stmtNames(stmt: Stmt): string[];
+    addStatements?(
+        stmts: { [key: number]: Stmt },
+        env: Env,
+        meta: MetaDataMap,
+        trace: TraceMap,
+    ): { env: Env; display: { [key: number]: Display } };
     addStatement(
         stmt: Stmt,
         env: Env,
         meta: MetaDataMap,
         trace: TraceMap,
-    ): { env: Env; display: JSX.Element | string | LocError | MyEvalError };
+    ): { env: Env; display: Display };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState, target?: number): { js: string; errors: Errors };

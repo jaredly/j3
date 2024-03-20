@@ -3,7 +3,7 @@ import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
 import { Store } from '../../custom/store/Store';
 import { pathForIdx } from './CommandPalette';
-import { LocError, MyEvalError } from './Evaluators';
+import { LocError, MyEvalError, Display as Produce } from './Evaluators';
 import { TraceMap } from './loadEv';
 
 export function renderTraces(
@@ -11,9 +11,7 @@ export function renderTraces(
         errors: { [loc: number]: string[] };
         display: Display;
         hashNames: { [loc: string]: string };
-        produce: {
-            [key: string]: string | JSX.Element | LocError | MyEvalError;
-        };
+        produce: { [key: string]: Produce };
         env: any;
         traces: TraceMap;
         pluginResults: { [nsLoc: number]: any };
