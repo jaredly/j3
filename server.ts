@@ -171,19 +171,17 @@ createServer(async (req, res) => {
         }
         mkdirSync(path.dirname(full), { recursive: true });
         let state: NUIState = JSON.parse(await readBody(req));
+        const last = state.history[state.history.length - 1].ts;
         state = compressState(state);
 
         const raw = JSON.stringify(state);
         if (existsSync(full)) {
             const prev: NUIState = JSON.parse(readFileSync(full, 'utf-8'));
-            const last = state.history[state.history.length - 1];
             const plast = prev.history[prev.history.length - 1];
-            if (plast.ts > last.ts) {
+            if (plast.ts > last) {
                 console.warn(
                     `AHH we lost some history somehow: plast vs last: `,
-                    new Date(plast.ts).toLocaleTimeString(),
-                    new Date(last.ts).toLocaleTimeString(),
-                    // prev.history.length - state.history.length,
+                    plast.ts - last,
                     // 'items',
                 );
                 writeFileSync(full + '.bad-' + Date.now(), raw);

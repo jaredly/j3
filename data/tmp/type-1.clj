@@ -1,3 +1,38 @@
+(** ## Prelude
+    some handy functions **)
+
+(defn map [values f]
+    (match values
+        []           []
+        [one ..rest] [(f one) ..(map rest f)]))
+
+(defn mapi [i values f]
+    (match values
+        []           []
+        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+
+(defn zip [one two]
+    (match (, one two)
+        (, [] [])               []
+        (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
+        _                       []))
+
+(defn foldl [init items f]
+    (match items
+        []           init
+        [one ..rest] (foldl (f init one) rest f)))
+
+(defn foldr [init items f]
+    (match items
+        []           init
+        [one ..rest] (f (foldr init rest f) one)))
+
+(foldr 0 [1 2 3] (fn [a b] b))
+
+(foldl 0 [1 2 3] (fn [a b] b))
+
+(defn map-without [map set] (foldr map (set/to-list set) map/rm))
+
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
@@ -44,9 +79,36 @@
 
 (def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
 
+(defn unwrap-fn [t]
+    (match t
+        (tapp (tapp (tcon "->" _) a _) b _) (let [(, args res) (unwrap-fn b)] (, [a ..args] res))
+        _                                   (, [] t)))
+
 (defn unwrap-app [t]
     (match t
-        (tapp (tapp (tcon "->")))))
+        (tapp a b _) (let [(, target args) (unwrap-app a)] (, target [b ..args]))
+        _            (, t [])))
+
+(defn join [sep arr]
+    (match arr
+        []           ""
+        [one]        one
+        [one ..rest] "${one}${sep}${(join sep rest)}"))
+
+(defn rev [arr col]
+    (match arr
+        []           col
+        [one]        [one ..col]
+        [one ..rest] (rev rest [one ..col])))
+
+(rev [1 2 3] [])
+
+(defn tts-list [args free]
+    (foldl
+        (, [] free)
+            args
+            (fn [(, args free) a]
+            (let [(, a free) (tts-inner a free)] (, [a ..args] free)))))
 
 (defn tts-inner [t free]
     (match t
@@ -56,15 +118,33 @@
                                                     none     (let [name (at letters idx "_")]
                                                                  (, name (, (map/set fmap s name) (+ 1 idx))))))
         (tcon s _)                          (, s free)
-        (tapp (tapp (tcon "->" _) a _) b _) (let [(, one free) (tts-inner a free) (, two free) (tts-inner b free)]
-                                                (, "(fn [${one}] ${two})" free))
-        (tapp a b _)                        (let [(, one free) (tts-inner a free) (, two free) (tts-inner b free)]
-                                                (, "(${one} ${two})" free))))
+        (tapp (tapp (tcon "->" _) a _) b _) (let [
+                                                (, args r)    (unwrap-fn b)
+                                                args          [a ..args]
+                                                (, args free) (tts-list args free)
+                                                (, two free)  (tts-inner r free)]
+                                                (, "(fn [${(join " " (rev args []))}] ${two})" free))
+        (tapp a b _)                        (let [
+                                                (, target args) (unwrap-app a)
+                                                args            [b ..args]
+                                                args            (rev args [])
+                                                (, args free)   (tts-list args free)
+                                                (, one free)    (tts-inner target free)]
+                                                (, "(${one} ${(join " " (rev args []))})" free))))
 
 (defn type-to-string [t]
     (let [(, text _) (tts-inner t (, map/nil 0))] text))
 
 (type-to-string (tapp (tapp (tcon "->" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
+
+(type-to-string
+    (tapp (tapp (tcon "cons" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
+
+(type-to-string
+    (tapp
+        (tapp (tcon "->" 0) (tvar "a" 0) 0)
+            (tapp (tapp (tcon "->" 0) (tvar "b" 0) 0) (tvar "a" 0) 0)
+            0))
 
 (defn type-with-free [type free]
     (match type
@@ -73,41 +153,6 @@
                          (tvar s l)
                              type)
         (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
-
-(** ## Prelude
-    some handy functions **)
-
-(defn map [values f]
-    (match values
-        []           []
-        [one ..rest] [(f one) ..(map rest f)]))
-
-(defn mapi [i values f]
-    (match values
-        []           []
-        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
-
-(defn zip [one two]
-    (match (, one two)
-        (, [] [])               []
-        (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
-        _                       []))
-
-(defn foldl [init items f]
-    (match items
-        []           init
-        [one ..rest] (foldl (f init one) rest f)))
-
-(defn foldr [init items f]
-    (match items
-        []           init
-        [one ..rest] (f (foldr init rest f) one)))
-
-(foldr 0 [1 2 3] (fn [a b] b))
-
-(foldl 0 [1 2 3] (fn [a b] b))
-
-(defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
 (** ## Types for inference **)
 
@@ -455,38 +500,40 @@
 
 (defn infer-show [tenv x] (type-to-string (infer tenv x)))
 
+(infer-show basic (@ (let [(, a b) (, 2 true)] (, a b))))
+
 (,
-    (fn [x] (type-to-string (infer basic x)))
-        [(, (@ +) "(int) -> (int) -> int")
+    (infer-show basic)
+        [(, (@ +) "(fn [int int] int)")
         (, (@ (let [a 1] a)) "int")
-        (, (@ (let [(, a b) (, 2 true)] (, a b))) "((, int) bool)")
+        (, (@ (let [(, a b) (, 2 true)] (, a b))) "(, int bool)")
         (, (@ 123) "int")
-        (, (@ (fn [a] a)) "(a) -> a")
-        (, (@ (fn [a] (+ 2 a))) "(int) -> int")
+        (, (@ (fn [a] a)) "(fn [a] a)")
+        (, (@ (fn [a] (+ 2 a))) "(fn [int] int)")
         (,
         (@
             (match 1
                 1 1))
             "int")
         ; Exploration
-        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "((, int) (a) -> a)")
-        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(a) -> a")
+        (, (@ (let [mid (, 1 (fn [x] x))] mid)) "(, int (fn [a] a))")
+        (, (@ (let [(, a b) (, 1 (fn [x] x)) n (b 2)] b)) "(fn [a] a)")
         (,
         (@ (let [m (, 1 (fn [x] x)) (, a b) m z (b 2)] (, m b)))
-            "((, ((, int) (a) -> a)) (b) -> b)")
+            "(, (, int (fn [a] a)) (fn [b] b))")
         (,
         (@ (fn [n] (let [(, a b) (, 1 (fn [x] n)) m (n 2)] b)))
-            "((int) -> a) -> (b) -> (int) -> a")
+            "(fn [(fn [int] a) b int] a)")
         ; Tests from the paper
-        (, (@ (let [id (fn [x] x)] id)) "(a) -> a")
-        (, (@ (let [id (fn [x] x)] (id id))) "(a) -> a")
-        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(a) -> a")
-        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(a) -> a")
-        (, (@ (fn [x] (let [y x] y))) "(a) -> a")
-        (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(a) -> a")
+        (, (@ (let [id (fn [x] x)] id)) "(fn [a] a)")
+        (, (@ (let [id (fn [x] x)] (id id))) "(fn [a] a)")
+        (, (@ (let [id (fn [x] (let [y x] y))] (id id))) "(fn [a] a)")
+        (, (@ (let [id (fn [x] (let [y x] y))] id)) "(fn [a] a)")
+        (, (@ (fn [x] (let [y x] y))) "(fn [a] a)")
+        (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(fn [a] a)")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
         (, (@ (let [id (fn [x] (x x))] id)) )
-        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "((bool) -> a) -> b")
+        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] b)")
         (, (@ (2 2)) )])
 
 (defn infer-stmt [tenv' stmt]

@@ -153,6 +153,25 @@ export const Outside = () => {
     );
 };
 
+const onlyLast = <T,>(fn: (arg: T) => void, time: number) => {
+    let last = Date.now();
+    let tid: Timer | null = null;
+    return (arg: T) => {
+        if (tid != null) clearTimeout(tid);
+        const now = Date.now();
+        if (now - last > time) {
+            last = now;
+            return fn(arg);
+        }
+        tid = setTimeout(() => {
+            tid = null;
+            last = Date.now();
+            fn(arg);
+        }, time - (now - last));
+    };
+};
+
+let lastSaveTime = Date.now();
 export const Loader = ({
     id,
     listing,
@@ -164,7 +183,13 @@ export const Loader = ({
 
     const save = useMemo(
         () =>
-            debounce<NUIState>((state) => {
+            onlyLast<NUIState>((state) => {
+                const now = Date.now();
+                console.log(`Time since last save`, now - lastSaveTime);
+                if (now - lastSaveTime < 200) {
+                    throw new Error(`saving too fast???`);
+                }
+                lastSaveTime = now;
                 latest.current = state;
                 return saveState(id, state);
             }, 500),
