@@ -651,6 +651,46 @@
         (, [(@! (defn fib [x] (+ 1 (fib (+ 2 x))))) (@! fib)] "(fn [int] int)")
         (, [(@! (, 1 2))] "(, int int)")])
 
+(** ## Other analysis **)
+
+(deftype (bag a) (one a) (many (array (bag a))) empty)
+
+(defn bag/and [first second]
+    (match (, first second)
+        (, empty a)             a
+        (, a empty)             a
+        (, (many [a]) (many b)) (many [a ..b])
+        (, (many a) (many [b])) (many [b ..a])
+        _                       (many [first second])))
+
+(defn pat-names [pat]
+    (match pat
+        (pany _)               set/nil
+        (pvar name l)          (set/add set/nil name)
+        (pcon string args int) (foldl
+                                   set/nil
+                                       args
+                                       (fn [bound arg] (set/merge bound (pat-names arg))))
+        (pstr string int)      set/nil
+        (pprim prim int)       set/nil))
+
+(pat-names (@p (cons a a)))
+
+(defn externals [bound expr]
+    (match expr
+        (evar name l)               (if (set/has bound name)
+                                        empty
+                                            (one (, name l)))
+        (eprim prim l)              empty
+        (estr first templates int)  (many (map templates (fn [(,, expr _ _)] (externals bound expr))))
+        (equot expr int)            empty
+        (equotquot cst int)         empty
+        (elambda name int body int) (externals (set/add bound name) body)
+        (eapp target arg int)       (bag/and (externals bound target) (externals bound arg))
+        (ematch expr cases int)     (bag/and
+                                        (externals bound expr)
+                                            (foldl empty cases (fn [bag (, pat body)] )))))
+
 (defn subst-to-string [subst]
     (join
         "\n"
