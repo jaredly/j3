@@ -642,11 +642,14 @@ const initialState = (): NUIState => {
 };
 export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 export const saveState = async (id: string, state: NUIState) => {
-    await fetch(urlForId(id), {
+    const res = await fetch(urlForId(id), {
         method: 'POST',
         body: JSON.stringify(state),
         headers: { 'Content-type': 'application/json' },
     });
+    if (res.status !== 200) {
+        alert(`Error ${res.status} while saving state! ${await res.text()}`);
+    }
 };
 export function loadState(state: NUIState = initialState()) {
     console.log(
@@ -738,7 +741,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
         next.history = state.history.concat([item]);
     }
     try {
-        verifyState(next);
+        // verifyState(next);
     } catch (err) {
         console.warn(`Action failed`);
         console.log(action);

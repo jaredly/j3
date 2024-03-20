@@ -154,17 +154,19 @@ createServer(async (req, res) => {
     const full = path.join(base, req.url!);
 
     if (req.method === 'POST') {
-        res.writeHead(200, headers('application/json'));
         if (!req.url!.startsWith('/tmp/')) {
+            res.writeHead(400, headers('text/plain'));
             return res.end('Not in the tmp directory: ' + req.url!);
         }
 
         console.log('posting', full);
         if (full.endsWith('.js')) {
+            res.writeHead(200, headers('text/plain'));
             writeFileSync(full, await readBody(req));
             return res.end('Saved ' + req.url!);
         }
         if (!full.endsWith('.json')) {
+            res.writeHead(400, headers('text/plain'));
             return res.end('Need an end ok');
         }
         mkdirSync(path.dirname(full), { recursive: true });
@@ -180,7 +182,12 @@ createServer(async (req, res) => {
                     prev.history.length - state.history.length,
                     'items',
                 );
-                copyFileSync(full, full + '.bak-' + Date.now());
+                writeFileSync(
+                    full + '.bad-' + Date.now(),
+                    JSON.stringify(state),
+                );
+                res.writeHead(400, headers('text/plain'));
+                return res.end('History regression!');
             }
         }
         writeFileSync(full, JSON.stringify(state));
@@ -194,7 +201,7 @@ createServer(async (req, res) => {
             console.log('Agh what');
             console.error(err);
         }
-        res.writeHead(200, headers('application/json'));
+        res.writeHead(200, headers('text/plain'));
         return res.end('Saved ' + req.url!);
     }
 

@@ -35,14 +35,27 @@
         (sdef string int expr int)
         (sexpr expr int))
 
-(defn tts-inner [t (, fmap idx)]
+(defn at [arr i default_]
+    (match arr
+        []           default_
+        [one ..rest] (if (= i 0)
+                         one
+                             (at rest (- i 1) default_))))
+
+(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
+
+(defn tts-inner [t free]
     (match t
-        (tvar s _)                          (match (map/get fmap s)
-                                                (some s) (, s (, fmap idx))
-                                                none     )
-        (tcon s _)                          s
-        (tapp (tapp (tcon "->" _) a _) b _) "(${(type-to-string a)}) -> ${(type-to-string b)}"
-        (tapp a b _)                        "(${(type-to-string a)} ${(type-to-string b)})"))
+        (tvar s _)                          (let [(, fmap idx) free]
+                                                (match (map/get fmap s)
+                                                    (some s) (, s free)
+                                                    none     (let [name (at letters idx "_")]
+                                                                 (, name (, (map/set fmap s name) (+ 1 idx))))))
+        (tcon s _)                          (, s free)
+        (tapp (tapp (tcon "->" _) a _) b _) (let [(, one free) (tts-inner a free) (, two free) (tts-inner b free)]
+                                                (, "(${one}) -> ${two}" free))
+        (tapp a b _)                        (let [(, one free) (tts-inner a free) (, two free) (tts-inner b free)]
+                                                (, "(${one} ${two})" free))))
 
 (defn type-to-string [t]
     (let [(, text _) (tts-inner t (, map/nil 0))] text))
@@ -478,9 +491,9 @@
                                                       (, self nidx)    (new-type-var name nidx)
                                                       self-bound       (tenv/set-type tenv' name (scheme set/nil self))
                                                       (,, s t nidx)    (t-expr self-bound expr 0)
-                                                      (, u-subst nidx) (unify self t n)
+                                                      (, u-subst nidx) (unify self t nidx)
                                                       s2               (compose-subst s u-subst)
-                                                      t                (type-apply s t)]
+                                                      t                (type-apply s2 t)]
                                                       (tenv/set-type tenv' name (generalize tenv' t)))
         (sexpr expr l)                            (let [
                                                       (** this "infer" is for side-effects only **)
@@ -554,6 +567,8 @@
         basic)
 
 (several [(@! (defn fib [x] (+ 1 (fib (+ 2 x)))))] (@ fib) basic)
+
+(several [(@! (defn what [f] (f (what f) 1)))] (@ what) basic)
 
 (@! (deftype (array a) (cons a (array a)) (nil)))
 

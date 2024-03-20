@@ -5,6 +5,12 @@
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
+(defn what [f] (f (what f) 1))
+
+
+
+what
+
 (foldr 0 [1 2] +)
 
 foldr
