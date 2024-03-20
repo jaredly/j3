@@ -446,7 +446,15 @@ export function selfCompileAndEval(
 }
 export function extractBuiltins(raw: string) {
     const names: string[] = getConstNames(raw);
-    const res = new Function('', raw + `\nreturn {${names.join(', ')}}`)();
+    let res: any;
+    try {
+        res = new Function('', raw + `\nreturn {${names.join(', ')}}`)();
+    } catch (err) {
+        console.log('Failed to extract builtins');
+        console.error(err);
+        console.log(raw);
+        return {};
+    }
     Object.keys(res).forEach((name) => {
         let desan = name;
         Object.entries(res.sanMap).forEach(([key, value]) => {

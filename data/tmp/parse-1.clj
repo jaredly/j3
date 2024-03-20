@@ -498,9 +498,9 @@
                     trace
                     (match expr
                     (estr first tpls l)      (match tpls
-                                                 [] "\"${(escape-string (unescape-string first))}\""
+                                                 [] "\"${(escape-string (unescapeString first))}\""
                                                  _  "`${
-                                                        (escape-string (unescape-string first))
+                                                        (escape-string (unescapeString first))
                                                         }${
                                                         (join
                                                             ""
@@ -511,7 +511,7 @@
                                                                         "${${
                                                                             (compile expr trace)
                                                                             }}${
-                                                                            (escape-string (unescape-string suffix))
+                                                                            (escape-string (unescapeString suffix))
                                                                             }"))))
                                                         }`")
                     (eprim prim l)           (match prim
@@ -572,6 +572,8 @@
         (, (@@ "hello") "hello")
         (, (@@ "\"") "\"")
         (, (@@ "\n") "\n")
+        (, (@@ "\\n") "\\n")
+        (, (@@ "\\\n") "\\\n")
         (, (@@ (+ 2 3)) 5)
         (,
         (@@

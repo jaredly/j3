@@ -2,7 +2,7 @@ return {type: 'bootstrap', stmts: [
   {
     "0": "builtins",
     "1": {
-      "0": "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n",
+      "0": "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\n\nconst unescapeString = (text) => text.replace(/\\\\\\\\./g, (matched) => {\n    if (matched[1] === 'n') {\n        return '\\\\n';\n    }\n    if (matched[1] === 't') return '\\\\t';\n    if (matched[1] === 'r') return '\\\\r';\n    return matched[1];\n});\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n",
       "1": {
         "type": "nil"
       },
@@ -10,6 +10,42 @@ return {type: 'bootstrap', stmts: [
     },
     "type": "sdef",
     "loc": 403
+  },
+  {
+    "0": {
+      "0": "\\\\",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4622,
+    "type": "sexpr",
+    "loc": 4622
+  },
+  {
+    "0": {
+      "0": "\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4625,
+    "type": "sexpr",
+    "loc": 4625
+  },
+  {
+    "0": {
+      "0": "\\\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4628,
+    "type": "sexpr",
+    "loc": 4628
   },
   {
     "0": "ast",
@@ -3135,7 +3171,7 @@ return {type: 'bootstrap', stmts: [
                   "type": "evar"
                 },
                 "1": {
-                  "0": "\\\\\\\\",
+                  "0": "\\\\n",
                   "1": {
                     "type": "nil"
                   },
@@ -3144,7 +3180,7 @@ return {type: 'bootstrap', stmts: [
                 "type": "eapp"
               },
               "1": {
-                "0": "\\\\",
+                "0": "\\n",
                 "1": {
                   "type": "nil"
                 },
@@ -3167,7 +3203,7 @@ return {type: 'bootstrap', stmts: [
                     "type": "evar"
                   },
                   "1": {
-                    "0": "\\\\\"",
+                    "0": "\\\\\\\\",
                     "1": {
                       "type": "nil"
                     },
@@ -3176,7 +3212,7 @@ return {type: 'bootstrap', stmts: [
                   "type": "eapp"
                 },
                 "1": {
-                  "0": "\\\"",
+                  "0": "\\\\",
                   "1": {
                     "type": "nil"
                   },
@@ -3199,7 +3235,7 @@ return {type: 'bootstrap', stmts: [
                       "type": "evar"
                     },
                     "1": {
-                      "0": "\\\\n",
+                      "0": "\\\\\"",
                       "1": {
                         "type": "nil"
                       },
@@ -3208,7 +3244,7 @@ return {type: 'bootstrap', stmts: [
                     "type": "eapp"
                   },
                   "1": {
-                    "0": "\\n",
+                    "0": "\\\"",
                     "1": {
                       "type": "nil"
                     },
@@ -3253,6 +3289,87 @@ return {type: 'bootstrap', stmts: [
     "1": 4526,
     "type": "sexpr",
     "loc": 4526
+  },
+  {
+    "0": {
+      "0": {
+        "0": "escape-string",
+        "type": "evar"
+      },
+      "1": {
+        "0": "\\\\n",
+        "1": {
+          "type": "nil"
+        },
+        "type": "estr"
+      },
+      "type": "eapp"
+    },
+    "1": 4590,
+    "type": "sexpr",
+    "loc": 4590
+  },
+  {
+    "0": {
+      "0": "\\\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4595,
+    "type": "sexpr",
+    "loc": 4595
+  },
+  {
+    "0": {
+      "0": "\\",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4598,
+    "type": "sexpr",
+    "loc": 4598
+  },
+  {
+    "0": {
+      "0": "\\\\",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4601,
+    "type": "sexpr",
+    "loc": 4601
+  },
+  {
+    "0": {
+      "0": {
+        "0": "unescape-string",
+        "type": "evar"
+      },
+      "1": {
+        "0": {
+          "0": "escape-string",
+          "type": "evar"
+        },
+        "1": {
+          "0": "\\\\n",
+          "1": {
+            "type": "nil"
+          },
+          "type": "estr"
+        },
+        "type": "eapp"
+      },
+      "type": "eapp"
+    },
+    "1": 4607,
+    "type": "sexpr",
+    "loc": 4607
   },
   {
     "0": {
@@ -4281,7 +4398,7 @@ return {type: 'bootstrap', stmts: [
                           },
                           "1": {
                             "0": {
-                              "0": "unescape-string",
+                              "0": "unescapeString",
                               "type": "evar"
                             },
                             "1": {
@@ -4320,7 +4437,7 @@ return {type: 'bootstrap', stmts: [
                             },
                             "1": {
                               "0": {
-                                "0": "unescape-string",
+                                "0": "unescapeString",
                                 "type": "evar"
                               },
                               "1": {
@@ -5537,6 +5654,54 @@ return {type: 'bootstrap', stmts: [
   },
   {
     "0": {
+      "0": "\\\"",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4570,
+    "type": "sexpr",
+    "loc": 4570
+  },
+  {
+    "0": {
+      "0": "\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4579,
+    "type": "sexpr",
+    "loc": 4579
+  },
+  {
+    "0": {
+      "0": "\\\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4573,
+    "type": "sexpr",
+    "loc": 4573
+  },
+  {
+    "0": {
+      "0": "\\\\\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4576,
+    "type": "sexpr",
+    "loc": 4576
+  },
+  {
+    "0": {
       "0": {
         "0": {
           "0": ",",
@@ -5737,39 +5902,22 @@ return {type: 'bootstrap', stmts: [
                         },
                         "1": {
                           "0": {
-                            "0": {
-                              "0": {
-                                "0": "+",
-                                "type": "evar"
-                              },
-                              "1": {
-                                "0": {
-                                  "0": 2,
-                                  "type": "pint"
-                                },
-                                "type": "eprim"
-                              },
-                              "type": "eapp"
-                            },
+                            "0": "\\\\\\n",
                             "1": {
-                              "0": {
-                                "0": 3,
-                                "type": "pint"
-                              },
-                              "type": "eprim"
+                              "type": "nil"
                             },
-                            "type": "eapp"
+                            "type": "estr"
                           },
                           "type": "equot"
                         },
                         "type": "eapp"
                       },
                       "1": {
-                        "0": {
-                          "0": 5,
-                          "type": "pint"
+                        "0": "\\\\\\n",
+                        "1": {
+                          "type": "nil"
                         },
-                        "type": "eprim"
+                        "type": "estr"
                       },
                       "type": "eapp"
                     },
@@ -5789,65 +5937,18 @@ return {type: 'bootstrap', stmts: [
                           },
                           "1": {
                             "0": {
-                              "0": {
-                                "0": "pany",
-                                "type": "evar"
-                              },
+                              "0": "\\\\\"",
                               "1": {
-                                "0": {
-                                  "0": {
-                                    "0": "pany",
-                                    "1": {
-                                      "type": "nil"
-                                    },
-                                    "type": "pcon"
-                                  },
-                                  "1": {
-                                    "0": "any",
-                                    "1": {
-                                      "type": "nil"
-                                    },
-                                    "type": "estr"
-                                  },
-                                  "type": ","
-                                },
-                                "1": {
-                                  "0": {
-                                    "0": {
-                                      "0": "pvar",
-                                      "1": {
-                                        "0": {
-                                          "0": "name",
-                                          "type": "pvar"
-                                        },
-                                        "1": {
-                                          "type": "nil"
-                                        },
-                                        "type": "cons"
-                                      },
-                                      "type": "pcon"
-                                    },
-                                    "1": {
-                                      "0": "name",
-                                      "type": "evar"
-                                    },
-                                    "type": ","
-                                  },
-                                  "1": {
-                                    "type": "nil"
-                                  },
-                                  "type": "cons"
-                                },
-                                "type": "cons"
+                                "type": "nil"
                               },
-                              "type": "ematch"
+                              "type": "estr"
                             },
                             "type": "equot"
                           },
                           "type": "eapp"
                         },
                         "1": {
-                          "0": "any",
+                          "0": "\\\\\"",
                           "1": {
                             "type": "nil"
                           },
@@ -5871,23 +5972,9 @@ return {type: 'bootstrap', stmts: [
                             },
                             "1": {
                               "0": {
-                                "0": "a",
+                                "0": "\\\\'",
                                 "1": {
-                                  "0": {
-                                    "0": {
-                                      "0": {
-                                        "0": 2,
-                                        "type": "pint"
-                                      },
-                                      "type": "eprim"
-                                    },
-                                    "1": "b",
-                                    "type": ","
-                                  },
-                                  "1": {
-                                    "type": "nil"
-                                  },
-                                  "type": "cons"
+                                  "type": "nil"
                                 },
                                 "type": "estr"
                               },
@@ -5896,7 +5983,7 @@ return {type: 'bootstrap', stmts: [
                             "type": "eapp"
                           },
                           "1": {
-                            "0": "a2b",
+                            "0": "\\\\'",
                             "1": {
                               "type": "nil"
                             },
@@ -5921,33 +6008,22 @@ return {type: 'bootstrap', stmts: [
                               "1": {
                                 "0": {
                                   "0": {
-                                    "0": "a",
+                                    "0": {
+                                      "0": "+",
+                                      "type": "evar"
+                                    },
                                     "1": {
                                       "0": {
-                                        "0": {
-                                          "0": "+",
-                                          "type": "evar"
-                                        },
-                                        "1": {
-                                          "0": "a",
-                                          "type": "evar"
-                                        },
-                                        "type": "eapp"
+                                        "0": 2,
+                                        "type": "pint"
                                       },
-                                      "1": {
-                                        "0": {
-                                          "0": 2,
-                                          "type": "pint"
-                                        },
-                                        "type": "eprim"
-                                      },
-                                      "type": "eapp"
+                                      "type": "eprim"
                                     },
-                                    "type": "elambda"
+                                    "type": "eapp"
                                   },
                                   "1": {
                                     "0": {
-                                      "0": 21,
+                                      "0": 3,
                                       "type": "pint"
                                     },
                                     "type": "eprim"
@@ -5960,7 +6036,7 @@ return {type: 'bootstrap', stmts: [
                             },
                             "1": {
                               "0": {
-                                "0": 23,
+                                "0": 5,
                                 "type": "pint"
                               },
                               "type": "eprim"
@@ -5983,61 +6059,69 @@ return {type: 'bootstrap', stmts: [
                                 },
                                 "1": {
                                   "0": {
-                                    "0": "one",
+                                    "0": {
+                                      "0": "pany",
+                                      "type": "evar"
+                                    },
                                     "1": {
                                       "0": {
-                                        "0": 1,
-                                        "type": "pint"
-                                      },
-                                      "type": "eprim"
-                                    },
-                                    "2": {
-                                      "0": "two",
-                                      "1": {
                                         "0": {
-                                          "0": 2,
-                                          "type": "pint"
-                                        },
-                                        "type": "eprim"
-                                      },
-                                      "2": {
-                                        "0": {
-                                          "0": {
-                                            "0": "+",
-                                            "type": "evar"
-                                          },
+                                          "0": "pany",
                                           "1": {
-                                            "0": {
-                                              "0": 1,
-                                              "type": "pint"
-                                            },
-                                            "type": "eprim"
+                                            "type": "nil"
                                           },
-                                          "type": "eapp"
+                                          "type": "pcon"
                                         },
                                         "1": {
-                                          "0": {
-                                            "0": 2,
-                                            "type": "pint"
+                                          "0": "any",
+                                          "1": {
+                                            "type": "nil"
                                           },
-                                          "type": "eprim"
+                                          "type": "estr"
                                         },
-                                        "type": "eapp"
+                                        "type": ","
                                       },
-                                      "type": "elet"
+                                      "1": {
+                                        "0": {
+                                          "0": {
+                                            "0": "pvar",
+                                            "1": {
+                                              "0": {
+                                                "0": "name",
+                                                "type": "pvar"
+                                              },
+                                              "1": {
+                                                "type": "nil"
+                                              },
+                                              "type": "cons"
+                                            },
+                                            "type": "pcon"
+                                          },
+                                          "1": {
+                                            "0": "name",
+                                            "type": "evar"
+                                          },
+                                          "type": ","
+                                        },
+                                        "1": {
+                                          "type": "nil"
+                                        },
+                                        "type": "cons"
+                                      },
+                                      "type": "cons"
                                     },
-                                    "type": "elet"
+                                    "type": "ematch"
                                   },
                                   "type": "equot"
                                 },
                                 "type": "eapp"
                               },
                               "1": {
-                                "0": {
-                                  "0": 3,
-                                  "type": "pint"
+                                "0": "any",
+                                "1": {
+                                  "type": "nil"
                                 },
-                                "type": "eprim"
+                                "type": "estr"
                               },
                               "type": "eapp"
                             },
@@ -6057,13 +6141,7 @@ return {type: 'bootstrap', stmts: [
                                   },
                                   "1": {
                                     "0": {
-                                      "0": {
-                                        "0": {
-                                          "0": 2,
-                                          "type": "pint"
-                                        },
-                                        "type": "eprim"
-                                      },
+                                      "0": "a",
                                       "1": {
                                         "0": {
                                           "0": {
@@ -6071,15 +6149,9 @@ return {type: 'bootstrap', stmts: [
                                               "0": 2,
                                               "type": "pint"
                                             },
-                                            "type": "pprim"
-                                          },
-                                          "1": {
-                                            "0": {
-                                              "0": 1,
-                                              "type": "pint"
-                                            },
                                             "type": "eprim"
                                           },
+                                          "1": "b",
                                           "type": ","
                                         },
                                         "1": {
@@ -6087,18 +6159,18 @@ return {type: 'bootstrap', stmts: [
                                         },
                                         "type": "cons"
                                       },
-                                      "type": "ematch"
+                                      "type": "estr"
                                     },
                                     "type": "equot"
                                   },
                                   "type": "eapp"
                                 },
                                 "1": {
-                                  "0": {
-                                    "0": 1,
-                                    "type": "pint"
+                                  "0": "a2b",
+                                  "1": {
+                                    "type": "nil"
                                   },
-                                  "type": "eprim"
+                                  "type": "estr"
                                 },
                                 "type": "eapp"
                               },
@@ -6118,19 +6190,39 @@ return {type: 'bootstrap', stmts: [
                                     },
                                     "1": {
                                       "0": {
-                                        "0": "a/b",
+                                        "0": {
+                                          "0": "a",
+                                          "1": {
+                                            "0": {
+                                              "0": {
+                                                "0": "+",
+                                                "type": "evar"
+                                              },
+                                              "1": {
+                                                "0": "a",
+                                                "type": "evar"
+                                              },
+                                              "type": "eapp"
+                                            },
+                                            "1": {
+                                              "0": {
+                                                "0": 2,
+                                                "type": "pint"
+                                              },
+                                              "type": "eprim"
+                                            },
+                                            "type": "eapp"
+                                          },
+                                          "type": "elambda"
+                                        },
                                         "1": {
                                           "0": {
-                                            "0": 2,
+                                            "0": 21,
                                             "type": "pint"
                                           },
                                           "type": "eprim"
                                         },
-                                        "2": {
-                                          "0": "a/b",
-                                          "type": "evar"
-                                        },
-                                        "type": "elet"
+                                        "type": "eapp"
                                       },
                                       "type": "equot"
                                     },
@@ -6138,7 +6230,7 @@ return {type: 'bootstrap', stmts: [
                                   },
                                   "1": {
                                     "0": {
-                                      "0": 2,
+                                      "0": 23,
                                       "type": "pint"
                                     },
                                     "type": "eprim"
@@ -6161,37 +6253,50 @@ return {type: 'bootstrap', stmts: [
                                       },
                                       "1": {
                                         "0": {
-                                          "0": {
+                                          "0": "one",
+                                          "1": {
                                             "0": {
-                                              "0": true,
-                                              "type": "pbool"
+                                              "0": 1,
+                                              "type": "pint"
                                             },
                                             "type": "eprim"
                                           },
-                                          "1": {
-                                            "0": {
+                                          "2": {
+                                            "0": "two",
+                                            "1": {
+                                              "0": {
+                                                "0": 2,
+                                                "type": "pint"
+                                              },
+                                              "type": "eprim"
+                                            },
+                                            "2": {
                                               "0": {
                                                 "0": {
-                                                  "0": true,
-                                                  "type": "pbool"
+                                                  "0": "+",
+                                                  "type": "evar"
                                                 },
-                                                "type": "pprim"
+                                                "1": {
+                                                  "0": {
+                                                    "0": 1,
+                                                    "type": "pint"
+                                                  },
+                                                  "type": "eprim"
+                                                },
+                                                "type": "eapp"
                                               },
                                               "1": {
                                                 "0": {
-                                                  "0": 1,
+                                                  "0": 2,
                                                   "type": "pint"
                                                 },
                                                 "type": "eprim"
                                               },
-                                              "type": ","
+                                              "type": "eapp"
                                             },
-                                            "1": {
-                                              "type": "nil"
-                                            },
-                                            "type": "cons"
+                                            "type": "elet"
                                           },
-                                          "type": "ematch"
+                                          "type": "elet"
                                         },
                                         "type": "equot"
                                       },
@@ -6199,7 +6304,7 @@ return {type: 'bootstrap', stmts: [
                                     },
                                     "1": {
                                       "0": {
-                                        "0": 1,
+                                        "0": 3,
                                         "type": "pint"
                                       },
                                       "type": "eprim"
@@ -6222,17 +6327,29 @@ return {type: 'bootstrap', stmts: [
                                         },
                                         "1": {
                                           "0": {
-                                            "0": "`",
+                                            "0": {
+                                              "0": {
+                                                "0": 2,
+                                                "type": "pint"
+                                              },
+                                              "type": "eprim"
+                                            },
                                             "1": {
                                               "0": {
                                                 "0": {
+                                                  "0": {
+                                                    "0": 2,
+                                                    "type": "pint"
+                                                  },
+                                                  "type": "pprim"
+                                                },
+                                                "1": {
                                                   "0": {
                                                     "0": 1,
                                                     "type": "pint"
                                                   },
                                                   "type": "eprim"
                                                 },
-                                                "1": "",
                                                 "type": ","
                                               },
                                               "1": {
@@ -6240,18 +6357,18 @@ return {type: 'bootstrap', stmts: [
                                               },
                                               "type": "cons"
                                             },
-                                            "type": "estr"
+                                            "type": "ematch"
                                           },
                                           "type": "equot"
                                         },
                                         "type": "eapp"
                                       },
                                       "1": {
-                                        "0": "`1",
-                                        "1": {
-                                          "type": "nil"
+                                        "0": {
+                                          "0": 1,
+                                          "type": "pint"
                                         },
-                                        "type": "estr"
+                                        "type": "eprim"
                                       },
                                       "type": "eapp"
                                     },
@@ -6271,44 +6388,203 @@ return {type: 'bootstrap', stmts: [
                                           },
                                           "1": {
                                             "0": {
-                                              "0": "${",
+                                              "0": "a/b",
                                               "1": {
                                                 "0": {
-                                                  "0": {
-                                                    "0": {
-                                                      "0": 1,
-                                                      "type": "pint"
-                                                    },
-                                                    "type": "eprim"
-                                                  },
-                                                  "1": "",
-                                                  "type": ","
+                                                  "0": 2,
+                                                  "type": "pint"
                                                 },
-                                                "1": {
-                                                  "type": "nil"
-                                                },
-                                                "type": "cons"
+                                                "type": "eprim"
                                               },
-                                              "type": "estr"
+                                              "2": {
+                                                "0": "a/b",
+                                                "type": "evar"
+                                              },
+                                              "type": "elet"
                                             },
                                             "type": "equot"
                                           },
                                           "type": "eapp"
                                         },
                                         "1": {
-                                          "0": "${1",
-                                          "1": {
-                                            "type": "nil"
+                                          "0": {
+                                            "0": 2,
+                                            "type": "pint"
                                           },
-                                          "type": "estr"
+                                          "type": "eprim"
                                         },
                                         "type": "eapp"
                                       },
                                       "type": "eapp"
                                     },
                                     "1": {
-                                      "0": "nil",
-                                      "type": "evar"
+                                      "0": {
+                                        "0": {
+                                          "0": "cons",
+                                          "type": "evar"
+                                        },
+                                        "1": {
+                                          "0": {
+                                            "0": {
+                                              "0": ",",
+                                              "type": "evar"
+                                            },
+                                            "1": {
+                                              "0": {
+                                                "0": {
+                                                  "0": {
+                                                    "0": true,
+                                                    "type": "pbool"
+                                                  },
+                                                  "type": "eprim"
+                                                },
+                                                "1": {
+                                                  "0": {
+                                                    "0": {
+                                                      "0": {
+                                                        "0": true,
+                                                        "type": "pbool"
+                                                      },
+                                                      "type": "pprim"
+                                                    },
+                                                    "1": {
+                                                      "0": {
+                                                        "0": 1,
+                                                        "type": "pint"
+                                                      },
+                                                      "type": "eprim"
+                                                    },
+                                                    "type": ","
+                                                  },
+                                                  "1": {
+                                                    "type": "nil"
+                                                  },
+                                                  "type": "cons"
+                                                },
+                                                "type": "ematch"
+                                              },
+                                              "type": "equot"
+                                            },
+                                            "type": "eapp"
+                                          },
+                                          "1": {
+                                            "0": {
+                                              "0": 1,
+                                              "type": "pint"
+                                            },
+                                            "type": "eprim"
+                                          },
+                                          "type": "eapp"
+                                        },
+                                        "type": "eapp"
+                                      },
+                                      "1": {
+                                        "0": {
+                                          "0": {
+                                            "0": "cons",
+                                            "type": "evar"
+                                          },
+                                          "1": {
+                                            "0": {
+                                              "0": {
+                                                "0": ",",
+                                                "type": "evar"
+                                              },
+                                              "1": {
+                                                "0": {
+                                                  "0": "`",
+                                                  "1": {
+                                                    "0": {
+                                                      "0": {
+                                                        "0": {
+                                                          "0": 1,
+                                                          "type": "pint"
+                                                        },
+                                                        "type": "eprim"
+                                                      },
+                                                      "1": "",
+                                                      "type": ","
+                                                    },
+                                                    "1": {
+                                                      "type": "nil"
+                                                    },
+                                                    "type": "cons"
+                                                  },
+                                                  "type": "estr"
+                                                },
+                                                "type": "equot"
+                                              },
+                                              "type": "eapp"
+                                            },
+                                            "1": {
+                                              "0": "`1",
+                                              "1": {
+                                                "type": "nil"
+                                              },
+                                              "type": "estr"
+                                            },
+                                            "type": "eapp"
+                                          },
+                                          "type": "eapp"
+                                        },
+                                        "1": {
+                                          "0": {
+                                            "0": {
+                                              "0": "cons",
+                                              "type": "evar"
+                                            },
+                                            "1": {
+                                              "0": {
+                                                "0": {
+                                                  "0": ",",
+                                                  "type": "evar"
+                                                },
+                                                "1": {
+                                                  "0": {
+                                                    "0": "${",
+                                                    "1": {
+                                                      "0": {
+                                                        "0": {
+                                                          "0": {
+                                                            "0": 1,
+                                                            "type": "pint"
+                                                          },
+                                                          "type": "eprim"
+                                                        },
+                                                        "1": "",
+                                                        "type": ","
+                                                      },
+                                                      "1": {
+                                                        "type": "nil"
+                                                      },
+                                                      "type": "cons"
+                                                    },
+                                                    "type": "estr"
+                                                  },
+                                                  "type": "equot"
+                                                },
+                                                "type": "eapp"
+                                              },
+                                              "1": {
+                                                "0": "${1",
+                                                "1": {
+                                                  "type": "nil"
+                                                },
+                                                "type": "estr"
+                                              },
+                                              "type": "eapp"
+                                            },
+                                            "type": "eapp"
+                                          },
+                                          "1": {
+                                            "0": "nil",
+                                            "type": "evar"
+                                          },
+                                          "type": "eapp"
+                                        },
+                                        "type": "eapp"
+                                      },
+                                      "type": "eapp"
                                     },
                                     "type": "eapp"
                                   },

@@ -9,10 +9,9 @@ import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { Store, WithStore, useGlobalState, useStore } from '../../custom/Store';
 import { Path } from '../../store';
-import { CommandPalette, pathForIdx } from './CommandPalette';
-import { LocError } from './Evaluators';
+import { CommandPalette } from './CommandPalette';
 import { valueToString } from './reduce';
-import { TraceMap } from './loadEv';
+import { renderTraces } from './renderTraces';
 
 export type Results = {
     display: Display;
@@ -324,108 +323,3 @@ const evSelect = (
         </select>
     );
 };
-
-function renderTraces(
-    results: {
-        errors: { [loc: number]: string[] };
-        display: Display;
-        hashNames: { [loc: string]: string };
-        produce: {
-            [key: string]: string | JSX.Element | LocError;
-        };
-        env: any;
-        traces: TraceMap;
-        pluginResults: { [nsLoc: number]: any };
-    },
-    state: NUIState,
-    store: Store,
-): React.ReactNode {
-    return Object.entries(results.traces).map(([top, traces]) => (
-        <div key={top} style={{ maxWidth: 500, overflow: 'auto' }}>
-            <div
-                onClick={() => {
-                    const path = pathForIdx(+top, state.regs, state.map);
-                    if (path) {
-                        store.dispatch({
-                            type: 'select',
-                            at: [{ start: path }],
-                        });
-                    }
-                }}
-            >
-                Top trace: {top}
-            </div>
-            <table>
-                <tbody>
-                    {Object.entries(traces)
-                        .flatMap(([k, v]) => v.map((v) => [k, v] as const))
-                        .sort((a, b) => a[1].at - b[1].at)
-                        .map(([key, value], i) => {
-                            const node = state.map[+key];
-                            return (
-                                <tr
-                                    key={i}
-                                    style={{ marginBottom: 5 }}
-                                    onMouseEnter={() => {
-                                        const node =
-                                            state.regs[+key]?.main ??
-                                            state.regs[+key]?.outside;
-                                        if (node) {
-                                            node.node.style.backgroundColor =
-                                                'rgba(255,0,0,0.5)';
-                                        }
-                                    }}
-                                    onMouseLeave={() => {
-                                        const node =
-                                            state.regs[+key]?.main ??
-                                            state.regs[+key]?.outside;
-                                        if (node) {
-                                            node.node.style.backgroundColor =
-                                                'unset';
-                                        }
-                                    }}
-                                >
-                                    <td>
-                                        <div
-                                            onClick={() => {
-                                                const path = pathForIdx(
-                                                    +key,
-                                                    state.regs,
-                                                    state.map,
-                                                );
-                                                if (path) {
-                                                    store.dispatch({
-                                                        type: 'select',
-                                                        at: [
-                                                            {
-                                                                start: path,
-                                                            },
-                                                        ],
-                                                    });
-                                                }
-                                            }}
-                                        >
-                                            {node.type === 'identifier'
-                                                ? node.text
-                                                : key}
-                                        </div>
-                                    </td>
-                                    <td style={{ whiteSpace: 'pre' }}>
-                                        <span
-                                            style={{
-                                                display: 'inline-block',
-                                                marginRight: 8,
-                                            }}
-                                        >
-                                            {value.at + ' '}
-                                        </span>
-                                        {value.formatted}
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                </tbody>
-            </table>
-        </div>
-    ));
-}

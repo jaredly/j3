@@ -45,10 +45,16 @@ export const matchPat = (
     }
 };
 
-const slash = (n: string) =>
+export const slash = (n: string) =>
     n.replaceAll(/\\./g, (m) => {
         if (m[1] === 'n') {
             return '\n';
+        }
+        if (m[1] === 't') {
+            return '\t';
+        }
+        if (m[1] === 'r') {
+            return '\r';
         }
         return m[1];
     });

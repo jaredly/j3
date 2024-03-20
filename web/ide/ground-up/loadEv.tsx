@@ -226,7 +226,7 @@ function withTracing(
                     formatted,
                     value,
                     info.formatter,
-                    env.values[info.formatter],
+                    env.values[info.formatter!],
                 );
                 formatted = 'bad format';
             }
@@ -436,7 +436,9 @@ export const fnsEvaluator = (
                 try {
                     const fn = new Function(
                         envArgs,
-                        `{${env.js.join('\n')};\n${js};\n${name ? 'return ' + sanitize(name) : ''}}`,
+                        `{${env.js.join('\n')};\n${js};\n${
+                            name ? 'return ' + sanitize(name) : ''
+                        }}`,
                     );
                     if (name) {
                         try {

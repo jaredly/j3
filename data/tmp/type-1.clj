@@ -60,6 +60,8 @@
         (tapp type type int)
         (tcon string int))
 
+(deftype (option a) (some a) (none))
+
 (def lol tcon)
 
 (deftype stmt
@@ -115,10 +117,12 @@
 (defn tts-inner [t free]
     (match t
         (tvar s _)                          (let [(, fmap idx) free]
-                                                (match (map/get fmap s)
-                                                    (some s) (, s free)
-                                                    none     (let [name (at letters idx "_")]
-                                                                 (, name (, (map/set fmap s name) (+ 1 idx))))))
+                                                (match fmap
+                                                    (some fmap) (match (map/get fmap s)
+                                                                    (some s) (, s free)
+                                                                    none     (let [name (at letters idx "_")]
+                                                                                 (, name (, (some (map/set fmap s name)) (+ 1 idx)))))
+                                                    _           (, s free)))
         (tcon s _)                          (, s free)
         (tapp (tapp (tcon "->" _) a _) b _) (let [
                                                 (, args r)    (unwrap-fn b)
@@ -135,7 +139,10 @@
                                                 (, "(${one} ${(join " " (rev args []))})" free))))
 
 (defn type-to-string [t]
-    (let [(, text _) (tts-inner t (, map/nil 0))] text))
+    (let [(, text _) (tts-inner t (, (some map/nil) 0))] text))
+
+(defn type-to-string-raw [t]
+    (let [(, text _) (tts-inner t (, none 0))] text))
 
 (type-to-string (tapp (tapp (tcon "->" 0) (tcon "a" 0) 0) (tcon "b" 0) 0))
 
@@ -424,6 +431,7 @@
 
 (defn t-pat [tenv pat nidx]
     (match pat
+        (pany nl)           (let [(, var nidx) (new-type-var "any" nidx)] (,, var map/nil nidx))
         (pvar name nl)      (let [(, var nidx) (new-type-var name nidx)]
                                 (,, var (map/set map/nil name var) nidx))
         (pstr _ nl)         (,, (tcon "string" nl) map/nil nidx)
@@ -547,9 +555,11 @@ tenv/nil
                                                       (, self nidx)    (new-type-var name nidx)
                                                       self-bound       (tenv/set-type tenv' name (scheme set/nil self))
                                                       (,, s t nidx)    (t-expr self-bound expr 0)
-                                                      (, u-subst nidx) (unify self t nidx)
-                                                      s2               (compose-subst s u-subst)
-                                                      t                (type-apply s2 t)]
+                                                      selfed           (type-apply s self)
+                                                      (, u-subst nidx) (unify selfed t nidx)
+                                                      s2               (compose-subst u-subst (compose-subst u-subst s))
+                                                      t                (type-apply s2 t)
+                                                      sb               (type-apply s2 selfed)]
                                                       (tenv/set-type tenv' name (generalize tenv' t)))
         (sexpr expr l)                            (let [
                                                       (** this "infer" is for side-effects only **)
@@ -577,6 +587,41 @@ tenv/nil
                                                                                                        (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
                                                                                                    (map/set cons name (tconstructor free args final))))))]
                                                       (tenv values cons (map/set types tname (set/from-list names))))))
+
+(defn several [stmts expr tenv]
+    (let [env (foldl tenv stmts infer-stmt)] (infer env expr)))
+
+(def builtin-env
+    (foldl
+        (tenv
+            (map/from-list
+                [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                    (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                    (, ">" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "<" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, ">=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "<=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))])
+                map/nil
+                map/nil)
+            [(@! (deftype (array a) (cons a (array a)) (nil)))
+            (@! (deftype (, a b) (, a b)))
+            (@! (deftype (,, a b c) (,, a b c)))
+            (@! (deftype (,,, a b c d) (,,, a b c d)))
+            (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
+            infer-stmt))
+
+[(,
+    (type-to-string
+        (several
+            [(@!
+                (defn foldr [init items f]
+                    (match items
+                        []           init
+                        [one ..rest] (f (foldr init rest f) one))))]
+                (@ foldr)
+                builtin-env))
+        "(fn [a (array b) (fn [a b] a)] a)")]
 
 ;(infer-stmt basic (sdef "hi" 0 (@ 12) -1))
 
@@ -616,9 +661,6 @@ tenv/nil
             (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
             1483))
 
-(defn several [stmts expr tenv]
-    (let [env (foldl tenv stmts infer-stmt)] (infer env expr)))
-
 (several
     [(@! (deftype (array a) (cons a (array a)) (nil)))]
         (@ (cons 1 nil))
@@ -629,31 +671,21 @@ tenv/nil
 (defn subst-to-string [subst]
     (join
         "\n"
-            (map (map/to-list subst) (fn [(, k v)] "${k} : ${(type-to-string v)}"))))
+            (map
+            (map/to-list subst)
+                (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
 
-(type-to-string (several [(@! (defn what [f] (f (what f))))] (@ what) basic))
+(type-to-string
+    (several
+        [(@!
+            (defn what [f a]
+                (if true
+                    (f (what f a))
+                        (f a))))]
+            (@ what)
+            basic))
 
 (@! (deftype (array a) (cons a (array a)) (nil)))
-
-(def builtin-env
-    (foldl
-        (tenv
-            (map/from-list
-                [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                    (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                    (, ">" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "<" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, ">=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "<=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))])
-                map/nil
-                map/nil)
-            [(@! (deftype (array a) (cons a (array a)) (nil)))
-            (@! (deftype (, a b) (, a b)))
-            (@! (deftype (,, a b c) (,, a b c)))
-            (@! (deftype (,,, a b c d) (,,, a b c d)))
-            (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
-            infer-stmt))
 
 (infer builtin-env (@ (, 1 2)))
 

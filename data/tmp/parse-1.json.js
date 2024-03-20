@@ -856,9 +856,9 @@ throw new Error('Failed to match. ' + valueToString($target))})(one)
 }
 throw new Error('Failed to match. ' + valueToString($target))})(repl);
 
-const escape_string = (string) => replaces(string)(cons($co("\\")("\\\\"))(cons($co("\n")("\\\n"))(cons($co("\"")("\\\""))(cons($co("\`")("\\\`"))(cons($co("\$")("\\\$"))(nil))))));
+const escape_string = (string) => replaces(string)(cons($co("\\")("\\\\"))(cons($co("\n")("\\n"))(cons($co("\"")("\\\""))(cons($co("\`")("\\\`"))(cons($co("\$")("\\\$"))(nil))))));
 
-const unescape_string = (string) => replaces(string)(cons($co("\\\"")("\""))(cons($co("\\\n")("\n"))(cons($co("\\\\")("\\"))(nil))));
+const unescape_string = (string) => replaces(string)(cons($co("\\\"")("\""))(cons($co("\\n")("\n"))(cons($co("\\\\")("\\"))(nil))));
 
 const quot = (expr) => (($target) => {if ($target.type === "eprim") {
 {
@@ -1072,16 +1072,16 @@ let tpls = $target[1];
 {
 let l = $target[2];
 return (($target) => {if ($target.type === "nil") {
-return `\"${escape_string(unescape_string(first))}\"`
+return `\"${escape_string(unescapeString(first))}\"`
 }
-return `\`${escape_string(unescape_string(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
+return `\`${escape_string(unescapeString(first))}${join("")(map(tpls)((item) => (($target) => {if ($target.type === ",,") {
 {
 let expr = $target[0];
 {
 let suffix = $target[1];
 {
 let l = $target[2];
-return `\${${compile(expr)(trace)}}${escape_string(unescape_string(suffix))}`
+return `\${${compile(expr)(trace)}}${escape_string(unescapeString(suffix))}`
 }
 }
 }

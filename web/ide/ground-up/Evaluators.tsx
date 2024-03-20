@@ -11,7 +11,7 @@ import {
     findTops,
     valueToString,
 } from './reduce';
-import { evalExpr } from './round-1/bootstrap';
+import { evalExpr, slash } from './round-1/bootstrap';
 import { sanitize } from './round-1/builtins';
 import {
     arr,
@@ -155,6 +155,8 @@ export const bootstrap: FullEvalator<
                                 : JSON.stringify(res),
                     };
                 } catch (err) {
+                    console.error(err);
+                    // console.log(text)
                     return { env, display: `Error! ${(err as Error).message}` };
                 }
             }
@@ -172,6 +174,7 @@ export const bootstrap: FullEvalator<
                     const res = evalExpr(stmt[0], env);
                     return { env, display: valueToString(res) };
                 } catch (err) {
+                    console.error(err);
                     return { env, display: `Error! ${(err as Error).message}` };
                 }
             }
@@ -212,6 +215,7 @@ function builtins() {
         '>': (a: number) => (b: number) => a > b,
         '>=': (a: number) => (b: number) => a >= b,
         '=': (a: number) => (b: number) => a === b,
+        unescapeString: slash,
 
         'int-to-string': (a: number) => a + '',
         string_to_int: (a: string) => {
