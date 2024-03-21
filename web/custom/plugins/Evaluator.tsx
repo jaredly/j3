@@ -20,7 +20,7 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
         return {
             type: 'vert',
             children: [
-                { type: 'ref', id: node.loc, path: { type: 'start' } },
+                { type: 'ref', id: node.loc },
                 {
                     type: 'dom',
                     node: (

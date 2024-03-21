@@ -108,6 +108,12 @@
                              type)
         (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
 
+(defn type-loc [type]
+    (match type
+        (tvar _ l)   l
+        (tapp _ _ l) l
+        (tcon _ l)   l))
+
 (** ## to-string functions for debugging **)
 
 (def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o"])
@@ -262,9 +268,7 @@
         [(, "c" (tcon "int" -1))]
             [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
         (** a gets the "b" substitution applied to it, and then overrides the "a" from earlier **)
-        (,
-        [(, "a" (tvar "b" -1))]
-            [(, "a" (tvar "c" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])])
+        (, [(, "a" (tvar "b" -1))] [(, "a" (tvar "c" -1)) (, "b" (tvar "c" -1))])])
 
 (** ## Generalizing
     This is where we take a type and turn it into a scheme, so we need to be able to know what variables should be reported as "free" at the level of the type. **)
@@ -312,7 +316,15 @@
                                                             (, map/nil nidx)
                                                                 (fatal "cant unify ${a} (${la}) and ${b} (${lb})"))
         _                                               (fatal
-                                                            "cant unify ${(type-to-string t1)} and ${(type-to-string t2)}")))
+                                                            "cant unify ${
+                                                                (type-to-string t1)
+                                                                } (${
+                                                                (type-loc t1)
+                                                                }) and ${
+                                                                (type-to-string t2)
+                                                                } (${
+                                                                (type-loc t2)
+                                                                })")))
 
 (defn var-bind [var type]
     (match type
@@ -838,6 +850,7 @@
         builtin-env
             infer-stmt
             infer
+            infer-defns
             to-string
             externals
             names))
@@ -848,6 +861,7 @@
     builtin-env
         infer-stmt
         infer
+        infer-defns
         type-to-string
         externals-stmt
         names)

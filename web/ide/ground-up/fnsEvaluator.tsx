@@ -1,10 +1,17 @@
-import { Errors, MyEvalError, FullEvalator, LocError } from './Evaluators';
+import {
+    Errors,
+    MyEvalError,
+    FullEvalator,
+    LocError,
+    Display,
+} from './Evaluators';
 import { findTops, valueToString } from './reduce';
-import { expr, stmt, unwrapArray } from './round-1/parse';
+import { expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
 import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
-import { FnsEnv, withTracing } from './loadEv';
+import { FnsEnv, TraceMap, withTracing } from './loadEv';
+import { MetaDataMap } from '../../custom/UIState';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
@@ -112,11 +119,44 @@ export const fnsEvaluator = (
             }
             return { js: env.js.join('\n'), errors };
         },
-        addStatement(stmt, env, meta, traceMap) {
-            const mm = Object.entries(meta)
-                .map(([k, v]) => [+k, v.trace])
-                .filter((k) => k[1]);
+        addStatements: data['infer_defns']
+            ? (stmts, env, meta, trace) => {
+                  const display: { [key: number]: Display } = {};
 
+                  try {
+                      env.typeCheck = data['infer_defns'](env.typeCheck)(
+                          wrapArray(Object.values(stmts)),
+                      );
+                  } catch (err) {
+                      console.error(err);
+                      return {
+                          env,
+                          display: {
+                              [+Object.keys(stmts)[0]]: new MyEvalError(
+                                  `Type Error`,
+                                  err as Error,
+                              ),
+                          },
+                      };
+                  }
+
+                  for (let [key, value] of Object.entries(stmts)) {
+                      const res = compileStmt(
+                          data,
+                          envArgs,
+                          san,
+                          value,
+                          env,
+                          meta,
+                          trace,
+                      );
+                      display[+key] = res.display;
+                      env = res.env;
+                  }
+                  return { env, display };
+              }
+            : undefined,
+        addStatement(stmt, env, meta, traceMap) {
             if (data['infer_stmt']) {
                 try {
                     env.typeCheck = data['infer_stmt'](env.typeCheck)(stmt);
@@ -129,121 +169,7 @@ export const fnsEvaluator = (
                 }
             }
 
-            if (stmt.type === 'sexpr') {
-                let type = null;
-                if (data['infer']) {
-                    try {
-                        type = data['type_to_string'](
-                            data['infer'](env.typeCheck)(stmt[0]),
-                        );
-                    } catch (err) {
-                        console.error(err);
-                        return {
-                            env,
-                            display: new MyEvalError(
-                                `Type Error`,
-                                err as Error,
-                            ),
-                        };
-                    }
-                }
-
-                let js;
-                try {
-                    js = data['compile'](stmt[0])(mm);
-                } catch (err) {
-                    return {
-                        env,
-                        display: new MyEvalError(
-                            `Compilation Error`,
-                            err as Error,
-                        ),
-                    };
-                }
-                let fn;
-                const fullSource =
-                    '{' + env.js.join('\n') + '\nreturn ' + js + '}';
-                try {
-                    fn = new Function(envArgs, fullSource);
-                } catch (err) {
-                    return {
-                        env,
-                        display: `JS Syntax Error: ${
-                            (err as Error).message
-                        }\n${js}`,
-                    };
-                }
-                try {
-                    let old = san.$trace;
-                    if (meta[stmt[1]]?.traceTop) {
-                        withTracing(traceMap, stmt[1], san, env);
-                    }
-                    const value = fn(san);
-                    san.$setTracer(null);
-                    return {
-                        env,
-                        display:
-                            valueToString(value) +
-                            (type ? '\nType: ' + type : ''),
-                    };
-                } catch (err) {
-                    const locs: { row: number; col: number }[] = [];
-                    (err as Error).stack!.replace(
-                        /<anonymous>:(\d+):(\d+)/g,
-                        (a, row, col) => {
-                            locs.push({ row: +row, col: +col });
-                            return '';
-                        },
-                    );
-                    return {
-                        env,
-                        display: new LocError(err as Error, fn + ''),
-                    };
-                }
-            }
-
-            let js;
-            try {
-                js = data['compile_stmt'](stmt)(mm);
-            } catch (err) {
-                return {
-                    env,
-                    display: `Compilation Error: ${(err as Error).message}`,
-                };
-            }
-
-            let name = stmt.type === 'sdef' ? stmt[0] : null;
-
-            try {
-                const fn = new Function(
-                    envArgs,
-                    `{${env.js.join('\n')};\n${js};\n${
-                        name ? 'return ' + sanitize(name) : ''
-                    }}`,
-                );
-                if (name) {
-                    try {
-                        env.values[name] = fn(san);
-                    } catch (err) {
-                        return {
-                            env,
-                            display: `JS Evaluation Error: ${
-                                (err as Error).message
-                            }\n${js}`,
-                        };
-                    }
-                }
-
-                env.js.push(js);
-                return { env, display: `compiled` };
-            } catch (err) {
-                return {
-                    env,
-                    display: `JS Syntax Error: ${
-                        (err as Error).message
-                    }\n${js}`,
-                };
-            }
+            return compileStmt(data, envArgs, san, stmt, env, meta, traceMap);
         },
         setTracing(idx, traceMap, env) {
             if (idx != null) {
@@ -280,4 +206,120 @@ export const fnsEvaluator = (
             }
         },
     };
+};
+
+const compileStmt = (
+    data: any,
+    envArgs: string,
+    san: any,
+    stmt: stmt,
+    env: FnsEnv,
+    meta: MetaDataMap,
+    traceMap: TraceMap,
+) => {
+    const mm = Object.entries(meta)
+        .map(([k, v]) => [+k, v.trace])
+        .filter((k) => k[1]);
+    if (stmt.type === 'sexpr') {
+        let type = null;
+        if (data['infer']) {
+            try {
+                type = data['type_to_string'](
+                    data['infer'](env.typeCheck)(stmt[0]),
+                );
+            } catch (err) {
+                console.error(err);
+                return {
+                    env,
+                    display: new MyEvalError(`Type Error`, err as Error),
+                };
+            }
+        }
+
+        let js;
+        try {
+            js = data['compile'](stmt[0])(mm);
+        } catch (err) {
+            return {
+                env,
+                display: new MyEvalError(`Compilation Error`, err as Error),
+            };
+        }
+        let fn;
+        const fullSource = '{' + env.js.join('\n') + '\nreturn ' + js + '}';
+        try {
+            fn = new Function(envArgs, fullSource);
+        } catch (err) {
+            return {
+                env,
+                display: `JS Syntax Error: ${(err as Error).message}\n${js}`,
+            };
+        }
+        try {
+            let old = san.$trace;
+            if (meta[stmt[1]]?.traceTop) {
+                withTracing(traceMap, stmt[1], san, env);
+            }
+            const value = fn(san);
+            san.$setTracer(null);
+            return {
+                env,
+                display: valueToString(value) + (type ? '\nType: ' + type : ''),
+            };
+        } catch (err) {
+            const locs: { row: number; col: number }[] = [];
+            (err as Error).stack!.replace(
+                /<anonymous>:(\d+):(\d+)/g,
+                (a, row, col) => {
+                    locs.push({ row: +row, col: +col });
+                    return '';
+                },
+            );
+            return {
+                env,
+                display: new LocError(err as Error, fn + ''),
+            };
+        }
+    }
+
+    let js;
+    try {
+        js = data['compile_stmt'](stmt)(mm);
+    } catch (err) {
+        return {
+            env,
+            display: `Compilation Error: ${(err as Error).message}`,
+        };
+    }
+
+    let name = stmt.type === 'sdef' ? stmt[0] : null;
+
+    try {
+        const fn = new Function(
+            envArgs,
+            `{${env.js.join('\n')};\n${js};\n${
+                name ? 'return ' + sanitize(name) : ''
+            }}`,
+        );
+        if (name) {
+            try {
+                env.values[name] = fn(san);
+            } catch (err) {
+                return {
+                    env,
+                    display: `JS Evaluation Error: ${
+                        (err as Error).message
+                    }\n${js}`,
+                };
+            }
+        }
+
+        env.js.push(js);
+        return { env, display: `compiled` };
+    } catch (err) {
+        return {
+            env,
+            display: `JS Syntax Error: ${(err as Error).message}\n${js}`,
+        };
+    }
 };

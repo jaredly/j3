@@ -17,6 +17,6 @@ export type ONode =
     | {
           type: 'ref';
           id: number;
-          path: PathChild;
+          path?: PathChild;
           ancestors?: (PathChild & { idx: number })[];
       };

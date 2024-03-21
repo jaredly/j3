@@ -231,6 +231,27 @@ return /*5209*//*5209*//*5209*//*5210*/tapp/*<5210*/(/*5209*//*5211*//*5211*//*5
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 5179');})(/*!*//*5181*/type/*<5181*/)/*<5179*//*<5172*//*<5172*/;
 
+const type_loc = /*8803*/(type) => /*8809*/(($target) => {
+if ($target.type === "tvar") {
+{
+let l = $target[1];
+return /*8816*/l/*<8816*/
+}
+}
+if ($target.type === "tapp") {
+{
+let l = $target[2];
+return /*8822*/l/*<8822*/
+}
+}
+if ($target.type === "tcon") {
+{
+let l = $target[1];
+return /*8827*/l/*<8827*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8809');})(/*!*//*8811*/type/*<8811*/)/*<8809*//*<8803*/;
+
 const letters = /*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5799*/"a"/*<5799*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5801*/"b"/*<5801*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5803*/"c"/*<5803*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5805*/"d"/*<5805*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5807*/"e"/*<5807*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5809*/"f"/*<5809*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5811*/"g"/*<5811*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5813*/"h"/*<5813*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*5815*/"i"/*<5815*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*6782*/"j"/*<6782*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*6784*/"k"/*<6784*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*6786*/"l"/*<6786*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*6788*/"m"/*<6788*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*6790*/"n"/*<6790*/)/*<5798*/(/*5798*//*5798*//*5798*//*5798*/cons/*<5798*/(/*5798*//*6792*/"o"/*<6792*/)/*<5798*/(/*5798*//*5798*/nil/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/)/*<5798*/;
 
 const unwrap_fn = /*5852*/(t) => /*5858*/(($target) => {
@@ -775,7 +796,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 1541');})(/*!*//
 }
 }
 }
-return /*1554*//*1555*/fatal/*<1555*/(/*1554*//*1556*/`cant unify ${/*1558*//*1560*/type_to_string/*<1560*/(/*1558*//*1561*/t1/*<1561*/)/*<1558*/} and ${/*1562*//*1564*/type_to_string/*<1564*/(/*1562*//*1566*/t2/*<1566*/)/*<1562*/}`/*<1556*/)/*<1554*/
+return /*1554*//*1555*/fatal/*<1555*/(/*1554*//*1556*/`cant unify ${/*1558*//*1560*/type_to_string/*<1560*/(/*1558*//*1561*/t1/*<1561*/)/*<1558*/} (${/*8799*//*8828*/type_loc/*<8828*/(/*8799*//*8829*/t1/*<8829*/)/*<8799*/}) and ${/*1562*//*1564*/type_to_string/*<1564*/(/*1562*//*1566*/t2/*<1566*/)/*<1562*/} (${/*8801*//*8830*/type_loc/*<8830*/(/*8801*//*8831*/t2/*<8831*/)/*<8801*/})`/*<1556*/)/*<1554*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1317');})(/*!*//*1319*//*1319*//*1320*/$co/*<1320*/(/*1319*//*1321*/t1/*<1321*/)/*<1319*/(/*1319*//*1322*/t2/*<1322*/)/*<1319*/)/*<1317*//*<1309*//*<1309*//*<1309*/;
 
 const var_bind = /*1567*/($var) => /*1567*/(type) => /*1575*/(($target) => {
@@ -2202,5 +2223,5 @@ return /*6322*/`${/*6324*/k/*<6324*/} : ${/*6326*//*6328*/type_to_string_raw/*<6
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6315');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6315*//*<6315*/)/*<6313*/)/*<6330*//*<6304*/;
 
-const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5});
-return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, infer, infer_defns, infer_several, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, show_subst, show_substs, show_types, show_types_list, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}
+const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6});
+return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, infer, infer_defns, infer_several, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, show_subst, show_substs, show_types, show_types_list, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_loc, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}

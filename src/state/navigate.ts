@@ -190,7 +190,7 @@ export const pathSelForNode = (
             }
             const path: Path[] = [
                 ...(node.ancestors ?? []),
-                { idx, ...node.path },
+                ...(node.path ? [{ idx, ...node.path }] : []),
             ];
             const cnode = map[node.id];
             if (!cnode) return [];

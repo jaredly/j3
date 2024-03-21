@@ -460,7 +460,7 @@ export const RenderNNode = (
                     debug={props.debug}
                     path={path.concat([
                         ...(nnode.ancestors ?? []),
-                        { idx, ...nnode.path },
+                        ...(nnode.path ? [{ idx, ...nnode.path }] : []),
                     ])}
                 />
             );

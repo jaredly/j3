@@ -25,7 +25,7 @@ export type NNode =
     | {
           type: 'ref';
           id: number;
-          path: PathChild;
+          path?: PathChild;
           ancestors?: Path[];
           style?: any;
       }
