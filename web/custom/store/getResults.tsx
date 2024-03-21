@@ -12,6 +12,7 @@ import { Path } from '../../store';
 export const getResults = <Env, Stmt, Expr>(
     state: NUIState,
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
+    debugExecOrder: boolean,
 ) => {
     const results: NUIResults = {
         display: {},
@@ -78,12 +79,14 @@ export const getResults = <Env, Stmt, Expr>(
                 results.produce[node.loc] = Array.isArray(res.display)
                     ? res.display
                     : [res.display];
-                const deps: Record<string, true> = {};
-                group[0].deps.forEach((d) => (deps[d.name] = true));
-                results.produce[node.loc].push(
-                    'Deps: ' + Object.keys(deps).join(', '),
-                );
-                results.produce[node.loc].push('Execution Order: ' + i);
+                if (debugExecOrder) {
+                    const deps: Record<string, true> = {};
+                    group[0].deps.forEach((d) => (deps[d.name] = true));
+                    results.produce[node.loc].push(
+                        'Deps: ' + Object.keys(deps).join(', '),
+                    );
+                    results.produce[node.loc].push('Execution Order: ' + i);
+                }
             }
             return;
         }
@@ -112,79 +115,23 @@ export const getResults = <Env, Stmt, Expr>(
                         results.produce[node.id] as any,
                     ];
                 }
-                results.produce[node.id].push('Cycle: ' + names.join(', '));
-                results.produce[node.id].push(
-                    'Deps: ' + node.deps.map((d) => d.name).join(', '),
-                );
-                results.produce[node.id].push('Execution Order: ' + i);
+                if (debugExecOrder) {
+                    results.produce[node.id].push('Cycle: ' + names.join(', '));
+                    results.produce[node.id].push(
+                        'Deps: ' + node.deps.map((d) => d.name).join(', '),
+                    );
+                    results.produce[node.id].push('Execution Order: ' + i);
+                }
             });
         }
     });
 
-    // findTops(state).forEach(({ top, hidden, plugin }) => {
-    //     if (hidden) return;
-    //     const stmt = fromMCST(top, state.map);
-    //     if (stmt.type === 'blank') {
-    //         results.produce[stmt.loc] = ' ';
-    //         return;
-    //     }
-    //     if (evaluator) {
-    //         if (plugin) {
-    //             results.produce[stmt.loc] = 'evaluated by plugin';
-    //             const pid = typeof plugin === 'string' ? plugin : plugin.id;
-    //             const options =
-    //                 typeof plugin === 'string' ? null : plugin.options;
-    //             const pl = plugins.find((p) => p.id === pid);
-    //             if (!pl) {
-    //                 results.produce[stmt.loc] = `plugin ${pid} not found`;
-    //                 return;
-    //             }
-    //             results.pluginResults[stmt.loc] = pl.process(
-    //                 fromMCST(top, state.map),
-    //                 state,
-    //                 evaluator,
-    //                 results,
-    //                 // state.meta,
-    //                 // (node) => {
-    //                 //     const errors = {};
-    //                 //     const expr = evaluator.parseExpr(node, errors);
-    //                 //     return evaluator.evaluate(
-    //                 //         expr,
-    //                 //         results.env,
-    //                 //         state.meta,
-    //                 //     );
-    //                 // },
-    //                 // (idx) => evaluator.setTracing(idx, results.traces),
-    //                 options,
-    //             );
-    //         } else {
-    //             const errs: Results['errors'] = {};
-    //             const ast = evaluator.parse(stmt, errs);
-    //             Object.assign(results.errors, errs);
-    //             if (ast) {
-    //                 const res = evaluator.addStatement(
-    //                     ast,
-    //                     results.env!,
-    //                     state.meta,
-    //                     results.traces,
-    //                 );
-    //                 results.env = res.env;
-    //                 results.produce[stmt.loc] = res.display;
-    //                 // console.log('good', res.display);
-    //             } else {
-    //                 // console.log('not parsed');
-    //                 results.produce[stmt.loc] =
-    //                     'not parsed ' + JSON.stringify(errs);
-    //             }
-    //         }
-    //     } else {
-    //         results.produce[stmt.loc] = 'No evaluator';
-    //     }
-
-    //     layout(top, 0, state.map, results.display, results.hashNames, true);
-    // });
-
     return results;
+};
+
+export const unique = (names: number[]) => {
+    const seen: Record<number, true> = {};
+    return names.filter((k) => (seen[k] ? false : (seen[k] = true)));
 };
 
 export const depSort = <T,>(
@@ -200,9 +147,6 @@ export const depSort = <T,>(
         node.names.forEach((name) => (idForName[name] = node.id)),
     );
 
-    // type GraphNode = {ids: number[], dependencies: GraphNode[]}
-    // hrm so it's directed
-
     // Record<a, b> where a depends on b
     const edges: { [key: number]: number[] } = {};
     // Record<b, a> where b is a dependency of a
@@ -211,9 +155,9 @@ export const depSort = <T,>(
     let hasDeps = false;
     nodes.forEach((node) => {
         if (node.deps.length) hasDeps = true;
-        edges[node.id] = node.deps
-            .map(({ name }) => idForName[name])
-            .filter(filterNulls);
+        edges[node.id] = unique(
+            node.deps.map(({ name }) => idForName[name]).filter(filterNulls),
+        );
         edges[node.id].forEach((id) => {
             if (!back[id]) {
                 back[id] = [node.id];
@@ -224,12 +168,6 @@ export const depSort = <T,>(
     });
 
     if (!hasDeps) return nodes.map((node) => [node]);
-
-    nodes.forEach((node) => {
-        if (node.hidden && !back[node.id]) {
-            delete edges[node.id];
-        }
-    });
 
     const keys = Object.keys(edges).map((m) => +m);
 
@@ -246,7 +184,11 @@ export const depSort = <T,>(
             });
             if (added.length) {
                 changed = true;
-                edges[key].push(...added);
+                added.forEach((k) => {
+                    if (!edges[key].includes(k)) {
+                        edges[key].push(k);
+                    }
+                });
             }
         }
     }
@@ -261,7 +203,9 @@ export const depSort = <T,>(
             const deps: number[] = [];
             edges[k].forEach((d) => {
                 if (edges[d].includes(k)) {
-                    cycle.push(d);
+                    if (!cycle.includes(d)) {
+                        cycle.push(d);
+                    }
                 } else {
                     deps.push(d);
                 }
@@ -315,35 +259,6 @@ export const depSort = <T,>(
     nodes.forEach((n) => (byKey[n.id] = n));
 
     return sorted.map((group) => group.map((k) => byKey[k]));
-    // const seen: Record<number,true>={}
-    // const waiting: typeof nodes = [];
-    // nodes.forEach(node => { })
-
-    // const sorted = nodes
-    //     .filter((node) => !node.hidden || back[node.id] != null)
-    //     .sort((a, b) =>
-    //         edges[a.id]?.includes(b.id)
-    //             ? edges[b.id]?.includes(a.id)
-    //                 ? 0
-    //                 : 1
-    //             : edges[b.id]?.includes(a.id)
-    //             ? -1
-    //             : 0,
-    //     );
-    // const groups: (typeof sorted)[] = [];
-    // sorted.forEach((item) => {
-    //     if (!groups.length) {
-    //         return groups.push([item]);
-    //     }
-    //     const last = groups[groups.length - 1];
-    //     // forward-link, means we have a cycle
-    //     if (edges[last[0].id]?.includes(item.id)) {
-    //         last.push(item);
-    //     } else {
-    //         groups.push([item]);
-    //     }
-    // });
-    // return groups;
 };
 
 export function sortTops<Env, Stmt, Expr>(

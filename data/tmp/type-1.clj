@@ -509,7 +509,7 @@
                                                                              (its l)
                                                                              }): given ${
                                                                              (its (len args))
-                                                                             }, but the type constructor only has ${
+                                                                             }, but the type constructor has ${
                                                                              (its (len cargs))
                                                                              }")
                                                                          0)
@@ -881,6 +881,8 @@
                         (one a) a
                         (two b) (+ b c)
                         _       mx))))))
+
+(** ## Type Environment populated with Builtins **)
 
 (defn tmap [k v] (tapp (tapp (tcon "map" -1) k -1) v -1))
 

@@ -1,7 +1,14 @@
 (def builtins
     "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
-(def ast "# AST")
+(** ## Our AST & CST **)
+
+(deftype cst
+    (cst/list (array cst) int)
+        (cst/array (array cst) int)
+        (cst/spread cst int)
+        (cst/identifier string int)
+        (cst/string string (array (,, cst string int)) int))
 
 (deftype (array a) (nil) (cons a (array a)))
 
@@ -40,19 +47,27 @@
         (sdef string int expr int)
         (sexpr expr int))
 
-(def parsing "# Parsing")
+(** ## Prelude **)
 
-(deftype cst
-    (cst/list (array cst) int)
-        (cst/array (array cst) int)
-        (cst/spread cst int)
-        (cst/identifier string int)
-        (cst/string string (array (,, cst string int)) int))
-
-(defn tapps [items l]
+(defn join [sep items]
     (match items
-        [one]        one
-        [one ..rest] (tapp (tapps rest l) one l)))
+        []           ""
+        [one ..rest] (match rest
+                         [] one
+                         _  (++ [one sep (join sep rest)]))))
+
+(join " " ["one" "two" "three"])
+
+(join " " [])
+
+(join " " ["one"])
+
+(defn mapi [i values f]
+    (match values
+        []           []
+        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+
+(foldr nil [1 2 3 4] (fn [b a] (cons a b)))
 
 (defn rev [arr col]
     (match arr
@@ -74,6 +89,31 @@
     (match items
         []           init
         [one ..rest] (f (foldr init rest f) one)))
+
+(defn pairs [list]
+    (match list
+        []               []
+        [one two ..rest] [(, one two) ..(pairs rest)]
+        _                (fatal "Pairs given odd number ${(valueToString list)}")))
+
+(deftype (option a) (some a) (none))
+
+(defn snd [tuple] (let [(, _ v) tuple] v))
+
+(defn fst [tuple] (let [(, v _) tuple] v))
+
+(defn replaces [target repl]
+    (match repl
+        []           target
+        [one ..rest] (match one
+                         (, find nw) (replaces (replace-all target find nw) rest))))
+
+(** ## Parsing **)
+
+(defn tapps [items l]
+    (match items
+        [one]        one
+        [one ..rest] (tapp (tapps rest l) one l)))
 
 (defn parse-type [type]
     (match type
@@ -98,16 +138,6 @@
             (tapp (tcon "->" -1) (tcon "a" 5688) -1)
                 (tapp (tapp (tcon "->" -1) (tcon "b" 5689) -1) (tcon "c" 5690) -1)
                 -1))])
-
-(@@ 1)
-
-(foldl 0 [1 2] +)
-
-(defn pairs [array]
-    (match array
-        []               []
-        [one two ..rest] [(, one two) ..(pairs rest)]
-        _                (fatal "Pairs given odd number ${(valueToString array)}")))
 
 (defn parse-pat [pat]
     (match pat
@@ -177,6 +207,8 @@
                                                                                  args
                                                                                  (fn [target arg] (eapp target (parse-expr arg) l)))
         (cst/array args l)                                               (parse-array args l)))
+
+(parse-expr (@@ (@! 12)))
 
 (defn parse-array [args l]
     (match args
@@ -281,8 +313,6 @@
         (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 3110) 3108))
         (, (@@ (@ 1)) (equot (eprim (pint 1 3124) 3124) 3122))])
 
-
-
 (parse-expr (@@ (fn [a] 1)))
 
 (defn mk-deftype [id li args items l]
@@ -366,70 +396,58 @@
         (@@ (defn a [m] m))
             (sdef "a" 2051 (elambda "m" 2055 (evar "m" 2053) 2049) 2049))])
 
-(deftype (option a) (some a) (none))
+(** ## Debugging Helpers **)
 
-(parse-expr (@@ (@! 12)))
+(defn pat-loc [pat]
+    (match pat
+        (pany l)     l
+        (pprim _ l)  l
+        (pstr _ l)   l
+        (pvar _ l)   l
+        (pcon _ _ l) l))
 
-(string-to-int "11")
+(defn expr-loc [expr]
+    (match expr
+        (estr _ _ l)      l
+        (eprim _ l)       l
+        (evar _ l)        l
+        (equotquot _ l)   l
+        (equot _ l)       l
+        (equot/stmt _ l)  l
+        (equot/pat _ l)   l
+        (equot/type _ l)  l
+        (elambda _ _ _ l) l
+        (elet _ _ _ l)    l
+        (eapp _ _ l)      l
+        (ematch _ _ l)    l))
 
-(def prelude "# prelude")
+(def its int-to-string)
 
-(defn join [sep items]
-    (match items
-        []           ""
-        [one ..rest] (match rest
-                         [] one
-                         _  (++ [one sep (join sep rest)]))))
+(defn trace-and-block [loc trace value js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});\n${js}"))
 
-(join " " ["one" "two" "three"])
+(defn trace-wrap [loc trace js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${js})"))
 
-(join " " [])
+(defn trace-and [loc trace value js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "($trace(${(its loc)}, ${(jsonify info)}, ${value}), ${js})"))
 
-(join " " ["one"])
+(defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
 
-(defn mapi [i values f]
-    (match values
-        []           []
-        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
-
-(foldr nil [1 2 3 4] (fn [b a] (cons a b)))
-
-(def compilation "# compilation")
-
-(def util "# util")
-
-(defn snd [tuple] (let [(, _ v) tuple] v))
-
-(defn fst [tuple] (let [(, v _) tuple] v))
-
-(defn replaces [target repl]
-    (match repl
-        []           target
-        [one ..rest] (match one
-                         (, find nw) (replaces (replace-all target find nw) rest))))
+(** ## Compilation **)
 
 (defn escape-string [string]
     (replaces
         string
             [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\\"") (, "`" "\\`") (, "$" "\\$")]))
 
-(defn unescape-string [string]
-    (replaces string [(, "\\\"" "\"") (, "\\n" "\n") (, "\\\\" "\\")]))
-
-"\n"
-
-"\\n"
-
-(unescape-string (escape-string "\n"))
-
-(def its int-to-string)
-
-(escape-string (unescape-string "\n"))
-
-(defn trace-and-block [loc trace value js]
-    (match (map/get trace loc)
-        (none)      js
-        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});\n${js}"))
+(escape-string (unescapeString "\n"))
 
 (defn pat-loop [target args i inner trace]
     (match args
@@ -439,14 +457,6 @@
                              "${target}[${(its i)}]"
                              (pat-loop target rest (+ i 1) inner trace)
                              trace)))
-
-(defn pat-loc [pat]
-    (match pat
-        (pany l)     l
-        (pprim _ l)  l
-        (pstr _ l)   l
-        (pvar _ l)   l
-        (pcon _ _ l) l))
 
 (defn compile-pat [pat target inner trace]
     (trace-and-block
@@ -475,33 +485,6 @@
                                    }\") {\n${
                                    (pat-loop target args 0 inner trace)
                                    }\n}")))
-
-(defn expr-loc [expr]
-    (match expr
-        (estr _ _ l)      l
-        (eprim _ l)       l
-        (evar _ l)        l
-        (equotquot _ l)   l
-        (equot _ l)       l
-        (equot/stmt _ l)  l
-        (equot/pat _ l)   l
-        (equot/type _ l)  l
-        (elambda _ _ _ l) l
-        (elet _ _ _ l)    l
-        (eapp _ _ l)      l
-        (ematch _ _ l)    l))
-
-(defn trace-wrap [loc trace js]
-    (match (map/get trace loc)
-        (none)      js
-        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${js})"))
-
-(defn trace-and [loc trace value js]
-    (match (map/get trace loc)
-        (none)      js
-        (some info) "($trace(${(its loc)}, ${(jsonify info)}, ${value}), ${js})"))
-
-(defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
 
 (defn compile [expr trace]
     (let [loc (expr-loc expr)]
@@ -573,8 +556,6 @@
                                                  (compile target trace)
                                                  })")))))
 
-(@@' 12)
-
 (compile
     (parse-expr
         (@@
@@ -584,8 +565,6 @@
         map/nil)
 
 (compile (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil)
-
-(parse-expr (@@ (let [a 1 b 2] a)))
 
 (defn run [v] (eval (compile (parse-expr v) map/nil)))
 
@@ -622,23 +601,6 @@
                 [a ..b] a))
             1)])
 
-(compile (parse-expr (@@ (fn [a] b))))
-
-(parse-expr (@@ (fn [a] b)))
-
-(,
-    (fn [x] (compile-stmt (parse-stmt x) map/nil))
-        [(,
-        (@@ (deftype (array a) (cons a (array a)) (nil)))
-            "const cons = (v0) => (v1) => ({type: \"cons\", 0: v0, 1: v1});\nconst nil = ({type: \"nil\"});")
-        (,
-        (@@ (deftype face (red) (black)))
-            "const red = ({type: \"red\"});\nconst black = ({type: \"black\"});")])
-
-(parse-stmt (@@ (deftype face (red))))
-
-5316
-
 (defn compile-stmt [stmt trace]
     (match stmt
         (sexpr expr l)                      (compile expr trace)
@@ -664,9 +626,14 @@
                                                                             (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
                                                                     "});"])))))))
 
-(compile-stmt
-    (parse-stmt (@@ (deftype (array a) (cons a (array a)) (nil))))
-        map/nil)
+(,
+    (fn [x] (compile-stmt (parse-stmt x) map/nil))
+        [(,
+        (@@ (deftype (array a) (cons a (array a)) (nil)))
+            "const cons = (v0) => (v1) => ({type: \"cons\", 0: v0, 1: v1});\nconst nil = ({type: \"nil\"});")
+        (,
+        (@@ (deftype face (red) (black)))
+            "const red = ({type: \"red\"});\nconst black = ({type: \"black\"});")])
 
 (deftype parse-and-compile
     (parse-and-compile

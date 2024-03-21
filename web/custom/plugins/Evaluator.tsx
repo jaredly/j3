@@ -2,7 +2,7 @@ import React from 'react';
 import { NamespacePlugin } from '../UIState';
 import { urlForId } from '../../ide/ground-up/reduce';
 
-export const evaluatorPlugin: NamespacePlugin<false | number, string> = {
+export const evaluatorPlugin: NamespacePlugin<string | number, string> = {
     id: 'evaluator',
     title: 'Save Evaluator',
 
@@ -49,8 +49,8 @@ export const evaluatorPlugin: NamespacePlugin<false | number, string> = {
                             >
                                 {options ?? 'Set name'}
                             </button>
-                            {results === false
-                                ? 'Not saving'
+                            {typeof results === 'string'
+                                ? results
                                 : `Saved at ${new Date(
                                       results,
                                   ).toLocaleTimeString()}`}
@@ -70,16 +70,21 @@ export const evaluatorPlugin: NamespacePlugin<false | number, string> = {
     process(node, state, evaluator, results, options) {
         if (!options || !options.endsWith('.js')) {
             // throw new Error(`Bad name`);
-            return false;
+            return options ? `Name must end in .js` : `Please set a name`;
         }
         if (
             node.type === 'blank' ||
             node.type === 'comment' ||
             node.type === 'comment-node'
         ) {
-            return false; // ignoring
+            return `Expression must not be blank or comment`; // ignoring
         }
-        const text = evaluator.toFile?.(state, node.loc).js;
+        let text;
+        try {
+            text = evaluator.toFile?.(state, node.loc).js;
+        } catch (err) {
+            return `Failed ` + (err as Error).message;
+        }
         fetch(urlForId(options), {
             body: text,
             method: 'POST',

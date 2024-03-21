@@ -52,6 +52,7 @@ export const evaluatorFromText = (
                 get_type,
             });
         } else if (result.type === 'parse-and-compile') {
+            data.type = 'fns';
             console.log('PARSE AND COMPILE');
             const {
                 0: parse_stmt,

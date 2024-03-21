@@ -9,7 +9,7 @@ import {
     RealizedNamespace,
 } from './UIState';
 import { Reg, RenderProps } from './types';
-import { Results } from '../ide/ground-up/GroundUp';
+import { Debug, Results } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { NsReg, Drag } from './useNSDrag';
 import { fromMCST } from '../../src/types/mcst';
@@ -79,7 +79,7 @@ export function NSTop({
     selections: Cursor[];
     produce: { [key: number]: ProduceItem[] };
     drag: Drag;
-    debug: boolean;
+    debug: Debug;
 }) {
     const source = useMemo(() => {
         const last = path[path.length - 1];
@@ -148,7 +148,7 @@ export function NSTop({
                                 />
                             ) : (
                                 <Render
-                                    debug={debug}
+                                    debug={debug.ids}
                                     idx={ns.top}
                                     // reg={reg}
                                     // map={state.map}

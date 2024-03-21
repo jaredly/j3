@@ -15,8 +15,6 @@ foldr
 
 what
 
-
-
 (** Basic syntax **)
 
 (match [1 2]

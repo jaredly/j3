@@ -54,6 +54,7 @@ export type Store = {
         fn: (state: NUIState, results: NUIResults) => void,
     ): () => void;
     everyChange(fn: (state: NUIState) => void): () => void;
+    setDebug(execOrder: boolean): void;
 };
 
 export const allNodesBetween = (
@@ -135,6 +136,7 @@ export const adaptiveBounce = (fn: () => void) => {
 };
 
 const noopStore: Store = {
+    setDebug() {},
     dispatch() {
         throw new Error('');
     },

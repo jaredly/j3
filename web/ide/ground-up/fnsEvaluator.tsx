@@ -87,7 +87,7 @@ export const fnsEvaluator = (
         toFile(state, target) {
             let env = this.init();
             const errors: Errors = {};
-            const names: string[] = [];
+            const allNames: string[] = [];
             let ret: null | string = null;
             const tops = findTops(state);
             const sorted = depSort(
@@ -116,44 +116,54 @@ export const fnsEvaluator = (
                     .filter(filterNulls),
             );
 
-            // sorted.forEach((group) => {
-            //     group.forEach(({ top, stmt }) => {
-            //         if (stmt.type === 'sdef') {
-            //             names.push(stmt[0]);
-            //         }
-            //         if (stmt.type === 'sexpr') {
-            //             if (top.top === target) {
-            //                 ret = data['compile'](stmt[0])([]);
-            //             }
-            //         }
-            //         const result = this.addStatement(stmt, env, {}, {});
-            //         if (result.display instanceof Error) {
-            //             console.error(`We failed, sorry folks`, result.display);
-            //             throw result.display;
-            //         }
-            //         env = result.env;
-            //     });
-            // });
-
-            findTops(state).forEach((top) => {
-                const node = fromMCST(top.top, state.map);
-                if (node.type === 'blank') return;
-                const parsed = this.parse(node, errors);
-                if (!parsed) return;
-                if (parsed.type === 'sdef') {
-                    names.push(parsed[0]);
-                }
-                if (parsed.type === 'sexpr') {
-                    if (top.top === target) {
-                        ret = data['compile'](parsed[0])([]);
+            sorted.forEach((group) => {
+                if (group.length > 1 && this.addStatements) {
+                    const result = this.addStatements(
+                        group.map((g) => g.stmt),
+                        env,
+                        {},
+                        {},
+                    );
+                    env = result.env;
+                    allNames.push(...group.flatMap(({ names }) => names));
+                } else {
+                    const { top, stmt, names } = group[0];
+                    allNames.push(...names);
+                    if (stmt.type === 'sexpr') {
+                        if (top.top === target) {
+                            ret = data['compile'](stmt[0])([]);
+                        } else {
+                            return; // ignore expressions
+                        }
                     }
-                }
-                try {
-                    env = this.addStatement(parsed, env, {}, {}).env;
-                } catch (err) {
-                    console.error(err);
+                    const result = this.addStatement(stmt, env, {}, {});
+                    if (result.display instanceof Error) {
+                        console.error(`We failed, sorry folks`, result.display);
+                        throw result.display;
+                    }
+                    env = result.env;
                 }
             });
+
+            // findTops(state).forEach((top) => {
+            //     const node = fromMCST(top.top, state.map);
+            //     if (node.type === 'blank') return;
+            //     const parsed = this.parse(node, errors);
+            //     if (!parsed) return;
+            //     if (parsed.type === 'sdef') {
+            //         names.push(parsed[0]);
+            //     }
+            //     if (parsed.type === 'sexpr') {
+            //         if (top.top === target) {
+            //             ret = data['compile'](parsed[0])([]);
+            //         }
+            //     }
+            //     try {
+            //         env = this.addStatement(parsed, env, {}, {}).env;
+            //     } catch (err) {
+            //         console.error(err);
+            //     }
+            // });
 
             if (target != null && ret == null) {
                 throw new Error(`tagtet wasnt a toplevel ${target}`);
@@ -162,7 +172,7 @@ export const fnsEvaluator = (
                 env.js.push(`return ${ret}`);
             } else {
                 env.js.push(
-                    `return {type: 'fns', ${names
+                    `return {type: 'fns', ${allNames
                         .map((name) => sanitize(name))
                         .sort()
                         .join(', ')}}`,

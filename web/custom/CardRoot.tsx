@@ -9,7 +9,7 @@ import React, {
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
-import { Results } from '../ide/ground-up/GroundUp';
+import { Debug, Results } from '../ide/ground-up/GroundUp';
 import { verifyState } from '../ide/ground-up/reduce';
 import { NSTop } from './NSTop';
 import { Action, NUIState, RealizedNamespace } from './UIState';
@@ -34,7 +34,7 @@ export function CardRoot({
     env,
     ev,
 }: {
-    debug: boolean;
+    debug: Debug;
     env: any;
     card: number;
     state: NUIState;

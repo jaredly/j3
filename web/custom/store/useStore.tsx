@@ -24,10 +24,11 @@ export const useStore = (initialState: NUIState) => {
         const everyListeners: ((state: NUIState) => void)[] = [];
         let state = initialState;
         let evaluator: FullEvalator<any, any, any> | null = null;
+        let debugExecOrder = { current: false };
 
         const updateResults = adaptiveBounce(() => {
             console.log('updating results');
-            results = getResults(state, evaluator);
+            results = getResults(state, evaluator, debugExecOrder.current);
             everyListeners.forEach((f) => f(state));
         });
 
@@ -35,14 +36,18 @@ export const useStore = (initialState: NUIState) => {
             evaluator = ev;
             console.log('loaded new', async);
             if (async) {
-                results = getResults(state, evaluator);
+                results = getResults(state, evaluator, debugExecOrder.current);
                 everyListeners.forEach((f) => f(state));
             }
         });
 
-        let results = getResults(state, evaluator);
+        let results = getResults(state, evaluator, debugExecOrder.current);
 
         return {
+            setDebug(nv) {
+                debugExecOrder.current = nv;
+                updateResults();
+            },
             dispatch(action) {
                 const a = performance.now();
                 let nextState = reduce(state, action);
@@ -50,7 +55,11 @@ export const useStore = (initialState: NUIState) => {
                 if (nextState.evaluator !== state.evaluator) {
                     loadEvaluator(nextState.evaluator, (ev) => {
                         evaluator = ev;
-                        results = getResults(state, evaluator);
+                        results = getResults(
+                            state,
+                            evaluator,
+                            debugExecOrder.current,
+                        );
                         everyListeners.forEach((f) => f(state));
                     });
                 }

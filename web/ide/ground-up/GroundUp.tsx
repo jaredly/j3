@@ -20,6 +20,12 @@ export type Results = {
     hashNames: { [idx: number]: string };
 };
 
+export type Debug = {
+    ids: boolean;
+    execOrder: boolean;
+    selection: boolean;
+};
+
 export const GroundUp = ({
     id,
     initial,
@@ -33,10 +39,18 @@ export const GroundUp = ({
 }) => {
     // const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
 
-    const [debug, setDebug] = useState(false);
+    const [debug, setDebug] = useState<Debug>({
+        ids: false,
+        execOrder: false,
+        selection: false,
+    });
 
     const store = useStore(initial);
     const { state, results } = useGlobalState(store);
+
+    useEffect(() => {
+        store.setDebug(debug.execOrder);
+    }, [debug.execOrder]);
 
     let first = useRef(true);
     useEffect(() => {
@@ -120,9 +134,20 @@ export const GroundUp = ({
                     overflow: 'auto',
                 }}
             >
-                <button onClick={() => setDebug(!debug)}>
-                    {debug ? 'Debug on' : 'Debug off'}
-                </button>
+                {(['ids', 'selection', 'execOrder'] as const).map((k) => (
+                    <div key={k}>
+                        <label>
+                            <input
+                                type="checkbox"
+                                checked={debug[k]}
+                                onChange={() =>
+                                    setDebug({ ...debug, [k]: !debug[k] })
+                                }
+                            />
+                            {' ' + k}
+                        </label>
+                    </div>
+                ))}
                 <div>
                     <ShowEvaluators
                         state={state}
@@ -131,22 +156,7 @@ export const GroundUp = ({
                         id={id}
                     />
                 </div>
-                {debug ? (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            backgroundColor: 'black',
-                            border: '1px solid #aaa',
-                            top: '100%',
-                            marginTop: 4,
-                            right: 0,
-                        }}
-                    >
-                        <ShowAt at={state.at} />
-                        {/* <br />
-                        {JSON.stringify(state.hover)} */}
-                    </div>
-                ) : null}
+                {debug.selection ? <ShowAt at={state.at} /> : null}
                 {renderTraces(results, state, store)}
             </div>
             <Hover
