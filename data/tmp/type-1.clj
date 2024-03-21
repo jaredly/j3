@@ -677,11 +677,13 @@
             (map/to-list subst)
                 (fn [(, name type)] "${name} -> ${(type-to-string-raw type)}"))))
 
-(defn infer-several [tenv' stmts]
+(defn show-substs [substs] (join "\n::\n" (map substs show-subst)))
+
+(defn infer-sev [tenv stmts]
     (let [
         nidx                  0
         (,, bound vars nidx)  (foldr
-                                  (,, tenv' [] nidx)
+                                  (,, tenv [] nidx)
                                       stmts
                                       (fn [(,, tenv' vars nidx) (sdef name _ body _)]
                                       (let [(, self nidx) (new-type-var name nidx)]
@@ -691,19 +693,63 @@
                                                   nidx))))
         (,, subst types nidx) (foldr
                                   (,, map/nil [] nidx)
-                                      stmts
-                                      (fn [(,, subst types nidx) (sdef name _ body _)]
-                                      (let [(,, one-subst type nidx) (t-expr bound body nidx)]
-                                          (** TODO might need this to be bidirectional? idk **)
-                                              (,, (compose-subst subst one-subst) [type ..types] nidx))))
-        selfed                (map vars (type-apply subst))
-        (, u-subst nidx)      (foldr
-                                  (, map/nil nidx)
-                                      (zip selfed types)
-                                      (fn [(, subst nidx) (, var type)]
-                                      (let [(, u-subst nidx) (unify var type nidx)]
-                                          (, (compose-subst subst u-subst) nidx))))
-        applied               (map types (type-apply u-subst))]
+                                      (zip vars stmts)
+                                      (fn [(,, subst types nidx) (, var (sdef name _ body _))]
+                                      (let [
+                                          (,, body-subst body-type nidx) (t-expr ;(bound) (tenv-apply subst bound) body nidx)
+                                          selfed                         (type-apply (compose-subst body-subst subst) var)
+                                          (, u-subst nidx)               (unify selfed body-type nidx)
+                                          subst                          (compose-subst (compose-subst u-subst body-subst) subst)]
+                                          (,, subst [(type-apply subst body-type) ..types] nidx))))]
+        (map (map types (type-apply subst)) type-to-string-raw)))
+
+(,
+    (infer-sev builtin-env)
+        [(,
+        [(@! (defn even [x] (odd (- x 1) x)))
+            (@! (defn odd [x y] "${(even x)}"))
+            (@! (defn what [a b c] (, (even a) (odd b c))))]
+            ["(fn [int] string)"
+            "(fn [int int] string)"
+            "(fn [int int int] (, string string))"])])
+
+(defn infer-several [tenv' stmts]
+    (let [
+        nidx                      0
+        (,, bound vars nidx)      (foldr
+                                      (,, tenv' [] nidx)
+                                          stmts
+                                          (fn [(,, tenv' vars nidx) (sdef name _ body _)]
+                                          (let [(, self nidx) (new-type-var name nidx)]
+                                              (,,
+                                                  (tenv/set-type tenv' name (scheme set/nil self))
+                                                      [self ..vars]
+                                                      nidx))))
+        (,, all-subst types nidx) (foldr
+                                      (,, [] [] nidx)
+                                          stmts
+                                          (fn [(,, subst types nidx) (sdef name _ body _)]
+                                          (let [(,, one-subst type nidx) (t-expr bound body nidx)]
+                                              (,, [one-subst ..subst] [type ..types] nidx))))
+        ;(selfed)                 ;(map vars (type-apply subst))
+        applied                   (map
+                                      (zip vars types)
+                                          (fn [(, var type)]
+                                          (let [
+                                              (, type nidx) (foldl
+                                                                (, type nidx)
+                                                                    all-subst
+                                                                    (fn [(, type nidx) subst]
+                                                                    (let [(, u-subst nidx) (unify (type-apply subst var) type nidx)]
+                                                                        (, (type-apply u-subst type) nidx))))]
+                                              type)))
+        ;(, applied nidx)         ;(foldr
+                                      (, map/nil nidx)
+                                          (zip selfe types)
+                                          (fn [(, subst nidx) (, var type)]
+                                          (let [(, u-subst nidx) (unify var type nidx)]
+                                              (, (compose-subst subst u-subst) nidx))))
+        ;(applied)                ;(map types (type-apply u-subst))]
         (foldr
             tenv'
                 (zip applied stmts)
@@ -716,7 +762,9 @@
         builtin-env
             [(@! (defn even [x] (odd (- x 1) x)))
             (@! (defn odd [x y] (even x)))
-            (@! (defn what [a b c] (+ (even a) (odd b))))]))
+            (@! (defn what [a b c] (+ (even a) (odd b c))))]))
+
+(infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 
 
 

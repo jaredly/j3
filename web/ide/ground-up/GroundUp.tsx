@@ -116,6 +116,8 @@ export const GroundUp = ({
                     right: 4,
                     backgroundColor: 'black',
                     padding: 16,
+                    maxHeight: '100vh',
+                    overflow: 'auto',
                 }}
             >
                 <button onClick={() => setDebug(!debug)}>

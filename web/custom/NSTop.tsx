@@ -223,54 +223,11 @@ const renderProduce = (
     dispatch: React.Dispatch<Action>,
 ) => {
     if (value instanceof MyEvalError) {
-        let at = 0;
-        let parts: JSX.Element[] = [];
-        const msg = value.source.message;
-        msg.replace(/\d+/g, (match, idx) => {
-            if (idx > at) {
-                parts.push(<span key={at}>{msg.slice(at, idx)}</span>);
-            }
-            const loc = +match;
-            parts.push(
-                <button
-                    key={idx}
-                    onMouseDown={(evt) => evt.stopPropagation()}
-                    style={{
-                        color: 'inherit',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                    }}
-                    onMouseEnter={() => {
-                        const got = state.regs[loc];
-                        const node = got?.main ?? got?.outside;
-                        if (!node) return;
-                        node.node.style.outline = '1px solid red';
-                    }}
-                    onClick={() => {
-                        const path = pathForIdx(loc, state.regs, state.map);
-                        if (!path) return alert('nope');
-                        dispatch({
-                            type: 'select',
-                            at: [{ start: path }],
-                        });
-                    }}
-                    onMouseLeave={() => {
-                        const got = state.regs[loc];
-                        const node = got?.main ?? got?.outside;
-                        if (!node) return;
-                        node.node.style.outline = 'unset';
-                    }}
-                >
-                    {match}
-                </button>,
-            );
-            at = idx + match.length;
-            return '';
-        });
-        if (at < msg.length) {
-            parts.push(<span key={at}>{msg.slice(at)}</span>);
-        }
+        let parts: JSX.Element[] = highlightIdxs(
+            value.source.message,
+            state,
+            dispatch,
+        );
         return (
             <div style={{ color: 'rgb(255,50,50)' }}>
                 {value.message + '\n'}
@@ -279,9 +236,10 @@ const renderProduce = (
         );
     }
     if (value instanceof LocError) {
+        let parts = highlightIdxs(value.message, state, dispatch);
         return (
             <div>
-                Traceback: {value.message}
+                Traceback: {parts}
                 {value.locs.map((n, i) => (
                     <div
                         className="hover"
@@ -334,3 +292,57 @@ const renderProduce = (
     if (!value) return '';
     return value;
 };
+function highlightIdxs(
+    msg: string,
+    state: NUIState,
+    dispatch: React.Dispatch<Action>,
+) {
+    let at = 0;
+    let parts: JSX.Element[] = [];
+    msg.replace(/\d+/g, (match, idx) => {
+        if (idx > at) {
+            parts.push(<span key={at}>{msg.slice(at, idx)}</span>);
+        }
+        const loc = +match;
+        parts.push(
+            <button
+                key={idx}
+                onMouseDown={(evt) => evt.stopPropagation()}
+                style={{
+                    color: 'inherit',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                }}
+                onMouseEnter={() => {
+                    const got = state.regs[loc];
+                    const node = got?.main ?? got?.outside;
+                    if (!node) return;
+                    node.node.style.outline = '1px solid red';
+                }}
+                onClick={() => {
+                    const path = pathForIdx(loc, state.regs, state.map);
+                    if (!path) return alert('nope');
+                    dispatch({
+                        type: 'select',
+                        at: [{ start: path }],
+                    });
+                }}
+                onMouseLeave={() => {
+                    const got = state.regs[loc];
+                    const node = got?.main ?? got?.outside;
+                    if (!node) return;
+                    node.node.style.outline = 'unset';
+                }}
+            >
+                {match}
+            </button>,
+        );
+        at = idx + match.length;
+        return '';
+    });
+    if (at < msg.length) {
+        parts.push(<span key={at}>{msg.slice(at)}</span>);
+    }
+    return parts;
+}

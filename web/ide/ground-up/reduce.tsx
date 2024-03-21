@@ -650,15 +650,22 @@ const initialState = (): NUIState => {
 };
 export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 export const saveState = async (id: string, state: NUIState) => {
-    const res = await fetch(urlForId(id), {
-        method: 'POST',
-        body: JSON.stringify(state),
-        headers: { 'Content-type': 'application/json' },
-    });
-    if (res.status !== 200) {
-        alert(`Error ${res.status} while saving state! ${await res.text()}`);
+    try {
+        const res = await fetch(urlForId(id), {
+            method: 'POST',
+            body: JSON.stringify(state),
+            headers: { 'Content-type': 'application/json' },
+        });
+        if (res.status !== 200) {
+            alert(
+                `Error ${res.status} while saving state! ${await res.text()}`,
+            );
+        }
+    } catch (err) {
+        alert(`Error ${(err as Error).message} while saving state!`);
     }
 };
+
 export function loadState(state: NUIState = initialState()) {
     console.log(
         `Loaded state, modified at: `,

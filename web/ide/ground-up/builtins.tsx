@@ -57,7 +57,8 @@ export function builtins() {
         },
         'map/map': (fn: (k: any) => any) => (map: [any, any][]) =>
             map.map(([k, v]) => [k, fn(v)]),
-        'map/merge': (a: [any, any][]) => (b: [any, any][]) => [...a, ...b],
+        'map/merge': (a: [any, any][]) => (b: [any, any][]) =>
+            [...a, ...b.filter((item) => !a.find((a) => a[0] === item[0]))],
         'map/values': (m: [any, any][]) => wrapArray(m.map((i) => i[1])),
 
         'set/nil': [],

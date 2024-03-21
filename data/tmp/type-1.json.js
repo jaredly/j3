@@ -1699,6 +1699,135 @@ return /*8144*/`${/*8146*/name/*<8146*/} -> ${/*8148*//*8150*/type_to_string_raw
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 8137');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8137*//*<8137*/)/*<8132*/)/*<8152*//*<8126*/;
 
+const show_substs = /*8245*/(substs) => /*8251*//*8251*//*8252*/join/*<8252*/(/*8251*//*8253*/"\n::\n"/*<8253*/)/*<8251*/(/*8251*//*8255*//*8255*//*8256*/map/*<8256*/(/*8255*//*8257*/substs/*<8257*/)/*<8255*/(/*8255*//*8258*/show_subst/*<8258*/)/*<8255*/)/*<8251*//*<8245*/;
+
+const infer_sev = /*8292*/(tenv) => /*8292*/(stmts) => /*8300*/(() => {const $target = /*8305*/0/*<8305*/;
+{
+let nidx = $target;
+return /*8300*/(() => {const $target = /*8311*//*8311*//*8311*//*8312*/foldr/*<8312*/(/*8311*//*8313*//*8313*//*8313*//*8314*/$co$co/*<8314*/(/*8313*//*8315*/tenv/*<8315*/)/*<8313*/(/*8313*//*8316*/nil/*<8316*/)/*<8313*/(/*8313*//*8317*/nidx/*<8317*/)/*<8313*/)/*<8311*/(/*8311*//*8318*/stmts/*<8318*/)/*<8311*/(/*8311*//*8319*/($fn_arg) => /*8319*/(($target) => {
+if ($target.type === ",,") {
+{
+let tenv$qu = $target[0];
+{
+let vars = $target[1];
+{
+let nidx = $target[2];
+return /*8319*/($fn_arg) => /*8319*/(($target) => {
+if ($target.type === "sdef") {
+{
+let name = $target[0];
+{
+let body = $target[2];
+return /*8333*/(() => {const $target = /*8340*//*8340*//*8341*/new_type_var/*<8341*/(/*8340*//*8342*/name/*<8342*/)/*<8340*/(/*8340*//*8343*/nidx/*<8343*/)/*<8340*/;
+if ($target.type === ",") {
+{
+let self = $target[0];
+{
+let nidx = $target[1];
+return /*8344*//*8344*//*8344*//*8345*/$co$co/*<8345*/(/*8344*//*8346*//*8346*//*8346*//*8347*/tenv$slset_type/*<8347*/(/*8346*//*8348*/tenv$qu/*<8348*/)/*<8346*/(/*8346*//*8349*/name/*<8349*/)/*<8346*/(/*8346*//*8350*//*8350*//*8351*/scheme/*<8351*/(/*8350*//*8352*/set$slnil/*<8352*/)/*<8350*/(/*8350*//*8353*/self/*<8353*/)/*<8350*/)/*<8346*/)/*<8344*/(/*8344*//*8354*//*8354*//*8354*/cons/*<8354*/(/*8354*//*8355*/self/*<8355*/)/*<8354*/(/*8354*//*8356*/vars/*<8356*/)/*<8354*/)/*<8344*/(/*8344*//*8360*/nidx/*<8360*/)/*<8344*/
+}
+}
+};
+throw new Error('let pattern not matched 8336. ' + valueToString($target));})(/*!*/)/*<8333*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8319');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8319*//*<8319*/
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8319');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8319*//*<8319*/)/*<8311*/;
+if ($target.type === ",,") {
+{
+let bound = $target[0];
+{
+let vars = $target[1];
+{
+let nidx = $target[2];
+return /*8300*/(() => {const $target = /*8363*//*8363*//*8363*//*8364*/foldr/*<8364*/(/*8363*//*8365*//*8365*//*8365*//*8366*/$co$co/*<8366*/(/*8365*//*8367*/map$slnil/*<8367*/)/*<8365*/(/*8365*//*8368*/nil/*<8368*/)/*<8365*/(/*8365*//*8369*/nidx/*<8369*/)/*<8365*/)/*<8363*/(/*8363*//*8370*//*8370*//*8371*/zip/*<8371*/(/*8370*//*8372*/vars/*<8372*/)/*<8370*/(/*8370*//*8373*/stmts/*<8373*/)/*<8370*/)/*<8363*/(/*8363*//*8374*/($fn_arg) => /*8374*/(($target) => {
+if ($target.type === ",,") {
+{
+let subst = $target[0];
+{
+let types = $target[1];
+{
+let nidx = $target[2];
+return /*8374*/($fn_arg) => /*8374*/(($target) => {
+if ($target.type === ",") {
+{
+let $var = $target[0];
+if ($target[1].type === "sdef") {
+{
+let name = $target[1][0];
+{
+let body = $target[1][2];
+return /*8391*/(() => {const $target = /*8399*//*8399*//*8399*//*8400*/t_expr/*<8400*/(/*8399*//*8612*//*8612*//*8401*/tenv_apply/*<8401*/(/*8612*//*8613*/subst/*<8613*/)/*<8612*/(/*8612*//*8614*/bound/*<8614*/)/*<8612*/)/*<8399*/(/*8399*//*8402*/body/*<8402*/)/*<8399*/(/*8399*//*8403*/nidx/*<8403*/)/*<8399*/;
+if ($target.type === ",,") {
+{
+let body_subst = $target[0];
+{
+let body_type = $target[1];
+{
+let nidx = $target[2];
+return /*8391*/(() => {const $target = /*8405*//*8405*//*8406*/type_apply/*<8406*/(/*8405*//*8505*//*8505*//*8506*/compose_subst/*<8506*/(/*8505*//*8407*/body_subst/*<8407*/)/*<8505*/(/*8505*//*8652*/subst/*<8652*/)/*<8505*/)/*<8405*/(/*8405*//*8408*/$var/*<8408*/)/*<8405*/;
+{
+let selfed = $target;
+return /*8391*/(() => {const $target = /*8413*//*8413*//*8413*//*8414*/unify/*<8414*/(/*8413*//*8415*/selfed/*<8415*/)/*<8413*/(/*8413*//*8416*/body_type/*<8416*/)/*<8413*/(/*8413*//*8417*/nidx/*<8417*/)/*<8413*/;
+if ($target.type === ",") {
+{
+let u_subst = $target[0];
+{
+let nidx = $target[1];
+return /*8391*/(() => {const $target = /*8428*//*8428*//*8429*/compose_subst/*<8429*/(/*8428*//*8502*//*8502*//*8431*/compose_subst/*<8431*/(/*8502*//*8503*/u_subst/*<8503*/)/*<8502*/(/*8502*//*8504*/body_subst/*<8504*/)/*<8502*/)/*<8428*/(/*8428*//*8653*/subst/*<8653*/)/*<8428*/;
+{
+let subst = $target;
+return /*8418*//*8418*//*8418*//*8419*/$co$co/*<8419*/(/*8418*//*8420*/subst/*<8420*/)/*<8418*/(/*8418*//*8435*//*8435*//*8435*/cons/*<8435*/(/*8435*//*8425*//*8425*//*8426*/type_apply/*<8426*/(/*8425*//*8432*/subst/*<8432*/)/*<8425*/(/*8425*//*8433*/body_type/*<8433*/)/*<8425*/)/*<8435*/(/*8435*//*8436*/types/*<8436*/)/*<8435*/)/*<8418*/(/*8418*//*8434*/nidx/*<8434*/)/*<8418*/
+};
+throw new Error('let pattern not matched 8427. ' + valueToString($target));})(/*!*/)/*<8391*/
+}
+}
+};
+throw new Error('let pattern not matched 8409. ' + valueToString($target));})(/*!*/)/*<8391*/
+};
+throw new Error('let pattern not matched 8404. ' + valueToString($target));})(/*!*/)/*<8391*/
+}
+}
+}
+};
+throw new Error('let pattern not matched 8394. ' + valueToString($target));})(/*!*/)/*<8391*/
+}
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8374');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8374*//*<8374*/
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8374');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8374*//*<8374*/)/*<8363*/;
+if ($target.type === ",,") {
+{
+let subst = $target[0];
+{
+let types = $target[1];
+{
+let nidx = $target[2];
+return /*8492*//*8492*//*8493*/map/*<8493*/(/*8492*//*8496*//*8496*//*8494*/map/*<8494*/(/*8496*//*8497*/types/*<8497*/)/*<8496*/(/*8496*//*8498*//*8499*/type_apply/*<8499*/(/*8498*//*8500*/subst/*<8500*/)/*<8498*/)/*<8496*/)/*<8492*/(/*8492*//*8495*/type_to_string_raw/*<8495*/)/*<8492*/
+}
+}
+}
+};
+throw new Error('let pattern not matched 8488. ' + valueToString($target));})(/*!*/)/*<8300*/
+}
+}
+}
+};
+throw new Error('let pattern not matched 8306. ' + valueToString($target));})(/*!*/)/*<8300*/
+};
+throw new Error('let pattern not matched 8304. ' + valueToString($target));})(/*!*/)/*<8300*//*<8292*//*<8292*/;
+
 const infer_several = /*7579*/(tenv$qu) => /*7579*/(stmts) => /*7586*/(() => {const $target = /*7610*/0/*<7610*/;
 {
 let nidx = $target;
@@ -1743,7 +1872,7 @@ let bound = $target[0];
 let vars = $target[1];
 {
 let nidx = $target[2];
-return /*7586*/(() => {const $target = /*7771*//*7771*//*7771*//*7776*/foldr/*<7776*/(/*7771*//*7777*//*7777*//*7777*//*7778*/$co$co/*<7778*/(/*7777*//*7779*/map$slnil/*<7779*/)/*<7777*/(/*7777*//*7780*/nil/*<7780*/)/*<7777*/(/*7777*//*7781*/nidx/*<7781*/)/*<7777*/)/*<7771*/(/*7771*//*7782*/stmts/*<7782*/)/*<7771*/(/*7771*//*7783*/($fn_arg) => /*7783*/(($target) => {
+return /*7586*/(() => {const $target = /*7771*//*7771*//*7771*//*7776*/foldr/*<7776*/(/*7771*//*7777*//*7777*//*7777*//*7778*/$co$co/*<7778*/(/*7777*//*7779*/nil/*<7779*/)/*<7777*/(/*7777*//*7780*/nil/*<7780*/)/*<7777*/(/*7777*//*7781*/nidx/*<7781*/)/*<7777*/)/*<7771*/(/*7771*//*7782*/stmts/*<7782*/)/*<7771*/(/*7771*//*7783*/($fn_arg) => /*7783*/(($target) => {
 if ($target.type === ",,") {
 {
 let subst = $target[0];
@@ -1765,7 +1894,7 @@ let one_subst = $target[0];
 let type = $target[1];
 {
 let nidx = $target[2];
-return /*7812*//*7812*//*7812*//*7813*/$co$co/*<7813*/(/*7812*//*7814*//*7814*//*7815*/compose_subst/*<7815*/(/*7814*//*7816*/subst/*<7816*/)/*<7814*/(/*7814*//*7817*/one_subst/*<7817*/)/*<7814*/)/*<7812*/(/*7812*//*7821*//*7821*//*7821*/cons/*<7821*/(/*7821*//*7822*/type/*<7822*/)/*<7821*/(/*7821*//*7823*/types/*<7823*/)/*<7821*/)/*<7812*/(/*7812*//*7827*/nidx/*<7827*/)/*<7812*/
+return /*7812*//*7812*//*7812*//*7813*/$co$co/*<7813*/(/*7812*//*7814*//*7814*//*7814*/cons/*<7814*/(/*7814*//*8161*/one_subst/*<8161*/)/*<7814*/(/*7814*//*8162*/subst/*<8162*/)/*<7814*/)/*<7812*/(/*7812*//*7821*//*7821*//*7821*/cons/*<7821*/(/*7821*//*7822*/type/*<7822*/)/*<7821*/(/*7821*//*7823*/types/*<7823*/)/*<7821*/)/*<7812*/(/*7812*//*7827*/nidx/*<7827*/)/*<7812*/
 }
 }
 }
@@ -1782,51 +1911,52 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 7783');})(/*!*//
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 7783');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<7783*//*<7783*/)/*<7771*/;
 if ($target.type === ",,") {
 {
-let subst = $target[0];
+let all_subst = $target[0];
 {
 let types = $target[1];
 {
 let nidx = $target[2];
-return /*7586*/(() => {const $target = /*7829*//*7829*//*7830*/map/*<7830*/(/*7829*//*7831*/vars/*<7831*/)/*<7829*/(/*7829*//*7834*//*7835*/type_apply/*<7835*/(/*7834*//*7836*/subst/*<7836*/)/*<7834*/)/*<7829*/;
-{
-let selfed = $target;
-return /*7586*/(() => {const $target = /*7838*//*7838*//*7838*//*7842*/foldr/*<7842*/(/*7838*//*7848*//*7848*//*7849*/$co/*<7849*/(/*7848*//*7850*/map$slnil/*<7850*/)/*<7848*/(/*7848*//*7851*/nidx/*<7851*/)/*<7848*/)/*<7838*/(/*7838*//*7843*//*7843*//*7844*/zip/*<7844*/(/*7843*//*7845*/selfed/*<7845*/)/*<7843*/(/*7843*//*7846*/types/*<7846*/)/*<7843*/)/*<7838*/(/*7838*//*7852*/($fn_arg) => /*7852*/(($target) => {
-if ($target.type === ",") {
-{
-let subst = $target[0];
-{
-let nidx = $target[1];
-return /*7852*/($fn_arg) => /*7852*/(($target) => {
+return /*7586*/(() => {const $target = /*8178*//*8178*//*8189*/map/*<8189*/(/*8178*//*8190*//*8190*//*8191*/zip/*<8191*/(/*8190*//*8192*/vars/*<8192*/)/*<8190*/(/*8190*//*8193*/types/*<8193*/)/*<8190*/)/*<8178*/(/*8178*//*8194*/($fn_arg) => /*8194*/(($target) => {
 if ($target.type === ",") {
 {
 let $var = $target[0];
 {
 let type = $target[1];
-return /*7863*/(() => {const $target = /*7870*//*7870*//*7870*//*7871*/unify/*<7871*/(/*7870*//*7872*/$var/*<7872*/)/*<7870*/(/*7870*//*7873*/type/*<7873*/)/*<7870*/(/*7870*//*7874*/nidx/*<7874*/)/*<7870*/;
+return /*8201*/(() => {const $target = /*8212*//*8212*//*8212*//*8213*/foldl/*<8213*/(/*8212*//*8263*//*8263*//*8214*/$co/*<8214*/(/*8263*//*8264*/type/*<8264*/)/*<8263*/(/*8263*//*8265*/nidx/*<8265*/)/*<8263*/)/*<8212*/(/*8212*//*8215*/all_subst/*<8215*/)/*<8212*/(/*8212*//*8216*/($fn_arg) => /*8216*/(($target) => {
+if ($target.type === ",") {
+{
+let type = $target[0];
+{
+let nidx = $target[1];
+return /*8216*/(subst) => /*8223*/(() => {const $target = /*8230*//*8230*//*8230*//*8231*/unify/*<8231*/(/*8230*//*8232*//*8232*//*8233*/type_apply/*<8233*/(/*8232*//*8234*/subst/*<8234*/)/*<8232*/(/*8232*//*8235*/$var/*<8235*/)/*<8232*/)/*<8230*/(/*8230*//*8236*/type/*<8236*/)/*<8230*/(/*8230*//*8237*/nidx/*<8237*/)/*<8230*/;
 if ($target.type === ",") {
 {
 let u_subst = $target[0];
 {
 let nidx = $target[1];
-return /*7875*//*7875*//*7876*/$co/*<7876*/(/*7875*//*7877*//*7877*//*7878*/compose_subst/*<7878*/(/*7877*//*7879*/subst/*<7879*/)/*<7877*/(/*7877*//*7880*/u_subst/*<7880*/)/*<7877*/)/*<7875*/(/*7875*//*7893*/nidx/*<7893*/)/*<7875*/
+return /*8238*//*8238*//*8239*/$co/*<8239*/(/*8238*//*8240*//*8240*//*8241*/type_apply/*<8241*/(/*8240*//*8242*/u_subst/*<8242*/)/*<8240*/(/*8240*//*8243*/type/*<8243*/)/*<8240*/)/*<8238*/(/*8238*//*8244*/nidx/*<8244*/)/*<8238*/
 }
 }
 };
-throw new Error('let pattern not matched 7866. ' + valueToString($target));})(/*!*/)/*<7863*/
+throw new Error('let pattern not matched 8226. ' + valueToString($target));})(/*!*/)/*<8223*//*<8216*/
 }
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 7852');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<7852*//*<7852*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 7852');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<7852*//*<7852*/)/*<7838*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8216');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8216*//*<8216*/)/*<8212*/;
 if ($target.type === ",") {
 {
-let u_subst = $target[0];
+let type = $target[0];
 {
 let nidx = $target[1];
-return /*7586*/(() => {const $target = /*7894*//*7894*//*7895*/map/*<7895*/(/*7894*//*7896*/types/*<7896*/)/*<7894*/(/*7894*//*7897*//*7898*/type_apply/*<7898*/(/*7897*//*7899*/u_subst/*<7899*/)/*<7897*/)/*<7894*/;
+return /*8259*/type/*<8259*/
+}
+}
+};
+throw new Error('let pattern not matched 8208. ' + valueToString($target));})(/*!*/)/*<8201*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8194');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8194*//*<8194*/)/*<8178*/;
 {
 let applied = $target;
 return /*7607*//*7607*//*7607*//*7946*/foldr/*<7946*/(/*7607*//*7953*/tenv$qu/*<7953*/)/*<7607*/(/*7607*//*7947*//*7947*//*7948*/zip/*<7948*/(/*7947*//*7949*/applied/*<7949*/)/*<7947*/(/*7947*//*8026*/stmts/*<8026*/)/*<7947*/)/*<7607*/(/*7607*//*7954*/(tenv$qu) => /*7954*/($fn_arg) => /*7954*/(($target) => {
@@ -1843,13 +1973,7 @@ return /*7968*//*7968*//*7968*//*7969*/tenv$slset_type/*<7969*/(/*7968*//*7970*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 7954');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<7954*//*<7954*//*<7954*/)/*<7607*/
 };
-throw new Error('let pattern not matched 7755. ' + valueToString($target));})(/*!*/)/*<7586*/
-}
-}
-};
-throw new Error('let pattern not matched 7837. ' + valueToString($target));})(/*!*/)/*<7586*/
-};
-throw new Error('let pattern not matched 7828. ' + valueToString($target));})(/*!*/)/*<7586*/
+throw new Error('let pattern not matched 8184. ' + valueToString($target));})(/*!*/)/*<7586*/
 }
 }
 }
@@ -2214,4 +2338,4 @@ return /*6322*/`${/*6324*/k/*<6324*/} : ${/*6326*//*6328*/type_to_string_raw/*<6
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6315');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6315*//*<6315*/)/*<6313*/)/*<6330*//*<6304*/;
 
 const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5});
-return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, infer, infer_several, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, show_subst, show_types, show_types_list, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}
+return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, earlier_subst, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, infer, infer_sev, infer_several, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, show_subst, show_substs, show_types, show_types_list, subst_to_string, t_expr, t_pat, t_prim, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tint, tts_inner, tts_list, type_apply, type_free, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, zip}
