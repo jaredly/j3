@@ -72,6 +72,7 @@
         (equotquot cst int)
         (elambda string int expr int)
         (eapp expr expr int)
+        (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
@@ -347,6 +348,12 @@
 
 (defn tfn [a b l] (tapp (tapp (tcon "->" l) a l) b l))
 
+(def tint (tcon "int" -1))
+
+(def tbool (tcon "bool" -1))
+
+(def tstring (tcon "string" -1))
+
 (defn t-expr [tenv expr nidx]
     (match expr
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
@@ -500,10 +507,6 @@
 
 (infer tenv/nil (@ (let [a 1] a)))
 
-(def tint (tcon "int" -1))
-
-(def tbool (tcon "bool" -1))
-
 (def basic
     (tenv
         (map/from-list
@@ -626,35 +629,15 @@
         [(sexpr expr _)] (infer tenv expr)
         [one ..rest]     (several (infer-stmt tenv one) rest)))
 
-(def builtin-env
-    (foldl
-        (tenv
-            (map/from-list
-                [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                    (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                    (, ">" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "<" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, ">=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "<=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))])
-                map/nil
-                map/nil)
-            [(@! (deftype (array a) (cons a (array a)) (nil)))
-            (@! (deftype (option a) (some a) (none)))
-            (@! (deftype (, a b) (, a b)))
-            (@! (deftype (,, a b c) (,, a b c)))
-            (@! (deftype (,,, a b c d) (,,, a b c d)))
-            (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
-            infer-stmt))
-
 2105
 
 3336
 
 (,
-    (fn [x] (type-to-string (several builtin-env x)))
+    (fn [x] (type-to-string (several basic x)))
         [(,
-        [(@!
+        [(@! (deftype (array a) (cons a (array a)) (nil)))
+            (@!
             (defn foldr [init items f]
                 (match items
                     []           init
@@ -807,6 +790,9 @@
         (equot expr int)            empty
         (equotquot cst int)         empty
         (elambda name int body int) (externals (set/add bound name) body)
+        (elet pat init body l)      (bag/and
+                                        (externals bound init)
+                                            (externals (set/merge bound (pat-names pat)) body))
         (eapp target arg int)       (bag/and (externals bound target) (externals bound arg))
         (ematch expr cases int)     (bag/and
                                         (externals bound expr)
@@ -843,6 +829,46 @@
                         (one a) a
                         (two b) (+ b c)
                         _       mx))))))
+
+(defn tmap [k v] (tapp (tapp (tcon "map" -1) k) v))
+
+(defn tfns [args result]
+    (foldr result args (fn [result arg] (tfn arg result -1))))
+
+(type-to-string (tfns [tint tbool] tstring))
+
+(def builtin-env
+    (foldl
+        (tenv
+            (map/from-list
+                [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                    (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                    (, ">" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "<" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, ">=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "<=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
+                    (, "unescapeString" (scheme set/nil (tfn tstring tstring)))
+                    (, "int-to-string" (scheme set/nil (tfn tint tstring)))
+                    (,
+                    "string-to-int"
+                        (scheme set/nil (tfn tstring (tapp (tcon "option" -1) tint -1))))
+                    (,
+                    "++"
+                        (scheme set/nil (tfn (tapp (tcon "array" -1) tstring -1) tstring)))
+                    (,
+                    "map/nil"
+                        (scheme (set/from-list ["k" "v"]) (tmap (tvar "k" -1) (tvar "v" -1))))
+                    (, "map/set" (scheme (set/from-list ["k" "v"]) (tfn (tmap))))])
+                map/nil
+                map/nil)
+            [(@! (deftype (array a) (cons a (array a)) (nil)))
+            (@! (deftype (option a) (some a) (none)))
+            (@! (deftype (, a b) (, a b)))
+            (@! (deftype (,, a b c) (,, a b c)))
+            (@! (deftype (,,, a b c d) (,,, a b c d)))
+            (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
+            infer-stmt))
 
 (defn subst-to-string [subst]
     (join

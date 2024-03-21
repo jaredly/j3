@@ -46,7 +46,7 @@ const PluginRender = ({
         () => (results ? plugin.render(expanded, results, store, ns) : null),
         [expanded, results, ns.plugin],
     );
-    if (!results) return <div>NO RESULTS</div>;
+    // if (!results) return <div>NO RESULTS</div>;
     if (!rn || !results) return <Render {...props} />;
     return <RenderNNode {...props} values={values} nnode={rn} />;
 };

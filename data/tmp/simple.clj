@@ -47,6 +47,8 @@ lol
 
 (def y 10)
 
+(let [a x] 2)
+
 x
 
 (** Mutual Recursive **)
