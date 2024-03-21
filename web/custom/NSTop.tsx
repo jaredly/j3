@@ -18,7 +18,8 @@ import {
     FullEvalator,
     LocError,
     bootstrap,
-    Display,
+    Produce,
+    ProduceItem,
 } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
 import { useExpanded, useGetStore, useNode } from './store/Store';
@@ -76,7 +77,7 @@ export function NSTop({
     results: Results;
     ns: RealizedNamespace;
     selections: Cursor[];
-    produce: { [key: number]: Display };
+    produce: { [key: number]: ProduceItem[] };
     drag: Drag;
     debug: boolean;
 }) {
@@ -216,9 +217,18 @@ export function NSTop({
         </div>
     );
 }
-
 const renderProduce = (
-    value: Display,
+    value: ProduceItem[],
+    state: NUIState,
+    dispatch: React.Dispatch<Action>,
+) => {
+    return value.map((item, i) => (
+        <div key={i}>{renderProduceItem(item, state, dispatch)}</div>
+    ));
+};
+
+const renderProduceItem = (
+    value: ProduceItem,
     state: NUIState,
     dispatch: React.Dispatch<Action>,
 ) => {
@@ -288,6 +298,7 @@ const renderProduce = (
     if (!value) return '';
     return value;
 };
+
 function highlightIdxs(
     msg: string,
     state: NUIState,

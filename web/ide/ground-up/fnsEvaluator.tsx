@@ -3,7 +3,7 @@ import {
     MyEvalError,
     FullEvalator,
     LocError,
-    Display,
+    Produce,
 } from './Evaluators';
 import { valueToString } from './reduce';
 import { findTops } from './findTops';
@@ -122,7 +122,7 @@ export const fnsEvaluator = (
         },
         addStatements: data['infer_defns']
             ? (stmts, env, meta, trace) => {
-                  const display: { [key: number]: Display } = {};
+                  const display: { [key: number]: Produce } = {};
 
                   try {
                       env.typeCheck = data['infer_defns'](env.typeCheck)(

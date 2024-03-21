@@ -613,15 +613,13 @@
                                                                                    (, values cons)
                                                                                        constructors
                                                                                        (fn [(, values cons) (,,, name nl args l)]
-                                                                                       (let [
-                                                                                           args (map args (fn [arg] (type-with-free arg free-set)))
-                                                                                           free (foldl set/nil args (fn [free arg] (set/merge free (type-free arg))))]
+                                                                                       (let [args (map args (fn [arg] (type-with-free arg free-set)))]
                                                                                            (,
                                                                                                (map/set
                                                                                                    values
                                                                                                        name
-                                                                                                       (scheme free (foldr final args (fn [body arg] (tfn arg body l)))))
-                                                                                                   (map/set cons name (tconstructor free args final))))))]
+                                                                                                       (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                                                                   (map/set cons name (tconstructor free-set args final))))))]
                                                       (tenv values cons (map/set types tname (set/from-list names))))))
 
 (defn several [tenv stmts]
@@ -657,7 +655,14 @@
         [(@! (deftype (array2 a) (cons2 a (array2 a)) (nil2))) (@! (cons2 1 nil2))]
             "(array2 int)")
         (, [(@! (defn fib [x] (+ 1 (fib (+ 2 x))))) (@! fib)] "(fn [int] int)")
-        (, [(@! (, 1 2))] "(, int int)")])
+        (, [(@! (, 1 2))] "(, int int)")
+        (,
+        [(@! (defn rev [a b] a)) (@! (let [a (rev 1 1) b (rev "a" 1)] (, a b)))]
+            "(, int string)")
+        (,
+        [(@! (deftype (what-t a) (what a (what-t a)) (one a) (no)))
+            (@! (let [a (what 1 (no)) b (what "a" (no))] (, a b)))]
+            "(, (what-t int) (what-t string))")])
 
 (defn show-types [names (tenv types _ _)]
     (let [names (set/from-list names)]
@@ -722,6 +727,8 @@
             (@! (defn odd [x y] (even x)))
             (@! (defn what [a b c] (+ (even a) (odd b c))))]
             ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])])
+
+8743
 
 (defn infer-defns [tenv stmts]
     (foldl
@@ -874,11 +881,12 @@
                         (, "map/get" (kv (tfns [(tmap k v) k] (toption v))))
                         (,
                         "map/map"
-                            (generic ["k" "v" "v2"] (tfns [(tmap k v) (tfns [v] v2)] (tmap k v2))))
+                            (generic ["k" "v" "v2"] (tfns [(tfns [v] v2) (tmap k v)] (tmap k v2))))
                         (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
                         (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
                         (, "set/nil" (kk (tset k)))
                         (, "set/add" (kk (tfns [(tset k) k] (tset k))))
+                        (, "set/has" (kk (tfns [(tset k) k] tbool)))
                         (, "set/rm" (kk (tfns [(tset k) k] (tset k))))
                         (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k))))
                         (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k))))
@@ -920,14 +928,6 @@
             to-string
             externals
             names))
-
-761
-
-888
-
-1012
-
-1005
 
 (typecheck
     builtin-env

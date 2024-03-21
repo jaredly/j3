@@ -75,7 +75,8 @@ export class LocError extends Error {
 }
 
 export type Errors = { [key: number]: string[] };
-export type Display = JSX.Element | string | LocError | MyEvalError;
+export type ProduceItem = JSX.Element | string | LocError | MyEvalError;
+export type Produce = ProduceItem | ProduceItem[];
 
 export type FullEvalator<Env, Stmt, Expr> = {
     id: string;
@@ -89,13 +90,13 @@ export type FullEvalator<Env, Stmt, Expr> = {
         env: Env,
         meta: MetaDataMap,
         trace: TraceMap,
-    ): { env: Env; display: { [key: number]: Display } };
+    ): { env: Env; display: { [key: number]: Produce } };
     addStatement(
         stmt: Stmt,
         env: Env,
         meta: MetaDataMap,
         trace: TraceMap,
-    ): { env: Env; display: Display };
+    ): { env: Env; display: Produce };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState, target?: number): { js: string; errors: Errors };
