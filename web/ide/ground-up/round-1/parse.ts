@@ -96,6 +96,8 @@ const addError = (errors: Errors, loc: number, error: string) => {
 export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
     switch (node.type) {
         case 'comment':
+        case 'comment-node':
+        case 'rich-text':
             return;
         case 'list':
             const values = filterBlanks(node.values);
@@ -562,6 +564,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
     }
     addError(ctx.errors, node.loc, 'unexpected expr ' + JSON.stringify(node));
 };
+
 export function filterBlanks(arg0: Node[]) {
     return arg0.filter(
         (a) =>

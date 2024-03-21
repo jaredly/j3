@@ -7,6 +7,7 @@ import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { NUIResults } from './Store';
 import { filterNulls } from '../reduce';
+import { Path } from '../../store';
 
 export const getResults = <Env, Stmt, Expr>(
     state: NUIState,
@@ -31,57 +32,7 @@ export const getResults = <Env, Stmt, Expr>(
         return results;
     }
 
-    const parsed = tops
-        .map((top) => {
-            const node = fromMCST(top.top, state.map);
-            if (
-                node.type === 'blank' ||
-                node.type === 'comment-node' ||
-                node.type === 'rich-text'
-            ) {
-                results.produce[node.loc] = [' '];
-                return;
-            }
-            layout(
-                top.top,
-                0,
-                state.map,
-                results.display,
-                results.hashNames,
-                true,
-            );
-            const errs = {};
-            const stmt = evaluator.parse(node, errs);
-            Object.assign(results.errors, errs);
-            if (!stmt) {
-                results.produce[node.loc] = [
-                    'not parsed ' + JSON.stringify(errs),
-                ];
-                if (top.plugin) {
-                    return {
-                        id: top.top,
-                        top,
-                        node,
-                        stmt,
-                        names: [],
-                        deps: [],
-                    };
-                }
-                return;
-            }
-            const names = evaluator.stmtNames(stmt);
-            return {
-                id: top.top,
-                top,
-                node,
-                stmt,
-                names,
-                deps: evaluator.dependencies(stmt),
-            };
-        })
-        .filter(filterNulls);
-
-    const sorted = depSort(parsed);
+    const sorted = sortTops(tops, state, results, evaluator);
     // console.log('sorted', sorted);
 
     // OK SO. we want ... to .... make a deep deps map, as well as identifying cycles?
@@ -236,7 +187,7 @@ export const getResults = <Env, Stmt, Expr>(
     return results;
 };
 
-const depSort = <T,>(
+export const depSort = <T,>(
     nodes: ({
         id: number;
         names: string[];
@@ -252,7 +203,9 @@ const depSort = <T,>(
     // type GraphNode = {ids: number[], dependencies: GraphNode[]}
     // hrm so it's directed
 
+    // Record<a, b> where a depends on b
     const edges: { [key: number]: number[] } = {};
+    // Record<b, a> where b is a dependency of a
     const back: { [key: number]: number[] } = {};
 
     let hasDeps = false;
@@ -297,32 +250,157 @@ const depSort = <T,>(
             }
         }
     }
-    console.log(nodes, idForName);
-    console.log({ deep: edges, edges, back });
 
-    const sorted = nodes
-        .filter((node) => !node.hidden || back[node.id] != null)
-        .sort((a, b) =>
-            edges[a.id]?.includes(b.id)
-                ? edges[b.id]?.includes(a.id)
-                    ? 0
-                    : 1
-                : edges[b.id]?.includes(a.id)
-                ? -1
-                : 0,
-        );
-    const groups: (typeof sorted)[] = [];
-    sorted.forEach((item) => {
-        if (!groups.length) {
-            return groups.push([item]);
-        }
-        const last = groups[groups.length - 1];
-        // forward-link, means we have a cycle
-        if (edges[last[0].id]?.includes(item.id)) {
-            last.push(item);
+    const cycles: { members: number[]; deps: number[] }[] = [];
+    const used: Record<number, true> = {};
+    const left: number[] = [];
+    keys.forEach((k) => {
+        if (used[k]) return;
+        if (edges[k].includes(k)) {
+            const cycle = [k];
+            const deps: number[] = [];
+            edges[k].forEach((d) => {
+                if (edges[d].includes(k)) {
+                    cycle.push(d);
+                } else {
+                    deps.push(d);
+                }
+            });
+            cycle.forEach((k) => (used[k] = true));
+            cycles.push({ members: cycle, deps });
         } else {
-            groups.push([item]);
+            left.push(k);
         }
     });
-    return groups;
+
+    // Here's what we can do.
+
+    const sorted: number[][] = [];
+
+    const seen: Record<number, true> = {};
+
+    let tick = 0;
+
+    while (left.length || cycles.length) {
+        if (tick++ > 10000) throw new Error('too many cycles');
+        let toRemove: number[] = [];
+        for (let i = 0; i < left.length; i++) {
+            if (edges[left[i]].every((k) => seen[k])) {
+                sorted.push([left[i]]);
+                seen[left[i]] = true;
+                toRemove.unshift(i);
+                // left.splice(i, 1)
+                // break
+            }
+        }
+        if (toRemove.length) {
+            toRemove.forEach((i) => left.splice(i, 1));
+        }
+        toRemove = [];
+        for (let i = 0; i < cycles.length; i++) {
+            if (cycles[i].deps.every((k) => seen[k])) {
+                sorted.push(cycles[i].members);
+                cycles[i].members.forEach((k) => (seen[k] = true));
+                // cycles.splice(i, 1)
+                // break
+                toRemove.unshift(i);
+            }
+        }
+        if (toRemove.length) {
+            toRemove.forEach((i) => cycles.splice(i, 1));
+        }
+    }
+
+    const byKey: Record<string, T> = {};
+    nodes.forEach((n) => (byKey[n.id] = n));
+
+    return sorted.map((group) => group.map((k) => byKey[k]));
+    // const seen: Record<number,true>={}
+    // const waiting: typeof nodes = [];
+    // nodes.forEach(node => { })
+
+    // const sorted = nodes
+    //     .filter((node) => !node.hidden || back[node.id] != null)
+    //     .sort((a, b) =>
+    //         edges[a.id]?.includes(b.id)
+    //             ? edges[b.id]?.includes(a.id)
+    //                 ? 0
+    //                 : 1
+    //             : edges[b.id]?.includes(a.id)
+    //             ? -1
+    //             : 0,
+    //     );
+    // const groups: (typeof sorted)[] = [];
+    // sorted.forEach((item) => {
+    //     if (!groups.length) {
+    //         return groups.push([item]);
+    //     }
+    //     const last = groups[groups.length - 1];
+    //     // forward-link, means we have a cycle
+    //     if (edges[last[0].id]?.includes(item.id)) {
+    //         last.push(item);
+    //     } else {
+    //         groups.push([item]);
+    //     }
+    // });
+    // return groups;
 };
+
+export function sortTops<Env, Stmt, Expr>(
+    tops: ReturnType<typeof findTops>,
+    state: NUIState,
+    results: NUIResults,
+    evaluator: FullEvalator<Env, Stmt, Expr>,
+) {
+    const parsed = tops
+        .map((top) => {
+            const node = fromMCST(top.top, state.map);
+            if (
+                node.type === 'blank' ||
+                node.type === 'comment-node' ||
+                node.type === 'rich-text'
+            ) {
+                results.produce[node.loc] = [' '];
+                return;
+            }
+            layout(
+                top.top,
+                0,
+                state.map,
+                results.display,
+                results.hashNames,
+                true,
+            );
+            const errs = {};
+            const stmt = evaluator.parse(node, errs);
+            Object.assign(results.errors, errs);
+            if (!stmt) {
+                results.produce[node.loc] = [
+                    'not parsed ' + JSON.stringify(errs),
+                ];
+                if (top.plugin) {
+                    return {
+                        id: top.top,
+                        top,
+                        node,
+                        stmt,
+                        names: [],
+                        deps: [],
+                    };
+                }
+                return;
+            }
+            return {
+                id: top.top,
+                top,
+                node,
+                stmt,
+                names: evaluator.stmtNames(stmt),
+                deps: evaluator.dependencies(stmt),
+            };
+        })
+        .filter(filterNulls);
+
+    const sorted = depSort(parsed);
+    return sorted;
+}

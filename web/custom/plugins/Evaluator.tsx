@@ -2,7 +2,7 @@ import React from 'react';
 import { NamespacePlugin } from '../UIState';
 import { urlForId } from '../../ide/ground-up/reduce';
 
-export const evaluatorPlugin: NamespacePlugin<1, string> = {
+export const evaluatorPlugin: NamespacePlugin<false | number, string> = {
     id: 'evaluator',
     title: 'Save Evaluator',
 
@@ -24,30 +24,37 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
                 {
                     type: 'dom',
                     node: (
-                        <button
-                            onClick={(evt) => {
-                                evt.stopPropagation();
-                                const name = prompt('Name to save it to');
-                                console.log(name);
-                                store.dispatch({
-                                    type: 'ns',
-                                    nsMap: {
-                                        [ns.id]: {
-                                            ...ns,
-                                            plugin: {
-                                                id: 'evaluator',
-                                                options: name,
+                        <div>
+                            <button
+                                onClick={(evt) => {
+                                    evt.stopPropagation();
+                                    const name = prompt('Name to save it to');
+                                    console.log(name);
+                                    store.dispatch({
+                                        type: 'ns',
+                                        nsMap: {
+                                            [ns.id]: {
+                                                ...ns,
+                                                plugin: {
+                                                    id: 'evaluator',
+                                                    options: name,
+                                                },
                                             },
                                         },
-                                    },
-                                });
-                            }}
-                            onMouseDown={(evt) => {
-                                evt.stopPropagation();
-                            }}
-                        >
-                            {options ?? 'Set name'}
-                        </button>
+                                    });
+                                }}
+                                onMouseDown={(evt) => {
+                                    evt.stopPropagation();
+                                }}
+                            >
+                                {options ?? 'Set name'}
+                            </button>
+                            {results === false
+                                ? 'Not saving'
+                                : `Saved at ${new Date(
+                                      results,
+                                  ).toLocaleTimeString()}`}
+                        </div>
                     ),
                 },
             ],
@@ -63,7 +70,14 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
     process(node, state, evaluator, results, options) {
         if (!options || !options.endsWith('.js')) {
             // throw new Error(`Bad name`);
-            return 1;
+            return false;
+        }
+        if (
+            node.type === 'blank' ||
+            node.type === 'comment' ||
+            node.type === 'comment-node'
+        ) {
+            return false; // ignoring
         }
         const text = evaluator.toFile?.(state, node.loc).js;
         fetch(urlForId(options), {
@@ -71,6 +85,6 @@ export const evaluatorPlugin: NamespacePlugin<1, string> = {
             method: 'POST',
         });
         // console.log(text);
-        return 1;
+        return Date.now();
     },
 };

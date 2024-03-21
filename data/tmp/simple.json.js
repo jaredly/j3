@@ -21,4 +21,4 @@ const lol = /*168*/function name_168(x) { return /*174*//*174*//*177*/$pl/*<177*
 
 const y = /*337*/10/*<337*/;
 
-return {type: 'fns', even, foldr, lol, odd, what, x, y}
+return {type: 'fns', a, b, c, e, even, foldr, l, lol, m, odd, what, x, y}

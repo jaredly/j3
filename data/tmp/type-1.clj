@@ -941,9 +941,9 @@
                         (, "map/to-list" (kv (tfns [(tmap k v)] (tarray (t, k v)))))
                         (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
                         (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring)))
-                        (, "eval" (generic ["v"] (tfns [(tcon "ast" -1)] (vbl "v"))))
+                        (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v"))))
                         (, "sanitize" (concrete (tfns [tstring] tstring)))
-                        (, "replace-all" (concrete (tfns [tstring tstring] tstring)))
+                        (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
                         (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
                     map/nil
                     map/nil)
@@ -974,10 +974,6 @@
             (fn [stmt] (array (, string int)))
             (fn [stmt] (array string))
             (fn [tenv string] (option type))))
-
-1
-
-()
 
 (typecheck
     builtin-env

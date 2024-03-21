@@ -30,6 +30,7 @@ export const evaluatorFromText = (
     text.forEach((text) => {
         const result = new Function(envArgs, '{' + text + '}')(san);
         if (result.type === 'typecheck') {
+            console.log('TYPECHECK');
             const {
                 0: env_nil,
                 1: infer_stmt,
@@ -50,8 +51,22 @@ export const evaluatorFromText = (
                 names,
                 get_type,
             });
-            console.log('um loading');
+        } else if (result.type === 'parse-and-compile') {
+            console.log('PARSE AND COMPILE');
+            const {
+                0: parse_stmt,
+                1: parse_expr,
+                2: compile_stmt,
+                3: compile,
+            } = result;
+            Object.assign(data, {
+                parse_stmt,
+                parse_expr,
+                compile_stmt,
+                compile,
+            });
         } else {
+            console.log('NOT A TYPE', result.type);
             Object.assign(data, result);
         }
     });

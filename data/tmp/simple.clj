@@ -23,6 +23,10 @@ what
     []        1
     [a ..asd] 2)
 
+(match true
+    false 1
+    true  2)
+
 [1 2]
 
 "hello ${"folks"}"
@@ -44,6 +48,8 @@ lol
 (lol 2)
 
 (@ [1 2])
+
+(@@ [1 2])
 
 (fn [(, a b c)] 1)
 
@@ -68,3 +74,21 @@ x
     (if (= 1 x)
         true
             (even (- x 1))))
+
+(** Big loop **)
+
+(def l m)
+
+(defn a [m] (+ (b 2) 2))
+
+(defn b [a] (c a))
+
+23
+
+(defn c [a] (e a))
+
+(defn e [b] (a 2))
+
+a
+
+(def m a)

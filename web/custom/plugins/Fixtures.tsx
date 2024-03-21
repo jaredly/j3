@@ -421,7 +421,9 @@ function statusMessage(
         return (
             <span
                 style={{ color: 'purple', cursor: 'pointer' }}
-                onClick={() => {
+                onMouseDown={(evt) => evt.stopPropagation()}
+                onClick={(evt) => {
+                    evt.stopPropagation();
                     // So ... we want .... the .. evaluator? to tell us, how to turn a [value]
                     // into a [CST]. Right? Seems about right.
                     console.log(res.found);

@@ -14,6 +14,8 @@ import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
 import { FnsEnv, TraceMap, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
+import { depSort, sortTops } from '../../custom/store/getResults';
+import { filterNulls } from '../../custom/reduce';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
@@ -87,6 +89,52 @@ export const fnsEvaluator = (
             const errors: Errors = {};
             const names: string[] = [];
             let ret: null | string = null;
+            const tops = findTops(state);
+            const sorted = depSort(
+                tops
+                    .map((top) => {
+                        const node = fromMCST(top.top, state.map);
+                        if (
+                            node.type === 'blank' ||
+                            node.type === 'comment-node' ||
+                            node.type === 'rich-text'
+                        ) {
+                            return;
+                        }
+                        const errs = {};
+                        const stmt = this.parse(node, errs);
+                        if (!stmt) return;
+                        return {
+                            id: top.top,
+                            top,
+                            node,
+                            stmt,
+                            names: this.stmtNames(stmt),
+                            deps: this.dependencies(stmt),
+                        };
+                    })
+                    .filter(filterNulls),
+            );
+
+            // sorted.forEach((group) => {
+            //     group.forEach(({ top, stmt }) => {
+            //         if (stmt.type === 'sdef') {
+            //             names.push(stmt[0]);
+            //         }
+            //         if (stmt.type === 'sexpr') {
+            //             if (top.top === target) {
+            //                 ret = data['compile'](stmt[0])([]);
+            //             }
+            //         }
+            //         const result = this.addStatement(stmt, env, {}, {});
+            //         if (result.display instanceof Error) {
+            //             console.error(`We failed, sorry folks`, result.display);
+            //             throw result.display;
+            //         }
+            //         env = result.env;
+            //     });
+            // });
+
             findTops(state).forEach((top) => {
                 const node = fromMCST(top.top, state.map);
                 if (node.type === 'blank') return;
@@ -106,6 +154,7 @@ export const fnsEvaluator = (
                     console.error(err);
                 }
             });
+
             if (target != null && ret == null) {
                 throw new Error(`tagtet wasnt a toplevel ${target}`);
             }
@@ -152,7 +201,7 @@ export const fnsEvaluator = (
                           const types: any[] = names.map((name) =>
                               data['get_type'](env.typeCheck)(name),
                           );
-                          display[+id].push(
+                          (display[+id] as any[]).push(
                               ...types.map((type, i) =>
                                   type.type === 'some'
                                       ? `${names[i]}: ${data['type_to_string'](
@@ -174,7 +223,7 @@ export const fnsEvaluator = (
                           meta,
                           trace,
                       );
-                      display[+key].push(res.display);
+                      (display[+key] as any[]).push(res.display);
                       env = res.env;
                   }
                   return { env, display };
@@ -291,6 +340,8 @@ const compileStmt = (
         try {
             js = data['compile'](stmt[0])(mm);
         } catch (err) {
+            console.log('error');
+            console.error(err);
             return {
                 env,
                 display: new MyEvalError(`Compilation Error`, err as Error),
@@ -337,9 +388,10 @@ const compileStmt = (
     try {
         js = data['compile_stmt'](stmt)(mm);
     } catch (err) {
+        console.error(err);
         return {
             env,
-            display: `Compilation Error: ${(err as Error).message}`,
+            display: new MyEvalError(`Compilation Error`, err as Error),
         };
     }
 
