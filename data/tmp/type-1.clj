@@ -61,8 +61,6 @@
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
-,
-
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
@@ -171,7 +169,7 @@
 (defn type-to-string-raw [t]
     (let [(, text _) (tts-inner t (, none 0))] text))
 
-(** ## Types for inference **)
+(** ## Types needed for inference **)
 
 (deftype scheme (scheme (set string) type))
 
@@ -335,7 +333,12 @@
                        (fatal "occurs check")
                            (map/set map/nil var type))))
 
-(** ## Type Inference! **)
+(** ## Type Inference!
+    Extensions to the HM algorithm:
+    - patterns & the match form
+    - type constructors (sum types)
+    - self-recursion
+    - mutual recursion (infer-defns) **)
 
 (defn t-prim [prim]
     (match prim
@@ -585,7 +588,8 @@
                                                       (,, s t nidx)    (t-expr self-bound expr nidx)
                                                       selfed           (type-apply s self)
                                                       (, u-subst nidx) (unify selfed t nidx)
-                                                      (** We have to compose these substitutions in both directions. 🤔 **)
+                                                      (** We have to compose these substitutions in both directions. 🤔
+                                                          yeah that definitely shouldn't be happening **)
                                                       s2               (compose-subst u-subst (compose-subst u-subst s))
                                                       t                (type-apply s2 t)]
                                                       (tenv/set-type tenv' name (generalize tenv' t)))
@@ -636,6 +640,7 @@
                 map/nil
                 map/nil)
             [(@! (deftype (array a) (cons a (array a)) (nil)))
+            (@! (deftype (option a) (some a) (none)))
             (@! (deftype (, a b) (, a b)))
             (@! (deftype (,, a b c) (,, a b c)))
             (@! (deftype (,,, a b c d) (,,, a b c d)))
@@ -745,7 +750,8 @@
 
 
 
-(** ## Other analysis **)
+(** ## Dependency analysis
+    Needed so we can know when to do mutual recursion. **)
 
 (deftype (bag a) (one a) (many (array (bag a))) (empty))
 
@@ -854,8 +860,6 @@
             to-string
             externals
             names))
-
-12
 
 (typecheck
     builtin-env
