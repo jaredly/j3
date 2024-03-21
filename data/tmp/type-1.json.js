@@ -496,6 +496,15 @@ return /*6391*/text/*<6391*/
 throw new Error('let pattern not matched 6380. ' + valueToString($target));})(/*!*/)/*<6376*/ }/*<6370*/;
 
 const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1});
+const scheme$sltype = /*10092*/function name_10092($fn_arg) { return /*10092*/(function match_10092($target) {
+if ($target.type === "scheme") {
+{
+let type = $target[1];
+return /*10102*/type/*<10102*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 10092');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<10092*/ }/*<10092*/;
+
 const tconstructor = (v0) => (v1) => (v2) => ({type: "tconstructor", 0: v0, 1: v1, 2: v2});
 const tenv = (v0) => (v1) => (v2) => ({type: "tenv", 0: v0, 1: v1, 2: v2});
 const tenv$sltype = /*3270*/function name_3270($fn_arg) { return /*3270*/(function match_3270($target) {
@@ -2279,5 +2288,5 @@ return /*6322*/`${/*6324*/k/*<6324*/} : ${/*6326*//*6328*/type_to_string_raw/*<6
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6315');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6315*/ }/*<6315*/)/*<6313*/)/*<6330*/ }/*<6304*/;
 
-const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6});
-return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, concrete, earlier_subst, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, generic, infer, infer_defns, infer_several, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme_apply, scheme_free, several, show_subst, show_substs, show_types, show_types_list, subst_to_string, t$co, t_expr, t_pat, t_prim, tarray, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tfns, tint, tmap, toption, tset, tstring, tts_inner, tts_list, type_apply, type_free, type_loc, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, vbl, zip}
+const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7});
+return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, concrete, earlier_subst, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, generic, infer, infer_defns, infer_several, infer_show, infer_stmt, instantiate, join, letters, make_subst_for_vars, map, map_without, mapi, names, new_type_var, pat_and_body, pat_names, rev, scheme$sltype, scheme_apply, scheme_free, several, show_subst, show_substs, show_types, show_types_list, subst_to_string, t$co, t_expr, t_pat, t_prim, tarray, tbool, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tfns, tint, tmap, toption, tset, tstring, tts_inner, tts_list, type_apply, type_free, type_loc, type_to_string, type_to_string_raw, type_with_free, unify, unwrap_app, unwrap_fn, var_bind, vbl, zip}

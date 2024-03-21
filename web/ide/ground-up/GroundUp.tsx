@@ -112,7 +112,7 @@ export const GroundUp = ({
             <div
                 style={{
                     position: 'fixed',
-                    top: 4,
+                    top: 30,
                     right: 4,
                     backgroundColor: 'black',
                     padding: 16,

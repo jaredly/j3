@@ -496,6 +496,15 @@ return /*6391*/text/*<6391*/
 throw new Error('let pattern not matched 6380. ' + valueToString($target));})(/*!*/)/*<6376*/ }/*<6370*/;
 
 const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1});
+const scheme$sltype = /*10092*/function name_10092($fn_arg) { return /*10092*/(function match_10092($target) {
+if ($target.type === "scheme") {
+{
+let type = $target[1];
+return /*10102*/type/*<10102*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 10092');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<10092*/ }/*<10092*/;
+
 const tconstructor = (v0) => (v1) => (v2) => ({type: "tconstructor", 0: v0, 1: v1, 2: v2});
 const tenv = (v0) => (v1) => (v2) => ({type: "tenv", 0: v0, 1: v1, 2: v2});
 const tenv$sltype = /*3270*/function name_3270($fn_arg) { return /*3270*/(function match_3270($target) {
@@ -2279,5 +2288,13 @@ return /*6322*/`${/*6324*/k/*<6324*/} : ${/*6326*//*6328*/type_to_string_raw/*<6
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6315');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6315*/ }/*<6315*/)/*<6313*/)/*<6330*/ }/*<6304*/;
 
-const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6});
-return /*4983*//*4983*//*4983*//*4983*//*4983*//*4983*//*4983*//*5008*/typecheck/*<5008*/(/*4983*//*5009*/builtin_env/*<5009*/)/*<4983*/(/*4983*//*5010*/infer_stmt/*<5010*/)/*<4983*/(/*4983*//*5011*/infer/*<5011*/)/*<4983*/(/*4983*//*8798*/infer_defns/*<8798*/)/*<4983*/(/*4983*//*5012*/type_to_string/*<5012*/)/*<4983*/(/*4983*//*7376*/externals_stmt/*<7376*/)/*<4983*/(/*4983*//*7573*/names/*<7573*/)/*<4983*/
+const typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7});
+return /*4983*//*4983*//*4983*//*4983*//*4983*//*4983*//*4983*//*4983*//*5008*/typecheck/*<5008*/(/*4983*//*5009*/builtin_env/*<5009*/)/*<4983*/(/*4983*//*5010*/infer_stmt/*<5010*/)/*<4983*/(/*4983*//*5011*/infer/*<5011*/)/*<4983*/(/*4983*//*8798*/infer_defns/*<8798*/)/*<4983*/(/*4983*//*5012*/type_to_string/*<5012*/)/*<4983*/(/*4983*//*7376*/externals_stmt/*<7376*/)/*<4983*/(/*4983*//*7573*/names/*<7573*/)/*<4983*/(/*4983*//*10087*/function name_10087(tenv) { return /*10087*/function name_10087(name) { return /*10103*/(function match_10103($target) {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return /*10113*//*10114*/some/*<10114*/(/*10113*//*10115*//*10116*/scheme$sltype/*<10116*/(/*10115*//*10117*/v/*<10117*/)/*<10115*/)/*<10113*/
+}
+}
+return /*10119*/none/*<10119*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 10103');})(/*!*//*10105*//*10105*//*10106*/tenv$sltype/*<10106*/(/*10105*//*10107*/tenv/*<10107*/)/*<10105*/(/*10105*//*10108*/name/*<10108*/)/*<10105*/)/*<10103*/ }/*<10087*/ }/*<10087*/)/*<4983*/

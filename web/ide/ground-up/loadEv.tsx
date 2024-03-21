@@ -38,6 +38,7 @@ export const evaluatorFromText = (
                 4: type_to_string,
                 5: externals_stmt,
                 6: names,
+                7: get_type,
             } = result;
             Object.assign(data, {
                 env_nil,
@@ -47,6 +48,7 @@ export const evaluatorFromText = (
                 type_to_string,
                 externals_stmt,
                 names,
+                get_type,
             });
             console.log('um loading');
         } else {

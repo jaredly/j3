@@ -174,6 +174,8 @@
 
 (deftype scheme (scheme (set string) type))
 
+(defn scheme/type [(scheme _ type)] type)
+
 (deftype tconstructor
     (tconstructor
         ; free variables
@@ -554,6 +556,13 @@
         (, (@ (fn [x] "hi ${x}")) "(fn [string] string)")
         (, (@ (let [a 1] a)) "int")
         (, (@ (let [(, a b) (, 2 true)] (, a b))) "(, int bool)")
+        (,
+        (@
+            (fn [a]
+                (match a
+                    (, a b) a
+                    12      1)))
+            )
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(fn [a] a)")
         (, (@ (fn [a] (+ 2 a))) "(fn [int] int)")
@@ -927,7 +936,8 @@
             infer-defns
             to-string
             externals
-            names))
+            names
+            get-type))
 
 (typecheck
     builtin-env
@@ -936,4 +946,8 @@
         infer-defns
         type-to-string
         externals-stmt
-        names)
+        names
+        (fn [tenv name]
+        (match (tenv/type tenv name)
+            (some v) (some (scheme/type v))
+            _        (none))))

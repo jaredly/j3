@@ -4,6 +4,7 @@ import {
     FullEvalator,
     LocError,
     Produce,
+    ProduceItem,
 } from './Evaluators';
 import { valueToString } from './reduce';
 import { findTops } from './findTops';
@@ -141,6 +142,28 @@ export const fnsEvaluator = (
                       };
                   }
 
+                  Object.entries(stmts).forEach(([id, stmt]) => {
+                      display[+id] = [];
+
+                      if (data['names'] && data['get_type']) {
+                          const names: string[] = unwrapArray(
+                              data['names'](stmt),
+                          );
+                          const types: any[] = names.map((name) =>
+                              data['get_type'](env.typeCheck)(name),
+                          );
+                          display[+id].push(
+                              ...types.map((type, i) =>
+                                  type.type === 'some'
+                                      ? `${names[i]}: ${data['type_to_string'](
+                                            type[0],
+                                        )}`
+                                      : `No type for ${names[i]}`,
+                              ),
+                          );
+                      }
+                  });
+
                   for (let [key, value] of Object.entries(stmts)) {
                       const res = compileStmt(
                           data,
@@ -151,13 +174,14 @@ export const fnsEvaluator = (
                           meta,
                           trace,
                       );
-                      display[+key] = res.display;
+                      display[+key].push(res.display);
                       env = res.env;
                   }
                   return { env, display };
               }
             : undefined,
         addStatement(stmt, env, meta, traceMap) {
+            const display: ProduceItem[] = [];
             if (data['infer_stmt']) {
                 try {
                     env.typeCheck = data['infer_stmt'](env.typeCheck)(stmt);
@@ -168,9 +192,35 @@ export const fnsEvaluator = (
                         display: new MyEvalError(`Type Error`, err as Error),
                     };
                 }
+
+                if (data['names'] && data['get_type']) {
+                    const names: string[] = unwrapArray(data['names'](stmt));
+                    const types: any[] = names.map((name) =>
+                        data['get_type'](env.typeCheck)(name),
+                    );
+                    display.push(
+                        ...types.map((type, i) =>
+                            type.type === 'some'
+                                ? `${names[i]}: ${data['type_to_string'](
+                                      type[0],
+                                  )}`
+                                : `No type for ${names[i]}`,
+                        ),
+                    );
+                }
             }
 
-            return compileStmt(data, envArgs, san, stmt, env, meta, traceMap);
+            const res = compileStmt(
+                data,
+                envArgs,
+                san,
+                stmt,
+                env,
+                meta,
+                traceMap,
+            );
+            display.push(res.display);
+            return { env: res.env, display };
         },
         setTracing(idx, traceMap, env) {
             if (idx != null) {
@@ -316,7 +366,7 @@ const compileStmt = (
         }
 
         env.js.push(js);
-        return { env, display: `compiled` };
+        return { env, display: `` };
     } catch (err) {
         return {
             env,
