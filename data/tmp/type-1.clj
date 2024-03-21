@@ -831,7 +831,7 @@
                         (two b) (+ b c)
                         _       mx))))))
 
-(defn tmap [k v] (tapp (tapp (tcon "map" -1) k) v))
+(defn tmap [k v] (tapp (tapp (tcon "map" -1) k -1) v -1))
 
 (defn tfns [args result]
     (foldr result args (fn [result arg] (tfn arg result -1))))
@@ -850,7 +850,7 @@
 
 (defn vbl [k] (tvar k -1))
 
-(defn t, [a b] (tapp (tapp (tcon "," -1) a) b))
+(defn t, [a b] (tapp (tapp (tcon "," -1) a -1) b -1))
 
 (def builtin-env
     (let [k (vbl "k") v (vbl "v") v2 (vbl "v2") kv (generic ["k" "v"]) kk (generic ["k"])]
@@ -874,7 +874,7 @@
                         (, "map/get" (kv (tfns [(tmap k v) k] (toption v))))
                         (,
                         "map/map"
-                            (generic ["k" "v" "v2"] (tfns [(tmap k v) (tfn v v2)] (tmap k v2))))
+                            (generic ["k" "v" "v2"] (tfns [(tmap k v) (tfns [v] v2)] (tmap k v2))))
                         (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
                         (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
                         (, "set/nil" (kk (tset k)))
@@ -887,11 +887,11 @@
                         (, "map/from-list" (kv (tfns [(tarray (t, k v))] (tmap k v))))
                         (, "map/to-list" (kv (tfns [(tmap k v)] (tarray (t, k v)))))
                         (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
-                        (, "valueToString" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
-                        (, "eval" (generic ["v"] (tfns [(tcon "ast" -1)] (tvar "v" -1))))
+                        (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring)))
+                        (, "eval" (generic ["v"] (tfns [(tcon "ast" -1)] (vbl "v"))))
                         (, "sanitize" (concrete (tfns [tstring] tstring)))
                         (, "replace-all" (concrete (tfns [tstring tstring] tstring)))
-                        (, "fatal" (generic ["v"] (tfns [tstring] (tvar "v" -1))))])
+                        (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
                     map/nil
                     map/nil)
                 [(@! (deftype (array a) (cons a (array a)) (nil)))
@@ -922,6 +922,12 @@
             names))
 
 761
+
+888
+
+1012
+
+1005
 
 (typecheck
     builtin-env

@@ -1,5 +1,6 @@
 import { layout } from '../../../src/layout';
 import {
+    NsUpdateMap,
     StateChange,
     StateSelect,
     StateUpdate,
@@ -12,6 +13,7 @@ import { ListLikeContents, fromMCST, fromMNode } from '../../../src/types/mcst';
 import {
     Action,
     NUIState,
+    RealizedNamespace,
     SandboxNamespace,
     UpdatableAction,
 } from '../../custom/UIState';
@@ -33,87 +35,6 @@ import { eq_eq } from '../infer/mini/infer';
 import { transformNode } from '../../../src/types/transform-cst';
 import { newResults } from '../Test';
 import { findTops, verifyPath } from './findTops';
-
-// const modifyNs = (
-//     card: Card,
-//     path: number[],
-//     mod: (ns: RealizedNamespace) => void,
-// ): Card | void => {
-//     card = { ...card };
-//     let ns = (card.ns = { ...card.ns, children: card.ns.children.slice() });
-//     for (let at of path) {
-//         const child = ns.children[at];
-//         if (!child || child.type !== 'normal') {
-//             console.log('bad child', at, ns, card);
-//             return;
-//         }
-//         ns = ns.children[at] = { ...child };
-//         ns.children = ns.children.slice();
-//     }
-//     mod(ns);
-//     return card;
-// };
-// const applyNsUpdate = (
-//     state: NUIState,
-//     nsUpdate: NonNullable<StateUpdate['nsUpdate']>[0],
-// ) => {
-//     if (nsUpdate.type === 'rm') {
-//         // const card = modifyNs(
-//         //     state.cards[nsUpdate.path[0]],
-//         //     nsUpdate.path.slice(1, -1),
-//         //     (ns) => {
-//         //         ns.children.splice(nsUpdate.path[nsUpdate.path.length - 1], 1);
-//         //     },
-//         // );
-//         // if (!card) return;
-//         // state.cards = state.cards.slice();
-//         // state.cards[nsUpdate.path[0]] = card;
-//         // state.nsMap
-//     }
-//     if (nsUpdate.type === 'add') {
-//         // const card = modifyNs(
-//         //     state.cards[nsUpdate.path[0]],
-//         //     nsUpdate.path.slice(1, -1),
-//         //     (ns) => {
-//         //         ns.children.splice(
-//         //             nsUpdate.path[nsUpdate.path.length - 1] +
-//         //                 (nsUpdate.after ? 1 : 0),
-//         //             0,
-//         //             nsUpdate.ns,
-//         //         );
-//         //     },
-//         // );
-//         // if (!card) {
-//         //     console.log('modfy ns failed');
-//         //     return;
-//         // }
-//         // state.cards = state.cards.slice();
-//         // state.cards[nsUpdate.path[0]] = card;
-//     }
-//     if (nsUpdate.type === 'replace') {
-//         const last = nsUpdate.path[nsUpdate.path.length - 1];
-//         const card = modifyNs(
-//             state.cards[nsUpdate.path[0]],
-//             nsUpdate.path.slice(1, -1),
-//             (ns) => {
-//                 const child = (ns.children[last] = { ...ns.children[last] });
-//                 if (child.type === 'placeholder') return;
-//                 if (nsUpdate.top != null) {
-//                     child.top = nsUpdate.top;
-//                 }
-//                 if (nsUpdate.hidden != null) {
-//                     child.hidden = nsUpdate.hidden;
-//                 }
-//                 if (nsUpdate.collapsed != null) {
-//                     child.collapsed = nsUpdate.collapsed;
-//                 }
-//             },
-//         );
-//         if (!card) return;
-//         state.cards = state.cards.slice();
-//         state.cards[nsUpdate.path[0]] = card;
-//     }
-// };
 
 export const reduceUpdate = (
     state: NUIState,
@@ -268,15 +189,41 @@ export const actionToUpdate = (
             }
             return common;
         }
-        case 'select':
+        case 'select': {
             // Ignore attempts to select the root node
             if (action.at.some((at) => isRootPath(at.start))) {
                 return;
             }
+            let changed = false;
+            const nsMap: NsUpdateMap = {};
+            for (let { start } of action.at) {
+                for (
+                    let i = 1;
+                    i < start.length && start[i].type === 'ns';
+                    i++
+                ) {
+                    const ns = state.nsMap[start[i].idx] as RealizedNamespace;
+                    if (ns.collapsed && !nsMap[ns.id]) {
+                        changed = true;
+                        nsMap[ns.id] = { ...ns, collapsed: false };
+                    }
+                }
+            }
+            if (changed) {
+                return {
+                    type: 'update',
+                    map: {},
+                    nsMap,
+                    selection: action.at[0].start,
+                    at: action.at,
+                };
+            }
+
             return {
                 type: 'full-select',
                 at: action.add ? state.at.concat(action.at) : action.at,
             };
+        }
         case 'paste': {
             const res = paste(state, {}, action.items, false);
             // console.log(res);

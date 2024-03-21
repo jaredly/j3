@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import * as React from 'react';
-import { Action, NUIState, RegMap } from '../../custom/UIState';
+import {
+    Action,
+    NUIState,
+    RealizedNamespace,
+    RegMap,
+} from '../../custom/UIState';
 import { selectStart } from '../../../src/state/navigate';
 import { MNode, Map } from '../../../src/types/mcst';
+import { Path } from '../../store';
+import { childPath } from './findTops';
 
 export const CommandPalette = ({
     state,
@@ -237,5 +244,51 @@ export const pathForIdx = (
         nsToCard[card.top] = i;
     });
 
+    let iter = 0;
+
+    const path: Path[] = [];
+    let idx = num;
+    let ns: number;
+    while (true) {
+        if (iter++ > 500) throw new Error('loop?');
+        if (parents[idx] == null) {
+            ns = nodeToNs[idx];
+            if (ns == null) {
+                console.error(`cant find ns for idx`, idx, nodeToNs);
+                return;
+            }
+            path.unshift({ type: 'ns-top', idx: ns });
+            break;
+        }
+        const parent = parents[idx];
+        const cp = childPath(map[parent], idx);
+        if (!cp) {
+            console.error(`cant find child path`, map[parent], idx);
+            return;
+        }
+        path.unshift({ ...cp, idx: parent });
+        idx = parent;
+    }
+
+    while (true) {
+        if (iter++ > 500) throw new Error('loop?');
+        const parent = nsParents[ns];
+        if (parent == null) {
+            const card = nsToCard[ns];
+            if (card == null) {
+                console.error(`no card for ns`, ns, nsToCard);
+                return;
+            }
+            path.unshift({ type: 'card', card, idx: -1 });
+            return path;
+        }
+
+        path.unshift({
+            type: 'ns',
+            at: (nsMap[parent] as RealizedNamespace).children.indexOf(ns),
+            idx: parent,
+        });
+        ns = parent;
+    }
     // Ok now trace it all back
 };

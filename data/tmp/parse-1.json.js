@@ -1214,7 +1214,7 @@ let nl = $target[1];
 let body = $target[2];
 {
 let l = $target[3];
-return $pl$pl(cons("(")(cons(sanitize(name))(cons(") => ")(cons(trace_and(nl)(trace)(sanitize(name))(compile(body)(trace)))(nil)))))
+return $pl$pl(cons(`function name_${l}(`)(cons(sanitize(name))(cons(") { return ")(cons(trace_and(nl)(trace)(sanitize(name))(compile(body)(trace)))(cons(" }")(nil))))))
 }
 }
 }
@@ -1229,7 +1229,7 @@ let init = $target[1];
 let body = $target[2];
 {
 let l = $target[3];
-return `(() => {const \$target = ${compile(init)(trace)};\n${compile_pat(pat)("\$target")(`return ${compile(body)(trace)}`)(trace)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})(/*!*/)`
+return `(function let_${l}() {const \$target = ${compile(init)(trace)};\n${compile_pat(pat)("\$target")(`return ${compile(body)(trace)}`)(trace)};\nthrow new Error('let pattern not matched ${pat_loc(pat)}. ' + valueToString(\$target));})(/*!*/)`
 }
 }
 }
@@ -1261,7 +1261,7 @@ let target = $target[0];
 let cases = $target[1];
 {
 let l = $target[2];
-return `((\$target) => {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
+return `(function match_${l}(\$target) {\n${join("\n")(map(cases)(($case) => (($target) => {if ($target.type === ",") {
 {
 let pat = $target[0];
 {

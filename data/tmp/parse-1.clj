@@ -534,11 +534,14 @@
                     (evar name l)            (sanitize name)
                     (equot inner l)          (jsonify inner)
                     (elambda name nl body l) (++
-                                                 ["("
+                                                 ["function name_${l}("
                                                      (sanitize name)
-                                                     ") => "
-                                                     (trace-and nl trace (sanitize name) (compile body trace))])
-                    (elet pat init body l)   "(() => {const $target = ${
+                                                     ") { return "
+                                                     (trace-and nl trace (sanitize name) (compile body trace))
+                                                     " }"])
+                    (elet pat init body l)   "(function let_${
+                                                 l
+                                                 }() {const $target = ${
                                                  (compile init trace)
                                                  };\n${
                                                  (compile-pat pat "$target" "return ${(compile body trace)}" trace)
@@ -548,7 +551,9 @@
                     (eapp fn arg l)          (match fn
                                                  (elambda name) "(${(compile fn trace)})(/*${l}*/${(compile arg trace)})"
                                                  _              "${(compile fn trace)}(/*${l}*/${(compile arg trace)})")
-                    (ematch target cases l)  "(($target) => {\n${
+                    (ematch target cases l)  "(function match_${
+                                                 l
+                                                 }($target) {\n${
                                                  (join
                                                      "\n"
                                                          (map

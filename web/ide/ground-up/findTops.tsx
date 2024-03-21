@@ -1,4 +1,5 @@
-import { MNode } from '../../../src/types/mcst';
+import { PathChild } from '../../../src/state/path';
+import { MNode, Map } from '../../../src/types/mcst';
 import { NUIState, RealizedNamespace } from '../../custom/UIState';
 import { Path } from '../../store';
 
@@ -53,6 +54,39 @@ export const verifyPath = (path: Path[], state: NUIState) => {
         }
     }
 };
+
+export const childPath = (parent: MNode, child: number): PathChild | null => {
+    switch (parent.type) {
+        case 'list':
+        case 'array':
+        case 'record': {
+            const idx = parent.values.indexOf(child);
+            if (idx === -1) return null;
+            return { type: 'child', at: idx };
+        }
+        case 'string':
+            if (parent.first === child) {
+                return { type: 'text', at: 0 };
+            }
+            for (let i = 0; i < parent.templates.length; i++) {
+                const { expr, suffix } = parent.templates[i];
+                if (child === expr) {
+                    return { type: 'expr', at: i + 1 };
+                }
+                if (child === suffix) {
+                    return { type: 'text', at: i + 1 };
+                }
+            }
+            return null;
+        case 'comment-node':
+        case 'spread':
+            return parent.contents === child
+                ? { type: 'spread-contents' }
+                : null;
+    }
+    return null;
+};
+
 const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
     switch (p.type) {
         case 'ns':
