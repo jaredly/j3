@@ -67,7 +67,7 @@ export const getResults = <Env, Stmt, Expr>(
         .filter(filterNulls);
 
     const sorted = depSort(parsed);
-    console.log('sorted', sorted);
+    // console.log('sorted', sorted);
 
     // OK SO. we want ... to .... make a deep deps map, as well as identifying cycles?
 
@@ -219,7 +219,9 @@ const depSort = <T,>(
     const edges: { [key: number]: number[] } = {};
     const back: { [key: number]: number[] } = {};
 
+    let hasDeps = false;
     nodes.forEach((node) => {
+        if (node.deps.length) hasDeps = true;
         edges[node.id] = node.deps
             .map(({ name }) => idForName[name])
             .filter(filterNulls);
@@ -231,6 +233,8 @@ const depSort = <T,>(
             }
         });
     });
+
+    if (!hasDeps) return nodes.map((node) => [node]);
 
     nodes.forEach((node) => {
         if (node.hidden && !back[node.id]) {

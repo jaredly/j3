@@ -37,7 +37,6 @@ export const fnsEvaluator = (
         },
         dependencies(stmt) {
             if (!data['externals_stmt']) {
-                console.log('no externals');
                 return [];
             }
             const deps = unwrapArray<{ type: ','; 0: string; 1: number }>(
@@ -49,7 +48,6 @@ export const fnsEvaluator = (
             if (data['names']) {
                 return unwrapArray(data['names'](stmt));
             }
-            console.log('no names');
             return [];
         },
         parse(node, errors) {

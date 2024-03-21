@@ -48,6 +48,13 @@
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
+(defn filter [fn list]
+    (match list
+        []           []
+        [one ..rest] (if (fn one)
+                         [one ..(filter fn rest)]
+                             (filter fn rest))))
+
 (foldr 0 [1 2 3] (fn [a b] b))
 
 (foldl 0 [1 2 3] (fn [a b] b))
@@ -563,7 +570,7 @@
                                                       nidx             0
                                                       (, self nidx)    (new-type-var name nidx)
                                                       self-bound       (tenv/set-type tenv' name (scheme set/nil self))
-                                                      (,, s t nidx)    (t-expr self-bound expr 0)
+                                                      (,, s t nidx)    (t-expr self-bound expr nidx)
                                                       selfed           (type-apply s self)
                                                       (, u-subst nidx) (unify selfed t nidx)
                                                       (** We have to compose these substitutions in both directions. 🤔 **)
@@ -650,6 +657,58 @@
             "(array2 int)")
         (, [(@! (defn fib [x] (+ 1 (fib (+ 2 x))))) (@! fib)] "(fn [int] int)")
         (, [(@! (, 1 2))] "(, int int)")])
+
+(defn show-types [names (tenv types _ _)]
+    (let [names (set/from-list names)]
+        (map
+            (filter (fn [(, k v)] (set/has names k)) (map/to-list types))
+                (fn [(, name (scheme free type))]
+                (match (set/to-list free)
+                    []   (type-to-string type)
+                    free "${name} = ${(join "," free)} : ${(type-to-string-raw type)}"))
+                types)))
+
+(defn infer-several [tenv' stmts]
+    (let [
+        nidx                  0
+        (,, bound vars nidx)  (foldr
+                                  (,, tenv' [] nidx)
+                                      stmts
+                                      (fn [(,, tenv' vars nidx) (sdef name _ body _)]
+                                      (let [(, self nidx) (new-type-var name nidx)]
+                                          (,,
+                                              (tenv/set-type tenv' name (scheme set/nil self))
+                                                  [self ..vars]
+                                                  nidx))))
+        (,, subst types nidx) (foldr
+                                  (,, map/nil [] nidx)
+                                      stmts
+                                      (fn [(,, subst types nidx) (sdef name _ body _)]
+                                      (let [(,, s t nidx) (t-expr bound body nidx)]
+                                          (** TODO might need this to be bidirectional? idk **)
+                                              (,, (compose-subst subst s) [t ..types] nidx))))
+        selfed                (map vars (type-apply subst))
+        (, u-subst nidx)      (foldr
+                                  (, map/nil nidx)
+                                      (zip selfed types)
+                                      (fn [(, subst nidx) (, var type)]
+                                      (let [(, u-subst nidx) (unify var type nidx)]
+                                          (, (compose-subst subst u-subst) nidx))))
+        applied               (map types (type-apply u-subst))]
+        (foldr
+            tenv'
+                (zip applied stmts)
+                (fn [tenv' (, type (sdef name _ _ _))]
+                (tenv/set-type tenv' name (generalize tenv' type))))))
+
+(show-types
+    (infer-several
+        builtin-env
+            [(@! (defn even [x] (odd (- x 1) x)))
+            (@! (defn odd [x y] (even x)))
+            (@! (defn what [a b c] (+ (even a) (odd b))))]))
+
+
 
 (** ## Other analysis **)
 
