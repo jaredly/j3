@@ -1,6 +1,6 @@
 import { NUIState } from '../UIState';
 import { fromMCST } from '../../../src/types/mcst';
-import { findTops } from '../../ide/ground-up/reduce';
+import { findTops } from '../../ide/ground-up/findTops';
 import { Results } from '../../ide/ground-up/GroundUp';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
 import { layout } from '../../../src/layout';

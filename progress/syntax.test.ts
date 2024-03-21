@@ -9,7 +9,7 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { validatePath } from '../src/state/clipboard';
+import { validatePath } from '../src/state/validatePath';
 import { applyUpdate, getKeyUpdate, State } from '../src/state/getKeyUpdate';
 import { selectEnd, selectStart } from '../src/state/navigate';
 import { Path } from '../src/state/path';

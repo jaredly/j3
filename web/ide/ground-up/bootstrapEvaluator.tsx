@@ -1,5 +1,6 @@
 import { Errors, FullEvalator, bootstrap } from './Evaluators';
-import { findTops, valueToString } from './reduce';
+import { valueToString } from './reduce';
+import { findTops } from './findTops';
 import { parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
 import { fromMCST } from '../../../src/types/mcst';

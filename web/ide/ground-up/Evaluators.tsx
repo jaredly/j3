@@ -6,12 +6,8 @@ import { fromMCST } from '../../../src/types/mcst';
 import { MetaDataMap, NUIState } from '../../custom/UIState';
 import { builtins } from './builtins';
 import { TraceMap } from './loadEv';
-import {
-    addTypeConstructors,
-    extractBuiltins,
-    findTops,
-    valueToString,
-} from './reduce';
+import { addTypeConstructors, extractBuiltins, valueToString } from './reduce';
+import { findTops } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
 import { expr, parseExpr, parseStmt, stmt, unwrapArray } from './round-1/parse';
 

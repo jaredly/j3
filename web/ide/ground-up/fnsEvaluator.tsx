@@ -5,7 +5,8 @@ import {
     LocError,
     Display,
 } from './Evaluators';
-import { findTops, valueToString } from './reduce';
+import { valueToString } from './reduce';
+import { findTops } from './findTops';
 import { expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
 import { fromMCST } from '../../../src/types/mcst';

@@ -12,11 +12,18 @@ b/c I could just unify the externals with the inferred types of the externals.
 ...
 OK so I'm guessing that type errors would be worse? hrm.
 
+# UX Things
+
+- [ ] select multiple adjacent, and do a wrap. pleeeeeease
 
 # Tracing, with style
 
-- I want to be able to attach a ... formatter ... to a trace.
-- and this formatter should be in-world.
+- [x] I want to be able to attach a ... formatter ... to a trace.
+- [x] and this formatter should be in-world.
+- [ ] so right now I just have a fn name, but it would be better to do
+  an arbitrary node. Which would mean ... allowing a ... root path .... that's
+  not a `card`. That should be just fine, right? I mean navigation would have to
+  fall back to dom-position-based (BTW why am I not doing that as a fallback in other places? ...)
 
 # Planning the Blog Posts / tutorials
 
@@ -28,6 +35,7 @@ OK so I'm guessing that type errors would be worse? hrm.
 6) add "match" support, and type constructors
 7) support single-definition toplevel recursion
 8) support multi-definition recursion, this will require doing dependency analysis.
+9) type-definition (multiple) recursion
 
 
 # Back to inference for a sec

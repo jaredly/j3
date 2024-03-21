@@ -187,7 +187,7 @@
     (tenv
         (map string scheme)
             (map string tconstructor)
-            (map string (set string))))
+            (map string (, int (set string)))))
 
 (defn tenv/type [(tenv types _ _) key] (map/get types key))
 
@@ -511,6 +511,7 @@
     (tenv
         (map/from-list
             [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
                 (,
                 ","
                     (scheme
@@ -707,7 +708,7 @@
 (,
     (fn [x]
         (map
-            (infer-several builtin-env x)
+            (infer-several basic x)
                 (fn [(, _ type)] (type-to-string-raw type))))
         [(,
         [(@! (defn even [x] (odd (- x 1) x)))
@@ -837,38 +838,71 @@
 
 (type-to-string (tfns [tint tbool] tstring))
 
+(defn toption [arg] (tapp (tcon "option" -1) arg -1))
+
+(defn tarray [arg] (tapp (tcon "array" -1) arg -1))
+
+(defn tset [arg] (tapp (tcon "set" -1) arg -1))
+
+(defn concrete [t] (scheme set/nil t))
+
+(defn generic [vbls t] (scheme (set/from-list vbls) t))
+
+(defn vbl [k] (tvar k -1))
+
+(defn t, [a b] (tapp (tapp (tcon "," -1) a) b))
+
 (def builtin-env
-    (foldl
-        (tenv
-            (map/from-list
-                [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                    (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                    (, ">" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "<" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, ">=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "<=" (scheme set/nil (tfn tint (tfn tint tbool -1) -1)))
-                    (, "unescapeString" (scheme set/nil (tfn tstring tstring)))
-                    (, "int-to-string" (scheme set/nil (tfn tint tstring)))
-                    (,
-                    "string-to-int"
-                        (scheme set/nil (tfn tstring (tapp (tcon "option" -1) tint -1))))
-                    (,
-                    "++"
-                        (scheme set/nil (tfn (tapp (tcon "array" -1) tstring -1) tstring)))
-                    (,
-                    "map/nil"
-                        (scheme (set/from-list ["k" "v"]) (tmap (tvar "k" -1) (tvar "v" -1))))
-                    (, "map/set" (scheme (set/from-list ["k" "v"]) (tfn (tmap))))])
-                map/nil
-                map/nil)
-            [(@! (deftype (array a) (cons a (array a)) (nil)))
-            (@! (deftype (option a) (some a) (none)))
-            (@! (deftype (, a b) (, a b)))
-            (@! (deftype (,, a b c) (,, a b c)))
-            (@! (deftype (,,, a b c d) (,,, a b c d)))
-            (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
-            infer-stmt))
+    (let [k (vbl "k") v (vbl "v") v2 (vbl "v2") kv (generic ["k" "v"]) kk (generic ["k"])]
+        (foldl
+            (tenv
+                (map/from-list
+                    [(, "+" (concrete (tfns [tint tint] tint)))
+                        (, "-" (concrete (tfns [tint tint] tint)))
+                        (, ">" (concrete (tfns [tint tint] tbool)))
+                        (, "<" (concrete (tfns [tint tint] tbool)))
+                        (, "=" (concrete (tfns [tint tint] tbool)))
+                        (, ">=" (concrete (tfns [tint tint] tbool)))
+                        (, "<=" (concrete (tfns [tint tint] tbool)))
+                        (, "unescapeString" (concrete (tfns [tstring] tstring)))
+                        (, "int-to-string" (concrete (tfns [tint] tstring)))
+                        (, "string-to-int" (concrete (tfns [tstring] (toption tint))))
+                        (, "++" (concrete (tfns [(tarray tstring)] tstring)))
+                        (, "map/nil" (kv (tmap k v)))
+                        (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v))))
+                        (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v))))
+                        (, "map/get" (kv (tfns [(tmap k v) k] (toption v))))
+                        (,
+                        "map/map"
+                            (generic ["k" "v" "v2"] (tfns [(tmap k v) (tfn v v2)] (tmap k v2))))
+                        (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
+                        (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
+                        (, "set/nil" (kk (tset k)))
+                        (, "set/add" (kk (tfns [(tset k) k] (tset k))))
+                        (, "set/rm" (kk (tfns [(tset k) k] (tset k))))
+                        (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k))))
+                        (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k))))
+                        (, "set/to-list" (kk (tfns [(tset k)] (tarray k))))
+                        (, "set/from-list" (kk (tfns [(tarray k)] (tset k))))
+                        (, "map/from-list" (kv (tfns [(tarray (t, k v))] (tmap k v))))
+                        (, "map/to-list" (kv (tfns [(tmap k v)] (tarray (t, k v)))))
+                        (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
+                        (, "valueToString" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
+                        (, "eval" (generic ["v"] (tfns [(tcon "ast" -1)] (tvar "v" -1))))
+                        (, "sanitize" (concrete (tfns [tstring] tstring)))
+                        (, "replace-all" (concrete (tfns [tstring tstring] tstring)))
+                        (, "fatal" (generic ["v"] (tfns [tstring] (tvar "v" -1))))])
+                    map/nil
+                    map/nil)
+                [(@! (deftype (array a) (cons a (array a)) (nil)))
+                (@! (deftype (option a) (some a) (none)))
+                (@! (deftype (, a b) (, a b)))
+                (@! (deftype (,, a b c) (,, a b c)))
+                (@! (deftype (,,, a b c d) (,,, a b c d)))
+                (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))]
+                infer-stmt)))
+
+(infer-show builtin-env (@ ,))
 
 (defn subst-to-string [subst]
     (join
@@ -886,6 +920,8 @@
             to-string
             externals
             names))
+
+761
 
 (typecheck
     builtin-env

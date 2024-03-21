@@ -251,11 +251,7 @@ const renderProduce = (
                             node.node.style.backgroundColor = 'red';
                         }}
                         onClick={() => {
-                            const path = pathForIdx(
-                                n.loc,
-                                state.regs,
-                                state.map,
-                            );
+                            const path = pathForIdx(n.loc, state);
                             if (!path) return alert('nope');
                             dispatch({
                                 type: 'select',
@@ -321,7 +317,7 @@ function highlightIdxs(
                     node.node.style.outline = '1px solid red';
                 }}
                 onClick={() => {
-                    const path = pathForIdx(loc, state.regs, state.map);
+                    const path = pathForIdx(loc, state);
                     if (!path) return alert('nope');
                     dispatch({
                         type: 'select',

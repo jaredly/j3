@@ -23,7 +23,7 @@ export function renderTraces(
         <div key={top} style={{ maxWidth: 500, overflow: 'auto' }}>
             <div
                 onClick={() => {
-                    const path = pathForIdx(+top, state.regs, state.map);
+                    const path = pathForIdx(+top, state);
                     if (path) {
                         store.dispatch({
                             type: 'select',
@@ -73,8 +73,7 @@ export function renderTraces(
                                         onClick={() => {
                                             const path = pathForIdx(
                                                 +key,
-                                                state.regs,
-                                                state.map,
+                                                state,
                                             );
                                             if (path) {
                                                 store.dispatch({

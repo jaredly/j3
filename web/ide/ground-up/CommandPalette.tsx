@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import * as React from 'react';
 import { Action, NUIState, RegMap } from '../../custom/UIState';
 import { selectStart } from '../../../src/state/navigate';
-import { Map } from '../../../src/types/mcst';
+import { MNode, Map } from '../../../src/types/mcst';
 
 export const CommandPalette = ({
     state,
@@ -156,7 +156,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
         if (node?.type === 'identifier') {
             const num = +node.text;
             if (!isNaN(num) && num + '' === node.text && state.map[num]) {
-                const path = pathForIdx(num, state.regs, state.map);
+                const path = pathForIdx(num, state);
                 if (path) {
                     commands.push({
                         title: 'Jump to idx',
@@ -185,7 +185,57 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
     return commands;
 };
 
-export const pathForIdx = (num: number, regs: RegMap, map: Map) => {
+export const nodeChildren = (node: MNode): number[] => {
+    switch (node.type) {
+        case 'list':
+        case 'array':
+        case 'record':
+            return node.values;
+        case 'spread':
+        case 'comment-node':
+            return [node.contents];
+        case 'string':
+            return [
+                node.first,
+                ...node.templates.flatMap((t) => [t.expr, t.suffix]),
+            ];
+    }
+    return [];
+};
+
+export const pathForIdx = (
+    num: number,
+    {
+        regs,
+        map,
+        cards,
+        nsMap,
+    }: Pick<NUIState, 'regs' | 'map' | 'cards' | 'nsMap'>,
+) => {
     const got = regs[num]?.main ?? regs[num]?.outside;
-    return got ? selectStart(num, got.path, map) : null;
+    if (got) {
+        return selectStart(num, got.path, map);
+    }
+    const parents: Record<number, number> = {};
+    Object.keys(map).forEach((k) => {
+        const node = map[+k];
+        nodeChildren(node).forEach((child) => {
+            parents[child] = node.loc;
+        });
+    });
+    const nodeToNs: Record<number, number> = {};
+    const nsParents: Record<number, number> = {};
+    Object.keys(nsMap).forEach((k) => {
+        const ns = nsMap[+k];
+        if (ns.type === 'normal') {
+            nodeToNs[ns.top] = ns.id;
+            ns.children.forEach((child) => (nsParents[child] = ns.id));
+        }
+    });
+    const nsToCard: Record<number, number> = {};
+    cards.forEach((card, i) => {
+        nsToCard[card.top] = i;
+    });
+
+    // Ok now trace it all back
 };

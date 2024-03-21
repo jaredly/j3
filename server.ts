@@ -14,7 +14,7 @@ import { NUIState } from './web/custom/UIState';
 import { ListLikeContents, fromMCST, toMCST } from './src/types/mcst';
 import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
-import { findTops } from './web/ide/ground-up/reduce';
+import { findTops } from './web/ide/ground-up/findTops';
 import { bootstrap } from './web/ide/ground-up/Evaluators';
 import { evaluatorFromText } from './web/ide/ground-up/loadEv';
 import { compressState } from './web/custom/compressState';
