@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../parse/parse';
+import { MCString, MNode, Map } from '../types/mcst';
 import { NewThing } from './getKeyUpdate';
 import { Path } from './path';
 
@@ -128,31 +129,42 @@ export const newId = (key: string[], idx: number, at?: number): NewThing => {
     };
 };
 
-export const newString = (idx: number, nid: number): NewThing => {
-    return {
-        map: {
-            [idx]: {
-                type: 'string',
-                first: nid,
-                templates: [],
-                loc: idx,
-            },
-            [nid]: {
-                type: 'stringText',
-                loc: nid,
-                text: '',
-            },
+export const newString = (
+    idx: number,
+    nidx: () => number,
+    first?: string,
+    expr?: NewThing,
+): NewThing => {
+    const nid = nidx();
+    const map: Map = {
+        [idx]: {
+            type: 'string',
+            first: nid,
+            templates: [],
+            loc: idx,
         },
-        idx: idx,
-        selection: [
-            { idx, type: 'text', at: 0 },
-            {
-                idx: nid,
-                type: 'subtext',
-                at: 0,
-            },
-        ],
+        [nid]: {
+            type: 'stringText',
+            loc: nid,
+            text: first ?? '',
+        },
     };
+    let selection: Path[] = [
+        { idx, type: 'text', at: 0 },
+        { idx: nid, type: 'subtext', at: 0 },
+    ];
+    if (expr != null) {
+        Object.assign(map, expr.map);
+        const sid = nidx();
+        map[sid] = {
+            type: 'stringText',
+            loc: sid,
+            text: '',
+        };
+        (map[idx] as MCString).templates!.push({ expr: expr.idx, suffix: sid });
+        selection = [{ idx, type: 'expr', at: 1 }, ...expr.selection];
+    }
+    return { map, idx: idx, selection };
 };
 
 export function newAnnot(

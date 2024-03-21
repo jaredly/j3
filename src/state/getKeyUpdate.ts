@@ -546,13 +546,43 @@ export const getKeyUpdate = (
     if (key === '"') {
         // are we at the start of a blank or id or something?
         if (node.type === 'blank') {
-            return replaceWith(fullPath.slice(0, -1), newString(idx, nidx()));
+            return replaceWith(fullPath.slice(0, -1), newString(idx, nidx));
         }
+
+        const flast = fullPath[fullPath.length - 1];
+        if (
+            flast.type === 'start' ||
+            (flast.type === 'subtext' && flast.at === 0)
+        ) {
+            let ppath = fullPath[fullPath.length - 2];
+            let subPath = fullPath;
+            let nw: NewThing = {
+                idx,
+                map: {},
+                selection: [flast],
+            };
+            if (ppath.type === 'record-target') {
+                nw.selection = fullPath.slice(-2);
+                subPath = fullPath.slice(0, -1);
+                nw.idx = ppath.idx;
+                ppath = subPath[subPath.length - 2];
+            }
+
+            if (wrappable.includes(subPath[subPath.length - 2].type)) {
+                return replacePathWith(
+                    subPath.slice(0, -1),
+                    map,
+                    nsMap,
+                    newString(nidx(), nidx, '', nw),
+                );
+            }
+        }
+
         return newNodeAfter(
             fullPath,
             map,
             nsMap,
-            newString(nidx(), nidx()),
+            newString(nidx(), nidx),
             nidx,
         );
     }
@@ -878,12 +908,6 @@ export function openListLike({
         }
 
         if (wrappable.includes(subPath[subPath.length - 2].type)) {
-            // for (let i = subPath.length - 1; i--; i >= 2) {
-            //     console.log('howww', i, subPath[i - 1], subPath);
-            //     if (wrappable.includes(subPath[i - 1].type)) {
-            //         return replacePathWith(
-            //             subPath.slice(0, i),
-            // }
             return replacePathWith(
                 subPath.slice(0, -1),
                 map,

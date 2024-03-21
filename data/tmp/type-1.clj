@@ -371,7 +371,7 @@
             - unify the target type with a function (arg type) => return value type variable
             - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
         (eapp target arg l)                 (let [
-                                                (, result-var nidx)                (new-type-var "a" nidx)
+                                                (, result-var nidx)                (new-type-var "res" nidx)
                                                 (,, target-subst target-type nidx) (t-expr tenv target nidx)
                                                 (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
                                                 (, unified-subst nidx)             (unify
@@ -664,9 +664,18 @@
             (filter (fn [(, k v)] (set/has names k)) (map/to-list types))
                 (fn [(, name (scheme free type))]
                 (match (set/to-list free)
-                    []   (type-to-string type)
-                    free "${name} = ${(join "," free)} : ${(type-to-string-raw type)}"))
-                types)))
+                    []   "${name} = ${(type-to-string type)}"
+                    free "${name} = ${(join "," free)} : ${(type-to-string-raw type)}")))))
+
+(defn show-types-list [types]
+    (join "\n" (map types type-to-string-raw)))
+
+(defn show-subst [subst]
+    (join
+        "\n"
+            (map
+            (map/to-list subst)
+                (fn [(, name type)] "${name} -> ${(type-to-string-raw type)}"))))
 
 (defn infer-several [tenv' stmts]
     (let [
@@ -684,9 +693,9 @@
                                   (,, map/nil [] nidx)
                                       stmts
                                       (fn [(,, subst types nidx) (sdef name _ body _)]
-                                      (let [(,, s t nidx) (t-expr bound body nidx)]
+                                      (let [(,, one-subst type nidx) (t-expr bound body nidx)]
                                           (** TODO might need this to be bidirectional? idk **)
-                                              (,, (compose-subst subst s) [t ..types] nidx))))
+                                              (,, (compose-subst subst one-subst) [type ..types] nidx))))
         selfed                (map vars (type-apply subst))
         (, u-subst nidx)      (foldr
                                   (, map/nil nidx)
@@ -702,7 +711,8 @@
                 (tenv/set-type tenv' name (generalize tenv' type))))))
 
 (show-types
-    (infer-several
+    ["even" "odd" "what"]
+        (infer-several
         builtin-env
             [(@! (defn even [x] (odd (- x 1) x)))
             (@! (defn odd [x y] (even x)))
