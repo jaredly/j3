@@ -62,13 +62,27 @@
 
 (defn parse-type [type]
     (match type
-        (cst/identifier id l) (tcon id l)
-        (cst/list [] l)       (fatal "(parse-type) with empty list")
-        (cst/list items l)    (tapps (rev (map items parse-type) []) l)
-        _                     (fatal "(parse-type) Invalid type ${(valueToString type)}")))
+        (cst/identifier id l)                                        (tcon id l)
+        (cst/list [] l)                                              (fatal "(parse-type) with empty list")
+        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]) (foldl
+                                                                         (parse-type body)
+                                                                             (rev args [])
+                                                                             (fn [body arg] (tapp (tapp (tcon "->" -1) (parse-type arg) -1) body -1)))
+        (cst/list items l)                                           (tapps (rev (map items parse-type) []) l)
+        _                                                            (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
-(parse-type
-    (cst/list [(cst/identifier "hi" 1) (cst/identifier "ho" 2)] 1))
+(,
+    parse-type
+        [(, (@@ (hi ho)) (tapp (tcon "hi" 5527) (tcon "ho" 5528) 5526))
+        (,
+        (@@ (fn [x] y))
+            (tapp (tapp (tcon "->" -1) (tcon "x" 5558) -1) (tcon "y" 5559) -1))
+        (,
+        (@@ (fn [a b] c))
+            (tapp
+            (tapp (tcon "->" -1) (tcon "a" 5688) -1)
+                (tapp (tapp (tcon "->" -1) (tcon "b" 5689) -1) (tcon "c" 5690) -1)
+                -1))])
 
 (foldl 0 [1 2] +)
 

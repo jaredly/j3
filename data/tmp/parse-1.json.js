@@ -95,6 +95,29 @@ return fatal("(parse-type) with empty list")
 }
 }
 if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "fn"){
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/array") {
+{
+let args = $target[0][1][0][0];
+if ($target[0][1][1].type === "cons") {
+{
+let body = $target[0][1][1][0];
+if ($target[0][1][1][1].type === "nil") {
+return foldl(parse_type(body))(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(-1))(parse_type(arg))(-1))(body)(-1))
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+if ($target.type === "cst/list") {
 {
 let items = $target[0];
 {

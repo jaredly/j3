@@ -967,13 +967,13 @@
 (deftype evaluator
     (typecheck
         tenv
-            ((-> tenv) ((-> stmt) tenv))
-            ((-> tenv) ((-> expr) type))
-            ((-> tenv) ((-> (array stmt)) tenv))
-            ((-> type) string)
-            ((-> stmt) (array (, string int)))
-            ((-> stmt) (array string))
-            ((-> tenv) ((-> string) (option type)))))
+            (fn [tenv stmt] tenv)
+            (fn [tenv expr] type)
+            (fn [tenv (array stmt)] tenv)
+            (fn [type] string)
+            (fn [stmt] (array (, string int)))
+            (fn [stmt] (array string))
+            (fn [tenv string] (option type))))
 
 1
 
