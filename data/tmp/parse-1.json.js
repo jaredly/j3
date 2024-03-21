@@ -8,6 +8,9 @@ const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
 const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1});
+const equot$slstmt = (v0) => (v1) => ({type: "equot/stmt", 0: v0, 1: v1});
+const equot$slpat = (v0) => (v1) => ({type: "equot/pat", 0: v0, 1: v1});
+const equot$sltype = (v0) => (v1) => ({type: "equot/type", 0: v0, 1: v1});
 const equotquot = (v0) => (v1) => ({type: "equotquot", 0: v0, 1: v1});
 const elambda = (v0) => (v1) => (v2) => (v3) => ({type: "elambda", 0: v0, 1: v1, 2: v2, 3: v3});
 const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2});
@@ -325,7 +328,7 @@ let body = $target[0][1][0];
 if ($target[0][1][1].type === "nil") {
 {
 let l = $target[1];
-return equot(parse_stmt(body))(l)
+return equot$slstmt(parse_stmt(body))(l)
 }
 }
 }
@@ -344,7 +347,7 @@ let body = $target[0][1][0];
 if ($target[0][1][1].type === "nil") {
 {
 let l = $target[1];
-return equot(parse_type(body))(l)
+return equot$sltype(parse_type(body))(l)
 }
 }
 }
@@ -363,7 +366,7 @@ let body = $target[0][1][0];
 if ($target[0][1][1].type === "nil") {
 {
 let l = $target[1];
-return equot(parse_pat(body))(l)
+return equot$slpat(parse_pat(body))(l)
 }
 }
 }
@@ -868,7 +871,7 @@ let nl = $target[1];
 let args = $target[2];
 {
 let l = $target[3];
-return $pl$pl(cons("const ")(cons(name2)(cons(" = ")(cons($pl$pl(mapi(0)(args)((i) => (_) => $pl$pl(cons("(v")(cons(int_to_string(i))(cons(") => ")(nil)))))))(cons("({type: \"")(cons(name2)(cons("\"")(cons($pl$pl(mapi(0)(args)((i) => (_) => $pl$pl(cons(", ")(cons(int_to_string(i))(cons(": v")(cons(int_to_string(i))(nil))))))))(cons("});")(nil))))))))))
+return $pl$pl(cons("const ")(cons(sanitize(name2))(cons(" = ")(cons($pl$pl(mapi(0)(args)((i) => (_) => $pl$pl(cons("(v")(cons(int_to_string(i))(cons(") => ")(nil)))))))(cons("({type: \"")(cons(name2)(cons("\"")(cons($pl$pl(mapi(0)(args)((i) => (_) => $pl$pl(cons(", ")(cons(int_to_string(i))(cons(": v")(cons(int_to_string(i))(nil))))))))(cons("});")(nil))))))))))
 }
 }
 }
@@ -1071,6 +1074,24 @@ let l = $target[1];
 return l
 }
 }
+if ($target.type === "equot/stmt") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "equot/pat") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "equot/type") {
+{
+let l = $target[1];
+return l
+}
+}
 if ($target.type === "elambda") {
 {
 let l = $target[3];
@@ -1197,6 +1218,33 @@ return sanitize(name)
 }
 }
 if ($target.type === "equot") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return jsonify(inner)
+}
+}
+}
+if ($target.type === "equot/stmt") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return jsonify(inner)
+}
+}
+}
+if ($target.type === "equot/type") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return jsonify(inner)
+}
+}
+}
+if ($target.type === "equot/pat") {
 {
 let inner = $target[0];
 {

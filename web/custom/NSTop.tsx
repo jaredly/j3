@@ -222,7 +222,7 @@ const renderProduce = (
     state: NUIState,
     dispatch: React.Dispatch<Action>,
 ) => {
-    return value.map((item, i) => (
+    return value?.map((item, i) => (
         <div key={i}>{renderProduceItem(item, state, dispatch)}</div>
     ));
 };

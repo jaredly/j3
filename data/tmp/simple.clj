@@ -45,6 +45,8 @@ lol
 
 (@ [1 2])
 
+(fn [(, a b c)] 1)
+
 (** Wrong Order **)
 
 (def x y)

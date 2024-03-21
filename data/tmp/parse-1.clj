@@ -10,6 +10,9 @@
         (estr first (array (,, expr string int)) int)
         (evar string int)
         (equot expr int)
+        (equot/stmt stmt int)
+        (equot/pat pat int)
+        (equot/type type int)
         (equotquot cst int)
         (elambda string int expr int)
         (eapp expr expr int)
@@ -107,9 +110,9 @@
                                                                              (none)     (evar id l))
         (cst/list [(cst/identifier "@" _) body] l)                       (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                      (equotquot body l)
-        (cst/list [(cst/identifier "@!" _) body] l)                      (equot (parse-stmt body) l)
-        (cst/list [(cst/identifier "@t" _) body] l)                      (equot (parse-type body) l)
-        (cst/list [(cst/identifier "@p" _) body] l)                      (equot (parse-pat body) l)
+        (cst/list [(cst/identifier "@!" _) body] l)                      (equot/stmt (parse-stmt body) l)
+        (cst/list [(cst/identifier "@t" _) body] l)                      (equot/type (parse-type body) l)
+        (cst/list [(cst/identifier "@p" _) body] l)                      (equot/pat (parse-pat body) l)
         (cst/list [(cst/identifier "if" _) cond yes no] l)               (ematch
                                                                              (parse-expr cond)
                                                                                  [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
@@ -159,9 +162,13 @@
                 (evar "b" 3403)
                 3401))
         (, (@@ "hi") (estr "hi" [] 1177))
-        (, (@@ (@t a)) (equot (tcon "a" 5333) 5331))
-        (, (@@ (@t (a b c))) )
-        (, (@@ (@p _)) (equot (pany 5349) 5346))
+        (, (@@ (@t a)) (equot/type (tcon "a" 5333) 5331))
+        (,
+        (@@ (@t (a b c)))
+            (equot/type
+            (tapp (tapp (tcon "a" 5364) (tcon "b" 5365) 5363) (tcon "c" 5366) 5363)
+                5360))
+        (, (@@ (@p _)) (equot/pat (pany 5349) 5346))
         (,
         (@@
             (if (= a b)
@@ -390,7 +397,7 @@
                                                         (let [(,,, name2 nl args l) case]
                                                             (++
                                                                 ["const "
-                                                                    name2
+                                                                    (sanitize name2)
                                                                     " = "
                                                                     (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
                                                                     "({type: \""
@@ -479,6 +486,9 @@
         (eprim _ l)       l
         (evar _ l)        l
         (equot _ l)       l
+        (equot/stmt _ l)  l
+        (equot/pat _ l)   l
+        (equot/type _ l)  l
         (elambda _ _ _ l) l
         (elet _ _ _ l)    l
         (eapp _ _ l)      l
@@ -533,6 +543,9 @@
                                                                   false "false"))
                     (evar name l)            (sanitize name)
                     (equot inner l)          (jsonify inner)
+                    (equot/stmt inner l)     (jsonify inner)
+                    (equot/type inner l)     (jsonify inner)
+                    (equot/pat inner l)      (jsonify inner)
                     (elambda name nl body l) (++
                                                  ["function name_${l}("
                                                      (sanitize name)
@@ -636,3 +649,5 @@
 (compile-stmt
     (parse-stmt (@@ (deftype (array a) (cons a (array a)) (nil))))
         map/nil)
+
+6925
