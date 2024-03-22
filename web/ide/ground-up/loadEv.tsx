@@ -40,6 +40,7 @@ export const evaluatorFromText = (
                 5: externals_stmt,
                 6: names,
                 7: get_type,
+                8: set_type_trace,
             } = result;
             Object.assign(data, {
                 env_nil,
@@ -50,6 +51,7 @@ export const evaluatorFromText = (
                 externals_stmt,
                 names,
                 get_type,
+                set_type_trace,
             });
         } else if (result.type === 'parse-and-compile') {
             data.type = 'fns';

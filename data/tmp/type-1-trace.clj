@@ -83,6 +83,21 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
+(defn expr-loc [expr]
+    (match expr
+        (eprim prim l)            l
+        (estr first _ l)          l
+        (evar string l)           l
+        (equot expr l)            l
+        (equot/stmt stmt l)       l
+        (equot/pat pat l)         l
+        (equot/type type l)       l
+        (equotquot cst l)         l
+        (elambda string l expr l) l
+        (eapp expr expr l)        l
+        (elet pat expr expr l)    l
+        (ematch expr _ l)         l))
+
 (deftype prim (pint int int) (pbool bool int))
 
 (deftype pat
@@ -91,6 +106,14 @@
         (pcon string (array pat) int)
         (pstr string int)
         (pprim prim int))
+
+(defn pat-loc [pat]
+    (match pat
+        (pany l)          l
+        (pvar string l)   l
+        (pcon string _ l) l
+        (pstr string l)   l
+        (pprim prim l)    l))
 
 (deftype type
     (tvar string int)
@@ -197,19 +220,26 @@
     (tenv
         (map string scheme)
             (map string tconstructor)
-            (map string (, int (set string)))))
+            (map string (, int (set string)))
+            (fn [int type] type)))
 
-(defn tenv/type [(tenv types _ _) key] (map/get types key))
+(defn noop-trace [_ t] t)
 
-(defn tenv/con [(tenv _ cons _) key] (map/get cons key))
+(defn tenv/type [(tenv types _ _ _) key] (map/get types key))
 
-(defn tenv/names [(tenv _ _ names) key] (map/get names key))
+(defn tenv/con [(tenv _ cons _ _) key] (map/get cons key))
 
-(defn tenv/rm [(tenv types cons names) var]
-    (tenv (map/rm types var) cons names))
+(defn tenv/names [(tenv _ _ names _) key] (map/get names key))
 
-(defn tenv/set-type [(tenv types cons names) k v]
-    (tenv (map/set types k v) cons names))
+(defn tenv/set-trace [(tenv a b c _) trace] (tenv a b c trace))
+
+(defn tenv/trace [(tenv _ _ _ trace)] trace)
+
+(defn tenv/rm [(tenv types cons names trace) var]
+    (tenv (map/rm types var) cons names trace))
+
+(defn tenv/set-type [(tenv types cons names trace) k v]
+    (tenv (map/set types k v) cons names trace))
 
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
@@ -227,7 +257,7 @@
 (defn scheme-free [(scheme vbls type)]
     (set/diff (type-free type) vbls))
 
-(defn tenv-free [(tenv types _ _)]
+(defn tenv-free [(tenv types _ _ _)]
     (foldr set/nil (map (map/values types) scheme-free) set/merge))
 
 (,
@@ -252,8 +282,8 @@
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
-(defn tenv-apply [subst (tenv types cons names)]
-    (tenv (map/map (scheme-apply subst) types) cons names))
+(defn tenv-apply [subst (tenv types cons names trace)]
+    (tenv (map/map (scheme-apply subst) types) cons names trace))
 
 (** ## Composing substitution maps
     Note that compose-subst is not commutative. The later map will get the earlier substitutions applied to it, and then any conflicts go to later. **)
@@ -367,97 +397,100 @@
 (def tstring (tcon "string" -1))
 
 (defn t-expr [tenv expr nidx]
-    (match expr
-        (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
-        (evar name l)                       (match (tenv/type tenv name)
-                                                (none)       (fatal "Unbound variable ${name} (${(its l)})")
-                                                (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
-        (equot _ l)                         (,, map/nil (tcon "expr" l) nidx)
-        (equot/stmt _ l)                    (,, map/nil (tcon "stmt" l) nidx)
-        (equot/pat _ l)                     (,, map/nil (tcon "pat" l) nidx)
-        (equot/type _ l)                    (,, map/nil (tcon "type" l) nidx)
-        (equotquot _ l)                     (,, map/nil (tcon "cst" l) nidx)
-        (eprim prim _)                      (,, map/nil (t-prim prim) nidx)
-        (estr first templates l)            (let [
-                                                string-type    (tcon "string" l)
-                                                (, subst nidx) (foldr
-                                                                   (, map/nil nidx)
-                                                                       templates
-                                                                       (fn [(, subst nidx) (,, expr suffix sl)]
-                                                                       (let [
-                                                                           (,, s2 t nidx) (t-expr tenv expr nidx)
-                                                                           (, s3 nidx)    (unify t string-type nidx)]
-                                                                           (, (compose-subst s3 (compose-subst s2 subst)) nidx))))]
-                                                (,, subst string-type nidx))
-        (** For lambdas (fn [name] body)
-            - create a type variable to represent the type of the argument
-            - add the type variable to the typing environment
-            - infer the body, using the augmented environment
-            - if the body's subst has some binding for our arg variable, use that **)
-        (elambda name nl body l)            (let [
-                                                (, arg-type nidx)              (new-type-var name nidx)
-                                                env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
-                                                (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
-                                                (,,
-                                                    body-subst
-                                                        (tfn (type-apply body-subst arg-type) body-type l)
-                                                        nidx))
-        (** Function application (target arg)
-            - create a type variable to represent the return value of the function application
-            - infer the target type
-            - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
-            - unify the target type with a function (arg type) => return value type variable
-            - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
-        (eapp target arg l)                 (let [
-                                                (, result-var nidx)                (new-type-var "res" nidx)
-                                                (,, target-subst target-type nidx) (t-expr tenv target nidx)
-                                                (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
-                                                (, unified-subst nidx)             (unify
-                                                                                       (type-apply arg-subst target-type)
-                                                                                           (tfn arg-type result-var l)
-                                                                                           nidx)]
-                                                (,,
-                                                    (compose-subst
-                                                        unified-subst
-                                                            (compose-subst arg-subst target-subst))
-                                                        (type-apply unified-subst result-var)
-                                                        nidx))
-        (** Let: simple version, where the pattern is just a pvar
-            - infer the type of the value being bound
-            - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
-            - apply any subst that we learned from inferring the value to our type environment, producing a new tenv (?) Seems like this ought to be equivalent to doing tenv-apply to tenv and then adding the name. It's impossible for the value-subst to produce ... something that would apply to the value-type, right??? right??
-            - infer the type of the body, using the tenv that has both the name bound to the generalized inferred type, as well as any substitutions that resulted from inferring the type of the bound value.
-            - compose the substitutions from the body with those from the value **)
-        ;(elet (pvar name nl) value body l) ;(let [
-                                                (,, value-subst value-type nidx) (t-expr tenv value nidx)
-                                                value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
-                                                env-with-name                    (tenv/set-type tenv name value-scheme)
-                                                e2                               (tenv-apply value-subst env-with-name)
-                                                (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
-                                                (,, (compose-subst body-subst value-subst) body-type nidx))
-        (** Let: complex version! Now with a whole lot of polymorphism!
-            - infer the type of the value
-            - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
-            - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
-        (elet pat init body l)              (pat-and-body tenv pat body (t-expr tenv init nidx))
-        (ematch target cases l)             (let [
-                                                (, result-var nidx)                   (new-type-var "match-res" nidx)
-                                                (,, target-subst target-type nidx)    (t-expr tenv target nidx)
-                                                (,,, _ target-subst result-type nidx) (foldr
-                                                                                          (,,, target-type target-subst result-var nidx)
-                                                                                              cases
-                                                                                              (fn [(,,, target-type subst result nidx) (, pat body)]
-                                                                                              (let [
-                                                                                                                                                           (,, subst body nidx)
-                                                                                                  (pat-and-body tenv pat body (,, subst target-type nidx)) (, unified-subst nidx)
-                                                                                                  (unify result body nidx)]
-                                                                                                  (,,,
-                                                                                                      (type-apply (compose-subst subst unified-subst) target-type)
-                                                                                                          (compose-subst subst unified-subst)
-                                                                                                          (type-apply unified-subst result)
-                                                                                                          nidx))))]
-                                                (,, target-subst result-type nidx))
-        _                                   (fatal "cannot infer type for ${(valueToString expr)}")))
+    (let 
+        [(,, subst type nidx)
+            (match expr
+            (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
+            (evar name l)                       (match (tenv/type tenv name)
+                                                    (none)       (fatal "Unbound variable ${name} (${(its l)})")
+                                                    (some found) (let [(,, t _ nidx) (instantiate found nidx)] (,, map/nil t nidx)))
+            (equot _ l)                         (,, map/nil (tcon "expr" l) nidx)
+            (equot/stmt _ l)                    (,, map/nil (tcon "stmt" l) nidx)
+            (equot/pat _ l)                     (,, map/nil (tcon "pat" l) nidx)
+            (equot/type _ l)                    (,, map/nil (tcon "type" l) nidx)
+            (equotquot _ l)                     (,, map/nil (tcon "cst" l) nidx)
+            (eprim prim _)                      (,, map/nil (t-prim prim) nidx)
+            (estr first templates l)            (let [
+                                                    string-type    (tcon "string" l)
+                                                    (, subst nidx) (foldr
+                                                                       (, map/nil nidx)
+                                                                           templates
+                                                                           (fn [(, subst nidx) (,, expr suffix sl)]
+                                                                           (let [
+                                                                               (,, s2 t nidx) (t-expr tenv expr nidx)
+                                                                               (, s3 nidx)    (unify t string-type nidx)]
+                                                                               (, (compose-subst s3 (compose-subst s2 subst)) nidx))))]
+                                                    (,, subst string-type nidx))
+            (** For lambdas (fn [name] body)
+                - create a type variable to represent the type of the argument
+                - add the type variable to the typing environment
+                - infer the body, using the augmented environment
+                - if the body's subst has some binding for our arg variable, use that **)
+            (elambda name nl body l)            (let [
+                                                    (, arg-type nidx)              (new-type-var name nidx)
+                                                    env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
+                                                    (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
+                                                    (,,
+                                                        body-subst
+                                                            (tfn (type-apply body-subst arg-type) body-type l)
+                                                            nidx))
+            (** Function application (target arg)
+                - create a type variable to represent the return value of the function application
+                - infer the target type
+                - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
+                - unify the target type with a function (arg type) => return value type variable
+                - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
+            (eapp target arg l)                 (let [
+                                                    (, result-var nidx)                (new-type-var "res" nidx)
+                                                    (,, target-subst target-type nidx) (t-expr tenv target nidx)
+                                                    (,, arg-subst arg-type nidx)       (t-expr (tenv-apply target-subst tenv) arg nidx)
+                                                    (, unified-subst nidx)             (unify
+                                                                                           (type-apply arg-subst target-type)
+                                                                                               (tfn arg-type result-var l)
+                                                                                               nidx)]
+                                                    (,,
+                                                        (compose-subst
+                                                            unified-subst
+                                                                (compose-subst arg-subst target-subst))
+                                                            (type-apply unified-subst result-var)
+                                                            nidx))
+            (** Let: simple version, where the pattern is just a pvar
+                - infer the type of the value being bound
+                - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
+                - apply any subst that we learned from inferring the value to our type environment, producing a new tenv (?) Seems like this ought to be equivalent to doing tenv-apply to tenv and then adding the name. It's impossible for the value-subst to produce ... something that would apply to the value-type, right??? right??
+                - infer the type of the body, using the tenv that has both the name bound to the generalized inferred type, as well as any substitutions that resulted from inferring the type of the bound value.
+                - compose the substitutions from the body with those from the value **)
+            ;(elet (pvar name nl) value body l) ;(let [
+                                                    (,, value-subst value-type nidx) (t-expr tenv value nidx)
+                                                    value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
+                                                    env-with-name                    (tenv/set-type tenv name value-scheme)
+                                                    e2                               (tenv-apply value-subst env-with-name)
+                                                    (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
+                                                    (,, (compose-subst body-subst value-subst) body-type nidx))
+            (** Let: complex version! Now with a whole lot of polymorphism!
+                - infer the type of the value
+                - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
+                - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
+            (elet pat init body l)              (pat-and-body tenv pat body (t-expr tenv init nidx))
+            (ematch target cases l)             (let [
+                                                    (, result-var nidx)                   (new-type-var "match-res" nidx)
+                                                    (,, target-subst target-type nidx)    (t-expr tenv target nidx)
+                                                    (,,, _ target-subst result-type nidx) (foldr
+                                                                                              (,,, target-type target-subst result-var nidx)
+                                                                                                  cases
+                                                                                                  (fn [(,,, target-type subst result nidx) (, pat body)]
+                                                                                                  (let [
+                                                                                                                                                               (,, subst body nidx)
+                                                                                                      (pat-and-body tenv pat body (,, subst target-type nidx)) (, unified-subst nidx)
+                                                                                                      (unify result body nidx)]
+                                                                                                      (,,,
+                                                                                                          (type-apply (compose-subst subst unified-subst) target-type)
+                                                                                                              (compose-subst subst unified-subst)
+                                                                                                              (type-apply unified-subst result)
+                                                                                                              nidx))))]
+                                                    (,, target-subst result-type nidx))
+            _                                   (fatal "cannot infer type for ${(valueToString expr)}"))]
+            (,, subst (tenv/trace tenv (expr-loc expr) type) nidx)))
 
 (defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
     (let [
@@ -486,53 +519,55 @@
                 nidx)))
 
 (defn t-pat [tenv pat nidx]
-    (match pat
-        (pany nl)             (let [(, var nidx) (new-type-var "any" nidx)] (,, var map/nil nidx))
-        (pvar name nl)        (let [(, var nidx) (new-type-var name nidx)]
-                                  (,, var (map/set map/nil name var) nidx))
-        (pstr _ nl)           (,, (tcon "string" nl) map/nil nidx)
-        (pprim (pbool _ _) l) (,, (tcon "bool" l) map/nil nidx)
-        (pprim (pint _ _) l)  (,, (tcon "int" l) map/nil nidx)
-        (pcon name args l)    (let [
-                                  (tconstructor free cargs cres) (match (tenv/con tenv name)
-                                                                     (none)   (fatal "Unknown constructor: ${name}")
-                                                                     (some v) v)
-                                  (,, tres tsubst nidx)          (instantiate (scheme free cres) nidx)
-                                  (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
-                                  cargs                          (map cargs (type-apply tsubst))
-                                  zipped                         (zip args cargs)
-                                  _                              (if (!= (len args) (len cargs))
-                                                                     (fatal
-                                                                         "Wrong number of arguments to constructor ${
-                                                                             name
-                                                                             } (${
-                                                                             (its l)
-                                                                             }): given ${
-                                                                             (its (len args))
-                                                                             }, but the type constructor has ${
-                                                                             (its (len cargs))
-                                                                             }")
-                                                                         0)
-                                  (,, subst bindings nidx)       (foldl
-                                                                     (,, map/nil map/nil nidx)
-                                                                         zipped
-                                                                         (fn [(,, subst bindings nidx) (, arg carg)]
-                                                                         (let [
-                                                                             (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
-                                                                             (, unified-subst nidx)      (unify pat-type carg nidx)]
-                                                                             (,,
-                                                                                 (compose-subst unified-subst subst)
-                                                                                     (map/merge bindings pat-bind)
-                                                                                     nidx))))]
-                                  (,,
-                                      (type-apply subst tres)
-                                          (map/map (type-apply subst) bindings)
-                                          nidx))))
+    (let [
+        (,, t bound nidx) (match pat
+                              (pany nl)             (let [(, var nidx) (new-type-var "any" nidx)] (,, var map/nil nidx))
+                              (pvar name nl)        (let [(, var nidx) (new-type-var name nidx)]
+                                                        (,, var (map/set map/nil name var) nidx))
+                              (pstr _ nl)           (,, (tcon "string" nl) map/nil nidx)
+                              (pprim (pbool _ _) l) (,, (tcon "bool" l) map/nil nidx)
+                              (pprim (pint _ _) l)  (,, (tcon "int" l) map/nil nidx)
+                              (pcon name args l)    (let [
+                                                        (tconstructor free cargs cres) (match (tenv/con tenv name)
+                                                                                           (none)   (fatal "Unknown constructor: ${name}")
+                                                                                           (some v) v)
+                                                        (,, tres tsubst nidx)          (instantiate (scheme free cres) nidx)
+                                                        (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
+                                                        cargs                          (map cargs (type-apply tsubst))
+                                                        zipped                         (zip args cargs)
+                                                        _                              (if (!= (len args) (len cargs))
+                                                                                           (fatal
+                                                                                               "Wrong number of arguments to constructor ${
+                                                                                                   name
+                                                                                                   } (${
+                                                                                                   (its l)
+                                                                                                   }): given ${
+                                                                                                   (its (len args))
+                                                                                                   }, but the type constructor has ${
+                                                                                                   (its (len cargs))
+                                                                                                   }")
+                                                                                               0)
+                                                        (,, subst bindings nidx)       (foldl
+                                                                                           (,, map/nil map/nil nidx)
+                                                                                               zipped
+                                                                                               (fn [(,, subst bindings nidx) (, arg carg)]
+                                                                                               (let [
+                                                                                                   (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
+                                                                                                   (, unified-subst nidx)      (unify pat-type carg nidx)]
+                                                                                                   (,,
+                                                                                                       (compose-subst unified-subst subst)
+                                                                                                           (map/merge bindings pat-bind)
+                                                                                                           nidx))))]
+                                                        (,,
+                                                            (type-apply subst tres)
+                                                                (map/map (type-apply subst) bindings)
+                                                                nidx)))]
+        (,, (tenv/trace tenv (pat-loc pat) t) bound nidx)))
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
 
-(def tenv/nil (tenv map/nil map/nil map/nil))
+(def tenv/nil (tenv map/nil map/nil map/nil noop-trace))
 
 (infer tenv/nil (@ ((fn [a] a) 23)))
 
@@ -559,7 +594,8 @@
                     (set/from-list ["a" "b"])
                         [(tvar "a" -1) (tvar "b" -1)]
                         (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))])
-            map/nil))
+            map/nil
+            noop-trace))
 
 (infer basic (@ (+ 2 3)))
 
@@ -640,28 +676,29 @@
                                                       _ (infer tenv' expr)]
                                                       tenv')
         (sdeftype tname tnl targs constructors l) (let [
-                                                      (tenv values cons types) tenv'
-                                                      names                    (map constructors (fn [(,,, name _ _ _)] name))
-                                                      final                    (foldl
-                                                                                   (tcon tname tnl)
-                                                                                       targs
-                                                                                       (fn [body (, arg al)] (tapp body (tvar arg al) l)))
-                                                      free-set                 (foldl set/nil targs (fn [free (, arg _)] (set/add free arg)))
-                                                      (, values cons)          (foldl
-                                                                                   (, values cons)
-                                                                                       constructors
-                                                                                       (fn [(, values cons) (,,, name nl args l)]
-                                                                                       (let [args (map args (fn [arg] (type-with-free arg free-set)))]
-                                                                                           (,
-                                                                                               (map/set
-                                                                                                   values
-                                                                                                       name
-                                                                                                       (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
-                                                                                                   (map/set cons name (tconstructor free-set args final))))))]
+                                                      (tenv values cons types trace) tenv'
+                                                      names                          (map constructors (fn [(,,, name _ _ _)] name))
+                                                      final                          (foldl
+                                                                                         (tcon tname tnl)
+                                                                                             targs
+                                                                                             (fn [body (, arg al)] (tapp body (tvar arg al) l)))
+                                                      free-set                       (foldl set/nil targs (fn [free (, arg _)] (set/add free arg)))
+                                                      (, values cons)                (foldl
+                                                                                         (, values cons)
+                                                                                             constructors
+                                                                                             (fn [(, values cons) (,,, name nl args l)]
+                                                                                             (let [args (map args (fn [arg] (type-with-free arg free-set)))]
+                                                                                                 (,
+                                                                                                     (map/set
+                                                                                                         values
+                                                                                                             name
+                                                                                                             (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                                                                         (map/set cons name (tconstructor free-set args final))))))]
                                                       (tenv
                                                           values
                                                               cons
-                                                              (map/set types tname (, (len targs) (set/from-list names)))))))
+                                                              (map/set types tname (, (len targs) (set/from-list names)))
+                                                              trace))))
 
 (defn several [tenv stmts]
     (match stmts
@@ -705,7 +742,7 @@
             (@! (let [a (what 1 (no)) b (what "a" (no))] (, a b)))]
             "(, (what-t int) (what-t string))")])
 
-(defn show-types [names (tenv types _ _)]
+(defn show-types [names (tenv types _ _ _)]
     (let [names (set/from-list names)]
         (map
             (filter (fn [(, k v)] (set/has names k)) (map/to-list types))
@@ -858,9 +895,9 @@
 
 (defn names [stmt]
     (match stmt
-        (sdef name _ _ _)               [name]
+        (sdef name l _ _)               [(, name l)]
         (sexpr _ _)                     []
-        (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name _ _ _)] name))))
+        (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name l _ _)] (, name l)))))
 
 (defn externals-stmt [stmt]
     (bag/to-list
@@ -948,7 +985,8 @@
                         (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
                         (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
                     map/nil
-                    map/nil)
+                    map/nil
+                    noop-trace)
                 [(@! (deftype (array a) (cons a (array a)) (nil)))
                 (@! (deftype (option a) (some a) (none)))
                 (@! (deftype (, a b) (, a b)))
@@ -974,8 +1012,10 @@
             (fn [tenv (array stmt)] tenv)
             (fn [type] string)
             (fn [stmt] (array (, string int)))
-            (fn [stmt] (array string))
-            (fn [tenv string] (option type))))
+            (fn [stmt] (array (, string int)))
+            (fn [tenv string] (option type))
+            (fn [tenv (fn [int type] type)] tenv))
+        )
 
 (typecheck
     builtin-env
@@ -988,4 +1028,5 @@
         (fn [tenv name]
         (match (tenv/type tenv name)
             (some v) (some (scheme/type v))
-            _        (none))))
+            _        (none)))
+        tenv/set-trace)
