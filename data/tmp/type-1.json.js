@@ -558,7 +558,10 @@ const names = /*7511*/function name_7511(stmt) { return /*7517*/(function match_
 if ($target.type === "sdef") {
 {
 let name = $target[0];
-return /*7526*//*7526*//*7526*/cons/*<7526*/(/*7526*//*7527*/name/*<7527*/)/*<7526*/(/*7526*//*7526*/nil/*<7526*/)/*<7526*/
+{
+let l = $target[1];
+return /*7526*//*7526*//*7526*/cons/*<7526*/(/*7526*//*10654*//*10654*//*7527*/$co/*<7527*/(/*10654*//*10655*/name/*<10655*/)/*<10654*/(/*10654*//*10656*/l/*<10656*/)/*<10654*/)/*<7526*/(/*7526*//*7526*/nil/*<7526*/)/*<7526*/
+}
 }
 }
 if ($target.type === "sexpr") {
@@ -571,7 +574,10 @@ return /*7540*//*7540*//*7541*/map/*<7541*/(/*7540*//*7542*/constructors/*<7542*
 if ($target.type === ",,,") {
 {
 let name = $target[0];
-return /*7552*/name/*<7552*/
+{
+let l = $target[1];
+return /*10657*//*10657*//*7552*/$co/*<7552*/(/*10657*//*10658*/name/*<10658*/)/*<10657*/(/*10657*//*10659*/l/*<10659*/)/*<10657*/
+}
 }
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 7543');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<7543*/ }/*<7543*/)/*<7540*/
@@ -2365,4 +2371,4 @@ return /*8789*//*8789*//*8789*//*8790*/tenv$slset_type/*<8790*/(/*8789*//*8791*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 8781');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8781*/ }/*<8781*/ }/*<8781*/)/*<8731*/ }/*<8724*/ }/*<8724*/;
 
-return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, concrete, eapp, earlier_subst, elambda, elet, ematch, empty, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, estr, evar, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, generic, infer, infer_defns, infer_several, infer_show, infer_stmt, instantiate, its, join, len, letters, make_subst_for_vars, many, map, map_without, mapi, names, new_type_var, none, one, pany, pat_names, pbool, pcon, pint, pprim, pstr, pvar, rev, scheme, scheme$sltype, scheme_apply, scheme_free, sdef, sdeftype, several, sexpr, show_subst, show_substs, show_types, show_types_list, some, subst_to_string, t$co, t_pat, t_prim, tapp, tarray, tbool, tcon, tconstructor, tenv, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tfns, tint, tmap, toption, tset, tstring, tvar, type_apply, type_free, type_loc, type_to_string, type_to_string_raw, type_with_free, typecheck, unify, unwrap_app, unwrap_fn, var_bind, vbl, zip}
+return {type: 'fns', at, bag$sland, bag$slto_list, basic, builtin_env, compose_subst, concat, concrete, eapp, earlier_subst, elambda, elet, ematch, empty, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, estr, evar, externals, externals_stmt, externals_type, filter, foldl, foldr, generalize, generic, infer, infer_defns, infer_several, infer_show, infer_stmt, instantiate, its, join, len, letters, make_subst_for_vars, many, map, map_without, mapi, names, new_type_var, none, one, pany, pat_and_body, pat_names, pbool, pcon, pint, pprim, pstr, pvar, rev, scheme, scheme$sltype, scheme_apply, scheme_free, sdef, sdeftype, several, sexpr, show_subst, show_substs, show_types, show_types_list, some, subst_to_string, t$co, t_expr, t_pat, t_prim, tapp, tarray, tbool, tcon, tconstructor, tenv, tenv$slcon, tenv$slnames, tenv$slnil, tenv$slrm, tenv$slset_type, tenv$sltype, tenv_apply, tenv_free, tfn, tfns, tint, tmap, toption, tset, tstring, tts_inner, tts_list, tvar, type_apply, type_free, type_loc, type_to_string, type_to_string_raw, type_with_free, typecheck, unify, unwrap_app, unwrap_fn, var_bind, vbl, zip}

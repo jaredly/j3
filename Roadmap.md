@@ -1,4 +1,95 @@
 
+# Ideas about currying
+
+WHAT IF
+fn args are always tuples
+(, a b c) has type (, a (, b (, c ())))
+
+andd
+
+(, 1 2 ..) has type (, int (, int 'a))
+
+So
+
+(f a b c)
+
+is the same as
+
+(f ..(, a b c))
+
+is the same as
+
+(f a ..(, b c))
+
+and
+
+(f a ..) infers f as having type (fn (, a ?) r) and returns (fn ? r)
+
+ooh it's so ... clean!
+
+it also ... seems like ... it could open us up to a world where you
+could pass in a record instead?
+
+
+SOOOO WHAT ABOUT
+passing in a single argument.
+and receiving a single argument.
+is it just like "it's a one-tuple, deal with it"? Is that ... necessary?
+
+(f (, 1 ()))
+
+(fn [x] y) -> (fn (, x ()) y)
+(fn [a b] c) -> (fn (, a b) c) -> (fn (, a (, b ())) c)
+
+(fn [a b] c) ... I do really like this better. and it's not being used?? right??
+(fn (, a b) c)
+
+OH Querstion. What about (fn (, a ..b) c) ? That has type ... (fn (, a b) c), where be could be anything?
+which, idk good luck matching on that...
+yeah I don't think varargs is really gonna be a thing.
+
+(, a) -> (, a ())
+(, a ..b) -> (, a b)
+(, a b) -> (, a (, b ()))
+
+(any way)
+
+ok back to the single-argument function.
+
+(myfun x) -> ??? -> (myfun x). Right?
+so like ... single argument invocation is the default
+and multi-arg (invocation & matching) is syntax sugar.
+
+(myfun x y) -> (myfun (, x (, y ())))
+(myfun x y ..z) -> (myfun (, x (, y z)))
+
+
+Now, potentially, the cool (?) thing will be
+that I think we can get away with this not touching the type-checker at all?
+which would be rad.
+
+
+# GRAND MASTER PLAN
+
+- [x] comment-out an ID
+- [x] cmd-click already my goodness
+- [ ] TRACE TYPES THANKS
+
+
+## USABILITY STUFF
+
+ The current type checker is functional, but (1) only reports a single error
+ and (2) can't tell me where it came from.
+
+ STEP 1 is to track a bunch more loc's so we can tell where things came from.
+ STEP 2 would be to stop using exceptions, but that might mean I need to add like ...
+ ... monads? or applicatives? something.
+
+
+So, things I definitely want in a language, which are lacking from this particular one:
+
+- let's not auto-curry.
+
 # ???????????
 
 WHAT IFFF
@@ -14,7 +105,7 @@ OK so I'm guessing that type errors would be worse? hrm.
 
 # UX Things
 
-- [ ] select multiple adjacent, and do a wrap. pleeeeeease
+- [x] select multiple adjacent, and do a wrap. pleeeeeease
 
 # Tracing, with style
 
@@ -35,7 +126,18 @@ OK so I'm guessing that type errors would be worse? hrm.
 6) add "match" support, and type constructors
 7) support single-definition toplevel recursion
 8) support multi-definition recursion, this will require doing dependency analysis.
+  - YAYYYY love it
 9) type-definition (multiple) recursion
+  - will require dependency analysis to flag whether a name is a type or a value
+  - ummm is there anything more complicated than that?
+  - well ok this will enable verification of type definitions, which I'm not really doing just yet
+
+ONCE WE HAVE THAT
+...
+What's the next step?
+profit???
+
+Like, I could write up a whole blog post about it.
 
 
 # Back to inference for a sec

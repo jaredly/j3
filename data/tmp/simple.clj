@@ -59,8 +59,6 @@ lol
 
 (let [a x] 2)
 
-x
-
 (** Mutual Recursive **)
 
 (defn even [x]

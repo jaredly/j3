@@ -84,7 +84,7 @@ export type FullEvalator<Env, Stmt, Expr> = {
     parse(node: Node, errors: Errors): Stmt | void;
     parseExpr(node: Node, errors: Errors): Expr | void;
     dependencies(stmt: Stmt): { name: string; loc: number }[];
-    stmtNames(stmt: Stmt): string[];
+    stmtNames(stmt: Stmt): { name: string; loc: number }[];
     addStatements?(
         stmts: { [key: number]: Stmt },
         env: Env,

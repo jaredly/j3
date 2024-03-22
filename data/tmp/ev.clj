@@ -1,3 +1,3 @@
 1234
 
-(def abc 234)
+(def abc hello)

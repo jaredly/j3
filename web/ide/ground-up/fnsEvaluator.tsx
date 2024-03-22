@@ -8,7 +8,7 @@ import {
 } from './Evaluators';
 import { valueToString } from './reduce';
 import { findTops } from './findTops';
-import { expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
+import { arr, expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
 import { sanitize } from './round-1/builtins';
 import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
@@ -57,7 +57,13 @@ export const fnsEvaluator = (
         },
         stmtNames(stmt) {
             if (data['names']) {
-                return unwrapArray(data['names'](stmt));
+                return unwrapArray(
+                    data['names'](stmt) as arr<{
+                        type: ',';
+                        0: string;
+                        1: number;
+                    }>,
+                ).map((res) => ({ name: res[0], loc: res[1] }));
             }
             return [];
         },
@@ -87,7 +93,7 @@ export const fnsEvaluator = (
         toFile(state, target) {
             let env = this.init();
             const errors: Errors = {};
-            const allNames: string[] = [];
+            const allNames: { name: string; loc: number }[] = [];
             let ret: null | string = null;
             const tops = findTops(state);
             const sorted = depSort(
@@ -128,6 +134,9 @@ export const fnsEvaluator = (
                     allNames.push(...group.flatMap(({ names }) => names));
                 } else {
                     const { top, stmt, names } = group[0];
+                    if (!names.length && stmt.type === 'sdef') {
+                        allNames.push({ name: stmt[0], loc: top.top });
+                    }
                     allNames.push(...names);
                     if (stmt.type === 'sexpr') {
                         if (top.top === target) {
@@ -145,26 +154,6 @@ export const fnsEvaluator = (
                 }
             });
 
-            // findTops(state).forEach((top) => {
-            //     const node = fromMCST(top.top, state.map);
-            //     if (node.type === 'blank') return;
-            //     const parsed = this.parse(node, errors);
-            //     if (!parsed) return;
-            //     if (parsed.type === 'sdef') {
-            //         names.push(parsed[0]);
-            //     }
-            //     if (parsed.type === 'sexpr') {
-            //         if (top.top === target) {
-            //             ret = data['compile'](parsed[0])([]);
-            //         }
-            //     }
-            //     try {
-            //         env = this.addStatement(parsed, env, {}, {}).env;
-            //     } catch (err) {
-            //         console.error(err);
-            //     }
-            // });
-
             if (target != null && ret == null) {
                 throw new Error(`tagtet wasnt a toplevel ${target}`);
             }
@@ -173,7 +162,7 @@ export const fnsEvaluator = (
             } else {
                 env.js.push(
                     `return {type: 'fns', ${allNames
-                        .map((name) => sanitize(name))
+                        .map(({ name }) => sanitize(name))
                         .sort()
                         .join(', ')}}`,
                 );
@@ -190,34 +179,32 @@ export const fnsEvaluator = (
                       );
                   } catch (err) {
                       console.error(err);
-                      return {
-                          env,
-                          display: {
-                              [+Object.keys(stmts)[0]]: new MyEvalError(
-                                  `Type Error`,
-                                  err as Error,
-                              ),
-                          },
-                      };
+                      const display: Record<number, Produce> = {};
+                      const myErr = new MyEvalError(`Type Error`, err as Error);
+                      Object.keys(stmts).forEach((k) => (display[+k] = myErr));
+                      return { env, display };
                   }
 
                   Object.entries(stmts).forEach(([id, stmt]) => {
                       display[+id] = [];
 
-                      if (data['names'] && data['get_type']) {
-                          const names: string[] = unwrapArray(
-                              data['names'](stmt),
-                          );
+                      if (
+                          data['names'] &&
+                          data['get_type'] &&
+                          stmt.type === 'sdef'
+                      ) {
+                          const names: { type: ','; 0: string; 1: number }[] =
+                              unwrapArray(data['names'](stmt));
                           const types: any[] = names.map((name) =>
-                              data['get_type'](env.typeCheck)(name),
+                              data['get_type'](env.typeCheck)(name[0]),
                           );
                           (display[+id] as any[]).push(
                               ...types.map((type, i) =>
                                   type.type === 'some'
-                                      ? `${names[i]}: ${data['type_to_string'](
-                                            type[0],
-                                        )}`
-                                      : `No type for ${names[i]}`,
+                                      ? `${names[i][0]}: ${data[
+                                            'type_to_string'
+                                        ](type[0])}`
+                                      : `No type for ${names[i][0]}`,
                               ),
                           );
                       }
@@ -252,10 +239,11 @@ export const fnsEvaluator = (
                     };
                 }
 
-                if (data['names'] && data['get_type']) {
-                    const names: string[] = unwrapArray(data['names'](stmt));
+                if (data['names'] && data['get_type'] && stmt.type === 'sdef') {
+                    const names: { type: ','; 0: string; 1: number }[] =
+                        unwrapArray(data['names'](stmt));
                     const types: any[] = names.map((name) =>
-                        data['get_type'](env.typeCheck)(name),
+                        data['get_type'](env.typeCheck)(name[0]),
                     );
                     display.push(
                         ...types.map((type, i) =>

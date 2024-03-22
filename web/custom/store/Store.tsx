@@ -34,6 +34,7 @@ import { goRight } from '../../../src/state/navigate';
 import { cmpFullPath } from '../../../src/state/path';
 
 export type NUIResults = {
+    jumpToName: { [name: string]: number };
     errors: { [loc: number]: string[] };
     display: Display;
     hashNames: { [loc: string]: string };

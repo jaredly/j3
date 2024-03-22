@@ -15,6 +15,7 @@ export const getResults = <Env, Stmt, Expr>(
     debugExecOrder: boolean,
 ) => {
     const results: NUIResults = {
+        jumpToName: {},
         display: {},
         errors: {},
         hashNames: {},
@@ -45,6 +46,12 @@ export const getResults = <Env, Stmt, Expr>(
 
     results.env = evaluator.init();
     sorted.forEach((group, i) => {
+        group.forEach((item) => {
+            item.names.forEach((name) => {
+                results.jumpToName[name.name] = name.loc;
+            });
+        });
+
         if (group.length === 1) {
             const {
                 top: { plugin },
@@ -137,14 +144,14 @@ export const unique = (names: number[]) => {
 export const depSort = <T,>(
     nodes: ({
         id: number;
-        names: string[];
+        names: { name: string; loc: number }[];
         deps: { name: string }[];
         hidden?: boolean;
     } & T)[],
 ) => {
     const idForName: { [name: string]: number } = {};
     nodes.forEach((node) =>
-        node.names.forEach((name) => (idForName[name] = node.id)),
+        node.names.forEach(({ name }) => (idForName[name] = node.id)),
     );
 
     // Record<a, b> where a depends on b

@@ -858,9 +858,9 @@
 
 (defn names [stmt]
     (match stmt
-        (sdef name _ _ _)               [name]
+        (sdef name l _ _)               [(, name l)]
         (sexpr _ _)                     []
-        (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name _ _ _)] name))))
+        (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name l _ _)] (, name l)))))
 
 (defn externals-stmt [stmt]
     (bag/to-list
@@ -974,7 +974,7 @@
             (fn [tenv (array stmt)] tenv)
             (fn [type] string)
             (fn [stmt] (array (, string int)))
-            (fn [stmt] (array string))
+            (fn [stmt] (array (, string int)))
             (fn [tenv string] (option type))))
 
 (typecheck

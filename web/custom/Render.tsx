@@ -9,6 +9,7 @@ import { splitNamespaces } from '../../src/db/hash-tree';
 import { useGetStore, useNode, Values } from './store/Store';
 import equal from 'fast-deep-equal';
 import { RichText } from './RichText';
+import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -238,6 +239,7 @@ export const RenderNNode = (
 ): JSX.Element | null => {
     const { nnode, idx, path } = props;
     const { reg, display, dispatch, node, selection, errors } = props.values;
+    const store = useGetStore();
 
     const edgeSelected = selection?.edge;
 
@@ -425,6 +427,26 @@ export const RenderNNode = (
                             path: path.concat({ idx, at: 0, type: 'subtext' }),
                         })
                     }
+                    onClick={(evt) => {
+                        if (evt.metaKey) {
+                            evt.stopPropagation();
+                            evt.preventDefault();
+                            const found =
+                                store.getResults().jumpToName[nnode.text];
+                            if (found != null) {
+                                const path = pathForIdx(
+                                    found,
+                                    store.getState(),
+                                );
+                                if (path != null) {
+                                    dispatch({
+                                        type: 'select',
+                                        at: [{ start: path }],
+                                    });
+                                }
+                            }
+                        }
+                    }}
                     onDoubleClick={() => {
                         dispatch({
                             type: 'select',

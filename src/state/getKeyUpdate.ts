@@ -404,7 +404,16 @@ export const getKeyUpdate = (
 
     // Start a list-like!
     if ('([{'.includes(key)) {
-        return openListLike({ key, idx, node, fullPath, map, nsMap, nidx });
+        return openListLike({
+            key,
+            idx,
+            node,
+            fullPath,
+            map,
+            nsMap,
+            nidx,
+            start: selection.end ? selection.start : null,
+        });
     }
 
     const ppath = fullPath[fullPath.length - 2];
@@ -601,14 +610,21 @@ export const getKeyUpdate = (
                 selection: [{ idx, type: 'text', at: 0 }],
             });
         }
-        if (node.type === 'list' || node.type === 'array') {
+        if (
+            node.type === 'list' ||
+            node.type === 'array' ||
+            (node.type === 'identifier' && pos === 0)
+        ) {
             const n = nidx();
             return replacePathWith(fullPath.slice(0, -1), map, nsMap, {
                 map: {
                     [n]: { type: 'comment-node', loc: n, contents: idx },
                 },
                 idx: n,
-                selection: [{ idx: n, type: 'start' }],
+                selection: [
+                    { idx: n, type: 'spread-contents' },
+                    { idx, type: 'start' },
+                ],
             });
         }
     }
@@ -868,6 +884,7 @@ export function openListLike({
     map,
     nsMap,
     nidx,
+    start,
 }: {
     key: string;
     idx: number;
@@ -876,12 +893,49 @@ export function openListLike({
     map: Map;
     nsMap: NsMap;
     nidx: () => number;
+    start: Path[] | null;
 }): StateUpdate | void {
     const type = ({ '(': 'list', '[': 'array', '{': 'record' } as const)[key]!;
 
     // Just replace it!
     if (node.type === 'blank') {
         return replaceWith(fullPath.slice(0, -1), newListLike(type, idx));
+    }
+
+    if (start) {
+        let i = 0;
+        for (let i = 0; i < fullPath.length && i < start.length; i++) {
+            const st = start[i];
+            const ed = fullPath[i];
+            if (st.idx !== ed.idx) break;
+            // two childs, most alike in dignity
+            if (st.type === 'child' && ed.type === 'child' && st.at !== ed.at) {
+                const left = Math.min(st.at, ed.at);
+                const right = Math.max(st.at, ed.at);
+                let parent = map[st.idx];
+                if (!('values' in parent)) break;
+                const newOne = newListLike(
+                    type,
+                    nidx(),
+                    parent.values.slice(left, right + 1).map((idx) => ({
+                        idx,
+                        map: {},
+                        selection: [],
+                    })),
+                );
+                parent = { ...parent, values: parent.values.slice() };
+                parent.values.splice(left, right - left + 1, newOne.idx);
+
+                return {
+                    type: 'update',
+                    map: { [parent.loc]: parent, ...newOne.map },
+                    selection: fullPath.slice(0, i).concat([
+                        { type: 'child', at: left, idx: st.idx },
+                        { type: 'start', idx: newOne.idx },
+                    ]),
+                };
+            }
+        }
     }
 
     const flast = fullPath[fullPath.length - 1];
