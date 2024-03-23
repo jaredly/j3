@@ -83,6 +83,29 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
+(defn expr-to-string [expr]
+    (match expr
+        (evar n _)           n
+        (elambda n _ b _)    "(fn [${n}] ${(expr-to-string b)})"
+        (eapp a b _)         "(${(expr-to-string a)} ${(expr-to-string b)})"
+        (eprim (pint n _) _) (int-to-string n)
+        (ematch t cases _)   "(match ${
+                                 (expr-to-string t)
+                                 } ${
+                                 (join
+                                     "\n"
+                                         (map cases (fn [(, a b)] "${(pat-to-string a)} ${(expr-to-string b)}")))
+                                 }"
+        _                    "??"))
+
+(defn pat-to-string [pat]
+    (match pat
+        (pany _)        "_"
+        (pvar n _)      n
+        (pcon c pats _) "(${c} ${(join " " (map pats pat-to-string))})"
+        (pstr s _)      "\"${s}\""
+        (pprim _ _)     "prim"))
+
 (deftype prim (pint int int) (pbool bool int))
 
 (deftype pat
@@ -216,7 +239,7 @@
         (, (@t (cons a b)) "(cons a b)")])
 
 (defn type-to-string-raw [t]
-    (let [(, text _) (tts-inner t (, none 0) true)] text))
+    (let [(, text _) (tts-inner t (, none 0) false)] text))
 
 (** ## Types needed for inference **)
 
@@ -415,6 +438,7 @@
         (type/set-loc (expr-loc expr))
             (match expr
             (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
+            (evar "()" l)                       (,, map/nil (tcon "()" l) nidx)
             (evar name l)                       (match (tenv/type tenv name)
                                                     (none)       (fatal "Unbound variable ${name} (${(its l)})")
                                                     (some found) (let [(,, t _ nidx) (instantiate found nidx l)] (,, map/nil t nidx)))
@@ -494,13 +518,13 @@
                                                                                                   cases
                                                                                                   (fn [(,,, target-type subst result nidx) (, pat body)]
                                                                                                   (let [
-                                                                                                                                                               (,, subst body nidx)
-                                                                                                      (pat-and-body tenv pat body (,, subst target-type nidx)) (, unified-subst nidx)
-                                                                                                      (unify result body nidx)]
+                                                                                                      (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
+                                                                                                      (, unified-subst nidx) (unify result body nidx)
+                                                                                                      composed               (compose-subst subst unified-subst)]
                                                                                                       (,,,
-                                                                                                          (type-apply (compose-subst subst unified-subst) target-type)
-                                                                                                              (compose-subst subst unified-subst)
-                                                                                                              (type-apply unified-subst result)
+                                                                                                          (type-apply composed target-type)
+                                                                                                              composed
+                                                                                                              (type-apply composed result)
                                                                                                               nidx))))]
                                                     (,, target-subst result-type nidx))
             _                                   (fatal "cannot infer type for ${(valueToString expr)}"))))
@@ -526,8 +550,8 @@
                                                nidx)]
         (,,
             (compose-subst
-                unified-subst
-                    (compose-subst value-subst body-subst))
+                body-subst
+                    (compose-subst value-subst unified-subst))
                 (type-apply unified-subst body-type)
                 nidx)))
 
@@ -643,6 +667,8 @@
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(fn [a] a)")
         (, (@ (fn [a] (+ 2 a))) "(fn [int] int)")
+        (, (@ ((fn [(, a _)] (a 2)) (, 1 2))) )
+        (, (@ (fn [(, a _)] (a 2))) "(fn [(, (fn [int] a) b)] a)")
         (,
         (@
             (match 1
@@ -966,6 +992,7 @@
             (tenv
                 (map/from-list
                     [(, "+" (concrete (tfns [tint tint] tint)))
+                        (, "+," (concrete (tfns [(t, tint (t, tint (tcon "()" -1)))] tint)))
                         (, "-" (concrete (tfns [tint tint] tint)))
                         (, ">" (concrete (tfns [tint tint] tbool)))
                         (, "<" (concrete (tfns [tint tint] tbool)))
@@ -1002,7 +1029,7 @@
                         (, "sanitize" (concrete (tfns [tstring] tstring)))
                         (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
                         (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
-                    map/nil
+                    (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1)))])
                     map/nil)
                 [(@! (deftype (array a) (cons a (array a)) (nil)))
                 (@! (deftype (option a) (some a) (none)))

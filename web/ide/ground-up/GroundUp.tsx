@@ -100,7 +100,14 @@ export const GroundUp = ({
     }, [store.getEvaluator()]);
 
     return (
-        <div style={{ padding: 16, cursor: 'text', marginBottom: 300 }}>
+        <div
+            style={{
+                padding: 16,
+                cursor: 'text',
+                marginBottom: 300,
+                marginRight: 500,
+            }}
+        >
             <HiddenInput
                 display={results.display}
                 state={state}

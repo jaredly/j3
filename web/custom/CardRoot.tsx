@@ -70,6 +70,10 @@ export function CardRoot({
 
     return (
         <div
+            style={{
+                maxWidth: 1400,
+                overflow: 'auto',
+            }}
             {...dragProps}
             onMouseDown={(evt) => {
                 let current = evt.target as HTMLElement;

@@ -1,5 +1,20 @@
 (deftype (array a) (cons a (array a)) (nil))
 
+(deftype x)
+
+((fn [a] (a "")) ,)
+
+((fn [(, a _)] (a 2)) (, 1 2))
+
+((fn [(, a (, b ""))] (+ a b)) (, 1 (, 2 (, 3 2))))
+
+(fn [(, a "")] 1)
+
+((fn [(, a (, b ""))] 2) (, 1 (, 2 (, 3 2))))
+
+(match (, 1 2)
+    (, a (, b "")) 1)
+
 (** Recursive functions **)
 
 (defn foldr [init items f]

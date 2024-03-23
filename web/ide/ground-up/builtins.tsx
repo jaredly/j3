@@ -14,6 +14,8 @@ export function builtins() {
           ) => void) = null;
     let env = {
         // Math
+        '+,': ({ 0: a, 1: { 0: b } }: any) => a + b,
+
         '+': (a: number) => (b: number) => a + b,
         '-': (a: number) => (b: number) => a - b,
         '<': (a: number) => (b: number) => a < b,
