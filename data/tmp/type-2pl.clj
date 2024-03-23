@@ -968,7 +968,9 @@
 (defn tmap [k v] (tapp (tapp (tcon "map" -1) k -1) v -1))
 
 (defn tfns [args result]
-    ((foldr result args (fn [result arg] (tfn arg result -1)))))
+    (tfn (foldr (tcon "()" -1) args (fn [result arg] (t, arg result)))
+        result
+            -1))
 
 (type-to-string (tfns [tint tbool] tstring))
 
