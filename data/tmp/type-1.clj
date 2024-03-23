@@ -992,7 +992,6 @@
             (tenv
                 (map/from-list
                     [(, "+" (concrete (tfns [tint tint] tint)))
-                        (, "+," (concrete (tfns [(t, tint (t, tint (tcon "()" -1)))] tint)))
                         (, "-" (concrete (tfns [tint tint] tint)))
                         (, ">" (concrete (tfns [tint tint] tbool)))
                         (, "<" (concrete (tfns [tint tint] tbool)))

@@ -16,6 +16,8 @@
 OH
 - [ ] NEED exhaustiveness checking, thanks
 
+- [ ] I should really add a gut-check in the `compose-subst` to verify that I'm combining them in the
+  correct order. e.g. that nothing in (earlier) needs to be applied to (later)
 
 # Currying
 
