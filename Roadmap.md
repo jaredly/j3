@@ -16,6 +16,31 @@
 OH
 - [ ] NEED exhaustiveness checking, thanks
 
+
+# Currying
+
+IS IT a problem, for
+(, a b ..())
+to be different from
+(, a b)
+?
+
+Ok, so I think the more ... theoretically pure version ...
+is to always have a `()` at the end, and I think I have a better shot of
+making that work. Once it's figured out, I can try to get fancy.
+
+
+ARGH I changed too many things at once.
+
+Turning off sourcemaps is nice, but annoying that it requires editor-side changes.
+
+AND
+
+making lambdas take patterns, also nice, but too mcuh I dare say.
+
+
+
+
 # Ideas about currying
 
 WHAT IF

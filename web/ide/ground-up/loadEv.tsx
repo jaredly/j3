@@ -53,7 +53,10 @@ export const evaluatorFromText = (
                 get_type,
                 set_type_trace,
             });
-        } else if (result.type === 'parse-and-compile') {
+        } else if (
+            result.type === 'parse-and-compile' ||
+            result.type === 'parse-and-compile2'
+        ) {
             data.type = 'fns';
             console.log('PARSE AND COMPILE');
             const {
@@ -63,6 +66,7 @@ export const evaluatorFromText = (
                 3: compile,
             } = result;
             Object.assign(data, {
+                parse_version: result.type === 'parse-and-compile' ? 1 : 2,
                 parse_stmt,
                 parse_expr,
                 compile_stmt,

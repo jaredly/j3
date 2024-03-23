@@ -148,6 +148,7 @@ export const fnsEvaluator = (
                     const result = this.addStatement(stmt, env, {}, {});
                     if (result.display instanceof Error) {
                         console.error(`We failed, sorry folks`, result.display);
+                        console.log(top);
                         throw result.display;
                     }
                     env = result.env;
@@ -277,9 +278,7 @@ export const fnsEvaluator = (
             }
         },
         evaluate(expr, env, meta) {
-            const mm = Object.entries(meta)
-                .map(([k, v]) => [+k, v.trace])
-                .filter((k) => k[1]);
+            const mm = prepareMeta(meta, data['parse_version'] === 2);
 
             let type = null;
             if (data['infer']) {
@@ -315,9 +314,8 @@ const compileStmt = (
     meta: MetaDataMap,
     traceMap: TraceMap,
 ) => {
-    const mm = Object.entries(meta)
-        .map(([k, v]) => [+k, v.trace])
-        .filter((k) => k[1]);
+    const mm = prepareMeta(meta, data['parse_version'] === 2);
+
     if (stmt.type === 'sexpr') {
         let type = null;
         if (data['infer']) {
@@ -424,3 +422,9 @@ const compileStmt = (
         };
     }
 };
+function prepareMeta(meta: MetaDataMap, and_how: boolean) {
+    const mm = Object.entries(meta)
+        .map(([k, v]) => [+k, v.trace])
+        .filter((k) => k[1]);
+    return and_how ? { type: ',', 0: mm, 1: false } : mm;
+}

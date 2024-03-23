@@ -153,7 +153,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 2101');})(/*!*//
 
 const escape_string = /*2127*/function name_2127(string) { return /*2133*//*2133*//*2134*/replaces/*<2134*/(/*2133*//*2135*/string/*<2135*/)/*<2133*/(/*2133*//*2136*//*2136*//*2136*/cons/*<2136*/(/*2136*//*2137*//*2137*//*2720*/$co/*<2720*/(/*2137*//*2721*/"\\"/*<2721*/)/*<2137*/(/*2137*//*2723*/"\\\\"/*<2723*/)/*<2137*/)/*<2136*/(/*2136*//*2136*//*2136*//*2136*/cons/*<2136*/(/*2136*//*2725*//*2725*//*2726*/$co/*<2726*/(/*2725*//*2727*/"\n"/*<2727*/)/*<2725*/(/*2725*//*2729*/"\\n"/*<2729*/)/*<2725*/)/*<2136*/(/*2136*//*2136*//*2136*//*2136*/cons/*<2136*/(/*2136*//*2731*//*2731*//*2732*/$co/*<2732*/(/*2731*//*2733*/"\""/*<2733*/)/*<2731*/(/*2731*//*2735*/"\\\""/*<2735*/)/*<2731*/)/*<2136*/(/*2136*//*2136*//*2136*//*2136*/cons/*<2136*/(/*2136*//*2155*//*2155*//*2156*/$co/*<2156*/(/*2155*//*2157*/"\`"/*<2157*/)/*<2155*/(/*2155*//*2159*/"\\\`"/*<2159*/)/*<2155*/)/*<2136*/(/*2136*//*2136*//*2136*//*2136*/cons/*<2136*/(/*2136*//*2161*//*2161*//*2162*/$co/*<2162*/(/*2161*//*2163*/"\$"/*<2163*/)/*<2161*/(/*2161*//*2165*/"\\\$"/*<2165*/)/*<2161*/)/*<2136*/(/*2136*//*2136*/nil/*<2136*/)/*<2136*/)/*<2136*/)/*<2136*/)/*<2136*/)/*<2136*/)/*<2133*/ }/*<2127*/;
 
-const builtins = /*3135*/"const sanMap = { '-': '_', '+': '\$pl', '*': '\$ti', '=': '\$eq', \n'>': '\$gt', '<': '\$lt', \"'\": '\$qu', '\"': '\$dq', ',': '\$co', '@': '\$at', '/': '\$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(\`^\${kwd}\$\`, 'g'), '\$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst \$eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst \$pl\$pl = (items) => unwrapArray(items).join('');\nconst \$pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst \$co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n"/*<3135*/;
+const builtins = /*3135*/"const sanMap = { '-': '_', '+': '\$pl', '*': '\$ti', '=': '\$eq', \n'>': '\$gt', '<': '\$lt', \"'\": '\$qu', '\"': '\$dq', ',': '\$co', '@': '\$at', '/': '\$sl', '!': '\$ex'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(\`^\${kwd}\$\`, 'g'), '\$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger; if (raw == '()') return 'null';\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst \$eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst \$pl\$pl = (items) => unwrapArray(items).join('');\nconst \$pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst \$co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n"/*<3135*/;
 
 const pat_loc = /*4536*/function name_4536(pat) { return /*4542*/(function match_4542($target) {
 if ($target.type === "pany") {
@@ -286,7 +286,7 @@ return /*5403*//*5403*//*5404*/rev/*<5404*/(/*5403*//*5405*/rest/*<5405*/)/*<540
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 5384');})(/*!*//*5386*/arr/*<5386*/)/*<5384*/ }/*<5377*/ }/*<5377*/;
 
-const parse_and_compile = (v0) => (v1) => (v2) => (v3) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3});
+const parse_and_compile2 = (v0) => (v1) => (v2) => (v3) => ({type: "parse-and-compile2", 0: v0, 1: v1, 2: v2, 3: v3});
 const foldl = /*5855*/function name_5855(init) { return /*5855*/function name_5855(items) { return /*5855*/function name_5855(f) { return /*5863*/(function match_5863($target) {
 if ($target.type === "nil") {
 return /*5867*/init/*<5867*/
@@ -355,24 +355,38 @@ let args = $target[1];
 {
 let l = $target[2];
 return /*6217*/(function match_6217($target) {
-if ($target.type === "nil") {
+if ($target.type === ",") {
+if ($target[1].type === "nil") {
 return /*6241*/none/*<6241*/
 }
-{
-let items = $target;
-return /*6234*//*6235*/some/*<6235*/(/*6234*//*6226*/`{${/*6228*//*6228*//*6230*/join/*<6230*/(/*6228*//*6231*/", "/*<6231*/)/*<6228*/(/*6228*//*6233*/items/*<6233*/)/*<6228*/}}`/*<6226*/)/*<6234*/
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 6217');})(/*!*//*6187*//*6187*//*6187*//*6191*/foldr/*<6191*/(/*6187*//*6192*/nil/*<6192*/)/*<6187*/(/*6187*//*6193*/args/*<6193*/)/*<6187*/(/*6187*//*6194*/function name_6194(res) { return /*6194*/function name_6194(arg) { return /*6199*/(function match_6199($target) {
+if ($target.type === ",") {
+{
+let items = $target[1];
+return /*6234*//*6235*/some/*<6235*/(/*6234*//*6226*/`{${/*6228*//*6228*//*6230*/join/*<6230*/(/*6228*//*6231*/", "/*<6231*/)/*<6228*/(/*6228*//*6514*//*6514*//*6515*/rev/*<6515*/(/*6514*//*6233*/items/*<6233*/)/*<6514*/(/*6514*//*6516*/nil/*<6516*/)/*<6514*/)/*<6228*/}}`/*<6226*/)/*<6234*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6217');})(/*!*//*6187*//*6187*//*6187*//*6191*/foldl/*<6191*/(/*6187*//*6306*//*6306*//*6307*/$co/*<6307*/(/*6306*//*6308*/0/*<6308*/)/*<6306*/(/*6306*//*6192*/nil/*<6192*/)/*<6306*/)/*<6187*/(/*6187*//*6193*/args/*<6193*/)/*<6187*/(/*6187*//*6194*/function name_6194($fn_arg) { return /*6194*/(function match_6194($target) {
+if ($target.type === ",") {
+{
+let i = $target[0];
+{
+let res = $target[1];
+return /*6194*/function name_6194(arg) { return /*6199*/(function match_6199($target) {
 if ($target.type === "none") {
-return /*6206*/res/*<6206*/
+return /*6312*//*6312*//*6206*/$co/*<6206*/(/*6312*//*6315*//*6315*//*6316*/$pl/*<6316*/(/*6315*//*6317*/i/*<6317*/)/*<6315*/(/*6315*//*6318*/1/*<6318*/)/*<6315*/)/*<6312*/(/*6312*//*6313*/res/*<6313*/)/*<6312*/
 }
 if ($target.type === "some") {
 {
 let what = $target[0];
-return /*6210*//*6210*//*6210*/cons/*<6210*/(/*6210*//*6211*/what/*<6211*/)/*<6210*/(/*6210*//*6212*/res/*<6212*/)/*<6210*/
+return /*6319*//*6319*//*6320*/$co/*<6320*/(/*6319*//*6321*//*6321*//*6322*/$pl/*<6322*/(/*6321*//*6323*/i/*<6323*/)/*<6321*/(/*6321*//*6324*/1/*<6324*/)/*<6321*/)/*<6319*/(/*6319*//*6210*//*6210*//*6210*/cons/*<6210*/(/*6210*//*6325*/`${/*6328*//*6332*/its/*<6332*/(/*6328*//*6333*/i/*<6333*/)/*<6328*/}: ${/*6211*/what/*<6211*/}`/*<6325*/)/*<6210*/(/*6210*//*6212*/res/*<6212*/)/*<6210*/)/*<6319*/
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 6199');})(/*!*//*6201*//*6202*/just_pat/*<6202*/(/*6201*//*6203*/arg/*<6203*/)/*<6201*/)/*<6199*/ }/*<6194*/ }/*<6194*/)/*<6187*/)/*<6217*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6199');})(/*!*//*6201*//*6202*/just_pat/*<6202*/(/*6201*//*6203*/arg/*<6203*/)/*<6201*/)/*<6199*/ }/*<6194*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6194');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<6194*/ }/*<6194*/)/*<6187*/)/*<6217*/
 }
 }
 }
@@ -587,7 +601,11 @@ return /*1816*//*1816*//*1816*//*1817*/pcon/*<1817*/(/*1816*//*1818*/name/*<1818
 return /*3160*//*3161*/fatal/*<3161*/(/*3160*//*3162*/`parse-pat mo match ${/*3164*//*3166*/valueToString/*<3166*/(/*3164*//*3167*/pat/*<3167*/)/*<3164*/}`/*<3162*/)/*<3160*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1727');})(/*!*//*1730*/pat/*<1730*/)/*<1727*/ }/*<1721*/;
 
-const trace_wrap = /*4689*/function name_4689(loc) { return /*4689*/function name_4689(trace) { return /*4689*/function name_4689(js) { return /*4699*/(function match_4699($target) {
+const trace_wrap = /*4689*/function name_4689(loc) { return /*4689*/function name_4689($fn_arg) { return /*4689*/(function match_4689($target) {
+if ($target.type === ",") {
+{
+let trace = $target[0];
+return /*4689*/function name_4689(js) { return /*4699*/(function match_4699($target) {
 if ($target.type === "none") {
 return /*4784*/js/*<4784*/
 }
@@ -597,9 +615,16 @@ let info = $target[0];
 return /*4788*/`\$trace(${/*5949*//*4800*/its/*<4800*/(/*5949*//*5950*/loc/*<5950*/)/*<5949*/}, ${/*4802*//*4804*/jsonify/*<4804*/(/*4802*//*4805*/info/*<4805*/)/*<4802*/}, ${/*4795*/js/*<4795*/})`/*<4788*/
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 4699');})(/*!*//*4778*//*4778*//*4779*/map$slget/*<4779*/(/*4778*//*4780*/trace/*<4780*/)/*<4778*/(/*4778*//*4781*/loc/*<4781*/)/*<4778*/)/*<4699*/ }/*<4689*/ }/*<4689*/ }/*<4689*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 4699');})(/*!*//*4778*//*4778*//*4779*/map$slget/*<4779*/(/*4778*//*4780*/trace/*<4780*/)/*<4778*/(/*4778*//*4781*/loc/*<4781*/)/*<4778*/)/*<4699*/ }/*<4689*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 4689');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<4689*/ }/*<4689*/ }/*<4689*/;
 
-const trace_and = /*4741*/function name_4741(loc) { return /*4741*/function name_4741(trace) { return /*4741*/function name_4741(value) { return /*4741*/function name_4741(js) { return /*4750*/(function match_4750($target) {
+const trace_and = /*4741*/function name_4741(loc) { return /*4741*/function name_4741($fn_arg) { return /*4741*/(function match_4741($target) {
+if ($target.type === ",") {
+{
+let trace = $target[0];
+return /*4741*/function name_4741(value) { return /*4741*/function name_4741(js) { return /*4750*/(function match_4750($target) {
 if ($target.type === "none") {
 return /*4820*/js/*<4820*/
 }
@@ -609,9 +634,16 @@ let info = $target[0];
 return /*4824*/`(\$trace(${/*5942*//*4826*/its/*<4826*/(/*5942*//*5943*/loc/*<5943*/)/*<5942*/}, ${/*4828*//*4830*/jsonify/*<4830*/(/*4828*//*4831*/info/*<4831*/)/*<4828*/}, ${/*4832*/value/*<4832*/}), ${/*4834*/js/*<4834*/})`/*<4824*/
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 4750');})(/*!*//*4814*//*4814*//*4815*/map$slget/*<4815*/(/*4814*//*4816*/trace/*<4816*/)/*<4814*/(/*4814*//*4817*/loc/*<4817*/)/*<4814*/)/*<4750*/ }/*<4741*/ }/*<4741*/ }/*<4741*/ }/*<4741*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 4750');})(/*!*//*4814*//*4814*//*4815*/map$slget/*<4815*/(/*4814*//*4816*/trace/*<4816*/)/*<4814*/(/*4814*//*4817*/loc/*<4817*/)/*<4814*/)/*<4750*/ }/*<4741*/ }/*<4741*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 4741');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<4741*/ }/*<4741*/ }/*<4741*/;
 
-const trace_and_block = /*4850*/function name_4850(loc) { return /*4850*/function name_4850(trace) { return /*4850*/function name_4850(value) { return /*4850*/function name_4850(js) { return /*4859*/(function match_4859($target) {
+const trace_and_block = /*4850*/function name_4850(loc) { return /*4850*/function name_4850($fn_arg) { return /*4850*/(function match_4850($target) {
+if ($target.type === ",") {
+{
+let trace = $target[0];
+return /*4850*/function name_4850(value) { return /*4850*/function name_4850(js) { return /*4859*/(function match_4859($target) {
 if ($target.type === "none") {
 return /*4867*/js/*<4867*/
 }
@@ -621,9 +653,17 @@ let info = $target[0];
 return /*4871*/`\$trace(${/*5951*//*4873*/its/*<4873*/(/*5951*//*5952*/loc/*<5952*/)/*<5951*/}, ${/*4875*//*4877*/jsonify/*<4877*/(/*4875*//*4878*/info/*<4878*/)/*<4875*/}, ${/*4879*/value/*<4879*/});\n${/*4881*/js/*<4881*/}`/*<4871*/
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 4859');})(/*!*//*4861*//*4861*//*4862*/map$slget/*<4862*/(/*4861*//*4863*/trace/*<4863*/)/*<4861*/(/*4861*//*4864*/loc/*<4864*/)/*<4861*/)/*<4859*/ }/*<4850*/ }/*<4850*/ }/*<4850*/ }/*<4850*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 4859');})(/*!*//*4861*//*4861*//*4862*/map$slget/*<4862*/(/*4861*//*4863*/trace/*<4863*/)/*<4861*/(/*4861*//*4864*/loc/*<4864*/)/*<4861*/)/*<4859*/ }/*<4850*/ }/*<4850*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 4850');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<4850*/ }/*<4850*/ }/*<4850*/;
 
-const source_map = /*4890*/function name_4890(loc) { return /*4890*/function name_4890(js) { return /*4897*/`/*${/*5953*//*4899*/its/*<4899*/(/*5953*//*5954*/loc/*<5954*/)/*<5953*/}*/${/*4901*/js/*<4901*/}/*<${/*5955*//*4903*/its/*<4903*/(/*5955*//*5956*/loc/*<5956*/)/*<5955*/}*/`/*<4897*/ }/*<4890*/ }/*<4890*/;
+const source_map = /*4890*/function name_4890(loc) { return /*4890*/function name_4890(enabled) { return /*4890*/function name_4890(js) { return /*6464*/(function match_6464($target) {
+if ($target === true) {
+return /*4897*/`/*${/*5953*//*4899*/its/*<4899*/(/*5953*//*5954*/loc/*<5954*/)/*<5953*/}*/${/*4901*/js/*<4901*/}/*<${/*5955*//*4903*/its/*<4903*/(/*5955*//*5956*/loc/*<5956*/)/*<5955*/}*/`/*<4897*/
+}
+return /*6467*/js/*<6467*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6464');})(/*!*//*6466*/enabled/*<6466*/)/*<6464*/ }/*<4890*/ }/*<4890*/ }/*<4890*/;
 
 const parse_stmt = /*599*/function name_599(cst) { return /*606*/(function match_606($target) {
 if ($target.type === "cst/list") {
@@ -979,36 +1019,6 @@ if ($target[0][0].type === "cst/identifier") {
 if ($target[0][0][0] === "fn"){
 if ($target[0][1].type === "cons") {
 if ($target[0][1][0].type === "cst/array") {
-if ($target[0][1][0][0].type === "cons") {
-{
-let arg = $target[0][1][0][0][0];
-if ($target[0][1][0][0][1].type === "nil") {
-if ($target[0][1][1].type === "cons") {
-{
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-{
-let b = $target[1];
-return /*6006*//*6006*//*6006*//*6021*/elambda/*<6021*/(/*6006*//*6022*//*6023*/parse_pat/*<6023*/(/*6022*//*6024*/arg/*<6024*/)/*<6022*/)/*<6006*/(/*6006*//*6025*//*6026*/parse_expr/*<6026*/(/*6025*//*6027*/body/*<6027*/)/*<6025*/)/*<6006*/(/*6006*//*6028*/b/*<6028*/)/*<6006*/
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "fn"){
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/array") {
 {
 let args = $target[0][1][0][0];
 if ($target[0][1][1].type === "cons") {
@@ -1113,9 +1123,29 @@ let target = $target[0][0];
 let args = $target[0][1];
 {
 let l = $target[1];
-return /*1575*//*1575*//*1575*//*1576*/foldl/*<1576*/(/*1575*//*1577*//*1578*/parse_expr/*<1578*/(/*1577*//*1579*/target/*<1579*/)/*<1577*/)/*<1575*/(/*1575*//*1580*/args/*<1580*/)/*<1575*/(/*1575*//*1581*/function name_1581(target) { return /*1581*/function name_1581(arg) { return /*1586*//*1586*//*1586*//*1587*/eapp/*<1587*/(/*1586*//*1588*/target/*<1588*/)/*<1586*/(/*1586*//*1589*//*1590*/parse_expr/*<1590*/(/*1589*//*1591*/arg/*<1591*/)/*<1589*/)/*<1586*/(/*1586*//*3745*/l/*<3745*/)/*<1586*/ }/*<1581*/ }/*<1581*/)/*<1575*/
+return /*6671*/(function let_6671() {const $target = /*6676*//*6676*//*6796*/apply_args/*<6796*/(/*6676*//*6797*/args/*<6797*/)/*<6676*/(/*6676*//*6798*/l/*<6798*/)/*<6676*/;
+{
+let args = $target;
+return /*6705*/(function match_6705($target) {
+if ($target.type === "cst/identifier") {
+if ($target[0] === ","){
+return /*6714*/args/*<6714*/
 }
 }
+return /*6649*//*6649*//*6649*//*6650*/eapp/*<6650*/(/*6649*//*6651*//*6653*/parse_expr/*<6653*/(/*6651*//*6654*/target/*<6654*/)/*<6651*/)/*<6649*/(/*6649*//*1575*/args/*<1575*/)/*<6649*/(/*6649*//*6667*/l/*<6667*/)/*<6649*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6705');})(/*!*//*6707*/target/*<6707*/)/*<6705*/
+};
+throw new Error('let pattern not matched 6675. ' + valueToString($target));})(/*!*/)/*<6671*/
+}
+}
+}
+}
+}
+if ($target.type === "cst/list") {
+if ($target[0].type === "nil") {
+{
+let l = $target[1];
+return /*6404*//*6404*//*6405*/evar/*<6405*/(/*6404*//*6406*/"()"/*<6406*/)/*<6404*/(/*6404*//*6408*/l/*<6408*/)/*<6404*/
 }
 }
 }
@@ -1154,6 +1184,31 @@ return /*3443*//*3443*//*3443*//*3444*/eapp/*<3444*/(/*3443*//*3445*//*3445*//*3
 }
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 3422');})(/*!*//*3424*/args/*<3424*/)/*<3422*/ }/*<3416*/ }/*<3416*/;
+
+const apply_args = /*6747*/function name_6747(args) { return /*6747*/function name_6747(l) { return /*6753*/(function match_6753($target) {
+if ($target.type === "nil") {
+return /*6766*//*6766*//*6767*/evar/*<6767*/(/*6766*//*6768*/"()"/*<6768*/)/*<6766*/(/*6766*//*6770*/l/*<6770*/)/*<6766*/
+}
+if ($target.type === "cons") {
+if ($target[0].type === "cst/spread") {
+{
+let inner = $target[0][0];
+if ($target[1].type === "nil") {
+return /*6762*//*6763*/parse_expr/*<6763*/(/*6762*//*6764*/inner/*<6764*/)/*<6762*/
+}
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return /*6777*//*6777*//*6777*//*6778*/eapp/*<6778*/(/*6777*//*6779*//*6779*//*6779*//*6780*/eapp/*<6780*/(/*6779*//*6781*//*6781*//*6782*/evar/*<6782*/(/*6781*//*6783*/","/*<6783*/)/*<6781*/(/*6781*//*6785*/l/*<6785*/)/*<6781*/)/*<6779*/(/*6779*//*6786*//*6787*/parse_expr/*<6787*/(/*6786*//*6788*/one/*<6788*/)/*<6786*/)/*<6779*/(/*6779*//*6789*/l/*<6789*/)/*<6779*/)/*<6777*/(/*6777*//*6790*//*6790*//*6791*/apply_args/*<6791*/(/*6790*//*6792*/rest/*<6792*/)/*<6790*/(/*6790*//*6793*/l/*<6793*/)/*<6790*/)/*<6777*/(/*6777*//*6795*/l/*<6795*/)/*<6777*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6753');})(/*!*//*6755*/args/*<6755*/)/*<6753*/ }/*<6747*/ }/*<6747*/;
 
 const pat_loop = /*2288*/function name_2288(target) { return /*2288*/function name_2288(args) { return /*2288*/function name_2288(i) { return /*2288*/function name_2288(inner) { return /*2288*/function name_2288(trace) { return /*2297*/(function match_2297($target) {
 if ($target.type === "nil") {
@@ -1239,7 +1294,11 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 2330');})(/*!*//
 const compile = /*2368*/function name_2368(expr) { return /*2368*/function name_2368(trace) { return /*4905*/(function let_4905() {const $target = /*4912*//*4913*/expr_loc/*<4913*/(/*4912*//*4914*/expr/*<4914*/)/*<4912*/;
 {
 let loc = $target;
-return /*4915*//*4915*//*4916*/source_map/*<4916*/(/*4915*//*4917*/loc/*<4917*/)/*<4915*/(/*4915*//*4769*//*4769*//*4769*//*4770*/trace_wrap/*<4770*/(/*4769*//*4773*/loc/*<4773*/)/*<4769*/(/*4769*//*4776*/trace/*<4776*/)/*<4769*/(/*4769*//*2634*/(function match_2634($target) {
+return /*4905*/(function let_4905() {const $target = /*6473*/trace/*<6473*/;
+if ($target.type === ",") {
+{
+let sm = $target[1];
+return /*4915*//*4915*//*4915*//*4916*/source_map/*<4916*/(/*4915*//*4917*/loc/*<4917*/)/*<4915*/(/*4915*//*6474*/sm/*<6474*/)/*<4915*/(/*4915*//*4769*//*4769*//*4769*//*4770*/trace_wrap/*<4770*/(/*4769*//*4773*/loc/*<4773*/)/*<4769*/(/*4769*//*4776*/trace/*<4776*/)/*<4769*/(/*4769*//*2634*/(function match_2634($target) {
 if ($target.type === "estr") {
 {
 let first = $target[0];
@@ -1297,6 +1356,11 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 2769');})(/*!*//
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 2742');})(/*!*//*2744*/prim/*<2744*/)/*<2742*/
 }
+}
+}
+if ($target.type === "evar") {
+if ($target[0] === "()"){
+return /*6421*/"null"/*<6421*/
 }
 }
 if ($target.type === "evar") {
@@ -1391,10 +1455,20 @@ return /*2836*/(function match_2836($target) {
 if ($target.type === "elambda") {
 {
 let name = $target[0];
-return /*4918*/`(${/*4920*//*4920*//*4922*/compile/*<4922*/(/*4920*//*4923*/fn/*<4923*/)/*<4920*/(/*4920*//*4924*/trace/*<4924*/)/*<4920*/})(/*${/*5984*//*4944*/its/*<4944*/(/*5984*//*5985*/l/*<5985*/)/*<5984*/}*/${/*4929*//*4929*//*4925*/compile/*<4925*/(/*4929*//*4930*/arg/*<4930*/)/*<4929*/(/*4929*//*4931*/trace/*<4931*/)/*<4929*/})`/*<4918*/
+return /*4918*/`(${/*4920*//*4920*//*4922*/compile/*<4922*/(/*4920*//*4923*/fn/*<4923*/)/*<4920*/(/*4920*//*4924*/trace/*<4924*/)/*<4920*/})(${/*6478*/(function match_6478($target) {
+if ($target === true) {
+return /*6482*/`/*${/*6486*//*6488*/its/*<6488*/(/*6486*//*6489*/l/*<6489*/)/*<6486*/}*/`/*<6482*/
+}
+return /*6484*/""/*<6484*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6478');})(/*!*//*6481*/sm/*<6481*/)/*<6478*/}${/*4929*//*4929*//*4925*/compile/*<4925*/(/*4929*//*4930*/arg/*<4930*/)/*<4929*/(/*4929*//*4931*/trace/*<4931*/)/*<4929*/})`/*<4918*/
 }
 }
-return /*4932*/`${/*4934*//*4934*//*4936*/compile/*<4936*/(/*4934*//*4937*/fn/*<4937*/)/*<4934*/(/*4934*//*4938*/trace/*<4938*/)/*<4934*/}(/*${/*5982*//*4946*/its/*<4946*/(/*5982*//*5983*/l/*<5983*/)/*<5982*/}*/${/*4939*//*4939*//*4941*/compile/*<4941*/(/*4939*//*4942*/arg/*<4942*/)/*<4939*/(/*4939*//*4943*/trace/*<4943*/)/*<4939*/})`/*<4932*/
+return /*4932*/`${/*4934*//*4934*//*4936*/compile/*<4936*/(/*4934*//*4937*/fn/*<4937*/)/*<4934*/(/*4934*//*4938*/trace/*<4938*/)/*<4934*/}(${/*6490*/(function match_6490($target) {
+if ($target === true) {
+return /*6494*/`/*${/*6498*//*6500*/its/*<6500*/(/*6498*//*6501*/l/*<6501*/)/*<6498*/}*/`/*<6494*/
+}
+return /*6496*/""/*<6496*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6490');})(/*!*//*6493*/sm/*<6493*/)/*<6490*/}${/*4939*//*4939*//*4941*/compile/*<4941*/(/*4939*//*4942*/arg/*<4942*/)/*<4939*/(/*4939*//*4943*/trace/*<4943*/)/*<4939*/})`/*<4932*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 2836');})(/*!*//*2838*/fn/*<2838*/)/*<2836*/
 }
 }
@@ -1423,10 +1497,13 @@ throw new Error('let pattern not matched 2914. ' + valueToString($target));})(/*
 }
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 2634');})(/*!*//*2636*/expr/*<2636*/)/*<2634*/)/*<4769*/)/*<4915*/
+}
+};
+throw new Error('let pattern not matched 6468. ' + valueToString($target));})(/*!*/)/*<4905*/
 };
 throw new Error('let pattern not matched 4911. ' + valueToString($target));})(/*!*/)/*<4905*/ }/*<2368*/ }/*<2368*/;
 
-const run = /*4208*/function name_4208(v) { return /*4215*//*4217*/eval/*<4217*/(/*4215*//*4218*//*4218*//*4219*/compile/*<4219*/(/*4218*//*4220*//*4221*/parse_expr/*<4221*/(/*4220*//*4222*/v/*<4222*/)/*<4220*/)/*<4218*/(/*4218*//*4676*/map$slnil/*<4676*/)/*<4218*/)/*<4215*/ }/*<4208*/;
+const run = /*4208*/function name_4208(v) { return /*4215*//*4217*/eval/*<4217*/(/*4215*//*4218*//*4218*//*4219*/compile/*<4219*/(/*4218*//*4220*//*4221*/parse_expr/*<4221*/(/*4220*//*4222*/v/*<4222*/)/*<4220*/)/*<4218*/(/*4218*//*6455*//*6455*//*4676*/$co/*<4676*/(/*6455*//*6456*/map$slnil/*<6456*/)/*<6455*/(/*6455*//*6457*/true/*<6457*/)/*<6455*/)/*<4218*/)/*<4215*/ }/*<4208*/;
 
 const compile_stmt = /*404*/function name_404(stmt) { return /*404*/function name_404(trace) { return /*410*/(function match_410($target) {
 if ($target.type === "sexpr") {
@@ -1489,4 +1566,4 @@ throw new Error('let pattern not matched 456. ' + valueToString($target));})(/*!
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 410');})(/*!*//*412*/stmt/*<412*/)/*<410*/ }/*<404*/ }/*<404*/;
 
-return /*5763*//*5763*//*5763*//*5763*//*5765*/parse_and_compile/*<5765*/(/*5763*//*5766*/parse_stmt/*<5766*/)/*<5763*/(/*5763*//*5767*/parse_expr/*<5767*/)/*<5763*/(/*5763*//*5768*/compile_stmt/*<5768*/)/*<5763*/(/*5763*//*5770*/compile/*<5770*/)/*<5763*/
+return /*5763*//*5763*//*5763*//*5763*//*5765*/parse_and_compile2/*<5765*/(/*5763*//*5766*/parse_stmt/*<5766*/)/*<5763*/(/*5763*//*5767*/parse_expr/*<5767*/)/*<5763*/(/*5763*//*5768*/compile_stmt/*<5768*/)/*<5763*/(/*5763*//*5770*/compile/*<5770*/)/*<5763*/
