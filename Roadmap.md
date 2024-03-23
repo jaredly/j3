@@ -7,8 +7,14 @@
 - THEN when "top trace" is set, it'll record those, and like update the UI n stuff.
   ALSO you can like "scrub through" the trace ... seeing it animated. Yeah that would be very cool.
 
+# OK
 
+- So NSTOPs should indicate if we've got errors anywhere
+- ALSO ... test failures?? hrmm 🤔
+  - yeah I need a way to
 
+OH
+- [ ] NEED exhaustiveness checking, thanks
 
 # Ideas about currying
 

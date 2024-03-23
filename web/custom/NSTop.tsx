@@ -22,7 +22,7 @@ import {
     ProduceItem,
 } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
-import { useExpanded, useGetStore, useNode } from './store/Store';
+import { Store, useExpanded, useGetStore, useNode } from './store/Store';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const PluginRender = ({
@@ -47,16 +47,29 @@ const PluginRender = ({
         () => (results ? plugin.render(expanded, results, store, ns) : null),
         [expanded, results, ns.plugin],
     );
-    // if (!results) return <div>NO RESULTS</div>;
     if (!rn || !results) return <Render {...props} />;
     return <RenderNNode {...props} values={values} nnode={rn} />;
+};
+
+export const hasErrors = (id: number, store: Store): boolean => {
+    const state = store.getState();
+    const results = store.getResults();
+    const ns = state.nsMap[id] as RealizedNamespace;
+    if (!ns) {
+        debugger;
+        return false;
+    }
+    const errs = results.produce[ns.top]?.some((pr) => pr instanceof Error);
+    if (errs) {
+        return true;
+    }
+    return ns.children.some((id) => hasErrors(id, store));
 };
 
 export function NSTop({
     ns,
     state,
     reg,
-    results,
     dispatch,
     selections,
     produce,
@@ -74,7 +87,6 @@ export function NSTop({
     dispatch: React.Dispatch<Action>;
     state: NUIState;
     reg: Reg;
-    results: Results;
     ns: RealizedNamespace;
     selections: Cursor[];
     produce: { [key: number]: ProduceItem[] };
@@ -208,7 +220,7 @@ export function NSTop({
                                     })}
                                     state={state}
                                     dispatch={dispatch}
-                                    results={results}
+                                    // results={results}
                                     selections={selections}
                                 />
                             ) : null,

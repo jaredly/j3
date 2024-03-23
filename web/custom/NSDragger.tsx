@@ -4,6 +4,8 @@ import { Action, RealizedNamespace } from './UIState';
 import { isAncestor } from './CardRoot';
 import { Drag } from './useNSDrag';
 import { NSMenu } from './NSMenu';
+import { useGetStore } from './store/Store';
+import { hasErrors } from './NSTop';
 
 export const NSDragger = ({
     ns,
@@ -30,6 +32,9 @@ export const NSDragger = ({
 
     const [cm, setCM] = useState(false);
     const mref = useRef<HTMLDivElement>(null);
+
+    const store = useGetStore();
+    const errs = hasErrors(ns.id, store);
 
     useEffect(() => {
         if (!cm) return;
@@ -75,7 +80,11 @@ export const NSDragger = ({
         >
             [
             {ns.collapsed ? (
-                <span style={{ color: '#aaa' }}>{ns.children.length}</span>
+                <span style={{ color: errs ? 'red' : '#aaa' }}>
+                    {ns.children.length}
+                </span>
+            ) : errs ? (
+                '🚨'
             ) : (
                 'v'
             )}

@@ -21,7 +21,7 @@
         (equot/pat pat int)
         (equot/type type int)
         (equotquot cst int)
-        (elambda string int expr int)
+        (elambda pat expr int)
         (eapp expr expr int)
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
@@ -179,17 +179,14 @@
                                                                              (parse-expr cond)
                                                                                  [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
                                                                                  l)
-        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)  (foldr
-                                                                             (parse-expr body)
-                                                                                 args
-                                                                                 (fn [body arg]
-                                                                                 (match arg
-                                                                                     (cst/identifier name l) (elambda name l body b)
-                                                                                     _                       (elambda
-                                                                                                                 "$fn-arg"
-                                                                                                                     -1
-                                                                                                                     (ematch (evar "$fn-arg" -1) [(, (parse-pat arg) body)] b)
-                                                                                                                     b))))
+        (cst/list [(cst/identifier "fn" _) (cst/array [arg] _) body] b)  (elambda (parse-pat arg) (parse-expr body) b)
+        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)  (let [
+                                                                             body (parse-expr body)
+                                                                             arg  (foldr
+                                                                                      (pcon "()" [] -1)
+                                                                                          args
+                                                                                          (fn [right left] (pcon "," [(parse-pat left) right] b)))]
+                                                                             (elambda arg body b))
         (cst/list [(cst/identifier "match" _) target ..cases] l)         (ematch
                                                                              (parse-expr target)
                                                                                  (map
@@ -270,23 +267,21 @@
                 (eprim (pint 1 4457) 4457)
                 (elet (pvar "b" 4458) (eprim (pint 2 4459) 4459) (evar "a" 4460) 4453)
                 4453))
-        (, (@@ (fn [a] 1)) (elambda "a" 1238 (eprim (pint 1 1239) 1239) 1235))
+        (, (@@ (fn [a] 1)) (elambda (pvar "a" 1238) (eprim (pint 1 1239) 1239) 1235))
         (,
         (@@ (fn [a b] 2))
             (elambda
-            "a"
-                1256
-                (elambda "b" 1257 (eprim (pint 2 1258) 1258) 1253)
+            (pcon
+                ","
+                    [(pvar "a" 1256) (pcon "," [(pvar "b" 1257) (pcon "()" [] -1)] 1253)]
+                    1253)
+                (eprim (pint 2 1258) 1258)
                 1253))
         (,
         (@@ (fn [(, a b)] a))
             (elambda
-            "$fn-arg"
-                -1
-                (ematch
-                (evar "$fn-arg" -1)
-                    [(, (pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911) (evar "a" 1915))]
-                    1908)
+            (pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911)
+                (evar "a" 1915)
                 1908))
         (,
         (@@ (+ 1 2))
@@ -394,7 +389,7 @@
                 1968))
         (,
         (@@ (defn a [m] m))
-            (sdef "a" 2051 (elambda "m" 2055 (evar "m" 2053) 2049) 2049))])
+            (sdef "a" 2051 (elambda (pvar "m" 2055) (evar "m" 2053) 2049) 2049))])
 
 (** ## Debugging Helpers **)
 
@@ -408,18 +403,18 @@
 
 (defn expr-loc [expr]
     (match expr
-        (estr _ _ l)      l
-        (eprim _ l)       l
-        (evar _ l)        l
-        (equotquot _ l)   l
-        (equot _ l)       l
-        (equot/stmt _ l)  l
-        (equot/pat _ l)   l
-        (equot/type _ l)  l
-        (elambda _ _ _ l) l
-        (elet _ _ _ l)    l
-        (eapp _ _ l)      l
-        (ematch _ _ l)    l))
+        (estr _ _ l)     l
+        (eprim _ l)      l
+        (evar _ l)       l
+        (equotquot _ l)  l
+        (equot _ l)      l
+        (equot/stmt _ l) l
+        (equot/pat _ l)  l
+        (equot/type _ l) l
+        (elambda _ _ l)  l
+        (elet _ _ _ l)   l
+        (eapp _ _ l)     l
+        (ematch _ _ l)   l))
 
 (def its int-to-string)
 
@@ -486,6 +481,27 @@
                                    (pat-loop target args 0 inner trace)
                                    }\n}")))
 
+(defn just-pat [pat]
+    (match pat
+        (pany _)           (none)
+        (pvar name l)      (some (sanitize name))
+        (pcon name args l) (match (foldr
+                               []
+                                   args
+                                   (fn [res arg]
+                                   (match (just-pat arg)
+                                       (none)      res
+                                       (some what) [what ..res])))
+                               []    none
+                               items (some "{${(join ", " items)}}"))
+        (pstr _ _)         (fatal "Cant use string as a pattern in this location")
+        (pprim _ _)        (fatal "Cant use primitive as a pattern in this location")))
+
+(defn orr [default_ opt]
+    (match opt
+        (some v) v
+        _        default_))
+
 (defn compile [expr trace]
     (let [loc (expr-loc expr)]
         (source-map
@@ -494,77 +510,67 @@
                 loc
                     trace
                     (match expr
-                    (estr first tpls l)      (match tpls
-                                                 [] "\"${(escape-string (unescapeString first))}\""
-                                                 _  "`${
-                                                        (escape-string (unescapeString first))
-                                                        }${
-                                                        (join
-                                                            ""
-                                                                (map
-                                                                tpls
-                                                                    (fn [item]
-                                                                    (let [(,, expr suffix l) item]
-                                                                        "${${
-                                                                            (compile expr trace)
-                                                                            }}${
-                                                                            (escape-string (unescapeString suffix))
-                                                                            }"))))
-                                                        }`")
-                    (eprim prim l)           (match prim
-                                                 (pint int _)   (int-to-string int)
-                                                 (pbool bool _) (match bool
-                                                                    true  "true"
-                                                                    false "false"))
-                    (evar name l)            (sanitize name)
-                    (equot inner l)          (jsonify inner)
-                    (equot/stmt inner l)     (jsonify inner)
-                    (equot/type inner l)     (jsonify inner)
-                    (equot/pat inner l)      (jsonify inner)
-                    (equotquot inner l)      (jsonify inner)
-                    (elambda name nl body l) (++
-                                                 ["function name_${(its l)}("
-                                                     (sanitize name)
-                                                     ") { return "
-                                                     (trace-and nl trace (sanitize name) (compile body trace))
-                                                     " }"])
-                    (elet pat init body l)   "(function let_${
-                                                 (its l)
-                                                 }() {const $target = ${
-                                                 (compile init trace)
-                                                 };\n${
-                                                 (compile-pat pat "$target" "return ${(compile body trace)}" trace)
-                                                 };\nthrow new Error('let pattern not matched ${
-                                                 (its (pat-loc pat))
-                                                 }. ' + valueToString($target));})(/*!*/)"
-                    (eapp fn arg l)          (match fn
-                                                 (elambda name _ _ _) "(${(compile fn trace)})(/*${(its l)}*/${(compile arg trace)})"
-                                                 _                    "${(compile fn trace)}(/*${(its l)}*/${(compile arg trace)})")
-                    (ematch target cases l)  "(function match_${
-                                                 (its l)
-                                                 }($target) {\n${
-                                                 (join
-                                                     "\n"
-                                                         (map
-                                                         cases
-                                                             (fn [case]
-                                                             (let [(, pat body) case]
-                                                                 (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
-                                                 }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
-                                                 (its l)
-                                                 }');})(/*!*/${
-                                                 (compile target trace)
-                                                 })")))))
-
-(compile
-    (parse-expr
-        (@@
-            (match 2
-                1 2))
-            )
-        map/nil)
-
-(compile (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil)
+                    (estr first tpls l)     (match tpls
+                                                [] "\"${(escape-string (unescapeString first))}\""
+                                                _  "`${
+                                                       (escape-string (unescapeString first))
+                                                       }${
+                                                       (join
+                                                           ""
+                                                               (map
+                                                               tpls
+                                                                   (fn [item]
+                                                                   (let [(,, expr suffix l) item]
+                                                                       "${${
+                                                                           (compile expr trace)
+                                                                           }}${
+                                                                           (escape-string (unescapeString suffix))
+                                                                           }"))))
+                                                       }`")
+                    (eprim prim l)          (match prim
+                                                (pint int _)   (int-to-string int)
+                                                (pbool bool _) (match bool
+                                                                   true  "true"
+                                                                   false "false"))
+                    (evar name l)           (sanitize name)
+                    (equot inner l)         (jsonify inner)
+                    (equot/stmt inner l)    (jsonify inner)
+                    (equot/type inner l)    (jsonify inner)
+                    (equot/pat inner l)     (jsonify inner)
+                    (equotquot inner l)     (jsonify inner)
+                    (elambda pat body l)    (++
+                                                ["function name_${(its l)}("
+                                                    (orr "_" (just-pat pat))
+                                                    ") { return "
+                                                    (compile body trace)
+                                                    " }"])
+                    (elet pat init body l)  "(function let_${
+                                                (its l)
+                                                }() {const ${
+                                                (orr "_" (just-pat pat))
+                                                } = ${
+                                                (compile init trace)
+                                                };\nreturn ${
+                                                (compile body trace)
+                                                };})(/*!*/)"
+                    (eapp fn arg l)         (match fn
+                                                (elambda name _ _) "(${(compile fn trace)})(/*${(its l)}*/${(compile arg trace)})"
+                                                _                  "${(compile fn trace)}(/*${(its l)}*/${(compile arg trace)})")
+                    (ematch target cases l) "(function match_${
+                                                (its l)
+                                                }($target) {\n${
+                                                (join
+                                                    "\n"
+                                                        (map
+                                                        cases
+                                                            (fn [case]
+                                                            (let [(, pat body) case]
+                                                                (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
+                                                }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
+                                                (its l)
+                                                }');})(/*!*/${
+                                                (compile target trace)
+                                                })")))))
 
 (defn run [v] (eval (compile (parse-expr v) map/nil)))
 

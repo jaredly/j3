@@ -28,7 +28,7 @@ export function CardRoot({
     state,
     card,
     dispatch,
-    results,
+    // results,
     produce,
     debug,
     env,
@@ -39,7 +39,7 @@ export function CardRoot({
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
-    results: Results;
+    // results: Results;
     produce: { [key: number]: ProduceItem[] };
     ev: FullEvalator<any, any, any> | void | null;
 }) {
@@ -94,7 +94,7 @@ export function CardRoot({
                 path={cardPath}
                 state={state}
                 dispatch={dispatch}
-                results={results}
+                // results={results}
                 produce={produce}
                 selections={selections}
                 env={env}

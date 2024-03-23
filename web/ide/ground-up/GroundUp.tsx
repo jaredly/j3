@@ -111,13 +111,12 @@ export const GroundUp = ({
             <WithStore store={store}>
                 {state.cards.map((_, i) => (
                     <CardRoot
+                        key={i}
+                        card={i}
                         state={state}
                         debug={debug}
-                        key={i}
                         ev={store.getEvaluator()}
                         dispatch={store.dispatch}
-                        card={i}
-                        results={results}
                         produce={results.produce}
                         env={results.env}
                     />
