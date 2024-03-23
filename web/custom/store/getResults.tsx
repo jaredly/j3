@@ -277,14 +277,6 @@ export function sortTops<Env, Stmt, Expr>(
     const parsed = tops
         .map((top) => {
             const node = fromMCST(top.top, state.map);
-            if (
-                node.type === 'blank' ||
-                node.type === 'comment-node' ||
-                node.type === 'rich-text'
-            ) {
-                results.produce[node.loc] = [' '];
-                return;
-            }
             layout(
                 top.top,
                 0,
@@ -293,6 +285,22 @@ export function sortTops<Env, Stmt, Expr>(
                 results.hashNames,
                 true,
             );
+
+            if (
+                node.type === 'blank' ||
+                node.type === 'comment-node' ||
+                node.type === 'rich-text'
+            ) {
+                results.produce[node.loc] = [' '];
+                return {
+                    id: top.top,
+                    top,
+                    node,
+                    stmt: null,
+                    names: [],
+                    deps: [],
+                };
+            }
             const errs = {};
             const stmt = evaluator.parse(node, errs);
             Object.assign(results.errors, errs);

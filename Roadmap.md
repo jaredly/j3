@@ -1,4 +1,15 @@
 
+# TWO TRACING THINGS
+
+- one, we want to report types of all expressions (oh but we'll need the final subst? probably? so maybe collecting a map is really the way to go... yeah it is, let's try to be immutable)
+- then have a `trace` function that will alow you to change the bgcolor of an ID, or show a bubble, or attach a piece
+  of text, or just show a general message. (console/log essentially)
+- THEN when "top trace" is set, it'll record those, and like update the UI n stuff.
+  ALSO you can like "scrub through" the trace ... seeing it animated. Yeah that would be very cool.
+
+
+
+
 # Ideas about currying
 
 WHAT IF
@@ -54,6 +65,45 @@ yeah I don't think varargs is really gonna be a thing.
 
 (any way)
 
+ooooh hrmmmmmm ok so... here's the sticky point:
+
+(f a ..) -> (fn [x] (f a ..x)) -> (fn [x] (f (, a x)))
+
+IF f is defined as (fn [a b] (+ a b)) for example
+then it's (fn [(, a (, b ()))]) ... right?
+in which case
+
+(let [g (f a ..)] (g 2))
+-> (g 2) would need to turn into (g (, 2 ())) NOT just being plain ol' (g 2)
+🤔
+HOWEVER, who says I need to end it with a `nil`? ... like ... no-one?
+
+CAN I
+
+(fn [a b] c) -> (fn (, a b) c)
+(fn [a b c] d) -> (fn (, a (, b c)) d)
+...
+somehow I suspect it ... wont actually work, or something?
+like
+idk I would imagine that the inference doesn't mesh that way.
+
+BUT
+whos to say I can't try? Might as well I guess, because it would be nice for
+single-arg functions to just behave normally.
+
+
+
+
+
+...
+
+OH OH also, for the "I want to pass arguments on to my child" you could do
+(fn [a b ..c] (some-other ..c)) .. right?
+
+...
+
+
+
 ok back to the single-argument function.
 
 (myfun x) -> ??? -> (myfun x). Right?
@@ -73,7 +123,16 @@ which would be rad.
 
 - [x] comment-out an ID
 - [x] cmd-click already my goodness
+- [ ] FIX SCROLLING so we don't hide behind the top bar ... how to do it. Probably have the bottom thing scroll
+  instead of making the top thing sticky.
 - [ ] TRACE TYPES THANKS
+  - game plan: keep the tracer on `tenv'`
+  - then do the tracing
+  - add `type` info to the `result` of a node
+  - IF an identifier node *DOES NOT* have a type, ... maybe like underline it?
+    That can be a way to track down when typing failed, right? Seems legit.
+    Alsooo this will allow me to track the progress of type checking, reporting how the types changed over time ...
+- [ ] then ... hm ... oh that's right, ONWARD with my plan to change the parser to TUPLE_RUN_FUNCTIONS. Yes please.
 
 
 ## USABILITY STUFF

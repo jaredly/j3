@@ -299,7 +299,7 @@ const renderProduceItem = (
     return value;
 };
 
-function highlightIdxs(
+export function highlightIdxs(
     msg: string,
     state: NUIState,
     dispatch: React.Dispatch<Action>,

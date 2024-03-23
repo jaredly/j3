@@ -8,6 +8,8 @@ import { Path } from '../../store';
 import { fromMCST } from '../../../src/types/mcst';
 import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
+import { useGetStore } from '../store/Store';
+import { highlightIdxs } from '../NSTop';
 
 type RefNode = Extract<NNode, { type: 'ref' }> & { path: Path };
 
@@ -382,10 +384,18 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
                                                           },
                                                           {
                                                               type: 'dom',
-                                                              node: statusMessage(
-                                                                  item,
-                                                                  results,
-                                                                  store.dispatch,
+                                                              node: (
+                                                                  <StatusMessage
+                                                                      item={
+                                                                          item
+                                                                      }
+                                                                      results={
+                                                                          results
+                                                                      }
+                                                                      dispatch={
+                                                                          store.dispatch
+                                                                      }
+                                                                  />
                                                               ),
                                                           },
                                                       ],
@@ -402,21 +412,32 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
     },
 };
 
-function statusMessage(
-    item: LineFixture,
+function StatusMessage({
+    item,
+    results,
+    dispatch,
+}: {
+    item: LineFixture;
     results: {
         [key: number]: {
             expected: any;
             found: any;
             error?: string | undefined;
         };
-    },
-    dispatch: React.Dispatch<Action>,
-): JSX.Element | null {
+    };
+    dispatch: React.Dispatch<Action>;
+}): JSX.Element | null {
+    const store = useGetStore();
+
     if (!item.input) return <span style={{ color: 'purple' }}>no input</span>;
     const res = results[item.input.node.loc];
     if (!res) return null;
-    if (res.error) return <span style={{ color: 'red' }}>{res.error}</span>;
+    if (res.error)
+        return (
+            <span style={{ color: 'red' }}>
+                {highlightIdxs(res.error, store.getState(), dispatch)}
+            </span>
+        );
     if (!equal(res.expected, res.found)) {
         return (
             <span
