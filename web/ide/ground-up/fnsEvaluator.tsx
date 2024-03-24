@@ -22,6 +22,34 @@ import { filterNulls } from '../../custom/reduce';
  * to javascript by something other than the `:bootstrap:` evaluator.
  */
 
+type CallingConvention = 'curried' | 'tuple' | 'tuple-nil';
+
+const makeTuple = (values: any[]) => {
+    let res = values[values.length - 1];
+    for (let i = values.length - 2; i >= 0; i--) {
+        res = { type: ',', 0: values[i], 1: res };
+    }
+    return res;
+};
+
+const callFn = (fn: Function, args: any[], convention: CallingConvention) => {
+    switch (convention) {
+        case 'curried': {
+            args.forEach((arg) => {
+                fn = fn(arg);
+            });
+            return fn;
+        }
+        case 'tuple':
+            if (args.length === 1) {
+                return fn(args[0]);
+            }
+            return fn(makeTuple(args));
+        case 'tuple-nil':
+            return fn(makeTuple(args.concat([{ type: '()' }])));
+    }
+};
+
 export const fnsEvaluator = (
     id: string,
     data: any,

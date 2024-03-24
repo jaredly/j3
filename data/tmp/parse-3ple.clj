@@ -217,10 +217,14 @@
 
 (defn pat-args [args l]
     (match args
-        []                     (pcon "()" [] l)
         [(cst/spread inner _)] (parse-pat inner)
         [one]                  (parse-pat one)
         [one ..rest]           (pcon "," [(parse-pat one) (pat-args rest l)] l)))
+
+(defn type-args [args l]
+    (match args
+        [one]        (parse-type one)
+        [one ..rest] (tapp (tapp (tcon "," l) (parse-type one) l) (type-args rest l) l)))
 
 (parse-expr (@@ (@! 12)))
 
@@ -345,7 +349,7 @@
             items
                 (fn [constr]
                 (match constr
-                    (cst/list [(cst/identifier name ni) ..args] l) (,,, name ni (map args parse-type) l))))
+                    (cst/list [(cst/identifier name ni) ..args] l) (,,, name ni [(type-args args l)] l))))
             l))
 
 (defn parse-stmt [cst]
@@ -693,7 +697,8 @@
         (fn [cst] stmt)
             (fn [cst] expr)
             (fn [stmt (, (map int bool) bool)] string)
-            (fn [expr (, (map int bool) bool)] string)))
+            (fn [expr (, (map int bool) bool)] string)
+            string))
 
 6468
 
@@ -701,4 +706,5 @@
     parse-stmt
         parse-expr
         compile-stmt
-        compile)
+        compile
+        "tuple")

@@ -64,8 +64,10 @@ export const evaluatorFromText = (
                 1: parse_expr,
                 2: compile_stmt,
                 3: compile,
+                4: calling_convention,
             } = result;
             Object.assign(data, {
+                calling_convention,
                 parse_version: result.type === 'parse-and-compile' ? 1 : 2,
                 parse_stmt,
                 parse_expr,

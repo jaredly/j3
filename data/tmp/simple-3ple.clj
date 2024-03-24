@@ -1,6 +1,18 @@
 1
 
+(deftype (,m a b) (,m a b))
+
+(,m 1 2)
+
 (, 2 3)
+
+(, 1 2 3 4)
+
+(deftype lol (lol int int int))
+
+lol
+
+(lol 1 2 3)
 
 ((fn [a b] a) (, 1 2))
 

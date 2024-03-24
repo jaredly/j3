@@ -1,4 +1,57 @@
 
+# Getting tupled-builtins
+
+OK so
+so far I've been slurging the envs of the compiler and the runtime
+which is bad mojo
+now that they have different calling conventions.
+SO
+
+- [ ] give the runtime a different set of builtins from the compiler
+- [ ] make tuply builtins ... it would be nice, to have the builtins be written normally, and then converted for the calling
+  convention at issue.
+
+
+- [ ] ergh, ok so in the tuplified version, we can't just have ...
+  (deftype (, a b) (, a b))
+  because it gets weird.
+  SO this means, that `,` has to be EITHER:
+  - special cased where it's a no-op, and a call to a builtin, OR
+  - it gets its own AST node??? naw. can't be.
+
+
+# WRITE A BLOG POST ABOUT CURRYING
+
+Let's talk about auto-currying
+
+(a, b) => c === (a) => (b) => c
+
+Nice things:
+If you have a function like (map fn list)
+and a function like (defn do-something [a b item] ...)
+where the final argument to do-something is the items of a list, you can do
+`(map (do-something a b) my-list)`. Isn't that nice!
+Much nicer than `(map (fn [x] (do-something a b x) my-list))`
+Of course, it requires that the item in question is in fact the final argument of `do-something`.
+Oh it's not? Well now we get to the wonderful world of "making programs really hard to read"!
+Also known as point-free?
+So you have a generic function that can take `(f a b c)` and turn it into `(f b c a)` or whatnot
+so that `a` can be the last argument.
+Really, I hate it.
+
+
+- [ ] need a way to ... tell ... the whatsit that our builtins should use a different calling convention.
+
+"parse-and-compile-2" = "can tell you to turn off the incessent loc sourcemapping numbers"
+but ... also ... might as well have it be "builtins should use tuples" right?
+
+ugh ok I'm just tired. Will sleep now.
+
+BUT
+
+next step is:
+
+
 # TWO TRACING THINGS
 
 - one, we want to report types of all expressions (oh but we'll need the final subst? probably? so maybe collecting a map is really the way to go... yeah it is, let's try to be immutable)

@@ -287,7 +287,7 @@ return /*5403*//*5403*//*5404*/rev/*<5404*/(/*5403*//*5405*/rest/*<5405*/)/*<540
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 5384');})(/*!*//*5386*/arr/*<5386*/)/*<5384*/ }/*<5377*/ }/*<5377*/;
 
-const parse_and_compile2 = (v0) => (v1) => (v2) => (v3) => ({type: "parse-and-compile2", 0: v0, 1: v1, 2: v2, 3: v3});
+const parse_and_compile2 = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "parse-and-compile2", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
 const foldl = /*5855*/function name_5855(init) { return /*5855*/function name_5855(items) { return /*5855*/function name_5855(f) { return /*5863*/(function match_5863($target) {
 if ($target.type === "nil") {
 return /*5867*/init/*<5867*/
@@ -463,39 +463,6 @@ return /*881*//*881*//*924*/tapps/*<924*/(/*881*//*5375*//*5375*//*5376*/rev/*<5
 return /*3138*//*3139*/fatal/*<3139*/(/*3138*//*3140*/`(parse-type) Invalid type ${/*3142*//*3144*/valueToString/*<3144*/(/*3142*//*3145*/type/*<3145*/)/*<3142*/}`/*<3140*/)/*<3138*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 867');})(/*!*//*869*/type/*<869*/)/*<867*/ }/*<692*/;
 
-const mk_deftype = /*1390*/function name_1390(id) { return /*1390*/function name_1390(li) { return /*1390*/function name_1390(args) { return /*1390*/function name_1390(items) { return /*1390*/function name_1390(l) { return /*1433*//*1433*//*1433*//*1433*//*1433*//*1434*/sdeftype/*<1434*/(/*1433*//*1435*/id/*<1435*/)/*<1433*/(/*1433*//*3980*/li/*<3980*/)/*<1433*/(/*1433*//*5017*//*5017*//*5018*/map/*<5018*/(/*5017*//*5019*/args/*<5019*/)/*<5017*/(/*5017*//*5020*/function name_5020(arg) { return /*5024*/(function match_5024($target) {
-if ($target.type === "cst/identifier") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return /*5031*//*5031*//*5032*/$co/*<5032*/(/*5031*//*5033*/name/*<5033*/)/*<5031*/(/*5031*//*5034*/l/*<5034*/)/*<5031*/
-}
-}
-}
-return /*5036*//*5037*/fatal/*<5037*/(/*5036*//*5038*/"deftype type argument must be identifier"/*<5038*/)/*<5036*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 5024');})(/*!*//*5026*/arg/*<5026*/)/*<5024*/ }/*<5020*/)/*<5017*/)/*<1433*/(/*1433*//*1436*//*1436*//*1437*/map/*<1437*/(/*1436*//*1438*/items/*<1438*/)/*<1436*/(/*1436*//*1439*/function name_1439(constr) { return /*1443*/(function match_1443($target) {
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-{
-let name = $target[0][0][0];
-{
-let ni = $target[0][0][1];
-{
-let args = $target[0][1];
-{
-let l = $target[1];
-return /*1457*//*1457*//*1457*//*1457*//*1458*/$co$co$co/*<1458*/(/*1457*//*1459*/name/*<1459*/)/*<1457*/(/*1457*//*3982*/ni/*<3982*/)/*<1457*/(/*1457*//*1460*//*1460*//*1461*/map/*<1461*/(/*1460*//*1462*/args/*<1462*/)/*<1460*/(/*1460*//*1463*/parse_type/*<1463*/)/*<1460*/)/*<1457*/(/*1457*//*3984*/l/*<3984*/)/*<1457*/
-}
-}
-}
-}
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 1443');})(/*!*//*1445*/constr/*<1445*/)/*<1443*/ }/*<1439*/)/*<1436*/)/*<1433*/(/*1433*//*3981*/l/*<3981*/)/*<1433*/ }/*<1390*/ }/*<1390*/ }/*<1390*/ }/*<1390*/ }/*<1390*/;
-
 const parse_pat = /*1721*/function name_1721(pat) { return /*1727*/(function match_1727($target) {
 if ($target.type === "cst/identifier") {
 if ($target[0] === "_"){
@@ -667,9 +634,6 @@ return /*6467*/js/*<6467*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6464');})(/*!*//*6466*/enabled/*<6466*/)/*<6464*/ }/*<4890*/ }/*<4890*/ }/*<4890*/;
 
 const pat_args = /*6880*/function name_6880(args) { return /*6880*/function name_6880(l) { return /*6889*/(function match_6889($target) {
-if ($target.type === "nil") {
-return /*6893*//*6893*//*6893*//*6894*/pcon/*<6894*/(/*6893*//*6895*/"()"/*<6895*/)/*<6893*/(/*6893*//*6932*/nil/*<6932*/)/*<6893*/(/*6893*//*6897*/l/*<6897*/)/*<6893*/
-}
 if ($target.type === "cons") {
 if ($target[0].type === "cst/spread") {
 {
@@ -698,6 +662,355 @@ return /*6912*//*6912*//*6912*//*6913*/pcon/*<6913*/(/*6912*//*6916*/","/*<6916*
 }
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6889');})(/*!*//*6891*/args/*<6891*/)/*<6889*/ }/*<6880*/ }/*<6880*/;
+
+const type_args = /*7155*/function name_7155(args) { return /*7155*/function name_7155(l) { return /*7163*/(function match_7163($target) {
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return /*7170*//*7171*/parse_type/*<7171*/(/*7170*//*7172*/one/*<7172*/)/*<7170*/
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return /*7189*//*7189*//*7189*//*7190*/tapp/*<7190*/(/*7189*//*7184*//*7184*//*7184*//*7185*/tapp/*<7185*/(/*7184*//*7179*//*7179*//*7181*/tcon/*<7181*/(/*7179*//*7182*/","/*<7182*/)/*<7179*/(/*7179*//*7195*/l/*<7195*/)/*<7179*/)/*<7184*/(/*7184*//*7186*//*7187*/parse_type/*<7187*/(/*7186*//*7188*/one/*<7188*/)/*<7186*/)/*<7184*/(/*7184*//*7196*/l/*<7196*/)/*<7184*/)/*<7189*/(/*7189*//*7191*//*7191*//*7192*/type_args/*<7192*/(/*7191*//*7193*/rest/*<7193*/)/*<7191*/(/*7191*//*7194*/l/*<7194*/)/*<7191*/)/*<7189*/(/*7189*//*7197*/l/*<7197*/)/*<7189*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 7163');})(/*!*//*7165*/args/*<7165*/)/*<7163*/ }/*<7155*/ }/*<7155*/;
+
+const pat_loop = /*2288*/function name_2288(target) { return /*2288*/function name_2288(args) { return /*2288*/function name_2288(i) { return /*2288*/function name_2288(inner) { return /*2288*/function name_2288(trace) { return /*2297*/(function match_2297($target) {
+if ($target.type === "nil") {
+return /*2301*/inner/*<2301*/
+}
+if ($target.type === "cons") {
+{
+let arg = $target[0];
+{
+let rest = $target[1];
+return /*2308*//*2308*//*2308*//*2308*//*2309*/compile_pat/*<2309*/(/*2308*//*2310*/arg/*<2310*/)/*<2308*/(/*2308*//*2311*/`${/*2395*/target/*<2395*/}[${/*5980*//*2397*/its/*<2397*/(/*5980*//*5981*/i/*<5981*/)/*<5980*/}]`/*<2311*/)/*<2308*/(/*2308*//*2313*//*2313*//*2313*//*2313*//*2313*//*2314*/pat_loop/*<2314*/(/*2313*//*2315*/target/*<2315*/)/*<2313*/(/*2313*//*2316*/rest/*<2316*/)/*<2313*/(/*2313*//*2317*//*2317*//*2318*/$pl/*<2318*/(/*2317*//*2319*/i/*<2319*/)/*<2317*/(/*2317*//*2320*/1/*<2320*/)/*<2317*/)/*<2313*/(/*2313*//*2321*/inner/*<2321*/)/*<2313*/(/*2313*//*4847*/trace/*<4847*/)/*<2313*/)/*<2308*/(/*2308*//*4845*/trace/*<4845*/)/*<2308*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2297');})(/*!*//*2299*/args/*<2299*/)/*<2297*/ }/*<2288*/ }/*<2288*/ }/*<2288*/ }/*<2288*/ }/*<2288*/;
+
+const compile_pat = /*2322*/function name_2322(pat) { return /*2322*/function name_2322(target) { return /*2322*/function name_2322(inner) { return /*2322*/function name_2322(trace) { return /*4883*//*4883*//*4883*//*4883*//*4884*/trace_and_block/*<4884*/(/*4883*//*4885*//*4886*/pat_loc/*<4886*/(/*4885*//*4887*/pat/*<4887*/)/*<4885*/)/*<4883*/(/*4883*//*4888*/trace/*<4888*/)/*<4883*/(/*4883*//*4889*/target/*<4889*/)/*<4883*/(/*4883*//*2330*/(function match_2330($target) {
+if ($target.type === "pany") {
+{
+let l = $target[0];
+return /*2335*/inner/*<2335*/
+}
+}
+if ($target.type === "pprim") {
+{
+let prim = $target[0];
+{
+let l = $target[1];
+return /*2339*/(function match_2339($target) {
+if ($target.type === "pint") {
+{
+let int = $target[0];
+return /*2345*/`if (${/*2399*/target/*<2399*/} === ${/*5978*//*2401*/its/*<2401*/(/*5978*//*5979*/int/*<5979*/)/*<5978*/}) {\n${/*2407*/inner/*<2407*/}\n}`/*<2345*/
+}
+}
+if ($target.type === "pbool") {
+{
+let bool = $target[0];
+return /*2350*/`if (${/*2403*/target/*<2403*/} === ${/*5970*/(function match_5970($target) {
+if ($target === true) {
+return /*5973*/"true"/*<5973*/
+}
+return /*5976*/"false"/*<5976*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 5970');})(/*!*//*5971*/bool/*<5971*/)/*<5970*/}) {\n${/*2409*/inner/*<2409*/}\n}`/*<2350*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2339');})(/*!*//*2341*/prim/*<2341*/)/*<2339*/
+}
+}
+}
+if ($target.type === "pstr") {
+{
+let str = $target[0];
+{
+let l = $target[1];
+return /*2355*/`if (${/*2411*/target/*<2411*/} === \"${/*2413*/str/*<2413*/}\"){\n${/*2415*/inner/*<2415*/}\n}`/*<2355*/
+}
+}
+}
+if ($target.type === "pvar") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return /*2360*/`{\nlet ${/*2417*//*2419*/sanitize/*<2419*/(/*2417*//*2420*/name/*<2420*/)/*<2417*/} = ${/*2421*/target/*<2421*/};\n${/*4836*/inner/*<4836*/}\n}`/*<2360*/
+}
+}
+}
+if ($target.type === "pcon") {
+{
+let name = $target[0];
+{
+let args = $target[1];
+{
+let l = $target[2];
+return /*2366*/`if (${/*2425*/target/*<2425*/}.type === \"${/*2427*/name/*<2427*/}\") {\n${/*2429*//*2429*//*2429*//*2429*//*2429*//*2431*/pat_loop/*<2431*/(/*2429*//*2432*/target/*<2432*/)/*<2429*/(/*2429*//*2433*/args/*<2433*/)/*<2429*/(/*2429*//*2434*/0/*<2434*/)/*<2429*/(/*2429*//*2435*/inner/*<2435*/)/*<2429*/(/*2429*//*4846*/trace/*<4846*/)/*<2429*/}\n}`/*<2366*/
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2330');})(/*!*//*2332*/pat/*<2332*/)/*<2330*/)/*<4883*/ }/*<2322*/ }/*<2322*/ }/*<2322*/ }/*<2322*/;
+
+const mk_deftype = /*1390*/function name_1390(id) { return /*1390*/function name_1390(li) { return /*1390*/function name_1390(args) { return /*1390*/function name_1390(items) { return /*1390*/function name_1390(l) { return /*1433*//*1433*//*1433*//*1433*//*1433*//*1434*/sdeftype/*<1434*/(/*1433*//*1435*/id/*<1435*/)/*<1433*/(/*1433*//*3980*/li/*<3980*/)/*<1433*/(/*1433*//*5017*//*5017*//*5018*/map/*<5018*/(/*5017*//*5019*/args/*<5019*/)/*<5017*/(/*5017*//*5020*/function name_5020(arg) { return /*5024*/(function match_5024($target) {
+if ($target.type === "cst/identifier") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return /*5031*//*5031*//*5032*/$co/*<5032*/(/*5031*//*5033*/name/*<5033*/)/*<5031*/(/*5031*//*5034*/l/*<5034*/)/*<5031*/
+}
+}
+}
+return /*5036*//*5037*/fatal/*<5037*/(/*5036*//*5038*/"deftype type argument must be identifier"/*<5038*/)/*<5036*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 5024');})(/*!*//*5026*/arg/*<5026*/)/*<5024*/ }/*<5020*/)/*<5017*/)/*<1433*/(/*1433*//*1436*//*1436*//*1437*/map/*<1437*/(/*1436*//*1438*/items/*<1438*/)/*<1436*/(/*1436*//*1439*/function name_1439(constr) { return /*1443*/(function match_1443($target) {
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+{
+let name = $target[0][0][0];
+{
+let ni = $target[0][0][1];
+{
+let args = $target[0][1];
+{
+let l = $target[1];
+return /*1457*//*1457*//*1457*//*1457*//*1458*/$co$co$co/*<1458*/(/*1457*//*1459*/name/*<1459*/)/*<1457*/(/*1457*//*3982*/ni/*<3982*/)/*<1457*/(/*1457*//*7198*//*7198*//*7198*/cons/*<7198*/(/*7198*//*1460*//*1460*//*1461*/type_args/*<1461*/(/*1460*//*1462*/args/*<1462*/)/*<1460*/(/*1460*//*1463*/l/*<1463*/)/*<1460*/)/*<7198*/(/*7198*//*7198*/nil/*<7198*/)/*<7198*/)/*<1457*/(/*1457*//*3984*/l/*<3984*/)/*<1457*/
+}
+}
+}
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1443');})(/*!*//*1445*/constr/*<1445*/)/*<1443*/ }/*<1439*/)/*<1436*/)/*<1433*/(/*1433*//*3981*/l/*<3981*/)/*<1433*/ }/*<1390*/ }/*<1390*/ }/*<1390*/ }/*<1390*/ }/*<1390*/;
+
+const compile = /*2368*/function name_2368(expr) { return /*2368*/function name_2368(trace) { return /*4905*/(function let_4905() {const $target = /*4912*//*4913*/expr_loc/*<4913*/(/*4912*//*4914*/expr/*<4914*/)/*<4912*/;
+{
+let loc = $target;
+return /*4905*/(function let_4905() {const $target = /*6473*/trace/*<6473*/;
+if ($target.type === ",") {
+{
+let sm = $target[1];
+return /*4915*//*4915*//*4915*//*4916*/source_map/*<4916*/(/*4915*//*4917*/loc/*<4917*/)/*<4915*/(/*4915*//*6474*/sm/*<6474*/)/*<4915*/(/*4915*//*4769*//*4769*//*4769*//*4770*/trace_wrap/*<4770*/(/*4769*//*4773*/loc/*<4773*/)/*<4769*/(/*4769*//*4776*/trace/*<4776*/)/*<4769*/(/*4769*//*2634*/(function match_2634($target) {
+if ($target.type === "estr") {
+{
+let first = $target[0];
+{
+let tpls = $target[1];
+{
+let l = $target[2];
+return /*2641*/(function match_2641($target) {
+if ($target.type === "nil") {
+return /*2645*/`\"${/*2647*//*2649*/escape_string/*<2649*/(/*2647*//*2650*//*2651*/unescapeString/*<2651*/(/*2650*//*2652*/first/*<2652*/)/*<2650*/)/*<2647*/}\"`/*<2645*/
+}
+return /*2654*/`\`${/*2675*//*2677*/escape_string/*<2677*/(/*2675*//*2678*//*2679*/unescapeString/*<2679*/(/*2678*//*2680*/first/*<2680*/)/*<2678*/)/*<2675*/}${/*2681*//*2681*//*2683*/join/*<2683*/(/*2681*//*2684*/""/*<2684*/)/*<2681*/(/*2681*//*2686*//*2686*//*2687*/map/*<2687*/(/*2686*//*2688*/tpls/*<2688*/)/*<2686*/(/*2686*//*2689*/function name_2689(item) { return /*2693*/(function let_2693() {const $target = /*2700*/item/*<2700*/;
+if ($target.type === ",,") {
+{
+let expr = $target[0];
+{
+let suffix = $target[1];
+{
+let l = $target[2];
+return /*2701*/`\${${/*2703*//*2703*//*2705*/compile/*<2705*/(/*2703*//*2706*/expr/*<2706*/)/*<2703*/(/*2703*//*4681*/trace/*<4681*/)/*<2703*/}}${/*2707*//*2709*/escape_string/*<2709*/(/*2707*//*2710*//*2711*/unescapeString/*<2711*/(/*2710*//*2712*/suffix/*<2712*/)/*<2710*/)/*<2707*/}`/*<2701*/
+}
+}
+}
+};
+throw new Error('let pattern not matched 2696. ' + valueToString($target));})(/*!*/)/*<2693*/ }/*<2689*/)/*<2686*/)/*<2681*/}\``/*<2654*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2641');})(/*!*//*2643*/tpls/*<2643*/)/*<2641*/
+}
+}
+}
+}
+if ($target.type === "eprim") {
+{
+let prim = $target[0];
+{
+let l = $target[1];
+return /*2742*/(function match_2742($target) {
+if ($target.type === "pint") {
+{
+let int = $target[0];
+return /*2763*//*2764*/int_to_string/*<2764*/(/*2763*//*2765*/int/*<2765*/)/*<2763*/
+}
+}
+if ($target.type === "pbool") {
+{
+let bool = $target[0];
+return /*2769*/(function match_2769($target) {
+if ($target === true) {
+return /*2773*/"true"/*<2773*/
+}
+if ($target === false) {
+return /*2776*/"false"/*<2776*/
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2769');})(/*!*//*2771*/bool/*<2771*/)/*<2769*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2742');})(/*!*//*2744*/prim/*<2744*/)/*<2742*/
+}
+}
+}
+if ($target.type === "evar") {
+if ($target[0] === "()"){
+return /*6421*/"null"/*<6421*/
+}
+}
+if ($target.type === "evar") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return /*2781*//*2782*/sanitize/*<2782*/(/*2781*//*2783*/name/*<2783*/)/*<2781*/
+}
+}
+}
+if ($target.type === "equot") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return /*2787*//*2788*/jsonify/*<2788*/(/*2787*//*2789*/inner/*<2789*/)/*<2787*/
+}
+}
+}
+if ($target.type === "equot/stmt") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return /*5456*//*5457*/jsonify/*<5457*/(/*5456*//*5458*/inner/*<5458*/)/*<5456*/
+}
+}
+}
+if ($target.type === "equot/type") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return /*5463*//*5464*/jsonify/*<5464*/(/*5463*//*5465*/inner/*<5465*/)/*<5463*/
+}
+}
+}
+if ($target.type === "equot/pat") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return /*5470*//*5471*/jsonify/*<5471*/(/*5470*//*5472*/inner/*<5472*/)/*<5470*/
+}
+}
+}
+if ($target.type === "equotquot") {
+{
+let inner = $target[0];
+{
+let l = $target[1];
+return /*5781*//*5785*/jsonify/*<5785*/(/*5781*//*5786*/inner/*<5786*/)/*<5781*/
+}
+}
+}
+if ($target.type === "elambda") {
+{
+let name = $target[0];
+{
+let nl = $target[1];
+{
+let body = $target[2];
+{
+let l = $target[3];
+return /*2794*//*2795*/$pl$pl/*<2795*/(/*2794*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2797*/`function name_${/*5957*//*5426*/its/*<5426*/(/*5957*//*5958*/l/*<5958*/)/*<5957*/}(`/*<2797*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2799*//*6877*/sanitize/*<6877*/(/*2799*//*6878*/name/*<6878*/)/*<2799*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2802*/") { return "/*<2802*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2804*//*2804*//*2805*/compile/*<2805*/(/*2804*//*2806*/body/*<2806*/)/*<2804*/(/*2804*//*4680*/trace/*<4680*/)/*<2804*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*5428*/" }"/*<5428*/)/*<2796*/(/*2796*//*2796*/nil/*<2796*/)/*<2796*/)/*<2796*/)/*<2796*/)/*<2796*/)/*<2796*/)/*<2794*/
+}
+}
+}
+}
+}
+if ($target.type === "elet") {
+{
+let pat = $target[0];
+{
+let init = $target[1];
+{
+let body = $target[2];
+{
+let l = $target[3];
+return /*2812*/`(function let_${/*5959*//*5422*/its/*<5422*/(/*5959*//*5960*/l/*<5960*/)/*<5959*/}() {const ${/*6272*//*6272*//*6273*/orr/*<6273*/(/*6272*//*6294*/"_"/*<6294*/)/*<6272*/(/*6272*//*6263*//*6265*/just_pat/*<6265*/(/*6263*//*6266*/pat/*<6266*/)/*<6263*/)/*<6272*/} = ${/*4401*//*4401*//*4403*/compile/*<4403*/(/*4401*//*4404*/init/*<4404*/)/*<4401*/(/*4401*//*4679*/trace/*<4679*/)/*<4401*/};\nreturn ${/*6267*//*6267*//*6269*/compile/*<6269*/(/*6267*//*6270*/body/*<6270*/)/*<6267*/(/*6267*//*6271*/trace/*<6271*/)/*<6267*/};})(/*!*/)`/*<2812*/
+}
+}
+}
+}
+}
+if ($target.type === "eapp") {
+{
+let fn = $target[0];
+{
+let arg = $target[1];
+{
+let l = $target[2];
+return /*2836*/(function match_2836($target) {
+if ($target.type === "elambda") {
+{
+let name = $target[0];
+return /*4918*/`(${/*4920*//*4920*//*4922*/compile/*<4922*/(/*4920*//*4923*/fn/*<4923*/)/*<4920*/(/*4920*//*4924*/trace/*<4924*/)/*<4920*/})(${/*6478*/(function match_6478($target) {
+if ($target === true) {
+return /*6482*/`/*${/*6486*//*6488*/its/*<6488*/(/*6486*//*6489*/l/*<6489*/)/*<6486*/}*/`/*<6482*/
+}
+return /*6484*/""/*<6484*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6478');})(/*!*//*6481*/sm/*<6481*/)/*<6478*/}${/*4929*//*4929*//*4925*/compile/*<4925*/(/*4929*//*4930*/arg/*<4930*/)/*<4929*/(/*4929*//*4931*/trace/*<4931*/)/*<4929*/})`/*<4918*/
+}
+}
+return /*4932*/`${/*4934*//*4934*//*4936*/compile/*<4936*/(/*4934*//*4937*/fn/*<4937*/)/*<4934*/(/*4934*//*4938*/trace/*<4938*/)/*<4934*/}(${/*6490*/(function match_6490($target) {
+if ($target === true) {
+return /*6494*/`/*${/*6498*//*6500*/its/*<6500*/(/*6498*//*6501*/l/*<6501*/)/*<6498*/}*/`/*<6494*/
+}
+return /*6496*/""/*<6496*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 6490');})(/*!*//*6493*/sm/*<6493*/)/*<6490*/}${/*4939*//*4939*//*4941*/compile/*<4941*/(/*4939*//*4942*/arg/*<4942*/)/*<4939*/(/*4939*//*4943*/trace/*<4943*/)/*<4939*/})`/*<4932*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2836');})(/*!*//*2838*/fn/*<2838*/)/*<2836*/
+}
+}
+}
+}
+if ($target.type === "ematch") {
+{
+let target = $target[0];
+{
+let cases = $target[1];
+{
+let l = $target[2];
+return /*2894*/`(function match_${/*5964*//*5424*/its/*<5424*/(/*5964*//*5965*/l/*<5965*/)/*<5964*/}(\$target) {\n${/*2896*//*2896*//*2898*/join/*<2898*/(/*2896*//*2901*/"\n"/*<2901*/)/*<2896*/(/*2896*//*2903*//*2903*//*2904*/map/*<2904*/(/*2903*//*2906*/cases/*<2906*/)/*<2903*/(/*2903*//*2907*/function name_2907($case) { return /*2911*/(function let_2911() {const $target = /*2918*/$case/*<2918*/;
+if ($target.type === ",") {
+{
+let pat = $target[0];
+{
+let body = $target[1];
+return /*2919*//*2919*//*2919*//*2919*//*2920*/compile_pat/*<2920*/(/*2919*//*2921*/pat/*<2921*/)/*<2919*/(/*2919*//*2922*/"\$target"/*<2922*/)/*<2919*/(/*2919*//*2924*/`return ${/*3336*//*3336*//*3338*/compile/*<3338*/(/*3336*//*3339*/body/*<3339*/)/*<3336*/(/*3336*//*4687*/trace/*<4687*/)/*<3336*/}`/*<2924*/)/*<2919*/(/*2919*//*4848*/trace/*<4848*/)/*<2919*/
+}
+}
+};
+throw new Error('let pattern not matched 2914. ' + valueToString($target));})(/*!*/)/*<2911*/ }/*<2907*/)/*<2903*/)/*<2896*/}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${/*5966*//*4315*/its/*<4315*/(/*5966*//*5967*/l/*<5967*/)/*<5966*/}');})(/*!*/${/*2926*//*2926*//*2928*/compile/*<2928*/(/*2926*//*2929*/target/*<2929*/)/*<2926*/(/*2926*//*4688*/trace/*<4688*/)/*<2926*/})`/*<2894*/
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2634');})(/*!*//*2636*/expr/*<2636*/)/*<2634*/)/*<4769*/)/*<4915*/
+}
+};
+throw new Error('let pattern not matched 6468. ' + valueToString($target));})(/*!*/)/*<4905*/
+};
+throw new Error('let pattern not matched 4911. ' + valueToString($target));})(/*!*/)/*<4905*/ }/*<2368*/ }/*<2368*/;
 
 const parse_stmt = /*599*/function name_599(cst) { return /*606*/(function match_606($target) {
 if ($target.type === "cst/list") {
@@ -1305,304 +1618,6 @@ throw new Error('let pattern not matched 7001. ' + valueToString($target));})(/*
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 6753');})(/*!*//*6755*/args/*<6755*/)/*<6753*/ }/*<6747*/ }/*<6747*/;
 
-const pat_loop = /*2288*/function name_2288(target) { return /*2288*/function name_2288(args) { return /*2288*/function name_2288(i) { return /*2288*/function name_2288(inner) { return /*2288*/function name_2288(trace) { return /*2297*/(function match_2297($target) {
-if ($target.type === "nil") {
-return /*2301*/inner/*<2301*/
-}
-if ($target.type === "cons") {
-{
-let arg = $target[0];
-{
-let rest = $target[1];
-return /*2308*//*2308*//*2308*//*2308*//*2309*/compile_pat/*<2309*/(/*2308*//*2310*/arg/*<2310*/)/*<2308*/(/*2308*//*2311*/`${/*2395*/target/*<2395*/}[${/*5980*//*2397*/its/*<2397*/(/*5980*//*5981*/i/*<5981*/)/*<5980*/}]`/*<2311*/)/*<2308*/(/*2308*//*2313*//*2313*//*2313*//*2313*//*2313*//*2314*/pat_loop/*<2314*/(/*2313*//*2315*/target/*<2315*/)/*<2313*/(/*2313*//*2316*/rest/*<2316*/)/*<2313*/(/*2313*//*2317*//*2317*//*2318*/$pl/*<2318*/(/*2317*//*2319*/i/*<2319*/)/*<2317*/(/*2317*//*2320*/1/*<2320*/)/*<2317*/)/*<2313*/(/*2313*//*2321*/inner/*<2321*/)/*<2313*/(/*2313*//*4847*/trace/*<4847*/)/*<2313*/)/*<2308*/(/*2308*//*4845*/trace/*<4845*/)/*<2308*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2297');})(/*!*//*2299*/args/*<2299*/)/*<2297*/ }/*<2288*/ }/*<2288*/ }/*<2288*/ }/*<2288*/ }/*<2288*/;
-
-const compile_pat = /*2322*/function name_2322(pat) { return /*2322*/function name_2322(target) { return /*2322*/function name_2322(inner) { return /*2322*/function name_2322(trace) { return /*4883*//*4883*//*4883*//*4883*//*4884*/trace_and_block/*<4884*/(/*4883*//*4885*//*4886*/pat_loc/*<4886*/(/*4885*//*4887*/pat/*<4887*/)/*<4885*/)/*<4883*/(/*4883*//*4888*/trace/*<4888*/)/*<4883*/(/*4883*//*4889*/target/*<4889*/)/*<4883*/(/*4883*//*2330*/(function match_2330($target) {
-if ($target.type === "pany") {
-{
-let l = $target[0];
-return /*2335*/inner/*<2335*/
-}
-}
-if ($target.type === "pprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return /*2339*/(function match_2339($target) {
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return /*2345*/`if (${/*2399*/target/*<2399*/} === ${/*5978*//*2401*/its/*<2401*/(/*5978*//*5979*/int/*<5979*/)/*<5978*/}) {\n${/*2407*/inner/*<2407*/}\n}`/*<2345*/
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return /*2350*/`if (${/*2403*/target/*<2403*/} === ${/*5970*/(function match_5970($target) {
-if ($target === true) {
-return /*5973*/"true"/*<5973*/
-}
-return /*5976*/"false"/*<5976*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 5970');})(/*!*//*5971*/bool/*<5971*/)/*<5970*/}) {\n${/*2409*/inner/*<2409*/}\n}`/*<2350*/
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2339');})(/*!*//*2341*/prim/*<2341*/)/*<2339*/
-}
-}
-}
-if ($target.type === "pstr") {
-{
-let str = $target[0];
-{
-let l = $target[1];
-return /*2355*/`if (${/*2411*/target/*<2411*/} === \"${/*2413*/str/*<2413*/}\"){\n${/*2415*/inner/*<2415*/}\n}`/*<2355*/
-}
-}
-}
-if ($target.type === "pvar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return /*2360*/`{\nlet ${/*2417*//*2419*/sanitize/*<2419*/(/*2417*//*2420*/name/*<2420*/)/*<2417*/} = ${/*2421*/target/*<2421*/};\n${/*4836*/inner/*<4836*/}\n}`/*<2360*/
-}
-}
-}
-if ($target.type === "pcon") {
-{
-let name = $target[0];
-{
-let args = $target[1];
-{
-let l = $target[2];
-return /*2366*/`if (${/*2425*/target/*<2425*/}.type === \"${/*2427*/name/*<2427*/}\") {\n${/*2429*//*2429*//*2429*//*2429*//*2429*//*2431*/pat_loop/*<2431*/(/*2429*//*2432*/target/*<2432*/)/*<2429*/(/*2429*//*2433*/args/*<2433*/)/*<2429*/(/*2429*//*2434*/0/*<2434*/)/*<2429*/(/*2429*//*2435*/inner/*<2435*/)/*<2429*/(/*2429*//*4846*/trace/*<4846*/)/*<2429*/}\n}`/*<2366*/
-}
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2330');})(/*!*//*2332*/pat/*<2332*/)/*<2330*/)/*<4883*/ }/*<2322*/ }/*<2322*/ }/*<2322*/ }/*<2322*/;
-
-const compile = /*2368*/function name_2368(expr) { return /*2368*/function name_2368(trace) { return /*4905*/(function let_4905() {const $target = /*4912*//*4913*/expr_loc/*<4913*/(/*4912*//*4914*/expr/*<4914*/)/*<4912*/;
-{
-let loc = $target;
-return /*4905*/(function let_4905() {const $target = /*6473*/trace/*<6473*/;
-if ($target.type === ",") {
-{
-let sm = $target[1];
-return /*4915*//*4915*//*4915*//*4916*/source_map/*<4916*/(/*4915*//*4917*/loc/*<4917*/)/*<4915*/(/*4915*//*6474*/sm/*<6474*/)/*<4915*/(/*4915*//*4769*//*4769*//*4769*//*4770*/trace_wrap/*<4770*/(/*4769*//*4773*/loc/*<4773*/)/*<4769*/(/*4769*//*4776*/trace/*<4776*/)/*<4769*/(/*4769*//*2634*/(function match_2634($target) {
-if ($target.type === "estr") {
-{
-let first = $target[0];
-{
-let tpls = $target[1];
-{
-let l = $target[2];
-return /*2641*/(function match_2641($target) {
-if ($target.type === "nil") {
-return /*2645*/`\"${/*2647*//*2649*/escape_string/*<2649*/(/*2647*//*2650*//*2651*/unescapeString/*<2651*/(/*2650*//*2652*/first/*<2652*/)/*<2650*/)/*<2647*/}\"`/*<2645*/
-}
-return /*2654*/`\`${/*2675*//*2677*/escape_string/*<2677*/(/*2675*//*2678*//*2679*/unescapeString/*<2679*/(/*2678*//*2680*/first/*<2680*/)/*<2678*/)/*<2675*/}${/*2681*//*2681*//*2683*/join/*<2683*/(/*2681*//*2684*/""/*<2684*/)/*<2681*/(/*2681*//*2686*//*2686*//*2687*/map/*<2687*/(/*2686*//*2688*/tpls/*<2688*/)/*<2686*/(/*2686*//*2689*/function name_2689(item) { return /*2693*/(function let_2693() {const $target = /*2700*/item/*<2700*/;
-if ($target.type === ",,") {
-{
-let expr = $target[0];
-{
-let suffix = $target[1];
-{
-let l = $target[2];
-return /*2701*/`\${${/*2703*//*2703*//*2705*/compile/*<2705*/(/*2703*//*2706*/expr/*<2706*/)/*<2703*/(/*2703*//*4681*/trace/*<4681*/)/*<2703*/}}${/*2707*//*2709*/escape_string/*<2709*/(/*2707*//*2710*//*2711*/unescapeString/*<2711*/(/*2710*//*2712*/suffix/*<2712*/)/*<2710*/)/*<2707*/}`/*<2701*/
-}
-}
-}
-};
-throw new Error('let pattern not matched 2696. ' + valueToString($target));})(/*!*/)/*<2693*/ }/*<2689*/)/*<2686*/)/*<2681*/}\``/*<2654*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2641');})(/*!*//*2643*/tpls/*<2643*/)/*<2641*/
-}
-}
-}
-}
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-{
-let l = $target[1];
-return /*2742*/(function match_2742($target) {
-if ($target.type === "pint") {
-{
-let int = $target[0];
-return /*2763*//*2764*/int_to_string/*<2764*/(/*2763*//*2765*/int/*<2765*/)/*<2763*/
-}
-}
-if ($target.type === "pbool") {
-{
-let bool = $target[0];
-return /*2769*/(function match_2769($target) {
-if ($target === true) {
-return /*2773*/"true"/*<2773*/
-}
-if ($target === false) {
-return /*2776*/"false"/*<2776*/
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2769');})(/*!*//*2771*/bool/*<2771*/)/*<2769*/
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2742');})(/*!*//*2744*/prim/*<2744*/)/*<2742*/
-}
-}
-}
-if ($target.type === "evar") {
-if ($target[0] === "()"){
-return /*6421*/"null"/*<6421*/
-}
-}
-if ($target.type === "evar") {
-{
-let name = $target[0];
-{
-let l = $target[1];
-return /*2781*//*2782*/sanitize/*<2782*/(/*2781*//*2783*/name/*<2783*/)/*<2781*/
-}
-}
-}
-if ($target.type === "equot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return /*2787*//*2788*/jsonify/*<2788*/(/*2787*//*2789*/inner/*<2789*/)/*<2787*/
-}
-}
-}
-if ($target.type === "equot/stmt") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return /*5456*//*5457*/jsonify/*<5457*/(/*5456*//*5458*/inner/*<5458*/)/*<5456*/
-}
-}
-}
-if ($target.type === "equot/type") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return /*5463*//*5464*/jsonify/*<5464*/(/*5463*//*5465*/inner/*<5465*/)/*<5463*/
-}
-}
-}
-if ($target.type === "equot/pat") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return /*5470*//*5471*/jsonify/*<5471*/(/*5470*//*5472*/inner/*<5472*/)/*<5470*/
-}
-}
-}
-if ($target.type === "equotquot") {
-{
-let inner = $target[0];
-{
-let l = $target[1];
-return /*5781*//*5785*/jsonify/*<5785*/(/*5781*//*5786*/inner/*<5786*/)/*<5781*/
-}
-}
-}
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-{
-let nl = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return /*2794*//*2795*/$pl$pl/*<2795*/(/*2794*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2797*/`function name_${/*5957*//*5426*/its/*<5426*/(/*5957*//*5958*/l/*<5958*/)/*<5957*/}(`/*<2797*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2799*//*6877*/sanitize/*<6877*/(/*2799*//*6878*/name/*<6878*/)/*<2799*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2802*/") { return "/*<2802*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*2804*//*2804*//*2805*/compile/*<2805*/(/*2804*//*2806*/body/*<2806*/)/*<2804*/(/*2804*//*4680*/trace/*<4680*/)/*<2804*/)/*<2796*/(/*2796*//*2796*//*2796*//*2796*/cons/*<2796*/(/*2796*//*5428*/" }"/*<5428*/)/*<2796*/(/*2796*//*2796*/nil/*<2796*/)/*<2796*/)/*<2796*/)/*<2796*/)/*<2796*/)/*<2796*/)/*<2794*/
-}
-}
-}
-}
-}
-if ($target.type === "elet") {
-{
-let pat = $target[0];
-{
-let init = $target[1];
-{
-let body = $target[2];
-{
-let l = $target[3];
-return /*2812*/`(function let_${/*5959*//*5422*/its/*<5422*/(/*5959*//*5960*/l/*<5960*/)/*<5959*/}() {const ${/*6272*//*6272*//*6273*/orr/*<6273*/(/*6272*//*6294*/"_"/*<6294*/)/*<6272*/(/*6272*//*6263*//*6265*/just_pat/*<6265*/(/*6263*//*6266*/pat/*<6266*/)/*<6263*/)/*<6272*/} = ${/*4401*//*4401*//*4403*/compile/*<4403*/(/*4401*//*4404*/init/*<4404*/)/*<4401*/(/*4401*//*4679*/trace/*<4679*/)/*<4401*/};\nreturn ${/*6267*//*6267*//*6269*/compile/*<6269*/(/*6267*//*6270*/body/*<6270*/)/*<6267*/(/*6267*//*6271*/trace/*<6271*/)/*<6267*/};})(/*!*/)`/*<2812*/
-}
-}
-}
-}
-}
-if ($target.type === "eapp") {
-{
-let fn = $target[0];
-{
-let arg = $target[1];
-{
-let l = $target[2];
-return /*2836*/(function match_2836($target) {
-if ($target.type === "elambda") {
-{
-let name = $target[0];
-return /*4918*/`(${/*4920*//*4920*//*4922*/compile/*<4922*/(/*4920*//*4923*/fn/*<4923*/)/*<4920*/(/*4920*//*4924*/trace/*<4924*/)/*<4920*/})(${/*6478*/(function match_6478($target) {
-if ($target === true) {
-return /*6482*/`/*${/*6486*//*6488*/its/*<6488*/(/*6486*//*6489*/l/*<6489*/)/*<6486*/}*/`/*<6482*/
-}
-return /*6484*/""/*<6484*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 6478');})(/*!*//*6481*/sm/*<6481*/)/*<6478*/}${/*4929*//*4929*//*4925*/compile/*<4925*/(/*4929*//*4930*/arg/*<4930*/)/*<4929*/(/*4929*//*4931*/trace/*<4931*/)/*<4929*/})`/*<4918*/
-}
-}
-return /*4932*/`${/*4934*//*4934*//*4936*/compile/*<4936*/(/*4934*//*4937*/fn/*<4937*/)/*<4934*/(/*4934*//*4938*/trace/*<4938*/)/*<4934*/}(${/*6490*/(function match_6490($target) {
-if ($target === true) {
-return /*6494*/`/*${/*6498*//*6500*/its/*<6500*/(/*6498*//*6501*/l/*<6501*/)/*<6498*/}*/`/*<6494*/
-}
-return /*6496*/""/*<6496*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 6490');})(/*!*//*6493*/sm/*<6493*/)/*<6490*/}${/*4939*//*4939*//*4941*/compile/*<4941*/(/*4939*//*4942*/arg/*<4942*/)/*<4939*/(/*4939*//*4943*/trace/*<4943*/)/*<4939*/})`/*<4932*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2836');})(/*!*//*2838*/fn/*<2838*/)/*<2836*/
-}
-}
-}
-}
-if ($target.type === "ematch") {
-{
-let target = $target[0];
-{
-let cases = $target[1];
-{
-let l = $target[2];
-return /*2894*/`(function match_${/*5964*//*5424*/its/*<5424*/(/*5964*//*5965*/l/*<5965*/)/*<5964*/}(\$target) {\n${/*2896*//*2896*//*2898*/join/*<2898*/(/*2896*//*2901*/"\n"/*<2901*/)/*<2896*/(/*2896*//*2903*//*2903*//*2904*/map/*<2904*/(/*2903*//*2906*/cases/*<2906*/)/*<2903*/(/*2903*//*2907*/function name_2907($case) { return /*2911*/(function let_2911() {const $target = /*2918*/$case/*<2918*/;
-if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return /*2919*//*2919*//*2919*//*2919*//*2920*/compile_pat/*<2920*/(/*2919*//*2921*/pat/*<2921*/)/*<2919*/(/*2919*//*2922*/"\$target"/*<2922*/)/*<2919*/(/*2919*//*2924*/`return ${/*3336*//*3336*//*3338*/compile/*<3338*/(/*3336*//*3339*/body/*<3339*/)/*<3336*/(/*3336*//*4687*/trace/*<4687*/)/*<3336*/}`/*<2924*/)/*<2919*/(/*2919*//*4848*/trace/*<4848*/)/*<2919*/
-}
-}
-};
-throw new Error('let pattern not matched 2914. ' + valueToString($target));})(/*!*/)/*<2911*/ }/*<2907*/)/*<2903*/)/*<2896*/}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${/*5966*//*4315*/its/*<4315*/(/*5966*//*5967*/l/*<5967*/)/*<5966*/}');})(/*!*/${/*2926*//*2926*//*2928*/compile/*<2928*/(/*2926*//*2929*/target/*<2929*/)/*<2926*/(/*2926*//*4688*/trace/*<4688*/)/*<2926*/})`/*<2894*/
-}
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2634');})(/*!*//*2636*/expr/*<2636*/)/*<2634*/)/*<4769*/)/*<4915*/
-}
-};
-throw new Error('let pattern not matched 6468. ' + valueToString($target));})(/*!*/)/*<4905*/
-};
-throw new Error('let pattern not matched 4911. ' + valueToString($target));})(/*!*/)/*<4905*/ }/*<2368*/ }/*<2368*/;
-
-const run = /*4208*/function name_4208(v) { return /*4215*//*4217*/eval/*<4217*/(/*4215*//*4218*//*4218*//*4219*/compile/*<4219*/(/*4218*//*4220*//*4221*/parse_expr/*<4221*/(/*4220*//*4222*/v/*<4222*/)/*<4220*/)/*<4218*/(/*4218*//*6455*//*6455*//*4676*/$co/*<4676*/(/*6455*//*6456*/map$slnil/*<6456*/)/*<6455*/(/*6455*//*6457*/true/*<6457*/)/*<6455*/)/*<4218*/)/*<4215*/ }/*<4208*/;
-
 const compile_stmt = /*404*/function name_404(stmt) { return /*404*/function name_404(trace) { return /*410*/(function match_410($target) {
 if ($target.type === "sexpr") {
 {
@@ -1664,4 +1679,6 @@ throw new Error('let pattern not matched 456. ' + valueToString($target));})(/*!
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 410');})(/*!*//*412*/stmt/*<412*/)/*<410*/ }/*<404*/ }/*<404*/;
 
-return /*5763*//*5763*//*5763*//*5763*//*5765*/parse_and_compile2/*<5765*/(/*5763*//*5766*/parse_stmt/*<5766*/)/*<5763*/(/*5763*//*5767*/parse_expr/*<5767*/)/*<5763*/(/*5763*//*5768*/compile_stmt/*<5768*/)/*<5763*/(/*5763*//*5770*/compile/*<5770*/)/*<5763*/
+const run = /*4208*/function name_4208(v) { return /*4215*//*4217*/eval/*<4217*/(/*4215*//*4218*//*4218*//*4219*/compile/*<4219*/(/*4218*//*4220*//*4221*/parse_expr/*<4221*/(/*4220*//*4222*/v/*<4222*/)/*<4220*/)/*<4218*/(/*4218*//*6455*//*6455*//*4676*/$co/*<4676*/(/*6455*//*6456*/map$slnil/*<6456*/)/*<6455*/(/*6455*//*6457*/true/*<6457*/)/*<6455*/)/*<4218*/)/*<4215*/ }/*<4208*/;
+
+return /*5763*//*5763*//*5763*//*5763*//*5763*//*5765*/parse_and_compile2/*<5765*/(/*5763*//*5766*/parse_stmt/*<5766*/)/*<5763*/(/*5763*//*5767*/parse_expr/*<5767*/)/*<5763*/(/*5763*//*5768*/compile_stmt/*<5768*/)/*<5763*/(/*5763*//*5770*/compile/*<5770*/)/*<5763*/(/*5763*//*7152*/"tuple"/*<7152*/)/*<5763*/
