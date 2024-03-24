@@ -874,6 +874,25 @@ return /*11248*/"prim"/*<11248*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 11204');})(/*!*//*11206*/pat/*<11206*/)/*<11204*/ }/*<11198*/;
 
+const tts_tuple = /*11389*/function name_11389(type) { return /*11398*/(function match_11398($target) {
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === ","){
+{
+let a = $target[0][1];
+{
+let b = $target[1];
+return /*11408*//*11408*//*11408*/cons/*<11408*/(/*11408*//*11409*/a/*<11409*/)/*<11408*/(/*11408*//*11410*//*11414*/tts_tuple/*<11414*/(/*11410*//*11415*/b/*<11415*/)/*<11410*/)/*<11408*/
+}
+}
+}
+}
+}
+}
+return /*11486*//*11486*//*11486*/cons/*<11486*/(/*11486*//*11487*/type/*<11487*/)/*<11486*/(/*11486*//*11486*/nil/*<11486*/)/*<11486*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 11398');})(/*!*//*11400*/type/*<11400*/)/*<11398*/ }/*<11389*/;
+
 const tts_inner = /*2099*/function name_2099(t) { return /*2099*/function name_2099(free) { return /*2099*/function name_2099(locs) { return /*2105*/(function match_2105($target) {
 if ($target.type === "tvar") {
 {
@@ -939,22 +958,36 @@ let la = $target[0][2];
 let b = $target[1];
 {
 let l = $target[2];
-return /*5675*/(function let_5675() {const $target = /*5909*//*5910*/unwrap_fn/*<5910*/(/*5909*//*5911*/b/*<5911*/)/*<5909*/;
-if ($target.type === ",") {
-{
-let args = $target[0];
-{
-let r = $target[1];
-return /*5675*/(function let_5675() {const $target = /*5913*//*5913*//*5913*/cons/*<5913*/(/*5913*//*5914*/a/*<5914*/)/*<5913*/(/*5913*//*5915*/args/*<5915*/)/*<5913*/;
+return /*5675*/(function let_5675() {const $target = /*5684*//*6209*/tts_tuple/*<6209*/(/*5684*//*6210*/a/*<6210*/)/*<5684*/;
 {
 let args = $target;
-return /*5675*/(function let_5675() {const $target = /*5684*//*5684*//*5684*//*6209*/tts_list/*<6209*/(/*5684*//*6210*/args/*<6210*/)/*<5684*/(/*5684*//*6211*/free/*<6211*/)/*<5684*/(/*5684*//*10952*/locs/*<10952*/)/*<5684*/;
+return /*5675*/(function let_5675() {const $target = /*11433*//*11433*//*11433*//*11434*/foldl/*<11434*/(/*11433*//*11457*//*11457*//*11440*/$co/*<11440*/(/*11457*//*11461*/nil/*<11461*/)/*<11457*/(/*11457*//*11458*/free/*<11458*/)/*<11457*/)/*<11433*/(/*11433*//*11436*/args/*<11436*/)/*<11433*/(/*11433*//*11437*/function name_11437($fn_arg) { return /*11437*/(function match_11437($target) {
 if ($target.type === ",") {
 {
 let args = $target[0];
 {
 let free = $target[1];
-return /*5675*/(function let_5675() {const $target = /*5692*//*5692*//*5692*//*5693*/tts_inner/*<5693*/(/*5692*//*5694*/r/*<5694*/)/*<5692*/(/*5692*//*5695*/free/*<5695*/)/*<5692*/(/*5692*//*10953*/locs/*<10953*/)/*<5692*/;
+return /*11437*/function name_11437(arg) { return /*11443*/(function let_11443() {const $target = /*11451*//*11451*//*11451*//*11452*/tts_inner/*<11452*/(/*11451*//*11453*/arg/*<11453*/)/*<11451*/(/*11451*//*11454*/free/*<11454*/)/*<11451*/(/*11451*//*11455*/locs/*<11455*/)/*<11451*/;
+if ($target.type === ",") {
+{
+let t = $target[0];
+{
+let free = $target[1];
+return /*11465*//*11465*//*11466*/$co/*<11466*/(/*11465*//*11467*//*11467*//*11467*/cons/*<11467*/(/*11467*//*11468*/t/*<11468*/)/*<11467*/(/*11467*//*11469*/args/*<11469*/)/*<11467*/)/*<11465*/(/*11465*//*11473*/free/*<11473*/)/*<11465*/
+}
+}
+};
+throw new Error('let pattern not matched 11447. ' + valueToString($target));})(/*!*/)/*<11443*/ }/*<11437*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 11437');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<11437*/ }/*<11437*/)/*<11433*/;
+if ($target.type === ",") {
+{
+let args = $target[0];
+{
+let free = $target[1];
+return /*5675*/(function let_5675() {const $target = /*5692*//*5692*//*5692*//*5693*/tts_inner/*<5693*/(/*5692*//*5694*/b/*<5694*/)/*<5692*/(/*5692*//*5695*/free/*<5695*/)/*<5692*/(/*5692*//*10953*/locs/*<10953*/)/*<5692*/;
 if ($target.type === ",") {
 {
 let two = $target[0];
@@ -968,13 +1001,9 @@ throw new Error('let pattern not matched 5688. ' + valueToString($target));})(/*
 }
 }
 };
+throw new Error('let pattern not matched 11429. ' + valueToString($target));})(/*!*/)/*<5675*/
+};
 throw new Error('let pattern not matched 5680. ' + valueToString($target));})(/*!*/)/*<5675*/
-};
-throw new Error('let pattern not matched 5912. ' + valueToString($target));})(/*!*/)/*<5675*/
-}
-}
-};
-throw new Error('let pattern not matched 5905. ' + valueToString($target));})(/*!*/)/*<5675*/
 }
 }
 }

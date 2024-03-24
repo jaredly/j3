@@ -6,6 +6,7 @@ export type jcst =
     | { type: 'cst/list'; 0: arr<jcst>; 1: number }
     | { type: 'cst/array'; 0: arr<jcst>; 1: number }
     | { type: 'cst/spread'; 0: jcst; 1: number }
+    | { type: 'cst/empty-spread'; 0: number }
     | {
           type: 'cst/string';
           0: string;
@@ -67,7 +68,9 @@ export const toJCST = (node: Node): jcst | null => {
         }
         case 'spread':
             const inner = toJCST(node.contents);
-            return inner ? { type: 'cst/spread', 0: inner, 1: node.loc } : null;
+            return inner
+                ? { type: 'cst/spread', 0: inner, 1: node.loc }
+                : { type: 'cst/empty-spread', 0: node.loc };
         case 'array': {
             const values = filterBlanks(node.values).map(toJCST);
             if (!values.every(Boolean)) return null;

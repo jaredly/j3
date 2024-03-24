@@ -16,7 +16,7 @@ export const Outside = () => {
     useEffect(() => {
         fetch(urlForId(''))
             .then((res) => res.json())
-            .then(setListing);
+            .then((list) => setListing(list.sort()));
     }, []);
     useEffect(() => {
         const title = hash.slice(1);

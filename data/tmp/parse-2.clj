@@ -180,8 +180,8 @@
                                                                                  [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
                                                                                  l)
         ;(cst/list [(cst/identifier "fn" _) (cst/array [arg] _) body] b) ;(elambda (parse-pat arg) (parse-expr body) b)
-        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)  (let [body (parse-expr body) arg (pat-args args b)]
-                                                                             (elambda "$arg" b (elet arg (evar "$arg" -1) body b) b))
+        (cst/list [(cst/identifier "fn" _) (cst/array args al) body]  b) (let [body (parse-expr body) arg (pat-args args al)]
+                                                                             (elambda "$arg" al (elet arg (evar "$arg" al) body b) b))
         (cst/list [(cst/identifier "match" _) target ..cases] l)         (ematch
                                                                              (parse-expr target)
                                                                                  (map
@@ -225,6 +225,17 @@
 (,
     parse-expr
         [(, (@@ true) (eprim (pbool true 1163) 1163))
+        (,
+        (@@ (fn [a] 2))
+            (elambda
+            "$arg"
+                6959
+                (elet
+                (pcon "," [(pvar "a" 6960) (pcon "()" [] 6959)] 6959)
+                    (evar "$arg" 6959)
+                    (eprim (pint 2 6961) 6961)
+                    6957)
+                6957))
         (,
         (@@ [1 ..b])
             (eapp
@@ -616,7 +627,7 @@
         (, (@@ "a${2}b") "a2b")
         (, (@@ ((fn [a] (+ a 2)) 21)) 23)
         (, (@@ (, 1 ..(, 2 ..()))) (, 1 (, 2 null)))
-        (, (@@ ((fn [a b] (+ a b)) (, 1 (, 2 ())))) )
+        (, (@@ ((fn [a b] (+ a b)) (, 1 (, 2 ..())))) )
         (, (@@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@@

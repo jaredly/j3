@@ -205,6 +205,11 @@
             }"
             s))
 
+(defn tts-tuple [type]
+    (match type
+        (tapp (tapp (tcon "," _) a _) b _) [a ..(tts-tuple b)]
+        _                                  [type]))
+
 (defn tts-inner [t free locs]
     (match t
         (tvar s l)                           (let [(, fmap idx) free]
@@ -216,10 +221,13 @@
                                                      _           (, (and-loc locs l s) free)))
         (tcon s l)                           (, (and-loc locs l s) free)
         (tapp (tapp (tcon "->" _) a la) b l) (let [
-                                                 (, args r)    (unwrap-fn b)
-                                                 args          [a ..args]
-                                                 (, args free) (tts-list args free locs)
-                                                 (, two free)  (tts-inner r free locs)]
+                                                 args          (tts-tuple a)
+                                                 (, args free) (foldl
+                                                                   (, [] free)
+                                                                       args
+                                                                       (fn [(, args free) arg]
+                                                                       (let [(, t free) (tts-inner arg free locs)] (, [t ..args] free))))
+                                                 (, two free)  (tts-inner b free locs)]
                                                  (, (and-loc locs l "(fn [${(join " " (rev args []))}] ${two})") free))
         (tapp a b l)                         (let [
                                                  (, target args) (unwrap-app a)
@@ -234,7 +242,8 @@
 
 (,
     type-to-string
-        [(, (@t (-> a (-> b c))) "(fn [a b] c)")
+        [(, (@t (-> a (-> b c))) "(fn [a] (fn [b] c))")
+        (, (@t (-> (, a (, b c)) d)) "(fn [a b c] d)")
         (, (@t (-> a b)) "(fn [a] b)")
         (, (@t (cons a b)) "(cons a b)")])
 
