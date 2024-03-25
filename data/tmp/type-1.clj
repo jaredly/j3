@@ -10,7 +10,7 @@
                          one
                              (at rest (- i 1) default_))))
 
-11111111
+111111
 
 (defn rev [arr col]
     (match arr
@@ -67,6 +67,12 @@
 (foldl 0 [1 2 3] (fn [a b] b))
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
+
+
+
+
+
+
 
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)

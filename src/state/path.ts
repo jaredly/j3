@@ -107,7 +107,10 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
             console.log(o.idx, t.idx);
             console.warn(
                 `Comparing full paths, different idx for same position?`,
+                o,
+                t,
             );
+            debugger;
             return 0;
         }
         const cmp = cmpPath(o, t);

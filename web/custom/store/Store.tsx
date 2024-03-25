@@ -186,36 +186,33 @@ export type Values = {
         edge: boolean;
         coverage: CoverageLevel;
     };
-    // UIState['at'],
     dispatch: React.Dispatch<Action>;
 };
 
 export const getValues = (
     idx: number,
-    path: Path[],
+    // path: Path[],
     store: Store,
     state: NUIState,
     results: NUIResults,
 ): Values => {
     if (!state.map[idx]) {
         return {
-            // errors: {},
             dispatch() {},
             display: {},
             meta: null,
-            // selection: null,
             reg() {},
             node: { type: 'blank', loc: -1 },
             nnode: { type: 'text', text: '' },
         };
     }
-    const sel = normalizeSelections(state.at);
-    const edgeSelected = sel.some(
-        (s) =>
-            s.start[s.start.length - 1].idx === idx ||
-            (s.end && s.end[s.end.length - 1].idx === idx),
-    );
-    const coverageLevel = isCoveredBySelection(sel, path, state.map);
+    // const sel = normalizeSelections(state.at);
+    // const edgeSelected = sel.some(
+    //     (s) =>
+    //         s.start[s.start.length - 1].idx === idx ||
+    //         (s.end && s.end[s.end.length - 1].idx === idx),
+    // );
+    // const coverageLevel = isCoveredBySelection(sel, path, state.map);
     const nnode = getNestedNodes(
         state.map[idx],
         state.map,
@@ -228,9 +225,9 @@ export const getValues = (
         dispatch: store.dispatch,
         meta: state.meta?.[idx] ?? null,
         display: results.display[idx],
-        selection: coverageLevel
-            ? { edge: edgeSelected, coverage: coverageLevel }
-            : undefined,
+        // selection: coverageLevel
+        //     ? { edge: edgeSelected, coverage: coverageLevel }
+        //     : undefined,
         node: state.map[idx],
         reg: store.reg,
         nnode,
@@ -283,41 +280,88 @@ export const useGlobalState = (store: Store) => {
 
 export const useGetStore = () => useContext(StoreCtx);
 
+/**
+ * This will:
+ * - perform the calculation the first time
+ * - recheck it whenever `sub` notifies us
+ * - recalc whenever `deps` changes
+ *
+ * - but `calc` better never change...
+ */
+export const useSubscribe = <T,>(
+    calc: () => T,
+    sub: (fn: () => void) => void,
+    deps: any[],
+) => {
+    const saved = useRef<T | null>(null);
+    useMemo(() => {
+        const nw = calc();
+        if (!equal(nw, saved.current)) {
+            saved.current = calc();
+        }
+    }, deps);
+    const [_, tick] = useState(null);
+
+    useEffect(() => {
+        sub(() => {
+            const nw = calc();
+            if (!equal(nw, saved.current)) {
+                saved.current = nw;
+                tick(null);
+            }
+        });
+    }, []);
+
+    return saved.current!;
+};
+
 export const useNode = (idx: number, path: Path[]): Values => {
     const store = useContext(StoreCtx);
     let [state, setState] = useState(() =>
-        getValues(idx, path, store, store.getState(), store.getResults()),
+        getValues(idx, store, store.getState(), store.getResults()),
     );
     const diff = state.node.loc !== idx;
-    const lpath = useRef(path);
-    if ((lpath.current !== path && !equal(lpath.current, path)) || diff) {
-        lpath.current = path;
-        state = getValues(
-            idx,
-            path,
-            store,
-            store.getState(),
-            store.getResults(),
-        );
-        console.warn(`path was different~ ahhh`);
-        // setState(state);
-
-        // throw new Error(
-        //     `path was different, I guess I need to account for it.`,
-        // );
+    if (diff) {
+        throw new Error(`ok cant handle the idx actually changing`);
     }
-    useEffect(() => {
-        if (diff) {
-            setState(state);
-        }
-    }, [diff]);
-    // useMemo(() =)
+
+    const pathRef = useLatest(path);
+    const selection = useSubscribe(
+        () => {
+            const path = pathRef.current;
+            const state = store.getState();
+
+            // man we're running this calculation quite a lot
+            const sel = normalizeSelections(state.at);
+            const edgeSelected = sel.some(
+                (s) =>
+                    s.start[s.start.length - 1].idx === idx ||
+                    (s.end && s.end[s.end.length - 1].idx === idx),
+            );
+            const coverageLevel = isCoveredBySelection(sel, path, state.map);
+
+            return coverageLevel
+                ? { edge: edgeSelected, coverage: coverageLevel }
+                : undefined;
+        },
+        (notify) => {
+            let la = store.getState().at;
+            store.everyChange((f) => {
+                if (f.at !== la) {
+                    la = f.at;
+                }
+                notify();
+            });
+        },
+        [path],
+    );
+
     useEffect(() => {
         return store.onChange(idx, (state, results) => {
             // Node is being deleted, ignore. This'll unmount in a minute
             if (!state.map[idx]) return;
-            setState(getValues(idx, path, store, state, results));
+            setState(getValues(idx, store, state, results));
         });
-    }, [idx, lpath.current]);
-    return state;
+    }, [idx]);
+    return { ...state, selection };
 };

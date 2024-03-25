@@ -127,6 +127,17 @@ export function NSTop({
                             dispatch={dispatch}
                             path={path}
                         />
+                        {debug.ids ? (
+                            <div
+                                style={{
+                                    fontSize: '80%',
+                                    opacity: 0.7,
+                                    width: 20,
+                                }}
+                            >
+                                {ns.id}
+                            </div>
+                        ) : null}
                         <div
                             ref={(node) => {
                                 if (node) {
@@ -211,7 +222,7 @@ export function NSTop({
                                     drag={drag}
                                     nsReg={nsReg}
                                     produce={produce}
-                                    key={child.top + ':' + i}
+                                    key={child.top}
                                     ns={child}
                                     path={path.concat({
                                         type: 'ns' as const,

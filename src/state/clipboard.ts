@@ -76,6 +76,7 @@ export const selectionStatus = (
     end: Path[],
     map: Map,
 ): CoverageLevel | null => {
+    // if (start.length > path.length + 1 && )
     let s = cmpFullPath(start, path);
     if (s > 0) {
         return null;
