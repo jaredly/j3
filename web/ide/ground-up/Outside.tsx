@@ -160,13 +160,13 @@ export const Outside = () => {
     );
 };
 
-const onlyLast = <T,>(fn: (arg: T) => void, time: number) => {
+const onlyLast = <T,>(fn: (arg: T) => void, time: number, longTime: number) => {
     let last = Date.now();
     let tid: Timer | null = null;
     return (arg: T) => {
         if (tid != null) clearTimeout(tid);
         const now = Date.now();
-        if (now - last > time) {
+        if (now - last > longTime) {
             last = now;
             return fn(arg);
         }
@@ -174,7 +174,7 @@ const onlyLast = <T,>(fn: (arg: T) => void, time: number) => {
             tid = null;
             last = Date.now();
             fn(arg);
-        }, time - (now - last));
+        }, time);
     };
 };
 
@@ -190,16 +190,23 @@ export const Loader = ({
 
     const save = useMemo(
         () =>
-            onlyLast<NUIState>((state) => {
-                const now = Date.now();
-                console.log(`Time since last save`, now - lastSaveTime);
-                if (now - lastSaveTime < 200) {
-                    throw new Error(`saving too fast???`);
-                }
-                lastSaveTime = now;
-                latest.current = state;
-                return saveState(id, state);
-            }, 500),
+            onlyLast<NUIState>(
+                (state) => {
+                    const now = Date.now();
+                    console.log(`Time since last save`, now - lastSaveTime);
+                    if (now - lastSaveTime < 200) {
+                        throw new Error(`saving too fast???`);
+                    }
+                    lastSaveTime = now;
+                    latest.current = state;
+                    return saveState(id, state);
+                },
+                // minimum time after last change
+                500,
+                // maximum time between saves
+                // if they're coming rapid fire
+                10000,
+            ),
         [id],
     );
 

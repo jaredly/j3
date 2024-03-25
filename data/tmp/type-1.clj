@@ -10,6 +10,8 @@
                          one
                              (at rest (- i 1) default_))))
 
+11111111
+
 (defn rev [arr col]
     (match arr
         []           col
