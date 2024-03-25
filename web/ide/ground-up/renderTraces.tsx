@@ -44,6 +44,9 @@ export function renderTraces(
                     .map((trace, i) => {
                         const tloc = trace.find((t) => t.type === 'tloc');
                         if (!tloc) return 'no tloc';
+                        const locs = trace
+                            .filter((t) => t.type === 'tloc')
+                            .map((t) => t[0] as number);
                         const loc = tloc[0];
                         const node = state.map[loc];
                         return (
@@ -51,21 +54,25 @@ export function renderTraces(
                                 key={i}
                                 style={{ marginBottom: 5, display: 'contents' }}
                                 onMouseEnter={() => {
-                                    const node =
-                                        state.regs[loc]?.main ??
-                                        state.regs[loc]?.outside;
-                                    if (node) {
-                                        node.node.style.outline =
-                                            '1px solid red';
-                                    }
+                                    locs.forEach((loc) => {
+                                        const node =
+                                            state.regs[loc]?.main ??
+                                            state.regs[loc]?.outside;
+                                        if (node) {
+                                            node.node.style.outline =
+                                                '1px solid red';
+                                        }
+                                    });
                                 }}
                                 onMouseLeave={() => {
-                                    const node =
-                                        state.regs[loc]?.main ??
-                                        state.regs[loc]?.outside;
-                                    if (node) {
-                                        node.node.style.outline = 'unset';
-                                    }
+                                    locs.forEach((loc) => {
+                                        const node =
+                                            state.regs[loc]?.main ??
+                                            state.regs[loc]?.outside;
+                                        if (node) {
+                                            node.node.style.outline = 'unset';
+                                        }
+                                    });
                                 }}
                             >
                                 <div

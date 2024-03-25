@@ -136,8 +136,9 @@ export const GroundUp = ({
                     right: 4,
                     backgroundColor: 'black',
                     padding: 16,
-                    maxHeight: '100vh',
-                    overflow: 'auto',
+                    maxHeight: 'calc(100vh - 60px)',
+                    display: 'flex',
+                    flexDirection: 'column',
                 }}
             >
                 {(['ids', 'selection', 'execOrder'] as const).map((k) => (
@@ -162,8 +163,10 @@ export const GroundUp = ({
                         id={id}
                     />
                 </div>
-                {debug.selection ? <ShowAt at={state.at} /> : null}
-                {renderTraces(results, state, store)}
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                    {debug.selection ? <ShowAt at={state.at} /> : null}
+                    {renderTraces(results, state, store)}
+                </div>
             </div>
             <Hover
                 state={state}

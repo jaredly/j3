@@ -147,33 +147,6 @@ export function withTracing(
                 return trace;
             }),
         );
-        // // if (!trace[loc]) {
-        // //     trace[loc] = [];
-        // // }
-        // let formatter = info.formatter
-        //     ? env.values[info.formatter]
-        //     : valueToString;
-        // let formatted = formatter(value);
-        // if (typeof formatted !== 'string') {
-        //     console.warn(
-        //         'not formatted',
-        //         formatted,
-        //         value,
-        //         info.formatter,
-        //         env.values[info.formatter!],
-        //     );
-        //     formatted = 'bad format';
-        // }
-        // trace.push({
-        //     loc,
-        //     trace: { type: 'tfmted', 0: value, 1: formatted },
-        // });
-        // trace[loc].push({
-        //     value,
-        //     at: count++,
-        //     formatted,
-        // });
-        // return value;
     });
 }
 
