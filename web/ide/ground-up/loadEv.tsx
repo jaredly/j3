@@ -97,21 +97,18 @@ export const evaluatorFromText = (
 };
 
 export type Trace =
+    | { type: 'tloc'; 0: number }
     | { type: 'tcolor'; 0: string }
     | { type: 'tbold'; 0: boolean }
     | { type: 'titalic'; 0: boolean }
     | { type: 'tflash'; 0: boolean }
     | { type: 'ttext'; 0: string }
     | { type: 'tval'; 0: any }
+    | { type: 'tnamed'; 0: string; 1: Trace }
     | { type: 'tfmted'; 0: any; 1: string }
     | { type: 'tfmt'; 0: any; 1: (v: any) => string };
 
-export type TraceMap = { [loc: number]: { loc: number; trace: Trace[] }[] };
-// export type TraceMap = {
-//     [loc: number]: {
-//         [loc: number]: { value: any; at: number; formatted: string }[];
-//     };
-// };
+export type TraceMap = { [loc: number]: Trace[][] };
 
 export function withTracing(
     traceMap: TraceMap,
@@ -119,14 +116,12 @@ export function withTracing(
     san: { [key: string]: any },
     env: FnsEnv,
 ) {
-    // let count = 0;
     const trace: TraceMap[0] = [];
     traceMap[loc] = trace;
-    // const trace: { [key: number]: any[] } = (traceMap[loc] = {});
-    san.$setTracer((loc: number, traces: Trace[]) => {
-        trace.push({
-            loc,
-            trace: traces.map((trace) => {
+
+    san.$setTracer((traces: Trace[]) => {
+        trace.push(
+            traces.map((trace) => {
                 if (trace.type === 'tval') {
                     return {
                         type: 'tfmted',
@@ -151,7 +146,7 @@ export function withTracing(
                 }
                 return trace;
             }),
-        });
+        );
         // // if (!trace[loc]) {
         // //     trace[loc] = [];
         // // }

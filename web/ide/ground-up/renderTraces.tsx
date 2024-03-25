@@ -41,7 +41,10 @@ export function renderTraces(
                     // .filter((v) =>
                     //     v.trace.some((trace) => trace.type === 'tfmted'),
                     // )
-                    .map(({ loc, trace }, i) => {
+                    .map((trace, i) => {
+                        const tloc = trace.find((t) => t.type === 'tloc');
+                        if (!tloc) return 'no tloc';
+                        const loc = tloc[0];
                         const node = state.map[loc];
                         return (
                             <div
@@ -110,15 +113,30 @@ export function renderTraces(
                                         overflow: 'auto',
                                     }}
                                 >
-                                    {trace
-                                        .map((t) =>
-                                            t.type === 'tfmted'
-                                                ? t[1]
-                                                : t.type === 'ttext'
-                                                ? t[0]
-                                                : null,
-                                        )
-                                        .join('\n')}
+                                    {trace.map((t, i) => {
+                                        switch (t.type) {
+                                            case 'tfmted':
+                                                return (
+                                                    <div key={i}>{t[1]}</div>
+                                                );
+                                            case 'ttext':
+                                                return (
+                                                    <div key={i}>{t[0]}</div>
+                                                );
+                                            case 'tloc':
+                                                return (
+                                                    <div key={i}>
+                                                        loc: {t[0]}
+                                                    </div>
+                                                );
+                                            default:
+                                                return (
+                                                    <div key={i}>
+                                                        ({t.type})
+                                                    </div>
+                                                );
+                                        }
+                                    })}
                                 </div>
                             </div>
                         );

@@ -29,6 +29,10 @@ export type NUIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
     hover: Path[];
+    traceScrub?: {
+        top: number;
+        idx: number;
+    };
     history: HistoryItem[];
     cards: Card[];
     nsMap: { [key: number]: SandboxNamespace };

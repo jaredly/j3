@@ -6,7 +6,7 @@ import { arr, unwrapArray, wrapArray } from './round-1/parse';
 import { Trace } from './loadEv';
 
 export type Tracer = (
-    loc: number,
+    // loc: number,
     trace: Trace[],
     // v: any,
     // info: NonNullable<MetaData['trace']>,
@@ -93,7 +93,8 @@ export function builtins() {
         },
         $trace(loc: number, info: any, value: any) {
             if (tracer) {
-                tracer(loc, [
+                tracer([
+                    { type: 'tloc', 0: loc },
                     info.formatter
                         ? { type: 'tfmt', 0: value, 1: info.formatter }
                         : { type: 'tval', 0: value },
@@ -103,9 +104,8 @@ export function builtins() {
             return value;
         },
 
-        trace: (loc: number) => (things: arr<Trace>) => {
-            console.log('traceeee', loc, things);
-            tracer?.(loc, unwrapArray(things));
+        trace: (things: arr<Trace>) => {
+            tracer?.(unwrapArray(things));
         },
 
         // Just handy

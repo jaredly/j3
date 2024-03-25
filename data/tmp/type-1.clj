@@ -184,6 +184,8 @@
         (tflash bool)
         (ttext string)
         (tval a)
+        (tloc int)
+        (tnamed string (trace-fmt a))
         (tfmted a string)
         (tfmt a (fn [a] string)))
 
@@ -391,10 +393,16 @@
 
 (defn unify [t1 t2 nidx l]
     (let 
-        [_
+        [l1
+            (type-loc t1)
+            l2
+            (type-loc t2)
+            _
             (trace
-            l
-                [(ttext "unify")
+            [(tloc l)
+                (tloc l1)
+                (tloc l2)
+                (ttext "unify")
                 (tfmt t1 type-to-string-raw)
                 (tfmt t2 type-to-string-raw)])
             (, subst nidx)
@@ -423,7 +431,8 @@
                                                                         (its (type-loc t2))
                                                                         })"))
             _
-            (trace l [(ttext "unified") (tfmt subst show-subst)])]
+            (trace
+            [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
             (, subst nidx)))
 
 (defn var-bind [var type]
@@ -462,7 +471,7 @@
 (defn t-expr [tenv expr nidx]
     (let [
         l                    (expr-loc expr)
-        _                    (trace l [(tcolor "blue") (ttext "enter")])
+        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
         (,, subst type nidx) (match expr
                                  (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
                                  (evar "()" l)                       (,, map/nil (tcon "()" l) nidx)
@@ -556,7 +565,8 @@
                                                                                                                                    nidx))))]
                                                                          (,, target-subst result-type nidx))
                                  _                                   (fatal "cannot infer type for ${(valueToString expr)}"))
-        _                    (trace l [(tcolor "white") (ttext "exit") (tfmt type type-to-string-raw)])]
+        _                    (trace
+                                 [(tloc l) (tcolor "white") (ttext "exit") (tfmt type type-to-string-raw)])]
         (,, subst type nidx)))
 
 (defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
@@ -588,7 +598,7 @@
 (defn t-pat [tenv pat nidx]
     (let [
         l                    (pat-loc pat)
-        _                    (trace l [(tcolor "blue") (ttext "enter")])
+        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
         (,, type subst nidx) (match pat
                                  (pany nl)             (let [(, var nidx) (new-type-var "any" nidx nl)] (,, var map/nil nidx))
                                  (pvar name nl)        (let [(, var nidx) (new-type-var name nidx nl)]
@@ -632,8 +642,10 @@
                                                                    (map/map (type-apply subst) bindings)
                                                                    nidx)))
         _                    (trace
-                                 l
-                                     [(tcolor "white") (ttext "exit") (tfmt type type-to-string-raw)])]
+                                 [(tloc l)
+                                     (tcolor "white")
+                                     (ttext "exit")
+                                     (tfmt type type-to-string-raw)])]
         (,, type subst nidx)))
 
 (defn infer [tenv expr]
@@ -1038,7 +1050,7 @@
                         "trace"
                             (kk
                             (tfns
-                                [tint (tapp (tcon "array" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
+                                [(tapp (tcon "array" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
                                     (tcon "()" -1))))
                         (, "unescapeString" (concrete (tfns [tstring] tstring)))
                         (, "int-to-string" (concrete (tfns [tint] tstring)))
@@ -1085,6 +1097,8 @@
                         (tflash bool)
                         (ttext string)
                         (tval a)
+                        (tloc int)
+                        (tnamed (trace-fmt a))
                         (tfmted a string)
                         (tfmt a (fn [a] string))))]
                 infer-stmt)))
