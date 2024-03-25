@@ -11,6 +11,7 @@ import {
     adaptiveBounce,
     loadEvaluator,
     allNodesBetween,
+    Evt,
 } from './Store';
 
 export const useStore = (initialState: NUIState) => {
@@ -21,7 +22,16 @@ export const useStore = (initialState: NUIState) => {
         const nodeListeners: {
             [key: string]: ((state: NUIState, results: NUIResults) => void)[];
         } = {};
-        const everyListeners: ((state: NUIState) => void)[] = [];
+
+        const evtListeners: Record<Evt, ((state: NUIState) => void)[]> = {
+            all: [],
+            hover: [],
+            map: [],
+            nsMap: [],
+            results: [],
+            selection: [],
+        };
+
         let state = initialState;
         let evaluator: FullEvalator<any, any, any> | null = null;
         let debugExecOrder = { current: false };
@@ -29,7 +39,9 @@ export const useStore = (initialState: NUIState) => {
         const updateResults = adaptiveBounce(() => {
             console.log('updating results');
             results = getResults(state, evaluator, debugExecOrder.current);
-            everyListeners.forEach((f) => f(state));
+
+            evtListeners.results.forEach((f) => f(state));
+            evtListeners.all.forEach((f) => f(state));
         });
 
         loadEvaluator(state.evaluator, (ev, async) => {
@@ -37,7 +49,9 @@ export const useStore = (initialState: NUIState) => {
             console.log('loaded new', async);
             if (async) {
                 results = getResults(state, evaluator, debugExecOrder.current);
-                everyListeners.forEach((f) => f(state));
+
+                evtListeners.results.forEach((f) => f(state));
+                evtListeners.all.forEach((f) => f(state));
             }
         });
 
@@ -60,7 +74,10 @@ export const useStore = (initialState: NUIState) => {
                             evaluator,
                             debugExecOrder.current,
                         );
-                        everyListeners.forEach((f) => f(state));
+
+                        evtListeners.results.forEach((f) => f(state));
+                        evtListeners.all.forEach((f) => f(state));
+                        // everyListeners.forEach((f) => f(state));
                     });
                 }
                 let nextResults = results;
@@ -144,7 +161,22 @@ export const useStore = (initialState: NUIState) => {
 
                 // prevState = state;
                 // prevResults = results;
-                everyListeners.forEach((f) => f(state));
+                // everyListeners.forEach((f) => f(state));
+
+                evtListeners.all.forEach((f) => f(state));
+                if (state.at !== prevState.at) {
+                    evtListeners.selection.forEach((f) => f(state));
+                }
+                if (state.map !== prevState.map) {
+                    evtListeners.map.forEach((f) => f(state));
+                }
+                if (state.nsMap !== prevState.nsMap) {
+                    evtListeners.nsMap.forEach((f) => f(state));
+                }
+                if (state.hover !== prevState.hover) {
+                    evtListeners.hover.forEach((f) => f(state));
+                }
+
                 const f = performance.now();
                 // console.log(
                 //     `Reduce ${b - a}\nResults ${c - b}\nSelection calc ${
@@ -173,12 +205,12 @@ export const useStore = (initialState: NUIState) => {
                     }
                 };
             },
-            everyChange(fn) {
-                everyListeners.push(fn);
+            on(evt, fn) {
+                evtListeners[evt].push(fn);
                 return () => {
-                    const idx = everyListeners.indexOf(fn);
+                    const idx = evtListeners[evt].indexOf(fn);
                     if (idx !== -1) {
-                        everyListeners.splice(idx, 1);
+                        evtListeners[evt].splice(idx, 1);
                     }
                 };
             },

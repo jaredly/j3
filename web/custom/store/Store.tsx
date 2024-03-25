@@ -44,6 +44,8 @@ export type NUIResults = {
     pluginResults: { [nsLoc: number]: any };
 };
 
+export type Evt = 'selection' | 'hover' | 'map' | 'nsMap' | 'all' | 'results';
+
 export type Store = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
@@ -54,7 +56,8 @@ export type Store = {
         idx: number,
         fn: (state: NUIState, results: NUIResults) => void,
     ): () => void;
-    everyChange(fn: (state: NUIState) => void): () => void;
+    // everyChange(fn: (state: NUIState) => void): () => void;
+    on(evt: Evt, fn: (state: NUIState) => void): () => void;
     setDebug(execOrder: boolean): void;
 };
 
@@ -153,7 +156,7 @@ const noopStore: Store = {
     onChange(idx, fn) {
         throw new Error('');
     },
-    everyChange(fn) {
+    on(evt, fn) {
         throw new Error('');
     },
     reg(a, b, c, d) {
@@ -242,14 +245,14 @@ export const useMemoEqual = <T,>(fn: () => T, deps: any[]): T => {
     }
     return last.current!;
 };
-// ok
+
 export const useExpanded = (idx: number): Node => {
     const store = useContext(StoreCtx);
     const [v, setV] = useState(() => fromMCST(idx, store.getState().map));
     const latest = useLatest(v);
     useEffect(
         () =>
-            store.everyChange((state) => {
+            store.on('map', (state) => {
                 const nw = fromMCST(idx, state.map);
                 if (!equal(nw, latest.current)) {
                     setV(nw);
@@ -267,7 +270,7 @@ export const useGlobalState = (store: Store) => {
     });
     useEffect(
         () =>
-            store.everyChange(() =>
+            store.on('all', () =>
                 setState({
                     state: store.getState(),
                     results: store.getResults(),
@@ -331,6 +334,8 @@ export const useNode = (idx: number, path: Path[]): Values => {
             const path = pathRef.current;
             const state = store.getState();
 
+            console.log(`doin a calc`, path);
+
             // man we're running this calculation quite a lot
             const sel = normalizeSelections(state.at);
             const edgeSelected = sel.some(
@@ -346,7 +351,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
         },
         (notify) => {
             let la = store.getState().at;
-            store.everyChange((f) => {
+            store.on('selection', (f) => {
                 if (f.at !== la) {
                     la = f.at;
                 }

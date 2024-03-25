@@ -67,7 +67,7 @@ export const RichText = ({
             }, 100);
         }
 
-        return store.everyChange(() => {
+        return store.on('selection', () => {
             const state = store.getState();
             const at = state.at[0]?.start;
             const last = at[at.length - 1];
