@@ -115,6 +115,7 @@ export const adaptiveBounce = (fn: () => void) => {
         const start = performance.now();
         fn();
         lastCost = performance.now() - start;
+        console.log('last cost', lastCost);
     };
 
     return () => {

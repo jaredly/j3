@@ -2,7 +2,7 @@
 
 # How to be demo-ready
 
-- [ ] need better perf on large documents (I think it's that I'm not memoizing toplevels)
+- [x] need better perf on large documents (I think it's that I'm not memoizing toplevels)
   - [x] dont recalc on hovers
   - [x] ns Keyed on just ID (not path) so I can reuse much more
   - [x] make sure cover selection is owkring

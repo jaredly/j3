@@ -37,6 +37,7 @@ export const useStore = (initialState: NUIState) => {
         let debugExecOrder = { current: false };
 
         const updateResults = adaptiveBounce(() => {
+            // console.log('nottt updating results');
             console.log('updating results');
             results = getResults(state, evaluator, debugExecOrder.current);
 
@@ -97,57 +98,58 @@ export const useStore = (initialState: NUIState) => {
                 }
 
                 // Send out the infos
-                const selChange: { [key: number]: boolean } = {};
-                if (state.at !== prevState.at) {
-                    prevState.at.forEach((cursor) => {
-                        cursor.start.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-                        cursor.end?.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-
-                        if (cursor.end) {
-                            const [start, end] = orderStartAndEnd(
-                                cursor.start,
-                                cursor.end,
-                            );
-                            allNodesBetween(start, end, prevState).forEach(
-                                (idx) => (selChange[idx] = true),
-                            );
-                        }
-                    });
-                    state.at.forEach((cursor) => {
-                        cursor.start.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-                        cursor.end?.forEach(
-                            (item) => (selChange[item.idx] = true),
-                        );
-
-                        if (cursor.end) {
-                            const [start, end] = orderStartAndEnd(
-                                cursor.start,
-                                cursor.end,
-                            );
-                            allNodesBetween(start, end, state).forEach(
-                                (idx) => (selChange[idx] = true),
-                            );
-                        }
-                    });
-
-                    // WE NEED
-                    // TO
-                    // ...
-                    // .....
-                    // `allNodesBetween(path[], path[], nsMap[], map)`
-                }
+                // TODO: This is still a somewhat good idea, but I'll want to
+                // ... have the ability to subscribe to ... just selection changes?
+                // eh maybe not. it's fine.
+                //
+                // const selChange: { [key: number]: boolean } = {};
+                // if (state.at !== prevState.at) {
+                //     prevState.at.forEach((cursor) => {
+                //         cursor.start.forEach(
+                //             (item) => (selChange[item.idx] = true),
+                //         );
+                //         cursor.end?.forEach(
+                //             (item) => (selChange[item.idx] = true),
+                //         );
+                //         if (cursor.end) {
+                //             const [start, end] = orderStartAndEnd(
+                //                 cursor.start,
+                //                 cursor.end,
+                //             );
+                //             allNodesBetween(start, end, prevState).forEach(
+                //                 (idx) => (selChange[idx] = true),
+                //             );
+                //         }
+                //     });
+                //     state.at.forEach((cursor) => {
+                //         cursor.start.forEach(
+                //             (item) => (selChange[item.idx] = true),
+                //         );
+                //         cursor.end?.forEach(
+                //             (item) => (selChange[item.idx] = true),
+                //         );
+                //         if (cursor.end) {
+                //             const [start, end] = orderStartAndEnd(
+                //                 cursor.start,
+                //                 cursor.end,
+                //             );
+                //             allNodesBetween(start, end, state).forEach(
+                //                 (idx) => (selChange[idx] = true),
+                //             );
+                //         }
+                //     });
+                //     // WE NEED
+                //     // TO
+                //     // ...
+                //     // .....
+                //     // `allNodesBetween(path[], path[], nsMap[], map)`
+                // }
                 const d = performance.now();
 
                 Object.keys(nodeListeners).forEach((k) => {
                     const idx = +k;
                     let changed =
-                        selChange[idx] ||
+                        // selChange[idx] ||
                         state.map[idx] !== prevState.map[idx] ||
                         state.meta[idx] !== prevState.meta[idx] ||
                         !equal(results.errors[idx], prevResults.errors[idx]) ||

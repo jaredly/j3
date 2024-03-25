@@ -68,12 +68,6 @@
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
-
-
-
-
-
-
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
