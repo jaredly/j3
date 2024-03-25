@@ -1,4 +1,11 @@
 
+
+# How to be demo-ready
+
+- [ ] need better perf on large documents (I think it's that I'm not memoizing toplevels)
+- [ ] need a `trace` function that can be accessed in-line
+
+
 # Getting tupled-builtins
 
 OK so

@@ -9,7 +9,7 @@ import {
 import { valueToString } from './reduce';
 import { findTops } from './findTops';
 import { arr, expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
-import { sanitize } from './round-1/builtins';
+import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
 import { FnsEnv, TraceMap, withTracing } from './loadEv';

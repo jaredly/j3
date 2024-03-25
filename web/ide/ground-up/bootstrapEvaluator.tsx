@@ -2,7 +2,7 @@ import { Errors, FullEvalator, bootstrap } from './Evaluators';
 import { valueToString } from './reduce';
 import { findTops } from './findTops';
 import { parseExpr, parseStmt, stmt } from './round-1/parse';
-import { sanitize } from './round-1/builtins';
+import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
 import { sanitizedEnv } from './loadEv';
 

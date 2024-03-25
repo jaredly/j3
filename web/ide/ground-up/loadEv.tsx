@@ -1,7 +1,7 @@
 import { FullEvalator, bootstrap } from './Evaluators';
 import { urlForId, valueToString } from './reduce';
 import { expr, stmt } from './round-1/parse';
-import { sanitize } from './round-1/builtins';
+import { sanitize } from './round-1/sanitize';
 import { MetaData, NUIState } from '../../custom/UIState';
 import { bootstrapEvaluator } from './bootstrapEvaluator';
 import { fnsEvaluator } from './fnsEvaluator';

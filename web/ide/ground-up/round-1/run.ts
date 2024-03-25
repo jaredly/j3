@@ -4,7 +4,7 @@ import { evalExpr } from './bootstrap';
 import { parseByCharacter } from '../../../../src/parse/parse.js';
 import { fromMCST } from '../../../../src/types/mcst.js';
 import { Ctx, parseStmt, stmt } from './parse';
-import { sanitize } from './builtins';
+import { sanitize } from './sanitize';
 
 const [_, __, arg, outfile] = process.argv;
 if (!existsSync(arg)) {
