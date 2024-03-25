@@ -209,13 +209,6 @@ export const getValues = (
             nnode: { type: 'text', text: '' },
         };
     }
-    // const sel = normalizeSelections(state.at);
-    // const edgeSelected = sel.some(
-    //     (s) =>
-    //         s.start[s.start.length - 1].idx === idx ||
-    //         (s.end && s.end[s.end.length - 1].idx === idx),
-    // );
-    // const coverageLevel = isCoveredBySelection(sel, path, state.map);
     const nnode = getNestedNodes(
         state.map[idx],
         state.map,
@@ -228,9 +221,6 @@ export const getValues = (
         dispatch: store.dispatch,
         meta: state.meta?.[idx] ?? null,
         display: results.display[idx],
-        // selection: coverageLevel
-        //     ? { edge: edgeSelected, coverage: coverageLevel }
-        //     : undefined,
         node: state.map[idx],
         reg: store.reg,
         nnode,
@@ -303,14 +293,14 @@ export const useSubscribe = <T,>(
             saved.current = calc();
         }
     }, deps);
-    const [_, tick] = useState(null);
+    const [_, tick] = useState(0);
 
     useEffect(() => {
         sub(() => {
             const nw = calc();
             if (!equal(nw, saved.current)) {
                 saved.current = nw;
-                tick(null);
+                tick((t) => t + 1);
             }
         });
     }, []);
@@ -333,8 +323,6 @@ export const useNode = (idx: number, path: Path[]): Values => {
         () => {
             const path = pathRef.current;
             const state = store.getState();
-
-            console.log(`doin a calc`, path);
 
             // man we're running this calculation quite a lot
             const sel = normalizeSelections(state.at);
