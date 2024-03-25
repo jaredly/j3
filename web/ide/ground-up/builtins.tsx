@@ -3,15 +3,17 @@ import { valueToString } from './reduce';
 import { slash } from './round-1/bootstrap';
 import { sanitize } from './round-1/sanitize';
 import { arr, unwrapArray, wrapArray } from './round-1/parse';
+import { Trace } from './loadEv';
+
+export type Tracer = (
+    loc: number,
+    trace: Trace[],
+    // v: any,
+    // info: NonNullable<MetaData['trace']>,
+) => void;
 
 export function builtins() {
-    let tracer:
-        | null
-        | ((
-              loc: number,
-              v: any,
-              info: NonNullable<MetaData['trace']>,
-          ) => void) = null;
+    let tracer: null | Tracer = null;
     let env = {
         // Math
         '+': (a: number) => (b: number) => a + b,
@@ -86,15 +88,26 @@ export function builtins() {
             return new Function(k, 'return ' + v)(obj);
         },
         sanitize,
-        $setTracer(nw: null | ((loc: number, value: any) => void)) {
-            // console.log('SET TRACRE', !!nw);
+        $setTracer(nw: null | Tracer) {
             tracer = nw;
         },
         $trace(loc: number, info: any, value: any) {
-            // console.log('TRACE MAYBE', tracer, loc, value);
-            tracer?.(loc, value, info);
+            if (tracer) {
+                tracer(loc, [
+                    info.formatter
+                        ? { type: 'tfmt', 0: value, 1: info.formatter }
+                        : { type: 'tval', 0: value },
+                ]);
+            }
+            // tracer?.(loc, value, info);
             return value;
         },
+
+        trace: (loc: number) => (things: arr<Trace>) => {
+            console.log('traceeee', loc, things);
+            tracer?.(loc, unwrapArray(things));
+        },
+
         // Just handy
         'replace-all': (a: string) => (b: string) => (c: string) =>
             a.replaceAll(b, c),

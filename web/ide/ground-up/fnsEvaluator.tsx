@@ -261,7 +261,7 @@ export const fnsEvaluator = (
                 try {
                     env.typeCheck = data['infer_stmt'](env.typeCheck)(stmt);
                 } catch (err) {
-                    console.error(err);
+                    // console.error(err);
                     return {
                         env,
                         display: new MyEvalError(`Type Error`, err as Error),

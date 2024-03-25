@@ -569,51 +569,48 @@
                 nidx)))
 
 (defn t-pat [tenv pat nidx]
-    (map-,,-1
-        (fn [x] x)
-            ;(type/set-loc (pat-loc pat))
-            (match pat
-            (pany nl)             (let [(, var nidx) (new-type-var "any" nidx nl)] (,, var map/nil nidx))
-            (pvar name nl)        (let [(, var nidx) (new-type-var name nidx nl)]
-                                      (,, var (map/set map/nil name var) nidx))
-            (pstr _ nl)           (,, (tcon "string" nl) map/nil nidx)
-            (pprim (pbool _ _) l) (,, (tcon "bool" l) map/nil nidx)
-            (pprim (pint _ _) l)  (,, (tcon "int" l) map/nil nidx)
-            (pcon name args l)    (let [
-                                      (tconstructor free cargs cres) (match (tenv/con tenv name)
-                                                                         (none)   (fatal "Unknown constructor: ${name}")
-                                                                         (some v) v)
-                                      (,, tres tsubst nidx)          (instantiate (scheme free (type/set-loc l cres)) nidx l)
-                                      (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
-                                      cargs                          (map cargs (type-apply tsubst))
-                                      zipped                         (zip args cargs)
-                                      _                              (if (!= (len args) (len cargs))
-                                                                         (fatal
-                                                                             "Wrong number of arguments to constructor ${
-                                                                                 name
-                                                                                 } (${
-                                                                                 (its l)
-                                                                                 }): given ${
-                                                                                 (its (len args))
-                                                                                 }, but the type constructor has ${
-                                                                                 (its (len cargs))
-                                                                                 }")
-                                                                             0)
-                                      (,, subst bindings nidx)       (foldl
-                                                                         (,, map/nil map/nil nidx)
-                                                                             zipped
-                                                                             (fn [(,, subst bindings nidx) (, arg carg)]
-                                                                             (let [
-                                                                                 (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
-                                                                                 (, unified-subst nidx)      (unify pat-type carg nidx)]
-                                                                                 (,,
-                                                                                     (compose-subst unified-subst subst)
-                                                                                         (map/merge bindings pat-bind)
-                                                                                         nidx))))]
-                                      (,,
-                                          (type-apply subst tres)
-                                              (map/map (type-apply subst) bindings)
-                                              nidx)))))
+    (match pat
+        (pany nl)             (let [(, var nidx) (new-type-var "any" nidx nl)] (,, var map/nil nidx))
+        (pvar name nl)        (let [(, var nidx) (new-type-var name nidx nl)]
+                                  (,, var (map/set map/nil name var) nidx))
+        (pstr _ nl)           (,, (tcon "string" nl) map/nil nidx)
+        (pprim (pbool _ _) l) (,, (tcon "bool" l) map/nil nidx)
+        (pprim (pint _ _) l)  (,, (tcon "int" l) map/nil nidx)
+        (pcon name args l)    (let [
+                                  (tconstructor free cargs cres) (match (tenv/con tenv name)
+                                                                     (none)   (fatal "Unknown constructor: ${name}")
+                                                                     (some v) v)
+                                  (,, tres tsubst nidx)          (instantiate (scheme free (type/set-loc l cres)) nidx l)
+                                  (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
+                                  cargs                          (map cargs (type-apply tsubst))
+                                  zipped                         (zip args cargs)
+                                  _                              (if (!= (len args) (len cargs))
+                                                                     (fatal
+                                                                         "Wrong number of arguments to constructor ${
+                                                                             name
+                                                                             } (${
+                                                                             (its l)
+                                                                             }): given ${
+                                                                             (its (len args))
+                                                                             }, but the type constructor has ${
+                                                                             (its (len cargs))
+                                                                             }")
+                                                                         0)
+                                  (,, subst bindings nidx)       (foldl
+                                                                     (,, map/nil map/nil nidx)
+                                                                         zipped
+                                                                         (fn [(,, subst bindings nidx) (, arg carg)]
+                                                                         (let [
+                                                                             (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
+                                                                             (, unified-subst nidx)      (unify pat-type carg nidx)]
+                                                                             (,,
+                                                                                 (compose-subst unified-subst subst)
+                                                                                     (map/merge bindings pat-bind)
+                                                                                     nidx))))]
+                                  (,,
+                                      (type-apply subst tres)
+                                          (map/map (type-apply subst) bindings)
+                                          nidx))))
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))

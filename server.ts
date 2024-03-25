@@ -64,12 +64,17 @@ const fileToJs = (state: NUIState) => {
 
         const ev = evaluatorFromText(state.evaluator.join(':'), text);
         if (ev?.toFile) {
-            const res = ev.toFile(state);
-            if (Object.keys(res.errors).length) {
-                console.log(`Failed to turn to file`, res.errors);
+            try {
+                const res = ev.toFile(state);
+                if (Object.keys(res.errors).length) {
+                    console.log(`Failed to turn to file`, res.errors);
+                    return;
+                }
+                return res.js;
+            } catch (err) {
+                console.log('Failed to do turn file to js');
                 return;
             }
-            return res.js;
         }
     }
 };

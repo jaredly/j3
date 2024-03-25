@@ -1641,7 +1641,7 @@ throw new Error('let pattern not matched 1285. ' + valueToString($target));})(/*
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1136');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<1136*/ }/*<1136*/;
 
-const t_pat = /*2466*/function name_2466(tenv) { return /*2466*/function name_2466(pat) { return /*2466*/function name_2466(nidx) { return /*10890*//*10890*//*10891*/map_$co$co_1/*<10891*/(/*10890*//*11694*/function name_11694(x) { return /*11698*/x/*<11698*/ }/*<11694*/)/*<10890*/(/*10890*//*2475*/(function match_2475($target) {
+const t_pat = /*2466*/function name_2466(tenv) { return /*2466*/function name_2466(pat) { return /*2466*/function name_2466(nidx) { return /*2475*/(function match_2475($target) {
 if ($target.type === "pany") {
 {
 let nl = $target[0];
@@ -1823,7 +1823,7 @@ throw new Error('let pattern not matched 3482. ' + valueToString($target));})(/*
 }
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 2475');})(/*!*//*2477*/pat/*<2477*/)/*<2475*/)/*<10890*/ }/*<2466*/ }/*<2466*/ }/*<2466*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 2475');})(/*!*//*2477*/pat/*<2477*/)/*<2475*/ }/*<2466*/ }/*<2466*/ }/*<2466*/;
 
 const t_expr = /*1654*/function name_1654(tenv) { return /*1654*/function name_1654(expr) { return /*1654*/function name_1654(nidx) { return /*1664*/(function match_1664($target) {
 if ($target.type === "evar") {

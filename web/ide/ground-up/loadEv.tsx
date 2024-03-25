@@ -96,11 +96,22 @@ export const evaluatorFromText = (
     return null;
 };
 
-export type TraceMap = {
-    [loc: number]: {
-        [loc: number]: { value: any; at: number; formatted: string }[];
-    };
-};
+export type Trace =
+    | { type: 'tcolor'; 0: string }
+    | { type: 'tbold'; 0: boolean }
+    | { type: 'titalic'; 0: boolean }
+    | { type: 'tflash'; 0: boolean }
+    | { type: 'ttext'; 0: string }
+    | { type: 'tval'; 0: any }
+    | { type: 'tfmted'; 0: any; 1: string }
+    | { type: 'tfmt'; 0: any; 1: (v: any) => string };
+
+export type TraceMap = { [loc: number]: { loc: number; trace: Trace[] }[] };
+// export type TraceMap = {
+//     [loc: number]: {
+//         [loc: number]: { value: any; at: number; formatted: string }[];
+//     };
+// };
 
 export function withTracing(
     traceMap: TraceMap,
@@ -108,35 +119,67 @@ export function withTracing(
     san: { [key: string]: any },
     env: FnsEnv,
 ) {
-    let count = 0;
-    const trace: { [key: number]: any[] } = (traceMap[loc] = {});
-    san.$setTracer(
-        (loc: number, value: any, info: NonNullable<MetaData['trace']>) => {
-            if (!trace[loc]) {
-                trace[loc] = [];
-            }
-            let formatter = info.formatter
-                ? env.values[info.formatter]
-                : valueToString;
-            let formatted = formatter(value);
-            if (typeof formatted !== 'string') {
-                console.warn(
-                    'not formatted',
-                    formatted,
-                    value,
-                    info.formatter,
-                    env.values[info.formatter!],
-                );
-                formatted = 'bad format';
-            }
-            trace[loc].push({
-                value,
-                at: count++,
-                formatted,
-            });
-            return value;
-        },
-    );
+    // let count = 0;
+    const trace: TraceMap[0] = [];
+    traceMap[loc] = trace;
+    // const trace: { [key: number]: any[] } = (traceMap[loc] = {});
+    san.$setTracer((loc: number, traces: Trace[]) => {
+        trace.push({
+            loc,
+            trace: traces.map((trace) => {
+                if (trace.type === 'tval') {
+                    return {
+                        type: 'tfmted',
+                        0: trace[0],
+                        1: valueToString(trace[0]),
+                    };
+                }
+                if (trace.type === 'tfmt') {
+                    if (typeof trace[1] === 'string') {
+                        const formatter = env.values[trace[1]];
+                        return {
+                            type: 'tfmted',
+                            0: trace[0],
+                            1: formatter(trace[0]),
+                        };
+                    }
+                    return {
+                        type: 'tfmted',
+                        0: trace[0],
+                        1: trace[1](trace[0]),
+                    };
+                }
+                return trace;
+            }),
+        });
+        // // if (!trace[loc]) {
+        // //     trace[loc] = [];
+        // // }
+        // let formatter = info.formatter
+        //     ? env.values[info.formatter]
+        //     : valueToString;
+        // let formatted = formatter(value);
+        // if (typeof formatted !== 'string') {
+        //     console.warn(
+        //         'not formatted',
+        //         formatted,
+        //         value,
+        //         info.formatter,
+        //         env.values[info.formatter!],
+        //     );
+        //     formatted = 'bad format';
+        // }
+        // trace.push({
+        //     loc,
+        //     trace: { type: 'tfmted', 0: value, 1: formatted },
+        // });
+        // trace[loc].push({
+        //     value,
+        //     at: count++,
+        //     formatted,
+        // });
+        // return value;
+    });
 }
 
 export function sanitizedEnv(benv: { [key: string]: any }) {

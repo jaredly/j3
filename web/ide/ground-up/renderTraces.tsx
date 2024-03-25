@@ -35,19 +35,22 @@ export function renderTraces(
                 Top trace: {top}
             </div>
             <div style={{ display: 'grid' }}>
-                {Object.entries(traces)
-                    .flatMap(([k, v]) => v.map((v) => [k, v] as const))
-                    .sort((a, b) => a[1].at - b[1].at)
-                    .map(([key, value], i) => {
-                        const node = state.map[+key];
+                {traces
+                    // .flatMap(([k, v]) => v.map((v) => [k, v] as const))
+                    // .sort((a, b) => a[1].at - b[1].at)
+                    // .filter((v) =>
+                    //     v.trace.some((trace) => trace.type === 'tfmted'),
+                    // )
+                    .map(({ loc, trace }, i) => {
+                        const node = state.map[loc];
                         return (
                             <div
                                 key={i}
                                 style={{ marginBottom: 5, display: 'contents' }}
                                 onMouseEnter={() => {
                                     const node =
-                                        state.regs[+key]?.main ??
-                                        state.regs[+key]?.outside;
+                                        state.regs[loc]?.main ??
+                                        state.regs[loc]?.outside;
                                     if (node) {
                                         node.node.style.outline =
                                             '1px solid red';
@@ -55,8 +58,8 @@ export function renderTraces(
                                 }}
                                 onMouseLeave={() => {
                                     const node =
-                                        state.regs[+key]?.main ??
-                                        state.regs[+key]?.outside;
+                                        state.regs[loc]?.main ??
+                                        state.regs[loc]?.outside;
                                     if (node) {
                                         node.node.style.outline = 'unset';
                                     }
@@ -71,10 +74,7 @@ export function renderTraces(
                                 >
                                     <div
                                         onClick={() => {
-                                            const path = pathForIdx(
-                                                +key,
-                                                state,
-                                            );
+                                            const path = pathForIdx(loc, state);
                                             if (path) {
                                                 store.dispatch({
                                                     type: 'select',
@@ -89,7 +89,7 @@ export function renderTraces(
                                     >
                                         {node.type === 'identifier'
                                             ? node.text
-                                            : key}
+                                            : loc}
                                     </div>
                                 </div>
                                 <div
@@ -100,7 +100,7 @@ export function renderTraces(
                                         gridColumn: 2,
                                     }}
                                 >
-                                    {value.at}
+                                    {i}
                                 </div>
                                 <div
                                     style={{
@@ -110,7 +110,15 @@ export function renderTraces(
                                         overflow: 'auto',
                                     }}
                                 >
-                                    {value.formatted}
+                                    {trace
+                                        .map((t) =>
+                                            t.type === 'tfmted'
+                                                ? t[1]
+                                                : t.type === 'ttext'
+                                                ? t[0]
+                                                : null,
+                                        )
+                                        .join('\n')}
                                 </div>
                             </div>
                         );

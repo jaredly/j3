@@ -7,27 +7,23 @@ import {
     useRef,
     useState,
 } from 'react';
-import { Action, MetaData, NUIState, UIState } from '../UIState';
+import { Action, MetaData, NUIState } from '../UIState';
 import { Display } from '../../../src/to-ast/library';
 import { NNode, getNestedNodes } from '../../../src/state/getNestedNodes';
 import { Node } from '../../../src/types/cst';
-import { MNode, Map, fromMCST } from '../../../src/types/mcst';
+import { MNode, fromMCST } from '../../../src/types/mcst';
 import { Reg } from '../types';
 import { CoverageLevel } from '../../../src/state/clipboard';
 import { Path } from '../../store';
 import { isCoveredBySelection } from '../isCoveredBySelection';
 import equal from 'fast-deep-equal';
 import { useLatest } from '../useNSDrag';
-import { normalizeSelections, useRegs } from '../CardRoot';
-import { debounce } from '../../ide/ground-up/reduce';
-import { loadEv } from '../../ide/ground-up/loadEv';
+import { normalizeSelections } from '../CardRoot';
+import { TraceMap, loadEv } from '../../ide/ground-up/loadEv';
 import {
     FullEvalator,
-    LocError,
-    MyEvalError,
     bootstrap,
     repr,
-    Produce as Produce,
     ProduceItem,
 } from '../../ide/ground-up/Evaluators';
 import { goRight } from '../../../src/state/navigate';
@@ -40,7 +36,7 @@ export type NUIResults = {
     hashNames: { [loc: string]: string };
     produce: { [key: string]: ProduceItem[] };
     env: any;
-    traces: { [loc: number]: { [loc: number]: any[] } };
+    traces: TraceMap;
     pluginResults: { [nsLoc: number]: any };
 };
 

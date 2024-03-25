@@ -21,7 +21,7 @@ export const getResults = <Env, Stmt, Expr>(
         hashNames: {},
         produce: {},
         env: null,
-        traces: {},
+        traces: [],
         pluginResults: {},
     };
     const tops = findTops(state);
