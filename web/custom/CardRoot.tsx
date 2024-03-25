@@ -89,19 +89,14 @@ export function CardRoot({
             }}
         >
             <NSTop
-                reg={reg}
                 debug={debug}
-                ev={ev}
                 nsReg={nsReg}
                 drag={dragObj}
                 ns={state.nsMap[state.cards[card].top] as RealizedNamespace}
                 path={cardPath}
                 state={state}
                 dispatch={dispatch}
-                // results={results}
                 produce={produce}
-                selections={selections}
-                env={env}
             />
             {dragElements}
             {invalid ? (

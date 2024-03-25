@@ -2,23 +2,14 @@ import React, { useMemo } from 'react';
 import { Cursor } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Render, RenderNNode } from './Render';
-import {
-    Action,
-    NUIState,
-    NamespacePlugin,
-    RealizedNamespace,
-} from './UIState';
-import { Reg, RenderProps } from './types';
-import { Debug, Results } from '../ide/ground-up/GroundUp';
+import { Action, NUIState, RealizedNamespace } from './UIState';
+import { RenderProps } from './types';
+import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { NsReg, Drag } from './useNSDrag';
-import { fromMCST } from '../../src/types/mcst';
 import {
     MyEvalError,
-    FullEvalator,
     LocError,
-    bootstrap,
-    Produce,
     ProduceItem,
 } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
@@ -27,12 +18,8 @@ import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const PluginRender = ({
     ns,
-    env,
-    ev,
     ...props
 }: RenderProps & {
-    ev: FullEvalator<any, any, any>;
-    env: any;
     ns: RealizedNamespace;
 }) => {
     const pid = typeof ns.plugin === 'string' ? ns.plugin : ns.plugin!.id;
@@ -69,26 +56,18 @@ export const hasErrors = (id: number, store: Store): boolean => {
 export function NSTop({
     ns,
     state,
-    reg,
     dispatch,
-    selections,
     produce,
     path,
     nsReg,
     drag,
-    env,
-    ev,
     debug,
 }: {
-    ev: FullEvalator<any, any, any> | void | null;
-    env: any;
     nsReg: NsReg;
     path: Path[];
     dispatch: React.Dispatch<Action>;
     state: NUIState;
-    reg: Reg;
     ns: RealizedNamespace;
-    selections: Cursor[];
     produce: { [key: number]: ProduceItem[] };
     drag: Drag;
     debug: Debug;
@@ -147,24 +126,12 @@ export function NSTop({
                                 }
                             }}
                         >
-                            {ns.plugin && ev ? (
+                            {ns.plugin ? (
                                 <PluginRender
                                     ns={ns}
-                                    env={env}
-                                    ev={ev}
-                                    // plugin={
-                                    //     plugins.find((p) => p.id === ns.plugin)!
-                                    // }
                                     debug={false}
                                     idx={ns.top}
-                                    // reg={reg}
-                                    // map={state.map}
                                     firstLineOnly={ns.collapsed}
-                                    // display={results.display ?? empty}
-                                    // hashNames={results.hashNames ?? empty}
-                                    // errors={results.errors ?? empty}
-                                    // selection={selections}
-                                    // dispatch={dispatch}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },
                                     ])}
@@ -173,14 +140,7 @@ export function NSTop({
                                 <Render
                                     debug={debug.ids}
                                     idx={ns.top}
-                                    // reg={reg}
-                                    // map={state.map}
                                     firstLineOnly={ns.collapsed}
-                                    // display={results.display ?? empty}
-                                    // hashNames={results.hashNames ?? empty}
-                                    // errors={results.errors ?? empty}
-                                    // selection={selections}
-                                    // dispatch={dispatch}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },
                                     ])}
@@ -215,14 +175,11 @@ export function NSTop({
                         .map((child, i) =>
                             child.type === 'normal' ? (
                                 <NSTop
-                                    env={env}
+                                    key={child.top}
                                     debug={debug}
-                                    ev={ev}
-                                    reg={reg}
                                     drag={drag}
                                     nsReg={nsReg}
                                     produce={produce}
-                                    key={child.top}
                                     ns={child}
                                     path={path.concat({
                                         type: 'ns' as const,
@@ -231,8 +188,6 @@ export function NSTop({
                                     })}
                                     state={state}
                                     dispatch={dispatch}
-                                    // results={results}
-                                    selections={selections}
                                 />
                             ) : null,
                         )}
