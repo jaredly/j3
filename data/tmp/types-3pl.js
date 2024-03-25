@@ -1825,7 +1825,7 @@ throw new Error('let pattern not matched 3482. ' + valueToString($target));})(/*
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 2475');})(/*!*//*2477*/pat/*<2477*/)/*<2475*/)/*<10890*/ }/*<2466*/ }/*<2466*/ }/*<2466*/;
 
-const t_expr = /*1654*/function name_1654(tenv) { return /*1654*/function name_1654(expr) { return /*1654*/function name_1654(nidx) { return /*10806*//*10806*//*10807*/map_$co$co_2/*<10807*/(/*10806*//*11681*/function name_11681(x) { return /*11686*/x/*<11686*/ }/*<11681*/)/*<10806*/(/*10806*//*1664*/(function match_1664($target) {
+const t_expr = /*1654*/function name_1654(tenv) { return /*1654*/function name_1654(expr) { return /*1654*/function name_1654(nidx) { return /*1664*/(function match_1664($target) {
 if ($target.type === "evar") {
 if ($target[0] === "()"){
 {
@@ -2191,7 +2191,7 @@ throw new Error('let pattern not matched 2259. ' + valueToString($target));})(/*
 }
 }
 return /*2064*//*2065*/fatal/*<2065*/(/*2064*//*2066*/`cannot infer type for ${/*2247*//*2249*/valueToString/*<2249*/(/*2247*//*2250*/expr/*<2250*/)/*<2247*/}`/*<2066*/)/*<2064*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 1664');})(/*!*//*1666*/expr/*<1666*/)/*<1664*/)/*<10806*/ }/*<1654*/ }/*<1654*/ }/*<1654*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1664');})(/*!*//*1666*/expr/*<1666*/)/*<1664*/ }/*<1654*/ }/*<1654*/ }/*<1654*/;
 
 const pat_and_body = /*4282*/function name_4282(tenv) { return /*4282*/function name_4282(pat) { return /*4282*/function name_4282(body) { return /*4282*/function name_4282($fn_arg) { return /*4282*/(function match_4282($target) {
 if ($target.type === ",,") {

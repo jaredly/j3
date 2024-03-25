@@ -71,7 +71,7 @@ export function CardRoot({
     return (
         <div
             style={{
-                maxWidth: 1400,
+                // maxWidth: 1400,
                 overflow: 'auto',
             }}
             {...dragProps}

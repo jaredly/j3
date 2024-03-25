@@ -20,6 +20,90 @@ SO
   - it gets its own AST node??? naw. can't be.
 
 
+
+
+Conceptually
+is it a little weird
+that, as far as types go
+most constructors get one thing
+but tuples get too?
+
+hrm yeah I think to really make it make sense,
+I'll want a `ttuple a b l` and then constructors
+need only to have a single argument.
+[SPOIILERS: NOPE]
+
+
+- etup a b
+- ptup a b
+- pcon a
+
+But the big news for compilation is: If I want to do flattening
+(where (lol a b c) is {type: 'lol', 0: a, 1: b, 2: c}) THEN
+I need type information at compile time.
+Which is not something I've needed so far.
+
+Q: Should I produce a whole 'typed-ast'?
+
+```
+(deftype expr
+    (eprim prim int)
+    (estr string (array (,, expr string int)) int)
+    (evar string int)
+    (elambda string int expr int)
+    (eapp expr expr int)
+    (elet pat expr expr int)
+    (ematch expr (array (, pat expr)) int))
+```
+
+but, like for each of these things, with the way
+type resolution goes, I won't know what the fully
+resolved type of a given thing is, until I've done all of the
+substitutions.
+
+would it be as simple as
+
+```
+(deftype (expr child)
+    (eprim prim int)
+    (estr string (array (,, child string int)) int)
+    (evar string int)
+    (elambda string int child int)
+    (eapp child child int)
+    (elet pat child child int)
+    (ematch child (array (, pat child)) int))
+
+(deftype plain (plain (expr plain)))
+(deftype typed (typed type (expr typed)))
+```
+
+Yeah ok, so that's how to make the AST be able to carry types.
+BUT that still leaves us with the problem of: "at what point
+is a given type fully realized"?
+
+
+but ... I guess I can ... hang on to the `subst` that I finally get,
+and then do a `apply that subst to the whole tree`?
+Yeah I guess.
+
+
+OK FOLKS
+I'm really going to make `(include "somefile")` a thing, I mean let's just do it.
+
+Alsoooo how about macros? yay or nay?
+
+like, the thread macros might be fun?
+
+
+
+
+
+
+
+
+
+
+
 # WRITE A BLOG POST ABOUT CURRYING
 
 Let's talk about auto-currying

@@ -5,6 +5,7 @@ import { sanitize } from './round-1/builtins';
 import { MetaData, NUIState } from '../../custom/UIState';
 import { bootstrapEvaluator } from './bootstrapEvaluator';
 import { fnsEvaluator } from './fnsEvaluator';
+import { builtins } from './builtins';
 
 const jsUrl = (id: string) => urlForId(id) + (id.endsWith('.js') ? '' : '.js');
 
@@ -22,7 +23,7 @@ export const evaluatorFromText = (
     id: string,
     text: string[],
 ): FullEvalator<unknown, stmt & { loc: number }, expr> | null => {
-    const benv = bootstrap.init();
+    const benv = builtins();
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
 

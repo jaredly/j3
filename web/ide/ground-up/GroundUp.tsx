@@ -105,7 +105,7 @@ export const GroundUp = ({
                 padding: 16,
                 cursor: 'text',
                 marginBottom: 300,
-                marginRight: 500,
+                // marginRight: 500,
             }}
         >
             <HiddenInput
