@@ -790,10 +790,6 @@
         [(sexpr expr _)] (infer tenv expr)
         [one ..rest]     (several (infer-stmt tenv one) rest)))
 
-2105
-
-3336
-
 (,
     (fn [x] (type-to-string (several basic x)))
         [(,

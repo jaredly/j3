@@ -1,15 +1,17 @@
+import { useEffect, useState } from 'react';
 import { layout } from '../../../src/layout';
+import { emptyMap } from '../../../src/parse/parse';
+import { paste } from '../../../src/state/clipboard';
 import {
     NsUpdateMap,
     StateChange,
-    StateSelect,
-    StateUpdate,
     applyUpdate,
     getKeyUpdate,
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
 import { CompilationResults, Ctx } from '../../../src/to-ast/library';
-import { ListLikeContents, fromMCST, fromMNode } from '../../../src/types/mcst';
+import { Node } from '../../../src/types/cst';
+import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
 import {
     Action,
     NUIState,
@@ -24,17 +26,11 @@ import {
     undoRedo,
 } from '../../custom/reduce';
 import { verticalMove } from '../../custom/verticalMove';
-import { paste } from '../../../src/state/clipboard';
+import { newResults } from '../Test';
 import { Algo, Trace } from '../infer/types';
+import { findTops, verifyPath } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
 import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
-import { Node } from '../../../src/types/cst';
-import { useState, useEffect } from 'react';
-import { emptyMap } from '../../../src/parse/parse';
-import { eq_eq } from '../infer/mini/infer';
-import { transformNode } from '../../../src/types/transform-cst';
-import { newResults } from '../Test';
-import { findTops, verifyPath } from './findTops';
 
 export const reduceUpdate = (
     state: NUIState,
@@ -333,58 +329,7 @@ export function bootstrapEval(
         }
     });
 }
-export function selfCompileAndEval(
-    parsed: stmt[],
-    env: { [key: string]: any },
-    total: string,
-    produce: { [key: number]: string },
-) {
-    parsed.forEach((stmt, i) => {
-        try {
-            const res = env['compile-st'](stmt);
-            if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                try {
-                    new Function('env', res);
-                    total += res + '\n';
-                } catch (err) {
-                    produce[(stmt as any).loc] +=
-                        'Self-compilation produced errors: ' +
-                        (err as Error).message +
-                        '\n\n' +
-                        res; // '\njs: ' + res;
-                }
-                // produce[(stmt as any).loc] += '\njs: ' + res;
-            } else if (stmt.type === 'sexpr') {
-                const ok = total + '\nreturn ' + res + '}';
-                // produce[(stmt as any).loc] += '\nself-eval: ' + res;
-                // produce[(stmt as any).loc] += + '\nAST: ' + JSON.stringify(stmt);
-                let f;
-                try {
-                    f = new Function('env', ok);
-                } catch (err) {
-                    produce[(stmt as any).loc] +=
-                        `Error self-compiling: ` +
-                        (err as Error).message +
-                        '\n\n' +
-                        ok;
-                    console.log(ok);
-                    return;
-                }
-                try {
-                    produce[(stmt as any).loc] += '\n' + valueToString(f(env));
-                } catch (err) {
-                    console.error(err, stmt, i);
-                    produce[(stmt as any).loc] +=
-                        `Error evaluating (self-compiled): ` +
-                        (err as Error).message;
-                }
-            }
-        } catch (err) {
-            console.error(err);
-            produce[(stmt as any).loc] += (err as Error).message;
-        }
-    });
-}
+
 export function extractBuiltins(raw: string) {
     const names: string[] = getConstNames(raw);
     let res: any;
@@ -405,6 +350,7 @@ export function extractBuiltins(raw: string) {
     });
     return res;
 }
+
 function getConstNames(raw: any) {
     const names: string[] = [];
     (raw as string).replaceAll(/^const ([a-zA-Z0-9_$]+)/gm, (v, name) => {
@@ -486,6 +432,7 @@ export function calcResults(
 
     return results;
 }
+
 export const valueToString = (v: any): string => {
     if (Array.isArray(v)) {
         return `[${v.map(valueToString).join(', ')}]`;
@@ -519,6 +466,7 @@ export const valueToString = (v: any): string => {
 
     return '' + v;
 };
+
 /**
  * Debounce a function.
  *
@@ -560,6 +508,7 @@ export const debounce = <T,>(
         }, time);
     };
 };
+
 const initialState = (): NUIState => {
     const map = emptyMap();
     return {
@@ -589,7 +538,9 @@ const initialState = (): NUIState => {
         },
     };
 };
+
 export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
+
 export const saveState = async (id: string, state: NUIState) => {
     try {
         const res = await fetch(urlForId(id), {
@@ -645,6 +596,7 @@ export function loadState(state: NUIState = initialState()) {
         nidx: () => idx++,
     };
 }
+
 export const useHash = (): string => {
     const [hash, update] = useState(location.hash);
     useEffect(() => {
@@ -656,6 +608,7 @@ export const useHash = (): string => {
     }, []);
     return hash;
 };
+
 export const white = (n: number) => ''.padStart(n, ' ');
 
 export const stringify = (v: any, level: number, max: number): string => {

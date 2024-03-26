@@ -168,9 +168,9 @@ export const fnsEvaluator = (
                     allNames.push(...group.flatMap(({ names }) => names));
                 } else {
                     const { top, stmt, names } = group[0];
-                    if (!names.length && stmt.type === 'sdef') {
-                        allNames.push({ name: stmt[0], loc: top.top });
-                    }
+                    // if (!names.length && stmt.type === 'sdef') {
+                    //     allNames.push({ name: stmt[0], loc: top.top });
+                    // }
                     allNames.push(...names);
                     if (stmt.type === 'sexpr') {
                         if (top.top === target) {
@@ -457,7 +457,6 @@ const compileStmt = (
         };
     }
 
-    // let name = stmt.type === 'sdef' ? stmt[0] : null;
     const name = names?.length ? names[0][0] : null;
 
     try {
@@ -481,7 +480,9 @@ const compileStmt = (
                 };
             }
             env.values[name] = value;
-            display = valueToString(value);
+            if (typeof value !== 'function') {
+                display = valueToString(value);
+            }
         }
 
         env.js.push(js);
