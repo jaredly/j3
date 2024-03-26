@@ -205,7 +205,7 @@ export const fnsEvaluator = (
         },
 
         addStatements(stmts, env, meta, trace) {
-            const display: { [key: number]: Produce } = {};
+            const display: { [key: number]: ProduceItem[] } = {};
             const values: Record<string, any> = {};
             let names:
                 | {
@@ -270,6 +270,10 @@ export const fnsEvaluator = (
                 trace,
                 names,
             );
+
+            Object.keys(stmts).forEach((id) => {
+                display[+id].push(res.display);
+            });
 
             return { env, display, values: res.values, js: res.js };
         },
