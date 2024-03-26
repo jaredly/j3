@@ -173,8 +173,11 @@ export const fnsEvaluator = (
                 env = result.env;
                 allNames.push(...group.flatMap(({ names }) => names));
 
-                if (group[0].top.top === target && result.js) {
-                    // ret = result.values._;
+                if (
+                    group[0].top.top === target &&
+                    'js' in result &&
+                    typeof result.js === 'string'
+                ) {
                     ret = result.js;
                 }
             });

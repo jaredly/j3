@@ -15,15 +15,22 @@ export type ResultsCache = {
     nodes: { [top: number]: { node: Node; ids: string[] } };
     // the result of "infer_stmt"
     // recalculated if (contents) or (types of dependencies) change
-    types: { [top: number]: any };
+    types: {
+        [top: number]:
+            | { type: 'success'; env: any }
+            | { type: 'error'; error: any; previous: any };
+    };
     // results! recalculated if (contents) or (dependencies) change
     results: {
-        [top: number]: {
-            // the things to display
-            produce: ProduceItem[];
-            // any exportable values
-            values: { [name: string]: any };
-        };
+        [top: number]:
+            | { type: 'error'; error: any } // ToDO should I hang on to previous data?
+            | {
+                  type: 'success';
+                  // the things to display
+                  produce: ProduceItem[];
+                  // any exportable values
+                  values: { [name: string]: any };
+              };
     };
 };
 
@@ -85,11 +92,11 @@ export const getResults = <Env, Stmt, Expr>(
             const {
                 top: { plugin },
                 node,
-                stmt,
             } = group[0];
             processPlugin(results, node, plugin, state, evaluator);
             return;
         }
+
         // if (group.length === 1) {
         //     const {
         //         top: { plugin },
