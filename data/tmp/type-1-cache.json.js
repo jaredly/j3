@@ -883,7 +883,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 11632');})(/*!*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 11632');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<11632*/ }/*<11632*/;
 
-const inference = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
+const inference = (v0) => (v1) => (v2) => (v3) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3});
 const analysis = (v0) => (v1) => ({type: "analysis", 0: v0, 1: v1});
 const value = ({type: "value"});
 const type = ({type: "type"});
@@ -2722,7 +2722,16 @@ throw new Error('let pattern not matched 8732. ' + valueToString($target));})(/*
 };
 throw new Error('let pattern not matched 8304. ' + valueToString($target));})(/*!*/)/*<8300*/ }/*<8292*/ }/*<8292*/;
 
-const infer_defns = /*8724*/function name_8724(tenv) { return /*8724*/function name_8724(stmts) { return /*8731*//*8731*//*8731*//*8775*/foldl/*<8775*/(/*8731*//*8776*/tenv/*<8776*/)/*<8731*/(/*8731*//*8777*//*8777*//*8778*/infer_several/*<8778*/(/*8777*//*8779*/tenv/*<8779*/)/*<8777*/(/*8777*//*8780*/stmts/*<8780*/)/*<8777*/)/*<8731*/(/*8731*//*8781*/function name_8781(tenv) { return /*8781*/function name_8781($fn_arg) { return /*8781*/(function match_8781($target) {
+const infer_defns = /*8724*/function name_8724(tenv) { return /*8724*/function name_8724(stmts) { return /*11782*/(function match_11782($target) {
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return /*11789*//*11789*//*11790*/infer_stmt/*<11790*/(/*11789*//*11791*/tenv/*<11791*/)/*<11789*/(/*11789*//*11792*/one/*<11792*/)/*<11789*/
+}
+}
+}
+return /*8731*//*8731*//*8731*//*8775*/foldl/*<8775*/(/*8731*//*8776*/tenv$slnil/*<8776*/)/*<8731*/(/*8731*//*8777*//*8777*//*8778*/infer_several/*<8778*/(/*8777*//*8779*/tenv/*<8779*/)/*<8777*/(/*8777*//*8780*/stmts/*<8780*/)/*<8777*/)/*<8731*/(/*8731*//*8781*/function name_8781(tenv) { return /*8781*/function name_8781($fn_arg) { return /*8781*/(function match_8781($target) {
 if ($target.type === ",") {
 {
 let name = $target[0];
@@ -2732,7 +2741,8 @@ return /*8789*//*8789*//*8789*//*8790*/tenv$slset_type/*<8790*/(/*8789*//*8791*/
 }
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 8781');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8781*/ }/*<8781*/ }/*<8781*/)/*<8731*/ }/*<8724*/ }/*<8724*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8781');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8781*/ }/*<8781*/ }/*<8781*/)/*<8731*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 11782');})(/*!*//*11785*/stmts/*<11785*/)/*<11782*/ }/*<8724*/ }/*<8724*/;
 
 const infer_and_add = /*11669*/function name_11669(tenv) { return /*11669*/function name_11669(stmt) { return /*11676*//*11676*//*11678*/tenv$slmerge/*<11678*/(/*11676*//*11679*/tenv/*<11679*/)/*<11676*/(/*11676*//*11680*//*11680*//*11681*/infer_stmt/*<11681*/(/*11680*//*11682*/tenv/*<11682*/)/*<11680*/(/*11680*//*11683*/stmt/*<11683*/)/*<11680*/)/*<11676*/ }/*<11669*/ }/*<11669*/;
 

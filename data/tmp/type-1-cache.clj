@@ -904,11 +904,13 @@
 8743
 
 (defn infer-defns [tenv stmts]
-    (foldl
-        tenv
-            (infer-several tenv stmts)
-            (fn [tenv (, name type)]
-            (tenv/set-type tenv name (generalize tenv type)))))
+    (match stmts
+        [one] (infer-stmt tenv one)
+        _     (foldl
+                  tenv/nil
+                      (infer-several tenv stmts)
+                      (fn [tenv (, name type)]
+                      (tenv/set-type tenv name (generalize tenv type))))))
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 
@@ -1123,10 +1125,9 @@
         check-stmts **)
         (inference
         tenv
-            (fn [tenv stmt] tenv)
+            (fn [tenv (array stmt)] tenv)
             (fn [tenv tenv] tenv)
-            (fn [tenv expr] type)
-            (fn [tenv (array stmt)] tenv)))
+            (fn [tenv expr] type)))
 
 (deftype name-kind (value) (type))
 
@@ -1145,14 +1146,9 @@
             (fn [tenv string] (option type))))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmt, 2: add_stmt, 3: infer, 4: infer_defns},\n  1: {0: externals_stmt, 1: names}, 2: type_to_string, 3: get_type}) => ({type: 'fns',\n  env_nil, infer_stmt, add_stmt, infer, infer_defns, externals_stmt, names, type_to_string, get_type \n}) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, names, type_to_string, get_type \n }) ")
     (typecheck
-        (inference
-            builtin-env
-                infer-stmt
-                tenv/merge
-                infer
-                infer-defns)
+        (inference builtin-env infer-defns tenv/merge infer)
             (analysis externals-stmt names)
             type-to-string
             (fn [tenv name]

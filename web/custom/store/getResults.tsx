@@ -1,24 +1,41 @@
-import { NUIState } from '../UIState';
+import { MetaData, NUIState, RealizedNamespace } from '../UIState';
 import { findTops } from '../../ide/ground-up/findTops';
-import { Results } from '../../ide/ground-up/GroundUp';
-import { FullEvalator } from '../../ide/ground-up/Evaluators';
+import { FullEvalator, ProduceItem } from '../../ide/ground-up/Evaluators';
 import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { NUIResults } from './Store';
-import { Path } from '../../store';
-import { sortTops } from './sortTops';
+import { SortedInfo, sortTops } from './sortTops';
 import { Node } from '../../../src/types/cst';
 
-type ResultsCache = {
+export type ResultsCache = {
+    lastState: null | NUIState;
+    // the result of `fromMCST`
+    // and the IDs of all included nodes. We can do a quick
+    // check of each of the `ids` to see if we need to recalculate
     nodes: { [top: number]: { node: Node; ids: string[] } };
+    // the result of "infer_stmt"
+    // recalculated if (contents) or (types of dependencies) change
     types: { [top: number]: any };
+    // results! recalculated if (contents) or (dependencies) change
+    results: {
+        [top: number]: {
+            // the things to display
+            produce: ProduceItem[];
+            // any exportable values
+            values: { [name: string]: any };
+        };
+    };
 };
 
 export const getResults = <Env, Stmt, Expr>(
     state: NUIState,
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
     debugExecOrder: boolean,
+    cache: ResultsCache,
 ) => {
+    const lastState = cache.lastState;
+    cache.lastState = state;
+
     const results: NUIResults = {
         jumpToName: {},
         display: {},
@@ -43,6 +60,14 @@ export const getResults = <Env, Stmt, Expr>(
 
     // OK SO. we want ... to .... make a deep deps map, as well as identifying cycles?
 
+    const changes: {
+        [top: number]: {
+            source: boolean;
+            type: boolean;
+            value: boolean;
+        };
+    } = {};
+
     // PROCESS:
     // we do dependency analysis on everything
     // with an algorithm that will hopefully leave things in place as much as possible.
@@ -56,84 +81,68 @@ export const getResults = <Env, Stmt, Expr>(
             });
         });
 
-        if (group.length === 1) {
+        if (group.length === 1 && group[0].top.plugin) {
             const {
                 top: { plugin },
                 node,
                 stmt,
             } = group[0];
-            if (plugin) {
-                results.produce[node.loc] = ['evaluated by plugin'];
-                const pid = typeof plugin === 'string' ? plugin : plugin.id;
-                const options =
-                    typeof plugin === 'string' ? null : plugin.options;
-                const pl = plugins.find((p) => p.id === pid);
-                if (!pl) {
-                    results.produce[node.loc] = [`plugin ${pid} not found`];
-                    return;
-                }
-                results.pluginResults[node.loc] = pl.process(
-                    node,
-                    state,
-                    evaluator,
-                    results,
-                    options,
-                );
-            } else if (stmt) {
-                const res = evaluator.addStatement(
-                    stmt,
-                    results.env!,
-                    state.meta,
-                    results.traces,
-                );
-                results.env = res.env;
-                results.produce[node.loc] = Array.isArray(res.display)
-                    ? res.display
-                    : [res.display];
-                if (debugExecOrder) {
-                    const deps: Record<string, true> = {};
-                    group[0].deps.forEach((d) => (deps[d.name] = true));
-                    results.produce[node.loc].push(
-                        'Deps: ' + Object.keys(deps).join(', '),
-                    );
-                    results.produce[node.loc].push('Execution Order: ' + i);
-                }
-            }
+            processPlugin(results, node, plugin, state, evaluator);
             return;
         }
+        // if (group.length === 1) {
+        //     const {
+        //         top: { plugin },
+        //         node,
+        //         stmt,
+        //     } = group[0];
+        //     if (plugin) {
+        //         processPlugin(results, node, plugin, state, evaluator);
+        //     } else if (stmt) {
+        //         const res = evaluator.addStatements(
+        //             stmt,
+        //             results.env!,
+        //             state.meta,
+        //             results.traces,
+        //         );
+        //         results.env = res.env;
+        //         results.produce[node.loc] = Array.isArray(res.display)
+        //             ? res.display
+        //             : [res.display];
+        //         if (debugExecOrder) {
+        //             showExecOrder<Stmt>(group, results, i);
+        //         }
+        //     }
+        //     return;
+        // }
+        // if (!evaluator.addStatements) {
+        //     group.forEach((node) => {
+        //         results.produce[node.id] = [`Evaluator can't handle cycles`];
+        //     });
+        // } else {
+        // }
 
-        if (!evaluator.addStatements) {
-            group.forEach((node) => {
-                results.produce[node.id] = [`Evaluator can't handle cycles`];
-            });
-        } else {
-            const stmts: { [key: number]: Stmt } = {};
-            group.forEach((node) => {
-                stmts[node.id] = node.stmt!;
-            });
-            const { env, display } = evaluator.addStatements(
-                stmts,
-                results.env!,
-                state.meta,
-                results.traces,
-            );
-            results.env = env;
-            Object.assign(results.produce, display);
-            const names = group.flatMap((node) => node.names);
-            group.forEach((node) => {
-                if (!Array.isArray(results.produce[node.id])) {
-                    results.produce[node.id] = [
-                        results.produce[node.id] as any,
-                    ];
-                }
-                if (debugExecOrder) {
-                    results.produce[node.id].push('Cycle: ' + names.join(', '));
-                    results.produce[node.id].push(
-                        'Deps: ' + node.deps.map((d) => d.name).join(', '),
-                    );
-                    results.produce[node.id].push('Execution Order: ' + i);
-                }
-            });
+        const stmts: { [key: number]: Stmt } = {};
+        group.forEach((node) => {
+            if (node.stmt) {
+                stmts[node.id] = node.stmt;
+            }
+        });
+        const { env, display } = evaluator.addStatements(
+            stmts,
+            results.env!,
+            state.meta,
+            results.traces,
+        );
+        results.env = env;
+        group.forEach((node) => {
+            if (!Array.isArray(display[node.id])) {
+                display[node.id] = [display[node.id] as any];
+            }
+        });
+        Object.assign(results.produce, display);
+        if (debugExecOrder) {
+            showExecOrder(group, results, i);
         }
     });
 
@@ -144,3 +153,45 @@ export const unique = (names: number[]) => {
     const seen: Record<number, true> = {};
     return names.filter((k) => (seen[k] ? false : (seen[k] = true)));
 };
+
+export type AnyEnv = FullEvalator<any, any, any>;
+
+export const processPlugin = (
+    results: NUIResults,
+    node: Node,
+    plugin: NonNullable<RealizedNamespace['plugin']>,
+    state: NUIState,
+    evaluator: AnyEnv,
+) => {
+    results.produce[node.loc] = ['evaluated by plugin'];
+    const pid = typeof plugin === 'string' ? plugin : plugin.id;
+    const options = typeof plugin === 'string' ? null : plugin.options;
+    const pl = plugins.find((p) => p.id === pid);
+    if (!pl) {
+        results.produce[node.loc] = [`plugin ${pid} not found`];
+        return;
+    }
+    results.pluginResults[node.loc] = pl.process(
+        node,
+        state,
+        evaluator,
+        results,
+        options,
+    );
+};
+
+export function showExecOrder<Stmt>(
+    group: SortedInfo<Stmt>[],
+    results: NUIResults,
+    i: number,
+) {
+    const names = group.flatMap((group) => group.names).map((n) => n.name);
+
+    group.forEach((node) => {
+        results.produce[node.id].push('Cycle: ' + names.join(', '));
+        results.produce[node.id].push(
+            'Deps: ' + node.deps.map((d) => d.name).join(', '),
+        );
+        results.produce[node.id].push('Execution Order: ' + i);
+    });
+}

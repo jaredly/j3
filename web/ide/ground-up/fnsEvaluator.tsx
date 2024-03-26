@@ -79,10 +79,17 @@ export const fnsEvaluator = (
             if (!data['externals_stmt']) {
                 return [];
             }
-            const deps = unwrapArray<{ type: ','; 0: string; 1: number }>(
-                data['externals_stmt'](stmt),
-            );
-            return deps.map((item) => ({ name: item[0], loc: item[1] }));
+            const deps = unwrapArray<{
+                type: ',';
+                0: string;
+                1: { type: 'value' | 'type' };
+                2: number;
+            }>(data['externals_stmt'](stmt));
+            return deps.map((item) => ({
+                name: item[0],
+                loc: item[2],
+                kind: item[1].type,
+            }));
         },
         stmtNames(stmt) {
             if (data['names']) {
@@ -157,35 +164,18 @@ export const fnsEvaluator = (
             );
 
             sorted.forEach((group) => {
-                if (group.length > 1 && this.addStatements) {
-                    const result = this.addStatements(
-                        group.map((g) => g.stmt),
-                        env,
-                        {},
-                        {},
-                    );
-                    env = result.env;
-                    allNames.push(...group.flatMap(({ names }) => names));
-                } else {
-                    const { top, stmt, names } = group[0];
-                    // if (!names.length && stmt.type === 'sdef') {
-                    //     allNames.push({ name: stmt[0], loc: top.top });
-                    // }
-                    allNames.push(...names);
-                    if (stmt.type === 'sexpr') {
-                        if (top.top === target) {
-                            ret = data['compile'](stmt[0])([]);
-                        } else {
-                            return; // ignore expressions
-                        }
-                    }
-                    const result = this.addStatement(stmt, env, {}, {});
-                    if (result.display instanceof Error) {
-                        console.error(`We failed, sorry folks`, result.display);
-                        console.log(top);
-                        throw result.display;
-                    }
-                    env = result.env;
+                const result = this.addStatements(
+                    group.map((g) => g.stmt),
+                    env,
+                    {},
+                    {},
+                );
+                env = result.env;
+                allNames.push(...group.flatMap(({ names }) => names));
+
+                if (group[0].top.top === target && result.js) {
+                    // ret = result.values._;
+                    ret = result.js;
                 }
             });
 
@@ -204,135 +194,143 @@ export const fnsEvaluator = (
             }
             return { js: env.js.join('\n'), errors };
         },
-        addStatements: data['infer_defns']
-            ? (stmts, env, meta, trace) => {
-                  const display: { [key: number]: Produce } = {};
-                  let names:
-                      | {
-                            type: ',,';
-                            0: string;
-                            1: { type: 'value' | 'type' };
-                            2: number;
-                        }[]
-                      | null = null;
-                  if (data['names']) {
-                      names = Object.values(stmts).flatMap((stmt) =>
-                          unwrapArray(data['names'](stmt)),
-                      );
-                  }
-
-                  try {
-                      env.typeCheck = data['infer_defns'](env.typeCheck)(
-                          wrapArray(Object.values(stmts)),
-                      );
-                  } catch (err) {
-                      console.error(err);
-                      const display: Record<number, Produce> = {};
-                      const myErr = new MyEvalError(`Type Error`, err as Error);
-                      Object.keys(stmts).forEach((k) => (display[+k] = myErr));
-                      return { env, display };
-                  }
-
-                  Object.entries(stmts).forEach(([id, stmt]) => {
-                      display[+id] = [];
-
-                      if (
-                          data['names'] &&
-                          data['get_type'] &&
-                          stmt.type === 'sdef'
-                      ) {
-                          const names: { type: ','; 0: string; 1: number }[] =
-                              unwrapArray(data['names'](stmt));
-                          const types: any[] = names.map((name) =>
-                              data['get_type'](env.typeCheck)(name[0]),
-                          );
-                          (display[+id] as any[]).push(
-                              ...types.map((type, i) =>
-                                  type.type === 'some'
-                                      ? `${names[i][0]}: ${data[
-                                            'type_to_string'
-                                        ](type[0])}`
-                                      : `No type for ${names[i][0]}`,
-                              ),
-                          );
-                      }
-                  });
-
-                  for (let [key, value] of Object.entries(stmts)) {
-                      const res = compileStmt(
-                          data,
-                          envArgs,
-                          san,
-                          value,
-                          env,
-                          meta,
-                          trace,
-                          names,
-                      );
-                      (display[+key] as any[]).push(res.display);
-                      env = res.env;
-                  }
-                  return { env, display };
-              }
-            : undefined,
-        addStatement(stmt, env, meta, traceMap) {
-            const display: ProduceItem[] = [];
+        addStatements(stmts, env, meta, trace) {
+            const display: { [key: number]: Produce } = {};
+            const values: Record<string, any> = {};
             let names:
-                | null
                 | {
                       type: ',,';
                       0: string;
                       1: { type: 'value' | 'type' };
                       2: number;
-                  }[] = null;
+                  }[]
+                | null = null;
             if (data['names']) {
-                names = unwrapArray(data['names'](stmt));
+                names = Object.values(stmts).flatMap((stmt) =>
+                    unwrapArray(data['names'](stmt)),
+                );
             }
 
-            if (data['infer_stmt']) {
+            if (data['infer_stmts']) {
                 try {
-                    const result = data['infer_stmt'](env.typeCheck)(stmt);
+                    const result = data['infer_stmts'](env.typeCheck)(
+                        wrapArray(Object.values(stmts)),
+                    );
                     if (data['add_stmt']) {
                         env.typeCheck = data['add_stmt'](env.typeCheck)(result);
                     } else {
                         env.typeCheck = result;
                     }
                 } catch (err) {
-                    return {
-                        env,
-                        display: new MyEvalError(`Type Error`, err as Error),
-                    };
-                }
-
-                if (names && data['get_type'] && stmt.type === 'sdef') {
-                    const types: any[] = names!.map((name) =>
-                        data['get_type'](env.typeCheck)(name[0]),
-                    );
-                    display.push(
-                        ...types.map((type, i) =>
-                            type.type === 'some'
-                                ? `${names![i][0]}: ${data['type_to_string'](
-                                      type[0],
-                                  )}`
-                                : `No type for ${names![i][0]}`,
-                        ),
-                    );
+                    console.error(err);
+                    const display: Record<number, Produce> = {};
+                    const myErr = new MyEvalError(`Type Error`, err as Error);
+                    Object.keys(stmts).forEach((k) => (display[+k] = myErr));
+                    return { env, display, values };
                 }
             }
 
-            const res = compileStmt(
-                data,
-                envArgs,
-                san,
-                stmt,
-                env,
-                meta,
-                traceMap,
-                names,
-            );
-            display.push(res.display);
-            return { env: res.env, display };
+            Object.entries(stmts).forEach(([id, stmt]) => {
+                display[+id] = [];
+
+                if (data['names'] && data['get_type'] && stmt.type === 'sdef') {
+                    const names: { type: ','; 0: string; 1: number }[] =
+                        unwrapArray(data['names'](stmt));
+                    const types: any[] = names.map((name) =>
+                        data['get_type'](env.typeCheck)(name[0]),
+                    );
+                    (display[+id] as any[]).push(
+                        ...types.map((type, i) =>
+                            type.type === 'some'
+                                ? `${names[i][0]}: ${data['type_to_string'](
+                                      type[0],
+                                  )}`
+                                : `No type for ${names[i][0]}`,
+                        ),
+                    );
+                }
+            });
+
+            let js;
+            for (let [key, value] of Object.entries(stmts)) {
+                const res = compileStmt(
+                    data,
+                    envArgs,
+                    san,
+                    value,
+                    env,
+                    meta,
+                    trace,
+                    names,
+                );
+                (display[+key] as any[]).push(res.display);
+                Object.assign(values, res.values);
+                env = res.env;
+                if (res.js) {
+                    js = res.js;
+                }
+            }
+            return { env, display, values, js };
         },
+
+        // addStatement(stmt, env, meta, traceMap) {
+        //     const display: ProduceItem[] = [];
+        //     let names:
+        //         | null
+        //         | {
+        //               type: ',,';
+        //               0: string;
+        //               1: { type: 'value' | 'type' };
+        //               2: number;
+        //           }[] = null;
+        //     if (data['names']) {
+        //         names = unwrapArray(data['names'](stmt));
+        //     }
+
+        //     if (data['infer_stmt']) {
+        //         try {
+        //             const result = data['infer_stmt'](env.typeCheck)(stmt);
+        //             if (data['add_stmt']) {
+        //                 env.typeCheck = data['add_stmt'](env.typeCheck)(result);
+        //             } else {
+        //                 env.typeCheck = result;
+        //             }
+        //         } catch (err) {
+        //             return {
+        //                 env,
+        //                 display: new MyEvalError(`Type Error`, err as Error),
+        //             };
+        //         }
+
+        //         if (names && data['get_type'] && stmt.type === 'sdef') {
+        //             const types: any[] = names!.map((name) =>
+        //                 data['get_type'](env.typeCheck)(name[0]),
+        //             );
+        //             display.push(
+        //                 ...types.map((type, i) =>
+        //                     type.type === 'some'
+        //                         ? `${names![i][0]}: ${data['type_to_string'](
+        //                               type[0],
+        //                           )}`
+        //                         : `No type for ${names![i][0]}`,
+        //                 ),
+        //             );
+        //         }
+        //     }
+
+        //     const res = compileStmt(
+        //         data,
+        //         envArgs,
+        //         san,
+        //         stmt,
+        //         env,
+        //         meta,
+        //         traceMap,
+        //         names,
+        //     );
+        //     display.push(res.display);
+        //     return { env: res.env, display };
+        // },
         setTracing(idx, traceMap, env) {
             if (idx != null) {
                 withTracing(traceMap, idx, san, env);
@@ -394,6 +392,7 @@ const compileStmt = (
                 return {
                     env,
                     display: new MyEvalError(`Type Error`, err as Error),
+                    values: {},
                 };
             }
         }
@@ -407,6 +406,7 @@ const compileStmt = (
             return {
                 env,
                 display: new MyEvalError(`Compilation Error`, err as Error),
+                values: {},
             };
         }
         let fn;
@@ -417,6 +417,7 @@ const compileStmt = (
             return {
                 env,
                 display: `JS Syntax Error: ${(err as Error).message}\n${js}`,
+                values: {},
             };
         }
         try {
@@ -429,6 +430,8 @@ const compileStmt = (
             return {
                 env,
                 display: valueToString(value) + (type ? '\nType: ' + type : ''),
+                values: { _: value },
+                js,
             };
         } catch (err) {
             const locs: { row: number; col: number }[] = [];
@@ -442,6 +445,7 @@ const compileStmt = (
             return {
                 env,
                 display: new LocError(err as Error, fn + ''),
+                values: {},
             };
         }
     }
@@ -454,6 +458,7 @@ const compileStmt = (
         return {
             env,
             display: new MyEvalError(`Compilation Error`, err as Error),
+            values: {},
         };
     }
 
@@ -467,8 +472,8 @@ const compileStmt = (
                 name ? 'return ' + sanitize(name) : ''
             }}`,
         );
+        let value;
         if (name) {
-            let value;
             try {
                 value = fn(san);
             } catch (err) {
@@ -477,6 +482,7 @@ const compileStmt = (
                     display: `JS Evaluation Error: ${
                         (err as Error).message
                     }\n${js}`,
+                    values: {},
                 };
             }
             env.values[name] = value;
@@ -486,11 +492,12 @@ const compileStmt = (
         }
 
         env.js.push(js);
-        return { env, display };
+        return { env, display, values: name ? { [name]: value } : {} };
     } catch (err) {
         return {
             env,
             display: `JS Syntax Error: ${(err as Error).message}\n${js}`,
+            values: {},
         };
     }
 };

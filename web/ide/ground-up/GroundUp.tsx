@@ -104,7 +104,7 @@ export const GroundUp = ({
             style={{
                 padding: 16,
                 cursor: 'text',
-                marginBottom: 300,
+                paddingBottom: 300,
                 // marginRight: 500,
             }}
         >

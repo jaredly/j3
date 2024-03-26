@@ -1,7 +1,7 @@
-import { Errors, FullEvalator, bootstrap } from './Evaluators';
+import { Errors, FullEvalator, Produce, bootstrap } from './Evaluators';
 import { valueToString } from './reduce';
 import { findTops } from './findTops';
-import { parseExpr, parseStmt, stmt } from './round-1/parse';
+import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
 import { sanitizedEnv } from './loadEv';
@@ -14,10 +14,11 @@ import { sanitizedEnv } from './loadEv';
 export const bootstrapEvaluator = (
     id: string,
     data: any,
-): FullEvalator<any, any, any> => {
+): FullEvalator<any, stmt & { loc: number }, expr> => {
     let benv = bootstrap.init();
-    data.stmts.forEach((stmt: any) => {
-        benv = bootstrap.addStatement(stmt, benv, {}, {}).env;
+    data.stmts.forEach((stmt: stmt & { loc: number }) => {
+        const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {}).env;
+        benv = res.env;
     });
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
@@ -29,52 +30,89 @@ export const bootstrapEvaluator = (
         stmtNames: () => [],
         dependencies: () => [],
         setTracing(idx, traceMap) {},
-        addStatement(stmt: stmt, env) {
-            if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
-                try {
-                    env.push(benv['compile-st'](stmt));
-                    return { env, display: 'compiled.' };
-                } catch (err) {
-                    console.error(err);
-                    return {
-                        env,
-                        display: 'Failed ' + (err as Error).message,
-                    };
+        addStatements(stmts: Record<number, stmt>, env) {
+            const display: Record<number, Produce> = {};
+            const values: Record<string, any> = {};
+
+            Object.keys(stmts).forEach((loc) => {
+                const stmt = stmts[+loc];
+
+                if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
+                    let raw;
+                    try {
+                        raw = benv['compile-st'](stmt);
+                        env.push(raw);
+                        try {
+                            const name = stmt.type === 'sdef' ? stmt[0] : null;
+                            const res = new Function(
+                                envArgs,
+                                '{' +
+                                    env.join('\n') +
+                                    (stmt.type === 'sdef'
+                                        ? `\nreturn ${stmt[0]}`
+                                        : '') +
+                                    '}',
+                            )(san);
+                            return {
+                                env,
+                                display: valueToString(res),
+                                values: name ? { [name]: res } : {},
+                            };
+                        } catch (err) {
+                            return {
+                                env,
+                                display: `Evaluation error ${
+                                    (err as Error).message
+                                }`,
+                            };
+                        }
+                        // return { env, display: 'compiled.' };
+                    } catch (err) {
+                        console.error(err);
+                        return {
+                            env,
+                            display: 'Failed ' + (err as Error).message,
+                        };
+                    }
                 }
-            }
-            if (stmt.type === 'sexpr') {
-                let raw;
-                try {
-                    raw = benv['compile-st'](stmt);
-                } catch (err) {
-                    console.error(err);
-                    return {
-                        env,
-                        display:
-                            'Compilation failed: ' + (err as Error).message,
-                    };
+                if (stmt.type === 'sexpr') {
+                    let raw;
+                    try {
+                        raw = benv['compile-st'](stmt);
+                    } catch (err) {
+                        console.error(err);
+                        return {
+                            env,
+                            display:
+                                'Compilation failed: ' + (err as Error).message,
+                        };
+                    }
+                    try {
+                        const res = new Function(
+                            envArgs,
+                            '{' + env.join('\n') + '\nreturn ' + raw + '}',
+                        )(san);
+                        return {
+                            env,
+                            display: valueToString(res),
+                            values: { _: res },
+                        };
+                    } catch (err) {
+                        console.log(envArgs);
+                        console.log(raw);
+                        console.error(err);
+                        return {
+                            env,
+                            display:
+                                'Error evaluating! ' +
+                                (err as Error).message +
+                                '\n' +
+                                raw,
+                        };
+                    }
                 }
-                try {
-                    const res = new Function(
-                        envArgs,
-                        '{' + env.join('\n') + '\nreturn ' + raw + '}',
-                    )(san);
-                    return { env, display: valueToString(res) };
-                } catch (err) {
-                    console.log(envArgs);
-                    console.log(raw);
-                    console.error(err);
-                    return {
-                        env,
-                        display:
-                            'Error evaluating! ' +
-                            (err as Error).message +
-                            '\n' +
-                            raw,
-                    };
-                }
-            }
-            return { env, display: 'idk' };
+            });
+            return { env, display, values };
         },
         toFile(state, target) {
             if (target != null) {
@@ -98,7 +136,7 @@ export const bootstrapEvaluator = (
                 //     this.addStatement
                 // }
                 try {
-                    env = this.addStatement(parsed, env, {}, {}).env;
+                    env = this.addStatements({ [0]: parsed }, env, {}, {}).env;
                 } catch (err) {
                     console.error(err);
                 }

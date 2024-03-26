@@ -86,6 +86,7 @@ export const reduceUpdate = (
             throw new Error('nope update');
     }
 };
+
 export const actionToUpdate = (
     state: NUIState,
     action: UpdatableAction,
@@ -254,6 +255,7 @@ export const actionToUpdate = (
         //     return action;
     }
 };
+
 export function bootstrapParse(
     stmts: Node[],
     results: CompilationResults & {
@@ -306,6 +308,7 @@ export function addTypeConstructors(
         env[cname] = next(constr[1])([]);
     });
 }
+
 export function bootstrapEval(
     parsed: stmt[],
     env: { [key: string]: any },
@@ -317,8 +320,6 @@ export function bootstrapEval(
                 try {
                     const res = evalExpr(stmt[0], env);
                     produce[(stmt as any).loc] += '\n' + valueToString(res);
-                    // produce[(stmt as any).loc] +=
-                    //     '\nJSON:' + JSON.stringify(stmt); //JSON.stringify(f());
                 } catch (err) {
                     console.error(err, stmt, i);
                     produce[(stmt as any).loc] += (err as Error).message;

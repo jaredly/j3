@@ -1,23 +1,17 @@
 import { useMemo } from 'react';
 import { NUIState } from '../UIState';
 import equal from 'fast-deep-equal';
-import { orderStartAndEnd } from '../../../src/parse/parse';
 import { reduce } from '../../ide/ground-up/reduce';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
-import { getResults } from './getResults';
-import {
-    Store,
-    NUIResults,
-    adaptiveBounce,
-    loadEvaluator,
-    allNodesBetween,
-    Evt,
-} from './Store';
+import { ResultsCache, getResults } from './getResults';
+import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
 
 export const useStore = (initialState: NUIState) => {
-    // const lstate = useLatest(state);
-    // const lresults = useLatest(results);
-    // const reg = useRegs(state);
+    const cache = useMemo<ResultsCache>(
+        () => ({ nodes: {}, types: {}, results: {}, lastState: null }),
+        [],
+    );
+
     const store = useMemo<Store>(() => {
         const nodeListeners: {
             [key: string]: ((state: NUIState, results: NUIResults) => void)[];
@@ -37,9 +31,13 @@ export const useStore = (initialState: NUIState) => {
         let debugExecOrder = { current: false };
 
         const updateResults = adaptiveBounce(() => {
-            // console.log('nottt updating results');
             console.log('updating results');
-            results = getResults(state, evaluator, debugExecOrder.current);
+            results = getResults(
+                state,
+                evaluator,
+                debugExecOrder.current,
+                cache,
+            );
 
             evtListeners.results.forEach((f) => f(state));
             evtListeners.all.forEach((f) => f(state));
@@ -49,14 +47,24 @@ export const useStore = (initialState: NUIState) => {
             evaluator = ev;
             console.log('loaded new', async);
             if (async) {
-                results = getResults(state, evaluator, debugExecOrder.current);
+                results = getResults(
+                    state,
+                    evaluator,
+                    debugExecOrder.current,
+                    cache,
+                );
 
                 evtListeners.results.forEach((f) => f(state));
                 evtListeners.all.forEach((f) => f(state));
             }
         });
 
-        let results = getResults(state, evaluator, debugExecOrder.current);
+        let results = getResults(
+            state,
+            evaluator,
+            debugExecOrder.current,
+            cache,
+        );
 
         return {
             setDebug(nv) {
@@ -74,11 +82,11 @@ export const useStore = (initialState: NUIState) => {
                             state,
                             evaluator,
                             debugExecOrder.current,
+                            cache,
                         );
 
                         evtListeners.results.forEach((f) => f(state));
                         evtListeners.all.forEach((f) => f(state));
-                        // everyListeners.forEach((f) => f(state));
                     });
                 }
                 let nextResults = results;
@@ -93,7 +101,6 @@ export const useStore = (initialState: NUIState) => {
                     prevState.map !== state.map ||
                     prevState.meta !== state.meta
                 ) {
-                    // nextResults = getResults(nextState, evaluator);
                     updateResults();
                 }
 
@@ -219,9 +226,5 @@ export const useStore = (initialState: NUIState) => {
         };
     }, []);
 
-    // const prevState = useRef(state);
-    // const prevResults = useRef(results);
-    // React.useLayoutEffect(() => {
-    // }, [state, results]);
     return store;
 };

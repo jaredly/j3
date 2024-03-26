@@ -10,6 +10,7 @@ import { addTypeConstructors, extractBuiltins, valueToString } from './reduce';
 import { findTops } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
 import { expr, parseExpr, parseStmt, stmt, unwrapArray } from './round-1/parse';
+import { LocedName } from '../../custom/store/sortTops';
 
 // export type BasicEvaluator<T> = {};
 
@@ -83,22 +84,18 @@ export type FullEvalator<Env, Stmt, Expr> = {
     init(): Env;
     parse(node: Node, errors: Errors): Stmt | void;
     parseExpr(node: Node, errors: Errors): Expr | void;
-    dependencies(stmt: Stmt): { name: string; loc: number }[];
-    stmtNames(
-        stmt: Stmt,
-    ): { name: string; loc: number; kind: 'value' | 'type' }[];
-    addStatements?(
+    dependencies(stmt: Stmt): LocedName[];
+    stmtNames(stmt: Stmt): LocedName[];
+    addStatements(
         stmts: { [key: number]: Stmt },
         env: Env,
         meta: MetaDataMap,
         trace: TraceMap,
-    ): { env: Env; display: { [key: number]: Produce } };
-    addStatement(
-        stmt: Stmt,
-        env: Env,
-        meta: MetaDataMap,
-        trace: TraceMap,
-    ): { env: Env; display: Produce };
+    ): {
+        env: Env;
+        display: { [key: number]: Produce };
+        values: { [name: string]: any };
+    };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
     toFile?(state: NUIState, target?: number): { js: string; errors: Errors };
@@ -118,8 +115,12 @@ export const repr: FullEvalator<void, Node, Node> = {
         return node;
     },
     setTracing(idx) {},
-    addStatement(stmt, env) {
-        return { env, display: JSON.stringify(stmt) };
+    addStatements(stmts, env) {
+        const display: Record<number, Produce> = {};
+        Object.keys(stmts).forEach((id) => {
+            display[+id] = JSON.stringify(stmts[+id]);
+        });
+        return { env, display, values: {} };
     },
     evaluate(expr, env) {
         return null;
@@ -154,47 +155,53 @@ export const bootstrap: FullEvalator<
         return evalExpr(expr, env);
     },
     setTracing(idx) {},
-    addStatement(stmt, env) {
-        switch (stmt.type) {
-            case 'sdef': {
-                try {
-                    const res = (env[stmt[0]] = evalExpr(stmt[1], env));
-                    if (stmt[0] === 'builtins') {
-                        Object.assign(env, extractBuiltins(res));
-                    }
-                    return {
-                        env,
-                        display:
+    addStatements(stmts, env) {
+        const display: Record<number, Produce> = {};
+        const values: Record<string, any> = {};
+        Object.keys(stmts).forEach((id) => {
+            const stmt = stmts[+id];
+            switch (stmt.type) {
+                case 'sdef': {
+                    try {
+                        const res = (env[stmt[0]] = evalExpr(stmt[1], env));
+                        if (stmt[0] === 'builtins') {
+                            Object.assign(env, extractBuiltins(res));
+                        }
+                        values[stmt[0]] = res;
+                        display[+id] =
                             typeof res === 'function'
                                 ? '<function>'
-                                : JSON.stringify(res),
-                    };
-                } catch (err) {
-                    console.error(err);
-                    // console.log(text)
-                    return { env, display: `Error! ${(err as Error).message}` };
+                                : JSON.stringify(res);
+                        return;
+                    } catch (err) {
+                        console.error(err);
+                        // console.log(text)
+                        display[+id] = `Error! ${(err as Error).message}`;
+                        return;
+                    }
                 }
-            }
-            case 'sdeftype': {
-                addTypeConstructors(stmt, env);
-                return {
-                    env,
-                    display: `type with ${
+                case 'sdeftype': {
+                    addTypeConstructors(stmt, env);
+                    display[+id] = `type with ${
                         unwrapArray(stmt[1]).length
-                    } constructors`,
-                };
-            }
-            case 'sexpr': {
-                try {
-                    const res = evalExpr(stmt[0], env);
-                    return { env, display: valueToString(res) };
-                } catch (err) {
-                    console.error(err);
-                    return { env, display: `Error! ${(err as Error).message}` };
+                    } constructors`;
+                    return;
+                }
+                case 'sexpr': {
+                    try {
+                        const res = evalExpr(stmt[0], env);
+                        display[+id] = valueToString(res);
+                    } catch (err) {
+                        console.error(err);
+                        display[+id] = `Error! ${(err as Error).message}`;
+                    }
+                    return;
                 }
             }
-        }
+        });
+        return { env, display, values };
     },
+
     // We ignore the `target` here ... because we're just dumping everything
     toFile(state: NUIState, target: number) {
         const errors: Errors = {};

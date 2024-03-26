@@ -3,6 +3,8 @@
 
 (deftype (option a) (some a) (none))
 
+(defn show-subst [a] "hih")
+
 (defn at [arr i default_]
     (match arr
         []           default_
@@ -896,11 +898,13 @@
 8743
 
 (defn infer-defns [tenv stmts]
-    (foldl
-        tenv
-            (infer-several tenv stmts)
-            (fn [tenv (, name type)]
-            (tenv/set-type tenv name (generalize tenv type)))))
+    (match stmts
+        [one] (infer-stmt tenv one)
+        _     (foldl
+                  tenv
+                      (infer-several tenv stmts)
+                      (fn [tenv (, name type)]
+                      (tenv/set-type tenv name (generalize tenv type))))))
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 

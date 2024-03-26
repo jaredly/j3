@@ -73,6 +73,7 @@ export function CardRoot({
             style={{
                 // maxWidth: 1400,
                 overflow: 'auto',
+                paddingBottom: 300,
             }}
             {...dragProps}
             onMouseDown={(evt) => {

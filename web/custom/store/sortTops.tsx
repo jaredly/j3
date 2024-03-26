@@ -6,15 +6,27 @@ import { layout } from '../../../src/layout';
 import { NUIResults } from './Store';
 import { filterNulls } from '../reduce';
 import { depSort } from './depSort';
+import { Node } from '../../../src/types/cst';
+
+type Tops = ReturnType<typeof findTops>;
+export type LocedName = { name: string; loc: number; kind: 'type' | 'value' };
+export type SortedInfo<Stmt> = {
+    id: number;
+    top: Tops[0];
+    node: Node;
+    stmt: void | null | Stmt;
+    names: LocedName[];
+    deps: LocedName[];
+};
 
 export function sortTops<Env, Stmt, Expr>(
-    tops: ReturnType<typeof findTops>,
+    tops: Tops,
     state: NUIState,
     results: NUIResults,
     evaluator: FullEvalator<Env, Stmt, Expr>,
-) {
+): SortedInfo<Stmt>[][] {
     const parsed = tops
-        .map((top) => {
+        .map((top): SortedInfo<Stmt> | null | void => {
             const node = fromMCST(top.top, state.map);
             layout(
                 top.top,

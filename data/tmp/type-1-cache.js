@@ -883,7 +883,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 11632');})(/*!*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 11632');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<11632*/ }/*<11632*/;
 
-const inference = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
+const inference = (v0) => (v1) => (v2) => (v3) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3});
 const analysis = (v0) => (v1) => ({type: "analysis", 0: v0, 1: v1});
 const value = ({type: "value"});
 const type = ({type: "type"});
@@ -2722,7 +2722,16 @@ throw new Error('let pattern not matched 8732. ' + valueToString($target));})(/*
 };
 throw new Error('let pattern not matched 8304. ' + valueToString($target));})(/*!*/)/*<8300*/ }/*<8292*/ }/*<8292*/;
 
-const infer_defns = /*8724*/function name_8724(tenv) { return /*8724*/function name_8724(stmts) { return /*8731*//*8731*//*8731*//*8775*/foldl/*<8775*/(/*8731*//*8776*/tenv/*<8776*/)/*<8731*/(/*8731*//*8777*//*8777*//*8778*/infer_several/*<8778*/(/*8777*//*8779*/tenv/*<8779*/)/*<8777*/(/*8777*//*8780*/stmts/*<8780*/)/*<8777*/)/*<8731*/(/*8731*//*8781*/function name_8781(tenv) { return /*8781*/function name_8781($fn_arg) { return /*8781*/(function match_8781($target) {
+const infer_defns = /*8724*/function name_8724(tenv) { return /*8724*/function name_8724(stmts) { return /*11782*/(function match_11782($target) {
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return /*11789*//*11789*//*11790*/infer_stmt/*<11790*/(/*11789*//*11791*/tenv/*<11791*/)/*<11789*/(/*11789*//*11792*/one/*<11792*/)/*<11789*/
+}
+}
+}
+return /*8731*//*8731*//*8731*//*8775*/foldl/*<8775*/(/*8731*//*8776*/tenv$slnil/*<8776*/)/*<8731*/(/*8731*//*8777*//*8777*//*8778*/infer_several/*<8778*/(/*8777*//*8779*/tenv/*<8779*/)/*<8777*/(/*8777*//*8780*/stmts/*<8780*/)/*<8777*/)/*<8731*/(/*8731*//*8781*/function name_8781(tenv) { return /*8781*/function name_8781($fn_arg) { return /*8781*/(function match_8781($target) {
 if ($target.type === ",") {
 {
 let name = $target[0];
@@ -2732,7 +2741,8 @@ return /*8789*//*8789*//*8789*//*8790*/tenv$slset_type/*<8790*/(/*8789*//*8791*/
 }
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 8781');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8781*/ }/*<8781*/ }/*<8781*/)/*<8731*/ }/*<8724*/ }/*<8724*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8781');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8781*/ }/*<8781*/ }/*<8781*/)/*<8731*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 11782');})(/*!*//*11785*/stmts/*<11785*/)/*<11782*/ }/*<8724*/ }/*<8724*/;
 
 const infer_and_add = /*11669*/function name_11669(tenv) { return /*11669*/function name_11669(stmt) { return /*11676*//*11676*//*11678*/tenv$slmerge/*<11678*/(/*11676*//*11679*/tenv/*<11679*/)/*<11676*/(/*11676*//*11680*//*11680*//*11681*/infer_stmt/*<11681*/(/*11680*//*11682*/tenv/*<11682*/)/*<11680*/(/*11680*//*11683*/stmt/*<11683*/)/*<11680*/)/*<11676*/ }/*<11669*/ }/*<11669*/;
 
@@ -2765,7 +2775,7 @@ throw new Error('let pattern not matched 9242. ' + valueToString($target));})(/*
 
 const infer_stmts = /*10723*/function name_10723(tenv) { return /*10723*/function name_10723(stmts) { return /*10730*//*10730*//*10730*//*10731*/foldl/*<10731*/(/*10730*//*10732*/tenv/*<10732*/)/*<10730*/(/*10730*//*10733*/stmts/*<10733*/)/*<10730*/(/*10730*//*10734*/infer_and_add/*<10734*/)/*<10730*/ }/*<10723*/ }/*<10723*/;
 
-return /*11773*//*11778*//*11779*/eval/*<11779*/(/*11778*//*11775*/"({0: {0: env_nil, 1: infer_stmt, 2: add_stmt, 3: infer, 4: infer_defns},\n  1: {0: externals_stmt, 1: names}, 2: type_to_string, 3: get_type}) => ({type: 'fns',\n  env_nil, infer_stmt, add_stmt, infer, infer_defns, externals_stmt, names, type_to_string, get_type \n}) "/*<11775*/)/*<11778*/(/*11773*//*4983*//*4983*//*4983*//*4983*//*5008*/typecheck/*<5008*/(/*4983*//*11753*//*11753*//*11753*//*11753*//*11753*//*11754*/inference/*<11754*/(/*11753*//*11766*/builtin_env/*<11766*/)/*<11753*/(/*11753*//*5010*/infer_stmt/*<5010*/)/*<11753*/(/*11753*//*11765*/tenv$slmerge/*<11765*/)/*<11753*/(/*11753*//*5011*/infer/*<5011*/)/*<11753*/(/*11753*//*8798*/infer_defns/*<8798*/)/*<11753*/)/*<4983*/(/*4983*//*11755*//*11755*//*7376*/analysis/*<7376*/(/*11755*//*11756*/externals_stmt/*<11756*/)/*<11755*/(/*11755*//*7573*/names/*<7573*/)/*<11755*/)/*<4983*/(/*4983*//*11764*/type_to_string/*<11764*/)/*<4983*/(/*4983*//*10087*/function name_10087(tenv) { return /*10087*/function name_10087(name) { return /*10103*/(function match_10103($target) {
+return /*11773*//*11778*//*11779*/eval/*<11779*/(/*11778*//*11775*/"({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, names, type_to_string, get_type \n }) "/*<11775*/)/*<11778*/(/*11773*//*4983*//*4983*//*4983*//*4983*//*5008*/typecheck/*<5008*/(/*4983*//*11753*//*11753*//*11753*//*11753*//*11754*/inference/*<11754*/(/*11753*//*11766*/builtin_env/*<11766*/)/*<11753*/(/*11753*//*5010*/infer_defns/*<5010*/)/*<11753*/(/*11753*//*11765*/tenv$slmerge/*<11765*/)/*<11753*/(/*11753*//*5011*/infer/*<5011*/)/*<11753*/)/*<4983*/(/*4983*//*11755*//*11755*//*7376*/analysis/*<7376*/(/*11755*//*11756*/externals_stmt/*<11756*/)/*<11755*/(/*11755*//*7573*/names/*<7573*/)/*<11755*/)/*<4983*/(/*4983*//*11764*/type_to_string/*<11764*/)/*<4983*/(/*4983*//*10087*/function name_10087(tenv) { return /*10087*/function name_10087(name) { return /*10103*/(function match_10103($target) {
 if ($target.type === "some") {
 {
 let v = $target[0];
