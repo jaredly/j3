@@ -17,6 +17,7 @@ import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
 import { sortTops } from '../../custom/store/sortTops';
 import { filterNulls } from '../../custom/reduce';
+import { unique } from '../../custom/store/getResults';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
@@ -75,6 +76,7 @@ export const fnsEvaluator = (
                 typeCheck: data['env_nil'],
             };
         },
+
         dependencies(stmt) {
             if (!data['externals_stmt']) {
                 return [];
@@ -91,6 +93,7 @@ export const fnsEvaluator = (
                 kind: item[1].type,
             }));
         },
+
         stmtNames(stmt) {
             if (data['names']) {
                 return unwrapArray(
@@ -108,6 +111,7 @@ export const fnsEvaluator = (
             }
             return [];
         },
+
         parse(node, errors) {
             const j = toJCST(node);
             if (!j) return;
@@ -120,6 +124,7 @@ export const fnsEvaluator = (
                 // ];
             }
         },
+
         parseExpr(node, errors) {
             const j = toJCST(node);
             if (!j) return;
@@ -131,6 +136,7 @@ export const fnsEvaluator = (
                 ];
             }
         },
+
         toFile(state, target) {
             let env = this.init();
             const errors: Errors = {};
@@ -197,6 +203,7 @@ export const fnsEvaluator = (
             }
             return { js: env.js.join('\n'), errors };
         },
+
         addStatements(stmts, env, meta, trace) {
             const display: { [key: number]: Produce } = {};
             const values: Record<string, any> = {};
@@ -254,86 +261,19 @@ export const fnsEvaluator = (
                 }
             });
 
-            let js;
-            for (let [key, value] of Object.entries(stmts)) {
-                const res = compileStmt(
-                    data,
-                    envArgs,
-                    san,
-                    value,
-                    env,
-                    meta,
-                    trace,
-                    names,
-                );
-                (display[+key] as any[]).push(res.display);
-                Object.assign(values, res.values);
-                env = res.env;
-                if (res.js) {
-                    js = res.js;
-                }
-            }
-            return { env, display, values, js };
+            const res = compileStmt(
+                data,
+                san,
+                Object.values(stmts),
+                env,
+                meta,
+                trace,
+                names,
+            );
+
+            return { env, display, values: res.values, js: res.js };
         },
 
-        // addStatement(stmt, env, meta, traceMap) {
-        //     const display: ProduceItem[] = [];
-        //     let names:
-        //         | null
-        //         | {
-        //               type: ',,';
-        //               0: string;
-        //               1: { type: 'value' | 'type' };
-        //               2: number;
-        //           }[] = null;
-        //     if (data['names']) {
-        //         names = unwrapArray(data['names'](stmt));
-        //     }
-
-        //     if (data['infer_stmt']) {
-        //         try {
-        //             const result = data['infer_stmt'](env.typeCheck)(stmt);
-        //             if (data['add_stmt']) {
-        //                 env.typeCheck = data['add_stmt'](env.typeCheck)(result);
-        //             } else {
-        //                 env.typeCheck = result;
-        //             }
-        //         } catch (err) {
-        //             return {
-        //                 env,
-        //                 display: new MyEvalError(`Type Error`, err as Error),
-        //             };
-        //         }
-
-        //         if (names && data['get_type'] && stmt.type === 'sdef') {
-        //             const types: any[] = names!.map((name) =>
-        //                 data['get_type'](env.typeCheck)(name[0]),
-        //             );
-        //             display.push(
-        //                 ...types.map((type, i) =>
-        //                     type.type === 'some'
-        //                         ? `${names![i][0]}: ${data['type_to_string'](
-        //                               type[0],
-        //                           )}`
-        //                         : `No type for ${names![i][0]}`,
-        //                 ),
-        //             );
-        //         }
-        //     }
-
-        //     const res = compileStmt(
-        //         data,
-        //         envArgs,
-        //         san,
-        //         stmt,
-        //         env,
-        //         meta,
-        //         traceMap,
-        //         names,
-        //     );
-        //     display.push(res.display);
-        //     return { env: res.env, display };
-        // },
         setTracing(idx, traceMap, env) {
             if (idx != null) {
                 withTracing(traceMap, idx, san, env);
@@ -341,6 +281,7 @@ export const fnsEvaluator = (
                 san.$setTracer(null);
             }
         },
+
         evaluate(expr, env, meta) {
             const mm = prepareMeta(meta, data['parse_version'] === 2);
 
@@ -351,19 +292,29 @@ export const fnsEvaluator = (
                 );
             }
 
+            const externals: { type: ','; 0: string; 1: number }[] =
+                unwrapArray(data['externals_expr'](expr));
+            const { needed, values } = assembleExternals(externals, env, san);
+
             try {
                 const js = data['compile'](expr)(mm);
                 const fn = new Function(
-                    envArgs,
-                    '{' + env.js.join('\n') + '\nreturn ' + js + '}',
+                    needed.length
+                        ? `{${needed.map(sanitize).join(', ')}}`
+                        : '_',
+                    'return ' + js,
                 );
                 try {
-                    return fn(san);
+                    return fn(values);
                 } catch (err) {
-                    return `Error ${(err as Error).message}`;
+                    return `Error ${(err as Error).message} Deps:${needed.join(
+                        ',',
+                    )}`;
                 }
             } catch (err) {
-                return `Error ${(err as Error).message}`;
+                return `Error ${(err as Error).message} Deps:${needed.join(
+                    ',',
+                )}`;
             }
         },
     };
@@ -371,9 +322,8 @@ export const fnsEvaluator = (
 
 const compileStmt = (
     data: any,
-    envArgs: string,
     san: any,
-    stmt: stmt,
+    stmts: stmt[],
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
@@ -383,12 +333,17 @@ const compileStmt = (
 ) => {
     const mm = prepareMeta(meta, data['parse_version'] === 2);
 
-    if (stmt.type === 'sexpr') {
+    const externals: { type: ','; 0: string; 1: number }[] = stmts.flatMap(
+        (stmt) => unwrapArray(data['externals_stmt'](stmt)),
+    );
+    const { needed, values } = assembleExternals(externals, env, san);
+
+    if (stmts.length === 1 && stmts[0].type === 'sexpr') {
         let type = null;
         if (data['infer']) {
             try {
                 type = data['type_to_string'](
-                    data['infer'](env.typeCheck)(stmt[0]),
+                    data['infer'](env.typeCheck)(stmts[0][0]),
                 );
             } catch (err) {
                 console.error(err);
@@ -402,7 +357,7 @@ const compileStmt = (
 
         let js;
         try {
-            js = data['compile'](stmt[0])(mm);
+            js = data['compile'](stmts[0][0])(mm);
         } catch (err) {
             console.log('error');
             console.error(err);
@@ -413,22 +368,26 @@ const compileStmt = (
             };
         }
         let fn;
-        const fullSource = '{' + env.js.join('\n') + '\nreturn ' + js + '}';
         try {
-            fn = new Function(envArgs, fullSource);
+            fn = new Function(
+                needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
+                'return ' + js,
+            );
         } catch (err) {
             return {
                 env,
-                display: `JS Syntax Error: ${(err as Error).message}\n${js}`,
+                display: `JS Syntax Error: ${
+                    (err as Error).message
+                }\n${js}\nDeps: ${needed.join(',')}`,
                 values: {},
             };
         }
         try {
-            let old = san.$trace;
-            if (meta[stmt[1]]?.traceTop) {
-                withTracing(traceMap, stmt[1], san, env);
+            if (meta[stmts[0][1]]?.traceTop) {
+                withTracing(traceMap, stmts[0][1], san, env);
             }
-            const value = fn(san);
+            const value = fn(values);
+
             san.$setTracer(null);
             return {
                 env,
@@ -455,7 +414,7 @@ const compileStmt = (
 
     let js;
     try {
-        js = data['compile_stmt'](stmt)(mm);
+        js = stmts.map((stmt) => data['compile_stmt'](stmt)(mm)).join('\n\n');
     } catch (err) {
         console.error(err);
         return {
@@ -470,21 +429,19 @@ const compileStmt = (
     try {
         let display = '';
         const fn = new Function(
-            envArgs,
-            `{${env.js.join('\n')};\n${js};\n${
-                name ? 'return ' + sanitize(name) : ''
-            }}`,
+            needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
+            `{${js};\n${name ? 'return ' + sanitize(name) : ''}}`,
         );
         let value;
         if (name) {
             try {
-                value = fn(san);
+                value = fn(values);
             } catch (err) {
                 return {
                     env,
                     display: `JS Evaluation Error: ${
                         (err as Error).message
-                    }\n${js}`,
+                    }\n${js}\nDeps: ${needed.join(',')}`,
                     values: {},
                 };
             }
@@ -494,8 +451,7 @@ const compileStmt = (
             }
         }
 
-        env.js.push(js);
-        return { env, display, values: name ? { [name]: value } : {} };
+        return { env, display, values: name ? { [name]: value } : {}, js };
     } catch (err) {
         return {
             env,
@@ -504,6 +460,26 @@ const compileStmt = (
         };
     }
 };
+
+function assembleExternals(
+    externals: { type: ','; 0: string; 1: number }[],
+    env: FnsEnv,
+    san: any,
+) {
+    const needed = unique(externals.map((ex) => ex[0]));
+    const values: Record<string, any> = {};
+    needed.forEach((name) => {
+        if (env.values[name] == null) {
+            console.warn(`Name not defined?`, name);
+            if (san[sanitize(name)]) {
+                values[sanitize(name)] = san[sanitize(name)];
+            }
+        } else {
+            values[sanitize(name)] = env.values[name];
+        }
+    });
+    return { needed, values };
+}
 
 function prepareMeta(meta: MetaDataMap, and_how: boolean) {
     const mm = Object.entries(meta)

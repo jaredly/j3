@@ -2,6 +2,10 @@
 
 (def b (+ a 2))
 
+a
+
++
+
 (def c (+ a b))
 
 (defn even [x]

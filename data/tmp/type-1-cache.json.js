@@ -884,7 +884,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 11632');})(/*!*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 11632');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<11632*/ }/*<11632*/;
 
 const inference = (v0) => (v1) => (v2) => (v3) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3});
-const analysis = (v0) => (v1) => ({type: "analysis", 0: v0, 1: v1});
+const analysis = (v0) => (v1) => (v2) => ({type: "analysis", 0: v0, 1: v1, 2: v2});
 const value = ({type: "value"});
 const type = ({type: "type"});
 const tts_inner = /*2099*/function name_2099(t) { return /*2099*/function name_2099(free) { return /*2099*/function name_2099(locs) { return /*2105*/(function match_2105($target) {
