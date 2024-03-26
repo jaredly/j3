@@ -17,7 +17,7 @@ export type ResultsCache = {
     // recalculated if (contents) or (types of dependencies) change
     types: {
         [top: number]:
-            | { type: 'success'; env: any }
+            | { type: 'success'; env: any; ts: number }
             | { type: 'error'; error: any; previous: any };
     };
     // results! recalculated if (contents) or (dependencies) change
@@ -30,6 +30,7 @@ export type ResultsCache = {
                   produce: ProduceItem[];
                   // any exportable values
                   values: { [name: string]: any };
+                  ts: number;
               };
     };
 };
@@ -96,38 +97,6 @@ export const getResults = <Env, Stmt, Expr>(
             processPlugin(results, node, plugin, state, evaluator);
             return;
         }
-
-        // if (group.length === 1) {
-        //     const {
-        //         top: { plugin },
-        //         node,
-        //         stmt,
-        //     } = group[0];
-        //     if (plugin) {
-        //         processPlugin(results, node, plugin, state, evaluator);
-        //     } else if (stmt) {
-        //         const res = evaluator.addStatements(
-        //             stmt,
-        //             results.env!,
-        //             state.meta,
-        //             results.traces,
-        //         );
-        //         results.env = res.env;
-        //         results.produce[node.loc] = Array.isArray(res.display)
-        //             ? res.display
-        //             : [res.display];
-        //         if (debugExecOrder) {
-        //             showExecOrder<Stmt>(group, results, i);
-        //         }
-        //     }
-        //     return;
-        // }
-        // if (!evaluator.addStatements) {
-        //     group.forEach((node) => {
-        //         results.produce[node.id] = [`Evaluator can't handle cycles`];
-        //     });
-        // } else {
-        // }
 
         const stmts: { [key: number]: Stmt } = {};
         group.forEach((node) => {
