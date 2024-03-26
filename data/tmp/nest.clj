@@ -1,5 +1,5 @@
-(def hello "hello")
+(def a 10)
 
-(def another "another")
+(def b (+ a 2))
 
-(def one (+ "one" "three"))
+(def c (+ a b))

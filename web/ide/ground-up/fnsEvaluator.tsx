@@ -14,7 +14,8 @@ import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
 import { FnsEnv, TraceMap, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
-import { depSort, sortTops } from '../../custom/store/getResults';
+import { depSort } from '../../custom/store/depSort';
+import { sortTops } from '../../custom/store/sortTops';
 import { filterNulls } from '../../custom/reduce';
 
 /**
@@ -89,9 +90,14 @@ export const fnsEvaluator = (
                     data['names'](stmt) as arr<{
                         type: ',';
                         0: string;
-                        1: number;
+                        1: { type: 'value' | 'type' };
+                        2: number;
                     }>,
-                ).map((res) => ({ name: res[0], loc: res[1] }));
+                ).map((res) => ({
+                    name: res[0],
+                    loc: res[2],
+                    kind: res[1].type,
+                }));
             }
             return [];
         },
@@ -201,6 +207,19 @@ export const fnsEvaluator = (
         addStatements: data['infer_defns']
             ? (stmts, env, meta, trace) => {
                   const display: { [key: number]: Produce } = {};
+                  let names:
+                      | {
+                            type: ',,';
+                            0: string;
+                            1: { type: 'value' | 'type' };
+                            2: number;
+                        }[]
+                      | null = null;
+                  if (data['names']) {
+                      names = Object.values(stmts).flatMap((stmt) =>
+                          unwrapArray(data['names'](stmt)),
+                      );
+                  }
 
                   try {
                       env.typeCheck = data['infer_defns'](env.typeCheck)(
@@ -248,6 +267,7 @@ export const fnsEvaluator = (
                           env,
                           meta,
                           trace,
+                          names,
                       );
                       (display[+key] as any[]).push(res.display);
                       env = res.env;
@@ -257,30 +277,44 @@ export const fnsEvaluator = (
             : undefined,
         addStatement(stmt, env, meta, traceMap) {
             const display: ProduceItem[] = [];
+            let names:
+                | null
+                | {
+                      type: ',,';
+                      0: string;
+                      1: { type: 'value' | 'type' };
+                      2: number;
+                  }[] = null;
+            if (data['names']) {
+                names = unwrapArray(data['names'](stmt));
+            }
+
             if (data['infer_stmt']) {
                 try {
-                    env.typeCheck = data['infer_stmt'](env.typeCheck)(stmt);
+                    const result = data['infer_stmt'](env.typeCheck)(stmt);
+                    if (data['add_stmt']) {
+                        env.typeCheck = data['add_stmt'](env.typeCheck)(result);
+                    } else {
+                        env.typeCheck = result;
+                    }
                 } catch (err) {
-                    // console.error(err);
                     return {
                         env,
                         display: new MyEvalError(`Type Error`, err as Error),
                     };
                 }
 
-                if (data['names'] && data['get_type'] && stmt.type === 'sdef') {
-                    const names: { type: ','; 0: string; 1: number }[] =
-                        unwrapArray(data['names'](stmt));
-                    const types: any[] = names.map((name) =>
+                if (names && data['get_type'] && stmt.type === 'sdef') {
+                    const types: any[] = names!.map((name) =>
                         data['get_type'](env.typeCheck)(name[0]),
                     );
                     display.push(
                         ...types.map((type, i) =>
                             type.type === 'some'
-                                ? `${names[i][0]}: ${data['type_to_string'](
+                                ? `${names![i][0]}: ${data['type_to_string'](
                                       type[0],
                                   )}`
-                                : `No type for ${names[i][0]}`,
+                                : `No type for ${names![i][0]}`,
                         ),
                     );
                 }
@@ -294,6 +328,7 @@ export const fnsEvaluator = (
                 env,
                 meta,
                 traceMap,
+                names,
             );
             display.push(res.display);
             return { env: res.env, display };
@@ -341,6 +376,9 @@ const compileStmt = (
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
+    names?:
+        | null
+        | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
 ) => {
     const mm = prepareMeta(meta, data['parse_version'] === 2);
 
@@ -419,9 +457,11 @@ const compileStmt = (
         };
     }
 
-    let name = stmt.type === 'sdef' ? stmt[0] : null;
+    // let name = stmt.type === 'sdef' ? stmt[0] : null;
+    const name = names?.length ? names[0][0] : null;
 
     try {
+        let display = '';
         const fn = new Function(
             envArgs,
             `{${env.js.join('\n')};\n${js};\n${
@@ -429,8 +469,9 @@ const compileStmt = (
             }}`,
         );
         if (name) {
+            let value;
             try {
-                env.values[name] = fn(san);
+                value = fn(san);
             } catch (err) {
                 return {
                     env,
@@ -439,10 +480,12 @@ const compileStmt = (
                     }\n${js}`,
                 };
             }
+            env.values[name] = value;
+            display = valueToString(value);
         }
 
         env.js.push(js);
-        return { env, display: `` };
+        return { env, display };
     } catch (err) {
         return {
             env,
@@ -450,6 +493,7 @@ const compileStmt = (
         };
     }
 };
+
 function prepareMeta(meta: MetaDataMap, and_how: boolean) {
     const mm = Object.entries(meta)
         .map(([k, v]) => [+k, v.trace])

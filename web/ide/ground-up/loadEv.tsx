@@ -75,6 +75,8 @@ export const evaluatorFromText = (
                 compile_stmt,
                 compile,
             });
+        } else if (result.type === 'fns') {
+            Object.assign(data, result);
         } else {
             console.log('NOT A TYPE', result.type);
             Object.assign(data, result);

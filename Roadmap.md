@@ -1,13 +1,29 @@
 
 
+- [ ] getResults
+  - recalc compilation when self changes
+  - recalc type when self or dep types change
+    - soo ... do I need a closer handle on `type env`?
+    - like, two different functions for "calculate type" and "add type to env"? probably.
+  - recalc value when self or deps change
+
+
+Ok, so how bout the `Evaluator` plugin config
+be responsible for providing the javascript
+involved in bridging the gap?
+like, translating the names and such.
+That would be quite nice.
+
+
 # How to be demo-ready
 
 - [x] need better perf on large documents (I think it's that I'm not memoizing toplevels)
   - [x] dont recalc on hovers
   - [x] ns Keyed on just ID (not path) so I can reuse much more
   - [x] make sure cover selection is owkring
-- [ ] need a `trace` function that can be accessed in-line
+- [x] need a `trace` function that can be accessed in-line
 
+- [ ] includeee
 
 # Getting tupled-builtins
 

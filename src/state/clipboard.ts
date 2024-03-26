@@ -37,7 +37,7 @@ import { addDef } from '../to-ast/to-ast';
 import { applyInferMod, infer } from '../infer/infer';
 import { CstCtx } from '../to-ast/library';
 import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
-import { NUIState } from '../../web/custom/UIState';
+import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
 import { reduceUpdate } from '../../web/ide/ground-up/reduce';
 import { findTops } from '../../web/ide/ground-up/findTops';
 
@@ -187,36 +187,81 @@ export const paste = (
 
                 const last = start[start.length - 1];
                 const parent = start[start.length - 2];
-                if (
-                    state.map[last.idx].type === 'blank' &&
-                    parent.type === 'child'
-                ) {
-                    const pnode = state.map[parent.idx] as ListLikeContents &
-                        MNodeExtra;
-                    const values = pnode.values.slice();
-                    values.splice(parent.at, 1, ...idxes);
-                    map[parent.idx] = {
-                        ...pnode,
-                        values,
-                    };
-                    return {
-                        type: 'update',
-                        map,
-                        selection: start
-                            .slice(0, -2)
-                            .concat({
-                                idx: parent.idx,
-                                type: 'child',
-                                at: parent.at + idxes.length - 1,
-                            })
-                            .concat(selection),
-                    };
+                if (state.map[last.idx].type !== 'blank') {
+                    const update = newNodeAfter; // TODO
+                }
+                if (state.map[last.idx].type === 'blank') {
+                    if (parent.type === 'child') {
+                        const pnode = state.map[
+                            parent.idx
+                        ] as ListLikeContents & MNodeExtra;
+                        const values = pnode.values.slice();
+                        values.splice(parent.at, 1, ...idxes);
+                        map[parent.idx] = {
+                            ...pnode,
+                            values,
+                        };
+                        return {
+                            type: 'update',
+                            map,
+                            selection: start
+                                .slice(0, -2)
+                                .concat({
+                                    idx: parent.idx,
+                                    type: 'child',
+                                    at: parent.at + idxes.length - 1,
+                                })
+                                .concat(selection),
+                        };
+                    }
+
+                    if (parent.type === 'ns-top') {
+                        const ns = state.nsMap[parent.idx] as RealizedNamespace;
+                        map[ns.top] = map[idxes[0]];
+                        delete map[idxes[0]];
+                        map[ns.top].loc = ns.top;
+                        const gparent = start[start.length - 3] as Extract<
+                            Path,
+                            { type: 'ns' }
+                        >;
+                        const pspace = state.nsMap[
+                            gparent.idx
+                        ] as RealizedNamespace;
+                        const idx = pspace.children.indexOf(ns.id);
+                        const nsm: NsUpdateMap = {};
+                        if (idxes.length > 1) {
+                            const children = pspace.children.slice();
+                            const nsidxes = idxes.slice(1).map((id) => {
+                                const n = state.nidx();
+                                nsm[n] = {
+                                    type: 'normal',
+                                    children: [],
+                                    id: n,
+                                    top: id,
+                                };
+                                return n;
+                            });
+                            children.splice(idx + 1, 0, ...nsidxes);
+                            nsm[pspace.id] = { ...pspace, children };
+                        }
+                        return {
+                            type: 'update',
+                            map,
+                            nsMap: nsm,
+                            selection: start
+                                .slice(0, -2)
+                                .concat(
+                                    { idx: parent.idx, type: 'ns-top' },
+                                    { type: 'start', idx: ns.top },
+                                ),
+                        };
+                    }
                 }
 
                 return newNodeAfter(
                     start,
                     state.map,
-                    {},
+                    state.nsMap,
                     { map, idx: lidx, selection },
                     state.nidx,
                     idxes.slice(0, -1),

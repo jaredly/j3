@@ -99,7 +99,7 @@ export function HiddenInput({
                 evt.preventDefault();
                 const text = evt.clipboardData.getData('text/html');
                 // TODO: We should do rich copy/paste!
-                if (text && 1 < 0) {
+                if (text) {
                     const start = text.indexOf(clipboardPrefix);
                     const end = text.indexOf(clipboardSuffix);
                     if (start !== -1 && end !== -1) {
