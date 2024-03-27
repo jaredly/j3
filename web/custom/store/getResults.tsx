@@ -144,7 +144,9 @@ export const getResults = <
         if (cache.nodes[top.top] && lastState) {
             if (
                 !cache.nodes[top.top].ids.some(
-                    (id) => state.map[+id] !== lastState.map[+id],
+                    (id) =>
+                        state.map[+id] !== lastState.map[+id] ||
+                        state.meta[+id] !== lastState.meta[+id],
                 )
             ) {
                 Object.assign(results.display, cache.nodes[top.top].display);
@@ -153,7 +155,14 @@ export const getResults = <
         }
         const ids: number[] = [];
         const node = fromMCST(top.top, state.map, ids);
-        if (cache.nodes[top.top] && equal(cache.nodes[top.top].node, node)) {
+        if (
+            cache.nodes[top.top] &&
+            equal(cache.nodes[top.top].node, node) &&
+            lastState &&
+            !cache.nodes[top.top].ids.some(
+                (id) => state.meta[+id] !== lastState.meta[+id],
+            )
+        ) {
             Object.assign(results.display, cache.nodes[top.top].display);
             return;
         }
@@ -167,7 +176,10 @@ export const getResults = <
         const errors: Errors = {};
         const stmt = evaluator.parse(node, errors);
         changes[top.top].stmt = cache.nodes[top.top]?.parsed
-            ? !equal(cache.nodes[top.top].parsed!.stmt, stmt)
+            ? !equal(cache.nodes[top.top].parsed!.stmt, stmt) ||
+              cache.nodes[top.top].ids.some(
+                  (id) => state.meta[+id] !== lastState!.meta[+id],
+              )
             : true;
         const names = stmt ? evaluator.stmtNames(stmt) : null;
         if (names) {

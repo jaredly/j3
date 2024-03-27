@@ -492,10 +492,12 @@ function assembleExternals(
         | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
 ) {
     const provided = names?.map((obj) => obj[0]) ?? [];
-    const needed = unique(externals.map((ex) => ex[0])).filter(
-        // Skip recursive self-calls
-        (name) => !provided.includes(name),
-    );
+    const needed = unique(externals.map((ex) => ex[0]))
+        .filter(
+            // Skip recursive self-calls
+            (name) => !provided.includes(name),
+        )
+        .concat(['$trace']);
     const values: Record<string, any> = {};
     needed.forEach((name) => {
         if (env.values[name] == null) {

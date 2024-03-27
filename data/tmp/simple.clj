@@ -52,7 +52,7 @@ nil
 
 (cons 1 (nil))
 
-(defn lol [x] (+ x 2))
+(defn lol [x] (let [y x] (+ x y)))
 
 lol
 
