@@ -4,9 +4,13 @@
 
 a
 
+(+ 2 30)
+
 +
 
 (def c (+ a b))
+
+c
 
 (defn even [x]
     (if (= 0 x)
@@ -18,7 +22,7 @@ a
         false
             (even (- x 1))))
 
-12341
+1231
 
 (, 1 2)
 
@@ -33,6 +37,6 @@ a
         (tcon a) a
         _        "hello"))
 
-12341
+12345
 
 (, even [(, 2 true) (, 3 false) (, 17 false) (, 24 true)])

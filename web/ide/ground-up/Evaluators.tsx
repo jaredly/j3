@@ -79,7 +79,13 @@ export type Errors = { [key: number]: string[] };
 export type ProduceItem = JSX.Element | string | LocError | MyEvalError;
 export type Produce = ProduceItem | ProduceItem[];
 
-export type FullEvalator<Env, Stmt, Expr, TypeEnv = any, Type = any> = {
+export type FullEvalator<
+    Env extends { values: { [key: string]: any } },
+    Stmt,
+    Expr,
+    TypeEnv = any,
+    Type = any,
+> = {
     id: string;
     init(): Env;
     parse(node: Node, errors: Errors): Stmt | void;
@@ -110,9 +116,9 @@ export type FullEvalator<Env, Stmt, Expr, TypeEnv = any, Type = any> = {
     toFile?(state: NUIState, target?: number): { js: string; errors: Errors };
 };
 
-export const repr: FullEvalator<void, Node, Node> = {
+export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     id: 'repr',
-    init() {},
+    init: () => ({ values: {} }),
     dependencies(stmt) {
         return [];
     },
@@ -137,13 +143,13 @@ export const repr: FullEvalator<void, Node, Node> = {
 };
 
 export const bootstrap: FullEvalator<
-    { [key: string]: any },
+    { values: { [key: string]: any } },
     stmt & { loc: number },
     expr
 > = {
     id: 'bootstrap',
     init: () => {
-        return builtins();
+        return { values: builtins() };
     },
     stmtNames: () => [],
     dependencies: () => [],
@@ -172,9 +178,12 @@ export const bootstrap: FullEvalator<
             switch (stmt.type) {
                 case 'sdef': {
                     try {
-                        const res = (env[stmt[0]] = evalExpr(stmt[1], env));
+                        const res = (env.values[stmt[0]] = evalExpr(
+                            stmt[1],
+                            env,
+                        ));
                         if (stmt[0] === 'builtins') {
-                            Object.assign(env, extractBuiltins(res));
+                            Object.assign(env.values, extractBuiltins(res));
                         }
                         values[stmt[0]] = res;
                         display[+id] =
@@ -190,7 +199,7 @@ export const bootstrap: FullEvalator<
                     }
                 }
                 case 'sdeftype': {
-                    addTypeConstructors(stmt, env);
+                    addTypeConstructors(stmt, env.values);
                     display[+id] = `type with ${
                         unwrapArray(stmt[1]).length
                     } constructors`;
@@ -198,7 +207,7 @@ export const bootstrap: FullEvalator<
                 }
                 case 'sexpr': {
                     try {
-                        const res = evalExpr(stmt[0], env);
+                        const res = evalExpr(stmt[0], env.values);
                         display[+id] = valueToString(res);
                     } catch (err) {
                         console.error(err);

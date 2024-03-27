@@ -22,7 +22,11 @@ export const loadEv = async (
 export const evaluatorFromText = (
     id: string,
     text: string[],
-): FullEvalator<unknown, stmt & { loc: number }, expr> | null => {
+): FullEvalator<
+    { values: { [key: string]: any } },
+    stmt & { loc: number },
+    expr
+> | null => {
     const benv = builtins();
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';

@@ -65,3 +65,7 @@
                              (filter fn rest))))
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
+
+some
+
+map-without

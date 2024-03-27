@@ -342,9 +342,11 @@ const compileStmt = (
 ) => {
     const mm = prepareMeta(meta, data['parse_version'] === 2);
 
-    const externals: { type: ','; 0: string; 1: number }[] = stmts.flatMap(
-        (stmt) => unwrapArray(data['externals_stmt'](stmt)),
-    );
+    const externals: { type: ','; 0: string; 1: number }[] = data[
+        'externals_stmt'
+    ]
+        ? stmts.flatMap((stmt) => unwrapArray(data['externals_stmt'](stmt)))
+        : [];
     const { needed, values } = assembleExternals(externals, env, san, names);
 
     if (stmts.length === 1 && stmts[0].type === 'sexpr') {

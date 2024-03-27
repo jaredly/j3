@@ -19,7 +19,11 @@ export type SortedInfo<Stmt> = {
     deps: LocedName[];
 };
 
-export function sortTops<Env, Stmt, Expr>(
+export function sortTops<
+    Env extends { values: { [key: string]: any } },
+    Stmt,
+    Expr,
+>(
     tops: Tops,
     state: NUIState,
     results: NUIResults,

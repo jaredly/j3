@@ -67,7 +67,11 @@ export type ResultsCache<Stmt> = {
     };
 };
 
-export const getResults = <Env, Stmt, Expr>(
+export const getResults = <
+    Env extends { values: { [key: string]: any } },
+    Stmt,
+    Expr,
+>(
     state: NUIState,
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
     debugExecOrder: boolean,
@@ -89,7 +93,7 @@ export const getResults = <Env, Stmt, Expr>(
         errors: {},
         hashNames: {},
         produce: {},
-        env: null,
+        env: { values: {} },
         traces: [],
         pluginResults: {},
         tenv: null,
@@ -282,11 +286,11 @@ export const getResults = <Env, Stmt, Expr>(
         }
 
         if (cache.types[groupKey] && evaluator.addTypes) {
-            console.log(
-                `add the types from`,
-                groupKey,
-                cache.types[groupKey].env,
-            );
+            // console.log(
+            //     `add the types from`,
+            //     groupKey,
+            //     cache.types[groupKey].env,
+            // );
             results.tenv = evaluator.addTypes!(
                 results.tenv,
                 cache.types[groupKey].env,
@@ -301,7 +305,7 @@ export const getResults = <Env, Stmt, Expr>(
         if (reEval) {
             const { env, display, values } = evaluator.addStatements(
                 stmts,
-                results.env!,
+                results.env as any,
                 state.meta,
                 results.traces,
             );
@@ -310,7 +314,7 @@ export const getResults = <Env, Stmt, Expr>(
                     ? (display[node.id] as any)
                     : [display[node.id]];
                 node.names.forEach(({ name }) => {
-                    results.env[name] = values[name];
+                    results.env.values[name] = values[name];
                 });
 
                 let pluginResult;
@@ -341,7 +345,8 @@ export const getResults = <Env, Stmt, Expr>(
                         cache.results[node.id].pluginResult;
                 }
                 node.names.forEach(({ name }) => {
-                    results.env[name] = cache.results[node.id].values[name];
+                    results.env.values[name] =
+                        cache.results[node.id].values[name];
                 });
             });
         }

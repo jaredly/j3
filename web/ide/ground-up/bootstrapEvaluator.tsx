@@ -17,7 +17,7 @@ export const bootstrapEvaluator = (
 ): FullEvalator<any, stmt & { loc: number }, expr> => {
     let benv = bootstrap.init();
     data.stmts.forEach((stmt: stmt & { loc: number }) => {
-        const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {}).env;
+        const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {});
         benv = res.env;
     });
     const san = sanitizedEnv(benv);
@@ -40,7 +40,7 @@ export const bootstrapEvaluator = (
                 if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
                     let raw;
                     try {
-                        raw = benv['compile-st'](stmt);
+                        raw = benv.values['compile-st'](stmt);
                         env.push(raw);
                         try {
                             const name = stmt.type === 'sdef' ? stmt[0] : null;
@@ -78,7 +78,7 @@ export const bootstrapEvaluator = (
                 if (stmt.type === 'sexpr') {
                     let raw;
                     try {
-                        raw = benv['compile-st'](stmt);
+                        raw = benv.values['compile-st'](stmt);
                     } catch (err) {
                         console.error(err);
                         return {
@@ -165,7 +165,7 @@ export const bootstrapEvaluator = (
         evaluate(expr, env) {
             let raw;
             try {
-                raw = benv['compile'](expr);
+                raw = benv.values['compile'](expr);
             } catch (err) {
                 console.error(err);
                 return 'Compilation failed: ' + (err as Error).message;

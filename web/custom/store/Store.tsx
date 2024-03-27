@@ -35,7 +35,7 @@ export type NUIResults = {
     display: Display;
     hashNames: { [loc: string]: string };
     produce: { [key: string]: ProduceItem[] };
-    env: any;
+    env: { values: { [key: string]: any } };
     tenv: any;
     traces: TraceMap;
     pluginResults: { [nsLoc: number]: any };
