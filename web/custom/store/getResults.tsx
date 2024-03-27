@@ -306,6 +306,7 @@ export const getResults = <
             const { env, display, values } = evaluator.addStatements(
                 stmts,
                 results.env as any,
+                results.tenv,
                 state.meta,
                 results.traces,
             );

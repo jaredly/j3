@@ -103,7 +103,7 @@ export type FullEvalator<
     addStatements(
         stmts: { [key: number]: Stmt },
         env: Env,
-        // tenv: TypeEnv,
+        tenv: TypeEnv,
         meta: MetaDataMap,
         trace: TraceMap,
     ): {

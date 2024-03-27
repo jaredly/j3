@@ -1,11 +1,14 @@
 
 
-- [ ] getResults
+- [x] getResults
   - recalc compilation when self changes
   - recalc type when self or dep types change
     - soo ... do I need a closer handle on `type env`?
     - like, two different functions for "calculate type" and "add type to env"? probably.
   - recalc value when self or deps change
+
+- [ ] I need to ensure that going from 'error' to 'not error' works
+
 
 - [x] ok, so now we're just doing addStatements ... all the time.
 - [x] now that we have dependency information, and such:

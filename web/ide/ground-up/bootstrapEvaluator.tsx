@@ -17,7 +17,7 @@ export const bootstrapEvaluator = (
 ): FullEvalator<any, stmt & { loc: number }, expr> => {
     let benv = bootstrap.init();
     data.stmts.forEach((stmt: stmt & { loc: number }) => {
-        const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {});
+        const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {}, {});
         benv = res.env;
     });
     const san = sanitizedEnv(benv);
@@ -136,7 +136,13 @@ export const bootstrapEvaluator = (
                 //     this.addStatement
                 // }
                 try {
-                    env = this.addStatements({ [0]: parsed }, env, {}, {}).env;
+                    env = this.addStatements(
+                        { [0]: parsed },
+                        env,
+                        {},
+                        {},
+                        {},
+                    ).env;
                 } catch (err) {
                     console.error(err);
                 }

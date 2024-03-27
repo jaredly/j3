@@ -198,6 +198,7 @@ export const fnsEvaluator = (
                     env,
                     {},
                     {},
+                    {},
                 );
                 env = result.env;
                 allNames.push(...group.flatMap(({ names }) => names));
@@ -227,7 +228,7 @@ export const fnsEvaluator = (
             return { js: env.js.join('\n'), errors };
         },
 
-        addStatements(stmts, env, meta, trace) {
+        addStatements(stmts, env, tenv, meta, trace) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
             let names:
@@ -246,25 +247,29 @@ export const fnsEvaluator = (
 
             Object.entries(stmts).forEach(([id, stmt]) => {
                 display[+id] = [];
-            });
 
-            //     if (data['names'] && data['get_type'] && stmt.type === 'sdef') {
-            //         const names: { type: ','; 0: string; 1: number }[] =
-            //             unwrapArray(data['names'](stmt));
-            //         const types: any[] = names.map((name) =>
-            //             data['get_type'](env.typeCheck)(name[0]),
-            //         );
-            //         (display[+id] as any[]).push(
-            //             ...types.map((type, i) =>
-            //                 type.type === 'some'
-            //                     ? `${names[i][0]}: ${data['type_to_string'](
-            //                           type[0],
-            //                       )}`
-            //                     : `No type for ${names[i][0]}`,
-            //             ),
-            //         );
-            //     }
-            // });
+                if (
+                    tenv &&
+                    data['names'] &&
+                    data['get_type'] &&
+                    stmt.type === 'sdef'
+                ) {
+                    const names: { type: ','; 0: string; 1: number }[] =
+                        unwrapArray(data['names'](stmt));
+                    const types: any[] = names.map((name) =>
+                        data['get_type'](tenv)(name[0]),
+                    );
+                    (display[+id] as any[]).push(
+                        ...types.map((type, i) =>
+                            type.type === 'some'
+                                ? `${names[i][0]}: ${data['type_to_string'](
+                                      type[0],
+                                  )}`
+                                : `No type for ${names[i][0]}`,
+                        ),
+                    );
+                }
+            });
 
             const res = compileStmt(
                 data,
