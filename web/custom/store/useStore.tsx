@@ -7,8 +7,14 @@ import { ResultsCache, getResults } from './getResults';
 import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
 
 export const useStore = (initialState: NUIState) => {
-    const cache = useMemo<ResultsCache>(
-        () => ({ nodes: {}, types: {}, results: {}, lastState: null }),
+    const cache = useMemo<ResultsCache<any>>(
+        () => ({
+            nodes: {},
+            types: {},
+            results: {},
+            lastState: null,
+            lastEvaluator: null,
+        }),
         [],
     );
 
@@ -31,7 +37,7 @@ export const useStore = (initialState: NUIState) => {
         let debugExecOrder = { current: false };
 
         const updateResults = adaptiveBounce(() => {
-            console.log('updating results');
+            // console.log('updating results');
             results = getResults(
                 state,
                 evaluator,

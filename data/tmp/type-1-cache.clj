@@ -1157,5 +1157,6 @@
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)
-                (some v) (some (scheme/type v))
-                _        (none)))))
+                q                      (some v)
+                (some (scheme/type v)) _
+                (none)))))

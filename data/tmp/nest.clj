@@ -18,6 +18,12 @@ a
         false
             (even (- x 1))))
 
-123411
+1234
+
+(, 1 2)
+
+"hello ${(int-to-string 321)}"
+
+12341
 
 (, even [(, 2 true) (, 3 false) (, 17 false) (, 24 true)])

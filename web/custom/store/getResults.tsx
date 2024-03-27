@@ -3,6 +3,7 @@ import { findTops } from '../../ide/ground-up/findTops';
 import {
     Errors,
     FullEvalator,
+    MyEvalError,
     ProduceItem,
 } from '../../ide/ground-up/Evaluators';
 import { layout } from '../../../src/layout';
@@ -14,6 +15,7 @@ import { fromMCST } from '../../../src/types/mcst';
 import equal from 'fast-deep-equal';
 import { depSort } from './depSort';
 import { filterNulls } from '../reduce';
+import { Display } from '../../../src/to-ast/library';
 
 type SuccessfulTypeResult = {
     type: 'success';
@@ -23,6 +25,7 @@ type SuccessfulTypeResult = {
 };
 
 export type ResultsCache<Stmt> = {
+    lastEvaluator: AnyEnv | null;
     lastState: null | NUIState;
     // the result of `fromMCST`
     // and the IDs of all included nodes. We can do a quick
@@ -37,6 +40,7 @@ export type ResultsCache<Stmt> = {
                 deps: LocedName[];
             };
             parseErrors: Errors | null;
+            display: NUIResults['display'];
         };
     };
 
@@ -69,6 +73,13 @@ export const getResults = <Env, Stmt, Expr>(
     debugExecOrder: boolean,
     cache: ResultsCache<Stmt>,
 ) => {
+    if (cache.lastEvaluator !== evaluator) {
+        cache.results = {};
+        cache.types = {};
+        cache.nodes = {};
+        cache.lastState = null;
+        cache.lastEvaluator = evaluator;
+    }
     const lastState = cache.lastState;
     cache.lastState = state;
 
@@ -86,8 +97,26 @@ export const getResults = <Env, Stmt, Expr>(
     const tops = findTops(state);
     if (!evaluator) {
         tops.forEach(({ top }) => {
+            const ids: number[] = [];
+            const node = fromMCST(top, state.map, ids);
+            cache.nodes[top] = {
+                ids,
+                node,
+                display: {},
+                parsed: undefined,
+                parseErrors: null,
+            };
+
             results.produce[top] = ['No evaluator'];
-            layout(top, 0, state.map, results.display, results.hashNames, true);
+            layout(
+                top,
+                0,
+                state.map,
+                cache.nodes[top].display,
+                results.hashNames,
+                true,
+            );
+            Object.assign(results.display, cache.nodes[top].display);
         });
         return results;
     }
@@ -100,32 +129,37 @@ export const getResults = <Env, Stmt, Expr>(
             value?: boolean;
         };
     } = {};
+    tops.forEach((top) => (changes[top.top] = {}));
 
     const idForName: { [name: string]: number } = {};
 
     // By the end of this, `cache.nodes` will be populated for
     // each `top.top`
     tops.forEach((top) => {
+        // console.log('top', top.top);
         if (cache.nodes[top.top] && lastState) {
             if (
                 !cache.nodes[top.top].ids.some(
                     (id) => state.map[+id] !== lastState.map[+id],
                 )
             ) {
-                changes[top.top] = {};
+                Object.assign(results.display, cache.nodes[top.top].display);
                 return;
             }
         }
         const ids: number[] = [];
         const node = fromMCST(top.top, state.map, ids);
         if (cache.nodes[top.top] && equal(cache.nodes[top.top].node, node)) {
-            changes[top.top] = {};
+            Object.assign(results.display, cache.nodes[top.top].display);
             return;
         }
 
-        layout(top.top, 0, state.map, results.display, results.hashNames, true);
+        const display: Display = {};
+        // console.log('PARSE & LAYOUT', top);
+        layout(top.top, 0, state.map, display, results.hashNames, true);
+        Object.assign(results.display, display);
 
-        changes[top.top] = { source: true };
+        changes[top.top].source = true;
         const errors: Errors = {};
         const stmt = evaluator.parse(node, errors);
         changes[top.top].stmt = cache.nodes[top.top]?.parsed
@@ -141,6 +175,7 @@ export const getResults = <Env, Stmt, Expr>(
         cache.nodes[top.top] = {
             ids,
             node,
+            display,
             parsed: stmt
                 ? {
                       stmt,
@@ -156,15 +191,19 @@ export const getResults = <Env, Stmt, Expr>(
     // const sorted = sortTops(tops, state, results, evaluator);
     const sortedTops = depSort(
         tops
-            .map(({ top }) =>
-                cache.nodes[top].parsed
+            .map(({ top }) => {
+                if (!cache.nodes[top].parsed) {
+                    console.log('Not parsed', top);
+                }
+
+                return cache.nodes[top].parsed
                     ? {
                           id: top,
                           names: cache.nodes[top].parsed!.names,
                           deps: cache.nodes[top].parsed!.deps,
                       }
-                    : null,
-            )
+                    : null;
+            })
             .filter(filterNulls),
     );
 
@@ -181,18 +220,6 @@ export const getResults = <Env, Stmt, Expr>(
     results.env = evaluator.init();
     results.tenv = evaluator.initType?.();
     sortedTops.forEach((group, i) => {
-        // const plugin = topsById[group[0].id].plugin;
-        // if (group.length === 1 && plugin) {
-        //     processPlugin(
-        //         results,
-        //         cache.nodes[group[0].id].node,
-        //         plugin,
-        //         state,
-        //         evaluator,
-        //     );
-        //     return;
-        // }
-
         const stmts: { [key: number]: Stmt } = {};
         for (let node of group) {
             const parsed = cache.nodes[node.id].parsed;
@@ -209,7 +236,10 @@ export const getResults = <Env, Stmt, Expr>(
         }
 
         const allDeps = unique(
-            group.flatMap((node) => node.deps).map((n) => idForName[n.name]),
+            group
+                .flatMap((node) => node.deps)
+                .map((n) => idForName[n.name])
+                .filter(filterNulls),
         );
         const ids = group.map((g) => g.id).sort();
         const groupKey = ids.join(':');
@@ -219,20 +249,34 @@ export const getResults = <Env, Stmt, Expr>(
             allDeps.some((id) => changes[id].type);
 
         if (retype && evaluator.infer && results.tenv) {
-            const tenv = evaluator.infer(Object.values(stmts), results.tenv);
-            const types = group.flatMap((node) =>
-                node.names.map((n) => evaluator.typeForName!(n.name, tenv)),
-            );
-            const gCache = cache.types[groupKey];
-            const changed = !equal(gCache.types, types);
-            if (changed) {
-                ids.forEach((id) => (changes[id].type = true));
-                cache.types[groupKey] = {
-                    env: tenv,
-                    ts: Date.now(),
-                    types: types,
-                    tops: ids,
-                };
+            try {
+                const tenv = evaluator.infer(
+                    Object.values(stmts),
+                    results.tenv,
+                );
+                const types = group.flatMap((node) =>
+                    node.names.map((n) => evaluator.typeForName!(tenv, n.name)),
+                );
+                const gCache = cache.types[groupKey];
+                const changed = !equal(gCache?.types, types);
+                if (changed) {
+                    ids.forEach((id) => (changes[id].type = true));
+                    cache.types[groupKey] = {
+                        env: tenv,
+                        ts: Date.now(),
+                        types: types,
+                        tops: ids,
+                    };
+                }
+            } catch (err) {
+                // ok folks
+                group.forEach(
+                    (node) =>
+                        (results.produce[node.id] = [
+                            new MyEvalError('Tyoe Checker', err as Error),
+                        ]),
+                );
+                return;
             }
         }
         results.tenv = evaluator.addTypes!(
@@ -269,6 +313,7 @@ export const getResults = <Env, Stmt, Expr>(
                         state,
                         evaluator,
                     );
+                    results.pluginResults[node.id] = pluginResult;
                 }
 
                 cache.results[node.id] = {
@@ -277,34 +322,20 @@ export const getResults = <Env, Stmt, Expr>(
                     values,
                     pluginResult,
                 };
-                // ToDO: actually check if things changed
                 changes[node.id].value = true;
             });
         } else {
             group.forEach((node) => {
                 results.produce[node.id] = cache.results[node.id].produce;
+                if (cache.results[node.id].pluginResult) {
+                    results.pluginResults[node.id] =
+                        cache.results[node.id].pluginResult;
+                }
                 node.names.forEach(({ name }) => {
                     results.env[name] = cache.results[node.id].values[name];
                 });
             });
         }
-
-        // const { env, display } = evaluator.addStatements(
-        //     stmts,
-        //     results.env!,
-        //     state.meta,
-        //     results.traces,
-        // );
-        // results.env = env;
-        // group.forEach((node) => {
-        //     if (!Array.isArray(display[node.id])) {
-        //         display[node.id] = [display[node.id] as any];
-        //     }
-        // });
-        // Object.assign(results.produce, display);
-        // if (debugExecOrder) {
-        //     showExecOrder(group, results, i);
-        // }
     });
 
     return results;
@@ -332,13 +363,7 @@ export const processPlugin = (
         results.produce[node.loc] = [`plugin ${pid} not found`];
         return;
     }
-    return (results.pluginResults[node.loc] = pl.process(
-        node,
-        state,
-        evaluator,
-        results,
-        options,
-    ));
+    return pl.process(node, state, evaluator, results, options);
 };
 
 export function showExecOrder<Stmt>(

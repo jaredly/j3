@@ -12,11 +12,12 @@
   - the `fnsEvaluator` env should actually be the values, instead of
     a list of strings to be compiled.
     We can now know what things to inject, and we know we're doing it in the right order.
-- [ ] gotta have FullEvaluator expose a 'inferTypes' thing
-- [ ] so we can start caching the type inference of stuff
-  - [ ] anddddd if a dependency has a TYPE ERROR .. then we definitely can
+- [x] gotta have FullEvaluator expose a 'inferTypes' thing
+- [x] so we can start caching the type inference of stuff
+  - [x] anddddd if a dependency has a TYPE ERROR .. then we definitely can
     bail on doing evaluations.
     SHOULD WE in that case just keep using the cached values? Might as well, right?
+- [ ] THE FIRST run, isn't working quite
 
 Ok, so how bout the `Evaluator` plugin config
 be responsible for providing the javascript

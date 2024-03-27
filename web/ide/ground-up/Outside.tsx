@@ -193,7 +193,7 @@ export const Loader = ({
             onlyLast<NUIState>(
                 (state) => {
                     const now = Date.now();
-                    console.log(`Time since last save`, now - lastSaveTime);
+                    // console.log(`Time since last save`, now - lastSaveTime);
                     if (now - lastSaveTime < 200) {
                         throw new Error(`saving too fast???`);
                     }

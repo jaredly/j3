@@ -77,6 +77,29 @@ export const fnsEvaluator = (
             };
         },
 
+        initType() {
+            return data['env_nil'];
+        },
+        infer(stmts, env) {
+            return data['infer_stmts'](env)(wrapArray(stmts));
+        },
+        inferExpr(expr, env) {
+            return data['infer'](env)(expr);
+        },
+        addTypes(env, nenv) {
+            return data['add_stmt'](env)(nenv);
+        },
+        typeForName(env, name) {
+            const res = data['get_type'](env)(name);
+            if (res.type === 'some') {
+                return res[0];
+            }
+            return null;
+        },
+        typeToString(type) {
+            return data['type_to_string'](type);
+        },
+
         dependencies(stmt) {
             if (!data['externals_stmt']) {
                 return [];
@@ -474,9 +497,10 @@ function assembleExternals(
     const values: Record<string, any> = {};
     needed.forEach((name) => {
         if (env.values[name] == null) {
-            console.warn(`Name not defined?`, name);
             if (san[sanitize(name)]) {
                 values[sanitize(name)] = san[sanitize(name)];
+            } else {
+                console.warn(`Name not defined?`, name);
             }
         } else {
             values[sanitize(name)] = env.values[name];
