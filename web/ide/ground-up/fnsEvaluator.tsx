@@ -459,6 +459,7 @@ const compileStmt = (
             try {
                 value = fn(values);
             } catch (err) {
+                // debugger;
                 return {
                     env,
                     display: `JS Evaluation Error: ${

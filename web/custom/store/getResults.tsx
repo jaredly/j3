@@ -183,10 +183,23 @@ export const getResults = <
             : true;
         const names = stmt ? evaluator.stmtNames(stmt) : null;
         if (names) {
-            names.forEach((name) => {
+            for (let name of names) {
                 results.jumpToName[name.name] = name.loc;
+                if (idForName[name.name] != null) {
+                    cache.nodes[top.top] = {
+                        ids,
+                        node,
+                        display,
+                        parsed: undefined,
+                        parseErrors: {
+                            [top.top]: ['Name already defined ' + name.name],
+                        },
+                    };
+
+                    return;
+                }
                 idForName[name.name] = top.top;
-            });
+            }
         }
         cache.nodes[top.top] = {
             ids,
@@ -209,7 +222,7 @@ export const getResults = <
         tops
             .map(({ top }) => {
                 if (!cache.nodes[top].parsed) {
-                    console.log('Not parsed', top);
+                    // console.log('Not parsed', top);
                 }
 
                 return cache.nodes[top].parsed
@@ -265,7 +278,7 @@ export const getResults = <
             allDeps.some((id) => changes[id].type);
 
         if (retype && evaluator.infer && results.tenv) {
-            console.log('Do types', groupKey);
+            // console.log('Do types', groupKey);
             try {
                 const tenv = evaluator.infer(
                     Object.values(stmts),
@@ -286,7 +299,6 @@ export const getResults = <
                     tops: ids,
                 };
             } catch (err) {
-                // ok folks
                 group.forEach(
                     (node) =>
                         (results.produce[node.id] = [
@@ -298,11 +310,6 @@ export const getResults = <
         }
 
         if (cache.types[groupKey] && evaluator.addTypes) {
-            // console.log(
-            //     `add the types from`,
-            //     groupKey,
-            //     cache.types[groupKey].env,
-            // );
             results.tenv = evaluator.addTypes!(
                 results.tenv,
                 cache.types[groupKey].env,

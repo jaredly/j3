@@ -124,6 +124,8 @@
         (tapp type type int)
         (tcon string int))
 
+tcon
+
 (defn pat-loc [pat]
     (match pat
         (pany l)     l

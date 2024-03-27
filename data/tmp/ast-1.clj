@@ -12,7 +12,7 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
-(defn expr-to-string [expr]
+;(defn expr-to-string [expr]
     (match expr
         (evar n _)           n
         (elambda n _ b _)    "(fn [${n}] ${(expr-to-string b)})"
@@ -27,7 +27,7 @@
                                  }"
         _                    "??"))
 
-(defn pat-to-string [pat]
+;(defn pat-to-string [pat]
     (match pat
         (pany _)        "_"
         (pvar n _)      n
@@ -48,6 +48,8 @@
     (tvar string int)
         (tapp type type int)
         (tcon string int))
+
+tcon
 
 (defn pat-loc [pat]
     (match pat
@@ -130,14 +132,14 @@
         (tapp a b _) (let [(, target args) (unwrap-app a)] (, target [b ..args]))
         _            (, t [])))
 
-(defn tts-list [args free locs]
+;(defn tts-list [args free locs]
     (foldl
         (, [] free)
             args
             (fn [(, args free) a]
             (let [(, a free) (tts-inner a free locs)] (, [a ..args] free)))))
 
-(defn and-loc [locs l s]
+;(defn and-loc [locs l s]
     (if locs
         "${
             s
@@ -148,7 +150,7 @@
             }"
             s))
 
-(defn tts-inner [t free locs]
+;(defn tts-inner [t free locs]
     (match t
         (tvar s l)                           (let [(, fmap idx) free]
                                                  (match fmap
@@ -172,14 +174,14 @@
                                                  (, one free)    (tts-inner target free locs)]
                                                  (, (and-loc locs l "(${one} ${(join " " (rev args []))})") free))))
 
-(defn type-to-string [t]
+;(defn type-to-string [t]
     (let [(, text _) (tts-inner t (, (some map/nil) 0) false)] text))
 
-(,
+;(,
     type-to-string
         [(, (@t (-> a (-> b c))) "(fn [a b] c)")
         (, (@t (-> a b)) "(fn [a] b)")
         (, (@t (cons a b)) "(cons a b)")])
 
-(defn type-to-string-raw [t]
+;(defn type-to-string-raw [t]
     (let [(, text _) (tts-inner t (, none 0) false)] text))
