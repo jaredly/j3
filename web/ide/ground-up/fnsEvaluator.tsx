@@ -363,7 +363,7 @@ const compileStmt = (
     const externals: { type: ','; 0: string; 1: number }[] = stmts.flatMap(
         (stmt) => unwrapArray(data['externals_stmt'](stmt)),
     );
-    const { needed, values } = assembleExternals(externals, env, san);
+    const { needed, values } = assembleExternals(externals, env, san, names);
 
     if (stmts.length === 1 && stmts[0].type === 'sexpr') {
         let type = null;
@@ -492,8 +492,15 @@ function assembleExternals(
     externals: { type: ','; 0: string; 1: number }[],
     env: FnsEnv,
     san: any,
+    names?:
+        | null
+        | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
 ) {
-    const needed = unique(externals.map((ex) => ex[0]));
+    const provided = names?.map((obj) => obj[0]) ?? [];
+    const needed = unique(externals.map((ex) => ex[0])).filter(
+        // Skip recursive self-calls
+        (name) => !provided.includes(name),
+    );
     const values: Record<string, any> = {};
     needed.forEach((name) => {
         if (env.values[name] == null) {
