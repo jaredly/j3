@@ -23,6 +23,7 @@ export function builtins() {
         '>': (a: number) => (b: number) => a > b,
         '>=': (a: number) => (b: number) => a >= b,
         '=': (a: number) => (b: number) => a === b,
+        '!=': (a: number) => (b: number) => a != b,
         unescapeString: slash,
 
         'int-to-string': (a: number) => a + '',

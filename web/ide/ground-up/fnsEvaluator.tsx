@@ -362,20 +362,6 @@ const compileStmt = (
 
     if (stmts.length === 1 && stmts[0].type === 'sexpr') {
         let type = null;
-        // if (data['infer']) {
-        //     try {
-        //         type = data['type_to_string'](
-        //             data['infer'](env.typeCheck)(stmts[0][0]),
-        //         );
-        //     } catch (err) {
-        //         console.error(err);
-        //         return {
-        //             env,
-        //             display: new MyEvalError(`Type Error`, err as Error),
-        //             values: {},
-        //         };
-        //     }
-        // }
 
         let js;
         try {
@@ -446,18 +432,23 @@ const compileStmt = (
         };
     }
 
-    const name = names?.length ? names[0][0] : null;
-
     try {
         let display = '';
         const fn = new Function(
             needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
-            `{${js};\n${name ? 'return ' + sanitize(name) : ''}}`,
+            `{${js};\n${
+                names
+                    ? 'return {' +
+                      names.map(({ 0: name }) => sanitize(name)).join(',') +
+                      '}'
+                    : ''
+            }}`,
         );
-        let value;
-        if (name) {
+        const result_values: { [key: string]: any } = {};
+        if (names?.length) {
+            let result: { [key: string]: any };
             try {
-                value = fn(values);
+                result = fn(values);
             } catch (err) {
                 // debugger;
                 return {
@@ -468,13 +459,22 @@ const compileStmt = (
                     values: {},
                 };
             }
-            env.values[name] = value;
-            if (typeof value !== 'function') {
-                display = valueToString(value);
-            }
+            names.forEach(({ 0: name }) => {
+                result_values[name] = result[sanitize(name)];
+            });
+            Object.assign(env.values, result_values);
+            display = names
+                .map(({ 0: name }) =>
+                    typeof result_values[name] !== 'function'
+                        ? valueToString(result_values[name])
+                        : null,
+                )
+                .filter(Boolean)
+                .join('\n');
         }
+        // display += '\n' + fn;
 
-        return { env, display, values: name ? { [name]: value } : {}, js };
+        return { env, display, values: names?.length ? result_values : {}, js };
     } catch (err) {
         return {
             env,
