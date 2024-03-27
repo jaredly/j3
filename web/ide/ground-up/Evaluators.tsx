@@ -79,11 +79,19 @@ export type Errors = { [key: number]: string[] };
 export type ProduceItem = JSX.Element | string | LocError | MyEvalError;
 export type Produce = ProduceItem | ProduceItem[];
 
-export type FullEvalator<Env, Stmt, Expr> = {
+export type FullEvalator<Env, Stmt, Expr, TypeEnv = any, Type = any> = {
     id: string;
     init(): Env;
     parse(node: Node, errors: Errors): Stmt | void;
     parseExpr(node: Node, errors: Errors): Expr | void;
+
+    initType?(): TypeEnv;
+    infer?(stmts: Stmt[], env: TypeEnv): TypeEnv;
+    inferExpr?(expr: Expr, env: TypeEnv): Type;
+    addTypes?(env: TypeEnv, nenv: TypeEnv): TypeEnv;
+    typeForName?(env: TypeEnv, name: string): Type;
+    typeToString?(type: Type): string;
+
     dependencies(stmt: Stmt): LocedName[];
     stmtNames(stmt: Stmt): LocedName[];
     addStatements(

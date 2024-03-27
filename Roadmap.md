@@ -8,7 +8,7 @@
   - recalc value when self or deps change
 
 - [x] ok, so now we're just doing addStatements ... all the time.
-- [ ] now that we have dependency information, and such:
+- [x] now that we have dependency information, and such:
   - the `fnsEvaluator` env should actually be the values, instead of
     a list of strings to be compiled.
     We can now know what things to inject, and we know we're doing it in the right order.
