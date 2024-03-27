@@ -161,5 +161,5 @@ export function sanitizedEnv(benv: { [key: string]: any }) {
 export type FnsEnv = {
     js: string[];
     values: { [key: string]: any };
-    typeCheck: any;
+    // typeCheck: any;
 };

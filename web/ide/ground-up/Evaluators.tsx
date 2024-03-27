@@ -97,6 +97,7 @@ export type FullEvalator<Env, Stmt, Expr, TypeEnv = any, Type = any> = {
     addStatements(
         stmts: { [key: number]: Stmt },
         env: Env,
+        // tenv: TypeEnv,
         meta: MetaDataMap,
         trace: TraceMap,
     ): {

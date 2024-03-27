@@ -249,6 +249,7 @@ export const getResults = <Env, Stmt, Expr>(
             allDeps.some((id) => changes[id].type);
 
         if (retype && evaluator.infer && results.tenv) {
+            console.log('Do types', groupKey);
             try {
                 const tenv = evaluator.infer(
                     Object.values(stmts),
@@ -279,10 +280,18 @@ export const getResults = <Env, Stmt, Expr>(
                 return;
             }
         }
-        results.tenv = evaluator.addTypes!(
-            results.tenv,
-            cache.types[groupKey].env,
-        );
+
+        if (cache.types[groupKey] && evaluator.addTypes) {
+            console.log(
+                `add the types from`,
+                groupKey,
+                cache.types[groupKey].env,
+            );
+            results.tenv = evaluator.addTypes!(
+                results.tenv,
+                cache.types[groupKey].env,
+            );
+        }
 
         const reEval =
             group.some(

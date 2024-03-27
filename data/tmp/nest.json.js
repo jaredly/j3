@@ -1,1 +1,1 @@
-return {type: 'fns', a, b, c, even, odd}
+return {type: 'fns', a, b, c, even, odd, tcon, tprim, tvar}

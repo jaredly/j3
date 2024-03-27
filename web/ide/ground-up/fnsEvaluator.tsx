@@ -73,7 +73,7 @@ export const fnsEvaluator = (
             return {
                 js: [],
                 values: {},
-                typeCheck: data['env_nil'],
+                // typeCheck: data['env_nil'],
             };
         },
 
@@ -229,7 +229,7 @@ export const fnsEvaluator = (
 
         addStatements(stmts, env, meta, trace) {
             const display: { [key: number]: ProduceItem[] } = {};
-            const values: Record<string, any> = {};
+            // const values: Record<string, any> = {};
             let names:
                 | {
                       type: ',,';
@@ -244,45 +244,27 @@ export const fnsEvaluator = (
                 );
             }
 
-            if (data['infer_stmts']) {
-                try {
-                    const result = data['infer_stmts'](env.typeCheck)(
-                        wrapArray(Object.values(stmts)),
-                    );
-                    if (data['add_stmt']) {
-                        env.typeCheck = data['add_stmt'](env.typeCheck)(result);
-                    } else {
-                        env.typeCheck = result;
-                    }
-                } catch (err) {
-                    console.error(err);
-                    const display: Record<number, Produce> = {};
-                    const myErr = new MyEvalError(`Type Error`, err as Error);
-                    Object.keys(stmts).forEach((k) => (display[+k] = myErr));
-                    return { env, display, values };
-                }
-            }
-
             Object.entries(stmts).forEach(([id, stmt]) => {
                 display[+id] = [];
-
-                if (data['names'] && data['get_type'] && stmt.type === 'sdef') {
-                    const names: { type: ','; 0: string; 1: number }[] =
-                        unwrapArray(data['names'](stmt));
-                    const types: any[] = names.map((name) =>
-                        data['get_type'](env.typeCheck)(name[0]),
-                    );
-                    (display[+id] as any[]).push(
-                        ...types.map((type, i) =>
-                            type.type === 'some'
-                                ? `${names[i][0]}: ${data['type_to_string'](
-                                      type[0],
-                                  )}`
-                                : `No type for ${names[i][0]}`,
-                        ),
-                    );
-                }
             });
+
+            //     if (data['names'] && data['get_type'] && stmt.type === 'sdef') {
+            //         const names: { type: ','; 0: string; 1: number }[] =
+            //             unwrapArray(data['names'](stmt));
+            //         const types: any[] = names.map((name) =>
+            //             data['get_type'](env.typeCheck)(name[0]),
+            //         );
+            //         (display[+id] as any[]).push(
+            //             ...types.map((type, i) =>
+            //                 type.type === 'some'
+            //                     ? `${names[i][0]}: ${data['type_to_string'](
+            //                           type[0],
+            //                       )}`
+            //                     : `No type for ${names[i][0]}`,
+            //             ),
+            //         );
+            //     }
+            // });
 
             const res = compileStmt(
                 data,
@@ -312,12 +294,12 @@ export const fnsEvaluator = (
         evaluate(expr, env, meta) {
             const mm = prepareMeta(meta, data['parse_version'] === 2);
 
-            let type = null;
-            if (data['infer']) {
-                type = data['type_to_string'](
-                    data['infer'](env.typeCheck)(expr),
-                );
-            }
+            // let type = null;
+            // if (data['infer']) {
+            //     type = data['type_to_string'](
+            //         data['infer'](env.typeCheck)(expr),
+            //     );
+            // }
 
             const externals: { type: ','; 0: string; 1: number }[] =
                 unwrapArray(data['externals_expr'](expr));
@@ -367,20 +349,20 @@ const compileStmt = (
 
     if (stmts.length === 1 && stmts[0].type === 'sexpr') {
         let type = null;
-        if (data['infer']) {
-            try {
-                type = data['type_to_string'](
-                    data['infer'](env.typeCheck)(stmts[0][0]),
-                );
-            } catch (err) {
-                console.error(err);
-                return {
-                    env,
-                    display: new MyEvalError(`Type Error`, err as Error),
-                    values: {},
-                };
-            }
-        }
+        // if (data['infer']) {
+        //     try {
+        //         type = data['type_to_string'](
+        //             data['infer'](env.typeCheck)(stmts[0][0]),
+        //         );
+        //     } catch (err) {
+        //         console.error(err);
+        //         return {
+        //             env,
+        //             display: new MyEvalError(`Type Error`, err as Error),
+        //             values: {},
+        //         };
+        //     }
+        // }
 
         let js;
         try {

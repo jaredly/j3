@@ -18,11 +18,20 @@ a
         false
             (even (- x 1))))
 
-1234
+12341
 
 (, 1 2)
 
 "hello ${(int-to-string 321)}"
+
+(deftype type (tcon string) (tprim int) (tvar string))
+
+(tcon "hello")
+
+(fn [v]
+    (match v
+        (tcon a) a
+        _        "hello"))
 
 12341
 
