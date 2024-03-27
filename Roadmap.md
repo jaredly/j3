@@ -8,6 +8,9 @@
   - recalc value when self or deps change
 
 - [ ] I need to ensure that going from 'error' to 'not error' works
+- [ ] changing the name of the thing doesn't update the type somehow
+  - so, if "names" changes, redo stuff
+- [ ] disallow multiple names with the same name
 
 
 - [x] ok, so now we're just doing addStatements ... all the time.

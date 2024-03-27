@@ -248,6 +248,12 @@ export const fnsEvaluator = (
             Object.entries(stmts).forEach(([id, stmt]) => {
                 display[+id] = [];
 
+                if (stmt.type === 'sexpr' && tenv && data['infer']) {
+                    display[+id] = [
+                        data['type_to_string'](data['infer'](tenv)(stmt[0])),
+                    ];
+                }
+
                 if (
                     tenv &&
                     data['names'] &&

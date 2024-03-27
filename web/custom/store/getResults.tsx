@@ -266,13 +266,13 @@ export const getResults = <
                 const changed = !equal(gCache?.types, types);
                 if (changed) {
                     ids.forEach((id) => (changes[id].type = true));
-                    cache.types[groupKey] = {
-                        env: tenv,
-                        ts: Date.now(),
-                        types: types,
-                        tops: ids,
-                    };
                 }
+                cache.types[groupKey] = {
+                    env: tenv,
+                    ts: Date.now(),
+                    types: types,
+                    tops: ids,
+                };
             } catch (err) {
                 // ok folks
                 group.forEach(
@@ -298,9 +298,11 @@ export const getResults = <
         }
 
         const reEval =
+            retype ||
             group.some(
                 (node) => changes[node.id].stmt || !cache.results[node.id],
-            ) || allDeps.some((id) => changes[id].value);
+            ) ||
+            allDeps.some((id) => changes[id].value);
 
         if (reEval) {
             const { env, display, values } = evaluator.addStatements(

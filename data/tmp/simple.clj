@@ -50,8 +50,6 @@ nil
 
 (cons 2 nil)
 
-
-
 (cons 1 (nil))
 
 (defn lol [x] (+ x 2))
@@ -64,7 +62,7 @@ lol
 
 (@@ [1 2])
 
-(fn [(, a b c)] 1)
+(fn [(, a b)] 1)
 
 (** Wrong Order **)
 
