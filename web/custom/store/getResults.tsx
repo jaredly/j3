@@ -38,6 +38,7 @@ export type ResultsCache<Stmt> = {
                 stmt: Stmt;
                 names: LocedName[];
                 deps: LocedName[];
+                failed: boolean;
             };
             parseErrors: Errors | null;
             display: NUIResults['display'];
@@ -150,6 +151,11 @@ export const getResults = <
                 )
             ) {
                 Object.assign(results.display, cache.nodes[top.top].display);
+
+                if (cache.nodes[top.top].parsed?.names) {
+                    registerNames(cache, top.top, results, idForName);
+                }
+
                 return;
             }
         }
@@ -164,6 +170,10 @@ export const getResults = <
             )
         ) {
             Object.assign(results.display, cache.nodes[top.top].display);
+            if (cache.nodes[top.top].parsed?.names) {
+                registerNames(cache, top.top, results, idForName);
+            }
+
             return;
         }
 
@@ -182,25 +192,6 @@ export const getResults = <
               )
             : true;
         const names = stmt ? evaluator.stmtNames(stmt) : null;
-        if (names) {
-            for (let name of names) {
-                results.jumpToName[name.name] = name.loc;
-                if (idForName[name.name] != null) {
-                    cache.nodes[top.top] = {
-                        ids,
-                        node,
-                        display,
-                        parsed: undefined,
-                        parseErrors: {
-                            [top.top]: ['Name already defined ' + name.name],
-                        },
-                    };
-
-                    return;
-                }
-                idForName[name.name] = top.top;
-            }
-        }
         cache.nodes[top.top] = {
             ids,
             node,
@@ -208,6 +199,7 @@ export const getResults = <
             parsed: stmt
                 ? {
                       stmt,
+                      failed: false,
                       // TODO could work harder to cache these, but it's fine
                       names: names!,
                       deps: evaluator.dependencies(stmt),
@@ -215,6 +207,9 @@ export const getResults = <
                 : undefined,
             parseErrors: Object.keys(errors).length ? errors : null,
         };
+        if (cache.nodes[top.top].parsed?.names) {
+            registerNames(cache, top.top, results, idForName);
+        }
     });
 
     // const sorted = sortTops(tops, state, results, evaluator);
@@ -225,7 +220,8 @@ export const getResults = <
                     // console.log('Not parsed', top);
                 }
 
-                return cache.nodes[top].parsed
+                return cache.nodes[top].parsed &&
+                    !cache.nodes[top].parsed!.failed
                     ? {
                           id: top,
                           names: cache.nodes[top].parsed!.names,
@@ -253,6 +249,7 @@ export const getResults = <
         for (let node of group) {
             const parsed = cache.nodes[node.id].parsed;
             if (!parsed) {
+                console.log('not parsed', node.id);
                 group.forEach(
                     (node) =>
                         (results.produce[node.id] = [
@@ -417,3 +414,22 @@ export function showExecOrder<Stmt>(
         results.produce[node.id].push('Execution Order: ' + i);
     });
 }
+
+export const registerNames = (
+    cache: ResultsCache<any>,
+    top: number,
+    results: NUIResults,
+    idForName: { [name: string]: number },
+) => {
+    for (let name of cache.nodes[top].parsed!.names) {
+        results.jumpToName[name.name] = name.loc;
+        if (idForName[name.name] != null) {
+            cache.nodes[top].parsed!.failed = true;
+            results.produce[top] = ['Name already defined ' + name.name];
+
+            return true;
+        }
+        // console.log('cached ...', name.name, top.top);
+        idForName[name.name] = top;
+    }
+};
