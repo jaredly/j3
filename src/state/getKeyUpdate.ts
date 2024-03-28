@@ -276,7 +276,7 @@ export const getKeyUpdate = (
     }
 
     if (key === 'Backspace') {
-        return handleBackspace(map, nsMap, selection, hashNames, cards);
+        return handleBackspace(map, nsMap, selection, hashNames, cards, mods);
     }
 
     const textRaw = hashNames[node.loc] ?? idText(node, map) ?? '';
@@ -322,6 +322,18 @@ export const getKeyUpdate = (
                     selection: next,
                 };
             }
+            if (
+                node.type === 'comment' &&
+                flast.type === 'subtext' &&
+                flast.at === 0
+            ) {
+                return {
+                    type: 'select',
+                    selection: fullPath
+                        .slice(0, -1)
+                        .concat([{ type: 'start', idx: node.loc }]),
+                };
+            }
         }
         const lll = goLeftUntil(fullPath, map, nsMap, cards, valid);
         if (lll && mods?.shift) {
@@ -337,6 +349,14 @@ export const getKeyUpdate = (
     const pos = pathPos(fullPath, textRaw);
 
     if (key === 'ArrowRight') {
+        if (node.type === 'comment' && flast.type === 'start') {
+            return {
+                type: 'select',
+                selection: fullPath
+                    .slice(0, -1)
+                    .concat([{ type: 'subtext', at: 0, idx: node.loc }]),
+            };
+        }
         if (pos < text.length) {
             const next = fullPath
                 .slice(0, -1)

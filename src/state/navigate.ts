@@ -66,6 +66,7 @@ export const goLeft = (
     cards: Card[],
 ): StateSelect | void => {
     if (!path.length) return;
+    // debugger;
     const last = path[path.length - 1];
 
     if (last.type === 'ns') {
@@ -122,7 +123,6 @@ export const goRightUntil = (
 
 export const goRight = (
     path: Path[],
-    // idx: number,
     map: Map,
     nsMap: NsMap,
     cards: Card[],

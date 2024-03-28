@@ -2,6 +2,7 @@ import { ListLikeContents, Map, MNode, MNodeExtra, NsMap } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { goLeft, selectEnd } from './navigate';
 import {
+    Mods,
     StateChange,
     UpdateMap,
     clearAllChildren,
@@ -23,6 +24,7 @@ export function handleBackspace(
     selection: { start: Path[]; end?: Path[] },
     hashNames: { [idx: number]: string },
     cards: Card[],
+    mods?: Mods,
 ): StateChange {
     if (selection.end) {
         const [start, end] = orderStartAndEnd(selection.start, selection.end);
@@ -119,10 +121,6 @@ export function handleBackspace(
 
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
-
-    // const isEmpty =
-    //     (node.type === 'comment' && node.text.length === 0) ||
-    //     node.type === 'blank';
 
     if (
         atStart &&
@@ -229,13 +227,6 @@ export function handleBackspace(
             }
         }
     }
-    // if (gpath?.type === 'ns-top') {
-    //     return {
-    //         type: 'update',
-    //         map: { [gpath.idx]: changed, [ppath.idx]: null },
-    //         selection: [...fullPath.slice(0, -3), gpath, flast],
-    //     };
-    // }
 
     if (node.type === 'accessText' && (atStart || node.text === '')) {
         if (parent.type !== 'recordAccess') {
