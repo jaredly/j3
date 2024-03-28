@@ -367,7 +367,7 @@
 
 (** ## Composing substitution maps
     Note that compose-subst is not commutative. The old-subst map will get the new-subst substitutions applied to it, and then any conflicting keys go with new-subst.
-    ⚠️ If compose-subst is called with arguments in the wrong order, it will break the algorithm. The magic of hindley-milner's algorithm W relies on the invariant being maintained that all substitutions get "passed forward"; that when adding in substitutions, they first get applied to all existing substitutions. Another way to break the algorithm is to not apply substs to the relevant types before attempting unification.  **)
+    ⚠️ If compose-subst is called with arguments in the wrong order, it will break the algorithm. The magic of hindley-milner's Algorithm W relies on the invariant being maintained that all substitutions get "passed forward"; that when adding in substitutions, they first get applied to all existing substitutions. Another way to break the algorithm is to not apply substs to the relevant types before attempting unification.  **)
 
 (defn check-invariant [place new-subst old-subst]
     (foldl
@@ -386,7 +386,7 @@
                                                   (some
                                                       "compose-subst[${
                                                           place
-                                                          }]: old subst has key ${
+                                                          }]: old-subst has key ${
                                                           key
                                                           }, which is used in new-subst for ${
                                                           nkey
@@ -395,13 +395,10 @@
                                                           }")
                                                       current))))))))
 
-foldl
-
 (defn compose-subst [place new-subst old-subst]
     (match (check-invariant place new-subst old-subst)
         (some message) (fatal message)
-        _              (map/merge (map/map (type-apply new-subst) old-subst) new-subst))
-        ;(map/merge (map/map (type-apply new-subst) old-subst) new-subst))
+        _              (map/merge (map/map (type-apply new-subst) old-subst) new-subst)))
 
 (def demo-new-subst
     (map/from-list [(, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))]))
@@ -420,7 +417,7 @@ foldl
         (,
         [(, "c" (tcon "int" -1))]
             [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
-        (** a gets the "b" substitution applied to it, and then overrides the "a" from new-subst **)
+        (** "a" gets the "b" substitution applied to it, and then overrides the "a" from new-subst **)
         (, [(, "a" (tvar "b" -1))] [(, "a" (tvar "c" -1)) (, "b" (tvar "c" -1))])])
 
 (** ## Generalizing
@@ -456,8 +453,8 @@ foldl
 (make-subst-for-vars ["a" "b" "c"] (map/nil) 0 -1)
 
 (** ## Unification
-    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution, otherwise we recurse.
-    Importantly, unification doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
+    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution; otherwise we recurse.
+    Importantly, unify doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
     If two types are irreconcilable, it throws an exception.
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
@@ -545,7 +542,8 @@ foldl
                                  (evar "()" l)                       (,, map/nil (tcon "()" l) nidx)
                                  (evar name l)                       (match (tenv/type tenv name)
                                                                          (none)       (fatal "Unbound variable ${name} (${(its l)})")
-                                                                         (some found) (let [(,, t _ nidx) (instantiate found nidx l)] (,, map/nil t nidx)))
+                                                                         (some found) (let [(,, t _ nidx) (instantiate found nidx l)]
+                                                                                          (,, map/nil (type/set-loc l t) nidx)))
                                  (equot _ l)                         (,, map/nil (tcon "expr" l) nidx)
                                  (equot/stmt _ l)                    (,, map/nil (tcon "stmt" l) nidx)
                                  (equot/pat _ l)                     (,, map/nil (tcon "pat" l) nidx)
@@ -672,6 +670,7 @@ foldl
                                                                                               (none)   (fatal "Unknown constructor: ${name}")
                                                                                               (some v) v)
                                                            (,, tres tsubst nidx)          (instantiate (scheme free cres) nidx l)
+                                                           tres                           (type/set-loc l tres)
                                                            (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
                                                            cargs                          (map cargs (type-apply tsubst))
                                                            zipped                         (zip args cargs)
@@ -693,7 +692,11 @@ foldl
                                                                                                   (fn [(,, subst bindings nidx) (, arg carg)]
                                                                                                   (let [
                                                                                                       (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
-                                                                                                      (, unified-subst nidx)      (unify (type-apply subst pat-type) (type-apply subst carg) nidx l)]
+                                                                                                      (, unified-subst nidx)      (unify
+                                                                                                                                      (type-apply subst pat-type)
+                                                                                                                                          (type-apply subst (type/set-loc l carg))
+                                                                                                                                          nidx
+                                                                                                                                          l)]
                                                                                                       (,,
                                                                                                           (compose-subst "t-pat" unified-subst subst)
                                                                                                               (map/merge bindings pat-bind)
@@ -802,7 +805,7 @@ foldl
         (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(fn [a] a)")
         (,
         (@ (fn [x] (, (x 1) (x "1" ))))
-            "Fatal runtime: cant unify int (12193) and string (12197)")
+            "Fatal runtime: cant unify int (12195) and string (12197)")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
         (, (@ (let [id (fn [x] (x x))] id)) "Fatal runtime: occurs check")
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] a)")
@@ -1007,10 +1010,10 @@ foldl
     (errorToString (infer-stmts builtin-env))
         [(,
         [(@! (defn hello [a] (+ 1 a))) (@! (hello "a"))]
-            "Fatal runtime: cant unify int (-1) and string (10738)")
+            "Fatal runtime: cant unify int (10720) and string (10738)")
         (,
         [(@! (deftype one (two) (three int))) (@! (two 1))]
-            "Fatal runtime: cant unify one (10748) and (fn [int] a) (10753)")])
+            "Fatal runtime: cant unify one (10756) and (fn [int] a) (10753)")])
 
 8743
 
