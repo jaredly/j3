@@ -60,7 +60,7 @@ export const RichText = ({
         const at = state.at[0]?.start;
         const last = at[at.length - 1];
         if (last.idx === idx && last.type === 'rich-text') {
-            console.log('focusing', last, idx);
+            // console.log('focusing', last, idx);
             // node.current?.focus();
             setTimeout(() => {
                 editor?.focus();
@@ -72,7 +72,7 @@ export const RichText = ({
             const at = state.at[0]?.start;
             const last = at[at.length - 1];
             if (last.idx === idx && last.type === 'rich-text') {
-                console.log('focusing 2', last, idx);
+                // console.log('focusing 2', last, idx);
                 // node.current?.focus();
                 editor?.focus();
             }
@@ -106,7 +106,7 @@ export const RichText = ({
             theme={'dark'}
             sideMenu={false}
             onKeyDown={(evt) => {
-                console.log('key down', evt.key, editor.document);
+                // console.log('key down', evt.key, editor.document);
                 if (
                     evt.key === 'Backspace' &&
                     editor.document.length === 1 &&

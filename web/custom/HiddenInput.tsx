@@ -257,7 +257,9 @@ export function HiddenInput({
                     }
                 }
 
-                if (evt.metaKey || evt.ctrlKey || evt.altKey) {
+                if (evt.key === 'Backspace' && evt.metaKey) {
+                    // it's fine
+                } else if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                     return;
                 }
 

@@ -607,7 +607,7 @@ export const getKeyUpdate = (
                     },
                 },
                 idx: idx,
-                selection: [{ idx, type: 'text', at: 0 }],
+                selection: [{ idx, type: 'subtext', at: 0 }],
             });
         }
         if (
