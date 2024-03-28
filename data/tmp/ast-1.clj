@@ -12,7 +12,7 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
-;(defn expr-to-string [expr]
+(defn expr-to-string [expr]
     (match expr
         (evar n _)           n
         (elambda n _ b _)    "(fn [${n}] ${(expr-to-string b)})"

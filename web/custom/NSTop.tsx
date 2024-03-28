@@ -31,12 +31,16 @@ const PluginRender = ({
     const store = useGetStore();
     const results = store.getResults().pluginResults[props.idx];
     const rn = useMemo(
-        () => (results ? plugin.render(expanded, results, store, ns) : null),
+        () =>
+            results != null
+                ? plugin.render(expanded, results, store, ns)
+                : null,
         [expanded, results, ns.plugin],
     );
-    if (!rn || !results)
+    if (!rn || results == null)
         return (
             <div>
+                {!results ? 'No plugin results...' : ''}
                 <Render {...props} />
             </div>
         );

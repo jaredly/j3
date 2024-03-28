@@ -25,6 +25,8 @@ export function builtins() {
         '=': (a: number) => (b: number) => a === b,
         '!=': (a: number) => (b: number) => a != b,
         unescapeString: slash,
+        or: (a: boolean) => (b: boolean) => a || b,
+        and: (a: boolean) => (b: boolean) => a && b,
 
         'int-to-string': (a: number) => a + '',
         string_to_int: (a: string) => {
@@ -63,6 +65,7 @@ export function builtins() {
         'map/merge': (a: [any, any][]) => (b: [any, any][]) =>
             [...a, ...b.filter((item) => !a.find((a) => a[0] === item[0]))],
         'map/values': (m: [any, any][]) => wrapArray(m.map((i) => i[1])),
+        'map/keys': (m: [any, any][]) => wrapArray(m.map((i) => i[0])),
 
         'set/nil': [],
         'set/add': (s: any[]) => (v: any) => [v, ...s],

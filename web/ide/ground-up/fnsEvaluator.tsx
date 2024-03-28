@@ -142,9 +142,9 @@ export const fnsEvaluator = (
                 return data['parse_stmt'](j);
             } catch (err) {
                 // This is just looking annoying.
-                // errors[node.loc] = [
-                //     'ParseStmt failed: ' + (err as Error).message,
-                // ];
+                errors[node.loc] = [
+                    'ParseStmt failed: ' + (err as Error).message,
+                ];
             }
         },
 
@@ -162,6 +162,7 @@ export const fnsEvaluator = (
 
         toFile(state, target) {
             let env = this.init();
+            let tenv = this.initType?.();
             const errors: Errors = {};
             const allNames: { name: string; loc: number }[] = [];
             let ret: null | string = null;
@@ -196,10 +197,11 @@ export const fnsEvaluator = (
                 const result = this.addStatements(
                     group.map((g) => g.stmt),
                     env,
-                    {},
+                    tenv,
                     {},
                     {},
                 );
+                env.js.push((result as any).js);
                 env = result.env;
                 allNames.push(...group.flatMap(({ names }) => names));
 

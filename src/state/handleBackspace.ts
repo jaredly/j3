@@ -9,7 +9,12 @@ import {
     maybeClearParentList,
 } from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
-import { idText, orderStartAndEnd, splitGraphemes } from '../parse/parse';
+import {
+    idText,
+    orderStartAndEnd,
+    pathPos,
+    splitGraphemes,
+} from '../parse/parse';
 import { accessText, Identifier, stringText } from '../types/cst';
 import { collectNodes } from './clipboard';
 import { Path } from './path';
@@ -17,6 +22,78 @@ import { removeNodes } from './removeNodes';
 import { Ctx } from '../to-ast/Ctx';
 import { modChildren } from './modChildren';
 import { Card, RealizedNamespace } from '../../web/custom/UIState';
+
+// const backspacers: ((node: MNode, last:Path) => StateChange | void)[] = [
+//     (node, last) => {
+//         if (last.type === 'text' && last.at > 0) {
+//         }
+//     }
+// ]
+// /**
+//  * Backspace:
+//  * - if we're text or subtext pos > 0, it's simple
+//  */
+const withLast = (path: Path[], last: Path) => path.slice(0, -1).concat([last]);
+
+const backspaces = (
+    map: Map,
+    node: MNode,
+    path: Path[],
+): StateChange | void => {
+    switch (node.type) {
+        case 'identifier':
+        case 'comment':
+            const pos = pathPos(path, node.text);
+            if (pos === 0) {
+                if (node.type === 'comment') {
+                    if (node.text === '') {
+                        return {
+                            type: 'update',
+                            map: {
+                                [node.loc]: { type: 'blank', loc: node.loc },
+                            },
+                            selection: withLast(path, {
+                                type: 'start',
+                                idx: node.loc,
+                            }),
+                        };
+                    } else {
+                        return {
+                            type: 'select',
+                            selection: withLast(path, {
+                                type: 'start',
+                                idx: node.loc,
+                            }),
+                        };
+                    }
+                }
+                const gp = path[path.length - 2];
+                return backspaces(map, map[gp.idx], path.slice(0, -1));
+            }
+            const text = splitGraphemes(node.text);
+            if (text.length === 1) {
+                const cleared = maybeClearParentList(path.slice(0, -1), map);
+                if (cleared) return cleared;
+            }
+            text.splice(pos - 1, 1);
+            if (!text.length) {
+                return {
+                    type: 'update',
+                    map: { [node.loc]: { type: 'blank', loc: node.loc } },
+                    selection: withLast(path, { type: 'start', idx: node.loc }),
+                };
+            }
+            return {
+                type: 'update',
+                map: { [node.loc]: { ...node, text: text.join('') } },
+                selection: withLast(path, {
+                    type: 'subtext',
+                    idx: node.loc,
+                    at: pos - 1,
+                }),
+            };
+    }
+};
 
 export function handleBackspace(
     map: Map,

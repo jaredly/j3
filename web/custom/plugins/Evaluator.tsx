@@ -83,6 +83,7 @@ export const evaluatorPlugin: NamespacePlugin<string | number, string> = {
         try {
             text = evaluator.toFile?.(state, node.loc).js;
         } catch (err) {
+            console.error(err);
             return `Failed ` + (err as Error).message;
         }
         fetch(urlForId(options), {

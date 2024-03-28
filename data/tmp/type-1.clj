@@ -3,8 +3,6 @@
 
 (deftype (option a) (some a) (none))
 
-(defn show-subst [a] "hih")
-
 (defn at [arr i default_]
     (match arr
         []           default_
@@ -916,7 +914,7 @@ tcon
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 
-
+show-subst
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion. **)

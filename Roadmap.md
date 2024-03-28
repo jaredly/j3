@@ -1,4 +1,20 @@
 
+## Doing a check on all the nodes
+
+- wrapping doesn't work
+  - annot (:)
+  - tapply (<>)
+  - ; comment
+- a:b and a<b> doesn't work on an NS
+
+
+
+
+##
+
+Backspace vs cmd backspace
+- so... cmd-backspace would be the new backspace
+
 
 - [x] getResults
   - recalc compilation when self changes

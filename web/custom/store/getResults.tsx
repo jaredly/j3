@@ -191,6 +191,10 @@ export const getResults = <
                   (id) => state.meta[+id] !== lastState!.meta[+id],
               )
             : true;
+        if (!stmt) {
+            // console.log('no stmt', node, errors);
+            results.produce[top.top] = [JSON.stringify(errors)];
+        }
         const names = stmt ? evaluator.stmtNames(stmt) : null;
         cache.nodes[top.top] = {
             ids,
@@ -275,6 +279,12 @@ export const getResults = <
             allDeps.some((id) => changes[id].type);
 
         const isPlugin = group.every((node) => topsById[node.id].plugin);
+        if (isPlugin) {
+            console.log(
+                'we have a plugin',
+                group.map((node) => topsById[node.id].plugin),
+            );
+        }
 
         if (retype && evaluator.infer && results.tenv && !isPlugin) {
             // console.log('Do types', groupKey);
@@ -340,6 +350,7 @@ export const getResults = <
 
                 let pluginResult;
                 if (topsById[node.id].plugin) {
+                    // console.log('Doing a plugin', topsById[node.id].plugin);
                     pluginResult = processPlugin(
                         results,
                         cache.nodes[node.id].node,

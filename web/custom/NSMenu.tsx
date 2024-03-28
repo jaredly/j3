@@ -13,6 +13,12 @@ export function NSMenu({
     dispatch: React.Dispatch<Action>;
     ns: RealizedNamespace;
 }) {
+    const current =
+        typeof ns.plugin === 'string'
+            ? ns.plugin
+            : ns.plugin
+            ? ns.plugin.id
+            : null;
     return (
         <div
             ref={mref}
@@ -36,7 +42,11 @@ export function NSMenu({
             {plugins.map((plugin) => (
                 <button
                     key={plugin.id}
-                    style={{ cursor: 'pointer' }}
+                    style={{
+                        cursor: 'pointer',
+                        backgroundColor:
+                            plugin.id === current ? '#ccc' : 'white',
+                    }}
                     onClick={() => {
                         dispatch({
                             type: 'ns',

@@ -10,8 +10,6 @@
                          one
                              (at rest (- i 1) default_))))
 
-111111
-
 (defn rev [arr col]
     (match arr
         []           col
@@ -39,6 +37,13 @@
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
 
+(defn any [values fn]
+    (match values
+        []           false
+        [one ..rest] (if (fn one)
+                         true
+                             (any rest fn))))
+
 (defn zip [one two]
     (match (, one two)
         (, [] [])               []
@@ -50,10 +55,14 @@
         []           init
         [one ..rest] (foldl (f init one) rest f)))
 
+(foldl 0 [1 2 3] (fn [a b] b))
+
 (defn foldr [init items f]
     (match items
         []           init
         [one ..rest] (f (foldr init rest f) one)))
+
+(foldr 0 [1 2 3] (fn [a b] b))
 
 (defn filter [fn list]
     (match list
@@ -62,11 +71,11 @@
                          [one ..(filter fn rest)]
                              (filter fn rest))))
 
-(foldr 0 [1 2 3] (fn [a b] b))
-
-(foldl 0 [1 2 3] (fn [a b] b))
+(defn apply-tuple [fn (, a b)] (fn a b))
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
+
+(def its int-to-string)
 
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
@@ -293,7 +302,7 @@
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
     - type-free: types cannot contain bindings, so every tvar is unbound
-    - scheme-free: a scheme contains a list of bound variables and a type, so it returns all tvars in the type that are not listed in the bound variables list
+    - scheme-free: a scheme contains a list of generic variables and a type, so it returns all tvars in the type that are not listed in the generic variables list
     - tenv-free: a type environment maps a list of variable names to schemes, so it returns all unbound tvars in all of the schemes. **)
 
 (defn type-free [type]
@@ -302,6 +311,14 @@
         (tcon _ _)   set/nil
         (tapp a b _) (set/merge (type-free a) (type-free b))
         ))
+
+(defn has-free [type name]
+    (match type
+        (tvar n _)   (= n name)
+        (tcon _ _)   false
+        (tapp a b _) (if (has-free a name)
+                         true
+                             (has-free b name))))
 
 (defn scheme-free [(scheme vbls type)]
     (set/diff (type-free type) vbls))
@@ -316,8 +333,8 @@
 
 (** ## Applying type substitutions
     A subst maps type variable names to types
-    - type-apply: any tvar that appears in subst gets swapped out
-    - scheme-apply: remove any substitutions that apply to its list of bound variables, and then do the substitution
+    - type-apply: any tvar that appears in subst gets swapped out for the substitution
+    - scheme-apply: ignoring any substitutions that apply to its list of generic variables, perform the substitution on the contained type
     - tenv-apply: apply a subst to all schemes **)
 
 (defn type-apply [subst type]
@@ -328,6 +345,14 @@
         (tapp a b c) (tapp (type-apply subst a) (type-apply subst b) c)
         _            type))
 
+(,
+    (type-apply (map/from-list [(, "a" (tcon "int" -1))]))
+        [(, (tvar "a" -1) (tcon "int" -1))
+        (, (tvar "b" -1) (tvar "b" -1))
+        (,
+        (tapp (tcon "array" -1) (tvar "a" -1) -1)
+            (tapp (tcon "array" -1) (tcon "int" -1) -1))])
+
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
@@ -335,39 +360,61 @@
     (tenv (map/map (scheme-apply subst) types) cons names))
 
 (** ## Composing substitution maps
-    Note that compose-subst is not commutative. The later map will get the earlier substitutions applied to it, and then any conflicts go to later. **)
+    Note that compose-subst is not commutative. The old-subst map will get the new-subst substitutions applied to it, and then any conflicting keys go with new-subst.
+    ⚠️ If compose-subst is called with arguments in the wrong order, it will break the algorithm. The magic of hindley-milner's algorithm W relies on the invariant being maintained that all substitutions get "passed forward"; that when adding in substitutions, they first get applied to all existing substitutions. **)
 
-(defn compose-subst [earlier later]
-    (map/merge (map/map (type-apply earlier) later) earlier))
+(defn compose-subst [new-subst old-subst]
+    (if (any
+        (map/keys old-subst)
+            (fn [k] (any (map/values new-subst) (fn [type] (has-free type k)))))
+        (fatal
+            "Old subst has something that would change new-subst.\nInvariant violation!\n${
+                (show-subst new-subst)
+                }\nvs\n${
+                (show-subst old-subst)
+                }")
+            (map/merge (map/map (type-apply new-subst) old-subst) new-subst))
+        ;(map/merge (map/map (type-apply new-subst) old-subst) new-subst))
 
-(def earlier-subst
+(def demo-new-subst
     (map/from-list [(, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))]))
 
 (,
-    (fn [x] (map/to-list (compose-subst earlier-subst (map/from-list x))))
+    (fn [x]
+        (map/to-list (compose-subst demo-new-subst (map/from-list x))))
         [(** x gets the "a" substitution applied to it **)
         (,
         [(, "x" (tvar "a" -1))]
             [(, "x" (tcon "a-mapped" -1))
             (, "a" (tcon "a-mapped" -1))
             (, "b" (tvar "c" -1))])
-        (** c does not get applied to b in earlier **)
+        (** c does not get applied to the b in new-subst **)
         (,
         [(, "c" (tcon "int" -1))]
             [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
-        (** a gets the "b" substitution applied to it, and then overrides the "a" from earlier **)
+        (** a gets the "b" substitution applied to it, and then overrides the "a" from new-subst **)
         (, [(, "a" (tvar "b" -1))] [(, "a" (tvar "c" -1)) (, "b" (tvar "c" -1))])])
 
 (** ## Generalizing
-    This is where we take a type and turn it into a scheme, so we need to be able to know what variables should be reported as "free" at the level of the type. **)
+    This is where we take a type and turn it into a scheme, so we need to be able to know what variables should be reported as "generic" at the level of the type. Basically, any variables that already exist in the type environment should not be generalized over here.
+    (fn [x] (let [y (fn [z] x)] t))
+    In this case, y should not be generic over its return type, only its argument type. **)
 
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
 (** ## Instantiate
-    This takes a scheme and generates fresh type variables for everything bound within it. **)
+    This takes a scheme and generates fresh type variables for everything in the "generics" set.
+    This allows us to have different instantiations of a given type variable when we e.g. use the same function twice in two different ways. Without this, the following wouldn't work:
+    (let [a (cons 1) b (cons "hi")] 1)
+    Because the type variable in the type for cons would be the same in both cases. With instantiate, the type for cons gets a fresh type variable at each usage. **)
 
-(def its int-to-string)
+(defn instantiate [(scheme vars t) nidx l]
+    (let [
+        (, subst nidx) (make-subst-for-vars (set/to-list vars) (map/nil) nidx l)]
+        (,, (type-apply subst t) subst nidx)))
+
+(instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10 0)
 
 (defn new-type-var [prefix nidx l]
     (, (tvar "${prefix}:${(its nidx)}" l) (+ 1 nidx)))
@@ -380,15 +427,10 @@
 
 (make-subst-for-vars ["a" "b" "c"] (map/nil) 0 -1)
 
-(defn instantiate [(scheme vars t) nidx l]
-    (let [
-        (, subst nidx) (make-subst-for-vars (set/to-list vars) (map/nil) nidx l)]
-        (,, (type-apply subst t) subst nidx)))
-
-(instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)
-
 (** ## Unification
-    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we add it to the subst, otherwise we recurse.
+    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution, otherwise we recurse.
+    Importantly, unification doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
+    If two types are irreconcilable, it throws an exception.
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
 (defn unify [t1 t2 nidx l]
@@ -463,10 +505,6 @@
 (def tbool (tcon "bool" -1))
 
 (def tstring (tcon "string" -1))
-
-(defn map-,,-2 [f (,, a b c)] (,, a (f b) c))
-
-(defn map-,,-1 [f (,, a b c)] (,, (f a) b c))
 
 (defn t-expr [tenv expr nidx]
     (let [
@@ -557,7 +595,7 @@
                                                                                                                        (let [
                                                                                                                            (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
                                                                                                                            (, unified-subst nidx) (unify result body nidx l)
-                                                                                                                           composed               (compose-subst subst unified-subst)]
+                                                                                                                           composed               (compose-subst unified-subst subst)]
                                                                                                                            (,,,
                                                                                                                                (type-apply composed target-type)
                                                                                                                                    composed
@@ -570,29 +608,22 @@
         (,, subst type nidx)))
 
 (defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
-    (let [
+    (** Something's rotten in the state of denmark.
+        The return type of this function should have int in the last spot, not a. **)
+        (let [
         (,, pat-type bindings nidx)    (t-pat tenv pat nidx)
         (, unified-subst nidx)         (unify value-type pat-type nidx (pat-loc pat))
-        bindings                       (map/map
-                                           (type-apply (compose-subst value-subst unified-subst))
-                                               bindings)
-        schemes                        (map/map
-                                           (generalize
-                                               (tenv-apply (compose-subst value-subst unified-subst) tenv))
-                                               bindings)
+        composed                       (compose-subst unified-subst value-subst)
+        bindings                       (map/map (type-apply composed) bindings)
+        schemes                        (map/map (generalize (tenv-apply composed tenv)) bindings)
         bound-env                      (foldr
                                            (tenv-apply value-subst tenv)
                                                (map/to-list schemes)
                                                (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme)))
-        (,, body-subst body-type nidx) (t-expr
-                                           (tenv-apply (compose-subst unified-subst value-subst) bound-env)
-                                               body
-                                               nidx)]
+        (,, body-subst body-type nidx) (t-expr (tenv-apply composed bound-env) body nidx)]
         (,,
-            (compose-subst
-                body-subst
-                    (compose-subst value-subst unified-subst))
-                (type-apply unified-subst body-type)
+            (compose-subst body-subst composed)
+                (type-apply composed body-type)
                 nidx)))
 
 (defn t-pat [tenv pat nidx]
@@ -703,14 +734,14 @@
         (, (@ "hi ${"ho"}") "string")
         (, (@ (fn [x] "hi ${x}")) "(fn [string] string)")
         (, (@ (let [a 1] a)) "int")
-        (, (@ (let [(, a b) (, 2 true)] (, a b))) "(, int bool)")
+        (, (@ (let [(, a b) (, 21 true)] (, a b))) "(, int bool)")
         (,
         (@
             (fn [a]
                 (match a
                     (, a b) a
                     _       1)))
-            "(fn [(, a b)] int)")
+            "(fn [(, int a)] int)")
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(fn [a] a)")
         (, (@ (fn [a] (+ 2 a))) "(fn [int] int)")
@@ -739,9 +770,12 @@
         (, (@ (let [id (fn [x] (let [y x] y))] id)) "(fn [a] a)")
         (, (@ (fn [x] (let [y x] y))) "(fn [a] a)")
         (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(fn [a] a)")
+        (,
+        (@ (fn [x] (, (x 1) (x "1" ))))
+            "Fatal runtime: cant unify int (12193) and string (12197)")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
         (, (@ (let [id (fn [x] (x x))] id)) "Fatal runtime: occurs check")
-        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] b)")
+        (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] a)")
         (,
         (@ (2 2))
             "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")])
@@ -1060,6 +1094,8 @@
                         (, "!=" (generic ["k"] (tfns [k k] tbool)))
                         (, ">=" (concrete (tfns [tint tint] tbool)))
                         (, "<=" (concrete (tfns [tint tint] tbool)))
+                        (, "or" (concrete (tfns [tbool tbool] tbool)))
+                        (, "and" (concrete (tfns [tbool tbool] tbool)))
                         (,
                         "trace"
                             (kk
@@ -1079,6 +1115,7 @@
                             (generic ["k" "v" "v2"] (tfns [(tfns [v] v2) (tmap k v)] (tmap k v2))))
                         (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
                         (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
+                        (, "map/keys" (kv (tfns [(tmap k v)] (tarray k))))
                         (, "set/nil" (kk (tset k)))
                         (, "set/add" (kk (tfns [(tset k) k] (tset k))))
                         (, "set/has" (kk (tfns [(tset k) k] tbool)))
@@ -1168,6 +1205,5 @@
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)
-                q                      (some v)
-                (some (scheme/type v)) _
-                (none)))))
+                (some v) (some (scheme/type v))
+                _        (none)))))
