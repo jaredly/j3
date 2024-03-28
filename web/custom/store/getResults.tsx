@@ -274,7 +274,9 @@ export const getResults = <
             group.some((node) => changes[node.id].stmt) ||
             allDeps.some((id) => changes[id].type);
 
-        if (retype && evaluator.infer && results.tenv) {
+        const isPlugin = group.every((node) => topsById[node.id].plugin);
+
+        if (retype && evaluator.infer && results.tenv && !isPlugin) {
             // console.log('Do types', groupKey);
             try {
                 const tenv = evaluator.infer(

@@ -893,9 +893,13 @@ tcon
 (defn infer-stmts [tenv stmts] (foldl tenv stmts infer-stmt))
 
 (,
-    (infer-stmts builtin-env)
-        [(, [(@! (defn hello [a] (+ 1 a))) (@! (hello "a"))] )
-        (, [(@! (deftype one (two) (three int))) (@! (two 1))] )])
+    (errorToString (infer-stmts builtin-env))
+        [(,
+        [(@! (defn hello [a] (+ 1 a))) (@! (hello "a"))]
+            "Fatal runtime: cant unify int (-1) and string (10738)")
+        (,
+        [(@! (deftype one (two) (three int))) (@! (two 1))]
+            "Fatal runtime: cant unify one (10748) and (fn [int] a) (10753)")])
 
 8743
 

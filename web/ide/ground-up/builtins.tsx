@@ -88,6 +88,13 @@ export function builtins() {
             const k = `{${Object.keys(obj).join(',')}}`;
             return new Function(k, 'return ' + v)(obj);
         },
+        errorToString: (fn: (arg: any) => any) => (arg: any) => {
+            try {
+                return fn(arg);
+            } catch (err) {
+                return (err as Error).message;
+            }
+        },
         sanitize,
         $setTracer(nw: null | Tracer) {
             tracer = nw;

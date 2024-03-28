@@ -34,7 +34,12 @@ const PluginRender = ({
         () => (results ? plugin.render(expanded, results, store, ns) : null),
         [expanded, results, ns.plugin],
     );
-    if (!rn || !results) return <Render {...props} />;
+    if (!rn || !results)
+        return (
+            <div>
+                <Render {...props} />
+            </div>
+        );
     return <RenderNNode {...props} values={values} nnode={rn} />;
 };
 
@@ -146,7 +151,22 @@ export function NSTop({
                                     ])}
                                 />
                             )}
-                            {ns.plugin ? null : ns.collapsed ? (
+                            {ns.plugin ? (
+                                <div
+                                    style={{
+                                        whiteSpace: 'pre',
+                                        fontSize: '80%',
+                                        // opacity: 0.5,
+                                        color: 'rgba(255,255,255,0.5)',
+                                    }}
+                                >
+                                    {renderProduce(
+                                        produce[ns.top],
+                                        state,
+                                        dispatch,
+                                    )}
+                                </div>
+                            ) : ns.collapsed ? (
                                 '...'
                             ) : (
                                 <div
@@ -273,7 +293,7 @@ const renderProduceItem = (
     if (typeof value === 'string') {
         return value;
     }
-    if (!value) return '';
+    if (!value) return 'No value?';
     return value;
 };
 

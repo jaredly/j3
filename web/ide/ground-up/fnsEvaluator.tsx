@@ -249,9 +249,17 @@ export const fnsEvaluator = (
                 display[+id] = [];
 
                 if (stmt.type === 'sexpr' && tenv && data['infer']) {
-                    display[+id] = [
-                        data['type_to_string'](data['infer'](tenv)(stmt[0])),
-                    ];
+                    try {
+                        display[+id] = [
+                            data['type_to_string'](
+                                data['infer'](tenv)(stmt[0]),
+                            ),
+                        ];
+                    } catch (err) {
+                        display[+id] = [
+                            new MyEvalError('Type Checker', err as Error),
+                        ];
+                    }
                 }
 
                 if (

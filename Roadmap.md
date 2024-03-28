@@ -12,6 +12,9 @@
   - so, if "names" changes, redo stuff
 - [ ] disallow multiple names with the same name
 
+- [ ] PLUGINS should still render even if there are type errors.
+  maybe just don't do type inference on plugins?
+  at least for nowwwww
 
 - [x] ok, so now we're just doing addStatements ... all the time.
 - [x] now that we have dependency information, and such:
