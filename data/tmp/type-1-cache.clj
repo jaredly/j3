@@ -299,6 +299,12 @@
 (defn tenv/set-type [(tenv types cons names) k v]
     (tenv (map/set types k v) cons names))
 
+(defn tenv/set-constructors [(tenv types cons names) name vbls ncons]
+    (tenv
+        types
+            (map/merge cons ncons)
+            (map/set names name (, vbls (set/from-list (map/keys ncons))))))
+
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
     - type-free: types cannot contain bindings, so every tvar is unbound
@@ -361,19 +367,40 @@
 
 (** ## Composing substitution maps
     Note that compose-subst is not commutative. The old-subst map will get the new-subst substitutions applied to it, and then any conflicting keys go with new-subst.
-    ⚠️ If compose-subst is called with arguments in the wrong order, it will break the algorithm. The magic of hindley-milner's algorithm W relies on the invariant being maintained that all substitutions get "passed forward"; that when adding in substitutions, they first get applied to all existing substitutions. **)
+    ⚠️ If compose-subst is called with arguments in the wrong order, it will break the algorithm. The magic of hindley-milner's algorithm W relies on the invariant being maintained that all substitutions get "passed forward"; that when adding in substitutions, they first get applied to all existing substitutions. Another way to break the algorithm is to not apply substs to the relevant types before attempting unification.  **)
 
-(defn compose-subst [new-subst old-subst]
-    (if (any
-        (map/keys old-subst)
-            (fn [k] (any (map/values new-subst) (fn [type] (has-free type k)))))
-        (fatal
-            "Old subst has something that would change new-subst.\nInvariant violation!\n${
-                (show-subst new-subst)
-                }\nvs\n${
-                (show-subst old-subst)
-                }")
-            (map/merge (map/map (type-apply new-subst) old-subst) new-subst))
+(defn check-invariant [place new-subst old-subst]
+    (foldl
+        (none)
+            (map/keys old-subst)
+            (fn [current key]
+            (match current
+                (some v) current
+                (none)   (foldl
+                             (none)
+                                 (map/to-list new-subst)
+                                 (fn [current (, nkey type)]
+                                 (match current
+                                     (some v) current
+                                     (none)   (if (has-free type key)
+                                                  (some
+                                                      "compose-subst[${
+                                                          place
+                                                          }]: old subst has key ${
+                                                          key
+                                                          }, which is used in new-subst for ${
+                                                          nkey
+                                                          } => ${
+                                                          (type-to-string-raw type)
+                                                          }")
+                                                      current))))))))
+
+foldl
+
+(defn compose-subst [place new-subst old-subst]
+    (match (check-invariant place new-subst old-subst)
+        (some message) (fatal message)
+        _              (map/merge (map/map (type-apply new-subst) old-subst) new-subst))
         ;(map/merge (map/map (type-apply new-subst) old-subst) new-subst))
 
 (def demo-new-subst
@@ -381,7 +408,8 @@
 
 (,
     (fn [x]
-        (map/to-list (compose-subst demo-new-subst (map/from-list x))))
+        (map/to-list
+            (compose-subst "test" demo-new-subst (map/from-list x))))
         [(** x gets the "a" substitution applied to it **)
         (,
         [(, "x" (tvar "a" -1))]
@@ -433,6 +461,8 @@
     If two types are irreconcilable, it throws an exception.
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
+(defn trace' [items] 0 ;(trace items))
+
 (defn unify [t1 t2 nidx l]
     (let 
         [l1
@@ -440,7 +470,7 @@
             l2
             (type-loc t2)
             _
-            (trace
+            (trace'
             [(tloc l)
                 (tloc l1)
                 (tloc l2)
@@ -456,7 +486,7 @@
                                                                                                   (type-apply target-subst arg-2)
                                                                                                   nidx
                                                                                                   l)]
-                                                                    (, (compose-subst target-subst arg-subst) nidx))
+                                                                    (, (compose-subst "unify-tapp" arg-subst target-subst) nidx))
             (, (tvar var _) t)                                  (, (var-bind var t) nidx)
             (, t (tvar var _))                                  (, (var-bind var t) nidx)
             (, (tcon a la) (tcon b lb))                         (if (= a b)
@@ -473,7 +503,7 @@
                                                                         (its (type-loc t2))
                                                                         })"))
             _
-            (trace
+            (trace'
             [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
             (, subst nidx)))
 
@@ -509,7 +539,7 @@
 (defn t-expr [tenv expr nidx]
     (let [
         l                    (expr-loc expr)
-        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
+        _                    (trace' [(tloc l) (tcolor "blue") (ttext "enter")])
         (,, subst type nidx) (match expr
                                  (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
                                  (evar "()" l)                       (,, map/nil (tcon "()" l) nidx)
@@ -531,7 +561,7 @@
                                                                                                 (let [
                                                                                                     (,, s2 t nidx) (t-expr tenv expr nidx)
                                                                                                     (, s3 nidx)    (unify t string-type nidx l)]
-                                                                                                    (, (compose-subst s3 (compose-subst s2 subst)) nidx))))]
+                                                                                                    (, (compose-subst "estr" s3 (compose-subst "estr2" s2 subst)) nidx))))]
                                                                          (,, subst string-type nidx))
                                  (** For lambdas (fn [name] body)
                                      - create a type variable to represent the type of the argument
@@ -563,8 +593,9 @@
                                                                                                                     l)]
                                                                          (,,
                                                                              (compose-subst
-                                                                                 unified-subst
-                                                                                     (compose-subst arg-subst target-subst))
+                                                                                 "eapp"
+                                                                                     unified-subst
+                                                                                     (compose-subst "eapp2" arg-subst target-subst))
                                                                                  (type-apply unified-subst result-var)
                                                                                  nidx))
                                  (** Let: simple version, where the pattern is just a pvar
@@ -579,7 +610,7 @@
                                                                          env-with-name                    (tenv/set-type tenv name value-scheme)
                                                                          e2                               (tenv-apply value-subst env-with-name)
                                                                          (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
-                                                                         (,, (compose-subst body-subst value-subst) body-type nidx))
+                                                                         (,, (compose-subst "elet" body-subst value-subst) body-type nidx))
                                  (** Let: complex version! Now with a whole lot of polymorphism!
                                      - infer the type of the value
                                      - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
@@ -594,8 +625,8 @@
                                                                                                                        (fn [(,,, target-type subst result nidx) (, pat body)]
                                                                                                                        (let [
                                                                                                                            (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
-                                                                                                                           (, unified-subst nidx) (unify result body nidx l)
-                                                                                                                           composed               (compose-subst unified-subst subst)]
+                                                                                                                           (, unified-subst nidx) (unify (type-apply subst result) body nidx l)
+                                                                                                                           composed               (compose-subst "ematch" unified-subst subst)]
                                                                                                                            (,,,
                                                                                                                                (type-apply composed target-type)
                                                                                                                                    composed
@@ -603,17 +634,16 @@
                                                                                                                                    nidx))))]
                                                                          (,, target-subst result-type nidx))
                                  _                                   (fatal "cannot infer type for ${(valueToString expr)}"))
-        _                    (trace
+        _                    (trace'
                                  [(tloc l) (tcolor "white") (ttext "exit") (tfmt type type-to-string-raw)])]
         (,, subst type nidx)))
 
 (defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
-    (** Something's rotten in the state of denmark.
-        The return type of this function should have int in the last spot, not a. **)
+    (** Yay!! Now we have verification. **)
         (let [
         (,, pat-type bindings nidx)    (t-pat tenv pat nidx)
         (, unified-subst nidx)         (unify value-type pat-type nidx (pat-loc pat))
-        composed                       (compose-subst unified-subst value-subst)
+        composed                       (compose-subst "pat-and-body" unified-subst value-subst)
         bindings                       (map/map (type-apply composed) bindings)
         schemes                        (map/map (generalize (tenv-apply composed tenv)) bindings)
         bound-env                      (foldr
@@ -622,14 +652,14 @@
                                                (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme)))
         (,, body-subst body-type nidx) (t-expr (tenv-apply composed bound-env) body nidx)]
         (,,
-            (compose-subst body-subst composed)
+            (compose-subst "pat-and-body-2" body-subst composed)
                 (type-apply composed body-type)
                 nidx)))
 
 (defn t-pat [tenv pat nidx]
     (let [
         l                    (pat-loc pat)
-        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
+        _                    (trace' [(tloc l) (tcolor "blue") (ttext "enter")])
         (,, type subst nidx) (match pat
                                  (pany nl)             (let [(, var nidx) (new-type-var "any" nidx nl)] (,, var map/nil nidx))
                                  (pvar name nl)        (let [(, var nidx) (new-type-var name nidx nl)]
@@ -663,16 +693,16 @@
                                                                                                   (fn [(,, subst bindings nidx) (, arg carg)]
                                                                                                   (let [
                                                                                                       (,, pat-type pat-bind nidx) (t-pat tenv arg nidx)
-                                                                                                      (, unified-subst nidx)      (unify pat-type carg nidx l)]
+                                                                                                      (, unified-subst nidx)      (unify (type-apply subst pat-type) (type-apply subst carg) nidx l)]
                                                                                                       (,,
-                                                                                                          (compose-subst unified-subst subst)
+                                                                                                          (compose-subst "t-pat" unified-subst subst)
                                                                                                               (map/merge bindings pat-bind)
                                                                                                               nidx))))]
                                                            (,,
                                                                (type-apply subst tres)
                                                                    (map/map (type-apply subst) bindings)
                                                                    nidx)))
-        _                    (trace
+        _                    (trace'
                                  [(tloc l)
                                      (tcolor "white")
                                      (ttext "exit")
@@ -684,7 +714,7 @@
 
 (def tenv/nil (tenv map/nil map/nil map/nil))
 
-(infer tenv/nil (@ ((fn [a] a) 23)))
+(infer tenv/nil (@ ((fn [a] a) 231)))
 
 (infer tenv/nil (@ (let [a 1] a)))
 
@@ -778,7 +808,10 @@
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] a)")
         (,
         (@ (2 2))
-            "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")])
+            "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")
+        (,  )])
+
+868
 
 (defn tenv/merge [(tenv values constructors types) (tenv nvalues ncons ntypes)]
     (tenv
@@ -792,16 +825,14 @@
 (defn infer-stmt [tenv' stmt]
     (match stmt
         (sdef name nl expr l)                     (let [
-                                                      nidx             0
-                                                      (, self nidx)    (new-type-var name nidx l)
-                                                      self-bound       (tenv/set-type tenv' name (scheme set/nil self))
-                                                      (,, s t nidx)    (t-expr self-bound expr nidx)
-                                                      selfed           (type-apply s self)
-                                                      (, u-subst nidx) (unify selfed t nidx l)
-                                                      (** We have to compose these substitutions in both directions. 🤔
-                                                          yeah that definitely shouldn't be happening **)
-                                                      s2               (compose-subst u-subst (compose-subst u-subst s))
-                                                      t                (type-apply s2 t)]
+                                                      nidx                   0
+                                                      (, self nidx)          (new-type-var name nidx l)
+                                                      self-bound             (tenv/set-type tenv' name (scheme set/nil self))
+                                                      (,, subst t nidx)      (t-expr self-bound expr nidx)
+                                                      selfed                 (type-apply subst self)
+                                                      (, unified-subst nidx) (unify selfed t nidx l)
+                                                      composed               (compose-subst "infer-stmt" unified-subst subst)
+                                                      t                      (type-apply composed t)]
                                                       (tenv/set-type tenv/nil name (generalize tenv' t)))
         (sexpr expr l)                            (let [
                                                       (** this "infer" is for side-effects only **)
@@ -866,7 +897,44 @@
         (,
         [(@! (deftype (what-t a) (what a (what-t a)) (one a) (no)))
             (@! (let [a (what 1 (no)) b (what "a" (no))] (, a b)))]
-            "(, (what-t int) (what-t string))")])
+            "(, (what-t int) (what-t string))")
+        (,
+        [(@! (deftype (array a) (cons a (array a)) (nil)))
+            (@!
+            (fn [zip one two]
+                (match (, one two)
+                    (, [] [])               []
+                    (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
+                    _                       [])))]
+            "(fn [(fn [(array a) (array b)] (array (, a b))) (array a) (array b)] (array (, a b)))")])
+
+(several
+    (foldl
+        (tenv/set-constructors
+            builtin-env
+                "stmt"
+                0
+                (map/from-list
+                [(,
+                    "sexpr"
+                        (tconstructor set/nil [(tcon "expr" -1) (tint)] (tcon "stmt" -1)))]))
+            [(,
+            "tenv/merge"
+                (concrete (tfns [(tcon "tenv" -1) (tcon "tenv" -1)] (tcon "tenv" -1))))
+            (,
+            "infer-stmt"
+                (concrete (tfns [(tcon "tenv" -1) (tcon "stmt" -1)] (tcon "tenv" -1))))
+            (,
+            "infer"
+                (concrete (tfns [(tcon "tenv" -1) (tcon "expr" -1)] (tcon "tenv" -1))))]
+            (fn [c (, a b)] (tenv/set-type c a b)))
+        [(@!
+        (defn several [tenv stmts]
+            (match stmts
+                []               (fatal "Fainal stmt should be an expr")
+                [(sexpr expr _)] (infer tenv expr)
+                [one ..rest]     (several (tenv/merge tenv (infer-stmt tenv one)) rest))))
+        (@! several)])
 
 (defn show-types [names (tenv types _ _)]
     (let [names (set/from-list names)]
@@ -907,10 +975,11 @@
                                       (zip vars stmts)
                                       (fn [(,, subst types nidx) (, var (sdef name _ body l))]
                                       (let [
-                                          (,, body-subst body-type nidx) (t-expr ;(bound) (tenv-apply subst bound) body nidx)
-                                          selfed                         (type-apply (compose-subst body-subst subst) var)
+                                          (,, body-subst body-type nidx) (t-expr (tenv-apply subst bound) body nidx)
+                                          both                           (compose-subst "infer-several" body-subst subst)
+                                          selfed                         (type-apply both var)
                                           (, u-subst nidx)               (unify selfed body-type nidx l)
-                                          subst                          (compose-subst (compose-subst u-subst body-subst) subst)]
+                                          subst                          (compose-subst "infer-several-2" u-subst both)]
                                           (,, subst [(type-apply subst body-type) ..types] nidx))))]
         (zip names (map types (type-apply subst)))))
 

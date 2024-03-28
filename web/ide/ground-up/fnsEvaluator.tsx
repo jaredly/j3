@@ -508,7 +508,7 @@ function assembleExternals(
             // Skip recursive self-calls
             (name) => !provided.includes(name),
         )
-        .concat(['$trace']);
+        .concat(['$trace', 'jsonify']);
     const values: Record<string, any> = {};
     needed.forEach((name) => {
         if (env.values[name] == null) {
