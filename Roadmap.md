@@ -8,11 +8,11 @@
   - recalc value when self or deps change
 
 - [ ] I need to ensure that going from 'error' to 'not error' works
-- [ ] changing the name of the thing doesn't update the type somehow
+- [x] changing the name of the thing doesn't update the type somehow
   - so, if "names" changes, redo stuff
-- [ ] disallow multiple names with the same name
+- [x] disallow multiple names with the same name
 
-- [ ] PLUGINS should still render even if there are type errors.
+- [x] PLUGINS should still render even if there are type errors.
   maybe just don't do type inference on plugins?
   at least for nowwwww
 
@@ -26,7 +26,7 @@
   - [x] anddddd if a dependency has a TYPE ERROR .. then we definitely can
     bail on doing evaluations.
     SHOULD WE in that case just keep using the cached values? Might as well, right?
-- [ ] THE FIRST run, isn't working quite
+- [x] THE FIRST run, isn't working quite
 
 Ok, so how bout the `Evaluator` plugin config
 be responsible for providing the javascript

@@ -701,7 +701,7 @@ tcon
 (infer-show basic (@ (let [(, a b) (, 2 true)] (, a b))))
 
 (,
-    (infer-show basic)
+    (errorToString (infer-show basic))
         [(, (@ +) "(fn [int int] int)")
         (, (@ "") "string")
         (, (@ "hi ${"ho"}") "string")
@@ -718,7 +718,9 @@ tcon
         (, (@ 123) "int")
         (, (@ (fn [a] a)) "(fn [a] a)")
         (, (@ (fn [a] (+ 2 a))) "(fn [int] int)")
-        (, (@ ((fn [(, a _)] (a 2)) (, 1 2))) )
+        (,
+        (@ ((fn [(, a _)] (a 2)) (, 1 2)))
+            "Fatal runtime: cant unify (fn [int] a) (11080) and int (11085)")
         (, (@ (fn [(, a _)] (a 2))) "(fn [(, (fn [int] a) b)] a)")
         (,
         (@
@@ -742,9 +744,11 @@ tcon
         (, (@ (fn [x] (let [y x] y))) "(fn [a] a)")
         (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(fn [a] a)")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
-        (, (@ (let [id (fn [x] (x x))] id)) )
+        (, (@ (let [id (fn [x] (x x))] id)) "Fatal runtime: occurs check")
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] b)")
-        (, (@ (2 2)) )])
+        (,
+        (@ (2 2))
+            "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")])
 
 (defn infer-stmt [tenv' stmt]
     (match stmt
@@ -900,8 +904,6 @@ tcon
         (,
         [(@! (deftype one (two) (three int))) (@! (two 1))]
             "Fatal runtime: cant unify one (10748) and (fn [int] a) (10753)")])
-
-8743
 
 (defn infer-defns [tenv stmts]
     (match stmts
