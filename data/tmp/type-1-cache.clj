@@ -1015,8 +1015,6 @@
         [(@! (deftype one (two) (three int))) (@! (two 1))]
             "Fatal runtime: cant unify one (10756) and (fn [int] a) (10753)")])
 
-8743
-
 (defn infer-defns [tenv stmts]
     (match stmts
         [one] (infer-stmt tenv one)
@@ -1166,8 +1164,6 @@
                         (, "!=" (generic ["k"] (tfns [k k] tbool)))
                         (, ">=" (concrete (tfns [tint tint] tbool)))
                         (, "<=" (concrete (tfns [tint tint] tbool)))
-                        (, "or" (concrete (tfns [tbool tbool] tbool)))
-                        (, "and" (concrete (tfns [tbool tbool] tbool)))
                         (,
                         "trace"
                             (kk

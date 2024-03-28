@@ -25,8 +25,6 @@ export function builtins() {
         '=': (a: number) => (b: number) => a === b,
         '!=': (a: number) => (b: number) => a != b,
         unescapeString: slash,
-        or: (a: boolean) => (b: boolean) => a || b,
-        and: (a: boolean) => (b: boolean) => a && b,
 
         'int-to-string': (a: number) => a + '',
         string_to_int: (a: string) => {
