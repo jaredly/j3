@@ -129,10 +129,25 @@ const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
                 return state.map[node.items[p.at - 1]];
             }
         case 'annot-annot':
+            if (node.type !== 'annot') {
+                throw new Error(`Node not an annot, ${node.type}`);
+            }
+            return state.map[node.annot];
         case 'annot-target':
-        case 'tapply-target':
+            if (node.type !== 'annot') {
+                throw new Error(`Node not an annot, ${node.type}`);
+            }
+            return state.map[node.target];
         case 'record-target':
-            throw new Error(`not handled atm node=${node.type} path=${p.type}`);
+            if (node.type !== 'recordAccess') {
+                throw new Error(`node not a recordAccess, ${node.type}`);
+            }
+            return state.map[node.target];
+        case 'tapply-target':
+            if (node.type === 'tapply') {
+                return state.map[node.target];
+            }
+            throw new Error(`Node not a tapply, ${node.type}`);
         case 'spread-contents':
             if (!('contents' in node)) {
                 throw new Error(`contents? ${node.type}`);
