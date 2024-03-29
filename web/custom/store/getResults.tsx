@@ -249,6 +249,40 @@ export const getResults = <
     results.env = evaluator.init();
     results.tenv = evaluator.initType?.();
     sortedTops.forEach((group, i) => {
+        const isPlugin = group.every((node) => topsById[node.id].plugin);
+        if (isPlugin) {
+            for (let node of group) {
+                const reRun =
+                    changes[node.id].source ||
+                    !cache.results[node.id] ||
+                    node.deps.some((id) => changes[idForName[id.name]]?.value);
+
+                if (reRun) {
+                    let pluginResult;
+                    if (topsById[node.id].plugin) {
+                        // console.log('Doing a plugin', topsById[node.id].plugin);
+                        pluginResult = processPlugin(
+                            results,
+                            cache.nodes[node.id].node,
+                            topsById[node.id].plugin!,
+                            state,
+                            evaluator,
+                        );
+                        results.pluginResults[node.id] = pluginResult;
+                    }
+
+                    cache.results[node.id] = {
+                        produce: results.produce[node.id],
+                        ts: Date.now(),
+                        values: {},
+                        pluginResult,
+                    };
+                    changes[node.id].value = true;
+                }
+            }
+            return;
+        }
+
         const stmts: { [key: number]: Stmt } = {};
         for (let node of group) {
             const parsed = cache.nodes[node.id].parsed;
@@ -278,7 +312,6 @@ export const getResults = <
             group.some((node) => changes[node.id].stmt) ||
             allDeps.some((id) => changes[id].type);
 
-        const isPlugin = group.every((node) => topsById[node.id].plugin);
         if (isPlugin) {
             console.log(
                 'we have a plugin',
@@ -308,6 +341,7 @@ export const getResults = <
                     tops: ids,
                 };
             } catch (err) {
+                delete cache.types[groupKey];
                 group.forEach(
                     (node) =>
                         (results.produce[node.id] = [

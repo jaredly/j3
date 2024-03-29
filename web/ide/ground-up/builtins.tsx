@@ -4,6 +4,7 @@ import { slash } from './round-1/bootstrap';
 import { sanitize } from './round-1/sanitize';
 import { arr, unwrapArray, wrapArray } from './round-1/parse';
 import { Trace } from './loadEv';
+import equal from 'fast-deep-equal';
 
 export type Tracer = (
     // loc: number,
@@ -50,9 +51,10 @@ export function builtins() {
         '++': (items: arr<string>) => unwrapArray(items).join(''),
         'map/nil': [],
         'map/set': (m: [any, any][]) => (k: any) => (v: any) => [[k, v], ...m],
-        'map/rm': (m: [any, any][]) => (k: any) => m.filter((i) => i[0] !== k),
+        'map/rm': (m: [any, any][]) => (k: any) =>
+            m.filter((i) => !equal(i[0], k)),
         'map/get': (m: [any, any][]) => (k: any) => {
-            const found = m.find((i) => i[0] === k);
+            const found = m.find((i) => equal(i[0], k));
             if (found != null) {
                 return { type: 'some', 0: found[1] };
             }
@@ -61,18 +63,19 @@ export function builtins() {
         'map/map': (fn: (k: any) => any) => (map: [any, any][]) =>
             map.map(([k, v]) => [k, fn(v)]),
         'map/merge': (a: [any, any][]) => (b: [any, any][]) =>
-            [...a, ...b.filter((item) => !a.find((a) => a[0] === item[0]))],
+            [...a, ...b.filter((item) => !a.find((a) => equal(a[0], item[0])))],
         'map/values': (m: [any, any][]) => wrapArray(m.map((i) => i[1])),
         'map/keys': (m: [any, any][]) => wrapArray(m.map((i) => i[0])),
 
         'set/nil': [],
         'set/add': (s: any[]) => (v: any) => [v, ...s],
         'set/has': (s: any[]) => (v: any) => s.includes(v),
-        'set/rm': (s: any[]) => (v: any) => s.filter((i) => i !== v),
+        'set/rm': (s: any[]) => (v: any) => s.filter((i) => !equal(i, v)),
         // NOTE this is only working for primitives
-        'set/diff': (a: any[]) => (b: any[]) => a.filter((i) => !b.includes(i)),
+        'set/diff': (a: any[]) => (b: any[]) =>
+            a.filter((i) => !b.some((j) => equal(i, j))),
         'set/merge': (a: any[]) => (b: any[]) =>
-            [...a, ...b.filter((x) => !a.includes(x))],
+            [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
         'set/to-list': wrapArray,
         'set/from-list': unwrapArray,
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>

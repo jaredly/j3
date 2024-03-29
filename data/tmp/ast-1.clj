@@ -12,6 +12,26 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
+(deftype prim (pint int int) (pbool bool int))
+
+(deftype pat
+    (pany int)
+        (pvar string int)
+        (pcon string (array pat) int)
+        (pstr string int)
+        (pprim prim int))
+
+(defn join [sep arr]
+    (match arr
+        []           ""
+        [one]        one
+        [one ..rest] "${one}${sep}${(join sep rest)}"))
+
+(defn map [list fn]
+    (match list
+        []           []
+        [one ..rest] [(fn one) ..(map rest fn)]))
+
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
@@ -27,22 +47,13 @@
                                  }"
         _                    "??"))
 
-;(defn pat-to-string [pat]
+(defn pat-to-string [pat]
     (match pat
         (pany _)        "_"
         (pvar n _)      n
         (pcon c pats _) "(${c} ${(join " " (map pats pat-to-string))})"
         (pstr s _)      "\"${s}\""
         (pprim _ _)     "prim"))
-
-(deftype prim (pint int int) (pbool bool int))
-
-(deftype pat
-    (pany int)
-        (pvar string int)
-        (pcon string (array pat) int)
-        (pstr string int)
-        (pprim prim int))
 
 (deftype type
     (tvar string int)

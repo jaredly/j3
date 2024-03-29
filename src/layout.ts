@@ -80,7 +80,9 @@ export const calculateLayout = (
                 display,
                 hashNames,
                 map,
-                firstName === 'let' ? 'let' : undefined,
+                firstName === 'let' || firstName === 'let->'
+                    ? 'let'
+                    : undefined,
             );
             if (
                 cw === false ||
@@ -207,6 +209,7 @@ const tightFirsts: { [key: string]: number } = {
     switch: 2,
     match: 2,
     let: 2,
+    'let->': 2,
     if: 2,
     '<>': 2,
     '->': 2,

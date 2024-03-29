@@ -524,7 +524,11 @@ const recordPairs = (nodes: number[], layout: Layout, map: Map): NNode => {
         }
         // if this is a single-line thing, +=1, otherwise +=2
         const next = map[nodes[i]];
-        if (next?.type === 'comment' || next?.type === 'rich-text') {
+        if (
+            next?.type === 'comment' ||
+            next?.type === 'rich-text' ||
+            next?.type === 'comment-node'
+        ) {
             pairs.push([
                 { type: 'ref', id: nodes[i], path: { type: 'child', at: i } },
             ]);

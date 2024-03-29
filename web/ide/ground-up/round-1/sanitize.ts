@@ -14,9 +14,10 @@ const sanMap = {
     ';': '$semi',
     '@': '$at',
     '!': '$ex',
+    '|': '$bar',
 };
 
-const kwds = 'case var if return';
+const kwds = 'case var if return super break while for default';
 const rx: [RegExp, string][] = [];
 kwds.split(' ').forEach((kwd) =>
     rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),
