@@ -37,12 +37,12 @@
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
 
-(defn any [values fn]
+(defn any [values f]
     (match values
         []           false
-        [one ..rest] (if (fn one)
+        [one ..rest] (if (f one)
                          true
-                             (any rest fn))))
+                             (any rest f))))
 
 (defn zip [one two]
     (match (, one two)
@@ -64,12 +64,12 @@
 
 (foldr 0 [1 2 3] (fn [a b] b))
 
-(defn filter [fn list]
+(defn filter [f list]
     (match list
         []           []
-        [one ..rest] (if (fn one)
-                         [one ..(filter fn rest)]
-                             (filter fn rest))))
+        [one ..rest] (if (f one)
+                         [one ..(filter f rest)]
+                             (filter f rest))))
 
 (defn apply-tuple [fn (, a b)] (fn a b))
 
@@ -459,8 +459,8 @@
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
 (defn unify [t1 t2 nidx l]
-    ;(unify-inner t1 t2 nidx l)
-        (let [
+    (unify-inner t1 t2 nidx l)
+        ;(let [
         l1             (type-loc t1)
         l2             (type-loc t2)
         _              (trace
@@ -485,30 +485,8 @@
                                                                                               nidx
                                                                                               l)]
                                                                 (, (compose-subst "unify-tapp" arg-subst target-subst) nidx))
-        (, (tvar var la) t)                                 (match (var-bind var t)
-                                                                (some bound) (, bound nidx)
-                                                                _            (fatal
-                                                                                 "Cannot unify ${
-                                                                                     (type-to-string-raw t1)
-                                                                                     } (${
-                                                                                     (its la)
-                                                                                     }) and ${
-                                                                                     (type-to-string-raw t2)
-                                                                                     } (${
-                                                                                     (its (type-loc t))
-                                                                                     }); one contains the other"))
-        (, t (tvar var la))                                 (match (var-bind var t)
-                                                                (some bound) (, bound nidx)
-                                                                _            (fatal
-                                                                                 "Cannot unify ${
-                                                                                     (type-to-string-raw t1)
-                                                                                     } (${
-                                                                                     (its la)
-                                                                                     }) and ${
-                                                                                     (type-to-string-raw t2)
-                                                                                     } (${
-                                                                                     (its (type-loc t))
-                                                                                     }); one contains the other"))
+        (, (tvar var _) t)                                  (, (var-bind var t) nidx)
+        (, t (tvar var _))                                  (, (var-bind var t) nidx)
         (, (tcon a la) (tcon b lb))                         (if (= a b)
                                                                 (, map/nil nidx)
                                                                     (fatal "cant unify ${a} (${(its la)}) and ${b} (${(its lb)})"))
@@ -526,11 +504,11 @@
 (defn var-bind [var type]
     (match type
         (tvar v _) (if (= var v)
-                       (some map/nil)
-                           (some (map/set map/nil var type)))
+                       map/nil
+                           (map/set map/nil var type))
         _          (if (set/has (type-free type) var)
-                       (none)
-                           (some (map/set map/nil var type)))))
+                       (fatal "occurs check")
+                           (map/set map/nil var type))))
 
 (** ## Type Inference!
     Extensions to the HM algorithm:
@@ -938,8 +916,7 @@
                     (, [] [])               []
                     (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
                     _                       [])))]
-            "(fn [(fn [(array a) (array b)] (array (, a b))) (array a) (array b)] (array (, a b)))")
-        ])
+            "(fn [(fn [(array a) (array b)] (array (, a b))) (array a) (array b)] (array (, a b)))")])
 
 (several
     (** This was a test case I needed to figure out. **)
@@ -995,7 +972,15 @@
     (let [
         nidx                  0
         names                 (map stmts (fn [(sdef name _ _ _)] name))
-        (,, bound vars nidx)  (foldr (,, tenv [] nidx) stmts (fn  fn))
+        (,, bound vars nidx)  (foldr
+                                  (,, tenv [] nidx)
+                                      stmts
+                                      (fn [(,, tenv' vars nidx) (sdef name _ body l)]
+                                      (let [(, self nidx) (new-type-var name nidx l)]
+                                          (,,
+                                              (tenv/set-type tenv' name (scheme set/nil self))
+                                                  [self ..vars]
+                                                  nidx))))
         (,, subst types nidx) (foldr
                                   (,, map/nil [] nidx)
                                       (zip vars stmts)
@@ -1285,7 +1270,7 @@
             (fn [type] string)
             (fn [tenv string] (option type))))
 
-;((eval
+((eval
     "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference builtin-env infer-defns tenv/merge infer)
