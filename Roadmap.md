@@ -1,4 +1,15 @@
 
+## What's the next step here?
+
+Looks like cached evaluation is working, from what I can tell.
+type-1-cache is winning.
+
+- [ ] CLIPBOARD copy namespacesssss pleassee
+
+
+
+
+
 ## Doing a check on all the nodes
 
 - wrapping doesn't work

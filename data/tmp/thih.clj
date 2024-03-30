@@ -1,3 +1,5 @@
+(** ## Our AST **)
+
 (deftype cst
     (cst/list (array cst) int)
         (cst/array (array cst) int)
@@ -87,6 +89,16 @@
 
 (defn star-con [name] (tcon (tycon name star) -1))
 
+(defn type/kind [type]
+    (match type
+        (tcon tc _)  (tycon/kind tc)
+        (tvar u _)   (tyvar/kind u)
+        (tapp t _ l) (match (type/kind t)
+                         (kfun _ k) k
+                         _          (fatal "Invalid type application ${(int-to-string l)}"))))
+
+(** ## Some Builtin Types **)
+
 (def tunit (star-con "()"))
 
 (def tchar (star-con "char"))
@@ -95,9 +107,9 @@
 
 (def tbool (star-con "bool"))
 
-(def tinteger (star-con "integer"))
-
 (def tfloat (star-con "float"))
+
+(def tinteger (star-con "integer"))
 
 (def tdouble (star-con "double"))
 
@@ -119,14 +131,6 @@
 
 (defn tycon/kind [(tycon v k)] k)
 
-(defn type/kind [type]
-    (match type
-        (tcon tc _)  (tycon/kind tc)
-        (tvar u _)   (tyvar/kind u)
-        (tapp t _ l) (match (type/kind t)
-                         (kfun _ k) k
-                         _          (fatal "Invalid type application ${(int-to-string l)}"))))
-
 ;(typealias subst (array (, tyvar type)))
 
 (def nullSubst [])
@@ -145,31 +149,74 @@
         (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
         _                     type))
 
-(defn map [f items]
-    (match items
-        []           []
-        [one ..rest] [(f one) ..(map f rest)]))
+(** ## Prelude **)
 
-(defn mapi [f i items]
-    (match items
-        []           []
-        [one ..rest] [(f one i) ..(mapi f (+ i 1) rest)]))
+(defn list/get [arr i]
+    (match (, arr i)
+        (, [one .._] 0)  one
+        (, [_ ..rest] i) (if (<= i 0)
+                             (fatal "Index out of range")
+                                 (list/get rest (- i 1)))))
 
-(defn type/tv [t]
-    (match t
-        (tvar u _)   (set/add set/nil u)
-        (tapp l r _) (set/merge (type/tv l) (type/tv r))
-        _            set/nil))
+(defn map/ok [f arr]
+    (match arr
+        []           (ok [])
+        [one ..rest] (match (f one)
+                         (ok val) (match (map/ok f rest)
+                                      (ok rest) (ok [val ..rest])
+                                      (err e)   (err e))
+                         (err e)  (err e))))
 
-(defn compose-subst [s1 s2]
-    (map/merge (map/map (type/apply s1) s2) s1))
+(defn find-some [f arr]
+    (match arr
+        []           (none)
+        [one ..rest] (match (f one)
+                         (some v) (some v)
+                         _        (find-some f rest))))
 
-(defn all [f items]
-    (match items
-        []           true
+(defn concat [arrays]
+    (match arrays
+        []                      []
+        [[] ..rest]             (concat rest)
+        [[one ..rest] ..arrays] [one ..(concat [rest ..arrays])]))
+
+(defn any [f arr]
+    (match arr
+        []           false
         [one ..rest] (if (f one)
-                         (all f rest)
-                             false)))
+                         true
+                             (any f rest))))
+
+(defn map/has [map key]
+    (match (map/get map key)
+        (some _) true
+        _        false))
+
+(defn not [v]
+    (if v
+        false
+            true))
+
+(defn array= [a' b' eq]
+    (match (, a' b')
+        (, [one ..rest] [two ..rest']) (if (eq one two)
+                                           (array= rest rest' eq)
+                                               false)
+        _                              false))
+
+(defn foldl [init items f]
+    (match items
+        []           init
+        [one ..rest] (foldl (f init one) rest f)))
+
+(defn foldr [init items f]
+    (match items
+        []           init
+        [one ..rest] (f (foldr init rest f) one)))
+
+(deftype (result good bad) (ok good) (err bad))
+
+(deftype (option a) (some a) (none))
 
 (defn filter [f arr]
     (match arr
@@ -185,7 +232,82 @@
                          (some one)
                              (find rest f))))
 
-(deftype (option a) (some a) (none))
+(defn all [f items]
+    (match items
+        []           true
+        [one ..rest] (if (f one)
+                         (all f rest)
+                             false)))
+
+(defn map [f items]
+    (match items
+        []           []
+        [one ..rest] [(f one) ..(map f rest)]))
+
+(defn mapi [f i items]
+    (match items
+        []           []
+        [one ..rest] [(f one i) ..(mapi f (+ i 1) rest)]))
+
+(** ## Type Unification **)
+
+(def matchPred (lift type-match))
+
+(def mguPred (lift mgu))
+
+(defn lift [m (isin i t) (isin i' t')]
+    (if (= i i')
+        (m t t')
+            (fatal "classes differ")))
+
+(defn pred/tv [(isin i t)] (type/tv t))
+
+(defn pred/apply [subst (isin i t)] (isin i (type/apply subst t)))
+
+(defn qual/tv [(=> preds t) t/tv]
+    (foldl (t/tv t) preds (fn [tv pred] (set/merge tv (pred/tv pred)))))
+
+(defn qual/apply [subst (=> preds t) t/apply]
+    (=> (map (pred/apply subst) preds) (t/apply subst t)))
+
+(defn pred= [(isin id type) (isin id' type')]
+    (if (= id id')
+        (type= type type')
+            false))
+
+(deftype pred (isin string type))
+
+(defn qual= [(=> preds t) (=> preds' t') t=]
+    (if (array= preds preds' pred=)
+        (t= t t')
+            false))
+
+(deftype (qual t) (=> (array pred) t))
+
+(defn type-match [t1 t2]
+    (** We're trying to find a substitution that will turn t1 into t2  **)
+        (match (, t1 t2)
+        (, (tapp l r loc) (tapp l' r' _)) (match (type-match l l')
+                                              (ok sl) (match (type-match r r')
+                                                          (ok sr) (ok (merge sl sr loc))
+                                                          err     err)
+                                              err     err)
+        (, (tvar u _) t)                  (if (kind= (tyvar/kind u) (type/kind t))
+                                              (ok (|-> u t))
+                                                  (err "Different Kinds"))
+        (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
+                                              (ok map/nil)
+                                                  (err
+                                                  "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"))))
+
+(defn type/tv [t]
+    (match t
+        (tvar u _)   (set/add set/nil u)
+        (tapp l r _) (set/merge (type/tv l) (type/tv r))
+        _            set/nil))
+
+(defn compose-subst [s1 s2]
+    (map/merge (map/map (type/apply s1) s2) s1))
 
 (defn set/intersect [one two]
     (filter (fn [k] (set/has two k)) (set/to-list one)))
@@ -228,77 +350,11 @@
                                                 (err "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}")))
         )
 
-(deftype (result good bad) (ok good) (err bad))
-
-(defn type-match [t1 t2]
-    (** We're trying to find a substitution that will turn t1 into t2  **)
-        (match (, t1 t2)
-        (, (tapp l r loc) (tapp l' r' _)) (match (type-match l l')
-                                              (ok sl) (match (type-match r r')
-                                                          (ok sr) (ok (merge sl sr loc))
-                                                          err     err)
-                                              err     err)
-        (, (tvar u _) t)                  (if (kind= (tyvar/kind u) (type/kind t))
-                                              (ok (|-> u t))
-                                                  (err "Different Kinds"))
-        (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
-                                              (ok map/nil)
-                                                  (err
-                                                  "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"))))
-
-(deftype (qual t) (=> (array pred) t))
-
-(defn array= [a' b' eq]
-    (match (, a' b')
-        (, [one ..rest] [two ..rest']) (if (eq one two)
-                                           (array= rest rest' eq)
-                                               false)
-        _                              false))
-
-(defn qual= [(=> preds t) (=> preds' t') t=]
-    (if (array= preds preds' pred=)
-        (t= t t')
-            false))
-
-(deftype pred (isin string type))
-
-(defn pred= [(isin id type) (isin id' type')]
-    (if (= id id')
-        (type= type type')
-            false))
-
-(defn qual/apply [subst (=> preds t) t/apply]
-    (=> (map (pred/apply subst) preds) (t/apply subst t)))
-
-(defn foldl [init items f]
-    (match items
-        []           init
-        [one ..rest] (foldl (f init one) rest f)))
-
-(defn foldr [init items f]
-    (match items
-        []           init
-        [one ..rest] (f (foldr init rest f) one)))
-
-(defn qual/tv [(=> preds t) t/tv]
-    (foldl (t/tv t) preds (fn [tv pred] (set/merge tv (pred/tv pred)))))
-
-(defn pred/apply [subst (isin i t)] (isin i (type/apply subst t)))
-
-(defn pred/tv [(isin i t)] (type/tv t))
-
-(defn lift [m (isin i t) (isin i' t')]
-    (if (= i i')
-        (m t t')
-            (fatal "classes differ")))
-
-(def mguPred (lift mgu))
-
-(def matchPred (lift type-match))
-
 ;(defalias class (, (array string) (array (qual pred))))
 
 ;(defalias inst (qual pred))
+
+(** ## Type Class stuff **)
 
 (def class/ord
     (,
@@ -315,8 +371,6 @@
     (class-env
         (map string (, (array string) (array (qual pred))))
             (array type)))
-
-class-env
 
 (defn supers [(class-env classes _) id]
     (match (map/get classes id)
@@ -341,16 +395,6 @@ class-env
 ;(defalias env-transformer (fn [class-env] (option class-env)))
 
 (defn compose-transformers [one two ce] (two (one ce)))
-
-(defn not [v]
-    (if v
-        false
-            true))
-
-(defn map/has [map key]
-    (match (map/get map key)
-        (some _) true
-        _        false))
 
 (defn add-class [(class-env classes defaults) (, name supers)]
     (match (map/get classes name)
@@ -391,13 +435,6 @@ class-env
 
 (core-classes initial-env)
 
-(defn any [f arr]
-    (match arr
-        []           false
-        [one ..rest] (if (f one)
-                         true
-                             (any f rest))))
-
 (defn overlap [p q]
     (match (mguPred p q)
         (ok _) true
@@ -426,12 +463,6 @@ class-env
             (isin "ord" (tvar (tyvar "b" star) -1))]
             (isin "ord" (mkpair (tvar (tyvar "a" star) -1) (tvar (tyvar "b" star) -1))))])
 
-(defn concat [arrays]
-    (match arrays
-        []                      []
-        [[] ..rest]             (concat rest)
-        [[one ..rest] ..arrays] [one ..(concat [rest ..arrays])]))
-
 (defn by-super [ce pred]
     (let [
         (isin i t)           pred
@@ -440,13 +471,6 @@ class-env
                                  (some s) s
                                  _        (fatal "Unknown name ${i}"))]
         [pred ..(concat (map (fn [i'] (by-super ce (isin i' t))) got))]))
-
-(defn find-some [f arr]
-    (match arr
-        []           (none)
-        [one ..rest] (match (f one)
-                         (some v) (some v)
-                         _        (find-some f rest))))
 
 (defn by-inst [ce pred]
     (let [
@@ -469,6 +493,8 @@ class-env
             (none)    false
             (some qs) (all (entail ce ps) qs))))
 
+(** ## Simplification **)
+
 (defn type/hnf [type]
     (match type
         (tvar _ _)   true
@@ -476,15 +502,6 @@ class-env
         (tapp t _ _) (type/hnf t)))
 
 (defn in-hnf [(isin _ t)] (type/hnf t))
-
-(defn map/ok [f arr]
-    (match arr
-        []           (ok [])
-        [one ..rest] (match (f one)
-                         (ok val) (match (map/ok f rest)
-                                      (ok rest) (ok [val ..rest])
-                                      (err e)   (err e))
-                         (err e)  (err e))))
 
 (defn to-hnfs [ce ps]
     (match (map/ok (to-hnf ce) ps)
@@ -513,6 +530,8 @@ class-env
         (err e) (err e)))
 
 (defn sc-entail [ce ps p] (any (any (pred= p)) (map (by-super ce) ps)))
+
+(** ## Type Schemes **)
 
 (deftype scheme (forall (array kind) (qual type)))
 
@@ -549,6 +568,8 @@ class-env
                                   (ok sc)
                                       (find-scheme id rest))))
 
+(** ## Monad alert **)
+
 (deftype type-env
     (type-env (map string scheme) (map string scheme)))
 
@@ -556,8 +577,6 @@ class-env
     (TI
         (fn [(map tyvar type) type-env int]
             (result (,,, (map tyvar type) type-env int a) string))))
-
-find
 
 (defn unify [t1 t2]
     (TI
@@ -610,13 +629,6 @@ find
     (let-> [ts (ti-then (map/ti new-tvar ks))]
         (ti-return (inst/qual ts inst/type qt))))
 
-(defn list/get [arr i]
-    (match (, arr i)
-        (, [one .._] 0)  one
-        (, [_ ..rest] i) (if (<= i 0)
-                             (fatal "Index out of range")
-                                 (list/get rest (- i 1)))))
-
 (defn inst/type [types type]
     (match type
         (tapp l r loc) (tapp (inst/type types l) (inst/type types r) loc)
@@ -640,6 +652,8 @@ find
     (map/get constrs name))
 
 (defn tenv/value [(type-env _ values) name] (map/get values name))
+
+(** ## Inference! **)
 
 (defn infer/prim [prim]
     (match prim

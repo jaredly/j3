@@ -139,7 +139,13 @@ export const selectionStatus = (
     return { type: 'partial' };
 };
 
+export type NSExport = {
+    top: Node;
+    children: NSExport[];
+};
+
 export type ClipboardItem =
+    | { type: 'ns'; items: NSExport[] }
     | {
           type: 'text';
           text: string;
@@ -267,7 +273,41 @@ export const paste = (
                     idxes.slice(0, -1),
                 );
             }
+            case 'ns': {
+                const nsMap: NsMap = {};
+                const map: Map = {};
+                const process = (ns: NSExport) => {
+                    const id = state.nidx();
+                    nsMap[id] = {
+                        type: 'normal',
+                        id,
+                        top: toMCST(reLoc(ns.top, state.nidx), map),
+                        children: ns.children.map(process),
+                    };
+                    return id;
+                };
+                const added = item.items.map(process);
+                const lns = state.at[0].start.findLast(
+                    (n) => n.type === 'ns',
+                )! as Extract<Path, { type: 'ns' }>;
+                const parent = state.nsMap[lns.idx] as RealizedNamespace;
+                const children = parent.children.slice();
+                children.splice(lns.at + 1, 0, ...added);
+                nsMap[parent.id] = { ...parent, children };
+                return {
+                    type: 'update',
+                    map,
+                    nsMap,
+                    selection: state.at[0].start,
+                };
+            }
+
+            default:
+                const _x: never = item;
         }
+    } else {
+        console.warn('cant handle the clipboard items... maybe multi');
+        console.log(items);
     }
     return;
 };
@@ -281,6 +321,8 @@ export const clipboardText = (
         .map((item) =>
             item.type === 'text'
                 ? item.text
+                : item.type === 'ns'
+                ? 'Copied namespace'
                 : item.nodes
                       .map((node) => {
                           const map: Map = {};

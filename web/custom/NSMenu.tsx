@@ -1,6 +1,20 @@
 import React from 'react';
-import { Action, RealizedNamespace } from './UIState';
+import { Action, NUIState, RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
+import { useGetStore } from './store/Store';
+import { Node } from '../../src/types/cst';
+import { fromMCST } from '../../src/types/mcst';
+import { clipboardPrefix, clipboardSuffix } from './ByHand';
+import { NSExport } from '../../src/state/clipboard';
+
+export const exportNs = (id: number, state: NUIState) => {
+    const ns = state.nsMap[id] as RealizedNamespace;
+    const res: NSExport = {
+        top: fromMCST(ns.top, state.map),
+        children: ns.children.map((id) => exportNs(id, state)),
+    };
+    return res;
+};
 
 export function NSMenu({
     mref,
@@ -13,6 +27,7 @@ export function NSMenu({
     dispatch: React.Dispatch<Action>;
     ns: RealizedNamespace;
 }) {
+    const store = useGetStore();
     const current =
         typeof ns.plugin === 'string'
             ? ns.plugin
@@ -38,6 +53,42 @@ export function NSMenu({
                 flexDirection: 'column',
             }}
         >
+            <button
+                style={{
+                    cursor: 'pointer',
+                    backgroundColor: 'white',
+                }}
+                onClick={() => {
+                    const state = store.getState();
+                    const exported = exportNs(ns.id, state);
+                    const text = JSON.stringify([
+                        {
+                            type: 'ns',
+                            items: [exported],
+                        },
+                    ]);
+                    // nstree?
+                    navigator.clipboard.write([
+                        new ClipboardItem({
+                            ['text/plain']: new Blob([text], {
+                                type: 'text/plain',
+                            }),
+                            ['text/html']: new Blob(
+                                [
+                                    clipboardPrefix +
+                                        text +
+                                        clipboardSuffix +
+                                        `Copied a namespace`,
+                                ],
+                                { type: 'text/html' },
+                            ),
+                        }),
+                    ]);
+                }}
+            >
+                Copy tree
+            </button>
+
             <div style={{ padding: '4px 8px' }}>Set Plugin</div>
             {plugins.map((plugin) => (
                 <button
