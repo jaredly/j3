@@ -472,7 +472,9 @@ export const registerNames = (
         results.jumpToName[name.name] = name.loc;
         if (idForName[name.name] != null) {
             cache.nodes[top].parsed!.failed = true;
-            results.produce[top] = ['Name already defined ' + name.name];
+            results.produce[top] = [
+                new Error(`Name already defined: ${name.name}`),
+            ];
 
             return true;
         }

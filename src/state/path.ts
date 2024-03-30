@@ -110,7 +110,7 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
                 o,
                 t,
             );
-            debugger;
+            // debugger;
             return 0;
         }
         const cmp = cmpPath(o, t);

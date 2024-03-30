@@ -76,7 +76,7 @@ export class LocError extends Error {
 }
 
 export type Errors = { [key: number]: string[] };
-export type ProduceItem = JSX.Element | string | LocError | MyEvalError;
+export type ProduceItem = JSX.Element | string | LocError | MyEvalError | Error;
 export type Produce = ProduceItem | ProduceItem[];
 
 export type FullEvalator<
