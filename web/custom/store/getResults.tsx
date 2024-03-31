@@ -278,6 +278,9 @@ export const getResults = <
                         pluginResult,
                     };
                     changes[node.id].value = true;
+                } else {
+                    results.pluginResults[node.id] =
+                        cache.results[node.id].pluginResult;
                 }
             }
             return;

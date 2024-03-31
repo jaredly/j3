@@ -10,6 +10,8 @@ a
 
 (def c (+ a b))
 
+
+
 c
 
 (defn even [x]
@@ -29,6 +31,8 @@ c
 "hello ${(int-to-string 321)}"
 
 (deftype type (tcon string) (tprim int) (tvar string))
+
+(defn x [y] werwwwwwweeeeeeeeeee)
 
 (tcon "hello")
 

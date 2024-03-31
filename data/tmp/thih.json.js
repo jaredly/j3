@@ -1322,6 +1322,183 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 14399');})(/*!*/
 
 const ti_err = /*14590*/function name_14590(v) { return /*14596*//*14597*/TI/*<14597*/(/*14596*//*14598*/function name_14598(_) { return /*14598*/function name_14598(_) { return /*14598*/function name_14598(_) { return /*14604*//*14605*/err/*<14605*/(/*14604*//*14606*/v/*<14606*/)/*<14604*/ }/*<14598*/ }/*<14598*/ }/*<14598*/)/*<14596*/ }/*<14590*/;
 
+const infer$slseq = /*14687*/function name_14687(ti) { return /*14687*/function name_14687(ce) { return /*14687*/function name_14687(as) { return /*14687*/function name_14687(assumptions) { return /*14697*/(function match_14697($target) {
+if ($target.type === "nil") {
+return /*14701*//*14702*/ti_return/*<14702*/(/*14701*//*14703*//*14703*//*14704*/$co/*<14704*/(/*14703*//*14705*/nil/*<14705*/)/*<14703*/(/*14703*//*14706*/nil/*<14706*/)/*<14703*/)/*<14701*/
+}
+if ($target.type === "cons") {
+{
+let bs = $target[0];
+{
+let bss = $target[1];
+return /*14713*//*14752*//*14753*/ti_then/*<14753*/(/*14752*//*14720*//*14720*//*14720*//*14721*/ti/*<14721*/(/*14720*//*14722*/ce/*<14722*/)/*<14720*/(/*14720*//*14723*/as/*<14723*/)/*<14720*/(/*14720*//*14724*/bs/*<14724*/)/*<14720*/)/*<14752*/(/*14713*//*14713*/function name_14713($let) { return /*14713*/(function match_14713($target) {
+if ($target.type === ",") {
+{
+let ps = $target[0];
+{
+let as$qu = $target[1];
+return /*14713*//*14750*//*14751*/ti_then/*<14751*/(/*14750*//*14729*//*14729*//*14729*//*14729*//*14730*/infer$slseq/*<14730*/(/*14729*//*14731*/ti/*<14731*/)/*<14729*/(/*14729*//*14732*/ce/*<14732*/)/*<14729*/(/*14729*//*14733*//*14733*//*14734*/$pl$pl$pl/*<14734*/(/*14733*//*14735*/as$qu/*<14735*/)/*<14733*/(/*14733*//*14736*/as/*<14736*/)/*<14733*/)/*<14729*/(/*14729*//*14737*/bss/*<14737*/)/*<14729*/)/*<14750*/(/*14713*//*14713*/function name_14713($let) { return /*14713*/(function match_14713($target) {
+if ($target.type === ",") {
+{
+let qs = $target[0];
+{
+let as$qu$qu = $target[1];
+return /*14738*//*14739*/ti_return/*<14739*/(/*14738*//*14740*//*14740*//*14741*/$co/*<14741*/(/*14740*//*14742*//*14742*//*14743*/$pl$pl$pl/*<14743*/(/*14742*//*14744*/ps/*<14744*/)/*<14742*/(/*14742*//*14745*/qs/*<14745*/)/*<14742*/)/*<14740*/(/*14740*//*14746*//*14746*//*14747*/$pl$pl$pl/*<14747*/(/*14746*//*14748*/as$qu$qu/*<14748*/)/*<14746*/(/*14746*//*14749*/as$qu/*<14749*/)/*<14746*/)/*<14740*/)/*<14738*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 14713');})(/*!*//*-1*/$let/*<-1*/)/*<14713*/ }/*<14713*/)/*<14713*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 14713');})(/*!*//*-1*/$let/*<-1*/)/*<14713*/ }/*<14713*/)/*<14713*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 14697');})(/*!*//*14699*/assumptions/*<14699*/)/*<14697*/ }/*<14687*/ }/*<14687*/ }/*<14687*/ }/*<14687*/;
+
+const restricted = /*14756*/function name_14756(bs) { return /*14762*/(function let_14762() {const $target = /*14766*/function name_14766($fn_arg) { return /*14766*/(function match_14766($target) {
+if ($target.type === ",") {
+{
+let i = $target[0];
+{
+let alts = $target[1];
+return /*14773*//*14773*//*14774*/any/*<14774*/(/*14773*//*14775*/function name_14775($fn_arg) { return /*14775*/(function match_14775($target) {
+if ($target.type === ",") {
+{
+let v = $target[0];
+return /*14782*/(function match_14782($target) {
+if ($target.type === "nil") {
+return /*14786*/true/*<14786*/
+}
+return /*14788*/false/*<14788*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 14782');})(/*!*//*14784*/v/*<14784*/)/*<14782*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 14775');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<14775*/ }/*<14775*/)/*<14773*/(/*14773*//*14789*/alts/*<14789*/)/*<14773*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 14766');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<14766*/ }/*<14766*/;
+{
+let simple = $target;
+return /*14790*//*14790*//*14792*/any/*<14792*/(/*14790*//*14793*/simple/*<14793*/)/*<14790*/(/*14790*//*14794*/bs/*<14794*/)/*<14790*/
+};
+throw new Error('let pattern not matched 14765. ' + valueToString($target));})(/*!*/)/*<14762*/ }/*<14756*/;
+
+const toScheme = /*15037*/function name_15037(t) { return /*15043*//*15043*//*15044*/forall/*<15044*/(/*15043*//*15045*/nil/*<15045*/)/*<15043*/(/*15043*//*15046*//*15046*//*15047*/$eq$gt/*<15047*/(/*15046*//*15048*/nil/*<15048*/)/*<15046*/(/*15046*//*15049*/t/*<15049*/)/*<15046*/)/*<15043*/ }/*<15037*/;
+
+const zipWith = /*15050*/function name_15050(f) { return /*15050*/function name_15050(left) { return /*15050*/function name_15050(right) { return /*15058*/(function match_15058($target) {
+if ($target.type === ",") {
+if ($target[0].type === "nil") {
+if ($target[1].type === "nil") {
+return /*15070*/nil/*<15070*/
+}
+}
+}
+if ($target.type === ",") {
+if ($target[0].type === "cons") {
+{
+let one = $target[0][0];
+{
+let left = $target[0][1];
+if ($target[1].type === "cons") {
+{
+let two = $target[1][0];
+{
+let right = $target[1][1];
+return /*15085*//*15085*//*15085*/cons/*<15085*/(/*15085*//*15086*//*15086*//*15087*/f/*<15087*/(/*15086*//*15088*/one/*<15088*/)/*<15086*/(/*15086*//*15089*/two/*<15089*/)/*<15086*/)/*<15085*/(/*15085*//*15090*//*15090*//*15090*//*15094*/zipWith/*<15094*/(/*15090*//*15095*/f/*<15095*/)/*<15090*/(/*15090*//*15096*/left/*<15096*/)/*<15090*/(/*15090*//*15097*/right/*<15097*/)/*<15090*/)/*<15085*/
+}
+}
+}
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15058');})(/*!*//*15060*//*15060*//*15061*/$co/*<15061*/(/*15060*//*15062*/left/*<15062*/)/*<15060*/(/*15060*//*15063*/right/*<15063*/)/*<15060*/)/*<15058*/ }/*<15050*/ }/*<15050*/ }/*<15050*/;
+
+const sequence = /*15098*/function name_15098(tis) { return /*15104*/(function match_15104($target) {
+if ($target.type === "nil") {
+return /*15108*//*15109*/ti_return/*<15109*/(/*15108*//*15110*/nil/*<15110*/)/*<15108*/
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return /*15113*//*15117*//*15118*/ti_then/*<15118*/(/*15117*//*15119*/one/*<15119*/)/*<15117*/(/*15113*//*15113*/function name_15113($let) { return /*15113*/(function match_15113($target) {
+{
+let res = $target;
+return /*15120*//*15121*/ti_return/*<15121*/(/*15120*//*15122*//*15122*//*15122*/cons/*<15122*/(/*15122*//*15123*/res/*<15123*/)/*<15122*/(/*15122*//*15122*/nil/*<15122*/)/*<15122*/)/*<15120*/
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15113');})(/*!*//*-1*/$let/*<-1*/)/*<15113*/ }/*<15113*/)/*<15113*/
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return /*15131*//*15136*//*15137*/ti_then/*<15137*/(/*15136*//*15138*/one/*<15138*/)/*<15136*/(/*15131*//*15131*/function name_15131($let) { return /*15131*/(function match_15131($target) {
+{
+let res = $target;
+return /*15131*//*15140*//*15141*/ti_then/*<15141*/(/*15140*//*15142*//*15143*/sequence/*<15143*/(/*15142*//*15144*/rest/*<15144*/)/*<15142*/)/*<15140*/(/*15131*//*15131*/function name_15131($let) { return /*15131*/(function match_15131($target) {
+{
+let rest = $target;
+return /*15145*//*15147*/ti_return/*<15147*/(/*15145*//*15148*//*15148*//*15148*/cons/*<15148*/(/*15148*//*15149*/res/*<15149*/)/*<15148*/(/*15148*//*15150*/rest/*<15150*/)/*<15148*/)/*<15145*/
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15131');})(/*!*//*-1*/$let/*<-1*/)/*<15131*/ }/*<15131*/)/*<15131*/
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15131');})(/*!*//*-1*/$let/*<-1*/)/*<15131*/ }/*<15131*/)/*<15131*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15104');})(/*!*//*15106*/tis/*<15106*/)/*<15104*/ }/*<15098*/;
+
+const apply = /*15198*/function name_15198(x) { return /*15204*/1/*<15204*/ }/*<15198*/;
+
+/*15205*/pred$slapply/*<15205*/
+const preds$slapply = /*15209*/function name_15209(subst) { return /*15209*/function name_15209(preds) { return /*15216*//*15216*//*15217*/map/*<15217*/(/*15216*//*15218*//*15219*/pred$slapply/*<15219*/(/*15218*//*15220*/subst/*<15220*/)/*<15218*/)/*<15216*/(/*15216*//*15221*/preds/*<15221*/)/*<15216*/ }/*<15209*/ }/*<15209*/;
+
+const foldr1 = /*15245*/function name_15245(f) { return /*15245*/function name_15245(lst) { return /*15252*/(function match_15252($target) {
+if ($target.type === "nil") {
+return /*15256*//*15257*/fatal/*<15257*/(/*15256*//*15258*/"Empty list to foldr1"/*<15258*/)/*<15256*/
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return /*15262*/one/*<15262*/
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+if ($target[1].type === "cons") {
+{
+let two = $target[1][0];
+if ($target[1][1].type === "nil") {
+return /*15273*//*15273*//*15274*/f/*<15274*/(/*15273*//*15275*/one/*<15275*/)/*<15273*/(/*15273*//*15276*/two/*<15276*/)/*<15273*/
+}
+}
+}
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+{
+let rest = $target[1];
+return /*15284*//*15284*//*15285*/f/*<15285*/(/*15284*//*15286*/one/*<15286*/)/*<15284*/(/*15284*//*15287*//*15287*//*15288*/foldr1/*<15288*/(/*15287*//*15290*/f/*<15290*/)/*<15287*/(/*15287*//*15289*/rest/*<15289*/)/*<15287*/)/*<15284*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15252');})(/*!*//*15254*/lst/*<15254*/)/*<15252*/ }/*<15245*/ }/*<15245*/;
+
+const intersect = /*15297*/function name_15297(t$eq) { return /*15297*/function name_15297(one) { return /*15297*/function name_15297(two) { return /*15305*//*15305*//*15307*/filter/*<15307*/(/*15305*//*15308*/function name_15308(v) { return /*15314*//*15314*//*15314*//*15315*/contains/*<15315*/(/*15314*//*15316*/two/*<15316*/)/*<15314*/(/*15314*//*15317*/v/*<15317*/)/*<15314*/(/*15314*//*15318*/t$eq/*<15318*/)/*<15314*/ }/*<15308*/)/*<15305*/(/*15305*//*15309*/one/*<15309*/)/*<15305*/ }/*<15297*/ }/*<15297*/ }/*<15297*/;
+
+/*15364*/foldr/*<15364*/
 const set$slintersect = /*691*/function name_691(one) { return /*691*/function name_691(two) { return /*700*//*700*//*701*/filter/*<701*/(/*700*//*706*/function name_706(k) { return /*710*//*710*//*711*/set$slhas/*<711*/(/*710*//*712*/two/*<712*/)/*<710*/(/*710*//*713*/k/*<713*/)/*<710*/ }/*<706*/)/*<700*/(/*700*//*702*//*703*/set$slto_list/*<703*/(/*702*//*704*/one/*<704*/)/*<702*/)/*<700*/ }/*<691*/ }/*<691*/;
 
 const mgu = /*808*/function name_808(t1) { return /*808*/function name_808(t2) { return /*815*/(function match_815($target) {
@@ -1807,6 +1984,7 @@ const stdClasses = /*14037*//*14037*//*14038*/$pl$pl$pl/*<14038*/(/*14037*//*140
 
 const ambiguities = /*14265*/function name_14265(ce) { return /*14265*/function name_14265(vs) { return /*14265*/function name_14265(ps) { return /*14273*//*14273*//*14274*/map/*<14274*/(/*14273*//*14275*/function name_14275(v) { return /*14287*//*14287*//*14288*/$co/*<14288*/(/*14287*//*14289*/v/*<14289*/)/*<14287*/(/*14287*//*14290*//*14290*//*14291*/filter/*<14291*/(/*14290*//*14296*/function name_14296(pred) { return /*14292*//*14292*//*14292*//*14293*/contains/*<14293*/(/*14292*//*14304*//*14305*/set$slto_list/*<14305*/(/*14304*//*14300*//*14301*/pred$sltv/*<14301*/(/*14300*//*14302*/pred/*<14302*/)/*<14300*/)/*<14304*/)/*<14292*/(/*14292*//*14294*/v/*<14294*/)/*<14292*/(/*14292*//*14303*/tyvar$eq/*<14303*/)/*<14292*/ }/*<14296*/)/*<14290*/(/*14290*//*14295*/ps/*<14295*/)/*<14290*/)/*<14287*/ }/*<14275*/)/*<14273*/(/*14273*//*14278*//*14278*//*14278*//*14279*/without/*<14279*/(/*14278*//*14355*//*14356*/set$slto_list/*<14356*/(/*14355*//*14282*//*14280*/preds$sltv/*<14280*/(/*14282*//*14283*/ps/*<14283*/)/*<14282*/)/*<14355*/)/*<14278*/(/*14278*//*14281*/vs/*<14281*/)/*<14278*/(/*14278*//*14332*/tyvar$eq/*<14332*/)/*<14278*/)/*<14273*/ }/*<14265*/ }/*<14265*/ }/*<14265*/;
 
+/*15224*/assump$slapply/*<15224*/
 const parse_expr = /*11178*/function name_11178(cst) { return /*11183*/(function match_11183($target) {
 if ($target.type === "cst/identifier") {
 if ($target[0] === "true"){
@@ -3066,38 +3244,6 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 10388');})(/*!*/
 }
 }
 }
-if ($target.type === "elet") {
-{
-let bindings = $target[0];
-{
-let body = $target[1];
-{
-let l = $target[2];
-return /*10451*//*10458*//*10458*//*10458*//*10459*/infer$slbinding_group/*<10459*/(/*10458*//*13651*/ce/*<13651*/)/*<10458*/(/*10458*//*13652*/as/*<13652*/)/*<10458*/(/*10458*//*10460*/bindings/*<10460*/)/*<10458*/(/*10451*//*10451*/function name_10451($let) { return /*10451*/(function match_10451($target) {
-if ($target.type === ",") {
-{
-let ps = $target[0];
-{
-let as$qu = $target[1];
-return /*10451*//*13658*//*13658*//*13658*//*13659*/infer$slexpr/*<13659*/(/*13658*//*13660*/ce/*<13660*/)/*<13658*/(/*13658*//*13661*//*13662*/concat/*<13662*/(/*13661*//*13663*//*13663*//*13663*/cons/*<13663*/(/*13663*//*13664*/as$qu/*<13664*/)/*<13663*/(/*13663*//*13663*//*13663*//*13663*/cons/*<13663*/(/*13663*//*13665*/as/*<13665*/)/*<13663*/(/*13663*//*13663*/nil/*<13663*/)/*<13663*/)/*<13663*/)/*<13661*/)/*<13658*/(/*13658*//*13666*/body/*<13666*/)/*<13658*/(/*10451*//*10451*/function name_10451($let) { return /*10451*/(function match_10451($target) {
-if ($target.type === ",") {
-{
-let qs = $target[0];
-{
-let t = $target[1];
-return /*13650*//*13667*/ti_return/*<13667*/(/*13650*//*13674*//*13674*//*13675*/$co/*<13675*/(/*13674*//*13668*//*13669*/concat/*<13669*/(/*13668*//*13670*//*13670*//*13670*/cons/*<13670*/(/*13670*//*13671*/ps/*<13671*/)/*<13670*/(/*13670*//*13670*//*13670*//*13670*/cons/*<13670*/(/*13670*//*13672*/qs/*<13672*/)/*<13670*/(/*13670*//*13670*/nil/*<13670*/)/*<13670*/)/*<13670*/)/*<13668*/)/*<13674*/(/*13674*//*13677*/t/*<13677*/)/*<13674*/)/*<13650*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 10451');})(/*!*//*-1*/$let/*<-1*/)/*<10451*/ }/*<10451*/)/*<10451*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 10451');})(/*!*//*-1*/$let/*<-1*/)/*<10451*/ }/*<10451*/)/*<10451*/
-}
-}
-}
-}
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 10168');})(/*!*//*10170*/expr/*<10170*/)/*<10168*/ }/*<10162*/ }/*<10162*/ }/*<10162*/;
 
 const split = /*13730*/function name_13730(ce) { return /*13730*/function name_13730(fs) { return /*13730*/function name_13730(gs) { return /*13730*/function name_13730(ps) { return /*13739*//*13781*//*13782*/ti_then/*<13782*/(/*13781*//*13808*//*13809*/ti_from_result/*<13809*/(/*13808*//*13743*//*13743*//*13744*/reduce/*<13744*/(/*13743*//*13745*/ce/*<13745*/)/*<13743*/(/*13743*//*13746*/ps/*<13746*/)/*<13743*/)/*<13808*/)/*<13781*/(/*13739*//*13739*/function name_13739($let) { return /*13739*/(function match_13739($target) {
@@ -3119,10 +3265,10 @@ if ($target.type === ",") {
 let ds = $target[0];
 {
 let rs = $target[1];
-return /*13739*//*13789*//*13790*/ti_then/*<13790*/(/*13789*//*13791*//*13791*//*13791*//*13792*/defaultedPreds/*<13792*/(/*13791*//*13793*/ce/*<13793*/)/*<13791*/(/*13791*//*13794*//*13795*/concat/*<13795*/(/*13794*//*13796*//*13796*//*13796*/cons/*<13796*/(/*13796*//*13797*/fs/*<13797*/)/*<13796*/(/*13796*//*13796*//*13796*//*13796*/cons/*<13796*/(/*13796*//*13798*/gs/*<13798*/)/*<13796*/(/*13796*//*13796*/nil/*<13796*/)/*<13796*/)/*<13796*/)/*<13794*/)/*<13791*/(/*13791*//*13799*/rs/*<13799*/)/*<13791*/)/*<13789*/(/*13739*//*13739*/function name_13739($let) { return /*13739*/(function match_13739($target) {
+return /*13739*//*13789*//*13790*/ti_then/*<13790*/(/*13789*//*14754*//*14755*/ti_from_result/*<14755*/(/*14754*//*13791*//*13791*//*13791*//*13792*/defaultedPreds/*<13792*/(/*13791*//*13793*/ce/*<13793*/)/*<13791*/(/*13791*//*13794*//*13795*/concat/*<13795*/(/*13794*//*13796*//*13796*//*13796*/cons/*<13796*/(/*13796*//*13797*/fs/*<13797*/)/*<13796*/(/*13796*//*13796*//*13796*//*13796*/cons/*<13796*/(/*13796*//*13798*/gs/*<13798*/)/*<13796*/(/*13796*//*13796*/nil/*<13796*/)/*<13796*/)/*<13796*/)/*<13794*/)/*<13791*/(/*13791*//*13799*/rs/*<13799*/)/*<13791*/)/*<14754*/)/*<13789*/(/*13739*//*13739*/function name_13739($let) { return /*13739*/(function match_13739($target) {
 {
 let rs$qu = $target;
-return /*13779*//*13800*/ti_return/*<13800*/(/*13779*//*13801*//*13801*//*13802*/$co/*<13802*/(/*13801*//*13803*/ds/*<13803*/)/*<13801*/(/*13801*//*13804*//*13804*//*13804*//*13805*/without/*<13805*/(/*13804*//*13806*/rs/*<13806*/)/*<13804*/(/*13804*//*13807*/rs$qu/*<13807*/)/*<13804*/(/*13804*//*14331*/a$eq/*<14331*/)/*<13804*/)/*<13801*/)/*<13779*/
+return /*13779*//*13800*/ti_return/*<13800*/(/*13779*//*13801*//*13801*//*13802*/$co/*<13802*/(/*13801*//*13803*/ds/*<13803*/)/*<13801*/(/*13801*//*13804*//*13804*//*13804*//*13805*/without/*<13805*/(/*13804*//*13806*/rs/*<13806*/)/*<13804*/(/*13804*//*13807*/rs$qu/*<13807*/)/*<13804*/(/*13804*//*14331*/pred$eq/*<14331*/)/*<13804*/)/*<13801*/)/*<13779*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 13739');})(/*!*//*-1*/$let/*<-1*/)/*<13739*/ }/*<13739*/)/*<13739*/
 }
@@ -3275,119 +3421,4 @@ throw new Error('let pattern not matched 10059. ' + valueToString($target));})(/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 10039');})(/*!*//*-1*/$let/*<-1*/)/*<10039*/ }/*<10039*/)/*<10039*/ }/*<10033*/;
 
-const infer$slalt = /*13680*/function name_13680(ce) { return /*13680*/function name_13680(as) { return /*13680*/function name_13680($fn_arg) { return /*13680*/(function match_13680($target) {
-if ($target.type === ",") {
-{
-let pat = $target[0];
-{
-let body = $target[1];
-return /*13692*//*13701*//*13702*/infer$slpat/*<13702*/(/*13701*//*13703*/pat/*<13703*/)/*<13701*/(/*13692*//*13692*/function name_13692($let) { return /*13692*/(function match_13692($target) {
-if ($target.type === ",,") {
-{
-let ps = $target[0];
-{
-let as$qu = $target[1];
-{
-let ts = $target[2];
-return /*13692*//*13708*//*13708*//*13708*//*13709*/infer$slexpr/*<13709*/(/*13708*//*13710*/ce/*<13710*/)/*<13708*/(/*13708*//*13711*//*13712*/concat/*<13712*/(/*13711*//*13713*//*13713*//*13713*/cons/*<13713*/(/*13713*//*13714*/as$qu/*<13714*/)/*<13713*/(/*13713*//*13713*//*13713*//*13713*/cons/*<13713*/(/*13713*//*13715*/as/*<13715*/)/*<13713*/(/*13713*//*13713*/nil/*<13713*/)/*<13713*/)/*<13713*/)/*<13711*/)/*<13708*/(/*13708*//*13716*/body/*<13716*/)/*<13708*/(/*13692*//*13692*/function name_13692($let) { return /*13692*/(function match_13692($target) {
-if ($target.type === ",") {
-{
-let qs = $target[0];
-{
-let t = $target[1];
-return /*13717*//*13718*/ti_return/*<13718*/(/*13717*//*13719*//*13719*//*13720*/$co$co/*<13720*/(/*13719*//*13721*//*13722*/concat/*<13722*/(/*13721*//*13723*//*13723*//*13723*/cons/*<13723*/(/*13723*//*13724*/ps/*<13724*/)/*<13723*/(/*13723*//*13723*//*13723*//*13723*/cons/*<13723*/(/*13723*//*13725*/qs/*<13725*/)/*<13723*/(/*13723*//*13723*/nil/*<13723*/)/*<13723*/)/*<13723*/)/*<13721*/)/*<13719*/(/*13719*//*13726*//*13726*//*13727*/tfn/*<13727*/(/*13726*//*13728*/ts/*<13728*/)/*<13726*/(/*13726*//*13729*/t/*<13729*/)/*<13726*/)/*<13719*/)/*<13717*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 13692');})(/*!*//*-1*/$let/*<-1*/)/*<13692*/ }/*<13692*/)/*<13692*/
-}
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 13692');})(/*!*//*-1*/$let/*<-1*/)/*<13692*/ }/*<13692*/)/*<13692*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 13680');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<13680*/ }/*<13680*/ }/*<13680*/ }/*<13680*/;
-
-const infer$slexpl = /*14440*/function name_14440(ce) { return /*14440*/function name_14440(as) { return /*14440*/function name_14440($fn_arg) { return /*14440*/(function match_14440($target) {
-if ($target.type === ",,") {
-{
-let i = $target[0];
-{
-let sc = $target[1];
-{
-let alts = $target[2];
-return /*14452*//*14465*//*14466*/ti_then/*<14466*/(/*14465*//*14461*//*14462*/fresh_inst/*<14462*/(/*14461*//*14463*/sc/*<14463*/)/*<14461*/)/*<14465*/(/*14452*//*14452*/function name_14452($let) { return /*14452*/(function match_14452($target) {
-if ($target.type === "=>") {
-{
-let qs = $target[0];
-{
-let t = $target[1];
-return /*14452*//*14472*//*14472*//*14472*//*14473*/infer$slalt/*<14473*/(/*14472*//*14474*/ce/*<14474*/)/*<14472*/(/*14472*//*14475*/as/*<14475*/)/*<14472*/(/*14472*//*14476*/alts/*<14476*/)/*<14472*/(/*14452*//*14452*/function name_14452($let) { return /*14452*/(function match_14452($target) {
-{
-let ps = $target;
-return /*14452*//*14478*/getSubst/*<14478*/(/*14452*//*14452*/function name_14452($let) { return /*14452*/(function match_14452($target) {
-{
-let s = $target;
-return /*14481*/(function let_14481() {const $target = /*14485*//*14485*//*14486*/apply/*<14486*/(/*14485*//*14488*/s/*<14488*/)/*<14485*/(/*14485*//*14489*/qs/*<14489*/)/*<14485*/;
-{
-let qs$qu = $target;
-return /*14481*/(function let_14481() {const $target = /*14491*//*14491*//*14493*/type$slapply/*<14493*/(/*14491*//*14494*/s/*<14494*/)/*<14491*/(/*14491*//*14495*/t/*<14495*/)/*<14491*/;
-{
-let t$qu = $target;
-return /*14481*/(function let_14481() {const $target = /*14497*//*14497*//*14497*//*14498*/tv/*<14498*/(/*14497*//*14499*//*14499*//*14500*/apply/*<14500*/(/*14499*//*14501*/s/*<14501*/)/*<14499*/(/*14499*//*14502*/as/*<14502*/)/*<14499*/)/*<14497*/(/*14497*//*14503*/gs/*<14503*/)/*<14497*/(/*14497*//*14507*//*14507*//*14508*/without/*<14508*/(/*14507*//*14504*//*14505*/tv/*<14505*/(/*14504*//*14506*/t$qu/*<14506*/)/*<14504*/)/*<14507*/(/*14507*//*14509*/fs/*<14509*/)/*<14507*/)/*<14497*/;
-{
-let fs = $target;
-return /*14481*/(function let_14481() {const $target = /*14522*//*14522*//*14523*/quantify/*<14523*/(/*14522*//*14524*/gs/*<14524*/)/*<14522*/(/*14522*//*14525*//*14525*//*14526*/$eq$gt/*<14526*/(/*14525*//*14527*/qs$qu/*<14527*/)/*<14525*/(/*14525*//*14528*/t$qu/*<14528*/)/*<14525*/)/*<14522*/;
-{
-let sc$qu = $target;
-return /*14481*/(function let_14481() {const $target = /*14530*//*14530*//*14531*/filter/*<14531*/(/*14530*//*14544*/function name_14544(x) { return /*14532*//*14533*/not/*<14533*/(/*14532*//*14548*//*14548*//*14548*//*14537*/entail/*<14537*/(/*14548*//*14538*/ce/*<14538*/)/*<14548*/(/*14548*//*14539*/qs$qu/*<14539*/)/*<14548*/(/*14548*//*14549*/x/*<14549*/)/*<14548*/)/*<14532*/ }/*<14544*/)/*<14530*/(/*14530*//*14540*//*14540*//*14541*/apply/*<14541*/(/*14540*//*14542*/s/*<14542*/)/*<14540*/(/*14540*//*14543*/ps/*<14543*/)/*<14540*/)/*<14530*/;
-{
-let ps$qu = $target;
-return /*14464*//*14556*//*14556*//*14556*//*14556*//*14557*/split/*<14557*/(/*14556*//*14558*/ce/*<14558*/)/*<14556*/(/*14556*//*14559*/fs/*<14559*/)/*<14556*/(/*14556*//*14560*/gs/*<14560*/)/*<14556*/(/*14556*//*14561*/ps$qu/*<14561*/)/*<14556*/(/*14464*//*14464*/function name_14464($let) { return /*14464*/(function match_14464($target) {
-if ($target.type === ",") {
-{
-let ds = $target[0];
-{
-let rs = $target[1];
-return /*14562*/(function match_14562($target) {
-if ($target === true) {
-return /*14568*//*14569*/ti_err/*<14569*/(/*14568*//*14570*/"signature too general"/*<14570*/)/*<14568*/
-}
-return /*14572*/(function match_14572($target) {
-if ($target.type === "nil") {
-return /*14580*//*14581*/ti_return/*<14581*/(/*14580*//*14582*/ds/*<14582*/)/*<14580*/
-}
-return /*14584*//*14587*/ti_err/*<14587*/(/*14584*//*14588*/"context too weak"/*<14588*/)/*<14584*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14572');})(/*!*//*14578*/rs/*<14578*/)/*<14572*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14562');})(/*!*//*14564*//*14564*//*14565*/$ex$eq/*<14565*/(/*14564*//*14566*/sc/*<14566*/)/*<14564*/(/*14564*//*14567*/sc$qu/*<14567*/)/*<14564*/)/*<14562*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14464');})(/*!*//*-1*/$let/*<-1*/)/*<14464*/ }/*<14464*/)/*<14464*/
-};
-throw new Error('let pattern not matched 14529. ' + valueToString($target));})(/*!*/)/*<14481*/
-};
-throw new Error('let pattern not matched 14521. ' + valueToString($target));})(/*!*/)/*<14481*/
-};
-throw new Error('let pattern not matched 14496. ' + valueToString($target));})(/*!*/)/*<14481*/
-};
-throw new Error('let pattern not matched 14490. ' + valueToString($target));})(/*!*/)/*<14481*/
-};
-throw new Error('let pattern not matched 14484. ' + valueToString($target));})(/*!*/)/*<14481*/
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14452');})(/*!*//*-1*/$let/*<-1*/)/*<14452*/ }/*<14452*/)/*<14452*/
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14452');})(/*!*//*-1*/$let/*<-1*/)/*<14452*/ }/*<14452*/)/*<14452*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14452');})(/*!*//*-1*/$let/*<-1*/)/*<14452*/ }/*<14452*/)/*<14452*/
-}
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 14440');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<14440*/ }/*<14440*/ }/*<14440*/ }/*<14440*/;
-
-return {type: 'fns', $bar_$gt, $eq$gt, $ex$gt$ex, $pl$pl$pl, TI, add_class, add_inst, add_prelude_classes, all, ambiguities, any, apply_transformers, array$eq, assump$slapply, assump$sltv, by_inst, by_super, candidates, class$slord, class_env, compose_subst, compose_transformers, concat, cons, contains, core_classes, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, defaultSubst, defaultedPreds, defined, eapp, elambda, elet, ematch, entail, enumId, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, err, estr, evar, every, example_insts, ext_subst, filter, find, find_scheme, find_some, foldl, foldr, forall, fresh_inst, fst, get_subst, head, id, in_hnf, infer$slalt, infer$slexpl, infer$slexpr, infer$slpat, infer$slpats, infer$slprim, initial_env, inst$slpred, inst$slpreds, inst$slqual, inst$sltype, insts, isin, join, kfun, kind$eq, kind_$gts, lift, list$slget, map, map$slhas, map$slok, map$slti, mapi, matchPred, merge, mgu, mguPred, mk_deftype, mklist, mkpair, modify, new_tvar, nil, none, not, ntv, nullSubst, numClasses, num_classes, ok, overlap, pairs, pany, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, partition, pbool, pcon, pint, pprim, pred$eq, pred$slapply, pred$sltv, preds$sltv, pstr, pvar, qual$eq, qual$slapply, qual$sltv, quantify, reduce, replaces, result_then, rev, sc_entail, scheme$eq, scheme$slapply, scheme$sltv, sdef, sdeftype, set$slintersect, sexpr, simplify, simplify_inner, snd, some, split, star, star_con, stdClasses, supers, tapp, tapps, tarrow, tbool, tchar, tcon, tdouble, tenv$slconstr, tenv$slvalue, tfloat, tfn, tgen, ti_err, ti_fail, ti_from_result, ti_return, ti_run, ti_then, tint, tinteger, tlist, to_hnf, to_hnfs, to_scheme, tstar, tstring, ttuple2, tunit, tvar, tycon, tycon$eq, tycon$slkind, tycon_$gts, type$eq, type$slapply, type$slhnf, type$slkind, type$sltv, type_$gts, type_env, type_match, tyvar, tyvar$eq, tyvar$slkind, unify, varBind, withDefaults, without, zip}
+return {type: 'fns', $bar_$gt, $eq$gt, $ex$gt$ex, $pl$pl$pl, TI, add_class, add_inst, add_prelude_classes, all, ambiguities, any, apply, apply_transformers, array$eq, assump$slapply, assump$sltv, by_inst, by_super, candidates, class$slord, class_env, compose_subst, compose_transformers, concat, cons, contains, core_classes, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, defaultSubst, defaultedPreds, defined, eapp, elambda, elet, ematch, entail, enumId, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, err, estr, evar, every, example_insts, ext_subst, filter, find, find_scheme, find_some, foldl, foldr, foldr1, forall, fresh_inst, fst, get_subst, head, id, in_hnf, infer$slexpr, infer$slpat, infer$slpats, infer$slprim, infer$slseq, initial_env, inst$slpred, inst$slpreds, inst$slqual, inst$sltype, insts, intersect, isin, join, kfun, kind$eq, kind_$gts, lift, list$slget, map, map$slhas, map$slok, map$slti, mapi, matchPred, merge, mgu, mguPred, mk_deftype, mklist, mkpair, modify, new_tvar, nil, none, not, ntv, nullSubst, numClasses, num_classes, ok, overlap, pairs, pany, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, partition, pbool, pcon, pint, pprim, pred$eq, pred$slapply, pred$sltv, preds$slapply, preds$sltv, pstr, pvar, qual$eq, qual$slapply, qual$sltv, quantify, reduce, replaces, restricted, result_then, rev, sc_entail, scheme$eq, scheme$slapply, scheme$sltv, sdef, sdeftype, sequence, set$slintersect, sexpr, simplify, simplify_inner, snd, some, split, star, star_con, stdClasses, supers, tapp, tapps, tarrow, tbool, tchar, tcon, tdouble, tenv$slconstr, tenv$slvalue, tfloat, tfn, tgen, ti_err, ti_fail, ti_from_result, ti_return, ti_run, ti_then, tint, tinteger, tlist, toScheme, to_hnf, to_hnfs, to_scheme, tstar, tstring, ttuple2, tunit, tvar, tycon, tycon$eq, tycon$slkind, tycon_$gts, type$eq, type$slapply, type$slhnf, type$slkind, type$sltv, type_$gts, type_env, type_match, tyvar, tyvar$eq, tyvar$slkind, unify, varBind, withDefaults, without, zip, zipWith}
