@@ -38,7 +38,8 @@
 (deftype type (tvar int int) (tapp type type int) (tcon string int))
 
 (deftype stmt
-    (sdeftype
+    (stypealias string int (array (, string int)) type int)
+        (sdeftype
         string
             int
             (array (, string int))
@@ -362,19 +363,19 @@
 
 (defn parse-stmt [cst]
     (match cst
-        (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)      (sdef id li (parse-expr value) l)
+        (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)       (sdef id li (parse-expr value) l)
         (cst/list
             [(cst/identifier "defn" a)
                 (cst/identifier id li)
                 (cst/array args b)
                 body]
                 c) (sdef
-                                                                                      id
-                                                                                          li
-                                                                                          (parse-expr
-                                                                                          (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c))
-                                                                                          c)
-        (cst/list [(cst/identifier "defn" _) .._] l)                              (fatal "Invalid 'defn' ${(int-to-string l)}")
+                                                                                       id
+                                                                                           li
+                                                                                           (parse-expr
+                                                                                           (cst/list [(cst/identifier "fn" a) (cst/array args b) body] c))
+                                                                                           c)
+        (cst/list [(cst/identifier "defn" _) .._] l)                               (fatal "Invalid 'defn' ${(int-to-string l)}")
         (cst/list
             [(cst/identifier "deftype" _) (cst/identifier id li) ..items]
                 l) (mk-deftype id li [] items l)
@@ -383,19 +384,53 @@
                 (cst/list [(cst/identifier id li) ..args] _)
                 ..items]
                 l) (mk-deftype id li args items l)
-        (cst/list [(cst/identifier "deftype" _) .._] l)                           (fatal "Invalid 'deftype' ${(int-to-string l)}")
-        _                                                                         (sexpr
-                                                                                      (parse-expr cst)
-                                                                                          (match cst
-                                                                                          (cst/list _ l)       l
-                                                                                          (cst/identifier _ l) l
-                                                                                          (cst/array _ l)      l
-                                                                                          (cst/string _ _ l)   l
-                                                                                          (cst/spread _ l)     l))))
+        (cst/list
+            [(cst/identifier "typealias" _) (cst/identifier name nl) body]
+                l) (stypealias name nl [] (parse-type body) l)
+        (cst/list
+            [(cst/identifier "typealias" _)
+                (cst/list [(cst/identifier name nl) ..args] _)
+                body]
+                l) (let [
+                                                                                       args (map
+                                                                                                args
+                                                                                                    (fn [x]
+                                                                                                    (match x
+                                                                                                        (cst/identifier name l) (, name l)
+                                                                                                        _                       (fatal "typealias type argument must be identifier"))))]
+                                                                                       (stypealias name nl args (parse-type body) l))
+        (cst/list [(cst/identifier "deftype" _) .._] l)                            (fatal "Invalid 'deftype' ${(int-to-string l)}")
+        _                                                                          (sexpr
+                                                                                       (parse-expr cst)
+                                                                                           (match cst
+                                                                                           (cst/list _ l)       l
+                                                                                           (cst/identifier _ l) l
+                                                                                           (cst/array _ l)      l
+                                                                                           (cst/string _ _ l)   l
+                                                                                           (cst/spread _ l)     l))))
 
 (,
     parse-stmt
         [(, (@@ (def a 2)) (sdef "a" 1302 (eprim (pint 2 1303) 1303) 1300))
+        (,
+        (@@ (typealias hello (, int string)))
+            (stypealias
+            "hello"
+                6271
+                []
+                (tapp
+                (tapp (tcon "," 6273) (tcon "int" 6274) 6272)
+                    (tcon "string" 6275)
+                    6272)
+                6269))
+        (,
+        (@@ (typealias (hello t) (, int t)))
+            (stypealias
+            "hello"
+                6337
+                [(, "t" 6338)]
+                (tapp (tapp (tcon "," 6340) (tcon "int" 6341) 6339) (tcon "t" 6342) 6339)
+                6334))
         (,
         (@@ (deftype what (one int) (two bool)))
             (sdeftype

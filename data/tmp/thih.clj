@@ -20,7 +20,12 @@
         (equotquot cst int)
         (elambda pat expr int)
         (eapp expr expr int)
-        (elet (array (, pat expr)) expr int)
+        (elet
+        (,
+            (array (, string scheme (array (, (array pat) expr))))
+                (array (array (, id (array (, (array pat) expr))))))
+            expr
+            int)
         (ematch expr (array (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
