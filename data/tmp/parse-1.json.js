@@ -1557,6 +1557,12 @@ return /*423*//*424*/$pl$pl/*<424*/(/*423*//*425*//*425*//*425*/cons/*<425*/(/*4
 }
 }
 }
+if ($target.type === "stypealias") {
+{
+let name = $target[0];
+return /*6444*/`/* type alias ${/*6447*/name/*<6447*/} */`/*<6444*/
+}
+}
 if ($target.type === "sdeftype") {
 {
 let name = $target[0];

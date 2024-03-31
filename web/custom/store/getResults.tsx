@@ -330,7 +330,9 @@ export const getResults = <
                     results.tenv,
                 );
                 const types = group.flatMap((node) =>
-                    node.names.map((n) => evaluator.typeForName!(tenv, n.name)),
+                    node.names
+                        .filter((n) => n.kind === 'value')
+                        .map((n) => evaluator.typeForName!(tenv, n.name)),
                 );
                 const gCache = cache.types[groupKey];
                 const changed = !equal(gCache?.types, types);
@@ -381,8 +383,10 @@ export const getResults = <
                 results.produce[node.id] = Array.isArray(display[node.id])
                     ? (display[node.id] as any)
                     : [display[node.id]];
-                node.names.forEach(({ name }) => {
-                    results.env.values[name] = values[name];
+                node.names.forEach(({ name, kind }) => {
+                    if (kind === 'value') {
+                        results.env.values[name] = values[name];
+                    }
                 });
 
                 let pluginResult;
@@ -413,9 +417,11 @@ export const getResults = <
                     results.pluginResults[node.id] =
                         cache.results[node.id].pluginResult;
                 }
-                node.names.forEach(({ name }) => {
-                    results.env.values[name] =
-                        cache.results[node.id].values[name];
+                node.names.forEach(({ name, kind }) => {
+                    if (kind === 'value') {
+                        results.env.values[name] =
+                            cache.results[node.id].values[name];
+                    }
                 });
             });
         }
@@ -454,7 +460,10 @@ export function showExecOrder<Stmt>(
     results: NUIResults,
     i: number,
 ) {
-    const names = group.flatMap((group) => group.names).map((n) => n.name);
+    const names = group
+        .flatMap((group) => group.names)
+        .filter((n) => n.kind === 'value')
+        .map((n) => n.name);
 
     group.forEach((node) => {
         results.produce[node.id].push('Cycle: ' + names.join(', '));
@@ -473,15 +482,17 @@ export const registerNames = (
 ) => {
     for (let name of cache.nodes[top].parsed!.names) {
         results.jumpToName[name.name] = name.loc;
-        if (idForName[name.name] != null) {
-            cache.nodes[top].parsed!.failed = true;
-            results.produce[top] = [
-                new Error(`Name already defined: ${name.name}`),
-            ];
+        if (name.kind === 'value') {
+            if (idForName[name.name] != null) {
+                cache.nodes[top].parsed!.failed = true;
+                results.produce[top] = [
+                    new Error(`Name already defined: ${name.name}`),
+                ];
 
-            return true;
+                return true;
+            }
+            // console.log('cached ...', name.name, top.top);
+            idForName[name.name] = top;
         }
-        // console.log('cached ...', name.name, top.top);
-        idForName[name.name] = top;
     }
 };

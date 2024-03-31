@@ -15,7 +15,7 @@ import { toJCST } from './round-1/j-cst';
 import { FnsEnv, TraceMap, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
-import { sortTops } from '../../custom/store/sortTops';
+import { LocedName, sortTops } from '../../custom/store/sortTops';
 import { filterNulls } from '../../custom/reduce';
 import { unique } from '../../custom/store/getResults';
 
@@ -164,7 +164,7 @@ export const fnsEvaluator = (
             let env = this.init();
             let tenv = this.initType?.();
             const errors: Errors = {};
-            const allNames: { name: string; loc: number }[] = [];
+            const allNames: LocedName[] = [];
             let ret: null | string = null;
             const tops = findTops(state);
             const sorted = depSort(
@@ -203,7 +203,11 @@ export const fnsEvaluator = (
                 );
                 env.js.push((result as any).js);
                 env = result.env;
-                allNames.push(...group.flatMap(({ names }) => names));
+                allNames.push(
+                    ...group
+                        .flatMap(({ names }) => names)
+                        .filter((n) => n.kind === 'value'),
+                );
 
                 if (
                     group[0].top.top === target &&
@@ -449,7 +453,10 @@ const compileStmt = (
             `{${js};\n${
                 names
                     ? 'return {' +
-                      names.map(({ 0: name }) => sanitize(name)).join(',') +
+                      names
+                          .filter((n) => n[1].type === 'value')
+                          .map(({ 0: name }) => sanitize(name))
+                          .join(',') +
                       '}'
                     : ''
             }}`,

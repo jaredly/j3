@@ -670,6 +670,7 @@
     (match stmt
         (sexpr expr l)                      (compile expr trace)
         (sdef name nl body l)               (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+        (stypealias name _ _ _ _)           "/* type alias ${name} */"
         (sdeftype name nl type-arg cases l) (join
                                                 "\n"
                                                     (map

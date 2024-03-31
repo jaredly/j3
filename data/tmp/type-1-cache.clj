@@ -854,12 +854,7 @@
                                                       map/nil
                                                           map/nil
                                                           map/nil
-                                                          (map/set
-                                                          map/nil
-                                                              name
-                                                              (,
-                                                              (map args (fn [(, name _)] name))
-                                                                  (subst-aliases (tenv/alias tenv') body))))
+                                                          (map/set map/nil name (, (map args (fn [(, name _)] name)) body)))
         (sexpr expr l)                            (let [
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
@@ -942,7 +937,11 @@
                                                                  }, given ${
                                                                  (its (len args))
                                                                  }.")
-                                                             (replace-in-type (map/from-list (zip names (map args fst))) subst))
+                                                             (let [
+                                                             subst (if (> (len names) 0)
+                                                                       subst
+                                                                           (replace-in-type (map/from-list (zip names (map args fst))) subst))]
+                                                             (subst-aliases alias subst)))
                               _                      (foldl base args (fn [target (, arg l)] (tapp target arg l))))
             _             (foldl base args (fn [target (, arg l)] (tapp target arg l))))))
 
@@ -1019,7 +1018,13 @@
         [(@! (typealias (hello a) (, int a)))
             (@! (deftype what (name (hello string))))
             (@! (name))]
-            "(fn [(, int string)] what)")])
+            "(fn [(, int string)] what)")
+        (,
+        [(@! (typealias (hello a) (,, int id a)))
+            (@! (typealias id string))
+            (@! (deftype what (name (hello bool))))
+            (@! name)]
+            "(fn [(,, int string bool)] what)")])
 
 (several
     (** This was a test case I needed to figure out. **)
@@ -1211,20 +1216,35 @@
                                                 (fn [bag (, pat body)]
                                                 (bag/and bag (externals (set/merge bound (pat-names pat)) body)))))))
 
-(defn externals-type [bound type] (set/diff (type-free type) bound))
+(defn externals-type [bound t]
+    (match t
+        (tvar _ _)       empty
+        (tcon name l)    (if (set/has bound name)
+                             empty
+                                 (one (,, name (type) l)))
+        (tapp one two _) (bag/and (externals-type bound one) (externals-type bound two))))
 
 (defn names [stmt]
     (match stmt
-        (sdef name l _ _)               [(,, name (value) l)]
-        (sexpr _ _)                     []
-        (stypealias name l _ _ _)       [(,, name (type) l)]
-        (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name l _ _)] (,, name (type) l)))))
+        (sdef name l _ _)                  [(,, name (value) l)]
+        (sexpr _ _)                        []
+        (stypealias name l _ _ _)          [(,, name (type) l)]
+        (sdeftype name l _ constructors _) [(,, name (type) l)
+                                               ..(map constructors (fn [(,,, name l _ _)] (,, name (value) l)))]))
 
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string int free constructors int) empty
-            (stypealias name _ args body _)             empty
+            (sdeftype string int free constructors int) (let [frees (set/from-list (map free fst))]
+                                                            (many
+                                                                (map
+                                                                    constructors
+                                                                        (fn [(,,, name l args _)]
+                                                                        (match args
+                                                                            [] empty
+                                                                            _  (many (map args (externals-type frees))))))))
+            (stypealias name _ args body _)             (let [frees (set/from-list (map args fst))]
+                                                            (externals-type frees body))
             (sdef name int body int)                    (externals (set/add set/nil name) body)
             (sexpr expr int)                            (externals set/nil expr))))
 

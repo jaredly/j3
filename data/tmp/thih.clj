@@ -9,6 +9,20 @@
 
 (deftype (array a) (nil) (cons a (array a)))
 
+(typealias id string)
+
+(typealias alt (, (array pat) expr))
+
+(typealias impl (, id (array alt)))
+
+(typealias expl (, id scheme (array alt)))
+
+(typealias bindgroup (, (array expl) (array (array impl))))
+
+(deftype lol (ok bindgroup))
+
+ok
+
 (deftype expr
     (eprim prim int)
         (estr string (array (,, expr string int)) int)
