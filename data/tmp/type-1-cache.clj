@@ -167,6 +167,7 @@
             (array (, string int))
             (array (,,, string int (array type) int))
             int)
+        (stypealias string int (array (, string int)) type int)
         (sdef string int expr int)
         (sexpr expr int))
 
@@ -285,25 +286,27 @@
     (tenv
         (map string scheme)
             (map string tconstructor)
-            (map string (, int (set string)))))
+            (map string (, int (set string)))
+            (map string (, (array string) type))))
 
-(defn tenv/type [(tenv types _ _) key] (map/get types key))
+(defn tenv/type [(tenv types _ _ _) key] (map/get types key))
 
-(defn tenv/con [(tenv _ cons _) key] (map/get cons key))
+(defn tenv/con [(tenv _ cons _ _) key] (map/get cons key))
 
-(defn tenv/names [(tenv _ _ names) key] (map/get names key))
+(defn tenv/names [(tenv _ _ names _) key] (map/get names key))
 
-(defn tenv/rm [(tenv types cons names) var]
-    (tenv (map/rm types var) cons names))
+(defn tenv/rm [(tenv types cons names alias) var]
+    (tenv (map/rm types var) cons names alias))
 
-(defn tenv/set-type [(tenv types cons names) k v]
-    (tenv (map/set types k v) cons names))
+(defn tenv/set-type [(tenv types cons names alias) k v]
+    (tenv (map/set types k v) cons names alias))
 
-(defn tenv/set-constructors [(tenv types cons names) name vbls ncons]
+(defn tenv/set-constructors [(tenv types cons names alias) name vbls ncons]
     (tenv
         types
             (map/merge cons ncons)
-            (map/set names name (, vbls (set/from-list (map/keys ncons))))))
+            (map/set names name (, vbls (set/from-list (map/keys ncons))))
+            alias))
 
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
@@ -329,7 +332,7 @@
 (defn scheme-free [(scheme vbls type)]
     (set/diff (type-free type) vbls))
 
-(defn tenv-free [(tenv types _ _)]
+(defn tenv-free [(tenv types _ _ _)]
     (foldr set/nil (map (map/values types) scheme-free) set/merge))
 
 (,
@@ -362,8 +365,8 @@
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
-(defn tenv-apply [subst (tenv types cons names)]
-    (tenv (map/map (scheme-apply subst) types) cons names))
+(defn tenv-apply [subst (tenv types cons names alias)]
+    (tenv (map/map (scheme-apply subst) types) cons names alias))
 
 (** ## Composing substitution maps
     Note that compose-subst is not commutative. The old-subst map will get the new-subst substitutions applied to it, and then any conflicting keys go with new-subst.
@@ -724,7 +727,7 @@
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
 
-(def tenv/nil (tenv map/nil map/nil map/nil))
+(def tenv/nil (tenv map/nil map/nil map/nil map/nil))
 
 (infer tenv/nil (@ ((fn [a] a) 231)))
 
@@ -751,6 +754,7 @@
                     (set/from-list ["a" "b"])
                         [(tvar "a" -1) (tvar "b" -1)]
                         (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))])
+            map/nil
             map/nil))
 
 (infer basic (@ (+ 2 3)))
@@ -823,11 +827,13 @@
             "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")
         (,  )])
 
-(defn tenv/merge [(tenv values constructors types) (tenv nvalues ncons ntypes)]
+(defn tenv/merge [(tenv values constructors types alias)
+    (tenv nvalues ncons ntypes nalias)]
     (tenv
         (map/merge values nvalues)
             (map/merge constructors ncons)
-            (map/merge types ntypes)))
+            (map/merge types ntypes)
+            (map/merge alias nalias)))
 
 (defn infer-and-add [tenv stmt]
     (tenv/merge tenv (infer-stmt tenv stmt)))
@@ -844,6 +850,16 @@
                                                       composed               (compose-subst "infer-stmt" unified-subst subst)
                                                       t                      (type-apply composed t)]
                                                       (tenv/set-type tenv/nil name (generalize tenv' t)))
+        (stypealias name nl args body l)          (tenv
+                                                      map/nil
+                                                          map/nil
+                                                          map/nil
+                                                          (map/set
+                                                          map/nil
+                                                              name
+                                                              (,
+                                                              (map args (fn [(, name _)] name))
+                                                                  (subst-aliases (tenv/alias tenv') body))))
         (sexpr expr l)                            (let [
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
@@ -859,7 +875,11 @@
                                                                           (, map/nil map/nil)
                                                                               constructors
                                                                               (fn [(, values cons) (,,, name nl args l)]
-                                                                              (let [args (map args (fn [arg] (type-with-free arg free-set)))]
+                                                                              (let [
+                                                                                  args (map args (fn [arg] (type-with-free arg free-set)))
+                                                                                  args (map args (subst-aliases (tenv/alias tenv')))
+                                                                                  ;_
+                                                                                  ;(map args (check-type-names tenv' tname))]
                                                                                   (,
                                                                                       (map/set
                                                                                           values
@@ -869,7 +889,80 @@
                                                       (tenv
                                                           values
                                                               cons
-                                                              (map/set map/nil tname (, (len targs) (set/from-list names)))))))
+                                                              (map/set map/nil tname (, (len targs) (set/from-list names)))
+                                                              map/nil))))
+
+(infer-stmt
+    (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))
+        (@! (typealias what (hello string))))
+
+(infer-stmt
+    (infer-stmt tenv/nil (@! (typealias hello int)))
+        (@! (deftype what (array hello))))
+
+(defn map/has [map k]
+    (match (map/get map k)
+        (some _) true
+        _        false))
+
+(defn tenv/alias [(tenv _ _ _ alias)] alias)
+
+(defn fst [(, a _)] a)
+
+(defn extract-type-call [type args]
+    (match type
+        (tapp one arg l) (extract-type-call one [(, arg l) ..args])
+        _                (, type args)))
+
+(defn replace-in-type [subst type]
+    (match type
+        (tvar _ _)       type
+        (tcon name l)    (match (map/get subst name)
+                             (some v) (type/set-loc l v)
+                             _        type)
+        (tapp one two l) (tapp (replace-in-type subst one) (replace-in-type subst two) l)))
+
+(type-to-string
+    (replace-in-type
+        (map/from-list [(, "a" (@t int)) (, "b" (@t (array string)))])
+            (@t (,, string a b))))
+
+(defn subst-aliases [alias type]
+    (let [
+        (, base args) (extract-type-call type [])
+        args          (map args (fn [(, arg l)] (, (subst-aliases alias arg) l)))]
+        (match base
+            (tcon name _) (match (map/get alias name)
+                              (some (, names subst)) (if (!= (len names) (len args))
+                                                         (fatal
+                                                             "Wrong number of args given to alias ${
+                                                                 name
+                                                                 }: expected ${
+                                                                 (its (len names))
+                                                                 }, given ${
+                                                                 (its (len args))
+                                                                 }.")
+                                                             (replace-in-type (map/from-list (zip names (map args fst))) subst))
+                              _                      (foldl base args (fn [target (, arg l)] (tapp target arg l))))
+            _             (foldl base args (fn [target (, arg l)] (tapp target arg l))))))
+
+(type-to-string
+    (subst-aliases
+        (map/from-list [(, "hello" (, ["a"] (@t (, int a))))])
+            (@t (hello string))))
+
+(defn check-type-names [tenv' type]
+    (match type
+        (tvar _ _)       true
+        (tcon name _)    (let [(tenv _ _ types alias) tenv']
+                             (if (map/has types name)
+                                 true
+                                     (if (map/has alias name)
+                                     true
+                                         (fatal "Unknown type ${name}"))))
+        (tapp one two _) (if (check-type-names tenv' one)
+                             (check-type-names tenv' two)
+                                 false)))
 
 (defn several [tenv stmts]
     (match stmts
@@ -916,7 +1009,17 @@
                     (, [] [])               []
                     (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
                     _                       [])))]
-            "(fn [(fn [(array a) (array b)] (array (, a b))) (array a) (array b)] (array (, a b)))")])
+            "(fn [(fn [(array a) (array b)] (array (, a b))) (array a) (array b)] (array (, a b)))")
+        (,
+        [(@! (typealias hello int))
+            (@! (deftype what (whatok hello)))
+            (@! whatok)]
+            "(fn [int] what)")
+        (,
+        [(@! (typealias (hello a) (, int a)))
+            (@! (deftype what (name (hello string))))
+            (@! (name))]
+            "(fn [(, int string)] what)")])
 
 (several
     (** This was a test case I needed to figure out. **)
@@ -947,7 +1050,7 @@
                 [one ..rest]     (several (tenv/merge tenv (infer-stmt tenv one)) rest))))
         (@! several)])
 
-(defn show-types [names (tenv types _ _)]
+(defn show-types [names (tenv types _ _ _)]
     (let [names (set/from-list names)]
         (map
             (filter (fn [(, k v)] (set/has names k)) (map/to-list types))
@@ -1114,12 +1217,14 @@
     (match stmt
         (sdef name l _ _)               [(,, name (value) l)]
         (sexpr _ _)                     []
+        (stypealias name l _ _ _)       [(,, name (type) l)]
         (sdeftype _ _ _ constructors _) (map constructors (fn [(,,, name l _ _)] (,, name (type) l)))))
 
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
             (sdeftype string int free constructors int) empty
+            (stypealias name _ args body _)             empty
             (sdef name int body int)                    (externals (set/add set/nil name) body)
             (sexpr expr int)                            (externals set/nil expr))))
 
@@ -1146,6 +1251,8 @@
 (type-to-string (tfns [tint tbool] tstring))
 
 (defn toption [arg] (tapp (tcon "option" -1) arg -1))
+
+;(typealias what l)
 
 (defn tarray [arg] (tapp (tcon "array" -1) arg -1))
 
@@ -1212,6 +1319,7 @@
                         (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
                         (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
                     (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1)))])
+                    map/nil
                     map/nil)
                 [(@! (deftype (array a) (cons a (array a)) (nil)))
                 (@! (deftype (option a) (some a) (none)))

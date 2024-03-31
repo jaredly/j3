@@ -22,6 +22,7 @@ const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
+const stypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "stypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
 const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3});
 const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1});
 const type_free = /*754*/function name_754(type) { return /*761*/(function match_761($target) {
@@ -1363,6 +1364,15 @@ return /*7526*//*7526*//*7526*/cons/*<7526*/(/*7526*//*10654*//*10654*//*10654*/
 if ($target.type === "sexpr") {
 return /*7532*/nil/*<7532*/
 }
+if ($target.type === "stypealias") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return /*13230*//*13230*//*13230*/cons/*<13230*/(/*13230*//*13231*//*13231*//*13231*//*13232*/$co$co/*<13232*/(/*13231*//*13233*/name/*<13233*/)/*<13231*/(/*13231*//*13235*/type/*<13235*/)/*<13231*/(/*13231*//*13236*/l/*<13236*/)/*<13231*/)/*<13230*/(/*13230*//*13230*/nil/*<13230*/)/*<13230*/
+}
+}
+}
 if ($target.type === "sdeftype") {
 {
 let constructors = $target[3];
@@ -1601,6 +1611,18 @@ let int = $target[4];
 return /*7332*/empty/*<7332*/
 }
 }
+}
+}
+}
+}
+if ($target.type === "stypealias") {
+{
+let name = $target[0];
+{
+let args = $target[2];
+{
+let body = $target[3];
+return /*13222*/empty/*<13222*/
 }
 }
 }
