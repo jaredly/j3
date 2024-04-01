@@ -52,6 +52,8 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 502');})(/*!*//*
 /*537*/(/*539*/function name_539(a) { return /*543*//*544*/a/*<544*/(/*543*//*545*/""/*<545*/)/*<543*/ }/*<539*/)(/*537*//*546*/$co/*<546*/)/*<537*/
 
 /*584*//*584*//*590*/$pl/*<590*/(/*584*//*591*/1/*<591*/)/*<584*/(/*584*//*592*/hi/*<592*/)/*<584*/
+const lol = /*597*//*597*//*598*/$pl/*<598*/(/*597*//*599*/1/*<599*/)/*<597*/(/*597*//*600*/hi/*<600*/)/*<597*/;
+
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
 const nil = ({type: "nil"});
 const even = /*288*/function name_288(x) { return /*294*/(function match_294($target) {
@@ -129,4 +131,4 @@ const m = /*441*/a/*<441*/;
 
 const l = /*446*/m/*<446*/;
 
-return {type: 'fns', a, b, c, cons, e, even, foldr, l, lol, m, nil, odd, what, x, y}
+return {type: 'fns', a, b, c, cons, e, even, foldr, l, lol, lol, m, nil, odd, what, x, y}

@@ -6,6 +6,8 @@
 
 (+ 1 hi)
 
+(def lol (+ 1 hi))
+
 (** Things that should error **)
 
 [1 "hi"]

@@ -267,7 +267,20 @@
 (defn type-to-string-raw [t]
     (let [(, text _) (tts-inner t (, none 0) false)] text))
 
-(** ## Types needed for inference **)
+(** ## Types needed for inference
+    type environment
+    type scheme **)
+
+(defn tenv/add-builtin-type [(tenv a b names d) (, name args)]
+    (tenv a b (map/set names name (, args set/nil)) d))
+
+(defn tenv/merge [(tenv values constructors types alias)
+    (tenv nvalues ncons ntypes nalias)]
+    (tenv
+        (map/merge values nvalues)
+            (map/merge constructors ncons)
+            (map/merge types ntypes)
+            (map/merge alias nalias)))
 
 (deftype scheme (scheme (set string) type))
 
@@ -523,18 +536,12 @@
     - self-recursion
     - mutual recursion (infer-defns) **)
 
+(** ## Expressions **)
+
 (defn t-prim [prim]
     (match prim
         (pint _ l)  (tcon "int" l)
         (pbool _ l) (tcon "bool" l)))
-
-(defn tfn [a b l] (tapp (tapp (tcon "->" l) a l) b l))
-
-(def tint (tcon "int" -1))
-
-(def tbool (tcon "bool" -1))
-
-(def tstring (tcon "string" -1))
 
 (defn t-expr [tenv expr nidx]
     (t-expr-inner tenv expr nidx)
@@ -647,6 +654,8 @@
                                      (,, target-subst result-type nidx))
         _                        (fatal "cannot infer type for ${(valueToString expr)}")))
 
+(** ## Patterns **)
+
 (defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
     (** Yay!! Now we have verification. **)
         (let [
@@ -726,6 +735,8 @@
                                       (type-apply subst tres)
                                           (map/map (type-apply subst) bindings)
                                           nidx))))
+
+(** ## Top-level "infer expression" **)
 
 (defn infer [tenv expr]
     (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
@@ -831,16 +842,7 @@
             "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")
         (,  )])
 
-(defn tenv/merge [(tenv values constructors types alias)
-    (tenv nvalues ncons ntypes nalias)]
-    (tenv
-        (map/merge values nvalues)
-            (map/merge constructors ncons)
-            (map/merge types ntypes)
-            (map/merge alias nalias)))
-
-(defn infer-and-add [tenv stmt]
-    (tenv/merge tenv (infer-stmtss tenv [stmt])))
+(** ## Statements (simple, no mutual dependencies) **)
 
 (defn infer-stmt [tenv' stmt]
     (match stmt
@@ -869,7 +871,7 @@
     (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))
         (@! (typealias what (hello string))))
 
-(infer-stmt
+;(infer-stmt
     (infer-stmt tenv/nil (@! (typealias hello int)))
         (@! (deftype what (array hello))))
 
@@ -1009,7 +1011,7 @@
         [(@! (deftype kind (star) (kfun kind kind))) (@! (let [(kfun m n) (star)] 1))]
             "int")])
 
-(several
+;(several
     (** This was a test case I needed to figure out. **)
         (foldl
         (tenv/set-constructors
@@ -1038,6 +1040,8 @@
                 [one ..rest]     (several (tenv/merge tenv (infer-stmt tenv one)) rest))))
         (@! several)])
 
+(** ## Some debugging fns **)
+
 (defn show-types [names (tenv types _ _ _)]
     (let [names (set/from-list names)]
         (map
@@ -1059,35 +1063,79 @@
 
 (defn show-substs [substs] (join "\n::\n" (map substs show-subst)))
 
+(** ## Mutually Recursive Values **)
+
 (defn infer-several [tenv stmts]
     (let [
-        nidx                  0
-        names                 (map
-                                  stmts
-                                      (fn [stmt]
-                                      (match stmt
-                                          (sdef name _ _ _) name
-                                          _                 (fatal "Cant infer-several with sdefs? idk maybe you can ..."))))
-        (,, bound vars nidx)  (foldr
-                                  (,, tenv [] nidx)
-                                      stmts
-                                      (fn [(,, tenv' vars nidx) (sdef name _ body l)]
-                                      (let [(, self nidx) (new-type-var name nidx l)]
-                                          (,,
-                                              (tenv/set-type tenv' name (scheme set/nil self))
-                                                  [self ..vars]
-                                                  nidx))))
-        (,, subst types nidx) (foldr
-                                  (,, map/nil [] nidx)
-                                      (zip vars stmts)
-                                      (fn [(,, subst types nidx) (, var (sdef name _ body l))]
-                                      (let [
-                                          (,, body-subst body-type nidx) (t-expr (tenv-apply subst bound) body nidx)
-                                          both                           (compose-subst "infer-several" body-subst subst)
-                                          selfed                         (type-apply both var)
-                                          (, u-subst nidx)               (unify selfed body-type nidx l)
-                                          subst                          (compose-subst "infer-several-2" u-subst both)]
-                                          (,, subst [(type-apply subst body-type) ..types] nidx))))]
+        nidx                         0
+        names                        (map
+                                         stmts
+                                             (fn [stmt]
+                                             (match stmt
+                                                 (sdef name _ _ _) name
+                                                 _                 (fatal "Cant infer-several with sdefs? idk maybe you can ..."))))
+        (,, bound vars nidx)         (foldr
+                                         (,, tenv [] nidx)
+                                             stmts
+                                             (fn [(,, tenv' vars nidx) (sdef name _ body l)]
+                                             (let [(, self nidx) (new-type-var name nidx l)]
+                                                 (,,
+                                                     (tenv/set-type tenv' name (scheme set/nil self))
+                                                         [self ..vars]
+                                                         nidx))))
+        externals                    (bag/fold
+                                         (fn [ext (,, name _ l)] (map/set ext name l))
+                                             map/nil
+                                             (foldr
+                                             empty
+                                                 (map stmts (fn [(sdef _ _ body _)] (externals set/nil body)))
+                                                 bag/and))
+        missing                      (let [(tenv values _ _ _) tenv (tenv v2 _ _ _) bound]
+                                         (filter
+                                             (fn [(, name loc)]
+                                                 (match (map/get values name)
+                                                     (some _) false
+                                                     _        (match (map/get v2 name)
+                                                                  (some _) false
+                                                                  _        true)))
+                                                 (map/to-list externals)))
+        (,, bound missing-vars nidx) (foldr
+                                         (,, bound [] nidx)
+                                             missing
+                                             (fn [(,, tenv vars nidx) (, name loc)]
+                                             (let [(, self nidx) (new-type-var name nidx loc)]
+                                                 (,,
+                                                     (tenv/set-type tenv name (scheme set/nil self))
+                                                         [self ..vars]
+                                                         nidx))))
+        (,, subst types nidx)        (foldr
+                                         (,, map/nil [] nidx)
+                                             (zip vars stmts)
+                                             (fn [(,, subst types nidx) (, var (sdef name _ body l))]
+                                             (let [
+                                                 (,, body-subst body-type nidx) (t-expr (tenv-apply subst bound) body nidx)
+                                                 both                           (compose-subst "infer-several" body-subst subst)
+                                                 selfed                         (type-apply both var)
+                                                 (, u-subst nidx)               (unify selfed body-type nidx l)
+                                                 subst                          (compose-subst "infer-several-2" u-subst both)]
+                                                 (,, subst [(type-apply subst body-type) ..types] nidx))))
+        _                            (match missing-vars
+                                         []   0
+                                         vars (fatal
+                                                  "Missing variables\n - ${
+                                                      (join
+                                                          "\n - "
+                                                              (map
+                                                              (zip missing (map missing-vars (type-apply subst)))
+                                                                  (fn [(, (, name loc) type)]
+                                                                  "${
+                                                                      name
+                                                                      } (${
+                                                                      (int-to-string loc)
+                                                                      }) : inferred as ${
+                                                                      (type-to-string type)
+                                                                      }")))
+                                                      }"))]
         (zip names (map types (type-apply subst)))))
 
 (,
@@ -1104,11 +1152,16 @@
         [(@! (defn even [x] (odd (- x 1) x)))
             (@! (defn odd [x y] (even x)))
             (@! (defn what [a b c] (+ (even a) (odd b c))))]
-            ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])])
+            ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])
+        (, [(@! (defn what [a] (+ 2 ho)))] 1)])
 
 (** ## Testing Errors **)
 
-(defn infer-stmts [tenv stmts] (foldl tenv stmts infer-and-add))
+(defn infer-stmts [tenv stmts]
+    (foldl
+        tenv
+            stmts
+            (fn [tenv stmt] (tenv/merge tenv (infer-stmtss tenv [stmt])))))
 
 (,
     (errorToString (infer-stmts builtin-env))
@@ -1119,28 +1172,7 @@
         [(@! (deftype one (two) (three int))) (@! (two 1))]
             "Fatal runtime: cant unify one (10756) and (fn [int] a) (10753)")])
 
-(defn split-stmts [stmts sdefs stypes salias sexps]
-    (match stmts
-        []           (,,, sdefs stypes salias sexps)
-        [one ..rest] (match one
-                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps)
-                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps)
-                         (stypealias name _ args body _) (split-stmts
-                                                             rest
-                                                                 sdefs
-                                                                 stypes
-                                                                 [(,, name args body) ..salias]
-                                                                 sexps)
-                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
-
-(defn infer-defns [tenv stmts]
-    (match stmts
-        [one] (infer-stmt tenv one)
-        _     (foldl
-                  tenv/nil
-                      (infer-several tenv stmts)
-                      (fn [tenv (, name type)]
-                      (tenv/set-type tenv name (generalize tenv type))))))
+(** ## deftype and typealias **)
 
 (defn infer-deftype [tenv' bound tname tnl targs constructors l]
     (let [
@@ -1212,6 +1244,33 @@
         tenv'                    (tenv/merge tenv tenv')]
         tenv))
 
+(** ## Statements (w/ circular dependencies) **)
+
+(infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
+
+(defn split-stmts [stmts sdefs stypes salias sexps]
+    (match stmts
+        []           (,,, sdefs stypes salias sexps)
+        [one ..rest] (match one
+                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps)
+                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps)
+                         (stypealias name _ args body _) (split-stmts
+                                                             rest
+                                                                 sdefs
+                                                                 stypes
+                                                                 [(,, name args body) ..salias]
+                                                                 sexps)
+                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
+
+(defn infer-defns [tenv stmts]
+    (match stmts
+        [one] (infer-stmt tenv one)
+        _     (foldl
+                  tenv/nil
+                      (infer-several tenv stmts)
+                      (fn [tenv (, name type)]
+                      (tenv/set-type tenv name (generalize tenv type))))))
+
 (defn infer-stmtss [tenv' stmts]
     (let [
         (,,, sdefs stypes salias sexps) (split-stmts stmts [] [] [] [])
@@ -1221,9 +1280,6 @@
         _                               (map sexps (infer (tenv/merge val-tenv tenv')))]
         (tenv/merge type-tenv val-tenv)))
 
-(defn tenv/add-builtin-type [(tenv a b names d) (, name args)]
-    (tenv a b (map/set names name (, args set/nil)) d))
-
 (infer-stmtss
     (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
         [(@! (typealias one (, int string)))
@@ -1232,12 +1288,8 @@
         (@! (deftype kind (star) (kfun kind kind)))
         (@! (let [(kfun m n) (star)] 1))])
 
-(infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
-
-
-
 (** ## Dependency analysis
-    Needed so we can know when to do mutual recursion. **)
+    Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
 
 (deftype (bag a) (one a) (many (array (bag a))) (empty))
 
@@ -1248,6 +1300,12 @@
         (, (many [a]) (many b)) (many [a ..b])
         (, (many a) (many [b])) (many [b ..a])
         _                       (many [first second])))
+
+(defn bag/fold [f init bag]
+    (match bag
+        (empty)      init
+        (one v)      (f init v)
+        (many items) (foldl init items (bag/fold f))))
 
 (defn concat [one two]
     (match one
@@ -1363,6 +1421,12 @@
 
 (** ## Type Environment populated with Builtins **)
 
+(defn tfn [a b l] (tapp (tapp (tcon "->" l) a l) b l))
+
+(def tbool (tcon "bool" -1))
+
+(def tint (tcon "int" -1))
+
 (defn tmap [k v] (tapp (tapp (tcon "map" -1) k -1) v -1))
 
 (defn tfns [args result]
@@ -1385,6 +1449,8 @@
 (defn vbl [k] (tvar k -1))
 
 (defn t, [a b] (tapp (tapp (tcon "," -1) a -1) b -1))
+
+(def tstring (tcon "string" -1))
 
 (def builtin-env
     (let [k (vbl "k") v (vbl "v") v2 (vbl "v2") kv (generic ["k" "v"]) kk (generic ["k"])]
@@ -1465,7 +1531,7 @@
                         (tnamed (trace-fmt a))
                         (tfmted a string)
                         (tfmt a (fn [a] string))))]
-                infer-and-add)))
+                (fn [tenv stmt] (tenv/merge tenv (infer-stmtss tenv [stmt]))))))
 
 (infer-show builtin-env (@ ,))
 
@@ -1475,6 +1541,8 @@
             (map
             (map/to-list subst)
                 (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
+
+(** ## Exporting as an "evaluator" **)
 
 (deftype inference
     (** initial

@@ -2,8 +2,8 @@
 THIH
 
 I really need ... type aliases. pleeease.
-- [ ] ok ... it's almost working? but not quite
-- [ ] ALSO lets get mutually recursive types to be
+- [x] ok ... it's almost working? but not quite
+- [x] ALSO lets get mutually recursive types to be
   evaluated at the same time.
   Which means externals needs to start returning `types depended on`.
   and ...
@@ -12,6 +12,14 @@ I really need ... type aliases. pleeease.
 - [ ] I kindof want "collapse" to be ternary.
   - first level (just hide ns children)
   - second level (hide ns children & only render an uneditable summary)
+
+- [ ] type checking, let's infer the types of missing externals
+  so we can make it much nicer to work with.
+
+
+- [ ] ok my good folks, its time for "extract this chunk"
+  - which means, our little power-bar is going to get an upgrade, because woof it needs it
+
 
 ## What's the next step here?
 
