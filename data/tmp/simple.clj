@@ -4,16 +4,20 @@
 
 ((fn [a] (a "")) ,)
 
+(** Things that should error **)
+
+[1 "hi"]
+
 ((fn [(, a _)] (a 2)) (, 1 2))
 
 ((fn [(, a (, b ""))] (+ a b)) (, 1 (, 2 (, 3 2))))
-
-(fn [(, a "")] 1)
 
 ((fn [(, a (, b ""))] 2) (, 1 (, 2 (, 3 2))))
 
 (match (, 1 2)
     (, a (, b "")) 1)
+
+(fn [(, a "")] 1)
 
 (** Recursive functions **)
 
@@ -43,8 +47,6 @@ what
 [1 2]
 
 "hello ${"folks"}"
-
-[1 "hi"]
 
 nil
 

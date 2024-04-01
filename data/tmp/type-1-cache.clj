@@ -757,7 +757,8 @@
                     (set/from-list ["a" "b"])
                         [(tvar "a" -1) (tvar "b" -1)]
                         (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))])
-            map/nil
+            (map/from-list
+            [(, "int" (, 0 set/nil)) (, "string" (, 0 set/nil)) (, "bool" (, 0 set/nil))])
             map/nil))
 
 (infer basic (@ (+ 2 3)))
@@ -839,7 +840,7 @@
             (map/merge alias nalias)))
 
 (defn infer-and-add [tenv stmt]
-    (tenv/merge tenv (infer-stmt tenv stmt)))
+    (tenv/merge tenv (infer-stmtss tenv [stmt])))
 
 (defn infer-stmt [tenv' stmt]
     (match stmt
@@ -862,33 +863,7 @@
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
                                                       tenv/nil)
-        (sdeftype tname tnl targs constructors l) (let [
-                                                      names           (map constructors (fn [(,,, name _ _ _)] name))
-                                                      final           (foldl
-                                                                          (tcon tname tnl)
-                                                                              targs
-                                                                              (fn [body (, arg al)] (tapp body (tvar arg al) l)))
-                                                      free-set        (foldl set/nil targs (fn [free (, arg _)] (set/add free arg)))
-                                                      (, values cons) (foldl
-                                                                          (, map/nil map/nil)
-                                                                              constructors
-                                                                              (fn [(, values cons) (,,, name nl args l)]
-                                                                              (let [
-                                                                                  args (map args (fn [arg] (type-with-free arg free-set)))
-                                                                                  args (map args (subst-aliases (tenv/alias tenv')))
-                                                                                  ;_
-                                                                                  ;(map args (check-type-names tenv' tname))]
-                                                                                  (,
-                                                                                      (map/set
-                                                                                          values
-                                                                                              name
-                                                                                              (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
-                                                                                          (map/set cons name (tconstructor free-set args final))))))]
-                                                      (tenv
-                                                          values
-                                                              cons
-                                                              (map/set map/nil tname (, (len targs) (set/from-list names)))
-                                                              map/nil))))
+        (sdeftype tname tnl targs constructors l) (infer-deftype tenv' set/nil tname tnl targs constructors l)))
 
 (infer-stmt
     (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))
@@ -970,7 +945,7 @@
     (match stmts
         []               (fatal "Final stmt should be an expr")
         [(sexpr expr _)] (infer tenv expr)
-        [one ..rest]     (several (tenv/merge tenv (infer-stmt tenv one)) rest)))
+        [one ..rest]     (several (tenv/merge tenv (infer-stmtss tenv [one])) rest)))
 
 (,
     (fn [x] (type-to-string (several basic x)))
@@ -1018,13 +993,15 @@
             (@! whatok)]
             "(fn [int] what)")
         (,
-        [(@! (typealias (hello a) (, int a)))
+        [(@! (deftype (, a b) (, a b)))
+            (@! (typealias (hello a) (, int a)))
             (@! (deftype what (name (hello string))))
             (@! (name))]
             "(fn [(, int string)] what)")
         (,
-        [(@! (typealias (hello a) (,, int id a)))
+        [(@! (deftype (,, a b c) (,, a b c)))
             (@! (typealias id string))
+            (@! (typealias (hello a) (,, int id a)))
             (@! (deftype what (name (hello bool))))
             (@! name)]
             "(fn [(,, int string bool)] what)")])
@@ -1162,6 +1139,44 @@
                       (fn [tenv (, name type)]
                       (tenv/set-type tenv name (generalize tenv type))))))
 
+(defn infer-deftype [tenv' bound tname tnl targs constructors l]
+    (let [
+        names           (map constructors (fn [(,,, name _ _ _)] name))
+        final           (foldl
+                            (tcon tname tnl)
+                                targs
+                                (fn [body (, arg al)] (tapp body (tvar arg al) l)))
+        free-set        (foldl set/nil targs (fn [free (, arg _)] (set/add free arg)))
+        (, values cons) (foldl
+                            (, map/nil map/nil)
+                                constructors
+                                (fn [(, values cons) (,,, name nl args l)]
+                                (let [
+                                    args (map args (fn [arg] (type-with-free arg free-set)))
+                                    args (map args (subst-aliases (tenv/alias tenv')))
+                                    _    (map
+                                             args
+                                                 (fn [arg]
+                                                 (match (bag/to-list (externals-type (set/add bound tname) arg))
+                                                     []    true
+                                                     names (fatal
+                                                               "Unbound types (in deftype ${
+                                                                   tname
+                                                                   }) ${
+                                                                   (join ", " (map names (fn [(,, name _ _)] name)))
+                                                                   }"))))]
+                                    (,
+                                        (map/set
+                                            values
+                                                name
+                                                (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
+                                            (map/set cons name (tconstructor free-set args final))))))]
+        (tenv
+            values
+                cons
+                (map/set map/nil tname (, (len targs) (set/from-list names)))
+                map/nil)))
+
 (defn infer-stypes [tenv' stypes salias]
     (let [
         names                    (foldl
@@ -1175,14 +1190,23 @@
         tenv                     (foldl
                                      tenv/nil
                                          salias
-                                         (fn [tenv' (,, name args body)]
+                                         (fn [tenv (,, name args body)]
                                          (match (bag/to-list
                                              (externals-type
                                                  (set/merge bound (set/from-list (map args fst)))
                                                      body))
-                                             []    (tenv/add-alias tenv' name (, (map args fst) body))
+                                             []    (tenv/add-alias tenv name (, (map args fst) body))
                                              names (fatal
-                                                       "Unbound types ${(join ", " (map names (fn [(,, name _ _)] name)))}"))))]
+                                                       "Unbound types ${(join ", " (map names (fn [(,, name _ _)] name)))}"))))
+        merged                   (tenv/merge tenv tenv')
+        tenv                     (foldl
+                                     tenv
+                                         stypes
+                                         (fn [tenv (sdeftype name tnl args constructors l)]
+                                         (tenv/merge
+                                             (infer-deftype merged bound name tnl args constructors l)
+                                                 tenv)))
+        tenv'                    (tenv/merge tenv tenv')]
         tenv))
 
 (defn infer-stmtss [tenv' stmts]
@@ -1201,7 +1225,7 @@
     (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
         [(@! (typealias one (, int string)))
         (@! (deftype (, a b) (, a b)))
-        (@! (deftype one (two float)))])
+        (@! (deftype one (two int)))])
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 
@@ -1402,7 +1426,11 @@
                         (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
                         (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
                     (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1)))])
-                    map/nil
+                    (map/from-list
+                    [(, "int" (, 0 set/nil))
+                        (, "string" (, 0 set/nil))
+                        (, "bool" (, 0 set/nil))
+                        (, "->" (, 2 set/nil))])
                     map/nil)
                 [(@! (deftype (array a) (cons a (array a)) (nil)))
                 (@! (deftype (option a) (some a) (none)))
@@ -1464,7 +1492,7 @@
 ((eval
     "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
-        (inference builtin-env infer-defns tenv/merge infer)
+        (inference builtin-env infer-stmtss tenv/merge infer)
             (analysis
             externals-stmt
                 (fn [x] (bag/to-list (externals set/nil x)))
