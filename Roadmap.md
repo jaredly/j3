@@ -13,12 +13,17 @@ I really need ... type aliases. pleeease.
   - first level (just hide ns children)
   - second level (hide ns children & only render an uneditable summary)
 
-- [ ] type checking, let's infer the types of missing externals
+- [x] type checking, let's infer the types of missing externals
   so we can make it much nicer to work with.
 
 
-- [ ] ok my good folks, its time for "extract this chunk"
+- [x] ok my good folks, its time for "extract this chunk"
   - which means, our little power-bar is going to get an upgrade, because woof it needs it
+
+  - hrm
+  - so ...
+    yeah, let's try to get fancy, why not?
+    we'll need some ... (include)liness.
 
 
 ## What's the next step here?

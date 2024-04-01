@@ -739,7 +739,11 @@
 (** ## Top-level "infer expression" **)
 
 (defn infer [tenv expr]
-    (let [(,, s t nidx) (t-expr tenv expr 0)] (type-apply s t)))
+    (let [
+        (,, tenv missing nidx) (find-missing tenv 0 (externals set/nil expr))
+        (,, subst type nidx)   (t-expr tenv expr nidx)
+        _                      (report-missing subst missing)]
+        (type-apply subst type)))
 
 (def tenv/nil (tenv map/nil map/nil map/nil map/nil))
 
@@ -847,14 +851,22 @@
 (defn infer-stmt [tenv' stmt]
     (match stmt
         (sdef name nl expr l)                     (let [
-                                                      nidx                   0
-                                                      (, self nidx)          (new-type-var name nidx l)
-                                                      self-bound             (tenv/set-type tenv' name (scheme set/nil self))
-                                                      (,, subst t nidx)      (t-expr self-bound expr nidx)
-                                                      selfed                 (type-apply subst self)
-                                                      (, unified-subst nidx) (unify selfed t nidx l)
-                                                      composed               (compose-subst "infer-stmt" unified-subst subst)
-                                                      t                      (type-apply composed t)]
+                                                      nidx                         0
+                                                      (** Make a type variable to represent the type of the value, for recursive calls, and add it to the tenv. **)
+                                                      (, self nidx)                (new-type-var name nidx l)
+                                                      self-bound                   (tenv/set-type tenv' name (scheme set/nil self))
+                                                      (** Here we find all "unbound variables" in the expression, and create new type variables for them.
+                                                          This makes for a much better experience, because instead of "unbound variable xyz", you can report
+                                                          e.g. "unbound variable xyz, expected type: (fn [int] string)". **)
+                                                      (,, self-bound missing nidx) (find-missing self-bound nidx (externals set/nil expr))
+                                                      (** Here we actually do the inference. **)
+                                                      (,, subst t nidx)            (t-expr self-bound expr nidx)
+                                                      _                            (report-missing subst missing)
+                                                      (** Now we resolve the self type. **)
+                                                      selfed                       (type-apply subst self)
+                                                      (, unified-subst nidx)       (unify selfed t nidx l)
+                                                      composed                     (compose-subst "infer-stmt" unified-subst subst)
+                                                      t                            (type-apply composed t)]
                                                       (tenv/set-type tenv/nil name (generalize tenv' t)))
         (stypealias name nl args body l)          (tenv
                                                       map/nil
@@ -1065,82 +1077,94 @@
 
 (** ## Mutually Recursive Values **)
 
+(defn vars-for-names [names nidx tenv]
+    (foldr
+        (,, tenv [] nidx)
+            names
+            (fn [(,, tenv vars nidx) (, name loc)]
+            (let [(, self nidx) (new-type-var name nidx loc)]
+                (,,
+                    (tenv/set-type tenv name (scheme set/nil self))
+                        [self ..vars]
+                        nidx)))))
+
+(defn report-missing [subst (, missing missing-vars)]
+    (match missing-vars
+        []   0
+        vars (let [
+                 (, text _) (foldl
+                                (, [] (, (some map/nil) 0))
+                                    (map missing-vars (type-apply subst))
+                                    (fn [(, result maps) t]
+                                    (let [(, text maps) (tts-inner t maps false)] (, [text ..result] maps))))]
+                 (fatal
+                     "Missing variables\n - ${
+                         (join
+                             "\n - "
+                                 (map
+                                 (zip missing (rev text []))
+                                     (fn [(, (, name loc) type)]
+                                     "${name} (${(int-to-string loc)}) : inferred as ${type}")))
+                         }"))))
+
+(defn tenv/values [(tenv values _ _ _)] values)
+
+(defn externals-defs [stmts]
+    (foldr
+        empty
+            (map stmts (fn [(sdef _ _ body _)] (externals set/nil body)))
+            bag/and))
+
+(defn find-missing [tenv nidx externals]
+    (let [
+        missing-names               (find-missing-names (tenv/values tenv) externals)
+        (,, tenv missing-vars nidx) (vars-for-names missing-names nidx tenv)]
+        (,, tenv (, missing-names missing-vars) nidx)))
+
+(defn find-missing-names [values ex]
+    (let [
+        externals (bag/fold (fn [ext (,, name _ l)] (map/set ext name l)) map/nil ex)]
+        (filter
+            (fn [(, name loc)]
+                (match (map/get values name)
+                    (some _) false
+                    _        true))
+                (map/to-list externals))))
+
+(defn infer-several-inner [bound (,, subst types nidx) (, var (sdef name _ body l))]
+    (let [
+        (,, body-subst body-type nidx) (t-expr (tenv-apply subst bound) body nidx)
+        both                           (compose-subst "infer-several" body-subst subst)
+        selfed                         (type-apply both var)
+        (, u-subst nidx)               (unify selfed body-type nidx l)
+        subst                          (compose-subst "infer-several-2" u-subst both)]
+        (,, subst [(type-apply subst body-type) ..types] nidx)))
+
 (defn infer-several [tenv stmts]
     (let [
-        nidx                         0
-        names                        (map
-                                         stmts
-                                             (fn [stmt]
-                                             (match stmt
-                                                 (sdef name _ _ _) name
-                                                 _                 (fatal "Cant infer-several with sdefs? idk maybe you can ..."))))
-        (,, bound vars nidx)         (foldr
-                                         (,, tenv [] nidx)
-                                             stmts
-                                             (fn [(,, tenv' vars nidx) (sdef name _ body l)]
-                                             (let [(, self nidx) (new-type-var name nidx l)]
-                                                 (,,
-                                                     (tenv/set-type tenv' name (scheme set/nil self))
-                                                         [self ..vars]
-                                                         nidx))))
-        externals                    (bag/fold
-                                         (fn [ext (,, name _ l)] (map/set ext name l))
-                                             map/nil
-                                             (foldr
-                                             empty
-                                                 (map stmts (fn [(sdef _ _ body _)] (externals set/nil body)))
-                                                 bag/and))
-        missing                      (let [(tenv values _ _ _) tenv (tenv v2 _ _ _) bound]
-                                         (filter
-                                             (fn [(, name loc)]
-                                                 (match (map/get values name)
-                                                     (some _) false
-                                                     _        (match (map/get v2 name)
-                                                                  (some _) false
-                                                                  _        true)))
-                                                 (map/to-list externals)))
-        (,, bound missing-vars nidx) (foldr
-                                         (,, bound [] nidx)
-                                             missing
-                                             (fn [(,, tenv vars nidx) (, name loc)]
-                                             (let [(, self nidx) (new-type-var name nidx loc)]
-                                                 (,,
-                                                     (tenv/set-type tenv name (scheme set/nil self))
-                                                         [self ..vars]
-                                                         nidx))))
-        (,, subst types nidx)        (foldr
-                                         (,, map/nil [] nidx)
-                                             (zip vars stmts)
-                                             (fn [(,, subst types nidx) (, var (sdef name _ body l))]
-                                             (let [
-                                                 (,, body-subst body-type nidx) (t-expr (tenv-apply subst bound) body nidx)
-                                                 both                           (compose-subst "infer-several" body-subst subst)
-                                                 selfed                         (type-apply both var)
-                                                 (, u-subst nidx)               (unify selfed body-type nidx l)
-                                                 subst                          (compose-subst "infer-several-2" u-subst both)]
-                                                 (,, subst [(type-apply subst body-type) ..types] nidx))))
-        _                            (match missing-vars
-                                         []   0
-                                         vars (fatal
-                                                  "Missing variables\n - ${
-                                                      (join
-                                                          "\n - "
-                                                              (map
-                                                              (zip missing (map missing-vars (type-apply subst)))
-                                                                  (fn [(, (, name loc) type)]
-                                                                  "${
-                                                                      name
-                                                                      } (${
-                                                                      (int-to-string loc)
-                                                                      }) : inferred as ${
-                                                                      (type-to-string type)
-                                                                      }")))
-                                                      }"))]
+        nidx                    0
+        names                   (map
+                                    stmts
+                                        (fn [stmt]
+                                        (match stmt
+                                            (sdef name _ _ _) name
+                                            _                 (fatal "Cant infer-several with sdefs? idk maybe you can ..."))))
+        (,, bound vars nidx)    (vars-for-names
+                                    (map stmts (fn [(sdef name _ _ l)] (, name l)))
+                                        nidx
+                                        tenv)
+        (,, bound missing nidx) (find-missing bound nidx (externals-defs stmts))
+        (,, subst types nidx)   (foldr
+                                    (,, map/nil [] nidx)
+                                        (zip vars stmts)
+                                        (infer-several-inner bound))
+        _                       (report-missing subst missing)]
         (zip names (map types (type-apply subst)))))
 
 (,
-    (fn [x]
-        (map (infer-several basic x) (fn [(, _ type)] (type-to-string type))))
+    (errorToString
+        (fn [x]
+            (map (infer-several basic x) (fn [(, _ type)] (type-to-string type)))))
         [(,
         [(@! (defn even [x] (odd (- x 1) x)))
             (@! (defn odd [x y] "${(even x)}"))
@@ -1153,7 +1177,9 @@
             (@! (defn odd [x y] (even x)))
             (@! (defn what [a b c] (+ (even a) (odd b c))))]
             ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])
-        (, [(@! (defn what [a] (+ 2 ho)))] 1)])
+        (,
+        [(@! (defn what [a] (+ 2 ho)))]
+            "Fatal runtime: Missing variables\n - ho (15537) : inferred as int")])
 
 (** ## Testing Errors **)
 
@@ -1298,14 +1324,14 @@
         (, (empty) a)           a
         (, a (empty))           a
         (, (many [a]) (many b)) (many [a ..b])
-        (, (many a) (many [b])) (many [b ..a])
+        (, a (many b))          (many [a ..b])
         _                       (many [first second])))
 
 (defn bag/fold [f init bag]
     (match bag
         (empty)      init
         (one v)      (f init v)
-        (many items) (foldl init items (bag/fold f))))
+        (many items) (foldr init items (bag/fold f))))
 
 (defn concat [one two]
     (match one
@@ -1317,7 +1343,7 @@
     (match bag
         (empty)     []
         (one a)     [a]
-        (many bags) (foldl
+        (many bags) (foldr
                         []
                             bags
                             (fn [res bag]
@@ -1328,7 +1354,7 @@
 
 (,
     bag/to-list
-        [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [10 2 1])])
+        [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [1 2 10])])
 
 (defn pat-names [pat]
     (match pat
@@ -1374,6 +1400,18 @@
                                                     (bag/and bag (pat-externals pat))
                                                         (externals (set/merge bound (pat-names pat)) body)))))))
 
+(,
+    (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
+        [(, (@ hi) [(,, "hi" (value) 16110)])
+        (, (@ [1 2 c]) [(,, "c" (value) 16144)])
+        (,
+        (@ (one two three))
+            [(,, "one" (value) 16158)
+            (,, "two" (value) 16159)
+            (,, "three" (value) 16160)])])
+
+(defn dot [a b c] (a (b c)))
+
 (defn externals-type [bound t]
     (match t
         (tvar _ _)       empty
@@ -1417,7 +1455,7 @@
                         (match hello
                         (one a) a
                         (two b) (+ b c)
-                        _       mx))))))
+                        _       [mx]))))))
 
 (** ## Type Environment populated with Builtins **)
 
@@ -1542,16 +1580,6 @@
             (map/to-list subst)
                 (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
 
-(** ## Commands **)
-
-;(deftype command (cmd/plain string (fn )))
-
-;(defn commands [node] ())
-
-; ok actually, I can't do that until the `state` is legible within this thing ... which seems like a stretch.
-
-
-
 (** ## Exporting as an "evaluator" **)
 
 (deftype inference
@@ -1582,14 +1610,13 @@
             (fn [type] string)
             (fn [tenv string] (option type))))
 
+(def externals-list (fn [x] (bag/to-list (externals set/nil x))))
+
 ((eval
     "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference builtin-env infer-stmtss tenv/merge infer)
-            (analysis
-            externals-stmt
-                (fn [x] (bag/to-list (externals set/nil x)))
-                names)
+            (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)

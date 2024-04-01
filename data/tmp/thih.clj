@@ -988,7 +988,9 @@
 (** ## Monad alert **)
 
 (deftype type-env
-    (type-env (map string scheme) (map string scheme)))
+    ; (values) name => type
+        ; (type...constructors) name => type 
+        (type-env (map string scheme) (map string scheme)))
 
 (deftype (TI a)
     (TI
@@ -1262,7 +1264,8 @@
 
 (def defaultedPreds (withDefaults (fn [vps ts] (concat (map snd vps)))))
 
-(def defaultSubst (withDefaults (fn [vps ts] (zip (map fst vps) ts))))
+(def defaultSubst
+    (withDefaults (fn [vps ts] (map/from-list (zip (map fst vps) ts)))))
 
 (defn infer/expl [ce as (,, i sc alts)]
     (let-> [
@@ -1309,10 +1312,6 @@
         [one]        (let-> [res (ti-then one)] (ti-return [res]))
         [one ..rest] (let-> [res (ti-then one) rest (ti-then (sequence rest))]
                          (ti-return [res ..rest]))))
-
-pred/apply
-
-assump/apply
 
 (defn foldr1 [f lst]
     (match lst
@@ -1371,11 +1370,14 @@ assump/apply
                        (, qs as'') (ti-then (infer/seq ti ce (+++ as' as) bss))]
                        (ti-return (, (+++ ps qs) (+++ as'' as'))))))
 
-(defn infer/program [ce as bindgroups]
+(defn infer/program [tenv ce as bindgroups]
     (ti-run
         (let-> [
             (, ps as') (ti-then (infer/seq infer/binding-group ce as bindgroups))
             s          (ti-then get-subst)
             rs         (ti-then (ti-from-result (reduce ce (preds/apply s ps))))
             s'         (ti-then (ti-from-result (defaultSubst ce [] rs)))]
-            (ti-return (assump/apply (compose-subst s' s) as')))))
+            (ti-return (map (assump/apply (compose-subst s' s)) as')))
+            map/nil
+            tenv
+            0))

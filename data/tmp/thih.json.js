@@ -1466,7 +1466,6 @@ const stdClasses = /*14037*//*14037*//*14038*/$pl$pl$pl/*<14038*/(/*14037*//*140
 
 const preds$sltv = /*14333*/function name_14333(preds) { return /*14339*//*14339*//*14339*//*14340*/foldl/*<14340*/(/*14339*//*14341*/set$slnil/*<14341*/)/*<14339*/(/*14339*//*14342*/preds/*<14342*/)/*<14339*/(/*14339*//*14343*/function name_14343(res) { return /*14343*/function name_14343(pred) { return /*14349*//*14349*//*14350*/set$slmerge/*<14350*/(/*14349*//*14351*/res/*<14351*/)/*<14349*/(/*14349*//*14352*//*14353*/pred$sltv/*<14353*/(/*14352*//*14354*/pred/*<14354*/)/*<14352*/)/*<14349*/ }/*<14343*/ }/*<14343*/)/*<14339*/ }/*<14333*/;
 
-/*15205*/pred$slapply/*<15205*/
 const preds$slapply = /*15209*/function name_15209(subst) { return /*15209*/function name_15209(preds) { return /*15216*//*15216*//*15217*/map/*<15217*/(/*15216*//*15218*//*15219*/pred$slapply/*<15219*/(/*15218*//*15220*/subst/*<15220*/)/*<15218*/)/*<15216*/(/*15216*//*15221*/preds/*<15221*/)/*<15216*/ }/*<15209*/ }/*<15209*/;
 
 const merge = /*604*/function name_604(s1) { return /*604*/function name_604(s2) { return /*604*/function name_604(l) { return /*611*/(function let_611() {const $target = /*615*//*615*//*616*/all/*<616*/(/*615*//*617*/function name_617(v) { return /*621*//*621*//*622*/$eq/*<622*/(/*621*//*623*//*623*//*624*/type$slapply/*<624*/(/*623*//*625*/s1/*<625*/)/*<623*/(/*623*//*626*//*626*//*627*/tvar/*<627*/(/*626*//*628*/v/*<628*/)/*<626*/(/*626*//*688*/l/*<688*/)/*<626*/)/*<623*/)/*<621*/(/*621*//*629*//*629*//*630*/type$slapply/*<630*/(/*629*//*631*/s2/*<631*/)/*<629*/(/*629*//*632*//*632*//*633*/tvar/*<633*/(/*632*//*634*/v/*<634*/)/*<632*/(/*632*//*690*/l/*<690*/)/*<632*/)/*<629*/)/*<621*/ }/*<617*/)/*<615*/(/*615*//*635*//*635*//*637*/set$slintersect/*<637*/(/*635*//*644*//*645*/set$slfrom_list/*<645*/(/*644*//*638*//*639*/map$slkeys/*<639*/(/*638*//*640*/s1/*<640*/)/*<638*/)/*<644*/)/*<635*/(/*635*//*646*//*647*/set$slfrom_list/*<647*/(/*646*//*641*//*642*/map$slkeys/*<642*/(/*641*//*643*/s2/*<643*/)/*<641*/)/*<646*/)/*<635*/)/*<615*/;
@@ -2076,7 +2075,6 @@ const ambiguities = /*14265*/function name_14265(ce) { return /*14265*/function 
 
 const toScheme = /*15037*/function name_15037(t) { return /*15043*//*15043*//*15044*/forall/*<15044*/(/*15043*//*15045*/nil/*<15045*/)/*<15043*/(/*15043*//*15046*//*15046*//*15047*/$eq$gt/*<15047*/(/*15046*//*15048*/nil/*<15048*/)/*<15046*/(/*15046*//*15049*/t/*<15049*/)/*<15046*/)/*<15043*/ }/*<15037*/;
 
-/*15224*/assump$slapply/*<15224*/
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
@@ -2343,7 +2341,7 @@ throw new Error('let pattern not matched 14206. ' + valueToString($target));})(/
 
 const defaultedPreds = /*14360*//*14361*/withDefaults/*<14361*/(/*14360*//*14362*/function name_14362(vps) { return /*14362*/function name_14362(ts) { return /*14367*//*14368*/concat/*<14368*/(/*14367*//*14369*//*14369*//*14370*/map/*<14370*/(/*14369*//*14371*/snd/*<14371*/)/*<14369*/(/*14369*//*14372*/vps/*<14372*/)/*<14369*/)/*<14367*/ }/*<14362*/ }/*<14362*/)/*<14360*/;
 
-const defaultSubst = /*14377*//*14378*/withDefaults/*<14378*/(/*14377*//*14379*/function name_14379(vps) { return /*14379*/function name_14379(ts) { return /*14384*//*14384*//*14385*/zip/*<14385*/(/*14384*//*14386*//*14386*//*14388*/map/*<14388*/(/*14386*//*14389*/fst/*<14389*/)/*<14386*/(/*14386*//*14390*/vps/*<14390*/)/*<14386*/)/*<14384*/(/*14384*//*14391*/ts/*<14391*/)/*<14384*/ }/*<14379*/ }/*<14379*/)/*<14377*/;
+const defaultSubst = /*14377*//*14378*/withDefaults/*<14378*/(/*14377*//*14379*/function name_14379(vps) { return /*14379*/function name_14379(ts) { return /*15878*//*15879*/map$slfrom_list/*<15879*/(/*15878*//*14384*//*14384*//*14385*/zip/*<14385*/(/*14384*//*14386*//*14386*//*14388*/map/*<14388*/(/*14386*//*14389*/fst/*<14389*/)/*<14386*/(/*14386*//*14390*/vps/*<14390*/)/*<14386*/)/*<14384*/(/*14384*//*14391*/ts/*<14391*/)/*<14384*/)/*<15878*/ }/*<14379*/ }/*<14379*/)/*<14377*/;
 
 const ti_err = /*14590*/function name_14590(v) { return /*14596*//*14597*/TI/*<14597*/(/*14596*//*14598*/function name_14598(_) { return /*14598*/function name_14598(_) { return /*14598*/function name_14598(_) { return /*14604*//*14605*/err/*<14605*/(/*14604*//*14606*/v/*<14606*/)/*<14604*/ }/*<14598*/ }/*<14598*/ }/*<14598*/)/*<14596*/ }/*<14590*/;
 
@@ -3767,7 +3765,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 13692');})(/*!*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 13680');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<13680*/ }/*<13680*/ }/*<13680*/ }/*<13680*/;
 
-const infer$slprogram = /*15392*/function name_15392(ce) { return /*15392*/function name_15392(as) { return /*15392*/function name_15392(bindgroups) { return /*15825*//*15827*/ti_run/*<15827*/(/*15825*//*15828*//*15835*//*15836*/ti_then/*<15836*/(/*15835*//*15837*//*15837*//*15837*//*15837*//*15838*/infer$slseq/*<15838*/(/*15837*//*15839*/infer$slbinding_group/*<15839*/)/*<15837*/(/*15837*//*15840*/ce/*<15840*/)/*<15837*/(/*15837*//*15841*/as/*<15841*/)/*<15837*/(/*15837*//*15842*/bindgroups/*<15842*/)/*<15837*/)/*<15835*/(/*15828*//*15828*/function name_15828($let) { return /*15828*/(function match_15828($target) {
+const infer$slprogram = /*15392*/function name_15392(tenv) { return /*15392*/function name_15392(ce) { return /*15392*/function name_15392(as) { return /*15392*/function name_15392(bindgroups) { return /*15886*//*15886*//*15886*//*15886*//*15887*/ti_run/*<15887*/(/*15886*//*15828*//*15835*//*15836*/ti_then/*<15836*/(/*15835*//*15837*//*15837*//*15837*//*15837*//*15838*/infer$slseq/*<15838*/(/*15837*//*15839*/infer$slbinding_group/*<15839*/)/*<15837*/(/*15837*//*15840*/ce/*<15840*/)/*<15837*/(/*15837*//*15841*/as/*<15841*/)/*<15837*/(/*15837*//*15842*/bindgroups/*<15842*/)/*<15837*/)/*<15835*/(/*15828*//*15828*/function name_15828($let) { return /*15828*/(function match_15828($target) {
 if ($target.type === ",") {
 {
 let ps = $target[0];
@@ -3782,7 +3780,7 @@ let rs = $target;
 return /*15828*//*15858*//*15859*/ti_then/*<15859*/(/*15858*//*15868*//*15869*/ti_from_result/*<15869*/(/*15868*//*15860*//*15860*//*15860*//*15861*/defaultSubst/*<15861*/(/*15860*//*15862*/ce/*<15862*/)/*<15860*/(/*15860*//*15863*/nil/*<15863*/)/*<15860*/(/*15860*//*15864*/rs/*<15864*/)/*<15860*/)/*<15868*/)/*<15858*/(/*15828*//*15828*/function name_15828($let) { return /*15828*/(function match_15828($target) {
 {
 let s$qu = $target;
-return /*15865*//*15870*/ti_return/*<15870*/(/*15865*//*15871*//*15871*//*15872*/assump$slapply/*<15872*/(/*15871*//*15873*//*15873*//*15874*/compose_subst/*<15874*/(/*15873*//*15875*/s$qu/*<15875*/)/*<15873*/(/*15873*//*15876*/s/*<15876*/)/*<15873*/)/*<15871*/(/*15871*//*15877*/as$qu/*<15877*/)/*<15871*/)/*<15865*/
+return /*15865*//*15870*/ti_return/*<15870*/(/*15865*//*15871*//*15871*//*15872*/map/*<15872*/(/*15871*//*15881*//*15880*/assump$slapply/*<15880*/(/*15881*//*15873*//*15873*//*15874*/compose_subst/*<15874*/(/*15873*//*15875*/s$qu/*<15875*/)/*<15873*/(/*15873*//*15876*/s/*<15876*/)/*<15873*/)/*<15881*/)/*<15871*/(/*15871*//*15877*/as$qu/*<15877*/)/*<15871*/)/*<15865*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 15828');})(/*!*//*-1*/$let/*<-1*/)/*<15828*/ }/*<15828*/)/*<15828*/
 }
@@ -3792,6 +3790,6 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 15828');})(/*!*/
 }
 }
 }
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 15828');})(/*!*//*-1*/$let/*<-1*/)/*<15828*/ }/*<15828*/)/*<15828*/)/*<15825*/ }/*<15392*/ }/*<15392*/ }/*<15392*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 15828');})(/*!*//*-1*/$let/*<-1*/)/*<15828*/ }/*<15828*/)/*<15828*/)/*<15886*/(/*15886*//*15888*/map$slnil/*<15888*/)/*<15886*/(/*15886*//*15895*/tenv/*<15895*/)/*<15886*/(/*15886*//*15889*/0/*<15889*/)/*<15886*/ }/*<15392*/ }/*<15392*/ }/*<15392*/ }/*<15392*/;
 
 return {type: 'fns', $bar_$gt, $eq$gt, $ex$gt$ex, $pl$pl$pl, TI, add_class, add_inst, add_prelude_classes, all, ambiguities, any, apply_transformers, array$eq, assump$slapply, assump$sltv, by_inst, by_super, candidates, class$slord, class_env, compose_subst, compose_transformers, concat, cons, contains, core_classes, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, defaultSubst, defaultedPreds, defined, eapp, elambda, elet, ematch, entail, enumId, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, err, estr, evar, every, example_insts, ext_subst, filter, find, find_scheme, find_some, foldl, foldr, foldr1, forall, fresh_inst, fst, get_subst, head, id, in_hnf, infer$slalt, infer$slalts, infer$slbinding_group, infer$slexpl, infer$slexpr, infer$slimpls, infer$slpat, infer$slpats, infer$slprim, infer$slprogram, infer$slseq, initial_env, inst$slpred, inst$slpreds, inst$slqual, inst$sltype, insts, intersect, isin, join, kfun, kind$eq, kind_$gts, lift, list$slget, map, map$slhas, map$slok, map$slti, mapi, matchPred, merge, mgu, mguPred, mk_deftype, mklist, mkpair, modify, new_tvar, nil, none, not, ntv, nullSubst, numClasses, num_classes, ok, overlap, pairs, pany, parse_array, parse_expr, parse_pat, parse_stmt, parse_type, partition, pbool, pcon, pint, pprim, pred$eq, pred$slapply, pred$sltv, preds$slapply, preds$sltv, pstr, pvar, qual$eq, qual$slapply, qual$sltv, quantify, reduce, replaces, restricted, result_then, rev, sc_entail, scheme$eq, scheme$slapply, scheme$sltv, sdef, sdeftype, sequence, set$slintersect, sexpr, simplify, simplify_inner, snd, some, split, star, star_con, stdClasses, supers, tapp, tapps, tarrow, tbool, tchar, tcon, tdouble, tenv$slconstr, tenv$slvalue, tfloat, tfn, tgen, ti_err, ti_fail, ti_from_result, ti_return, ti_run, ti_then, tint, tinteger, tlist, toScheme, to_hnf, to_hnfs, to_scheme, tstar, tstring, ttuple2, tunit, tvar, tycon, tycon$eq, tycon$slkind, tycon_$gts, type$eq, type$slapply, type$slhnf, type$slkind, type$sltv, type_$gts, type_env, type_match, tyvar, tyvar$eq, tyvar$slkind, unify, varBind, withDefaults, without, zip, zipWith}

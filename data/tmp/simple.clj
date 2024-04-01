@@ -8,7 +8,11 @@
 
 (def lol (+ 1 hi))
 
-(let [one 23] (+ 1 one))
+(defn xx [one] (+ 1 one))
+
+(def hi (lolz 10 23 aa bb))
+
+(let [one 23] (xx one))
 
 (** Things that should error **)
 

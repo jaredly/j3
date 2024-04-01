@@ -15,13 +15,13 @@ import { Path } from './path';
 export function replacePathWith(
     path: Path[],
     map: Map,
-    onsMap: NUIState['nsMap'],
+    oldNsMap: NUIState['nsMap'],
     newThing: NewThing,
 ): StateUpdate | void {
     if (!path.length) {
         return;
     }
-    const { update, nsMap } = replacePath(path, newThing.idx, map, onsMap);
+    const { update, nsMap } = replacePath(path, newThing.idx, map, oldNsMap);
     return {
         type: 'update',
         map: {

@@ -105,6 +105,7 @@ const actionToUpdate = (
         case 'config:evaluator':
         case 'namespace-rename':
         case 'meta':
+        case 'update':
             return action;
         case 'rich': {
             const node = state.map[action.idx];

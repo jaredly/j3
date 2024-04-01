@@ -1,6 +1,11 @@
 import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { type ClipboardItem } from '../../src/state/clipboard';
-import { State, Mods, StateChange } from '../../src/state/getKeyUpdate';
+import {
+    State,
+    Mods,
+    StateChange,
+    StateUpdate,
+} from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
@@ -237,6 +242,7 @@ export type Action =
 /** Actions that can be turned into a StateChange | UIStatechange */
 export type UpdatableAction =
     | { type: 'config:evaluator'; id: string | string[] | null }
+    | StateUpdate
     | { type: 'hover'; path: Path[] }
     | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
     | { type: 'copy'; items: ClipboardItem[] }

@@ -92,6 +92,7 @@ export const actionToUpdate = (
     action: UpdatableAction,
 ): StateChange | UIStateChange | void => {
     switch (action.type) {
+        case 'update':
         case 'config:evaluator':
             return action;
         case 'hover':
