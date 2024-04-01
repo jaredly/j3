@@ -15,13 +15,9 @@
 
 (typealias impl (, id (array alt)))
 
-(typealias expl (, id scheme (array alt)))
+(typealias expl (,, id scheme (array alt)))
 
 (typealias bindgroup (, (array expl) (array (array impl))))
-
-;(deftype lol (ok bindgroup))
-
-;ok
 
 (deftype expr
     (eprim prim int)
@@ -155,7 +151,7 @@
 
 (defn tycon/kind [(tycon v k)] k)
 
-;(typealias subst (array (, tyvar type)))
+(typealias subst (array (, tyvar type)))
 
 (def nullSubst [])
 
@@ -183,8 +179,6 @@
                                  (list/get rest (- i 1)))))
 
 (deftype (result good bad) (ok good) (err bad))
-
-
 
 (defn map/ok [f arr]
     (match arr
@@ -341,20 +335,32 @@
     parse-type
         [(,
         (@@ (hi ho))
-            (tapp (tcon (tycon "hi" star) 5527) (tcon (tycon "ho" star) 5528) 5526))
+            (tapp
+            (tcon (tycon "hi" (star)) 10930)
+                (tcon (tycon "ho" (star)) 10931)
+                10929))
         (,
         (@@ (fn [x] y))
             (tapp
-            (tapp (tcon (tstar "->") -1) (tcon (tstar "x") 5558) -1)
-                (tcon (tstar "y") 5559)
+            (tapp
+                (tcon (tycon "(->)" (kfun (star) (kfun (star) (star)))) -1)
+                    (tcon (tycon "x" (star)) 10952)
+                    -1)
+                (tcon (tycon "y" (star)) 10953)
                 -1))
         (,
         (@@ (fn [a b] c))
             (tapp
-            (tapp (tcon (tstar "->") -1) (tcon (tstar "a") 5688) -1)
+            (tapp
+                (tcon (tycon "(->)" (kfun (star) (kfun (star) (star)))) -1)
+                    (tcon (tycon "a" (star)) 10982)
+                    -1)
                 (tapp
-                (tapp (tcon (tstar "->") -1) (tcon (tstar "b") 5689) -1)
-                    (tcon (tstar "c") 5690)
+                (tapp
+                    (tcon (tycon "(->)" (kfun (star) (kfun (star) (star)))) -1)
+                        (tcon (tycon "b" (star)) 10983)
+                        -1)
+                    (tcon (tycon "c" (star)) 10984)
                     -1)
                 -1))])
 
@@ -414,11 +420,16 @@
                                                                                     (pairs inits)
                                                                                     (fn [body init]
                                                                                     (let [(, pat value) init]
-                                                                                        (elet [(, (parse-pat pat) (parse-expr value))] body l))))
+                                                                                        (match pat
+                                                                                            (cst/identifier name l) (elet (, [] [[(, name [(, [] (parse-expr value))])]]) body l)))))
         (cst/list [(cst/identifier "letrec" _) (cst/array inits _) body] l) (elet
-                                                                                (map
-                                                                                    (fn [(, pat value)] (, (parse-pat pat) (parse-expr value)))
-                                                                                        (pairs inits))
+                                                                                (,
+                                                                                    []
+                                                                                        (map
+                                                                                        (fn [(, pat value)]
+                                                                                            (match pat
+                                                                                                (cst/identifier name l) [(, name [(, [] (parse-expr value))])]))
+                                                                                            (pairs inits)))
                                                                                     (parse-expr body)
                                                                                     l)
         (cst/list [(cst/identifier "let->" _) (cst/array inits _) body] l)  (foldr
@@ -500,12 +511,9 @@
         (,
         (@@ (let [a 1 b 2] a))
             (elet
-            [(, (pvar "a" 12042) (eprim (pint 1 12043) 12043))]
-                (elet
-                [(, (pvar "b" 12044) (eprim (pint 2 12045) 12045))]
-                    (evar "a" 12046)
-                    12039)
-                12039))
+            (, [] [[(, "a" [(, [] (eprim (pint 1 12043) 12043))])]])
+                (elet (, [] [[(, "b" [(, [] (eprim (pint 2 12045) 12045))])]]) (evar "a" 12046) 12044)
+                12042))
         (,
         (@@ (let-> [v hi] v2))
             (eapp
@@ -541,13 +549,10 @@
                 12265))
         (,
         (@@ (let [x 2] x))
-            (elet
-            [(, (pvar "x" 12290) (eprim (pint 2 12291) 12291))]
-                (evar "x" 12292)
-                12287))
+            (elet (, [] [[(, "x" [(, [] (eprim (pint 2 12291) 12291))])]]) (evar "x" 12292) 12290))
         (,
-        (@@ (let [(, a b) (, 2 3)] 1))
-            (elet
+        ;(@@ (let [(, a b) (, 2 3)] 1))
+            ;(elet
             [(,
                 (pcon "," [(pvar "a" 12322) (pvar "b" 12323)] 12320)
                     (eapp
@@ -652,7 +657,11 @@
                 12828))
         (,
         (@@ (defn a [m] m))
-            (sdef "a" 12866 (elambda "m" 12868 (evar "m" 12869) 12864) 12864))])
+            (sdef
+            "a"
+                12866
+                (elambda (pvar "m" 12868) (evar "m" 12869) 12864)
+                12864))])
 
 (** ## Type Unification **)
 

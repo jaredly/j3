@@ -1443,6 +1443,8 @@
                     [(, "int" (, 0 set/nil))
                         (, "string" (, 0 set/nil))
                         (, "bool" (, 0 set/nil))
+                        (, "map" (, 2 set/nil))
+                        (, "set" (, 1 set/nil))
                         (, "->" (, 2 set/nil))])
                     map/nil)
                 [;(@! (deftype (array a) (cons a (array a)) (nil)))

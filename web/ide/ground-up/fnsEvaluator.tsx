@@ -482,7 +482,9 @@ const compileStmt = (
             Object.assign(env.values, result_values);
             display = names
                 .map(({ 0: name }) =>
-                    typeof result_values[name] !== 'function'
+                    result_values[name] === undefined
+                        ? null
+                        : typeof result_values[name] !== 'function'
                         ? valueToString(result_values[name])
                         : null,
                 )
