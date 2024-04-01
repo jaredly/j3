@@ -979,7 +979,9 @@
 (def example-insts
     [(add-inst [] (isin "ord" tunit))
         (add-inst [] (isin "ord" tchar))
-        (add-inst [] (isin "ord" tint))
+        (add-inst [] (isin "integral" tint))
+        (add-inst [] (isin "num" tint))
+        (add-inst [] (isin "floating" tfloat))
         (add-inst
         [(isin "ord" (tvar (tyvar "a" star) -1))
             (isin "ord" (tvar (tyvar "b" star) -1))]
@@ -993,6 +995,15 @@
                                  (some s) s
                                  _        (fatal "Unknown name ${i}"))]
         [pred ..(concat (map (fn [i'] (by-super ce (isin i' t))) got))]))
+
+(def builtin-env
+    (apply-transformers
+        example-insts
+            (add-prelude-classes initial-env)))
+
+(by-super builtin-env (isin "num" tint))
+
+(by-inst builtin-env (isin "num" tint))
 
 (defn by-inst [ce pred]
     (let [
@@ -1014,6 +1025,8 @@
             (match (by-inst ce p)
             (none)    false
             (some qs) (all (entail ce ps) qs))))
+
+(entail builtin-env [(isin "num" tint)] (isin "num" tint))
 
 (** ## Simplification **)
 
@@ -1481,7 +1494,9 @@
     (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))
         (infer/program
         tenv/nil
-            (add-prelude-classes initial-env)
+            (apply-transformers
+            example-insts
+                (add-prelude-classes initial-env))
             [(!>! "a" (to-scheme tint))
             (!>! "pi" (to-scheme tfloat))
             (!>! "int-to-string" (to-scheme (tfn tint tstring)))
