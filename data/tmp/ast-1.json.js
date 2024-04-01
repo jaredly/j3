@@ -1,25 +1,5 @@
-const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
-const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
-const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
-const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1});
-const equot$slstmt = (v0) => (v1) => ({type: "equot/stmt", 0: v0, 1: v1});
-const equot$slpat = (v0) => (v1) => ({type: "equot/pat", 0: v0, 1: v1});
-const equot$sltype = (v0) => (v1) => ({type: "equot/type", 0: v0, 1: v1});
-const equotquot = (v0) => (v1) => ({type: "equotquot", 0: v0, 1: v1});
-const elambda = (v0) => (v1) => (v2) => (v3) => ({type: "elambda", 0: v0, 1: v1, 2: v2, 3: v3});
-const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2});
-const elet = (v0) => (v1) => (v2) => (v3) => ({type: "elet", 0: v0, 1: v1, 2: v2, 3: v3});
-const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2});
 const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1});
 const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1});
-const pany = (v0) => ({type: "pany", 0: v0});
-const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1});
-const pcon = (v0) => (v1) => (v2) => ({type: "pcon", 0: v0, 1: v1, 2: v2});
-const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1});
-const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1});
-const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
-const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
-const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const pat_loc = /*918*/function name_918(pat) { return /*923*/(function match_923($target) {
 if ($target.type === "pany") {
 {
@@ -128,65 +108,6 @@ return /*1025*/l/*<1025*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 956');})(/*!*//*958*/expr/*<958*/)/*<956*/ }/*<951*/;
 
-const type$slset_loc = /*1026*/function name_1026(loc) { return /*1026*/function name_1026(type) { return /*1032*/(function match_1032($target) {
-if ($target.type === "tvar") {
-{
-let name = $target[0];
-return /*1039*//*1039*//*1040*/tvar/*<1040*/(/*1039*//*1041*/name/*<1041*/)/*<1039*/(/*1039*//*1042*/loc/*<1042*/)/*<1039*/
-}
-}
-if ($target.type === "tapp") {
-{
-let a = $target[0];
-{
-let b = $target[1];
-return /*1048*//*1048*//*1048*//*1049*/tapp/*<1049*/(/*1048*//*1050*//*1050*//*1051*/type$slset_loc/*<1051*/(/*1050*//*1052*/loc/*<1052*/)/*<1050*/(/*1050*//*1053*/a/*<1053*/)/*<1050*/)/*<1048*/(/*1048*//*1054*//*1054*//*1055*/type$slset_loc/*<1055*/(/*1054*//*1056*/loc/*<1056*/)/*<1054*/(/*1054*//*1057*/b/*<1057*/)/*<1054*/)/*<1048*/(/*1048*//*1058*/loc/*<1058*/)/*<1048*/
-}
-}
-}
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-return /*1063*//*1063*//*1064*/tcon/*<1064*/(/*1063*//*1065*/name/*<1065*/)/*<1063*/(/*1063*//*1066*/loc/*<1066*/)/*<1063*/
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 1032');})(/*!*//*1034*/type/*<1034*/)/*<1032*/ }/*<1026*/ }/*<1026*/;
-
-const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
-const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3});
-const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1});
-const type_with_free = /*1101*/function name_1101(type) { return /*1101*/function name_1101(free) { return /*1107*/(function match_1107($target) {
-if ($target.type === "tvar") {
-return /*1114*/type/*<1114*/
-}
-if ($target.type === "tcon") {
-{
-let s = $target[0];
-{
-let l = $target[1];
-return /*1119*/(function match_1119($target) {
-if ($target === true) {
-return /*1125*//*1125*//*1126*/tvar/*<1126*/(/*1125*//*1127*/s/*<1127*/)/*<1125*/(/*1125*//*1128*/l/*<1128*/)/*<1125*/
-}
-return /*1129*/type/*<1129*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 1119');})(/*!*//*1121*//*1121*//*1122*/set$slhas/*<1122*/(/*1121*//*1123*/free/*<1123*/)/*<1121*/(/*1121*//*1124*/s/*<1124*/)/*<1121*/)/*<1119*/
-}
-}
-}
-if ($target.type === "tapp") {
-{
-let a = $target[0];
-{
-let b = $target[1];
-{
-let l = $target[2];
-return /*1135*//*1135*//*1135*//*1136*/tapp/*<1136*/(/*1135*//*1137*//*1137*//*1138*/type_with_free/*<1138*/(/*1137*//*1139*/a/*<1139*/)/*<1137*/(/*1137*//*1140*/free/*<1140*/)/*<1137*/)/*<1135*/(/*1135*//*1141*//*1141*//*1142*/type_with_free/*<1142*/(/*1141*//*1143*/b/*<1143*/)/*<1141*/(/*1141*//*1144*/free/*<1144*/)/*<1141*/)/*<1135*/(/*1135*//*1145*/l/*<1145*/)/*<1135*/
-}
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 1107');})(/*!*//*1109*/type/*<1109*/)/*<1107*/ }/*<1101*/ }/*<1101*/;
-
 const type_loc = /*1146*/function name_1146(type) { return /*1151*/(function match_1151($target) {
 if ($target.type === "tvar") {
 {
@@ -208,16 +129,6 @@ return /*1169*/l/*<1169*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1151');})(/*!*//*1153*/type/*<1153*/)/*<1151*/ }/*<1146*/;
 
-const tcolor = (v0) => ({type: "tcolor", 0: v0});
-const tbold = (v0) => ({type: "tbold", 0: v0});
-const titalic = (v0) => ({type: "titalic", 0: v0});
-const tflash = (v0) => ({type: "tflash", 0: v0});
-const ttext = (v0) => ({type: "ttext", 0: v0});
-const tval = (v0) => ({type: "tval", 0: v0});
-const tloc = (v0) => ({type: "tloc", 0: v0});
-const tnamed = (v0) => (v1) => ({type: "tnamed", 0: v0, 1: v1});
-const tfmted = (v0) => (v1) => ({type: "tfmted", 0: v0, 1: v1});
-const tfmt = (v0) => (v1) => ({type: "tfmt", 0: v0, 1: v1});
 const letters = /*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1220*/"a"/*<1220*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1222*/"b"/*<1222*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1224*/"c"/*<1224*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1226*/"d"/*<1226*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1228*/"e"/*<1228*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1230*/"f"/*<1230*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1232*/"g"/*<1232*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1234*/"h"/*<1234*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1236*/"i"/*<1236*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1238*/"j"/*<1238*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1240*/"k"/*<1240*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1242*/"l"/*<1242*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1244*/"m"/*<1244*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1246*/"n"/*<1246*/)/*<1219*/(/*1219*//*1219*//*1219*//*1219*/cons/*<1219*/(/*1219*//*1248*/"o"/*<1248*/)/*<1219*/(/*1219*//*1219*/nil/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/)/*<1219*/;
 
 const unwrap_fn = /*1250*/function name_1250(t) { return /*1255*/(function match_1255($target) {
@@ -272,7 +183,6 @@ throw new Error('let pattern not matched 1309. ' + valueToString($target));})(/*
 return /*1324*//*1324*//*1325*/$co/*<1325*/(/*1324*//*1326*/t/*<1326*/)/*<1324*/(/*1324*//*1327*/nil/*<1327*/)/*<1324*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1298');})(/*!*//*1300*/t/*<1300*/)/*<1298*/ }/*<1293*/;
 
-/*1734*/tcon/*<1734*/
 const join = /*1736*/function name_1736(sep) { return /*1736*/function name_1736(arr) { return /*1745*/(function match_1745($target) {
 if ($target.type === "nil") {
 return /*1749*/""/*<1749*/
@@ -296,21 +206,24 @@ return /*1764*/`${/*1766*/one/*<1766*/}${/*1768*/sep/*<1768*/}${/*1770*//*1770*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 1745');})(/*!*//*1747*/arr/*<1747*/)/*<1745*/ }/*<1736*/ }/*<1736*/;
 
-const map = /*1775*/function name_1775(list) { return /*1775*/function name_1775(fn) { return /*1782*/(function match_1782($target) {
-if ($target.type === "nil") {
-return /*1786*/nil/*<1786*/
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-{
-let rest = $target[1];
-return /*1796*//*1796*//*1796*/cons/*<1796*/(/*1796*//*1797*//*1798*/fn/*<1798*/(/*1797*//*1799*/one/*<1799*/)/*<1797*/)/*<1796*/(/*1796*//*1800*//*1800*//*1804*/map/*<1804*/(/*1800*//*1805*/rest/*<1805*/)/*<1800*/(/*1800*//*1806*/fn/*<1806*/)/*<1800*/)/*<1796*/
-}
-}
-}
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 1782');})(/*!*//*1784*/list/*<1784*/)/*<1782*/ }/*<1775*/ }/*<1775*/;
-
+const pany = (v0) => ({type: "pany", 0: v0});
+const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1});
+const pcon = (v0) => (v1) => (v2) => ({type: "pcon", 0: v0, 1: v1, 2: v2});
+const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1});
+const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1});
+const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
+const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
+const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
+const tcolor = (v0) => ({type: "tcolor", 0: v0});
+const tbold = (v0) => ({type: "tbold", 0: v0});
+const titalic = (v0) => ({type: "titalic", 0: v0});
+const tflash = (v0) => ({type: "tflash", 0: v0});
+const ttext = (v0) => ({type: "ttext", 0: v0});
+const tval = (v0) => ({type: "tval", 0: v0});
+const tloc = (v0) => ({type: "tloc", 0: v0});
+const tnamed = (v0) => (v1) => ({type: "tnamed", 0: v0, 1: v1});
+const tfmted = (v0) => (v1) => ({type: "tfmted", 0: v0, 1: v1});
+const tfmt = (v0) => (v1) => ({type: "tfmt", 0: v0, 1: v1});
 const pat_to_string = /*816*/function name_816(pat) { return /*821*/(function match_821($target) {
 if ($target.type === "pany") {
 return /*827*/"_"/*<827*/
@@ -341,6 +254,79 @@ return /*864*/"prim"/*<864*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 821');})(/*!*//*823*/pat/*<823*/)/*<821*/ }/*<816*/;
 
+const type$slset_loc = /*1026*/function name_1026(loc) { return /*1026*/function name_1026(type) { return /*1032*/(function match_1032($target) {
+if ($target.type === "tvar") {
+{
+let name = $target[0];
+return /*1039*//*1039*//*1040*/tvar/*<1040*/(/*1039*//*1041*/name/*<1041*/)/*<1039*/(/*1039*//*1042*/loc/*<1042*/)/*<1039*/
+}
+}
+if ($target.type === "tapp") {
+{
+let a = $target[0];
+{
+let b = $target[1];
+return /*1048*//*1048*//*1048*//*1049*/tapp/*<1049*/(/*1048*//*1050*//*1050*//*1051*/type$slset_loc/*<1051*/(/*1050*//*1052*/loc/*<1052*/)/*<1050*/(/*1050*//*1053*/a/*<1053*/)/*<1050*/)/*<1048*/(/*1048*//*1054*//*1054*//*1055*/type$slset_loc/*<1055*/(/*1054*//*1056*/loc/*<1056*/)/*<1054*/(/*1054*//*1057*/b/*<1057*/)/*<1054*/)/*<1048*/(/*1048*//*1058*/loc/*<1058*/)/*<1048*/
+}
+}
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+return /*1063*//*1063*//*1064*/tcon/*<1064*/(/*1063*//*1065*/name/*<1065*/)/*<1063*/(/*1063*//*1066*/loc/*<1066*/)/*<1063*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1032');})(/*!*//*1034*/type/*<1034*/)/*<1032*/ }/*<1026*/ }/*<1026*/;
+
+const type_with_free = /*1101*/function name_1101(type) { return /*1101*/function name_1101(free) { return /*1107*/(function match_1107($target) {
+if ($target.type === "tvar") {
+return /*1114*/type/*<1114*/
+}
+if ($target.type === "tcon") {
+{
+let s = $target[0];
+{
+let l = $target[1];
+return /*1119*/(function match_1119($target) {
+if ($target === true) {
+return /*1125*//*1125*//*1126*/tvar/*<1126*/(/*1125*//*1127*/s/*<1127*/)/*<1125*/(/*1125*//*1128*/l/*<1128*/)/*<1125*/
+}
+return /*1129*/type/*<1129*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1119');})(/*!*//*1121*//*1121*//*1122*/set$slhas/*<1122*/(/*1121*//*1123*/free/*<1123*/)/*<1121*/(/*1121*//*1124*/s/*<1124*/)/*<1121*/)/*<1119*/
+}
+}
+}
+if ($target.type === "tapp") {
+{
+let a = $target[0];
+{
+let b = $target[1];
+{
+let l = $target[2];
+return /*1135*//*1135*//*1135*//*1136*/tapp/*<1136*/(/*1135*//*1137*//*1137*//*1138*/type_with_free/*<1138*/(/*1137*//*1139*/a/*<1139*/)/*<1137*/(/*1137*//*1140*/free/*<1140*/)/*<1137*/)/*<1135*/(/*1135*//*1141*//*1141*//*1142*/type_with_free/*<1142*/(/*1141*//*1143*/b/*<1143*/)/*<1141*/(/*1141*//*1144*/free/*<1144*/)/*<1141*/)/*<1135*/(/*1135*//*1145*/l/*<1145*/)/*<1135*/
+}
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 1107');})(/*!*//*1109*/type/*<1109*/)/*<1107*/ }/*<1101*/ }/*<1101*/;
+
+/*1734*/tcon/*<1734*/
+const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
+const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
+const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
+const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1});
+const equot$slstmt = (v0) => (v1) => ({type: "equot/stmt", 0: v0, 1: v1});
+const equot$slpat = (v0) => (v1) => ({type: "equot/pat", 0: v0, 1: v1});
+const equot$sltype = (v0) => (v1) => ({type: "equot/type", 0: v0, 1: v1});
+const equotquot = (v0) => (v1) => ({type: "equotquot", 0: v0, 1: v1});
+const elambda = (v0) => (v1) => (v2) => (v3) => ({type: "elambda", 0: v0, 1: v1, 2: v2, 3: v3});
+const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2});
+const elet = (v0) => (v1) => (v2) => (v3) => ({type: "elet", 0: v0, 1: v1, 2: v2, 3: v3});
+const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2});
+
+const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
+const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3});
+const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1});
 const expr_to_string = /*725*/function name_725(expr) { return /*730*/(function match_730($target) {
 if ($target.type === "evar") {
 {
@@ -396,4 +382,4 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 795');})(/*!*//*
 return /*814*/"??"/*<814*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 730');})(/*!*//*732*/expr/*<732*/)/*<730*/ }/*<725*/;
 
-return {type: 'fns', eapp, elambda, elet, ematch, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, estr, evar, expr_loc, expr_to_string, join, letters, map, pany, pat_loc, pat_to_string, pbool, pcon, pint, pprim, pstr, pvar, sdef, sdeftype, sexpr, tapp, tbold, tcolor, tcon, tflash, tfmt, tfmted, titalic, tloc, tnamed, ttext, tval, tvar, type$slset_loc, type_loc, type_with_free, unwrap_app, unwrap_fn}
+return {type: 'fns', eapp, elambda, elet, ematch, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, estr, evar, expr_loc, expr_to_string, join, letters, pany, pat_loc, pat_to_string, pbool, pcon, pint, pprim, pstr, pvar, sdef, sdeftype, sexpr, tapp, tbold, tcolor, tcon, tflash, tfmt, tfmted, titalic, tloc, tnamed, ttext, tval, tvar, type$slset_loc, type_loc, type_with_free, unwrap_app, unwrap_fn}

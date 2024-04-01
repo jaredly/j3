@@ -308,6 +308,9 @@
             (map/set names name (, vbls (set/from-list (map/keys ncons))))
             alias))
 
+(defn tenv/add-alias [(tenv a b c aliases) name (, args body)]
+    (tenv a b c (map/set aliases name (, args body))))
+
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
     - type-free: types cannot contain bindings, so every tvar is unbound
@@ -938,7 +941,7 @@
                                                                  (its (len args))
                                                                  }.")
                                                              (let [
-                                                             subst (if (> (len names) 0)
+                                                             subst (if (= (len names) 0)
                                                                        subst
                                                                            (replace-in-type (map/from-list (zip names (map args fst))) subst))]
                                                              (subst-aliases alias subst)))
@@ -1079,7 +1082,12 @@
 (defn infer-several [tenv stmts]
     (let [
         nidx                  0
-        names                 (map stmts (fn [(sdef name _ _ _)] name))
+        names                 (map
+                                  stmts
+                                      (fn [stmt]
+                                      (match stmt
+                                          (sdef name _ _ _) name
+                                          _                 (fatal "Cant infer-several with sdefs? idk maybe you can ..."))))
         (,, bound vars nidx)  (foldr
                                   (,, tenv [] nidx)
                                       stmts
@@ -1131,6 +1139,20 @@
         [(@! (deftype one (two) (three int))) (@! (two 1))]
             "Fatal runtime: cant unify one (10756) and (fn [int] a) (10753)")])
 
+(defn split-stmts [stmts sdefs stypes salias sexps]
+    (match stmts
+        []           (,,, sdefs stypes salias sexps)
+        [one ..rest] (match one
+                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps)
+                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps)
+                         (stypealias name _ args body _) (split-stmts
+                                                             rest
+                                                                 sdefs
+                                                                 stypes
+                                                                 [(,, name args body) ..salias]
+                                                                 sexps)
+                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
+
 (defn infer-defns [tenv stmts]
     (match stmts
         [one] (infer-stmt tenv one)
@@ -1139,6 +1161,47 @@
                       (infer-several tenv stmts)
                       (fn [tenv (, name type)]
                       (tenv/set-type tenv name (generalize tenv type))))))
+
+(defn infer-stypes [tenv' stypes salias]
+    (let [
+        names                    (foldl
+                                     (map salias (fn [(,, name _ _)] name))
+                                         stypes
+                                         (fn [names (sdeftype name _ _ _ _)] [name ..names]))
+        (tenv _ _ types aliases) tenv'
+        bound                    (set/merge
+                                     (set/from-list (map/keys types))
+                                         (set/merge (set/from-list names) (set/from-list (map/keys aliases))))
+        tenv                     (foldl
+                                     tenv/nil
+                                         salias
+                                         (fn [tenv' (,, name args body)]
+                                         (match (bag/to-list
+                                             (externals-type
+                                                 (set/merge bound (set/from-list (map args fst)))
+                                                     body))
+                                             []    (tenv/add-alias tenv' name (, (map args fst) body))
+                                             names (fatal
+                                                       "Unbound types ${(join ", " (map names (fn [(,, name _ _)] name)))}"))))]
+        tenv))
+
+(defn infer-stmtss [tenv' stmts]
+    (let [
+        (,,, sdefs stypes salias sexps) (split-stmts stmts [] [] [] [])
+        tenv                            (infer-stypes tenv' stypes salias)
+        tenv'                           (tenv/merge tenv tenv')
+        tenv2                           (infer-defns tenv' sdefs)
+        _                               (map sexps (infer tenv'))]
+        (tenv/merge tenv tenv2)))
+
+(defn tenv/add-builtin-type [(tenv a b names d) (, name args)]
+    (tenv a b (map/set names name (, args set/nil)) d))
+
+(infer-stmtss
+    (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
+        [(@! (typealias one (, int string)))
+        (@! (deftype (, a b) (, a b)))
+        (@! (deftype one (two float)))])
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 
