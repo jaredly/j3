@@ -767,9 +767,9 @@
                                                 (err "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}")))
         )
 
-;(defalias class (, (array string) (array (qual pred))))
+(typealias class (, (array string) (array (qual pred))))
 
-;(defalias inst (qual pred))
+(typealias inst (qual pred))
 
 (** ## Type Class stuff **)
 
@@ -1110,45 +1110,44 @@
 
 (defn infer/expr [ce as expr]
     (match expr
-        (evar name l)       (match (find-scheme name as)
-                                (err e) (TI
-                                            (fn [subst tenv nidx]
-                                                (match (tenv/value tenv name)
-                                                    (none)        (err "Unbound variable ${name}")
-                                                    (some scheme) (ti-run
-                                                                      (let-> [(=> ps t) (ti-then (fresh-inst scheme))] (ti-return (, ps t)))
-                                                                          subst
-                                                                          tenv
-                                                                          nidx))))
-                                (ok sc) (let-> [(=> ps t) (ti-then (fresh-inst sc))] (ti-return (, ps t))))
-        (eprim prim l)      (infer/prim prim)
-        (eapp target arg l) (let-> [
-                                (, ps te) (ti-then (infer/expr ce as target))
-                                (, qs tf) (ti-then (infer/expr ce as arg))
-                                t         (ntv star)
-                                _         (ti-then (unify (tfn tf t) te))]
-                                (ti-return (, (concat [ps qs]) t)))
-        ;(elet bindings body l)
-        ;(let-> [
-            (, ps as') (ti-then (infer/alts ce as bindings))
-            (, qs t)   (ti-then (infer/expr ce (concat [as' as]) body))]
-            (ti-return (, (concat [ps qs]) t)))))
+        (evar name l)           (match (find-scheme name as)
+                                    (err e) (TI
+                                                (fn [subst tenv nidx]
+                                                    (match (tenv/value tenv name)
+                                                        (none)        (err "Unbound variable ${name}")
+                                                        (some scheme) (ti-run
+                                                                          (let-> [(=> ps t) (ti-then (fresh-inst scheme))] (ti-return (, ps t)))
+                                                                              subst
+                                                                              tenv
+                                                                              nidx))))
+                                    (ok sc) (let-> [(=> ps t) (ti-then (fresh-inst sc))] (ti-return (, ps t))))
+        (eprim prim l)          (infer/prim prim)
+        (eapp target arg l)     (let-> [
+                                    (, ps te) (ti-then (infer/expr ce as target))
+                                    (, qs tf) (ti-then (infer/expr ce as arg))
+                                    t         (ntv star)
+                                    _         (ti-then (unify (tfn tf t) te))]
+                                    (ti-return (, (concat [ps qs]) t)))
+        (ematch target cases l) (fatal
+                                    "This match should have been turned into an elet ${
+                                        (int-to-string l)
+                                        }")
+        (elet bindings body l)  (let-> [
+                                    (, ps as') (ti-then (infer/binding-group ce as bindings))
+                                    (, qs t)   (ti-then (infer/expr ce (concat [as' as]) body))]
+                                    (ti-return (, (concat [ps qs]) t)))))
 
-;(defn infer/alt [ce as (, pat body)]
+(defn infer/alt [ce as (, pats body)]
     (let-> [
-        (,, ps as' ts) (ti-then (infer/pat pat))
+        (,, ps as' ts) (ti-then (infer/pats pats))
         (, qs t)       (ti-then (infer/expr ce (concat [as' as]) body))]
-        (ti-return (,, (concat [ps qs]) as (tfn ts t)))))
+        (ti-return (, (concat [ps qs]) (foldr t ts tfn)))))
 
-foldr
-
-;(defn infer/alts [ce as alts]
-    
-        (let-> [
+(defn infer/alts [ce as alts t]
+    (let-> [
         psts (ti-then (map/ti (infer/alt ce as) alts))
-        ;_
-        ;(ti-then (map/ti (unify t) (map snd psts)))]
-        (ti-return (, ))))
+        _    (ti-then (map/ti (unify t) (map snd psts)))]
+        (ti-return (concat (map fst psts)))))
 
 (defn ti-from-result [result]
     (match result
@@ -1192,7 +1191,7 @@ foldr
         rs'       (ti-then (ti-from-result (defaultedPreds ce (concat [fs gs]) rs)))]
         (ti-return (, ds (without rs rs' pred=)))))
 
-;(defalias ambiguity (, tyvar (array pred)))
+(typealias ambiguity (, tyvar (array pred)))
 
 (defn ambiguities [ce vs ps]
     (map
@@ -1265,7 +1264,7 @@ foldr
 
 (def defaultSubst (withDefaults (fn [vps ts] (zip (map fst vps) ts))))
 
-;(defn infer/expl [ce as (,, i sc alts)]
+(defn infer/expl [ce as (,, i sc alts)]
     (let-> [
         (=> qs t) (ti-then (fresh-inst sc))
         ps        (ti-then (infer/alts ce as alts t))
@@ -1311,8 +1310,6 @@ foldr
         [one ..rest] (let-> [res (ti-then one) rest (ti-then (sequence rest))]
                          (ti-return [res ..rest]))))
 
-(defn apply [x] 1)
-
 pred/apply
 
 assump/apply
@@ -1328,7 +1325,7 @@ assump/apply
 
 (defn intersect [t= one two] (filter (fn [v] (contains two v t=)) one))
 
-;(defn infer/impls [ce as bs]
+(defn infer/impls [ce as bs]
     (let-> [ts (ti-then (map/ti (fn [_] (new-tvar star)) bs))]
         (let [
             is    (map fst bs)
@@ -1359,7 +1356,7 @@ assump/apply
                                 (let [scs' (map (fn [x] (quantify gs (=> rs x))) ts')]
                                 (ti-return (, ds (zipWith !>! is scs')))))))))))
 
-;(defn infer/binding-group [ce as (, es iss)]
+(defn infer/binding-group [ce as (, es iss)]
     (let [as' (map (fn [(,, v sc alts)] (!>! v sc)) es)]
         (let-> [
             (, ps as'') (ti-then (infer/seq infer/impls ce (+++ as' as) iss))
@@ -1374,3 +1371,11 @@ assump/apply
                        (, qs as'') (ti-then (infer/seq ti ce (+++ as' as) bss))]
                        (ti-return (, (+++ ps qs) (+++ as'' as'))))))
 
+(defn infer/program [ce as bindgroups]
+    (ti-run
+        (let-> [
+            (, ps as') (ti-then (infer/seq infer/binding-group ce as bindgroups))
+            s          (ti-then get-subst)
+            rs         (ti-then (ti-from-result (reduce ce (preds/apply s ps))))
+            s'         (ti-then (ti-from-result (defaultSubst ce [] rs)))]
+            (ti-return (assump/apply (compose-subst s' s) as')))))

@@ -2,7 +2,16 @@
 THIH
 
 I really need ... type aliases. pleeease.
+- [ ] ok ... it's almost working? but not quite
+- [ ] ALSO lets get mutually recursive types to be
+  evaluated at the same time.
+  Which means externals needs to start returning `types depended on`.
+  and ...
 
+
+- [ ] I kindof want "collapse" to be ternary.
+  - first level (just hide ns children)
+  - second level (hide ns children & only render an uneditable summary)
 
 ## What's the next step here?
 

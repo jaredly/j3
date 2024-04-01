@@ -4,6 +4,8 @@
 
 ((fn [a] (a "")) ,)
 
+(+ 1 hi)
+
 (** Things that should error **)
 
 [1 "hi"]
