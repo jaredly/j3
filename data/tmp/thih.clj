@@ -201,7 +201,7 @@
 
 (def tfloat (star-con "float"))
 
-(def tinteger (star-con "integer"))
+(def tinteger (star-con "int"))
 
 (def tdouble (star-con "double"))
 
@@ -911,7 +911,8 @@
 (defn modify [(class-env classes defaults) i c]
     (class-env (map/set classes i c) defaults))
 
-(def initial-env (class-env map/nil [tinteger tdouble]))
+(def initial-env
+    (class-env map/nil [tinteger tdouble tfloat tunit t]))
 
 ;(defalias env-transformer (fn [class-env] (option class-env)))
 
@@ -1033,7 +1034,13 @@
     (if (in-hnf p)
         (ok [p])
             (match (by-inst ce p)
-            (none)    (err "context reduction")
+            (none)    (let [(isin name type) p]
+                          (err
+                              "Can't find an instance for class '${
+                                  name
+                                  }' for type ${
+                                  (type->s type)
+                                  }"))
             (some ps) (to-hnfs ce ps))))
 
 (defn simplify-inner [ce rs preds]
@@ -1468,18 +1475,23 @@
 
 (defn preds/apply [subst preds] (map (pred/apply subst) preds))
 
+
+
 (result->s
     (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))
         (infer/program
         tenv/nil
             (add-prelude-classes initial-env)
-            [(!>! "a" (to-scheme (tcon (tycon "int" star) -1)))
-            (!>! "pi" (to-scheme (tcon (tycon "float" star) -1)))
+            [(!>! "a" (to-scheme tint))
+            (!>! "pi" (to-scheme tfloat))
+            (!>! "int-to-string" (to-scheme (tfn tint tstring)))
             (!>!
             "++"
                 (forall [star] (=> [(isin "num" (tgen 0 -1))] (tfn (tgen 0 -1) (tgen 0 -1)))))
             (!>! "+" (to-scheme (tfn tint (tfn tint tint))))]
-            [(, [] [[(, "hello" [(, [(pvar "az" -1)] (@ (++ 1)))])]])]))
+            [(, [] [[(, "hello" [(, [(pvar "a" -1)] (@ (int-to-string 1)))])]])]))
+
+(@ (++ 1 2))
 
 (defn dot [a b c] (a (b c)))
 
