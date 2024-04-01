@@ -19,9 +19,9 @@
 
 (typealias bindgroup (, (array expl) (array (array impl))))
 
-(deftype lol (ok bindgroup))
+;(deftype lol (ok bindgroup))
 
-ok
+;ok
 
 (deftype expr
     (eprim prim int)
@@ -182,6 +182,10 @@ ok
                              (fatal "Index out of range")
                                  (list/get rest (- i 1)))))
 
+(deftype (result good bad) (ok good) (err bad))
+
+
+
 (defn map/ok [f arr]
     (match arr
         []           (ok [])
@@ -237,8 +241,6 @@ ok
     (match items
         []           init
         [one ..rest] (f (foldr init rest f) one)))
-
-(deftype (result good bad) (ok good) (err bad))
 
 (deftype (option a) (some a) (none))
 

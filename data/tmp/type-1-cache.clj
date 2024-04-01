@@ -1004,7 +1004,10 @@
             (@! (typealias (hello a) (,, int id a)))
             (@! (deftype what (name (hello bool))))
             (@! name)]
-            "(fn [(,, int string bool)] what)")])
+            "(fn [(,, int string bool)] what)")
+        (,
+        [(@! (deftype kind (star) (kfun kind kind))) (@! (let [(kfun m n) (star)] 1))]
+            "int")])
 
 (several
     (** This was a test case I needed to figure out. **)
@@ -1212,11 +1215,11 @@
 (defn infer-stmtss [tenv' stmts]
     (let [
         (,,, sdefs stypes salias sexps) (split-stmts stmts [] [] [] [])
-        tenv                            (infer-stypes tenv' stypes salias)
-        tenv'                           (tenv/merge tenv tenv')
-        tenv2                           (infer-defns tenv' sdefs)
-        _                               (map sexps (infer tenv'))]
-        (tenv/merge tenv tenv2)))
+        type-tenv                       (infer-stypes tenv' stypes salias)
+        tenv'                           (tenv/merge type-tenv tenv')
+        val-tenv                        (infer-defns tenv' sdefs)
+        _                               (map sexps (infer (tenv/merge val-tenv tenv')))]
+        (tenv/merge type-tenv val-tenv)))
 
 (defn tenv/add-builtin-type [(tenv a b names d) (, name args)]
     (tenv a b (map/set names name (, args set/nil)) d))
@@ -1225,7 +1228,9 @@
     (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
         [(@! (typealias one (, int string)))
         (@! (deftype (, a b) (, a b)))
-        (@! (deftype one (two int)))])
+        (@! (deftype one (two int)))
+        (@! (deftype kind (star) (kfun kind kind)))
+        (@! (let [(kfun m n) (star)] 1))])
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
 
@@ -1269,14 +1274,20 @@
 
 (defn pat-names [pat]
     (match pat
-        (pany _)               set/nil
-        (pvar name l)          (set/add set/nil name)
-        (pcon string args int) (foldl
-                                   set/nil
-                                       args
-                                       (fn [bound arg] (set/merge bound (pat-names arg))))
-        (pstr string int)      set/nil
-        (pprim prim int)       set/nil))
+        (pany _)           set/nil
+        (pvar name l)      (set/add set/nil name)
+        (pcon name args l) (foldl
+                               set/nil
+                                   args
+                                   (fn [bound arg] (set/merge bound (pat-names arg))))
+        (pstr string int)  set/nil
+        (pprim prim int)   set/nil))
+
+(defn pat-externals [pat]
+    (match pat
+        (** Soo this should be probably a (type)? **)
+        (pcon name args l) (bag/and (one (,, name (value) l)) (many (map args pat-externals)))
+        _                  empty))
 
 (defn externals [bound expr]
     (match expr
@@ -1292,7 +1303,7 @@
         (equotquot cst int)         empty
         (elambda name int body int) (externals (set/add bound name) body)
         (elet pat init body l)      (bag/and
-                                        (externals bound init)
+                                        (bag/and (pat-externals pat) (externals bound init))
                                             (externals (set/merge bound (pat-names pat)) body))
         (eapp target arg int)       (bag/and (externals bound target) (externals bound arg))
         (ematch expr cases int)     (bag/and
@@ -1301,7 +1312,9 @@
                                             empty
                                                 cases
                                                 (fn [bag (, pat body)]
-                                                (bag/and bag (externals (set/merge bound (pat-names pat)) body)))))))
+                                                (bag/and
+                                                    (bag/and bag (pat-externals pat))
+                                                        (externals (set/merge bound (pat-names pat)) body)))))))
 
 (defn externals-type [bound t]
     (match t
@@ -1432,8 +1445,8 @@
                         (, "bool" (, 0 set/nil))
                         (, "->" (, 2 set/nil))])
                     map/nil)
-                [(@! (deftype (array a) (cons a (array a)) (nil)))
-                (@! (deftype (option a) (some a) (none)))
+                [;(@! (deftype (array a) (cons a (array a)) (nil)))
+                ;(@! (deftype (option a) (some a) (none)))
                 (@! (deftype (, a b) (, a b)))
                 (@! (deftype (,, a b c) (,, a b c)))
                 (@! (deftype (,,, a b c d) (,,, a b c d)))
