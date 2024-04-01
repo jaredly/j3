@@ -28,7 +28,7 @@ I really need ... type aliases. pleeease.
 
 ## Wish List
 
-- [ ] "jump to named thing" from the cmd palette
+- [x] "jump to named thing" from the cmd palette
 - [ ] "show type of thing at loc"
 
 

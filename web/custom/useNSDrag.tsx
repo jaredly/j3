@@ -134,7 +134,11 @@ export const useNSDrag = (
                     let tid = children[target.at];
                     targetParent = state.nsMap[tid] as RealizedNamespace;
                     children = targetParent.children.slice();
-                    target = { type: 'ns', idx: tid, at: 0 };
+                    target = {
+                        type: 'ns',
+                        idx: tid,
+                        at: targetParent.collapsed ? children.length : 0,
+                    };
                     tpath = tpath.concat([target]);
                 } else {
                     tpath = tpath.slice();
