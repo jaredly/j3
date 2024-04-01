@@ -8,6 +8,8 @@
 
 (def lol (+ 1 hi))
 
+(let [one 23] (+ 1 one))
+
 (** Things that should error **)
 
 [1 "hi"]

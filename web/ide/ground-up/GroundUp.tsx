@@ -183,7 +183,9 @@ export const GroundUp = ({
                 }}
             />
             <Cursors at={state.at} regs={state.regs} />
-            <CommandPalette state={state} dispatch={store.dispatch} />
+            <WithStore store={store}>
+                <CommandPalette />
+            </WithStore>
             {/* {selTop ? JSON.stringify(results.tops[selTop].data) : null} */}
             {/* {selTop != null ? <ViewJson v={results.tops[selTop].data} /> : null} */}
             {/* {JSON.stringify(state.at)} */}

@@ -1542,6 +1542,16 @@
             (map/to-list subst)
                 (fn [(, k v)] "${k} : ${(type-to-string-raw v)}"))))
 
+(** ## Commands **)
+
+;(deftype command (cmd/plain string (fn )))
+
+;(defn commands [node] ())
+
+; ok actually, I can't do that until the `state` is legible within this thing ... which seems like a stretch.
+
+
+
 (** ## Exporting as an "evaluator" **)
 
 (deftype inference

@@ -54,6 +54,12 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 502');})(/*!*//*
 /*584*//*584*//*590*/$pl/*<590*/(/*584*//*591*/1/*<591*/)/*<584*/(/*584*//*592*/hi/*<592*/)/*<584*/
 const lol = /*597*//*597*//*598*/$pl/*<598*/(/*597*//*599*/1/*<599*/)/*<597*/(/*597*//*600*/hi/*<600*/)/*<597*/;
 
+/*601*/(function let_601() {const $target = /*606*/23/*<606*/;
+{
+let one = $target;
+return /*607*//*607*//*608*/$pl/*<608*/(/*607*//*609*/1/*<609*/)/*<607*/(/*607*//*610*/one/*<610*/)/*<607*/
+};
+throw new Error('let pattern not matched 605. ' + valueToString($target));})(/*!*/)/*<601*/
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
 const nil = ({type: "nil"});
 const even = /*288*/function name_288(x) { return /*294*/(function match_294($target) {

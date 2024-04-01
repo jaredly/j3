@@ -10,16 +10,20 @@ import { selectStart } from '../../../src/state/navigate';
 import { MNode, Map } from '../../../src/types/mcst';
 import { Path } from '../../store';
 import { childPath } from './findTops';
+import { useGetStore, useGlobalState } from '../../custom/store/Store';
 
-export const CommandPalette = ({
-    state,
-    dispatch,
-}: {
-    state: NUIState;
-    dispatch: React.Dispatch<Action>;
-}) => {
+export const CommandPalette = () => {
+    const store = useGetStore();
+    const { state, results } = useGlobalState(store);
+
     const [open, setOpen] = useState(false);
     const ref = React.useRef<HTMLInputElement>(null);
+
+    const [focus, setFocus] = useState<SuperCommand | InputCommand | null>(
+        null,
+    );
+    const [text, setText] = useState('');
+    const [sel, setSel] = useState(0);
 
     useEffect(() => {
         const fn = (evt: KeyboardEvent) => {
@@ -34,13 +38,26 @@ export const CommandPalette = ({
     useEffect(() => {
         if (open) {
             ref.current?.focus();
+            setSel(0);
+            setText('');
+            setFocus(null);
         }
     }, [open]);
 
     const commands = React.useMemo(
-        () => getCommands(state, dispatch),
-        [open, state],
+        () =>
+            focus?.type === 'super'
+                ? focus.children
+                : getCommands(state, store.dispatch),
+        [open, state, focus],
     );
+
+    const filtered = React.useMemo(() => {
+        const needle = text.toLowerCase();
+        return commands.filter((cmd) => {
+            return cmd.title.toLowerCase().includes(needle);
+        });
+    }, [text, commands]);
 
     if (!open) return null;
 
@@ -70,11 +87,44 @@ export const CommandPalette = ({
             >
                 <input
                     ref={ref}
+                    value={text}
+                    onChange={(evt) => {
+                        setText(evt.target.value);
+                        setSel(0);
+                    }}
                     placeholder="Search for commands"
                     onBlur={() => setOpen(false)}
                     onKeyDown={(evt) => {
                         if (evt.key === 'Escape') {
                             setOpen(false);
+                        }
+                        if (evt.key === 'ArrowUp') {
+                            setSel(sel <= 0 ? filtered.length - 1 : sel - 1);
+                        }
+                        if (evt.key === 'ArrowDown') {
+                            setSel(sel >= filtered.length - 1 ? 0 : sel + 1);
+                        }
+                        if (evt.key === 'Enter' || evt.key === 'Return') {
+                            if (focus?.type === 'input') {
+                                if (!focus.validate || focus.validate(text)) {
+                                    focus.action(text);
+                                    setOpen(false);
+                                    return;
+                                }
+                                return;
+                            }
+                            const selected = filtered[sel];
+                            if (!selected) return;
+                            if (selected.type === 'plain') {
+                                selected.action();
+                                setOpen(false);
+                            } else if (
+                                selected.type === 'super' ||
+                                selected.type === 'input'
+                            ) {
+                                setText('');
+                                setFocus(selected);
+                            }
                         }
                     }}
                     style={{
@@ -83,32 +133,73 @@ export const CommandPalette = ({
                         padding: 8,
                         color: 'inherit',
                         border: '1px solid #ccc',
-                        backgroundColor: 'transparent',
+                        background: 'none',
                     }}
                 />
-                {commands.map((cmd, i) => (
-                    <button
-                        key={i}
-                        // onClick={() => cmd.action()}
-                        style={{
-                            padding: '24px 48px',
-                            backgroundColor: 'none',
-                        }}
-                        onMouseDown={(evt) => {
-                            evt.preventDefault();
-                            cmd.action();
-                        }}
-                    >
-                        {cmd.title}
-                    </button>
-                ))}
+                {focus?.type === 'input'
+                    ? focus.detail(text)
+                    : filtered.map((cmd, i) => (
+                          <button
+                              key={i}
+                              style={{
+                                  padding: '24px 48px',
+                                  background: sel === i ? '#333' : 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: 'inherit',
+                              }}
+                              onMouseEnter={() => setSel(i)}
+                              onMouseDown={(evt) => {
+                                  evt.preventDefault();
+                                  if (cmd.type === 'plain') {
+                                      cmd.action();
+                                      setOpen(false);
+                                  } else if (
+                                      cmd.type === 'input' ||
+                                      cmd.type === 'super'
+                                  ) {
+                                      setFocus(cmd);
+                                      setText('');
+                                  }
+                              }}
+                          >
+                              {cmd.title}
+                          </button>
+                      ))}
             </div>
         </div>
     );
 };
 
+type InputCommand = {
+    type: 'input';
+    title: string;
+    detail(input: string): string;
+    action(input: string): void;
+    validate?(input: string): boolean;
+};
+
+type SuperCommand = {
+    type: 'super';
+    title: string;
+    children: Command[];
+};
+
+type Command =
+    | {
+          type: 'plain';
+          title: string;
+          action(): void;
+      }
+    | InputCommand
+    | SuperCommand
+    | {
+          type: 'info';
+          title: string;
+      };
+
 const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
-    const commands: { title: string; action(): void }[] = [];
+    const commands: Command[] = [];
 
     const sel = state.at[0]?.start;
     if (sel) {
@@ -117,6 +208,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
 
         if (meta?.trace) {
             commands.push({
+                type: 'plain',
                 title: 'Remove Trace',
                 action() {
                     dispatch({
@@ -127,6 +219,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
             });
         } else {
             commands.push({
+                type: 'plain',
                 title: 'Trace',
                 action() {
                     dispatch({
@@ -139,6 +232,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
 
         if (meta?.traceTop) {
             commands.push({
+                type: 'plain',
                 title: 'Turn off Trace Top',
                 action() {
                     dispatch({
@@ -149,6 +243,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
             });
         } else {
             commands.push({
+                type: 'plain',
                 title: 'Set Trace Top',
                 action() {
                     dispatch({
@@ -166,6 +261,7 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
                 const path = pathForIdx(num, state);
                 if (path) {
                     commands.push({
+                        type: 'plain',
                         title: 'Jump to idx',
                         action() {
                             dispatch({
@@ -176,17 +272,26 @@ const getCommands = (state: NUIState, dispatch: React.Dispatch<Action>) => {
                     });
                 } else {
                     commands.push({
+                        type: 'info',
                         title: 'Cannot jump to idx',
-                        action() {
-                            // dispatch({
-                            //     type: 'select',
-                            //     at: [{ start: got.path }],
-                            // });
-                        },
                     });
                 }
             }
         }
+
+        commands.push({
+            type: 'input',
+            title: 'Extract to toplevel',
+            action(input) {
+                // TODO
+            },
+            detail(input) {
+                return `(defn ${input} ...)`;
+            },
+            validate(input) {
+                return input.trim().length > 0 && !input.trim().includes(' ');
+            },
+        });
     }
 
     return commands;
