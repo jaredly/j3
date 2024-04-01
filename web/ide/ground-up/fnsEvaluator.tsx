@@ -282,7 +282,7 @@ export const fnsEvaluator = (
                     (display[+id] as any[]).push(
                         ...types.map((type, i) =>
                             type.type === 'some'
-                                ? `${names[i][0]}: ${data['type_to_string'](
+                                ? `${names[i][0]}⁚ ${data['type_to_string'](
                                       type[0],
                                   )}`
                                 : `No type for ${names[i][0]}`,

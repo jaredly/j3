@@ -26,6 +26,12 @@ I really need ... type aliases. pleeease.
     we'll need some ... (include)liness.
 
 
+## Wish List
+
+- [ ] "jump to named thing" from the cmd palette
+- [ ] "show type of thing at loc"
+
+
 ## What's the next step here?
 
 Looks like cached evaluation is working, from what I can tell.

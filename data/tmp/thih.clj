@@ -62,6 +62,12 @@
 
 (deftype kind (star) (kfun kind kind))
 
+(deftype tyvar (tyvar string kind))
+
+(deftype tycon (tycon string kind))
+
+(** ## deriving eq and show ... lol **)
+
 (defn kind= [a b]
     (match (, a b)
         (, (star) (star))           true
@@ -75,8 +81,6 @@
         (star)     "*"
         (kfun a b) "(${(kind->s a)}->${(kind->s b)})"))
 
-(deftype tyvar (tyvar string kind))
-
 (defn tyvar= [(tyvar name kind) (tyvar name' kind')]
     (if (= name name')
         (kind= kind kind')
@@ -84,7 +88,7 @@
 
 (defn type->s [a]
     (match a
-        (tvar (tyvar name kind) _) "${name} : ${(kind->s kind)}"
+        (tvar (tyvar name kind) _) "var ${name} : ${(kind->s kind)}"
         (tapp target arg _)        "(${(type->s target)} ${(type->s arg)})"
         (tcon con _)               (tycon->s con)
         (tgen num _)               "gen${(int-to-string num)}"))
@@ -98,14 +102,12 @@
         (, (tcon tycon _) (tcon tycon' _))            (tycon= tycon tycon')
         (, (tgen n _) (tgen n' _))                    (= n n')))
 
-(deftype tycon (tycon string kind))
-
 (defn tycon= [(tycon name kind) (tycon name' kind')]
     (if (= name name')
         (kind= kind kind')
             false))
 
-(defn tycon->s [(tycon name kind)] "${name} : ${(kind->s kind)}")
+(defn tycon->s [(tycon name kind)] "[${name} : ${(kind->s kind)}]")
 
 (defn star-con [name] (tcon (tycon name star) -1))
 
@@ -694,6 +696,9 @@
 
 (deftype pred (isin string type))
 
+(defn pred->s [(isin name type)]
+    "class ${name} <- ${(type->s type)}")
+
 (defn qual= [(=> preds t) (=> preds' t') t=]
     (if (array= preds preds' pred=)
         (t= t t')
@@ -758,14 +763,12 @@
                                             (ok s1) (match (mgu (type/apply s1 r) (type/apply s1 r'))
                                                         (err e) (err e)
                                                         (ok s2) (ok (compose-subst s2 s1))))
-        ;(let [s1 (mgu l l') s2 (mgu (type/apply s1 r) (type/apply s1 r'))]
-            (compose-subst s2 s1))
         (, (tvar u l) t)                (ok (varBind u t))
         (, t (tvar u l))                (ok (varBind u t))
-        (, (tcon tc1 _) (tcon tc2 _))   (if (= tc1 tc2)
+        (, (tcon tc1 _) (tcon tc2 _))   (if (tycon= tc1 tc2)
                                             (ok map/nil)
-                                                (err "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}")))
-        )
+                                                (err "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}"))
+        (, a b)                         (err "Cant unify ${(jsonify a)} and ${(type->s b)}")))
 
 (typealias class (, (array string) (array (qual pred))))
 
@@ -788,6 +791,10 @@
     (class-env
         (map string (, (array string) (array (qual pred))))
             (array type)))
+
+(def class-env/nil (class-env map/nil []))
+
+(def class-env/std (class-env ))
 
 (defn supers [(class-env classes _) id]
     (match (map/get classes id)
@@ -991,6 +998,8 @@
     ; (values) name => type
         ; (type...constructors) name => type 
         (type-env (map string scheme) (map string scheme)))
+
+(def tenv/nil (type-env map/nil map/nil))
 
 (deftype (TI a)
     (TI
@@ -1240,7 +1249,7 @@
                 [(all (type= (tvar v -1)) ts)
                     (any (fn [x] (contains numClasses x =)) is)
                     (all (fn [x] (contains stdClasses x =)) is)]
-                    id))
+                    (fn [x] x)))
             []
                 (filter (fn [t'] (all (entail ce []) (map (fn [i] (isin i t')) is))) defaults))))
 
@@ -1381,3 +1390,34 @@
             map/nil
             tenv
             0))
+
+(result->s
+    (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))
+        (infer/program
+        tenv/nil
+            (add-prelude-classes initial-env)
+            [(!>! "a" (to-scheme (tcon (tycon "int" star) -1)))
+            (!>! "+" (to-scheme (tfn tint (tfn tint tint))))]
+            [(, [] [[(, "hello" [(, [] (@ (+ a)))])]])]))
+
+(defn result->s [v->s v]
+    (match v
+        (ok v)  (v->s v)
+        (err e) e))
+
+(defn assump->s [(!>! name (forall kinds (=> preds type)))]
+    "${
+        name
+        }:${
+        (match kinds
+            [] ""
+            _  " arg kinds: ${(join "," (map kind->s kinds))}")
+        }${
+        (match preds
+            [] ""
+            _  " typeclasses: ${(join "," (map pred->s preds))}")
+        } ${
+        (type->s type)
+        }")
+
+13915

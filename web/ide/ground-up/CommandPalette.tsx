@@ -16,6 +16,7 @@ import {
     replacePathWith,
 } from '../../../src/state/replacePathWith';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
+import { FullEvalator } from './Evaluators';
 
 export const CommandPalette = () => {
     const store = useGetStore();
@@ -296,108 +297,7 @@ const getCommands = (
                 type: 'input',
                 title: 'Extract to toplevel',
                 action(input) {
-                    const state = store.getState();
-                    const path = state.at[0].start;
-
-                    const nsParent = path.findLast(
-                        (p) => p.type === 'ns',
-                    ) as Extract<Path, { type: 'ns' }>;
-                    const nsId = path.find((p) => p.type === 'ns-top')?.idx;
-                    if (!nsId || !nsParent) {
-                        throw new Error('cant find toplevel ns');
-                    }
-                    const atTop = (state.nsMap[nsId] as RealizedNamespace).top;
-
-                    const errors = {};
-                    const topNode = fromMCST(atTop, state.map);
-                    const stmt = ev.parse(topNode, errors);
-                    if (!stmt) {
-                        throw new Error(`no stmt`);
-                    }
-                    const topExternals = ev.dependencies(stmt);
-                    const extMap: Record<string, true> = {};
-                    topExternals.forEach((ex) => (extMap[ex.name] = true));
-
-                    const at = path[path.length - 1].idx;
-                    const node = fromMCST(at, state.map);
-                    const parsed = ev.parse(node, errors);
-                    if (!parsed) {
-                        throw new Error(`doesn't parse`);
-                    }
-
-                    const externals = ev
-                        .dependencies(parsed)
-                        .filter((ex) => !extMap[ex.name]);
-
-                    const nid = newId([input], state.nidx());
-                    const repl = externals.length
-                        ? newListLike('list', state.nidx(), [
-                              nid,
-                              ...externals.map((ex) =>
-                                  newId([ex.name], state.nidx()),
-                              ),
-                          ])
-                        : nid;
-
-                    const newTop = newListLike('list', state.nidx(), [
-                        newId(
-                            [externals.length ? 'defn' : 'def'],
-                            state.nidx(),
-                        ),
-                        newId([input], state.nidx()),
-                        ...(externals.length
-                            ? [
-                                  newListLike(
-                                      'array',
-                                      state.nidx(),
-                                      externals.map((ex) =>
-                                          newId([ex.name], state.nidx()),
-                                      ),
-                                  ),
-                              ]
-                            : []),
-                        { idx: at, map: {}, selection: [] },
-                    ]);
-
-                    // ev.addStatements
-                    const update = replacePathWith(
-                        path.slice(0, -1),
-                        state.map,
-                        state.nsMap,
-                        repl,
-                    );
-
-                    if (update) {
-                        Object.assign(update.map, newTop.map);
-                        if (!update.nsMap) {
-                            update.nsMap = {};
-                        }
-                        const nns = state.nidx();
-                        update.nsMap[nns] = {
-                            children: [],
-                            top: newTop.idx,
-                            id: nns,
-                            type: 'normal',
-                        };
-                        const parent = state.nsMap[
-                            nsParent.idx
-                        ] as RealizedNamespace;
-                        const children = parent.children.slice();
-                        children.splice(nsParent.at, 0, nns);
-                        update.nsMap[nsParent.idx] = {
-                            ...parent,
-                            children,
-                        };
-                        update.selection = path
-                            .slice(0, path.indexOf(nsParent) + 1)
-                            .concat([
-                                { type: 'ns-top', idx: nns },
-                                { type: 'end', idx: newTop.idx },
-                            ]);
-
-                        console.log('upate', update);
-                        dispatch(update);
-                    }
+                    extractToToplevel(store, ev, input, dispatch);
                 },
                 detail(input) {
                     return `(defn ${input} ...)`;
@@ -407,6 +307,25 @@ const getCommands = (
                         input.trim().length > 0 && !input.trim().includes(' ')
                     );
                 },
+            });
+
+            const res = store.getResults();
+            commands.push({
+                type: 'super',
+                title: 'Jump to...',
+                children: Object.entries(res.jumpToName).map(([name, loc]) => ({
+                    type: 'plain',
+                    title: name,
+                    action() {
+                        const path = pathForIdx(loc, store.getState());
+                        if (path != null) {
+                            dispatch({
+                                type: 'select',
+                                at: [{ start: path }],
+                            });
+                        }
+                    },
+                })),
             });
         }
     }
@@ -514,3 +433,102 @@ export const pathForIdx = (
     }
     // Ok now trace it all back
 };
+
+function extractToToplevel(
+    store: Store,
+    ev: FullEvalator<any, any, any>,
+    input: string,
+    dispatch: React.Dispatch<Action>,
+) {
+    const state = store.getState();
+    const path = state.at[0].start;
+
+    const nsParent = path.findLast((p) => p.type === 'ns') as Extract<
+        Path,
+        { type: 'ns' }
+    >;
+    const nsId = path.find((p) => p.type === 'ns-top')?.idx;
+    if (!nsId || !nsParent) {
+        throw new Error('cant find toplevel ns');
+    }
+    const atTop = (state.nsMap[nsId] as RealizedNamespace).top;
+
+    const errors = {};
+    const topNode = fromMCST(atTop, state.map);
+    const stmt = ev.parse(topNode, errors);
+    if (!stmt) {
+        throw new Error(`no stmt`);
+    }
+    const topExternals = ev.dependencies(stmt);
+    const extMap: Record<string, true> = {};
+    topExternals.forEach((ex) => (extMap[ex.name] = true));
+
+    const at = path[path.length - 1].idx;
+    const node = fromMCST(at, state.map);
+    const parsed = ev.parse(node, errors);
+    if (!parsed) {
+        throw new Error(`doesn't parse`);
+    }
+
+    const externals = ev.dependencies(parsed).filter((ex) => !extMap[ex.name]);
+
+    const nid = newId([input], state.nidx());
+    const repl = externals.length
+        ? newListLike('list', state.nidx(), [
+              nid,
+              ...externals.map((ex) => newId([ex.name], state.nidx())),
+          ])
+        : nid;
+
+    const newTop = newListLike('list', state.nidx(), [
+        newId([externals.length ? 'defn' : 'def'], state.nidx()),
+        newId([input], state.nidx()),
+        ...(externals.length
+            ? [
+                  newListLike(
+                      'array',
+                      state.nidx(),
+                      externals.map((ex) => newId([ex.name], state.nidx())),
+                  ),
+              ]
+            : []),
+        { idx: at, map: {}, selection: [] },
+    ]);
+
+    // ev.addStatements
+    const update = replacePathWith(
+        path.slice(0, -1),
+        state.map,
+        state.nsMap,
+        repl,
+    );
+
+    if (!update) {
+        return;
+    }
+
+    Object.assign(update.map, newTop.map);
+    if (!update.nsMap) {
+        update.nsMap = {};
+    }
+    const nns = state.nidx();
+    update.nsMap[nns] = {
+        children: [],
+        top: newTop.idx,
+        id: nns,
+        type: 'normal',
+    };
+    const parent = state.nsMap[nsParent.idx] as RealizedNamespace;
+    const children = parent.children.slice();
+    children.splice(nsParent.at, 0, nns);
+    update.nsMap[nsParent.idx] = {
+        ...parent,
+        children,
+    };
+    update.selection = path.slice(0, path.indexOf(nsParent) + 1).concat([
+        { type: 'ns-top', idx: nns },
+        { type: 'end', idx: newTop.idx },
+    ]);
+
+    dispatch(update);
+}
