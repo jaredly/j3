@@ -912,7 +912,7 @@
     (class-env (map/set classes i c) defaults))
 
 (def initial-env
-    (class-env map/nil [tinteger tdouble tfloat tunit t]))
+    (class-env map/nil [tinteger tdouble tfloat tunit]))
 
 ;(defalias env-transformer (fn [class-env] (option class-env)))
 

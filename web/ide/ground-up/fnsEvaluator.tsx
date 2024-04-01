@@ -523,8 +523,6 @@ function assembleExternals(
         if (env.values[name] == null) {
             if (san[sanitize(name)]) {
                 values[sanitize(name)] = san[sanitize(name)];
-            } else {
-                console.warn(`Name not defined?`, name);
             }
         } else {
             values[sanitize(name)] = env.values[name];
