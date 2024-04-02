@@ -193,7 +193,10 @@ export const fnsEvaluator = (
             );
 
             sorted.forEach((group) => {
-                if (group.every((item) => item.stmt.type === 'sexpr')) {
+                if (
+                    group.every((item) => item.stmt.type === 'sexpr') &&
+                    group[0].top.top !== target
+                ) {
                     return;
                 }
                 const result = this.addStatements(
@@ -203,6 +206,14 @@ export const fnsEvaluator = (
                     {},
                     {},
                 );
+                if (
+                    group[0].top.top === target &&
+                    'js' in result &&
+                    typeof result.js === 'string'
+                ) {
+                    ret = result.js;
+                    return;
+                }
                 env.js.push((result as any).js);
                 env = result.env;
                 allNames.push(
@@ -210,14 +221,6 @@ export const fnsEvaluator = (
                         .flatMap(({ names }) => names)
                         .filter((n) => n.kind === 'value'),
                 );
-
-                if (
-                    group[0].top.top === target &&
-                    'js' in result &&
-                    typeof result.js === 'string'
-                ) {
-                    ret = result.js;
-                }
             });
 
             if (target != null && ret == null) {
