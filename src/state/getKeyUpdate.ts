@@ -727,6 +727,25 @@ export const getKeyUpdate = (
                     .concat(nat.selection),
             };
         }
+
+        if (
+            node.type === 'list' ||
+            node.type === 'array' ||
+            (node.type === 'identifier' && pos === 0)
+        ) {
+            const n = nidx();
+            return replacePathWith(fullPath.slice(0, -1), map, nsMap, {
+                map: {
+                    [n]: { type: 'spread', loc: n, contents: idx },
+                },
+                idx: n,
+                selection: [
+                    { idx: n, type: 'spread-contents' },
+                    { idx, type: 'start' },
+                ],
+            });
+        }
+
         if (node.type !== 'identifier') {
             const at = newBlank(nidx());
             const one = newRecordAccess(at.idx, '', nidx(), nidx());

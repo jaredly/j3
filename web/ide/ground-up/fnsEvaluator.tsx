@@ -521,7 +521,9 @@ function assembleExternals(
 ) {
     const provided = names?.map((obj) => obj[0]) ?? [];
     const needed = unique(
-        externals.map((ex) => ex[0]).concat(['$trace', 'jsonify']),
+        externals
+            .map((ex) => ex[0])
+            .concat(['$trace', 'jsonify', 'valueToString']),
     ).filter(
         // Skip recursive self-calls
         (name) => !provided.includes(name),

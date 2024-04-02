@@ -1261,30 +1261,47 @@
 
 (defn ti-fail [e] (TI (fn [a b c] (err e))))
 
+(defn unzip [list]
+    (match list
+        []               (, [] [])
+        [(, a b) ..rest] (let [(, left right) (unzip rest)] (, [a ..left] [b ..right]))))
+
 (defn infer/expr [ce as expr]
     (match expr
-        (evar name l)           (match (find-scheme name as)
-                                    (err e) (ti-err e)
-                                    (ok sc) (let-> [(=> ps t) (ti-then (fresh-inst sc))] (ti-return (, ps t))))
-        (eprim prim l)          (infer/prim prim)
-        (eapp target arg l)     (let-> [
-                                    (, ps target-type) (ti-then (infer/expr ce as target))
-                                    (, qs arg-type)    (ti-then (infer/expr ce as arg))
-                                    result-var         (ntv star)
-                                    _                  (ti-then (unify (tfn arg-type result-var) target-type))]
-                                    (ti-return (, (concat [ps qs]) result-var)))
-        (elambda pat body l)    (infer/expr
-                                    ce
-                                        as
-                                        (elet (, [] [[(, "lambda-arg" [(, [pat] body)])]]) (evar "lambda-arg" l) l))
-        (ematch target cases l) (fatal
-                                    "This match should have been turned into an elet ${
-                                        (int-to-string l)
-                                        }")
-        (elet bindings body l)  (let-> [
-                                    (, ps as') (ti-then (infer/binding-group ce as bindings))
-                                    (, qs t)   (ti-then (infer/expr ce (concat [as' as]) body))]
-                                    (ti-return (, (concat [ps qs]) t)))))
+        (evar name l)            (match (find-scheme name as)
+                                     (err e) (ti-err e)
+                                     (ok sc) (let-> [(=> ps t) (ti-then (fresh-inst sc))] (ti-return (, ps t))))
+        (estr first templates l) (let-> [
+                                     results        (ti-then
+                                                        (map/ti (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates)))
+                                     (, ps types)   (ti-then (ti-return (unzip results)))
+                                     results'       (ti-then
+                                                        (map/ti
+                                                            (fn [_]
+                                                                (fresh-inst (forall [star] (=> [(isin "show" (tgen 0 -1))] (tgen 0 -1)))))
+                                                                types))
+                                     (, ps' types') (ti-then (ti-return (unzip (map (fn [(=> a b)] (, a b)) results'))))
+                                     _              (ti-then (map/ti (fn [(, a b)] (unify a b)) (zip types types')))]
+                                     (ti-return (, (concat [(concat ps) (concat ps')]) tstring)))
+        (eprim prim l)           (infer/prim prim)
+        (eapp target arg l)      (let-> [
+                                     (, ps target-type) (ti-then (infer/expr ce as target))
+                                     (, qs arg-type)    (ti-then (infer/expr ce as arg))
+                                     result-var         (ntv star)
+                                     _                  (ti-then (unify (tfn arg-type result-var) target-type))]
+                                     (ti-return (, (concat [ps qs]) result-var)))
+        (elambda pat body l)     (infer/expr
+                                     ce
+                                         as
+                                         (elet (, [] [[(, "lambda-arg" [(, [pat] body)])]]) (evar "lambda-arg" l) l))
+        (ematch target cases l)  (fatal
+                                     "This match should have been turned into an elet ${
+                                         (int-to-string l)
+                                         }")
+        (elet bindings body l)   (let-> [
+                                     (, ps as') (ti-then (infer/binding-group ce as bindings))
+                                     (, qs t)   (ti-then (infer/expr ce (concat [as' as]) body))]
+                                     (ti-return (, (concat [ps qs]) t)))))
 
 (defn infer/alt [ce as (, pats body)]
     (let-> [
@@ -1344,7 +1361,9 @@
                     gs  (without (set/to-list (foldr1 set/merge vss)) fs tyvar=)]
                     (let-> [
                         (, ds rs) (ti-then
-                                      (split ce fs (foldr1 (intersect tyvar=) (map set/to-list vss)) ps'))]
+                                      (** This intersect call is the part that makes it so that, if you have multiple bindings in a group,
+                                          the only variables that can have typeclass constraints are ones that appear in every binding. **)
+                                          (split ce fs (foldr1 (intersect tyvar=) (map set/to-list vss)) ps'))]
                         (if (restricted bs)
                             (let [
                                 gs'  (without gs (set/to-list (preds/tv rs)) tyvar=)
@@ -1409,13 +1428,15 @@
 
 (typealias ambiguity (, tyvar (array pred)))
 
-(defn ambiguities [ce vs ps]
+(defn ambiguities [ce known-variables preds]
     (map
         (fn [v]
             (,
                 v
-                    (filter (fn [pred] (contains (set/to-list (pred/tv pred)) v tyvar=)) ps)))
-            (without (set/to-list (preds/tv ps)) vs tyvar=)))
+                    (filter
+                    (fn [pred] (contains (set/to-list (pred/tv pred)) v tyvar=))
+                        preds)))
+            (without (set/to-list (preds/tv preds)) known-variables tyvar=)))
 
 (def numClasses
     ["num"
@@ -1458,15 +1479,41 @@
             []
                 (filter (fn [t'] (all (entail ce []) (map (fn [i] (isin i t')) is))) defaults))))
 
-(defn withDefaults [f ce vs ps]
-    (let [vps (ambiguities ce vs ps) tss (map (candidates ce) vps)]
-        (if (any
-            (fn [x]
-                (match x
-                    [] true
-                    _  false))
-                tss)
-            (err "Cannot resolve ambiguity")
+(defn joinor [sep default items]
+    (match items
+        [] default
+        _  (join sep items)))
+
+(defn tss->s [tss]
+    (joinor
+        "\n"
+            "no tss"
+            (map (dot (joinor "; " "[empty]") (map type->s)) tss)))
+
+(defn vps->s [vps]
+    (joinor
+        "\n"
+            "no vps"
+            (map
+            (fn [(, a preds)] "${(tyvar->s a)} ${(join ";" (map pred->s preds))}")
+                vps)))
+
+(defn empty [x]
+    (match x
+        [] true
+        _  false))
+
+(defn withDefaults [f ce known-variables predicates]
+    (let [
+        vps (ambiguities ce known-variables predicates)
+        tss (map (candidates ce) vps)]
+        (if (any empty tss)
+            (err
+                "Cannot resolve ambiguity vps: ${
+                    (vps->s vps)
+                    } tss: ${
+                    (tss->s tss)
+                    }")
                 (ok (f vps (map head tss))))))
 
 (def defaultedPreds (withDefaults (fn [vps ts] (concat (map snd vps)))))
@@ -1491,27 +1538,59 @@
 
 (def types->s (dot (join "\n") (map type->s)))
 
-(result->s
-    (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))
-        (infer/program
+(defn parse-binding [jcst]
+    (match jcst
+        (cst/list [(cst/identifier "fn" l) (cst/array items _) body] _) (, "it" [(, (map parse-pat items) (parse-expr body))])
+        _                                                               (, "it" [(, [] (parse-expr jcst))])))
+
+(defn infer-and-show [tenv class-env assumptions jcst] )
+
+(,
+    (fn [v]
+        (program-results->s
+            (infer/program
+                tenv/nil
+                    (apply-transformers
+                    example-insts
+                        (add-prelude-classes initial-env))
+                    builtin-assumptions
+                    [(, [] [[(parse-binding v)]])])))
+        [(, (@@ 11) "it:  int")
+        (, (@@ (+ 1 2)) "it:  int")
+        (,
+        (@@ (fn [a] (+ 1 a)))
+            "it: kinds: *; tc: [gen0 => num];  (fn [gen0] gen0)")
+        (, (@@ "Hello") "it:  (list char)")
+        (,
+        (@@ (fn [a] "Hello ${a}"))
+            "it: kinds: *; tc: [gen0 => show];  (fn [gen0] (list char))")
+        (,
+        (@@
+            (fn [a]
+                (if x
+                    1
+                        2)))
+            )])
+
+(def program-results->s
+    (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
+
+(program-results->s
+    (infer/program
         tenv/nil
             (apply-transformers
             example-insts
                 (add-prelude-classes initial-env))
-            [(!>! "a" (to-scheme tint))
-            (!>! "pi" (to-scheme tfloat))
-            (!>! "int-to-string" (to-scheme (tfn tint tstring)))
-            (!>!
-            "++"
-                (forall
-                [star]
-                    (=> [(isin "num" (tgen 0 -1))] (tfn (tgen 0 -1) (tfn (tgen 0 -1) (tgen 0 -1))))))
-            (!>! "+" (to-scheme (tfn tint (tfn tint tint))))]
+            builtin-assumptions
             [(,
             []
                 [[;(, "hello" [(, [(pvar "a" -1)] (@ (int-to-string 1)))])
                 ;(, "one" [(, [(pvar "a" -1)] (@ 1))])
-                (, "twoz" [(, [(pvar "am" -1)] (parse-expr (@@ (fn [x] (++ am x)))))])
+                (, "aa" [(, [(pvar "a" -1)] (@ (, 1 "hi ${a}")))])
+                ;(, "m" [(, [(pvar "la" -1)] (@ (show la)))])
+                ;(, "id" [(, [(pvar "a" -1)] (@ a))])
+                ;(, "lol" [(, [(pvar "b" -1)] (@ id))])
+                ;(, "twoz" [(, [(pvar "am" -1)] (parse-expr (@@ (fn [x] (+ am x)))))])
                 ;(, "two" [(, [(pvar "a" -1)] (parse-expr (@@ (++ a 2))))])]])]))
 
 (** Ok what I want to do
@@ -1544,40 +1623,6 @@
 
 (def g2 (tgen 2 -1))
 
-(def builtin-assumptions
-    (let [
-        map01   (tmap g0 g1)
-        biNum   (generic ["num"] (tfns [g0 g0] g0))
-        uNum    (generic ["num"] (tfn g0 g0))
-        boolOrd (generic ["ord"] (tfns [g0 g0] tbool))
-        boolEq  (generic ["eq"] (tfns [g0 g0] tbool))
-        kv      (generics [["ord"] []])]
-        
-            (map
-            (fn [(, name (, kinds qual))] (!>! name (forall kinds qual)))
-                [(, "+" biNum)
-                (, "-" biNum)
-                (, "*" biNum)
-                (, "negate" uNum)
-                (, "abs" uNum)
-                (, "fromInt" (generic ["num"] (tfn tint g0)))
-                (, ">" boolOrd)
-                (, ">=" boolOrd)
-                (, "<" boolOrd)
-                (, "<=" boolOrd)
-                (, "=" boolEq)
-                (, "!=" boolEq)
-                (, "show" (generic ["show"] (tfn g0 tstring)))
-                (, "map/nil" (kv (tmap g0 g1)))
-                (, "map/set" (kv (tfns [map01 g0 g1] map01)))
-                (, "map/get" (kv (tfns [map01 g0] g1)))
-                (, "map/map" (generics [["ord"] [] []] (tfns [map01 (tfn g1 g2)] (tmap g0 g2))))
-                (, "map/merge" (kv (tfns [map01 map01] map01)))
-                (, "map/values" (kv (tfns [map01] (tapp tlist g1 -1))))
-                (, "map/keys" (kv (tfns [map01] (tapp tlist g0 -1))))
-                (, "map/to-list" (kv (tfns [map01] (tapp tlist (mkpair g0 g1) -1))))
-                (, "map/from-list" (kv (tfns [(tapp tlist (mkpair g0 g1) -1)] map01)))])))
-
 (defn toption [v]
     (tapp (tcon (tycon "option" (kfun star star)) -1) v -1))
 
@@ -1587,24 +1632,156 @@
             err
             -1))
 
+(defn mkcon [v] (tcon (tycon v star) -1))
+
+(def tratio (tcon (tycon "ratio" (kfun star star)) -1))
+
+(def trational (tapp tratio tint -1))
+
+(def builtin-assumptions
+    (let [
+        map01   (tmap g0 g1)
+        biNum   (generic ["num"] (tfns [g0 g0] g0))
+        uNum    (generic ["num"] (tfn g0 g0))
+        boolOrd (generic ["ord"] (tfns [g0 g0] tbool))
+        boolEq  (generic ["eq"] (tfns [g0 g0] tbool))
+        kv      (generics [["ord"] []])
+        g       generics
+        float   (generic ["floating"])
+        floatUn (float (tfn g0 g0))]
+        (map
+            (fn [(, name (, kinds qual))] (!>! name (forall kinds qual)))
+                [(, "+" biNum)
+                (, "-" biNum)
+                (, "*" biNum)
+                (, "negate" uNum)
+                (, "abs" uNum)
+                (, "fromInt" (generic ["num"] (tfn tint g0)))
+                (, "toInt" (generic ["integral"] (tfn g0 tint)))
+                (, "/" (generic ["fractional"] (tfns [g0 g0] g0)))
+                (, "pi" (float g0))
+                (, "exp" floatUn)
+                (, "log" floatUn)
+                (, "sqrt" floatUn)
+                (, "**" (float (tfns [g0 g0] g0)))
+                (, "logBase" (float (tfns [g0 g0] g0)))
+                (, "sin" floatUn)
+                (, "cos" floatUn)
+                (, "tan" floatUn)
+                (, ">" boolOrd)
+                (, ">=" boolOrd)
+                (, "<" boolOrd)
+                (, "<=" boolOrd)
+                (, "max" (generic ["ord"] (tfns [g0 g0] g0)))
+                (, "min" (generic ["ord"] (tfns [g0 g0] g0)))
+                (,
+                "compare"
+                    (generic ["ord"] (tfns [g0 g0] (tcon (tycon "ordering" star) -1))))
+                (, "=" boolEq)
+                (, "!=" boolEq)
+                (, "show" (generic ["show"] (tfn g0 tstring)))
+                (, "range" (generic ["ix"] (tfn (mkpair g0 g0) (mklist g0))))
+                (, "index" (generic ["ix"] (tfns [(mkpair g0 g0) g0] tint)))
+                (, "inRange" (generic ["ix"] (tfns [(mkpair g0 g0) g0] tbool)))
+                (, "rangeSize" (generic ["ix"] (tfns [(mkpair g0 g0)] tint)))
+                ; monadss
+                (,
+                "return"
+                    (, [(kfun star star) star] (=> [(isin "monad" g0)] (tfn g1 (tapp g0 g1 -1)))))
+                (,
+                ">>="
+                    (,
+                    [(kfun star star) star star]
+                        (=>
+                        [(isin "monad" g0)]
+                            (tfns [(tapp g0 g1 -1) (tfn g1 (tapp g0 g2 -1))] (tapp g0 g2 -1)))))
+                (,
+                ">>"
+                    (,
+                    [(kfun star star) star star]
+                        (=>
+                        [(isin "monad" g0)]
+                            (tfns [(tapp g0 g1 -1) (tapp g0 g2 -1)] (tapp g0 g2 -1)))))
+                (,
+                "fail"
+                    (,
+                    [(kfun star star) star]
+                        (=> [(isin "monad" g0)] (tfn tstring (tapp g0 g1 -1)))))
+                ; maps
+                (, "map/nil" (kv (tmap g0 g1)))
+                (, "map/set" (kv (tfns [map01 g0 g1] map01)))
+                (, "map/get" (kv (tfns [map01 g0] g1)))
+                (, "map/map" (generics [["ord"] [] []] (tfns [map01 (tfn g1 g2)] (tmap g0 g2))))
+                (, "map/merge" (kv (tfns [map01 map01] map01)))
+                (, "map/values" (kv (tfns [map01] (tapp tlist g1 -1))))
+                (, "map/keys" (kv (tfns [map01] (tapp tlist g0 -1))))
+                (, "map/to-list" (kv (tfns [map01] (tapp tlist (mkpair g0 g1) -1))))
+                (, "map/from-list" (kv (tfns [(tapp tlist (mkpair g0 g1) -1)] map01)))
+                ; ok folks
+                (, "nil" (g [[]] (mklist g0)))
+                (, "cons" (g [[]] (tfn g0 (mklist g0))))
+                (, "," (g [[] []] (tfns [g0 g1] (mkpair g0 g1))))
+                (, "false" (g [] tbool))
+                (, "true" (g [] tbool))
+                (, "ok" (g [[] []] (tfn g0 (tresult g0 g1))))
+                (, "err" (g [[] []] (tfn g1 (tresult g0 g1))))
+                (, "LT" (g [] (mkcon "ordering")))
+                (, "EQ" (g [] (mkcon "ordering")))
+                (, "GT" (g [] (mkcon "ordering")))
+                ])))
+
 (def builtin-instances
     (let [
-        eq  (fn [x] (generic ["eq"] (isin "eq" x)))
-        eq2 (fn [x] (generics [["eq"] ["eq"]] (isin "eq" x)))]
-        
-            (concat
-            [(eq (tapp tlist g0 -1))
-                (eq (toption g0))
-                (eq2 (tresult g0 g1))
-                (concat
-                (map
-                    (fn [(, cls names)]
-                        (map (fn [name] (, [] (=> [] (isin cls (tcon (tycon name star) -1))))) names))
-                        [(, "eq" ["unit" "char" "int" "float" "double" "bool" "ordering"])]))])))
+        gen1      (fn [cls x] (generic [cls] (isin cls x)))
+        gen2      (fn [cls x] (generics [[cls] [cls]] (isin cls x)))
+        int-ratio (fn [x] (generic ["integral"] (isin x (tapp (mkcon "ratio") g0 -1))))
+        eq        (gen1 "eq")
+        eq2       (gen2 "eq")
+        show      (gen1 "show")
+        show2     (gen2 "show")
+        list      (mklist g0)
+        option    (toption g0)
+        result    (tresult g0 g1)
+        pair      (mkpair g0 g1)
+        ix        (gen1 "ix")
+        ix2       (gen2 "ix")]
+        [(eq list)
+            (eq option)
+            (eq2 result)
+            (int-ratio "eq")
+            (eq2 pair)
+            (gen1 "ord" list)
+            (int-ratio "ord")
+            (gen1 "ord" option)
+            (gen2 "ord" result)
+            (gen2 "ord" pair)
+            (int-ratio "num")
+            (int-ratio "real")
+            (int-ratio "fractional")
+            (int-ratio "realfrac")
+            (show list)
+            (show option)
+            (show result)
+            (int-ratio "show")
+            (show pair)
+            (ix pair)
+            (generics [] (isin "monad" (tcon (tycon "option" (kfun star star)) -1)))
+            (generics [] (isin "monad" (tcon (tycon "list" (kfun star star)) -1)))
+            ..(concat
+            (map
+                (fn [(, cls names)] (map (fn [name] (, [] (=> [] (isin cls (mkcon name))))) names))
+                    [(, "eq" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    (, "ord" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    (, "num" ["int" "float" "double"])
+                    (, "real" ["int" "float" "double"])
+                    (, "integral" ["int"])
+                    (, "fractional" ["float" "double"])
+                    (, "floating" ["float" "double"])
+                    (, "realfrac" ["float" "double"])
+                    (, "show" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    (, "ix" ["unit" "char" "int" "bool" "ordering"])]))]))
 
 (type->s (parse-type (@@ (fn [int] string))))
-
-(@ (++ 1 2))
 
 (defn dot [a b c] (a (b c)))
 

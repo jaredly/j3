@@ -8,7 +8,11 @@ I really need ... type aliases. pleeease.
   Which means externals needs to start returning `types depended on`.
   and ...
 
-- [ ] I want a "display" attribute on nstop
+- [x] I want a "display" attribute on nstop
+
+- [x] gotta be able to ...spread in front of a thing
+
+I REALLLY want to be able to drag things around
 
 - [ ] I kindof want "collapse" to be ternary.
   - first level (just hide ns children)
