@@ -12,12 +12,13 @@ import { arr, expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
 import { toJCST } from './round-1/j-cst';
-import { FnsEnv, TraceMap, withTracing } from './loadEv';
+import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
 import { LocedName } from '../../custom/store/sortTops';
 import { filterNulls } from '../../custom/reduce';
 import { unique } from '../../custom/store/getResults';
+import { builtins } from './builtins';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
@@ -34,23 +35,23 @@ const makeTuple = (values: any[]) => {
     return res;
 };
 
-const callFn = (fn: Function, args: any[], convention: CallingConvention) => {
-    switch (convention) {
-        case 'curried': {
-            args.forEach((arg) => {
-                fn = fn(arg);
-            });
-            return fn;
-        }
-        case 'tuple':
-            if (args.length === 1) {
-                return fn(args[0]);
-            }
-            return fn(makeTuple(args));
-        case 'tuple-nil':
-            return fn(makeTuple(args.concat([{ type: '()' }])));
-    }
-};
+// const callFn = (fn: Function, args: any[], convention: CallingConvention) => {
+//     switch (convention) {
+//         case 'curried': {
+//             args.forEach((arg) => {
+//                 fn = fn(arg);
+//             });
+//             return fn;
+//         }
+//         case 'tuple':
+//             if (args.length === 1) {
+//                 return fn(args[0]);
+//             }
+//             return fn(makeTuple(args));
+//         case 'tuple-nil':
+//             return fn(makeTuple(args.concat([{ type: '()' }])));
+//     }
+// };
 
 export const fnsEvaluator = (
     id: string,
@@ -70,11 +71,7 @@ export const fnsEvaluator = (
     return {
         id,
         init() {
-            return {
-                js: [],
-                values: {},
-                // typeCheck: data['env_nil'],
-            };
+            return { js: [], values: sanitizedEnv(builtins()) };
         },
 
         initType() {
@@ -100,42 +97,39 @@ export const fnsEvaluator = (
             return data['type_to_string'](type);
         },
 
-        analysis: {
-            dependencies(stmt) {
-                if (!data['externals_stmt']) {
-                    return [];
-                }
-                const deps = unwrapArray<{
-                    type: ',';
-                    0: string;
-                    1: { type: 'value' | 'type' };
-                    2: number;
-                }>(data['externals_stmt'](stmt));
-                return deps.map((item) => ({
-                    name: item[0],
-                    loc: item[2],
-                    kind: item[1].type,
-                }));
-            },
+        analysis:
+            data['externals_stmt'] && data['names']
+                ? {
+                      dependencies(stmt) {
+                          const deps = unwrapArray<{
+                              type: ',';
+                              0: string;
+                              1: { type: 'value' | 'type' };
+                              2: number;
+                          }>(data['externals_stmt'](stmt));
+                          return deps.map((item) => ({
+                              name: item[0],
+                              loc: item[2],
+                              kind: item[1].type,
+                          }));
+                      },
 
-            stmtNames(stmt) {
-                if (data['names']) {
-                    return unwrapArray(
-                        data['names'](stmt) as arr<{
-                            type: ',,';
-                            0: string;
-                            1: { type: 'value' | 'type' };
-                            2: number;
-                        }>,
-                    ).map((res) => ({
-                        name: res[0],
-                        loc: res[2],
-                        kind: res[1].type,
-                    }));
-                }
-                return [];
-            },
-        },
+                      stmtNames(stmt) {
+                          return unwrapArray(
+                              data['names'](stmt) as arr<{
+                                  type: ',,';
+                                  0: string;
+                                  1: { type: 'value' | 'type' };
+                                  2: number;
+                              }>,
+                          ).map((res) => ({
+                              name: res[0],
+                              loc: res[2],
+                              kind: res[1].type,
+                          }));
+                      },
+                  }
+                : undefined,
 
         parse(node, errors) {
             const j = toJCST(node);
@@ -199,6 +193,9 @@ export const fnsEvaluator = (
             );
 
             sorted.forEach((group) => {
+                if (group.every((item) => item.stmt.type === 'sexpr')) {
+                    return;
+                }
                 const result = this.addStatements(
                     group.map((g) => g.stmt),
                     env,
@@ -324,13 +321,6 @@ export const fnsEvaluator = (
 
         evaluate(expr, env, meta) {
             const mm = prepareMeta(meta, data['parse_version'] === 2);
-
-            // let type = null;
-            // if (data['infer']) {
-            //     type = data['type_to_string'](
-            //         data['infer'](env.typeCheck)(expr),
-            //     );
-            // }
 
             const externals: { type: ','; 0: string; 1: number }[] =
                 unwrapArray(data['externals_expr'](expr));

@@ -115,6 +115,7 @@ export type FullEvalator<
         env: Env;
         display: { [key: number]: Produce };
         values: { [name: string]: any };
+        js?: string;
     };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;

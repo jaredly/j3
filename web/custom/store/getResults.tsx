@@ -208,7 +208,7 @@ export const getResults = <
             ) {
                 Object.assign(results.display, cache.nodes[top.top].display);
 
-                if (cache.deps?.[top.top].names) {
+                if (cache.deps?.[top.top]?.names) {
                     registerNames(cache, top.top, results, idForName);
                 }
 
@@ -226,7 +226,7 @@ export const getResults = <
             )
         ) {
             Object.assign(results.display, cache.nodes[top.top].display);
-            if (cache.deps?.[top.top].names) {
+            if (cache.deps?.[top.top]?.names) {
                 registerNames(cache, top.top, results, idForName);
             }
 
@@ -249,7 +249,9 @@ export const getResults = <
             : true;
         if (!stmt) {
             // console.log('no stmt', node, errors);
-            results.produce[top.top] = [JSON.stringify(errors)];
+            if (Object.keys(errors).length) {
+                results.produce[top.top] = [new Error(JSON.stringify(errors))];
+            }
         }
         cache.nodes[top.top] = {
             ns: top.ns,

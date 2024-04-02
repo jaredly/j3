@@ -746,11 +746,16 @@
 
 (defn externals [bound expr]
     (match expr
-        (evar name l)               (if (set/has bound name)
-                                        empty
-                                            (one (,, name (value) l)))
+        (evar name l)               (match (set/has bound name)
+                                        true empty
+                                        _    (one (,, name (value) l)))
         (eprim prim l)              empty
-        (estr first templates int)  (many (map templates (fn [(,, expr _ _)] (externals bound expr))))
+        (estr first templates int)  (many
+                                        (map
+                                            templates
+                                                (fn [arg]
+                                                (match arg
+                                                    (,, expr _ _) (externals bound expr)))))
         (equot expr int)            empty
         (equot/type _ _)            empty
         (equot/pat _ _)             empty
@@ -766,10 +771,13 @@
                                             (foldl
                                             empty
                                                 cases
-                                                (fn [bag (, pat body)]
-                                                (bag/and
-                                                    (bag/and bag (pat-externals pat))
-                                                        (externals (set/merge bound (pat-names pat)) body)))))))
+                                                (fn [bag arg]
+                                                (match arg
+                                                    (, pat body) (bag/and
+                                                                     (bag/and bag (pat-externals pat))
+                                                                         (externals (set/merge bound (pat-names pat)) body))))))))
+
+(defn dot [a b c] (a (b c)))
 
 (,
     (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
@@ -779,14 +787,12 @@
         (@ (one two three))
             [(,, "one" (value) 7066) (,, "two" (value) 7067) (,, "three" (value) 7068)])])
 
-(defn dot [a b c] (a (b c)))
-
 (defn externals-type [bound t]
     (match t
         (tvar _ _)       empty
-        (tcon name l)    (if (set/has bound name)
-                             empty
-                                 (one (,, name (type) l)))
+        (tcon name l)    (match (set/has bound name)
+                             true empty
+                             _    (one (,, name (type) l)))
         (tapp one two _) (bag/and (externals-type bound one) (externals-type bound two))))
 
 (defn names [stmt]
@@ -795,7 +801,11 @@
         (sexpr _ _)                        []
         (stypealias name l _ _ _)          [(,, name (type) l)]
         (sdeftype name l _ constructors _) [(,, name (type) l)
-                                               ..(map constructors (fn [(,,, name l _ _)] (,, name (value) l)))]))
+                                               ..(map
+                                               constructors
+                                                   (fn [arg]
+                                                   (match arg
+                                                       (,,, name l _ _) (,, name (value) l))))]))
 
 (defn externals-stmt [stmt]
     (bag/to-list
@@ -804,10 +814,11 @@
                                                             (many
                                                                 (map
                                                                     constructors
-                                                                        (fn [(,,, name l args _)]
-                                                                        (match args
-                                                                            [] empty
-                                                                            _  (many (map args (externals-type frees))))))))
+                                                                        (fn [constructor]
+                                                                        (match constructor
+                                                                            (,,, name l args _) (match args
+                                                                                                    [] empty
+                                                                                                    _  (many (map args (externals-type frees)))))))))
             (stypealias name _ args body _)             (let [frees (set/from-list (map args fst))]
                                                             (externals-type frees body))
             (sdef name int body int)                    (externals (set/add set/nil name) body)
@@ -823,7 +834,7 @@
             (fn [stmt] (array (,, string name-kind int)))))
 
 ((eval
-    "({0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt}) => ({type: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt})")
+    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt}) => ({type: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt})")
     (parse-and-compile
         parse-stmt
             parse-expr
@@ -832,3 +843,4 @@
             names
             externals-stmt))
 
+6885

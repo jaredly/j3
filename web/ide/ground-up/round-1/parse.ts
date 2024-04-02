@@ -51,9 +51,9 @@ export type prim =
     { type: 'pint'; 0: number } | { type: 'pbool'; 0: boolean };
 export type expr =
     | { type: 'estr'; 0: string; 1: arr<{ type: ','; 0: expr; 1: string }> }
-    | { type: 'eprim'; 0: prim }
+    | { type: 'eprim'; 0: prim; 1: number }
     | { type: 'equot'; 0: expr | jcst }
-    | { type: 'evar'; 0: string }
+    | { type: 'evar'; 0: string; 1: number }
     | { type: 'elambda'; 0: string; 1: expr }
     | { type: 'eapp'; 0: expr; 1: expr }
     | { type: 'elet'; 0: string; 1: expr; 2: expr }
@@ -351,15 +351,20 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
         case 'identifier': {
             const num = +node.text;
             if (!isNaN(num)) {
-                return { type: 'eprim', 0: { type: 'pint', 0: num } };
+                return {
+                    type: 'eprim',
+                    0: { type: 'pint', 0: num },
+                    1: node.loc,
+                };
             }
             if (node.text === 'true' || node.text === 'false') {
                 return {
                     type: 'eprim',
                     0: { type: 'pbool', 0: node.text === 'true' },
+                    1: node.loc,
                 };
             }
-            return { type: 'evar', 0: node.text };
+            return { type: 'evar', 0: node.text, 1: node.loc };
         }
         case 'string':
             const parsed = node.templates.map((t) => parseExpr(t.expr, ctx));
@@ -492,10 +497,14 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                           type: 'eapp',
                           0: {
                               type: 'eapp',
-                              0: { type: 'evar', 0: ',' },
+                              0: { type: 'evar', 0: ',', 1: node.loc },
                               1: { type: 'equot', 0: inner },
                           },
-                          1: { type: 'eprim', 0: { type: 'pint', 0: 42 } },
+                          1: {
+                              type: 'eprim',
+                              0: { type: 'pint', 0: 42 },
+                              1: node.loc,
+                          },
                       }
                     : undefined;
             }
@@ -523,9 +532,9 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
         case 'array':
             const v = filterBlanks(node.values);
             if (v.length === 0) {
-                return { type: 'evar', 0: 'nil' };
+                return { type: 'evar', 0: 'nil', 1: node.loc };
             }
-            let res: expr = { type: 'evar', 0: 'nil' };
+            let res: expr = { type: 'evar', 0: 'nil', 1: node.loc };
             for (let i = v.length - 1; i >= 0; i--) {
                 const node = v[i];
                 if (i === v.length - 1) {
@@ -540,7 +549,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                             type: 'eapp',
                             0: {
                                 type: 'eapp',
-                                0: { type: 'evar', 0: 'cons' },
+                                0: { type: 'evar', 0: 'cons', 1: node.loc },
                                 1: expr,
                             },
                             1: res,
@@ -553,7 +562,7 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                         type: 'eapp',
                         0: {
                             type: 'eapp',
-                            0: { type: 'evar', 0: 'cons' },
+                            0: { type: 'evar', 0: 'cons', 1: node.loc },
                             1: expr,
                         },
                         1: res,

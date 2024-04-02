@@ -35,6 +35,7 @@ export const bootstrapEvaluator = (
         addStatements(stmts: Record<number, stmt>, env) {
             const display: Record<number, Produce> = {};
             const values: Record<string, any> = {};
+            let js: string[] = [];
 
             Object.keys(stmts).forEach((loc) => {
                 const stmt = stmts[+loc];
@@ -43,6 +44,7 @@ export const bootstrapEvaluator = (
                     let raw;
                     try {
                         raw = benv.values['compile-st'](stmt);
+                        js.push(raw);
                         env.source.push(raw);
                         try {
                             const name = stmt.type === 'sdef' ? stmt[0] : null;
@@ -81,6 +83,7 @@ export const bootstrapEvaluator = (
                         );
                         return;
                     }
+                    js.push(raw);
                     try {
                         const res = new Function(
                             envArgs,
@@ -105,47 +108,57 @@ export const bootstrapEvaluator = (
                     }
                 }
             });
-            return { env, display, values };
+            return {
+                env,
+                display,
+                values,
+                js: js.length ? js.join('\n') : undefined,
+            };
         },
         toFile(state, target) {
-            if (target != null) {
-                throw new Error(
-                    `bootstrap evaluator not equipped for target toFile`,
-                );
-            }
+            // if (target != null) {
+            //     throw new Error(
+            //         `bootstrap evaluator not equipped for target toFile`,
+            //     );
+            // }
             let env = this.init();
             const errors: Errors = {};
             const names: string[] = [];
-            const rv = null;
+            let ret: null | string = null;
             findTops(state).forEach((top) => {
                 const node = fromMCST(top.top, state.map);
                 if (node.type === 'blank') return;
-                const parsed = this.parse(node, errors);
+                const nodeErrors: Errors = {};
+                const parsed = this.parse(node, nodeErrors);
+                Object.assign(errors, nodeErrors);
                 if (!parsed) return;
                 if (parsed.type === 'sdef') {
                     names.push(parsed[0]);
                 }
-                // if (target && top.top === target) {
-                //     this.addStatement
-                // }
+                let res;
                 try {
-                    env = this.addStatements(
-                        { [0]: parsed },
-                        env,
-                        {},
-                        {},
-                        {},
-                    ).env;
+                    res = this.addStatements({ [0]: parsed }, env, {}, {}, {});
                 } catch (err) {
                     console.error(err);
+                    return;
+                }
+                env = res.env;
+                if (top.top === target && res.js) {
+                    ret = res.js;
                 }
             });
-            env.source.push(
-                `return {type: 'fns', ${names
-                    .map((name) => sanitize(name))
-                    .sort()
-                    .join(', ')}}`,
-            );
+            if (ret) {
+                env.source.push(`return ${ret}`);
+            } else if (target != null) {
+                throw new Error(`no ret, even though given a target ${target}`);
+            } else {
+                env.source.push(
+                    `return {type: 'fns', ${names
+                        .map((name) => sanitize(name))
+                        .sort()
+                        .join(', ')}}`,
+                );
+            }
             return { js: env.source.join('\n'), errors };
         },
         parse(node, errors) {
