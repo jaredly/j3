@@ -8,6 +8,7 @@ I really need ... type aliases. pleeease.
   Which means externals needs to start returning `types depended on`.
   and ...
 
+- [ ] I want a "display" attribute on nstop
 
 - [ ] I kindof want "collapse" to be ternary.
   - first level (just hide ns children)
@@ -24,6 +25,12 @@ I really need ... type aliases. pleeease.
   - so ...
     yeah, let's try to get fancy, why not?
     we'll need some ... (include)liness.
+
+
+## THIH
+
+- [ ] potential issue: when I type multiple things together in the same bindgroup,
+  I lose typeclasses somehow?
 
 
 ## Wish List

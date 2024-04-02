@@ -138,10 +138,14 @@ export function withTracing(
                 if (trace.type === 'tfmt') {
                     if (typeof trace[1] === 'string') {
                         const formatter = env.values[trace[1]];
+                        let res = formatter(trace[0]);
+                        if (typeof res !== 'string') {
+                            res = JSON.stringify(res);
+                        }
                         return {
                             type: 'tfmted',
                             0: trace[0],
-                            1: formatter(trace[0]),
+                            1: res,
                         };
                     }
                     return {

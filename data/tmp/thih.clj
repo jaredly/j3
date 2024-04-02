@@ -147,14 +147,14 @@
 (defn assump->s [(!>! name (forall kinds (=> preds type)))]
     "${
         name
-        }:${
+        }: ${
         (match kinds
             [] ""
-            _  " arg kinds: ${(join "," (map kind->s kinds))}")
+            _  "kinds: ${(join "," (map kind->s kinds))}; ")
         }${
         (match preds
             [] ""
-            _  " typeclasses: ${(join "," (map pred->s preds))}")
+            _  "tc: ${(join "," (map pred->s preds))}; ")
         } ${
         (type->s type)
         }")
@@ -797,8 +797,7 @@
 
 (deftype pred (isin string type))
 
-(defn pred->s [(isin name type)]
-    "class ${name} <- ${(type->s type)}")
+(defn pred->s [(isin name type)] "[${(type->s type)} => ${name}]")
 
 (defn qual= [(=> preds t) (=> preds' t') t=]
     (if (array= preds preds' pred=)
@@ -821,7 +820,8 @@
         (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
                                               (ok map/nil)
                                                   (err
-                                                  "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"))))
+                                                  "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"))
+        _                                 (err "Unable to match ${(type->s t1)} vs ${(type->s t2)}")))
 
 (defn type/tv [t]
     (match t
@@ -1065,6 +1065,8 @@
 
 (defn simplify [ce] (simplify-inner ce []))
 
+(def preds->s (dot (join "\n") (map pred->s)))
+
 (defn reduce [ce ps]
     (match (to-hnfs ce ps)
         (ok qs) (ok (simplify ce qs))
@@ -1194,7 +1196,7 @@
 
 (defn inst/pred [types (isin c t)] (isin c (inst/type types t)))
 
-;(defalias
+(typealias
     (infer e t)
         (fn [class-env (array assump) e] (TI (, (array pred) t))))
 
@@ -1277,6 +1279,10 @@
                                     result-var         (ntv star)
                                     _                  (ti-then (unify (tfn arg-type result-var) target-type))]
                                     (ti-return (, (concat [ps qs]) result-var)))
+        (elambda pat body l)    (infer/expr
+                                    ce
+                                        as
+                                        (elet (, [] [[(, "lambda-arg" [(, [pat] body)])]]) (evar "lambda-arg" l) l))
         (ematch target cases l) (fatal
                                     "This match should have been turned into an elet ${
                                         (int-to-string l)
@@ -1290,7 +1296,8 @@
     (let-> [
         (,, ps as' ts) (ti-then (infer/pats pats))
         (, qs t)       (ti-then (infer/expr ce (concat [as' as]) body))]
-        (ti-return (, (concat [ps qs]) (foldr t ts (fn [res arg] (tfn arg res)))))))
+        (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))]
+            (ti-return (, (concat [ps qs]) res-type)))))
 
 
 
@@ -1488,7 +1495,7 @@
 
 (defn preds/apply [subst preds] (map (pred/apply subst) preds))
 
-
+(def types->s (dot (join "\n") (map type->s)))
 
 (result->s
     (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))
@@ -1502,9 +1509,18 @@
             (!>! "int-to-string" (to-scheme (tfn tint tstring)))
             (!>!
             "++"
-                (forall [star] (=> [(isin "num" (tgen 0 -1))] (tfn (tgen 0 -1) (tgen 0 -1)))))
+                (forall
+                [star]
+                    (=> [(isin "num" (tgen 0 -1))] (tfn (tgen 0 -1) (tfn (tgen 0 -1) (tgen 0 -1))))))
             (!>! "+" (to-scheme (tfn tint (tfn tint tint))))]
-            [(, [] [[(, "hello" [(, [(pvar "a" -1)] (@ (int-to-string 1)))])]])]))
+            [(,
+            []
+                [[;(, "hello" [(, [(pvar "a" -1)] (@ (int-to-string 1)))])
+                ;(, "one" [(, [(pvar "a" -1)] (@ 1))])
+                (, "twoz" [(, [(pvar "am" -1)] (parse-expr (@@ (fn [x] (++ am x)))))])
+                ;(, "two" [(, [(pvar "a" -1)] (parse-expr (@@ (++ a 2))))])]])]))
+
+
 
 (@ (++ 1 2))
 

@@ -298,11 +298,12 @@ export const fnsEvaluator = (
                 env,
                 meta,
                 trace,
+                undefined,
                 names,
             );
 
             Object.keys(stmts).forEach((id) => {
-                display[+id].push(res.display);
+                display[+id].push(...res.display);
             });
 
             return { env, display, values: res.values, js: res.js };
@@ -361,6 +362,7 @@ const compileStmt = (
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
+    display = valueToString,
     names?:
         | null
         | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
@@ -385,7 +387,7 @@ const compileStmt = (
             console.error(err);
             return {
                 env,
-                display: new MyEvalError(`Compilation Error`, err as Error),
+                display: [new MyEvalError(`Compilation Error`, err as Error)],
                 values: {},
             };
         }
@@ -398,9 +400,11 @@ const compileStmt = (
         } catch (err) {
             return {
                 env,
-                display: `JS Syntax Error: ${
-                    (err as Error).message
-                }\n${js}\nDeps: ${needed.join(',')}`,
+                display: [
+                    `JS Syntax Error: ${
+                        (err as Error).message
+                    }\n${js}\nDeps: ${needed.join(',')}`,
+                ],
                 values: {},
             };
         }
@@ -413,7 +417,10 @@ const compileStmt = (
             san.$setTracer(null);
             return {
                 env,
-                display: valueToString(value) + (type ? '\nType: ' + type : ''),
+                display: [
+                    valueToString(value),
+                    ...(type ? ['Type: ' + type] : []),
+                ],
                 values: { _: value },
                 js,
             };
@@ -428,7 +435,7 @@ const compileStmt = (
             );
             return {
                 env,
-                display: new LocError(err as Error, fn + ''),
+                display: [new LocError(err as Error, fn + '')],
                 values: {},
             };
         }
@@ -441,13 +448,13 @@ const compileStmt = (
         console.error(err);
         return {
             env,
-            display: new MyEvalError(`Compilation Error`, err as Error),
+            display: [new MyEvalError(`Compilation Error`, err as Error)],
             values: {},
         };
     }
 
     try {
-        let display = '';
+        let display: ProduceItem[] = [];
         const fn = new Function(
             needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
             `{${js};\n${
@@ -470,9 +477,11 @@ const compileStmt = (
                 // debugger;
                 return {
                     env,
-                    display: `JS Evaluation Error: ${
-                        (err as Error).message
-                    }\n${js}\nDeps: ${needed.join(',')}`,
+                    display: [
+                        `JS Evaluation Error: ${
+                            (err as Error).message
+                        }\n${js}\nDeps: ${needed.join(',')}`,
+                    ],
                     values: {},
                 };
             }
@@ -488,8 +497,7 @@ const compileStmt = (
                         ? valueToString(result_values[name])
                         : null,
                 )
-                .filter(Boolean)
-                .join('\n');
+                .filter(filterNulls);
         }
         // display += '\n' + fn;
 

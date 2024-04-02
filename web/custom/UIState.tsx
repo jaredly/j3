@@ -176,6 +176,7 @@ export type RealizedNamespace = {
     children: number[];
     collapsed?: boolean;
     plugin?: string | { id: string; options: any }; // hash or something, or just a name ya know
+    display?: { id: string; options: any };
     // PLUGINS get evaluated ... after everything else?
     //
 };
