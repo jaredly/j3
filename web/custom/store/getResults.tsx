@@ -16,6 +16,8 @@ import equal from 'fast-deep-equal';
 import { depSort } from './depSort';
 import { filterNulls } from '../reduce';
 import { Display } from '../../../src/to-ast/library';
+import React from 'react';
+import { valueToString } from '../../ide/ground-up/reduce';
 
 type SuccessfulTypeResult = {
     type: 'success';
@@ -66,6 +68,22 @@ export type ResultsCache<Stmt> = {
             ts: number;
         };
     };
+};
+
+const displayFunction = (config?: {
+    id: string;
+    options: any;
+}): undefined | ((v: any) => ProduceItem[]) => {
+    if (!config) return;
+    if (config.id === 'pre') {
+        return (value) => {
+            if (typeof value === 'string') {
+                return [<pre>{value}</pre>];
+            }
+            return [<pre key={0}>{JSON.stringify(value, null, 2)}</pre>];
+        };
+    }
+    return (value) => [valueToString(value)];
 };
 
 export const getResults = <
@@ -372,12 +390,17 @@ export const getResults = <
             allDeps.some((id) => changes[id].value);
 
         if (reEval) {
+            const displayConfig =
+                group.length === 1 ? topsById[group[0].id].display : undefined;
+            const renderValue = displayFunction(displayConfig);
+
             const { env, display, values } = evaluator.addStatements(
                 stmts,
                 results.env as any,
                 results.tenv,
                 state.meta,
                 results.traces,
+                renderValue,
             );
             group.forEach((node) => {
                 results.produce[node.id] = Array.isArray(display[node.id])

@@ -234,7 +234,7 @@ export const fnsEvaluator = (
             return { js: env.js.join('\n'), errors };
         },
 
-        addStatements(stmts, env, tenv, meta, trace) {
+        addStatements(stmts, env, tenv, meta, trace, displayResult) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
             let names:
@@ -298,7 +298,7 @@ export const fnsEvaluator = (
                 env,
                 meta,
                 trace,
-                undefined,
+                displayResult,
                 names,
             );
 
@@ -362,7 +362,7 @@ const compileStmt = (
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
-    display = valueToString,
+    renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
     names?:
         | null
         | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
@@ -418,7 +418,7 @@ const compileStmt = (
             return {
                 env,
                 display: [
-                    valueToString(value),
+                    ...renderValue(value),
                     ...(type ? ['Type: ' + type] : []),
                 ],
                 values: { _: value },

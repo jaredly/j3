@@ -172,6 +172,7 @@ export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
         hidden?: boolean;
         path: Path[];
         plugin?: RealizedNamespace['plugin'];
+        display?: RealizedNamespace['display'];
     }[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
     const add = (id: number, path: Path[]) => {
@@ -184,6 +185,7 @@ export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
                     hidden: ns.hidden,
                     path: [...path, { type: 'ns-top', idx: id }],
                     plugin: ns.plugin,
+                    display: ns.display,
                 });
             }
             ns.children.forEach((child, i) =>

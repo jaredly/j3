@@ -123,6 +123,29 @@ export function NSMenu({
             >
                 No plugin
             </button>
+            <div style={{ padding: '4px 8px' }}>Set Render Function</div>
+            {['pre', null].map((id) => (
+                <button
+                    key={id ?? 'default'}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => {
+                        dispatch({
+                            type: 'ns',
+                            nsMap: {
+                                [ns.id]: {
+                                    ...ns,
+                                    display:
+                                        id === null
+                                            ? undefined
+                                            : { id, options: null },
+                                },
+                            },
+                        });
+                    }}
+                >
+                    {id === null ? 'Default' : id}
+                </button>
+            ))}
         </div>
     );
 }

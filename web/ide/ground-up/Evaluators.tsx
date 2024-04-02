@@ -106,6 +106,7 @@ export type FullEvalator<
         tenv: TypeEnv,
         meta: MetaDataMap,
         trace: TraceMap,
+        renderResult?: (v: any) => ProduceItem[],
     ): {
         env: Env;
         display: { [key: number]: Produce };

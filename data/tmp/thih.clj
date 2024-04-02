@@ -1114,9 +1114,11 @@
 (** ## Monad alert **)
 
 (deftype type-env
-    ; (values) name => type
-        ; (type...constructors) name => type 
-        (type-env (map string scheme) (map string scheme)))
+    ; (type...constructors) name => type 
+        (type-env
+        (map string scheme)
+            ; (types) name => (, (array kind) (set name))
+            (map string (, (array kind) (set string)))))
 
 (def tenv/nil (type-env map/nil map/nil))
 
@@ -1262,15 +1264,7 @@
 (defn infer/expr [ce as expr]
     (match expr
         (evar name l)           (match (find-scheme name as)
-                                    (err e) (TI
-                                                (fn [subst tenv nidx]
-                                                    (match (tenv/value tenv name)
-                                                        (none)        (err "Unbound variable ${name}")
-                                                        (some scheme) (ti-run
-                                                                          (let-> [(=> ps t) (ti-then (fresh-inst scheme))] (ti-return (, ps t)))
-                                                                              subst
-                                                                              tenv
-                                                                              nidx))))
+                                    (err e) (ti-err e)
                                     (ok sc) (let-> [(=> ps t) (ti-then (fresh-inst sc))] (ti-return (, ps t))))
         (eprim prim l)          (infer/prim prim)
         (eapp target arg l)     (let-> [
@@ -1520,7 +1514,95 @@
                 (, "twoz" [(, [(pvar "am" -1)] (parse-expr (@@ (fn [x] (++ am x)))))])
                 ;(, "two" [(, [(pvar "a" -1)] (parse-expr (@@ (++ a 2))))])]])]))
 
+(** Ok what I want to do
+    - have a way to "add builtins" **)
 
+; figuring out what type variables wegot
+
+(defn tfns [args res] (foldr res args (fn [res arg] (tfn arg res))))
+
+(defn tmap [k v]
+    (tapp
+        (tapp (tcon (tycon "map" (kfun star (kfun star star))) -1) k -1)
+            v
+            -1))
+
+(defn mk-pred [g0] (fn [name] (isin name g0)))
+
+(defn generics [classes body]
+    (,
+        (map (fn [_] star) classes)
+            (=>
+            (concat (mapi (fn [cls i] (map (mk-pred (tgen i -1)) cls)) 0 classes))
+                body)))
+
+(defn generic [cls body] (generics [cls] body))
+
+(def g0 (tgen 0 -1))
+
+(def g1 (tgen 1 -1))
+
+(def g2 (tgen 2 -1))
+
+(def builtin-assumptions
+    (let [
+        map01   (tmap g0 g1)
+        biNum   (generic ["num"] (tfns [g0 g0] g0))
+        uNum    (generic ["num"] (tfn g0 g0))
+        boolOrd (generic ["ord"] (tfns [g0 g0] tbool))
+        boolEq  (generic ["eq"] (tfns [g0 g0] tbool))
+        kv      (generics [["ord"] []])]
+        
+            (map
+            (fn [(, name (, kinds qual))] (!>! name (forall kinds qual)))
+                [(, "+" biNum)
+                (, "-" biNum)
+                (, "*" biNum)
+                (, "negate" uNum)
+                (, "abs" uNum)
+                (, "fromInt" (generic ["num"] (tfn tint g0)))
+                (, ">" boolOrd)
+                (, ">=" boolOrd)
+                (, "<" boolOrd)
+                (, "<=" boolOrd)
+                (, "=" boolEq)
+                (, "!=" boolEq)
+                (, "show" (generic ["show"] (tfn g0 tstring)))
+                (, "map/nil" (kv (tmap g0 g1)))
+                (, "map/set" (kv (tfns [map01 g0 g1] map01)))
+                (, "map/get" (kv (tfns [map01 g0] g1)))
+                (, "map/map" (generics [["ord"] [] []] (tfns [map01 (tfn g1 g2)] (tmap g0 g2))))
+                (, "map/merge" (kv (tfns [map01 map01] map01)))
+                (, "map/values" (kv (tfns [map01] (tapp tlist g1 -1))))
+                (, "map/keys" (kv (tfns [map01] (tapp tlist g0 -1))))
+                (, "map/to-list" (kv (tfns [map01] (tapp tlist (mkpair g0 g1) -1))))
+                (, "map/from-list" (kv (tfns [(tapp tlist (mkpair g0 g1) -1)] map01)))])))
+
+(defn toption [v]
+    (tapp (tcon (tycon "option" (kfun star star)) -1) v -1))
+
+(defn tresult [ok err]
+    (tapp
+        (tapp (tcon (tycon "result" (kfun star (kfun star star))) -1) ok -1)
+            err
+            -1))
+
+(def builtin-instances
+    (let [
+        eq  (fn [x] (generic ["eq"] (isin "eq" x)))
+        eq2 (fn [x] (generics [["eq"] ["eq"]] (isin "eq" x)))]
+        
+            (concat
+            [(eq (tapp tlist g0 -1))
+                (eq (toption g0))
+                (eq2 (tresult g0 g1))
+                (concat
+                (map
+                    (fn [(, cls names)]
+                        (map (fn [name] (, [] (=> [] (isin cls (tcon (tycon name star) -1))))) names))
+                        [(, "eq" ["unit" "char" "int" "float" "double" "bool" "ordering"])]))])))
+
+(type->s (parse-type (@@ (fn [int] string))))
 
 (@ (++ 1 2))
 
