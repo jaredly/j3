@@ -104,9 +104,20 @@
 
 (type->fn (tfn tint (tfn tfloat tbool)))
 
+(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
+
+(defn at [i lst]
+    (match lst
+        []           (fatal "index out of range")
+        [one ..rest] (if (<= i 0)
+                         one
+                             (at (- i 1) rest))))
+
+(defn gen-name [num] "${(at num letters)}")
+
 (defn type->s [type]
     (match type
-        (tvar (tyvar name kind) _) "var ${name} : ${(kind->s kind)}"
+        (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
         (tapp target arg _)        (match (type->fn type)
                                        (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
                                                            "(${(type->s target)} ${(join " " (map type->s args))})")
@@ -115,7 +126,7 @@
         (tcon (tycon "[]" _) _)    "list"
         (tcon (tycon name _) _)    name
         (tcon con _)               (tycon->s con)
-        (tgen num _)               "gen${(int-to-string num)}"))
+        (tgen num _)               (gen-name num)))
 
 (type->s tstring)
 
@@ -150,12 +161,16 @@
         }: ${
         (match kinds
             [] ""
-            _  "kinds: ${(join "," (map kind->s kinds))}; ")
+            _  "${
+                   (join
+                       "; "
+                           (mapi (fn [kind i] "${(gen-name i)} ${(kind->s kind)}") 0 kinds))
+                   }; ")
         }${
         (match preds
             [] ""
-            _  "tc: ${(join "," (map pred->s preds))}; ")
-        } ${
+            _  "${(join "; " (map pred->s preds))}; ")
+        }${
         (type->s type)
         }")
 
@@ -211,7 +226,7 @@
 
 (def ttuple2 (tcon (tycon "(,)" (kfun star (kfun star star))) -1))
 
-(def tstring (tapp tlist tchar -1))
+(def tstring (star-con "string"))
 
 (defn tfn [a b] (tapp (tapp tarrow a -1) b -1))
 
@@ -797,7 +812,7 @@
 
 (deftype pred (isin string type))
 
-(defn pred->s [(isin name type)] "[${(type->s type)} => ${name}]")
+(defn pred->s [(isin name type)] "${(type->s type)} ∈ ${name}")
 
 (defn qual= [(=> preds t) (=> preds' t') t=]
     (if (array= preds preds' pred=)
@@ -869,7 +884,7 @@
         (, (tcon tc1 _) (tcon tc2 _))   (if (tycon= tc1 tc2)
                                             (ok map/nil)
                                                 (err "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}"))
-        (, a b)                         (err "Cant unify ${(jsonify a)} and ${(type->s b)}")))
+        (, a b)                         (err "Cant unify ${(type->s a)} and ${(type->s b)}")))
 
 (** ## Type Class stuff **)
 
@@ -932,6 +947,7 @@
     (foldl
         env
             [(, "eq" [])
+            (, "ix" [])
             (, "ord" ["eq"])
             (, "show" [])
             (, "read" [])
@@ -975,6 +991,10 @@
 
 (defn apply-transformers [transformers env]
     (foldl env transformers (fn [env f] (f env))))
+
+(defn unwrap-tuple [f (, a b)] (f a b))
+
+(defn wrap-tuple [f a b] (f (, a b)))
 
 (def example-insts
     [(add-inst [] (isin "ord" tunit))
@@ -1548,41 +1568,57 @@
 
 (defn infer-and-show [tenv class-env assumptions jcst] )
 
+(def builtin-ce
+    (apply-transformers
+        (map (fn [(, _ (=> a b))] (add-inst a b)) builtin-instances)
+            (add-prelude-classes initial-env)))
+
+(def builtin-tenv
+    (type-env
+        (map/from-list
+            [(, "ok" (tuple-scheme (generics [[] []] (tfn g0 (tresult g0 g1)))))
+                (, "err" (tuple-scheme (generics [[] []] (tfn g1 (tresult g0 g1)))))
+                (, "," (tuple-scheme (generics [[] []] (tfns [g0 g1] (mkpair g0 g1)))))])
+            (map/from-list [])))
+
 (,
     (fn [v]
         (program-results->s
             (infer/program
-                tenv/nil
-                    (apply-transformers
-                    example-insts
-                        (add-prelude-classes initial-env))
+                builtin-tenv
+                    builtin-ce
                     builtin-assumptions
                     [(, [] [[(parse-binding v)]])])))
-        [(, (@@ 11) "it:  int")
-        (, (@@ (+ 1 2)) "it:  int")
-        (,
-        (@@ (fn [a] (+ 1 a)))
-            "it: kinds: *; tc: [gen0 => num];  (fn [gen0] gen0)")
-        (, (@@ "Hello") "it:  (list char)")
-        (,
-        (@@ (fn [a] "Hello ${a}"))
-            "it: kinds: *; tc: [gen0 => show];  (fn [gen0] (list char))")
-        (, (@@ (ok 1)) "it: kinds: *;  (result int gen0)")
+        [(, (@@ 11) "it: int")
+        (, (@@ (+ 1 2)) "it: int")
+        (, (@@ (fn [a] (+ 1 a))) "it: a *; a ∈ num; (fn [a] a)")
+        (, (@@ "Hello") "it: string")
+        (, (@@ (fn [a] "Hello ${a}")) "it: a *; a ∈ show; (fn [a] string)")
+        (, (@@ (ok 1)) "it: a *; (result int a)")
         (,
         (@@
             (fn [a]
                 (if a
                     1
                         2)))
-            "it: kinds: *; tc: [gen0 => num];  (fn [bool] gen0)")
+            "it: a *; a ∈ num; (fn [bool] a)")
         (,
         (@@
             (match (ok 1)
                 (ok v)  v
                 (err e) 10))
-            )
+            "it: int")
+        (,
+        (@@
+            (match (, 1 true)
+                (, a false) a
+                (, _ true)  2))
+            "it: int")
         (** Shadowing **)
-        (, (@@ (let [a 2] (let [a "hi"] a))) "it:  (list char)")])
+        (, (@@ (let [a 2] (let [a "hi"] a))) "it: string")
+        (,
+        (@@ (fn [x] (return (, 2 x))))
+            "it: a *; b (*->*); c *; c ∈ num; b ∈ monad; (fn [a] (b (, c a)))")])
 
 (def program-results->s
     (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
@@ -1629,6 +1665,8 @@
 
 (defn generic [cls body] (generics [cls] body))
 
+(def concrete (generics []))
+
 (def g0 (tgen 0 -1))
 
 (def g1 (tgen 1 -1))
@@ -1650,6 +1688,11 @@
 
 (def trational (tapp tratio tint -1))
 
+(defn tuple-scheme [(, kinds qual)] (forall kinds qual))
+
+(def tuple-assump
+    (fn [(, name (, kinds qual))] (!>! name (forall kinds qual))))
+
 (def builtin-assumptions
     (let [
         map01   (tmap g0 g1)
@@ -1662,7 +1705,7 @@
         float   (generic ["floating"])
         floatUn (float (tfn g0 g0))]
         (map
-            (fn [(, name (, kinds qual))] (!>! name (forall kinds qual)))
+            tuple-assump
                 [(, "+" biNum)
                 (, "-" biNum)
                 (, "*" biNum)
