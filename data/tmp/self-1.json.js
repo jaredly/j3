@@ -12,541 +12,6 @@ return {type: 'bootstrap', stmts: [
     "loc": 403
   },
   {
-    "0": {
-      "0": "\\\\",
-      "1": {
-        "type": "nil"
-      },
-      "type": "estr"
-    },
-    "1": 4622,
-    "type": "sexpr",
-    "loc": 4622
-  },
-  {
-    "0": {
-      "0": "\\n",
-      "1": {
-        "type": "nil"
-      },
-      "type": "estr"
-    },
-    "1": 4625,
-    "type": "sexpr",
-    "loc": 4625
-  },
-  {
-    "0": {
-      "0": "\\\\n",
-      "1": {
-        "type": "nil"
-      },
-      "type": "estr"
-    },
-    "1": 4628,
-    "type": "sexpr",
-    "loc": 4628
-  },
-  {
-    "0": "ast",
-    "1": {
-      "0": "# AST",
-      "1": {
-        "type": "nil"
-      },
-      "type": "estr"
-    },
-    "type": "sdef",
-    "loc": 3514
-  },
-  {
-    "0": "array",
-    "1": {
-      "0": {
-        "0": "nil",
-        "1": {
-          "type": "nil"
-        },
-        "type": ","
-      },
-      "1": {
-        "0": {
-          "0": "cons",
-          "1": {
-            "0": {
-              "0": "a",
-              "type": "tcon"
-            },
-            "1": {
-              "0": {
-                "0": "a",
-                "type": "tcon"
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": "cons"
-          },
-          "type": ","
-        },
-        "1": {
-          "type": "nil"
-        },
-        "type": "cons"
-      },
-      "type": "cons"
-    },
-    "type": "sdeftype",
-    "loc": 590
-  },
-  {
-    "0": "expr",
-    "1": {
-      "0": {
-        "0": "eprim",
-        "1": {
-          "0": {
-            "0": "prim",
-            "type": "tcon"
-          },
-          "1": {
-            "type": "nil"
-          },
-          "type": "cons"
-        },
-        "type": ","
-      },
-      "1": {
-        "0": {
-          "0": "evar",
-          "1": {
-            "0": {
-              "0": "string",
-              "type": "tcon"
-            },
-            "1": {
-              "type": "nil"
-            },
-            "type": "cons"
-          },
-          "type": ","
-        },
-        "1": {
-          "0": {
-            "0": "elambda",
-            "1": {
-              "0": {
-                "0": "string",
-                "type": "tcon"
-              },
-              "1": {
-                "0": {
-                  "0": "expr",
-                  "type": "tcon"
-                },
-                "1": {
-                  "type": "nil"
-                },
-                "type": "cons"
-              },
-              "type": "cons"
-            },
-            "type": ","
-          },
-          "1": {
-            "0": {
-              "0": "eapp",
-              "1": {
-                "0": {
-                  "0": "expr",
-                  "type": "tcon"
-                },
-                "1": {
-                  "0": {
-                    "0": "expr",
-                    "type": "tcon"
-                  },
-                  "1": {
-                    "type": "nil"
-                  },
-                  "type": "cons"
-                },
-                "type": "cons"
-              },
-              "type": ","
-            },
-            "1": {
-              "0": {
-                "0": "elet",
-                "1": {
-                  "0": {
-                    "0": "string",
-                    "type": "tcon"
-                  },
-                  "1": {
-                    "0": {
-                      "0": "expr",
-                      "type": "tcon"
-                    },
-                    "1": {
-                      "0": {
-                        "0": "expr",
-                        "type": "tcon"
-                      },
-                      "1": {
-                        "type": "nil"
-                      },
-                      "type": "cons"
-                    },
-                    "type": "cons"
-                  },
-                  "type": "cons"
-                },
-                "type": ","
-              },
-              "1": {
-                "0": {
-                  "0": "ematch",
-                  "1": {
-                    "0": {
-                      "0": "expr",
-                      "type": "tcon"
-                    },
-                    "1": {
-                      "0": {
-                        "0": {
-                          "0": "pat",
-                          "type": "tcon"
-                        },
-                        "1": {
-                          "0": "expr",
-                          "type": "tcon"
-                        },
-                        "type": "tapp"
-                      },
-                      "1": {
-                        "type": "nil"
-                      },
-                      "type": "cons"
-                    },
-                    "type": "cons"
-                  },
-                  "type": ","
-                },
-                "1": {
-                  "type": "nil"
-                },
-                "type": "cons"
-              },
-              "type": "cons"
-            },
-            "type": "cons"
-          },
-          "type": "cons"
-        },
-        "type": "cons"
-      },
-      "type": "cons"
-    },
-    "type": "sdeftype",
-    "loc": 408
-  },
-  {
-    "0": "prim",
-    "1": {
-      "0": {
-        "0": "pint",
-        "1": {
-          "0": {
-            "0": "int",
-            "type": "tcon"
-          },
-          "1": {
-            "type": "nil"
-          },
-          "type": "cons"
-        },
-        "type": ","
-      },
-      "1": {
-        "0": {
-          "0": "pbool",
-          "1": {
-            "0": {
-              "0": "bool",
-              "type": "tcon"
-            },
-            "1": {
-              "type": "nil"
-            },
-            "type": "cons"
-          },
-          "type": ","
-        },
-        "1": {
-          "type": "nil"
-        },
-        "type": "cons"
-      },
-      "type": "cons"
-    },
-    "type": "sdeftype",
-    "loc": 529
-  },
-  {
-    "0": "pat",
-    "1": {
-      "0": {
-        "0": "pany",
-        "1": {
-          "type": "nil"
-        },
-        "type": ","
-      },
-      "1": {
-        "0": {
-          "0": "pvar",
-          "1": {
-            "0": {
-              "0": "string",
-              "type": "tcon"
-            },
-            "1": {
-              "type": "nil"
-            },
-            "type": "cons"
-          },
-          "type": ","
-        },
-        "1": {
-          "0": {
-            "0": "pprim",
-            "1": {
-              "0": {
-                "0": "prim",
-                "type": "tcon"
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": ","
-          },
-          "1": {
-            "0": {
-              "0": "pstr",
-              "1": {
-                "0": {
-                  "0": "string",
-                  "type": "tcon"
-                },
-                "1": {
-                  "type": "nil"
-                },
-                "type": "cons"
-              },
-              "type": ","
-            },
-            "1": {
-              "0": {
-                "0": "pcon",
-                "1": {
-                  "0": {
-                    "0": "string",
-                    "type": "tcon"
-                  },
-                  "1": {
-                    "0": {
-                      "0": "string",
-                      "type": "tcon"
-                    },
-                    "1": {
-                      "type": "nil"
-                    },
-                    "type": "cons"
-                  },
-                  "type": "cons"
-                },
-                "type": ","
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": "cons"
-          },
-          "type": "cons"
-        },
-        "type": "cons"
-      },
-      "type": "cons"
-    },
-    "type": "sdeftype",
-    "loc": 541
-  },
-  {
-    "0": "type",
-    "1": {
-      "0": {
-        "0": "tvar",
-        "1": {
-          "0": {
-            "0": "int",
-            "type": "tcon"
-          },
-          "1": {
-            "type": "nil"
-          },
-          "type": "cons"
-        },
-        "type": ","
-      },
-      "1": {
-        "0": {
-          "0": "tapp",
-          "1": {
-            "0": {
-              "0": "type",
-              "type": "tcon"
-            },
-            "1": {
-              "0": {
-                "0": "type",
-                "type": "tcon"
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": "cons"
-          },
-          "type": ","
-        },
-        "1": {
-          "0": {
-            "0": "tcon",
-            "1": {
-              "0": {
-                "0": "string",
-                "type": "tcon"
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": ","
-          },
-          "1": {
-            "type": "nil"
-          },
-          "type": "cons"
-        },
-        "type": "cons"
-      },
-      "type": "cons"
-    },
-    "type": "sdeftype",
-    "loc": 555
-  },
-  {
-    "0": "stmt",
-    "1": {
-      "0": {
-        "0": "sdeftype",
-        "1": {
-          "0": {
-            "0": "string",
-            "type": "tcon"
-          },
-          "1": {
-            "0": {
-              "0": {
-                "0": "string",
-                "type": "tcon"
-              },
-              "1": {
-                "0": "type",
-                "type": "tcon"
-              },
-              "type": "tapp"
-            },
-            "1": {
-              "type": "nil"
-            },
-            "type": "cons"
-          },
-          "type": "cons"
-        },
-        "type": ","
-      },
-      "1": {
-        "0": {
-          "0": "sdef",
-          "1": {
-            "0": {
-              "0": "string",
-              "type": "tcon"
-            },
-            "1": {
-              "0": {
-                "0": "expr",
-                "type": "tcon"
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": "cons"
-          },
-          "type": ","
-        },
-        "1": {
-          "0": {
-            "0": "sexpr",
-            "1": {
-              "0": {
-                "0": "expr",
-                "type": "tcon"
-              },
-              "1": {
-                "type": "nil"
-              },
-              "type": "cons"
-            },
-            "type": ","
-          },
-          "1": {
-            "type": "nil"
-          },
-          "type": "cons"
-        },
-        "type": "cons"
-      },
-      "type": "cons"
-    },
-    "type": "sdeftype",
-    "loc": 568
-  },
-  {
-    "0": "prelude",
-    "1": {
-      "0": "# prelude",
-      "1": {
-        "type": "nil"
-      },
-      "type": "estr"
-    },
-    "type": "sdef",
-    "loc": 3522
-  },
-  {
     "0": "join",
     "1": {
       "0": "sep",
@@ -1664,16 +1129,515 @@ return {type: 'bootstrap', stmts: [
     "loc": 2746
   },
   {
-    "0": "compilation",
-    "1": {
-      "0": "# compilation",
+    "0": {
+      "0": "\\\\",
       "1": {
         "type": "nil"
       },
       "type": "estr"
     },
-    "type": "sdef",
-    "loc": 3537
+    "1": 4622,
+    "type": "sexpr",
+    "loc": 4622
+  },
+  {
+    "0": {
+      "0": "\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4625,
+    "type": "sexpr",
+    "loc": 4625
+  },
+  {
+    "0": {
+      "0": "\\\\n",
+      "1": {
+        "type": "nil"
+      },
+      "type": "estr"
+    },
+    "1": 4628,
+    "type": "sexpr",
+    "loc": 4628
+  },
+  {
+    "0": "array",
+    "1": {
+      "0": {
+        "0": "nil",
+        "1": {
+          "type": "nil"
+        },
+        "type": ","
+      },
+      "1": {
+        "0": {
+          "0": "cons",
+          "1": {
+            "0": {
+              "0": "a",
+              "type": "tcon"
+            },
+            "1": {
+              "0": {
+                "0": "a",
+                "type": "tcon"
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": "cons"
+          },
+          "type": ","
+        },
+        "1": {
+          "type": "nil"
+        },
+        "type": "cons"
+      },
+      "type": "cons"
+    },
+    "type": "sdeftype",
+    "loc": 590
+  },
+  {
+    "0": "expr",
+    "1": {
+      "0": {
+        "0": "eprim",
+        "1": {
+          "0": {
+            "0": "prim",
+            "type": "tcon"
+          },
+          "1": {
+            "type": "nil"
+          },
+          "type": "cons"
+        },
+        "type": ","
+      },
+      "1": {
+        "0": {
+          "0": "evar",
+          "1": {
+            "0": {
+              "0": "string",
+              "type": "tcon"
+            },
+            "1": {
+              "type": "nil"
+            },
+            "type": "cons"
+          },
+          "type": ","
+        },
+        "1": {
+          "0": {
+            "0": "elambda",
+            "1": {
+              "0": {
+                "0": "string",
+                "type": "tcon"
+              },
+              "1": {
+                "0": {
+                  "0": "expr",
+                  "type": "tcon"
+                },
+                "1": {
+                  "type": "nil"
+                },
+                "type": "cons"
+              },
+              "type": "cons"
+            },
+            "type": ","
+          },
+          "1": {
+            "0": {
+              "0": "eapp",
+              "1": {
+                "0": {
+                  "0": "expr",
+                  "type": "tcon"
+                },
+                "1": {
+                  "0": {
+                    "0": "expr",
+                    "type": "tcon"
+                  },
+                  "1": {
+                    "type": "nil"
+                  },
+                  "type": "cons"
+                },
+                "type": "cons"
+              },
+              "type": ","
+            },
+            "1": {
+              "0": {
+                "0": "elet",
+                "1": {
+                  "0": {
+                    "0": "string",
+                    "type": "tcon"
+                  },
+                  "1": {
+                    "0": {
+                      "0": "expr",
+                      "type": "tcon"
+                    },
+                    "1": {
+                      "0": {
+                        "0": "expr",
+                        "type": "tcon"
+                      },
+                      "1": {
+                        "type": "nil"
+                      },
+                      "type": "cons"
+                    },
+                    "type": "cons"
+                  },
+                  "type": "cons"
+                },
+                "type": ","
+              },
+              "1": {
+                "0": {
+                  "0": "ematch",
+                  "1": {
+                    "0": {
+                      "0": "expr",
+                      "type": "tcon"
+                    },
+                    "1": {
+                      "0": {
+                        "0": {
+                          "0": "pat",
+                          "type": "tcon"
+                        },
+                        "1": {
+                          "0": "expr",
+                          "type": "tcon"
+                        },
+                        "type": "tapp"
+                      },
+                      "1": {
+                        "type": "nil"
+                      },
+                      "type": "cons"
+                    },
+                    "type": "cons"
+                  },
+                  "type": ","
+                },
+                "1": {
+                  "type": "nil"
+                },
+                "type": "cons"
+              },
+              "type": "cons"
+            },
+            "type": "cons"
+          },
+          "type": "cons"
+        },
+        "type": "cons"
+      },
+      "type": "cons"
+    },
+    "type": "sdeftype",
+    "loc": 408
+  },
+  {
+    "0": "prim",
+    "1": {
+      "0": {
+        "0": "pint",
+        "1": {
+          "0": {
+            "0": "int",
+            "type": "tcon"
+          },
+          "1": {
+            "type": "nil"
+          },
+          "type": "cons"
+        },
+        "type": ","
+      },
+      "1": {
+        "0": {
+          "0": "pbool",
+          "1": {
+            "0": {
+              "0": "bool",
+              "type": "tcon"
+            },
+            "1": {
+              "type": "nil"
+            },
+            "type": "cons"
+          },
+          "type": ","
+        },
+        "1": {
+          "type": "nil"
+        },
+        "type": "cons"
+      },
+      "type": "cons"
+    },
+    "type": "sdeftype",
+    "loc": 529
+  },
+  {
+    "0": "pat",
+    "1": {
+      "0": {
+        "0": "pany",
+        "1": {
+          "type": "nil"
+        },
+        "type": ","
+      },
+      "1": {
+        "0": {
+          "0": "pvar",
+          "1": {
+            "0": {
+              "0": "string",
+              "type": "tcon"
+            },
+            "1": {
+              "type": "nil"
+            },
+            "type": "cons"
+          },
+          "type": ","
+        },
+        "1": {
+          "0": {
+            "0": "pprim",
+            "1": {
+              "0": {
+                "0": "prim",
+                "type": "tcon"
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": ","
+          },
+          "1": {
+            "0": {
+              "0": "pstr",
+              "1": {
+                "0": {
+                  "0": "string",
+                  "type": "tcon"
+                },
+                "1": {
+                  "type": "nil"
+                },
+                "type": "cons"
+              },
+              "type": ","
+            },
+            "1": {
+              "0": {
+                "0": "pcon",
+                "1": {
+                  "0": {
+                    "0": "string",
+                    "type": "tcon"
+                  },
+                  "1": {
+                    "0": {
+                      "0": "string",
+                      "type": "tcon"
+                    },
+                    "1": {
+                      "type": "nil"
+                    },
+                    "type": "cons"
+                  },
+                  "type": "cons"
+                },
+                "type": ","
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": "cons"
+          },
+          "type": "cons"
+        },
+        "type": "cons"
+      },
+      "type": "cons"
+    },
+    "type": "sdeftype",
+    "loc": 541
+  },
+  {
+    "0": "type",
+    "1": {
+      "0": {
+        "0": "tvar",
+        "1": {
+          "0": {
+            "0": "int",
+            "type": "tcon"
+          },
+          "1": {
+            "type": "nil"
+          },
+          "type": "cons"
+        },
+        "type": ","
+      },
+      "1": {
+        "0": {
+          "0": "tapp",
+          "1": {
+            "0": {
+              "0": "type",
+              "type": "tcon"
+            },
+            "1": {
+              "0": {
+                "0": "type",
+                "type": "tcon"
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": "cons"
+          },
+          "type": ","
+        },
+        "1": {
+          "0": {
+            "0": "tcon",
+            "1": {
+              "0": {
+                "0": "string",
+                "type": "tcon"
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": ","
+          },
+          "1": {
+            "type": "nil"
+          },
+          "type": "cons"
+        },
+        "type": "cons"
+      },
+      "type": "cons"
+    },
+    "type": "sdeftype",
+    "loc": 555
+  },
+  {
+    "0": "stmt",
+    "1": {
+      "0": {
+        "0": "sdeftype",
+        "1": {
+          "0": {
+            "0": "string",
+            "type": "tcon"
+          },
+          "1": {
+            "0": {
+              "0": {
+                "0": "string",
+                "type": "tcon"
+              },
+              "1": {
+                "0": "type",
+                "type": "tcon"
+              },
+              "type": "tapp"
+            },
+            "1": {
+              "type": "nil"
+            },
+            "type": "cons"
+          },
+          "type": "cons"
+        },
+        "type": ","
+      },
+      "1": {
+        "0": {
+          "0": "sdef",
+          "1": {
+            "0": {
+              "0": "string",
+              "type": "tcon"
+            },
+            "1": {
+              "0": {
+                "0": "expr",
+                "type": "tcon"
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": "cons"
+          },
+          "type": ","
+        },
+        "1": {
+          "0": {
+            "0": "sexpr",
+            "1": {
+              "0": {
+                "0": "expr",
+                "type": "tcon"
+              },
+              "1": {
+                "type": "nil"
+              },
+              "type": "cons"
+            },
+            "type": ","
+          },
+          "1": {
+            "type": "nil"
+          },
+          "type": "cons"
+        },
+        "type": "cons"
+      },
+      "type": "cons"
+    },
+    "type": "sdeftype",
+    "loc": 568
   },
   {
     "0": "literal-constr",
@@ -2597,18 +2561,6 @@ return {type: 'bootstrap', stmts: [
     },
     "type": "sdef",
     "loc": 638
-  },
-  {
-    "0": "util",
-    "1": {
-      "0": "# util",
-      "1": {
-        "type": "nil"
-      },
-      "type": "estr"
-    },
-    "type": "sdef",
-    "loc": 3539
   },
   {
     "0": "snd",

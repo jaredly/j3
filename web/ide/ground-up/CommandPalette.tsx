@@ -440,6 +440,9 @@ function extractToToplevel(
     input: string,
     dispatch: React.Dispatch<Action>,
 ) {
+    if (!ev.analysis) {
+        throw new Error('evaluator doesnt have analysis');
+    }
     const state = store.getState();
     const path = state.at[0].start;
 
@@ -459,7 +462,7 @@ function extractToToplevel(
     if (!stmt) {
         throw new Error(`no stmt`);
     }
-    const topExternals = ev.dependencies(stmt);
+    const topExternals = ev.analysis.dependencies(stmt);
     const extMap: Record<string, true> = {};
     topExternals.forEach((ex) => (extMap[ex.name] = true));
 
@@ -470,7 +473,9 @@ function extractToToplevel(
         throw new Error(`doesn't parse`);
     }
 
-    const externals = ev.dependencies(parsed).filter((ex) => !extMap[ex.name]);
+    const externals = ev.analysis
+        .dependencies(parsed)
+        .filter((ex) => !extMap[ex.name]);
 
     const nid = newId([input], state.nidx());
     const repl = externals.length

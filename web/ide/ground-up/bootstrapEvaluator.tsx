@@ -14,21 +14,23 @@ import { sanitizedEnv } from './loadEv';
 export const bootstrapEvaluator = (
     id: string,
     data: any,
-): FullEvalator<any, stmt & { loc: number }, expr> => {
+): FullEvalator<
+    { values: { [key: string]: any }; source: string[] },
+    stmt & { loc: number },
+    expr
+> => {
     let benv = bootstrap.init();
     data.stmts.forEach((stmt: stmt & { loc: number }) => {
         const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {}, {});
         benv = res.env;
     });
-    const san = sanitizedEnv(benv);
+    const san = sanitizedEnv(benv.values);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
     return {
         id,
-        init(): string[] {
-            return [];
+        init() {
+            return { values: bootstrap.init(), source: [] };
         },
-        stmtNames: () => [],
-        dependencies: () => [],
         setTracing(idx, traceMap) {},
         addStatements(stmts: Record<number, stmt>, env) {
             const display: Record<number, Produce> = {};
@@ -41,38 +43,31 @@ export const bootstrapEvaluator = (
                     let raw;
                     try {
                         raw = benv.values['compile-st'](stmt);
-                        env.push(raw);
+                        env.source.push(raw);
                         try {
                             const name = stmt.type === 'sdef' ? stmt[0] : null;
                             const res = new Function(
                                 envArgs,
                                 '{' +
-                                    env.join('\n') +
+                                    env.source.join('\n') +
                                     (stmt.type === 'sdef'
-                                        ? `\nreturn ${stmt[0]}`
+                                        ? `\nreturn ${sanitize(stmt[0])}`
                                         : '') +
                                     '}',
                             )(san);
-                            return {
-                                env,
-                                display: valueToString(res),
-                                values: name ? { [name]: res } : {},
-                            };
+                            if (name) {
+                                values[name] = res;
+                            }
+                            display[+loc] = valueToString(res);
+                            return;
                         } catch (err) {
-                            return {
-                                env,
-                                display: `Evaluation error ${
-                                    (err as Error).message
-                                }`,
-                            };
+                            display[+loc] = `Evaluation error ${
+                                (err as Error).message
+                            }`;
                         }
-                        // return { env, display: 'compiled.' };
                     } catch (err) {
                         console.error(err);
-                        return {
-                            env,
-                            display: 'Failed ' + (err as Error).message,
-                        };
+                        display[+loc] = err as Error;
                     }
                 }
                 if (stmt.type === 'sexpr') {
@@ -81,34 +76,32 @@ export const bootstrapEvaluator = (
                         raw = benv.values['compile-st'](stmt);
                     } catch (err) {
                         console.error(err);
-                        return {
-                            env,
-                            display:
-                                'Compilation failed: ' + (err as Error).message,
-                        };
+                        display[+loc] = new Error(
+                            'Compilation failed: ' + (err as Error).message,
+                        );
+                        return;
                     }
                     try {
                         const res = new Function(
                             envArgs,
-                            '{' + env.join('\n') + '\nreturn ' + raw + '}',
+                            '{' +
+                                env.source.join('\n') +
+                                '\nreturn ' +
+                                raw +
+                                '}',
                         )(san);
-                        return {
-                            env,
-                            display: valueToString(res),
-                            values: { _: res },
-                        };
+                        display[+loc] = valueToString(res);
+                        values._ = res;
                     } catch (err) {
                         console.log(envArgs);
                         console.log(raw);
                         console.error(err);
-                        return {
-                            env,
-                            display:
-                                'Error evaluating! ' +
+                        display[+loc] = new Error(
+                            'Error evaluating! ' +
                                 (err as Error).message +
                                 '\n' +
                                 raw,
-                        };
+                        );
                     }
                 }
             });
@@ -147,15 +140,23 @@ export const bootstrapEvaluator = (
                     console.error(err);
                 }
             });
-            env.push(
+            env.source.push(
                 `return {type: 'fns', ${names
                     .map((name) => sanitize(name))
                     .sort()
                     .join(', ')}}`,
             );
-            return { js: env.join('\n'), errors };
+            return { js: env.source.join('\n'), errors };
         },
         parse(node, errors) {
+            if (
+                node.type === 'blank' ||
+                node.type === 'comment' ||
+                node.type === 'comment-node' ||
+                node.type === 'rich-text'
+            ) {
+                return;
+            }
             const ctx = { errors, display: {} };
             const stmt = parseStmt(node, ctx) as stmt & { loc: number };
             if (Object.keys(ctx.errors).length || !stmt) {
@@ -179,7 +180,7 @@ export const bootstrapEvaluator = (
             try {
                 const res = new Function(
                     envArgs,
-                    '{' + env.join('\n') + '\nreturn ' + raw + '}',
+                    '{' + env.source.join('\n') + '\nreturn ' + raw + '}',
                 )(san);
                 return res;
             } catch (err) {

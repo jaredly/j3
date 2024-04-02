@@ -9,7 +9,7 @@ import {
 import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { NUIResults } from './Store';
-import { LocedName, SortedInfo, sortTops } from './sortTops';
+import { LocedName } from './sortTops';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import equal from 'fast-deep-equal';
@@ -40,12 +40,16 @@ export type ResultsCache<Stmt> = {
             ids: number[];
             parsed: void | {
                 stmt: Stmt;
-                names: LocedName[];
-                deps: LocedName[];
-                failed: boolean;
             };
             parseErrors: Errors | null;
             display: NUIResults['display'];
+        };
+    };
+    deps?: {
+        [top: number]: {
+            names: LocedName[];
+            deps: LocedName[];
+            duplicate?: boolean;
         };
     };
 
@@ -91,6 +95,20 @@ const displayFunction = (config?: {
     return (value) => [valueToString(value)];
 };
 
+type DepsOrNoDeps =
+    | {
+          type: 'nodeps';
+          id: number;
+          names?: null;
+          deps?: null;
+      }
+    | {
+          type: 'deps';
+          id: number;
+          names: LocedName[];
+          deps: LocedName[];
+      };
+
 export const getResults = <
     Env extends { values: { [key: string]: any } },
     Stmt,
@@ -108,6 +126,7 @@ export const getResults = <
         cache.results = {};
         cache.types = {};
         cache.nodes = {};
+        cache.deps = evaluator?.analysis ? {} : undefined;
         cache.lastState = null;
         cache.lastEvaluator = evaluator;
         cache.settings.debugExecOrder = debugExecOrder;
@@ -189,7 +208,7 @@ export const getResults = <
             ) {
                 Object.assign(results.display, cache.nodes[top.top].display);
 
-                if (cache.nodes[top.top].parsed?.names) {
+                if (cache.deps?.[top.top].names) {
                     registerNames(cache, top.top, results, idForName);
                 }
 
@@ -207,7 +226,7 @@ export const getResults = <
             )
         ) {
             Object.assign(results.display, cache.nodes[top.top].display);
-            if (cache.nodes[top.top].parsed?.names) {
+            if (cache.deps?.[top.top].names) {
                 registerNames(cache, top.top, results, idForName);
             }
 
@@ -232,47 +251,47 @@ export const getResults = <
             // console.log('no stmt', node, errors);
             results.produce[top.top] = [JSON.stringify(errors)];
         }
-        const names = stmt ? evaluator.stmtNames(stmt) : null;
         cache.nodes[top.top] = {
             ns: top.ns,
             ids,
             node,
             display,
-            parsed: stmt
-                ? {
-                      stmt,
-                      failed: false,
-                      // TODO could work harder to cache these, but it's fine
-                      names: names!,
-                      deps: evaluator.dependencies(stmt),
-                  }
-                : undefined,
+            parsed: stmt ? { stmt } : undefined,
             parseErrors: Object.keys(errors).length ? errors : null,
         };
-        if (cache.nodes[top.top].parsed?.names) {
-            registerNames(cache, top.top, results, idForName);
+
+        if (stmt && evaluator.analysis) {
+            if (changes[top.top].stmt) {
+                const names = evaluator.analysis.stmtNames(stmt);
+                const deps = evaluator.analysis.dependencies(stmt);
+                cache.deps![top.top] = { names, deps };
+                // TODO could work harder to cache these, but it's fine
+                //     names: names!,
+                // if (cache.nodes[top.top].parsed?.names) {
+                //     registerNames(cache, top.top, results, idForName);
+                // }
+            }
         }
     });
 
-    // const sorted = sortTops(tops, state, results, evaluator);
-    const sortedTops = depSort(
-        tops
-            .map(({ top }) => {
-                if (!cache.nodes[top].parsed) {
-                    // console.log('Not parsed', top);
-                }
-
-                return cache.nodes[top].parsed &&
-                    !cache.nodes[top].parsed!.failed
-                    ? {
-                          id: top,
-                          names: cache.nodes[top].parsed!.names,
-                          deps: cache.nodes[top].parsed!.deps,
-                      }
-                    : null;
-            })
-            .filter(filterNulls),
-    );
+    const sortedTops: DepsOrNoDeps[][] = !cache.deps
+        ? tops
+              .filter((top) => cache.nodes[top.top].parsed)
+              .map(({ top }) => [{ type: 'nodeps', id: top } as const])
+        : depSort(
+              tops
+                  .map(({ top }) => {
+                      return cache.deps?.[top] && !cache.deps[top].duplicate
+                          ? {
+                                type: 'deps' as const,
+                                id: top,
+                                names: cache.deps[top].names,
+                                deps: cache.deps[top].deps,
+                            }
+                          : null;
+                  })
+                  .filter(filterNulls),
+          );
 
     const topsById: Record<number, ReturnType<typeof findTops>[0]> = {};
     tops.forEach((top) => (topsById[top.top] = top));
@@ -294,6 +313,7 @@ export const getResults = <
                     changes[node.id].ns ||
                     changes[node.id].source ||
                     !cache.results[node.id] ||
+                    !node.deps ||
                     node.deps.some((id) => changes[idForName[id.name]]?.value);
 
                 if (reRun) {
@@ -343,13 +363,14 @@ export const getResults = <
 
         const allDeps = unique(
             group
-                .flatMap((node) => node.deps)
+                .flatMap((node) => node.deps ?? [])
                 .map((n) => idForName[n.name])
                 .filter(filterNulls),
         );
         const ids = group.map((g) => g.id).sort();
         const groupKey = ids.join(':');
         const retype =
+            !evaluator.analysis ||
             !cache.types[groupKey] ||
             group.some((node) => changes[node.id].stmt) ||
             allDeps.some((id) => changes[id].type);
@@ -370,7 +391,7 @@ export const getResults = <
                 );
                 const types = group.flatMap((node) =>
                     node.names
-                        .filter((n) => n.kind === 'value')
+                        ?.filter((n) => n.kind === 'value')
                         .map((n) => evaluator.typeForName!(tenv, n.name)),
                 );
                 const gCache = cache.types[groupKey];
@@ -432,11 +453,15 @@ export const getResults = <
                 results.produce[node.id] = Array.isArray(display[node.id])
                     ? (display[node.id] as any)
                     : [display[node.id]];
-                node.names.forEach(({ name, kind }) => {
-                    if (kind === 'value') {
-                        results.env.values[name] = values[name];
-                    }
-                });
+                if (!node.names) {
+                    Object.assign(results.env.values, values);
+                } else {
+                    node.names?.forEach(({ name, kind }) => {
+                        if (kind === 'value') {
+                            results.env.values[name] = values[name];
+                        }
+                    });
+                }
 
                 let pluginResult;
                 if (topsById[node.id].ns.plugin) {
@@ -465,12 +490,19 @@ export const getResults = <
                     results.pluginResults[node.id] =
                         cache.results[node.id].pluginResult;
                 }
-                node.names.forEach(({ name, kind }) => {
-                    if (kind === 'value') {
-                        results.env.values[name] =
-                            cache.results[node.id].values[name];
-                    }
-                });
+                if (!node.names) {
+                    Object.assign(
+                        results.env.values,
+                        cache.results[node.id].values,
+                    );
+                } else {
+                    node.names.forEach(({ name, kind }) => {
+                        if (kind === 'value') {
+                            results.env.values[name] =
+                                cache.results[node.id].values[name];
+                        }
+                    });
+                }
             });
         }
     });
@@ -510,19 +542,20 @@ export const processPlugin = (
 };
 
 export function showExecOrder(
-    group: { id: number; names: LocedName[]; deps: LocedName[] }[],
+    group: DepsOrNoDeps[],
     results: NUIResults,
     i: number,
 ) {
-    const names = unique(
-        group
-            .flatMap((group) => group.names)
-            .filter((n) => n.kind === 'value')
-            .map((n) => n.name),
-    );
+    const names = group
+        .flatMap((group) => group.names ?? [])
+        .filter((n) => n.kind === 'value')
+        .map((n) => n.name);
 
     const prefix = '🍉 ';
     group.forEach((node) => {
+        if (!node.deps) {
+            return;
+        }
         if (!results.produce[node.id]) {
             results.produce[node.id] = [];
         } else {
@@ -544,11 +577,11 @@ export const registerNames = (
     results: NUIResults,
     idForName: { [name: string]: number },
 ) => {
-    for (let name of cache.nodes[top].parsed!.names) {
+    for (let name of cache.deps![top].names) {
         results.jumpToName[name.name] = name.loc;
         if (name.kind === 'value') {
             if (idForName[name.name] != null) {
-                cache.nodes[top].parsed!.failed = true;
+                cache.deps![top].duplicate = true;
                 results.produce[top] = [
                     new Error(`Name already defined: ${name.name}`),
                 ];

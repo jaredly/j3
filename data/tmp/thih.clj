@@ -1565,89 +1565,6 @@
 
 (defn preds/apply [subst preds] (map (pred/apply subst) preds))
 
-(** ## Puttin in all together **)
-
-(defn parse-binding [jcst]
-    (match jcst
-        (cst/list [(cst/identifier "fn" l) (cst/array items _) body] _) (, "it" [(, (map parse-pat items) (parse-expr body))])
-        _                                                               (, "it" [(, [] (parse-expr jcst))])))
-
-(def builtin-ce
-    (apply-transformers
-        (map (fn [(, _ (=> a b))] (add-inst a b)) builtin-instances)
-            (add-prelude-classes initial-env)))
-
-(def builtin-tenv
-    (type-env
-        (map/from-list
-            [(, "ok" (tuple-scheme (generics [[] []] (tfn g0 (tresult g0 g1)))))
-                (, "err" (tuple-scheme (generics [[] []] (tfn g1 (tresult g0 g1)))))
-                (, "," (tuple-scheme (generics [[] []] (tfns [g0 g1] (mkpair g0 g1)))))])
-            (map/from-list [])))
-
-(def program-results->s
-    (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
-
-(,
-    (fn [v]
-        (program-results->s
-            (infer/program
-                builtin-tenv
-                    builtin-ce
-                    builtin-assumptions
-                    [(, [] [[(parse-binding v)]])])))
-        [(, (@@ 11) "it: int")
-        (, (@@ (+ 1 2)) "it: int")
-        (, (@@ (fn [a] (+ 1 a))) "it: a *; a ∈ num; (fn [a] a)")
-        (, (@@ "Hello") "it: string")
-        (, (@@ "My age is ${10} and hieght is ${1.12}") "it: string")
-        (,
-        (@@ (fn [x] (, (+ 1 x) "${x}")))
-            "it: a *; a ∈ pretty; a ∈ num; (fn [a] (, a string))")
-        (, (@@ (fn [a] "Hello ${a}")) "it: a *; a ∈ pretty; (fn [a] string)")
-        (, (@@ (ok 1)) "it: a *; (result int a)")
-        (,
-        (@@
-            (fn [a]
-                (if a
-                    1
-                        2)))
-            "it: a *; a ∈ num; (fn [bool] a)")
-        (, (@@ [1]) "it: (list int)")
-        (,
-        (@@
-            (match (ok 1)
-                (ok v)  v
-                (err e) 10))
-            "it: int")
-        (, (@@ (cons 1 [2.0])) "it: (list double)")
-        (,
-        (@@
-            (match (, 1 true)
-                (, a false) a
-                (, _ true)  2))
-            "it: int")
-        (** Shadowing **)
-        (, (@@ (let [a 2] (let [a "hi"] a))) "it: string")
-        (,
-        (@@ (fn [x] (return (, 2 x))))
-            "it: a *; b (*->*); c *; c ∈ num; b ∈ monad; (fn [a] (b (, c a)))")
-        (,
-        (@@
-            (letrec
-                [even
-                    (fn [x]
-                    (if (< x 1)
-                        true
-                            (odd (- x 1))))
-                    odd
-                    (fn [x]
-                    (if (< x 1)
-                        true
-                            (even (- x 1))))]
-                    (even 10)))
-            "it: bool")])
-
 (** ## Builtins and such **)
 
 (defn tmap [k v]
@@ -1844,9 +1761,92 @@
 
 (defn dot [a b c] (a (b c)))
 
+(** ## Puttin in all together **)
+
+(defn parse-binding [jcst]
+    (match jcst
+        (cst/list [(cst/identifier "fn" l) (cst/array items _) body] _) (, "it" [(, (map parse-pat items) (parse-expr body))])
+        _                                                               (, "it" [(, [] (parse-expr jcst))])))
+
+(def builtin-ce
+    (apply-transformers
+        (map (fn [(, _ (=> a b))] (add-inst a b)) builtin-instances)
+            (add-prelude-classes initial-env)))
+
+(def builtin-tenv
+    (type-env
+        (map/from-list
+            [(, "ok" (tuple-scheme (generics [[] []] (tfn g0 (tresult g0 g1)))))
+                (, "err" (tuple-scheme (generics [[] []] (tfn g1 (tresult g0 g1)))))
+                (, "," (tuple-scheme (generics [[] []] (tfns [g0 g1] (mkpair g0 g1)))))])
+            (map/from-list [])))
+
+(def program-results->s
+    (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
+
+(,
+    (fn [v]
+        (program-results->s
+            (infer/program
+                builtin-tenv
+                    builtin-ce
+                    builtin-assumptions
+                    [(, [] [[(parse-binding v)]])])))
+        [(, (@@ 11) "it: int")
+        (, (@@ (+ 1 2)) "it: int")
+        (, (@@ (fn [a] (+ 1 a))) "it: a *; a ∈ num; (fn [a] a)")
+        (, (@@ "Hello") "it: string")
+        (, (@@ "My age is ${10} and hieght is ${1.12}") "it: string")
+        (,
+        (@@ (fn [x] (, (+ 1 x) "${x}")))
+            "it: a *; a ∈ pretty; a ∈ num; (fn [a] (, a string))")
+        (, (@@ (fn [a] "Hello ${a}")) "it: a *; a ∈ pretty; (fn [a] string)")
+        (, (@@ (ok 1)) "it: a *; (result int a)")
+        (,
+        (@@
+            (fn [a]
+                (if a
+                    1
+                        2)))
+            "it: a *; a ∈ num; (fn [bool] a)")
+        (, (@@ [1]) "it: (list int)")
+        (,
+        (@@
+            (match (ok 1)
+                (ok v)  v
+                (err e) 10))
+            "it: int")
+        (, (@@ (cons 1 [2.0])) "it: (list double)")
+        (,
+        (@@
+            (match (, 1 true)
+                (, a false) a
+                (, _ true)  2))
+            "it: int")
+        (** Shadowing **)
+        (, (@@ (let [a 2] (let [a "hi"] a))) "it: string")
+        (,
+        (@@ (fn [x] (return (, 2 x))))
+            "it: a *; b (*->*); c *; c ∈ num; b ∈ monad; (fn [a] (b (, c a)))")
+        (,
+        (@@
+            (letrec
+                [even
+                    (fn [x]
+                    (if (< x 1)
+                        true
+                            (odd (- x 1))))
+                    odd
+                    (fn [x]
+                    (if (< x 1)
+                        true
+                            (even (- x 1))))]
+                    (even 10)))
+            "it: bool")])
+
 (** ## Export as Evaluator **)
 
-((eval
+;((eval
     "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference builtin-env infer-stmtss tenv/merge infer)

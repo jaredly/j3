@@ -38,7 +38,7 @@ export class LocError extends Error {
 
         locs.forEach(({ row, col }) => {
             if (row - 1 >= lines.length) {
-                return console.error('Row out of bounds?', row, lines.length);
+                return; // console.error('Row out of bounds?', row, lines.length);
             }
 
             for (let i = row - 1; i >= 0; i--) {
@@ -70,7 +70,7 @@ export class LocError extends Error {
                 }
             }
 
-            console.error(`Cant symbolicate`, { row, col });
+            // console.error(`Cant symbolicate`, { row, col });
         });
     }
 }
@@ -91,6 +91,7 @@ export type FullEvalator<
     parse(node: Node, errors: Errors): Stmt | void;
     parseExpr(node: Node, errors: Errors): Expr | void;
 
+    // Type checker stuff
     initType?(): TypeEnv;
     infer?(stmts: Stmt[], env: TypeEnv): TypeEnv;
     inferExpr?(expr: Expr, env: TypeEnv): Type;
@@ -98,8 +99,11 @@ export type FullEvalator<
     typeForName?(env: TypeEnv, name: string): Type;
     typeToString?(type: Type): string;
 
-    dependencies(stmt: Stmt): LocedName[];
-    stmtNames(stmt: Stmt): LocedName[];
+    analysis?: {
+        dependencies(stmt: Stmt): LocedName[];
+        stmtNames(stmt: Stmt): LocedName[];
+    };
+
     addStatements(
         stmts: { [key: number]: Stmt },
         env: Env,
@@ -120,10 +124,6 @@ export type FullEvalator<
 export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     id: 'repr',
     init: () => ({ values: {} }),
-    dependencies(stmt) {
-        return [];
-    },
-    stmtNames: () => [],
     parse(node: Node, errors: Errors) {
         return node;
     },
@@ -152,8 +152,6 @@ export const bootstrap: FullEvalator<
     init: () => {
         return { values: builtins() };
     },
-    stmtNames: () => [],
-    dependencies: () => [],
     parse(node, errors) {
         const ctx = { errors, display: {} };
         const stmt = parseStmt(node, ctx) as stmt & { loc: number };
@@ -168,7 +166,7 @@ export const bootstrap: FullEvalator<
         return parseExpr(node, ctx);
     },
     evaluate(expr, env) {
-        return evalExpr(expr, env);
+        return evalExpr(expr, env.values);
     },
     setTracing(idx) {},
     addStatements(stmts, env) {
@@ -181,7 +179,7 @@ export const bootstrap: FullEvalator<
                     try {
                         const res = (env.values[stmt[0]] = evalExpr(
                             stmt[1],
-                            env,
+                            env.values,
                         ));
                         if (stmt[0] === 'builtins') {
                             Object.assign(env.values, extractBuiltins(res));

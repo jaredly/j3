@@ -1,8 +1,12 @@
 (deftype (array a) (cons a (array a)) (nil))
 
-(deftype x)
+"Hello0"
 
-"Hello"
+,
+
+"Hello ${111}"
+
+nil
 
 ((fn [a] (a "")) ,)
 
@@ -10,11 +14,13 @@
 
 (+ 1 hi)
 
-(def lol (+ 1 hi))
+(def lolfn (+ 1 hi))
 
 (defn xx [one] (+ 1 one))
 
-(def hi (lolz 10 23 aa bb))
+(def hi 10)
+
+(def hio (lolz 10 23 aa bb))
 
 (let [one 23] (xx one))
 
@@ -68,11 +74,9 @@ nil
 
 (cons 1 (nil))
 
-(defn lol [x] (let [y x] (+ x y)))
+(defn lolz [x] (let [y x] (+ x y)))
 
-lol
-
-(lol 2)
+(lolz 2)
 
 (@ [1 2])
 

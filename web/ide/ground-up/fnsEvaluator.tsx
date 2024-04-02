@@ -15,7 +15,7 @@ import { toJCST } from './round-1/j-cst';
 import { FnsEnv, TraceMap, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
-import { LocedName, sortTops } from '../../custom/store/sortTops';
+import { LocedName } from '../../custom/store/sortTops';
 import { filterNulls } from '../../custom/reduce';
 import { unique } from '../../custom/store/getResults';
 
@@ -100,39 +100,41 @@ export const fnsEvaluator = (
             return data['type_to_string'](type);
         },
 
-        dependencies(stmt) {
-            if (!data['externals_stmt']) {
-                return [];
-            }
-            const deps = unwrapArray<{
-                type: ',';
-                0: string;
-                1: { type: 'value' | 'type' };
-                2: number;
-            }>(data['externals_stmt'](stmt));
-            return deps.map((item) => ({
-                name: item[0],
-                loc: item[2],
-                kind: item[1].type,
-            }));
-        },
-
-        stmtNames(stmt) {
-            if (data['names']) {
-                return unwrapArray(
-                    data['names'](stmt) as arr<{
-                        type: ',';
-                        0: string;
-                        1: { type: 'value' | 'type' };
-                        2: number;
-                    }>,
-                ).map((res) => ({
-                    name: res[0],
-                    loc: res[2],
-                    kind: res[1].type,
+        analysis: {
+            dependencies(stmt) {
+                if (!data['externals_stmt']) {
+                    return [];
+                }
+                const deps = unwrapArray<{
+                    type: ',';
+                    0: string;
+                    1: { type: 'value' | 'type' };
+                    2: number;
+                }>(data['externals_stmt'](stmt));
+                return deps.map((item) => ({
+                    name: item[0],
+                    loc: item[2],
+                    kind: item[1].type,
                 }));
-            }
-            return [];
+            },
+
+            stmtNames(stmt) {
+                if (data['names']) {
+                    return unwrapArray(
+                        data['names'](stmt) as arr<{
+                            type: ',,';
+                            0: string;
+                            1: { type: 'value' | 'type' };
+                            2: number;
+                        }>,
+                    ).map((res) => ({
+                        name: res[0],
+                        loc: res[2],
+                        kind: res[1].type,
+                    }));
+                }
+                return [];
+            },
         },
 
         parse(node, errors) {
@@ -161,6 +163,9 @@ export const fnsEvaluator = (
         },
 
         toFile(state, target) {
+            if (!this.analysis) {
+                throw new Error(`toFile requires analysis`);
+            }
             let env = this.init();
             let tenv = this.initType?.();
             const errors: Errors = {};
@@ -186,8 +191,8 @@ export const fnsEvaluator = (
                             top,
                             node,
                             stmt,
-                            names: this.stmtNames(stmt),
-                            deps: this.dependencies(stmt),
+                            names: this.analysis!.stmtNames(stmt),
+                            deps: this.analysis!.dependencies(stmt),
                         };
                     })
                     .filter(filterNulls),

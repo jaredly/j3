@@ -12,7 +12,10 @@ I really need ... type aliases. pleeease.
 
 - [x] gotta be able to ...spread in front of a thing
 
-- [ ] allow you to "turn off" the output... probably by setting 'display' to 'none'...
+- [x] allow you to "turn off" the output... probably by setting 'display' to 'none'...
+
+- [ ] get a test going to actually verify that my "self-hosting" chain is contiguous.
+  I've been playing fast and loose.
 
 I REALLLY want to be able to drag things around
 
