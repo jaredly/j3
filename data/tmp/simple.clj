@@ -2,7 +2,11 @@
 
 (deftype x)
 
+"Hello"
+
 ((fn [a] (a "")) ,)
+
+(def lol 10)
 
 (+ 1 hi)
 

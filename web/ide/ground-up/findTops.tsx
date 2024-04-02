@@ -169,10 +169,11 @@ const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
 export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
     let all: {
         top: number;
-        hidden?: boolean;
         path: Path[];
-        plugin?: RealizedNamespace['plugin'];
-        display?: RealizedNamespace['display'];
+        // hidden?: boolean;
+        // plugin?: RealizedNamespace['plugin'];
+        // display?: RealizedNamespace['display'];
+        ns: RealizedNamespace;
     }[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
     const add = (id: number, path: Path[]) => {
@@ -182,10 +183,11 @@ export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
                 seen[ns.top] = true;
                 all.push({
                     top: ns.top,
-                    hidden: ns.hidden,
+                    // hidden: ns.hidden,
                     path: [...path, { type: 'ns-top', idx: id }],
-                    plugin: ns.plugin,
-                    display: ns.display,
+                    // plugin: ns.plugin,
+                    // display: ns.display,
+                    ns,
                 });
             }
             ns.children.forEach((child, i) =>

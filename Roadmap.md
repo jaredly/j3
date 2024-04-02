@@ -12,6 +12,8 @@ I really need ... type aliases. pleeease.
 
 - [x] gotta be able to ...spread in front of a thing
 
+- [ ] allow you to "turn off" the output... probably by setting 'display' to 'none'...
+
 I REALLLY want to be able to drag things around
 
 - [ ] I kindof want "collapse" to be ternary.

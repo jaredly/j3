@@ -295,7 +295,7 @@ const renderProduceItem = (
         return <div>Error {value.message}</div>;
     }
     if (typeof value === 'string') {
-        return value;
+        return value.length > 1000 ? value.slice(0, 1000) + '...' : value;
     }
     if (!value) return 'No value?';
     return value;

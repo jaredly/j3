@@ -14,6 +14,7 @@ export const useStore = (initialState: NUIState) => {
             results: {},
             lastState: null,
             lastEvaluator: null,
+            settings: { debugExecOrder: false },
         }),
         [],
     );

@@ -63,7 +63,7 @@ export function sortTops<
                 results.produce[node.loc] = [
                     'not parsed ' + JSON.stringify(errs),
                 ];
-                if (top.plugin) {
+                if (top.ns.plugin) {
                     return {
                         id: top.top,
                         top,

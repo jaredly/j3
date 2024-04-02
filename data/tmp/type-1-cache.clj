@@ -1512,6 +1512,9 @@
                         (, "unescapeString" (concrete (tfns [tstring] tstring)))
                         (, "int-to-string" (concrete (tfns [tint] tstring)))
                         (, "string-to-int" (concrete (tfns [tstring] (toption tint))))
+                        (,
+                        "string-to-float"
+                            (concrete (tfns [tstring] (toption (tcon "float" -1)))))
                         (, "++" (concrete (tfns [(tarray tstring)] tstring)))
                         (, "map/nil" (kv (tmap k v)))
                         (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v))))
@@ -1545,6 +1548,7 @@
                     (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1)))])
                     (map/from-list
                     [(, "int" (, 0 set/nil))
+                        (, "float" (, 0 set/nil))
                         (, "string" (, 0 set/nil))
                         (, "bool" (, 0 set/nil))
                         (, "map" (, 2 set/nil))

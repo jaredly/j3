@@ -29,11 +29,13 @@ type SuccessfulTypeResult = {
 export type ResultsCache<Stmt> = {
     lastEvaluator: AnyEnv | null;
     lastState: null | NUIState;
+    settings: { debugExecOrder: boolean };
     // the result of `fromMCST`
     // and the IDs of all included nodes. We can do a quick
     // check of each of the `ids` to see if we need to recalculate
     nodes: {
         [top: number]: {
+            ns: RealizedNamespace;
             node: Node;
             ids: number[];
             parsed: void | {
@@ -83,6 +85,9 @@ const displayFunction = (config?: {
             return [<pre key={0}>{JSON.stringify(value, null, 2)}</pre>];
         };
     }
+    if (config.id === 'none') {
+        return () => [];
+    }
     return (value) => [valueToString(value)];
 };
 
@@ -96,12 +101,16 @@ export const getResults = <
     debugExecOrder: boolean,
     cache: ResultsCache<Stmt>,
 ) => {
-    if (cache.lastEvaluator !== evaluator) {
+    if (
+        cache.lastEvaluator !== evaluator ||
+        cache.settings.debugExecOrder !== debugExecOrder
+    ) {
         cache.results = {};
         cache.types = {};
         cache.nodes = {};
         cache.lastState = null;
         cache.lastEvaluator = evaluator;
+        cache.settings.debugExecOrder = debugExecOrder;
     }
     const lastState = cache.lastState;
     cache.lastState = state;
@@ -119,10 +128,11 @@ export const getResults = <
     };
     const tops = findTops(state);
     if (!evaluator) {
-        tops.forEach(({ top }) => {
+        tops.forEach(({ top, ns }) => {
             const ids: number[] = [];
             const node = fromMCST(top, state.map, ids);
             cache.nodes[top] = {
+                ns,
                 ids,
                 node,
                 display: {},
@@ -146,6 +156,7 @@ export const getResults = <
 
     const changes: {
         [top: number]: {
+            ns?: boolean;
             source?: boolean;
             stmt?: boolean;
             type?: boolean;
@@ -159,8 +170,16 @@ export const getResults = <
     // By the end of this, `cache.nodes` will be populated for
     // each `top.top`
     tops.forEach((top) => {
+        const nsChange = cache.nodes[top.top]
+            ? cache.nodes[top.top].ns.plugin !== top.ns.plugin ||
+              cache.nodes[top.top].ns.display !== top.ns.display
+            : false;
+        if (nsChange) {
+            changes[top.top].ns = true;
+        }
+
         // console.log('top', top.top);
-        if (cache.nodes[top.top] && lastState) {
+        if (cache.nodes[top.top] && lastState && !nsChange) {
             if (
                 !cache.nodes[top.top].ids.some(
                     (id) =>
@@ -215,6 +234,7 @@ export const getResults = <
         }
         const names = stmt ? evaluator.stmtNames(stmt) : null;
         cache.nodes[top.top] = {
+            ns: top.ns,
             ids,
             node,
             display,
@@ -267,22 +287,23 @@ export const getResults = <
     results.env = evaluator.init();
     results.tenv = evaluator.initType?.();
     sortedTops.forEach((group, i) => {
-        const isPlugin = group.every((node) => topsById[node.id].plugin);
+        const isPlugin = group.every((node) => topsById[node.id].ns.plugin);
         if (isPlugin) {
             for (let node of group) {
                 const reRun =
+                    changes[node.id].ns ||
                     changes[node.id].source ||
                     !cache.results[node.id] ||
                     node.deps.some((id) => changes[idForName[id.name]]?.value);
 
                 if (reRun) {
                     let pluginResult;
-                    if (topsById[node.id].plugin) {
+                    if (topsById[node.id].ns.plugin) {
                         // console.log('Doing a plugin', topsById[node.id].plugin);
                         pluginResult = processPlugin(
                             results,
                             cache.nodes[node.id].node,
-                            topsById[node.id].plugin!,
+                            topsById[node.id].ns.plugin!,
                             state,
                             evaluator,
                         );
@@ -333,12 +354,12 @@ export const getResults = <
             group.some((node) => changes[node.id].stmt) ||
             allDeps.some((id) => changes[id].type);
 
-        if (isPlugin) {
-            console.log(
-                'we have a plugin',
-                group.map((node) => topsById[node.id].plugin),
-            );
-        }
+        // if (isPlugin) {
+        //     console.log(
+        //         'we have a plugin',
+        //         group.map((node) => topsById[node.id].ns.plugin),
+        //     );
+        // }
 
         if (retype && evaluator.infer && results.tenv && !isPlugin) {
             // console.log('Do types', groupKey);
@@ -385,13 +406,18 @@ export const getResults = <
         const reEval =
             retype ||
             group.some(
-                (node) => changes[node.id].stmt || !cache.results[node.id],
+                (node) =>
+                    changes[node.id].ns ||
+                    changes[node.id].stmt ||
+                    !cache.results[node.id],
             ) ||
             allDeps.some((id) => changes[id].value);
 
         if (reEval) {
             const displayConfig =
-                group.length === 1 ? topsById[group[0].id].display : undefined;
+                group.length === 1
+                    ? topsById[group[0].id].ns.display
+                    : undefined;
             const renderValue = displayFunction(displayConfig);
 
             const { env, display, values } = evaluator.addStatements(
@@ -413,12 +439,11 @@ export const getResults = <
                 });
 
                 let pluginResult;
-                if (topsById[node.id].plugin) {
-                    // console.log('Doing a plugin', topsById[node.id].plugin);
+                if (topsById[node.id].ns.plugin) {
                     pluginResult = processPlugin(
                         results,
                         cache.nodes[node.id].node,
-                        topsById[node.id].plugin!,
+                        topsById[node.id].ns.plugin!,
                         state,
                         evaluator,
                     );
@@ -450,6 +475,12 @@ export const getResults = <
         }
     });
 
+    if (debugExecOrder) {
+        sortedTops.forEach((group, i) => {
+            showExecOrder(group, results, i);
+        });
+    }
+
     return results;
 };
 
@@ -478,22 +509,32 @@ export const processPlugin = (
     return pl.process(node, state, evaluator, results, options);
 };
 
-export function showExecOrder<Stmt>(
-    group: SortedInfo<Stmt>[],
+export function showExecOrder(
+    group: { id: number; names: LocedName[]; deps: LocedName[] }[],
     results: NUIResults,
     i: number,
 ) {
-    const names = group
-        .flatMap((group) => group.names)
-        .filter((n) => n.kind === 'value')
-        .map((n) => n.name);
+    const names = unique(
+        group
+            .flatMap((group) => group.names)
+            .filter((n) => n.kind === 'value')
+            .map((n) => n.name),
+    );
 
+    const prefix = '🍉 ';
     group.forEach((node) => {
-        results.produce[node.id].push('Cycle: ' + names.join(', '));
+        if (!results.produce[node.id]) {
+            results.produce[node.id] = [];
+        } else {
+            results.produce[node.id] = results.produce[node.id].filter(
+                (n) => typeof n !== 'string' || !n.startsWith(prefix),
+            );
+        }
+        results.produce[node.id].push(prefix + 'Cycle: ' + names.join(', '));
         results.produce[node.id].push(
-            'Deps: ' + node.deps.map((d) => d.name).join(', '),
+            prefix + 'Deps: ' + unique(node.deps.map((d) => d.name)).join(', '),
         );
-        results.produce[node.id].push('Execution Order: ' + i);
+        results.produce[node.id].push(prefix + 'Execution Order: ' + i);
     });
 }
 

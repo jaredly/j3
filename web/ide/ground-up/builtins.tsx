@@ -28,6 +28,14 @@ export function builtins() {
         unescapeString: slash,
 
         'int-to-string': (a: number) => a + '',
+        string_to_float: (a: string) => {
+            if (!a.match(/^\d*\.\d+$/)) {
+                return { type: 'none' };
+            }
+            var v = parseFloat(a);
+            if (!isNaN(v)) return { type: 'some', 0: v };
+            return { type: 'none' };
+        },
         string_to_int: (a: string) => {
             var v = parseInt(a);
             if (!isNaN(v) && '' + v === a) return { type: 'some', 0: v };

@@ -490,11 +490,11 @@ const compileStmt = (
             });
             Object.assign(env.values, result_values);
             display = names
-                .map(({ 0: name }) =>
+                .flatMap(({ 0: name }) =>
                     result_values[name] === undefined
                         ? null
                         : typeof result_values[name] !== 'function'
-                        ? valueToString(result_values[name])
+                        ? renderValue(result_values[name])
                         : null,
                 )
                 .filter(filterNulls);

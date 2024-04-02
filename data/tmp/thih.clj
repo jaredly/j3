@@ -1,243 +1,3 @@
-(** ## Our AST **)
-
-(deftype cst
-    (cst/list (array cst) int)
-        (cst/array (array cst) int)
-        (cst/spread cst int)
-        (cst/identifier string int)
-        (cst/string string (array (,, cst string int)) int))
-
-(deftype (array a) (nil) (cons a (array a)))
-
-(typealias id string)
-
-(typealias alt (, (array pat) expr))
-
-(typealias impl (, id (array alt)))
-
-(typealias expl (,, id scheme (array alt)))
-
-(typealias bindgroup (, (array expl) (array (array impl))))
-
-(deftype expr
-    (eprim prim int)
-        (estr string (array (,, expr string int)) int)
-        (evar string int)
-        (equot expr int)
-        (equot/stmt stmt int)
-        (equot/pat pat int)
-        (equot/type type int)
-        (equotquot cst int)
-        (elambda pat expr int)
-        (eapp expr expr int)
-        (elet bindgroup expr int)
-        (ematch expr (array (, pat expr)) int))
-
-(deftype prim (pint int int) (pbool bool int))
-
-(deftype pat
-    (pany int)
-        (pvar string int)
-        (pcon string (array pat) int)
-        (pstr string int)
-        (pprim prim int))
-
-(deftype type
-    (tvar tyvar int)
-        (tapp type type int)
-        (tcon tycon int)
-        (tgen int int))
-
-(deftype stmt
-    (sdeftype
-        string
-            int
-            (array (, string int))
-            (array (,,, string int (array type) int))
-            int)
-        (sdef string int expr int)
-        (sexpr expr int))
-
-(defn enumId [num] "v${(int-to-string num)}")
-
-(deftype kind (star) (kfun kind kind))
-
-(deftype tyvar (tyvar string kind))
-
-(deftype tycon (tycon string kind))
-
-(** ## deriving eq and show ... lol **)
-
-(defn kind= [a b]
-    (match (, a b)
-        (, (star) (star))           true
-        (, (kfun a b) (kfun a' b')) (if (kind= a a')
-                                        (kind= b b')
-                                            false)
-        _                           false))
-
-(defn kind->s [a]
-    (match a
-        (star)     "*"
-        (kfun a b) "(${(kind->s a)}->${(kind->s b)})"))
-
-(defn tyvar= [(tyvar name kind) (tyvar name' kind')]
-    (if (= name name')
-        (kind= kind kind')
-            false))
-
-(defn tyvar->s [(tyvar name kind)]
-    (match kind
-        (star) name
-        _      "[${name} : ${(kind->s kind)}]"))
-
-(defn type->fn [type]
-    (match type
-        (tapp (tapp (tcon (tycon "(->)" _) _) arg _) result _) (match (type->fn result)
-                                                                   (, args result) (, [arg ..args] result))
-        _                                                      (, [] type)))
-
-(defn unwrap-tapp [target args]
-    (match target
-        (tapp a b _) (unwrap-tapp a [b ..args])
-        _            (, target args)))
-
-(type->fn (tfn tint (tfn tfloat tbool)))
-
-(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
-
-(defn at [i lst]
-    (match lst
-        []           (fatal "index out of range")
-        [one ..rest] (if (<= i 0)
-                         one
-                             (at (- i 1) rest))))
-
-(defn gen-name [num] "${(at num letters)}")
-
-(defn type->s [type]
-    (match type
-        (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
-        (tapp target arg _)        (match (type->fn type)
-                                       (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
-                                                           "(${(type->s target)} ${(join " " (map type->s args))})")
-                                       (, args result) "(fn [${(join " " (map type->s args))}] ${(type->s result)})")
-        (tcon (tycon "(,)" _) _)   ","
-        (tcon (tycon "[]" _) _)    "list"
-        (tcon (tycon name _) _)    name
-        (tcon con _)               (tycon->s con)
-        (tgen num _)               (gen-name num)))
-
-(type->s tstring)
-
-(type->s (mkpair tint tbool))
-
-(type->s (tfn tint (tfn tfloat tbool)))
-
-(defn type= [a b]
-    (match (, a b)
-        (, (tvar ty _) (tvar ty' _))                  (tyvar= ty ty')
-        (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
-                                                          (type= arg arg')
-                                                              false)
-        (, (tcon tycon _) (tcon tycon' _))            (tycon= tycon tycon')
-        (, (tgen n _) (tgen n' _))                    (= n n')))
-
-(defn tycon= [(tycon name kind) (tycon name' kind')]
-    (if (= name name')
-        (kind= kind kind')
-            false))
-
-(defn tycon->s [(tycon name kind)]
-    (match kind
-        (star) name
-        _      "[${name} : ${(kind->s kind)}]"))
-
-(defn star-con [name] (tcon (tycon name star) -1))
-
-(defn assump->s [(!>! name (forall kinds (=> preds type)))]
-    "${
-        name
-        }: ${
-        (match kinds
-            [] ""
-            _  "${
-                   (join
-                       "; "
-                           (mapi (fn [kind i] "${(gen-name i)} ${(kind->s kind)}") 0 kinds))
-                   }; ")
-        }${
-        (match preds
-            [] ""
-            _  "${(join "; " (map pred->s preds))}; ")
-        }${
-        (type->s type)
-        }")
-
-(defn type/kind [type]
-    (match type
-        (tcon tc _)  (tycon/kind tc)
-        (tvar u _)   (tyvar/kind u)
-        (tapp t _ l) (match (type/kind t)
-                         (kfun _ k) k
-                         _          (fatal "Invalid type application ${(int-to-string l)}"))))
-
-(typealias subst (array (, tyvar type)))
-
-(def nullSubst [])
-
-(defn |-> [u t] (map/set map/nil u t))
-
-;(defn abc/apply [subst abc] abc)
-
-;(defn abc/tv [t] (array tyvar))
-
-(defn type/apply [subst type]
-    (match type
-        (tvar tyvar _)        (match (map/get subst tyvar)
-                                  (none)      type
-                                  (some type) type)
-        (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
-        _                     type))
-
-(typealias class (, (array string) (array (qual pred))))
-
-(typealias inst (qual pred))
-
-(** ## Some Builtin Types **)
-
-(def tunit (star-con "()"))
-
-(def tchar (star-con "char"))
-
-(def tint (star-con "int"))
-
-(def tbool (star-con "bool"))
-
-(def tfloat (star-con "float"))
-
-(def tinteger (star-con "int"))
-
-(def tdouble (star-con "double"))
-
-(def tlist (tcon (tycon "[]" (kfun star star)) -1))
-
-(def tarrow (tcon (tycon "(->)" (kfun star (kfun star star))) -1))
-
-(def ttuple2 (tcon (tycon "(,)" (kfun star (kfun star star))) -1))
-
-(def tstring (star-con "string"))
-
-(defn tfn [a b] (tapp (tapp tarrow a -1) b -1))
-
-(defn mklist [t] (tapp tlist t -1))
-
-(defn mkpair [a b] (tapp (tapp ttuple2 a -1) b -1))
-
-(defn tyvar/kind [(tyvar v k)] k)
-
-(defn tycon/kind [(tycon v k)] k)
-
 (** ## Prelude **)
 
 (defn list/get [arr i]
@@ -429,6 +189,250 @@
         (ok v)  (v->s v)
         (err e) e))
 
+(** ## Our AST **)
+
+(deftype cst
+    (cst/list (array cst) int)
+        (cst/array (array cst) int)
+        (cst/spread cst int)
+        (cst/identifier string int)
+        (cst/string string (array (,, cst string int)) int))
+
+(deftype (array a) (nil) (cons a (array a)))
+
+(typealias id string)
+
+(typealias alt (, (array pat) expr))
+
+(typealias impl (, id (array alt)))
+
+(typealias expl (,, id scheme (array alt)))
+
+(typealias bindgroup (, (array expl) (array (array impl))))
+
+(deftype expr
+    (eprim prim int)
+        (estr string (array (,, expr string int)) int)
+        (evar string int)
+        (equot expr int)
+        (equot/stmt stmt int)
+        (equot/pat pat int)
+        (equot/type type int)
+        (equotquot cst int)
+        (elambda pat expr int)
+        (eapp expr expr int)
+        (elet bindgroup expr int)
+        (ematch expr (array (, pat expr)) int))
+
+(deftype prim (pint int int) (pfloat float int) (pbool bool int))
+
+(deftype pat
+    (pany int)
+        (pvar string int)
+        (pcon string (array pat) int)
+        (pstr string int)
+        (pprim prim int))
+
+(deftype type
+    (tvar tyvar int)
+        (tapp type type int)
+        (tcon tycon int)
+        (tgen int int))
+
+(deftype stmt
+    (sdeftype
+        string
+            int
+            (array (, string int))
+            (array (,,, string int (array type) int))
+            int)
+        (sdef string int expr int)
+        (sexpr expr int))
+
+(defn enumId [num] "v${(int-to-string num)}")
+
+(deftype kind (star) (kfun kind kind))
+
+(deftype tyvar (tyvar string kind))
+
+(deftype tycon (tycon string kind))
+
+(** ## deriving eq and show ... lol **)
+
+(defn kind= [a b]
+    (match (, a b)
+        (, (star) (star))           true
+        (, (kfun a b) (kfun a' b')) (if (kind= a a')
+                                        (kind= b b')
+                                            false)
+        _                           false))
+
+(defn kind->s [a]
+    (match a
+        (star)     "*"
+        (kfun a b) "(${(kind->s a)}->${(kind->s b)})"))
+
+(defn tyvar= [(tyvar name kind) (tyvar name' kind')]
+    (if (= name name')
+        (kind= kind kind')
+            false))
+
+(defn tyvar->s [(tyvar name kind)]
+    (match kind
+        (star) name
+        _      "[${name} : ${(kind->s kind)}]"))
+
+(defn type->fn [type]
+    (match type
+        (tapp (tapp (tcon (tycon "(->)" _) _) arg _) result _) (match (type->fn result)
+                                                                   (, args result) (, [arg ..args] result))
+        _                                                      (, [] type)))
+
+(defn unwrap-tapp [target args]
+    (match target
+        (tapp a b _) (unwrap-tapp a [b ..args])
+        _            (, target args)))
+
+(type->fn (tfn tint (tfn tfloat tbool)))
+
+(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
+
+(defn at [i lst]
+    (match lst
+        []           (fatal "index out of range")
+        [one ..rest] (if (<= i 0)
+                         one
+                             (at (- i 1) rest))))
+
+(defn gen-name [num] "${(at num letters)}")
+
+(defn type->s [type]
+    (match type
+        (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
+        (tapp target arg _)        (match (type->fn type)
+                                       (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
+                                                           "(${(type->s target)} ${(join " " (map type->s args))})")
+                                       (, args result) "(fn [${(join " " (map type->s args))}] ${(type->s result)})")
+        (tcon (tycon "(,)" _) _)   ","
+        (tcon (tycon "[]" _) _)    "list"
+        (tcon (tycon name _) _)    name
+        (tcon con _)               (tycon->s con)
+        (tgen num _)               (gen-name num)))
+
+(type->s tstring)
+
+(type->s (mkpair tint tbool))
+
+(type->s (tfn tint (tfn tfloat tbool)))
+
+(defn type= [a b]
+    (match (, a b)
+        (, (tvar ty _) (tvar ty' _))                  (tyvar= ty ty')
+        (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
+                                                          (type= arg arg')
+                                                              false)
+        (, (tcon tycon _) (tcon tycon' _))            (tycon= tycon tycon')
+        (, (tgen n _) (tgen n' _))                    (= n n')))
+
+(defn tycon= [(tycon name kind) (tycon name' kind')]
+    (if (= name name')
+        (kind= kind kind')
+            false))
+
+(defn tycon->s [(tycon name kind)]
+    (match kind
+        (star) name
+        _      "[${name} : ${(kind->s kind)}]"))
+
+(defn star-con [name] (tcon (tycon name star) -1))
+
+(defn assump->s [(!>! name (forall kinds (=> preds type)))]
+    "${
+        name
+        }: ${
+        (match kinds
+            [] ""
+            _  "${
+                   (join
+                       "; "
+                           (mapi (fn [kind i] "${(gen-name i)} ${(kind->s kind)}") 0 kinds))
+                   }; ")
+        }${
+        (match preds
+            [] ""
+            _  "${(join "; " (map pred->s preds))}; ")
+        }${
+        (type->s type)
+        }")
+
+(defn type/kind [type]
+    (match type
+        (tcon tc _)  (tycon/kind tc)
+        (tvar u _)   (tyvar/kind u)
+        (tapp t _ l) (match (type/kind t)
+                         (kfun _ k) k
+                         _          (fatal "Invalid type application ${(int-to-string l)}"))))
+
+(typealias subst (array (, tyvar type)))
+
+(def nullSubst [])
+
+(defn |-> [u t] (map/set map/nil u t))
+
+;(defn abc/apply [subst abc] abc)
+
+;(defn abc/tv [t] (array tyvar))
+
+(defn type/apply [subst type]
+    (match type
+        (tvar tyvar _)        (match (map/get subst tyvar)
+                                  (none)      type
+                                  (some type) type)
+        (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
+        _                     type))
+
+(typealias class (, (array string) (array (qual pred))))
+
+(typealias inst (qual pred))
+
+(def types->s (dot (join "\n") (map type->s)))
+
+(def assumps->s (dot (join "\n") (map assump->s)))
+
+(** ## Some Builtin Types **)
+
+(def tunit (star-con "()"))
+
+(def tchar (star-con "char"))
+
+(def tint (star-con "int"))
+
+(def tbool (star-con "bool"))
+
+(def tfloat (star-con "float"))
+
+(def tinteger (star-con "int"))
+
+(def tdouble (star-con "double"))
+
+(def tlist (tcon (tycon "[]" (kfun star star)) -1))
+
+(def tarrow (tcon (tycon "(->)" (kfun star (kfun star star))) -1))
+
+(def ttuple2 (tcon (tycon "(,)" (kfun star (kfun star star))) -1))
+
+(def tstring (star-con "string"))
+
+(defn tfn [a b] (tapp (tapp tarrow a -1) b -1))
+
+(defn mklist [t] (tapp tlist t -1))
+
+(defn mkpair [a b] (tapp (tapp ttuple2 a -1) b -1))
+
+(defn tyvar/kind [(tyvar v k)] k)
+
+(defn tycon/kind [(tycon v k)] k)
+
 (** ## Parsing **)
 
 (defn tapps [items l]
@@ -512,7 +516,9 @@
                                                                                     l)
         (cst/identifier id l)                                               (match (string-to-int id)
                                                                                 (some int) (eprim (pint int l) l)
-                                                                                (none)     (evar id l))
+                                                                                (none)     (match (string-to-float id)
+                                                                                               (some v) (eprim (pfloat v l) l)
+                                                                                               _        (evar id l)))
         (cst/list [(cst/identifier "@" _) body] l)                          (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                         (equotquot body l)
         (cst/list [(cst/identifier "@!" _) body] l)                         (equot/stmt (parse-stmt body) l)
@@ -539,15 +545,16 @@
                                                                                     (fn [body init]
                                                                                     (let [(, pat value) init]
                                                                                         (match pat
-                                                                                            (cst/identifier name l) (elet (, [] [[(, name [(, [] (parse-expr value))])]]) body l)))))
+                                                                                            (cst/identifier name l) (elet (, [] [[(, name [(, [] (parse-expr value))])]]) body l)
+                                                                                            _                       (ematch (parse-expr value) [(, (parse-pat pat) body)] l)))))
         (cst/list [(cst/identifier "letrec" _) (cst/array inits _) body] l) (elet
                                                                                 (,
                                                                                     []
-                                                                                        (map
+                                                                                        [(map
                                                                                         (fn [(, pat value)]
                                                                                             (match pat
-                                                                                                (cst/identifier name l) [(, name [(, [] (parse-expr value))])]))
-                                                                                            (pairs inits)))
+                                                                                                (cst/identifier name l) (, name [(, [] (parse-expr value))])))
+                                                                                            (pairs inits))])
                                                                                     (parse-expr body)
                                                                                     l)
         (cst/list [(cst/identifier "let->" _) (cst/array inits _) body] l)  (foldr
@@ -669,15 +676,15 @@
         (@@ (let [x 2] x))
             (elet (, [] [[(, "x" [(, [] (eprim (pint 2 12291) 12291))])]]) (evar "x" 12292) 12290))
         (,
-        ;(@@ (let [(, a b) (, 2 3)] 1))
-            ;(elet
-            [(,
+        (@@ (let [(, a b) (, 2 3)] 1))
+            (ematch
+            (eapp
+                (eapp (evar "," 12325) (eprim (pint 2 12326) 12326) 12324)
+                    (eprim (pint 3 12327) 12327)
+                    12324)
+                [(,
                 (pcon "," [(pvar "a" 12322) (pvar "b" 12323)] 12320)
-                    (eapp
-                    (eapp (evar "," 12325) (eprim (pint 2 12326) 12326) 12324)
-                        (eprim (pint 3 12327) 12327)
-                        12324))]
-                (eprim (pint 1 12328) 12328)
+                    (eprim (pint 1 12328) 12328))]
                 12317))
         (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 12386) 12384))
         (, (@@ (@ 1)) (equot (eprim (pint 1 12401) 12401) 12399))])
@@ -951,6 +958,7 @@
             (, "ord" ["eq"])
             (, "show" [])
             (, "read" [])
+            (, "pretty" [])
             (, "bounded" [])
             (, "enum" [])
             (, "functor" [])
@@ -1008,7 +1016,8 @@
             (isin "ord" (mkpair (tvar (tyvar "a" star) -1) (tvar (tyvar "b" star) -1))))])
 
 (defn by-super [ce pred]
-    (let [
+    (** I still don't really know what the point of super-types is. **)
+        (let [
         (isin i t)           pred
         (class-env supers _) ce
         (, got _)            (match (map/get supers i)
@@ -1046,7 +1055,7 @@
             (none)    false
             (some qs) (all (entail ce ps) qs))))
 
-(entail builtin-env [(isin "num" tint)] (isin "num" tint))
+(entail builtin-env [(isin "eq" tint)] (isin "num" tint))
 
 (** ## Simplification **)
 
@@ -1180,14 +1189,9 @@
 
 (defn map/ti [f arr]
     (match arr
-        []           (TI (fn [s t n] (ok (,,, s t n []))))
-        [one ..rest] (TI
-                         (fn [subst tenv nidx]
-                             (match (ti-run (f one) subst tenv nidx)
-                                 (ok (,,, subst tenv nidx value)) (match (ti-run (map/ti f rest) subst tenv nidx)
-                                                                      (ok (,,, subst tenv nidx results)) (ok (,,, subst tenv nidx [value ..results]))
-                                                                      (err e)                            (err e))
-                                 (err e)                          (err e))))))
+        []           (ti-return [])
+        [one ..rest] (let-> [res (ti-then (f one)) rest (ti-then (map/ti f rest))]
+                         (ti-return [res ..rest]))))
 
 (defn ti-then [ti next]
     (TI
@@ -1247,8 +1251,9 @@
 
 (defn infer/prim [prim]
     (match prim
-        (pbool _ _) (ti-return (, [] tbool))
-        (pint _ _)  (let-> [v (ntv star)] (ti-return (, [(isin "num" v)] v)))))
+        (pbool _ _)  (ti-return (, [] tbool))
+        (pfloat _ _) (let-> [v (ntv star)] (ti-return (, [(isin "floating" v)] v)))
+        (pint _ _)   (let-> [v (ntv star)] (ti-return (, [(isin "num" v)] v)))))
 
 (defn infer/pats [pats]
     (let-> [psasts (ti-then (map/ti infer/pat pats))]
@@ -1298,7 +1303,7 @@
                                      results'       (ti-then
                                                         (map/ti
                                                             (fn [_]
-                                                                (fresh-inst (forall [star] (=> [(isin "show" (tgen 0 -1))] (tgen 0 -1)))))
+                                                                (fresh-inst (forall [star] (=> [(isin "pretty" (tgen 0 -1))] (tgen 0 -1)))))
                                                                 types))
                                      (, ps' types') (ti-then (ti-return (unzip (map (fn [(=> a b)] (, a b)) results'))))
                                      _              (ti-then (map/ti (fn [(, a b)] (unify a b)) (zip types types')))]
@@ -1478,6 +1483,7 @@
             "ord"
             "show"
             "read"
+            "pretty"
             "bounded"
             "enum"
             "ix"
@@ -1559,14 +1565,12 @@
 
 (defn preds/apply [subst preds] (map (pred/apply subst) preds))
 
-(def types->s (dot (join "\n") (map type->s)))
+(** ## Puttin in all together **)
 
 (defn parse-binding [jcst]
     (match jcst
         (cst/list [(cst/identifier "fn" l) (cst/array items _) body] _) (, "it" [(, (map parse-pat items) (parse-expr body))])
         _                                                               (, "it" [(, [] (parse-expr jcst))])))
-
-(defn infer-and-show [tenv class-env assumptions jcst] )
 
 (def builtin-ce
     (apply-transformers
@@ -1581,6 +1585,9 @@
                 (, "," (tuple-scheme (generics [[] []] (tfns [g0 g1] (mkpair g0 g1)))))])
             (map/from-list [])))
 
+(def program-results->s
+    (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
+
 (,
     (fn [v]
         (program-results->s
@@ -1593,7 +1600,11 @@
         (, (@@ (+ 1 2)) "it: int")
         (, (@@ (fn [a] (+ 1 a))) "it: a *; a ∈ num; (fn [a] a)")
         (, (@@ "Hello") "it: string")
-        (, (@@ (fn [a] "Hello ${a}")) "it: a *; a ∈ show; (fn [a] string)")
+        (, (@@ "My age is ${10} and hieght is ${1.12}") "it: string")
+        (,
+        (@@ (fn [x] (, (+ 1 x) "${x}")))
+            "it: a *; a ∈ pretty; a ∈ num; (fn [a] (, a string))")
+        (, (@@ (fn [a] "Hello ${a}")) "it: a *; a ∈ pretty; (fn [a] string)")
         (, (@@ (ok 1)) "it: a *; (result int a)")
         (,
         (@@
@@ -1602,12 +1613,14 @@
                     1
                         2)))
             "it: a *; a ∈ num; (fn [bool] a)")
+        (, (@@ [1]) "it: (list int)")
         (,
         (@@
             (match (ok 1)
                 (ok v)  v
                 (err e) 10))
             "it: int")
+        (, (@@ (cons 1 [2.0])) "it: (list double)")
         (,
         (@@
             (match (, 1 true)
@@ -1618,41 +1631,32 @@
         (, (@@ (let [a 2] (let [a "hi"] a))) "it: string")
         (,
         (@@ (fn [x] (return (, 2 x))))
-            "it: a *; b (*->*); c *; c ∈ num; b ∈ monad; (fn [a] (b (, c a)))")])
+            "it: a *; b (*->*); c *; c ∈ num; b ∈ monad; (fn [a] (b (, c a)))")
+        (,
+        (@@
+            (letrec
+                [even
+                    (fn [x]
+                    (if (< x 1)
+                        true
+                            (odd (- x 1))))
+                    odd
+                    (fn [x]
+                    (if (< x 1)
+                        true
+                            (even (- x 1))))]
+                    (even 10)))
+            "it: bool")])
 
-(def program-results->s
-    (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
-
-(program-results->s
-    (infer/program
-        tenv/nil
-            (apply-transformers
-            example-insts
-                (add-prelude-classes initial-env))
-            builtin-assumptions
-            [(,
-            []
-                [[;(, "hello" [(, [(pvar "a" -1)] (@ (int-to-string 1)))])
-                ;(, "one" [(, [(pvar "a" -1)] (@ 1))])
-                (, "aa" [(, [(pvar "a" -1)] (@ (, 1 "hi ${a}")))])
-                ;(, "m" [(, [(pvar "la" -1)] (@ (show la)))])
-                ;(, "id" [(, [(pvar "a" -1)] (@ a))])
-                ;(, "lol" [(, [(pvar "b" -1)] (@ id))])
-                ;(, "twoz" [(, [(pvar "am" -1)] (parse-expr (@@ (fn [x] (+ am x)))))])
-                ;(, "two" [(, [(pvar "a" -1)] (parse-expr (@@ (++ a 2))))])]])]))
-
-(** Ok what I want to do
-    - have a way to "add builtins" **)
-
-; figuring out what type variables wegot
-
-(defn tfns [args res] (foldr res args (fn [res arg] (tfn arg res))))
+(** ## Builtins and such **)
 
 (defn tmap [k v]
     (tapp
         (tapp (tcon (tycon "map" (kfun star (kfun star star))) -1) k -1)
             v
             -1))
+
+(defn tfns [args res] (foldr res args (fn [res arg] (tfn arg res))))
 
 (defn mk-pred [g0] (fn [name] (isin name g0)))
 
@@ -1702,6 +1706,7 @@
         boolEq  (generic ["eq"] (tfns [g0 g0] tbool))
         kv      (generics [["ord"] []])
         g       generics
+        con     (generics [])
         float   (generic ["floating"])
         floatUn (float (tfn g0 g0))]
         (map
@@ -1774,15 +1779,15 @@
                 (, "map/from-list" (kv (tfns [(tapp tlist (mkpair g0 g1) -1)] map01)))
                 ; ok folks
                 (, "nil" (g [[]] (mklist g0)))
-                (, "cons" (g [[]] (tfn g0 (mklist g0))))
+                (, "cons" (g [[]] (tfns [g0 (mklist g0)] (mklist g0))))
                 (, "," (g [[] []] (tfns [g0 g1] (mkpair g0 g1))))
-                (, "false" (g [] tbool))
-                (, "true" (g [] tbool))
+                (, "false" (con tbool))
+                (, "true" (con tbool))
                 (, "ok" (g [[] []] (tfn g0 (tresult g0 g1))))
                 (, "err" (g [[] []] (tfn g1 (tresult g0 g1))))
-                (, "LT" (g [] (mkcon "ordering")))
-                (, "EQ" (g [] (mkcon "ordering")))
-                (, "GT" (g [] (mkcon "ordering")))
+                (, "LT" (con (mkcon "ordering")))
+                (, "EQ" (con (mkcon "ordering")))
+                (, "GT" (con (mkcon "ordering")))
                 ])))
 
 (def builtin-instances
@@ -1834,12 +1839,20 @@
                     (, "floating" ["float" "double"])
                     (, "realfrac" ["float" "double"])
                     (, "show" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    (, "pretty" ["unit" "char" "int" "float" "double" "bool" "ordering"])
                     (, "ix" ["unit" "char" "int" "bool" "ordering"])]))]))
-
-(type->s (parse-type (@@ (fn [int] string))))
 
 (defn dot [a b c] (a (b c)))
 
-(def assumps->s (dot (join "\n") (map assump->s)))
+(** ## Export as Evaluator **)
 
-13915
+((eval
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    (typecheck
+        (inference builtin-env infer-stmtss tenv/merge infer)
+            (analysis externals-stmt externals-list names)
+            type-to-string
+            (fn [tenv name]
+            (match (tenv/type tenv name)
+                (some v) (some (scheme/type v))
+                _        (none)))))

@@ -124,11 +124,15 @@ export function NSMenu({
                 No plugin
             </button>
             <div style={{ padding: '4px 8px' }}>Set Render Function</div>
-            {['pre', null].map((id) => (
+            {['pre', 'none', null].map((id) => (
                 <button
                     key={id ?? 'default'}
-                    style={{ cursor: 'pointer' }}
+                    style={{
+                        cursor: 'pointer',
+                        background: id === ns.display?.id ? 'red' : 'white',
+                    }}
                     onClick={() => {
+                        console.log('setting display', id);
                         dispatch({
                             type: 'ns',
                             nsMap: {

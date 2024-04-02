@@ -54,6 +54,9 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 502');})(/*!*//*
 const xx = /*658*/function name_658(one) { return /*607*//*607*//*608*/$pl/*<608*/(/*607*//*609*/1/*<609*/)/*<607*/(/*607*//*610*/one/*<610*/)/*<607*/ }/*<658*/;
 
 
+/*683*/"Hello"/*<683*/
+const lol = /*690*/10/*<690*/;
+
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
 const nil = ({type: "nil"});
 const even = /*288*/function name_288(x) { return /*294*/(function match_294($target) {
@@ -140,4 +143,4 @@ let one = $target;
 return /*656*//*655*/xx/*<655*/(/*656*//*657*/one/*<657*/)/*<656*/
 };
 throw new Error('let pattern not matched 605. ' + valueToString($target));})(/*!*/)/*<601*/
-return {type: 'fns', a, b, c, cons, e, even, foldr, hi, l, lol, lol, m, nil, odd, what, x, xx, y}
+return {type: 'fns', a, b, c, cons, e, even, foldr, hi, l, lol, lol, lol, m, nil, odd, what, x, xx, y}
