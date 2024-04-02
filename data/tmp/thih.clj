@@ -1294,10 +1294,13 @@
                                      ce
                                          as
                                          (elet (, [] [[(, "lambda-arg" [(, [pat] body)])]]) (evar "lambda-arg" l) l))
-        (ematch target cases l)  (fatal
-                                     "This match should have been turned into an elet ${
-                                         (int-to-string l)
-                                         }")
+        (ematch target cases l)  (infer/expr
+                                     ce
+                                         as
+                                         (elet
+                                         (, [] [[(, "match" (map (fn [(, pat body)] (, [pat] body)) cases))]])
+                                             (eapp (evar "match" l) target l)
+                                             l))
         (elet bindings body l)   (let-> [
                                      (, ps as') (ti-then (infer/binding-group ce as bindings))
                                      (, qs t)   (ti-then (infer/expr ce (concat [as' as]) body))]
@@ -1564,13 +1567,22 @@
         (,
         (@@ (fn [a] "Hello ${a}"))
             "it: kinds: *; tc: [gen0 => show];  (fn [gen0] (list char))")
+        (, (@@ (ok 1)) "it: kinds: *;  (result int gen0)")
         (,
         (@@
             (fn [a]
-                (if x
+                (if a
                     1
                         2)))
-            )])
+            "it: kinds: *; tc: [gen0 => num];  (fn [bool] gen0)")
+        (,
+        (@@
+            (match (ok 1)
+                (ok v)  v
+                (err e) 10))
+            )
+        (** Shadowing **)
+        (, (@@ (let [a 2] (let [a "hi"] a))) "it:  (list char)")])
 
 (def program-results->s
     (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
