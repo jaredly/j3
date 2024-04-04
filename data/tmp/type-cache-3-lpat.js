@@ -18,6 +18,9 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 10964');})(/*!*/
 
 const value = ({type: "value"});
 const type = ({type: "type"});
+const apply_tuple = /*11883*/function name_11883(f) { return /*11883*/function name_11883({0: a, 1: b}) {
+ return /*11894*//*11894*//*11895*/f/*<11895*/(/*11894*//*11896*/a/*<11896*/)/*<11894*/(/*11894*//*11897*/b/*<11897*/)/*<11894*/ }/*<11883*/ }/*<11883*/;
+
 const map$slhas = /*13428*/function name_13428(map) { return /*13428*/function name_13428(k) { return /*13436*/(function match_13436($target) {
 if ($target.type === "some") {
 return /*13445*/true/*<13445*/

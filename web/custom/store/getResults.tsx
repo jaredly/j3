@@ -196,16 +196,19 @@ function collectStatements<Stmt>(
         const parsed = cache.nodes[node.id].parsed;
         if (!parsed) {
             missing = true;
-            group.forEach(
-                (node) =>
-                    (results.produce[node.id] = [
+            group.forEach((node) => {
+                if (
+                    Object.keys(cache.nodes[node.id].parseErrors ?? {}).length
+                ) {
+                    results.produce[node.id] = [
                         new Error(
                             `Parse error, or no stmt idk ${JSON.stringify(
                                 cache.nodes[node.id].parseErrors,
                             )}`,
                         ),
-                    ]),
-            );
+                    ];
+                }
+            });
         } else {
             stmts[node.id] = parsed.stmt;
         }

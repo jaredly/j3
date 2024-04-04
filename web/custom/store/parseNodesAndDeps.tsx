@@ -83,6 +83,20 @@ export function parseNodesAndDeps<
                 if (cache.deps?.[top.top]?.names) {
                     registerNames(cache, top.top, results, idForName);
                 }
+                if (!cache.nodes[top.top].parsed) {
+                    if (
+                        Object.keys(cache.nodes[top.top].parseErrors ?? {})
+                            .length
+                    ) {
+                        results.produce[top.top] = [
+                            new Error(
+                                `Parse error, or no stmt idk ${JSON.stringify(
+                                    cache.nodes[top.top].parseErrors,
+                                )}`,
+                            ),
+                        ];
+                    }
+                }
 
                 return;
             }
