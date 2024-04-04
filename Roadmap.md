@@ -4,6 +4,10 @@
 - [x] thih working!
 - [ ] gotta get deftype n stuff for thih going, so I can actually try it out.
 
+- [x] Algorithm W, this time with a state monad
+- [ ] DO I want to put non-(values) stuff into the monad? Or keep them on tenv...
+- [ ] ok let's have the state monad keep track of all ... inferred types... by loc.
+
 
 UGH the caching logic for getResults is so convoluted. :(
 

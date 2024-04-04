@@ -470,7 +470,7 @@
         (<- (, (type-apply subst t) subst))))
 
 (force
-    (run-> (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10) 0))
+    (run/nil-> (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)))
 
 (defn new-type-var [prefix l]
     (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
@@ -582,8 +582,6 @@
         (ok v)  v
         (err e) (fatal "Result Error ${e}")))
 
-foldr
-
 (defn foldl-> [init values f]
     (match values
         []           (<- init)
@@ -596,11 +594,26 @@ foldr
 
 (** ## Type Inference State **)
 
-(typealias (State value) (StateT int value))
+(typealias (State value) (StateT (, int (array (, int type))) value))
 
-(def <-idx <-state)
+(def <-idx (let-> [(, idx _) <-state] (<- idx)))
 
-(def idx-> state->)
+(defn idx-> [v] (let-> [(, _ b) <-state _ (state-> (, v b))] (<- 0)))
+
+(defn record-> [loc type]
+    (let-> [(, idx types) <-state _ (state-> (, idx [(, loc type) ..types]))]
+        (<- 0)))
+
+(def <-types (let-> [(, _ types) <-state] (<- types)))
+
+(def state/nil (, 0 []))
+
+(defn run/nil-> [st] (run-> st state/nil))
+
+(defn run/record [st]
+    (run->
+        (let-> [value st types <-types] (<- (, value types)))
+            state/nil))
 
 (** ## Type Inference!
     Extensions to the HM algorithm:
@@ -616,8 +629,11 @@ foldr
         (pint _ l)  (tcon "int" l)
         (pbool _ l) (tcon "bool" l)))
 
-(defn t-expr [tenv expr nidx]
-    (force ((state-f (t-expr-inner tenv expr)) nidx))
+(defn t-expr [tenv expr]
+    (let-> [
+        (, subst type) (t-expr-inner tenv expr)
+        _              (record-> (expr-loc expr) type)]
+        (<- (, subst type)))
         ;(let [
         l                    (expr-loc expr)
         _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
@@ -649,7 +665,7 @@ foldr
                                                      map/nil
                                                          templates
                                                          (fn [subst (,, expr suffix sl)]
-                                                         (let-> [(, s2 t) (t-expr-inner tenv expr) s3 (unify-inner t string-type l)]
+                                                         (let-> [(, s2 t) (t-expr tenv expr) s3 (unify-inner t string-type l)]
                                                              (<- (compose-subst "estr" s3 (compose-subst "estr2" s2 subst))))))]
                                      (<- (, subst string-type)))
         (** For lambdas (fn [name] body)
@@ -684,8 +700,8 @@ foldr
             - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
         (eapp target arg l)      (let-> [
                                      result-var                   (new-type-var "res" l)
-                                     (, target-subst target-type) (t-expr-inner tenv target)
-                                     (, arg-subst arg-type)       (t-expr-inner (tenv-apply target-subst tenv) arg)
+                                     (, target-subst target-type) (t-expr tenv target)
+                                     (, arg-subst arg-type)       (t-expr (tenv-apply target-subst tenv) arg)
                                      (, unified-subst)            (unify-inner
                                                                       (type-apply arg-subst target-type)
                                                                           (tfn arg-type result-var l)
@@ -715,11 +731,11 @@ foldr
             - infer the type of the value
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
-        (elet pat init body l)   (let-> [inited (t-expr-inner tenv init)]
+        (elet pat init body l)   (let-> [inited (t-expr tenv init)]
                                      (pat-and-body tenv pat body inited false))
         (ematch target cases l)  (let-> [
                                      result-var                      (new-type-var "match-res" l)
-                                     (, target-subst target-type)    (t-expr-inner tenv target)
+                                     (, target-subst target-type)    (t-expr tenv target)
                                      (,, _ target-subst result-type) (foldr->
                                                                          (,, target-type target-subst result-var)
                                                                              cases
@@ -741,7 +757,7 @@ foldr
 (defn pat-and-body [tenv pat body (, value-subst value-type) monomorphic]
     (** Yay!! Now we have verification. **)
         (let-> [
-        (, pat-type bindings)    (t-pat-inner tenv pat)
+        (, pat-type bindings)    (t-pat tenv pat)
         unified-subst            (unify-inner value-type pat-type (pat-loc pat))
         composed                 (<- (compose-subst "pat-and-body" unified-subst value-subst))
         bindings                 (<- (map/map (type-apply composed) bindings))
@@ -762,8 +778,9 @@ foldr
                 (compose-subst "pat-and-body-2" body-subst composed)
                     (type-apply composed body-type)))))
 
-(defn t-pat [tenv pat nidx]
-    (force (run-> (t-pat-inner tenv pat) nidx))
+(defn t-pat [tenv pat]
+    (let-> [(, t subst) (t-pat-inner tenv pat) _ (record-> (pat-loc pat) t)]
+        (<- (, t subst)))
         ;(let [
         l                    (pat-loc pat)
         _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
@@ -809,7 +826,7 @@ foldr
                                                                          zipped
                                                                          (fn [(, subst bindings) (, arg carg)]
                                                                          (let-> [
-                                                                             (, pat-type pat-bind) (t-pat-inner tenv arg)
+                                                                             (, pat-type pat-bind) (t-pat tenv arg)
                                                                              unified-subst         (unify-inner
                                                                                                        (type-apply subst pat-type)
                                                                                                            (type-apply subst (type/set-loc l carg))
@@ -825,15 +842,15 @@ foldr
 (defn infer [tenv expr]
     (let-> [
         (, tenv missing) (find-missing tenv (externals set/nil expr))
-        (, subst type)   (t-expr-inner tenv expr)
+        (, subst type)   (t-expr tenv expr)
         _                (report-missing subst missing)]
         (<- (type-apply subst type))))
 
 (def tenv/nil (tenv map/nil map/nil map/nil map/nil))
 
-(infer tenv/nil (@ ((fn [a] a) 231)))
+(run/nil-> (infer tenv/nil (@ ((fn [a] a) 231))))
 
-(infer tenv/nil (@ (let [a 1] a)))
+(run/nil-> (infer tenv/nil (@ (let [a 1] a))))
 
 (def basic
     (tenv
@@ -860,20 +877,19 @@ foldr
             [(, "int" (, 0 set/nil)) (, "string" (, 0 set/nil)) (, "bool" (, 0 set/nil))])
             map/nil))
 
-(infer basic (@ (+ 2 3)))
+(run/record (infer basic (@ (+ 2 3))))
 
-3633
+(run/record (infer basic (@ (let [a 1] a))))
 
-(infer basic (@ (let [a 1] a)))
-
-(infer
-    basic
-        (@
-        (match 1
-            1 1)))
+(run/record
+    (infer
+        basic
+            (@
+            (match 1
+                1 1))))
 
 (defn infer-show [tenv x]
-    (match (run-> (infer tenv x) 0)
+    (match (run/nil-> (infer tenv x))
         (ok v)  (type-to-string v)
         (err e) "Fatal runtime: ${e}"))
 
@@ -947,7 +963,7 @@ foldr
                                                           e.g. "unbound variable xyz, expected type: (fn [int] string)". **)
                                                       (, self-bound missing) (find-missing self-bound (externals set/nil expr))
                                                       (** Here we actually do the inference. **)
-                                                      (, subst t)            (t-expr-inner self-bound expr)
+                                                      (, subst t)            (t-expr self-bound expr)
                                                       _                      (report-missing subst missing)
                                                       (** Now we resolve the self type. **)
                                                       selfed                 (<- (type-apply subst self))
@@ -968,12 +984,11 @@ foldr
         (sdeftype tname tnl targs constructors l) (infer-deftype tenv' set/nil tname tnl targs constructors l)))
 
 (force
-    (run->
+    (run/nil->
         (infer-stmt
             (force
-                (run-> (infer-stmt tenv/nil (@! (typealias (hello a) (, int a)))) 0))
-                (@! (typealias what (hello string))))
-            0))
+                (run/nil-> (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))))
+                (@! (typealias what (hello string))))))
 
 (defn map/has [map k]
     (match (map/get map k)
@@ -1193,7 +1208,7 @@ foldr
 
 (defn infer-several-inner [bound (, subst types) (, var (sdef name _ body l))]
     (let-> [
-        (, body-subst body-type) (t-expr-inner (tenv-apply subst bound) body)
+        (, body-subst body-type) (t-expr (tenv-apply subst bound) body)
         both                     (<- (compose-subst "infer-several" body-subst subst))
         selfed                   (<- (type-apply both var))
         u-subst                  (unify-inner selfed body-type l)
@@ -1218,7 +1233,7 @@ foldr
 
 (,
     (fn [x]
-        (match (run-> (infer-several basic x) 0)
+        (match (run/nil-> (infer-several basic x))
             (ok v)  (map v (fn [(, _ t)] (type-to-string t)))
             (err e) [e]))
         [(,
@@ -1374,15 +1389,14 @@ foldr
         (<- (tenv/merge type-tenv val-tenv))))
 
 (force
-    (run->
+    (run/nil->
         (infer-stmtss
             (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
                 [(@! (typealias one (, int string)))
                 (@! (deftype (, a b) (, a b)))
                 (@! (deftype one (two int)))
                 (@! (deftype kind (star) (kfun kind kind)))
-                (@! (let [(kfun m n) (star)] 1))])
-            0))
+                (@! (let [(kfun m n) (star)] 1))])))
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
@@ -1644,7 +1658,7 @@ foldr
                         (tfmted a string)
                         (tfmt a (fn [a] string))))]
                 (fn [tenv stmt]
-                (tenv/merge tenv (force (run-> (infer-stmtss tenv [stmt]) 0)))))))
+                (tenv/merge tenv (force (run/nil-> (infer-stmtss tenv [stmt]))))))))
 
 (infer-show builtin-env (@ ,))
 
@@ -1692,9 +1706,9 @@ foldr
     (typecheck
         (inference
             builtin-env
-                (fn [tenv stmts] (force (run-> (infer-stmtss tenv stmts) 0)))
+                (fn [tenv stmts] (force (run/nil-> (infer-stmtss tenv stmts))))
                 tenv/merge
-                (fn [tenv expr] (force (run-> (infer tenv expr) 0))))
+                (fn [tenv expr] (force (run/nil-> (infer tenv expr)))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
