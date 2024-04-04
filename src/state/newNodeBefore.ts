@@ -20,14 +20,14 @@ export const newNodeAfter = (
             const ns = nsMap[parent.idx] as RealizedNamespace;
             const children = ns.children.slice();
             const nid = nidx();
-            children.splice(parent.at + 1, 0, nid);
+            children.splice(children.indexOf(parent.child) + 1, 0, nid);
             return {
                 type: 'update',
                 map: newThing.map,
                 selection: path
                     .slice(0, i)
                     .concat([
-                        { ...parent, at: parent.at + 1 },
+                        { ...parent, child: nid },
                         { type: 'ns-top', idx: nid },
                         ...newThing.selection,
                     ]),
@@ -111,16 +111,16 @@ export const newNodeBefore = (
         if (parent.type === 'ns') {
             const ns = nsMap[parent.idx] as RealizedNamespace;
             const children = ns.children.slice();
-            const mid = children[parent.at];
+            const mid = parent.child;
             const nid = nidx();
-            children.splice(parent.at, 0, nid);
+            children.splice(children.indexOf(mid), 0, nid);
             return {
                 type: 'update',
                 map: newThing.map,
                 selection: path
                     .slice(0, i)
                     .concat([
-                        { ...parent, at: parent.at + 1 },
+                        { ...parent, child: nid },
                         { type: 'ns-top', idx: mid },
                         ...newThing.selection,
                     ]),

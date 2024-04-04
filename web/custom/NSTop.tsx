@@ -86,11 +86,11 @@ export function NSTop({
         if (last.type !== 'ns') {
             return null;
         }
-        return { idx: last.idx, at: last.at };
+        return { idx: last.idx, child: last.child };
     }, [path]);
 
     const nsp = path
-        .map((p) => (p.type === 'ns' ? `${p.idx}$${p.at}` : `${p.idx}`))
+        .map((p) => (p.type === 'ns' ? `${p.idx}$${p.child}` : `${p.idx}`))
         .join(':');
 
     return (
@@ -207,7 +207,7 @@ export function NSTop({
                                     ns={child}
                                     path={path.concat({
                                         type: 'ns' as const,
-                                        at: i,
+                                        child: child.id,
                                         idx: ns.id,
                                     })}
                                     state={state}

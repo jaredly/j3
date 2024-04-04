@@ -38,7 +38,7 @@ export function Root({
         console.log('ROOT First render');
     }, []);
     const selections = React.useMemo(
-        () => normalizeSelections(state.at),
+        () => normalizeSelections(state.at, state),
         [state.at],
     );
     const reg = useRegs(state);
@@ -169,11 +169,14 @@ function selectionAction(
     }
 }
 
-function normalizeSelections(at: Cursor[]): { start: Path[]; end: Path[] }[] {
+function normalizeSelections(
+    at: Cursor[],
+    state: NUIState,
+): { start: Path[]; end: Path[] }[] {
     return at
         .filter((s) => s.end)
         .map(({ start, end }) => {
-            [start, end] = orderStartAndEnd(start, end!);
+            [start, end] = orderStartAndEnd(start, end!, state);
             return { start, end };
         });
 }

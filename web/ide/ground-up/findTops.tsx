@@ -21,7 +21,11 @@ export const verifyPath = (path: Path[], state: NUIState) => {
         }
         const p = path[i];
         if (p.type === 'ns') {
-            ns = state.nsMap[ns.children[p.at]];
+            const next = path[i + 1];
+            if (!ns.children.includes(next.idx)) {
+                throw new Error(`ns ${next.idx} not a child of ${ns.id}`);
+            }
+            ns = state.nsMap[next.idx];
             continue;
         }
         if (path[i].type === 'ns-top') {
@@ -195,7 +199,7 @@ export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
                     ...path,
                     {
                         type: 'ns',
-                        at: i,
+                        child,
                         idx: id,
                     },
                 ]),

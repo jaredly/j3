@@ -1,8 +1,11 @@
 // Um the path
 
+import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
+import { NsMap } from '../types/mcst';
+
 export type PathChild =
     | { type: 'card'; card: number }
-    | { type: 'ns'; at: number }
+    | { type: 'ns'; child: number }
     | { type: 'ns-top' }
     | { type: 'child'; at: number }
     | { type: 'subtext'; at: number }
@@ -40,12 +43,9 @@ export const cmpPath = (one: Path, two: Path): number => {
             case 'text':
                 return one.at - (two as { at: number }).at;
             case 'ns':
-                // THIS IS WRONG because they might be from different cards?
-                // but actually maybe it's fine... because if we get this far,
-                // it's because the paths match?
-                return one.at - (two as Extract<Path, { type: 'ns' }>).at;
+                throw new Error(`ns path not comparable`);
             case 'card':
-                return one.card - (two as Extract<Path, { type: 'card' }>).card;
+                throw new Error(`card path not comparable`);
             default:
                 let _: never = one;
         }
@@ -98,7 +98,7 @@ export const cmpPath = (one: Path, two: Path): number => {
     throw new Error(`Comparing ${one.type} to ${two.type}, unexpected`);
 };
 
-export const cmpFullPath = (one: Path[], two: Path[]) => {
+export const cmpFullPath = (one: Path[], two: Path[], nsMap: NsMap) => {
     for (let i = 0; i < one.length && i < two.length; i++) {
         const o = one[i];
         const t = two[i];
@@ -113,10 +113,28 @@ export const cmpFullPath = (one: Path[], two: Path[]) => {
             // debugger;
             return 0;
         }
-        const cmp = cmpPath(o, t);
-        if (cmp !== 0) {
-            return cmp;
+
+        // if (o.type !== t.type) {
+        //     throw new Error(`Different path types, cant compare`);
+        // }
+        if (o.type === 'card' && t.type == 'card') {
+            if (o.card !== t.card) {
+                throw new Error(`cant compare selections from different cards`);
+            }
+            continue;
         }
+        if (o.type === 'ns' && t.type === 'ns') {
+            if (o.idx !== t.idx) {
+                throw new Error('different ns idxxxxx');
+            }
+            if (o.child === t.child) continue;
+            const children = (nsMap[o.idx] as RealizedNamespace).children;
+            return children.indexOf(o.child) - children.indexOf(t.child);
+        }
+        const diff = cmpPath(o, t);
+        if (diff === 0) continue;
+        return diff;
     }
+
     return 0;
 };

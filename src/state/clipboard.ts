@@ -75,9 +75,10 @@ export const selectionStatus = (
     start: Path[],
     end: Path[],
     map: Map,
+    nsMap: NsMap,
 ): CoverageLevel | null => {
     // if (start.length > path.length + 1 && )
-    let s = cmpFullPath(start, path);
+    let s = cmpFullPath(start, path, nsMap);
     if (s > 0) {
         return null;
     }
@@ -100,7 +101,7 @@ export const selectionStatus = (
         s = -1;
     }
 
-    let e = cmpFullPath(path, end);
+    let e = cmpFullPath(path, end, nsMap);
     if (e > 0) {
         return null;
     }
@@ -292,7 +293,7 @@ export const paste = (
                 )! as Extract<Path, { type: 'ns' }>;
                 const parent = state.nsMap[lns.idx] as RealizedNamespace;
                 const children = parent.children.slice();
-                children.splice(lns.at + 1, 0, ...added);
+                children.splice(children.indexOf(lns.child) + 1, 0, ...added);
                 nsMap[parent.id] = { ...parent, children };
                 return {
                     type: 'update',
@@ -346,7 +347,7 @@ export const collectClipboard = (
     const items: ClipboardItem[] = [];
     state.at.forEach(({ start, end }) => {
         if (end) {
-            [start, end] = orderStartAndEnd(start, end);
+            [start, end] = orderStartAndEnd(start, end, state.nsMap);
             items.push(collectNodes(state, start, end, hashNames));
         }
     });
@@ -408,6 +409,7 @@ export const collectNodes = (
                     start,
                     end,
                     state.map,
+                    state.nsMap,
                 );
                 if (!status) {
                     return false;

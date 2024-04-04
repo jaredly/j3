@@ -104,7 +104,11 @@ export function handleBackspace(
     mods?: Mods,
 ): StateChange {
     if (selection.end) {
-        const [start, end] = orderStartAndEnd(selection.start, selection.end);
+        const [start, end] = orderStartAndEnd(
+            selection.start,
+            selection.end,
+            nsMap,
+        );
         const item = collectNodes({ map, nsMap, cards }, start, end, hashNames);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
@@ -236,7 +240,7 @@ export function handleBackspace(
         if (!left) return;
         const ns = nsMap[gpath.idx] as RealizedNamespace;
         const children = ns.children.slice();
-        const cid = children.splice(gpath.at, 1)[0];
+        const cid = children.splice(children.indexOf(gpath.child), 1)[0];
         // STOPSHIP cleanup the thing that was removed
         return {
             type: 'update',
@@ -255,7 +259,7 @@ export function handleBackspace(
         if (!left) return;
         const ns = nsMap[ppath.idx] as RealizedNamespace;
         const children = ns.children.slice();
-        const cid = children.splice(ppath.at, 1)[0];
+        const cid = children.splice(children.indexOf(ppath.child), 1)[0];
         // STOPSHIP cleanup the thing that was removed
         return {
             type: 'update',

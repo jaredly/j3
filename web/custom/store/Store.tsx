@@ -65,13 +65,12 @@ export const allNodesBetween = (
 ): number[] => {
     const found: number[] = [start[start.length - 1].idx];
 
-    while (cmpFullPath(start, end) < 0) {
+    while (cmpFullPath(start, end, state) < 0) {
         const sel = goRight(start, state.map, state.nsMap, state.cards);
         if (!sel) break;
         found.push(start[start.length - 1].idx);
         start = sel.selection;
     }
-
     found.push(end[end.length - 1].idx);
 
     return found;
@@ -323,13 +322,18 @@ export const useNode = (idx: number, path: Path[]): Values => {
             const state = store.getState();
 
             // man we're running this calculation quite a lot
-            const sel = normalizeSelections(state.at);
+            const sel = normalizeSelections(state.at, state.nsMap);
             const edgeSelected = sel.some(
                 (s) =>
                     s.start[s.start.length - 1].idx === idx ||
                     (s.end && s.end[s.end.length - 1].idx === idx),
             );
-            const coverageLevel = isCoveredBySelection(sel, path, state.map);
+            const coverageLevel = isCoveredBySelection(
+                sel,
+                path,
+                state.map,
+                state.nsMap,
+            );
 
             return coverageLevel
                 ? { edge: edgeSelected, coverage: coverageLevel }

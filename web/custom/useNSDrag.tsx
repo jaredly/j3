@@ -13,9 +13,8 @@ export const canDrop = (drag: DragState) => {
     const end = drag.drop.path[drag.drop.path.length - 1] as NsPath;
     if (
         drag.source.idx === end.idx &&
-        (drag.source.at === end.at ||
-            (drag.source.at === end.at + 1 && drag.drop.position === 'after') ||
-            (drag.source.at === end.at - 1 && drag.drop.position === 'before'))
+        drag.source.child === end.child
+        // TODO: handle the 'before' / 'after'
     ) {
         return false;
     }
@@ -25,7 +24,7 @@ export const canDrop = (drag: DragState) => {
 export type DragState = {
     ns: RealizedNamespace;
     onClick(): void;
-    source: { idx: number; at: number };
+    source: { idx: number; child: number };
     nsp: string;
     orig: {
         x: number;
@@ -126,18 +125,20 @@ export const useNSDrag = (
                 const oldParent = state.nsMap[
                     drag.source.idx
                 ] as RealizedNamespace;
-                const nid = oldParent.children[drag.source.at];
+                const nid = drag.source.child;
                 const moving = state.nsMap[nid] as RealizedNamespace;
                 let tpath = drag.drop.path;
 
                 if (drag.drop.position === 'inside') {
-                    let tid = children[target.at];
+                    let tid = target.child;
                     targetParent = state.nsMap[tid] as RealizedNamespace;
                     children = targetParent.children.slice();
                     target = {
                         type: 'ns',
                         idx: tid,
-                        at: targetParent.collapsed ? children.length : 0,
+                        child: targetParent.collapsed
+                            ? children[children.length - 1]
+                            : children[0],
                     };
                     tpath = tpath.concat([target]);
                 } else {
@@ -147,16 +148,6 @@ export const useNSDrag = (
                         { type: 'ns' }
                     >;
                     tpath[tpath.length - 1] = last;
-                    if (target.idx === drag.source.idx) {
-                        if (drag.source.at < target.at) {
-                            last.at -= 1;
-                        }
-                        if (drag.drop.position === 'after') {
-                            last.at += 1;
-                        }
-                    } else if (drag.drop.position === 'after') {
-                        last.at += 1;
-                    }
                 }
 
                 const selection = tpath.concat([
@@ -164,12 +155,13 @@ export const useNSDrag = (
                     { type: 'start', idx: moving.top },
                 ]);
 
+                for (let i = 0; i < tpath.length; i++) {}
+
                 if (target.idx === drag.source.idx) {
-                    children.splice(drag.source.at, 1);
+                    children.splice(children.indexOf(drag.source.child), 1);
+                    const at = children.indexOf(target.child);
                     children.splice(
-                        target.at +
-                            (drag.source.at < target.at ? -1 : 0) +
-                            (drag.drop.position === 'after' ? 1 : 0),
+                        at + (drag.drop.position === 'after' ? 1 : 0),
                         0,
                         nid,
                     );
@@ -185,7 +177,8 @@ export const useNSDrag = (
                     });
                 } else {
                     children.splice(
-                        target.at + (drag.drop.position === 'after' ? 1 : 0),
+                        children.indexOf(target.child) +
+                            (drag.drop.position === 'after' ? 1 : 0),
                         0,
                         nid,
                     );
@@ -298,6 +291,6 @@ export type NsReg = {
     [key: string]: {
         node: HTMLDivElement;
         path: Path[];
-        dest: { idx: number; at: number };
+        dest: { idx: number; child: number };
     } | null;
 };

@@ -22,7 +22,11 @@ export function DebugClipboard({
             state.at
                 .map((sel) => {
                     if (!sel.end) return null;
-                    const [start, end] = orderStartAndEnd(sel.start, sel.end);
+                    const [start, end] = orderStartAndEnd(
+                        sel.start,
+                        sel.end,
+                        state.nsMap,
+                    );
 
                     return collectNodes(
                         state,
@@ -32,7 +36,7 @@ export function DebugClipboard({
                     );
                 })
                 .filter(Boolean) as ClipboardItem[],
-        [state.map, state.at],
+        [state.map, state.at, state.nsMap],
     );
 
     if (!debug) return null;

@@ -12,10 +12,11 @@ import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
 import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
-import { fromMCST, Map, MNode } from '../types/mcst';
+import { fromMCST, Map, MNode, NsMap } from '../types/mcst';
 import { applyMenuItem } from '../to-ast/autoComplete';
 import { fixMissingReferences } from '../../web/custom/reduce';
 import GraphemeSplitter from 'grapheme-splitter';
+import { NUIState } from '../../web/custom/UIState';
 
 export const idText = (node: MNode, map: Map) => {
     switch (node.type) {
@@ -96,7 +97,7 @@ export const parseByCharacter = (
                 throw new Error(`need end for copy`);
             }
 
-            [start, end] = orderStartAndEnd(start, end);
+            [start, end] = orderStartAndEnd(start, end, {});
 
             throw new Error(
                 'I dont think this code is used anymore. if so, need to use UIState pls',
@@ -213,8 +214,12 @@ export const idxSource = () => {
     return () => idx++;
 };
 
-export function orderStartAndEnd(start: Path[], end: Path[]): [Path[], Path[]] {
-    return cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+export function orderStartAndEnd(
+    start: Path[],
+    end: Path[],
+    nsMap: NsMap,
+): [Path[], Path[]] {
+    return cmpFullPath(start, end, nsMap) < 0 ? [start, end] : [end, start];
 }
 
 function determineKey(text: string[], i: number, mods: Mods) {

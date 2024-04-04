@@ -27,7 +27,7 @@ export const NSDragger = ({
             console.log(path);
             throw new Error('bad path');
         }
-        return { idx: last.idx, at: last.at };
+        return { idx: last.idx, child: last.child };
     }, [path]);
 
     const [cm, setCM] = useState(false);

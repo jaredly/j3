@@ -48,7 +48,7 @@ export const replacePath = (
             if (parentNs.type === 'placeholder') {
                 throw new Error('sandbox placeholder');
             }
-            const nsid = parentNs.children[parent.at];
+            const nsid = parent.child;
             const ns = nsMap[nsid];
             if (ns.type === 'placeholder') {
                 throw new Error('sandbox placeholder');

@@ -23,6 +23,7 @@ import {
     Produce,
     ProduceItem,
 } from '../ide/ground-up/Evaluators';
+import { NsMap } from '../../src/types/mcst';
 
 export function CardRoot({
     state,
@@ -47,6 +48,7 @@ export function CardRoot({
         () =>
             normalizeSelections(
                 state.at.filter((s) => pathCard(s.start) === card),
+                state.nsMap,
             ),
         [state.at, card],
     );
@@ -143,11 +145,11 @@ function selectionAction(
     }
 }
 
-export function normalizeSelections(at: Cursor[]): Cursor[] {
+export function normalizeSelections(at: Cursor[], nsMap: NsMap): Cursor[] {
     return at
         .filter((s) => s.end)
         .map(({ start, end }) => {
-            [start, end] = orderStartAndEnd(start, end!);
+            [start, end] = orderStartAndEnd(start, end!, nsMap);
             return { start, end };
         });
 }

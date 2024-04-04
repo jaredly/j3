@@ -9,6 +9,9 @@
 - [ ] ok let's have the state monad keep track of all ... inferred types... by loc.
 
 
+- [ ] WAAAAIT why am I tracking the "at" of ns paths????? STOOPPPPP ITTTTT
+
+
 UGH the caching logic for getResults is so convoluted. :(
 
 

@@ -426,7 +426,7 @@ export const pathForIdx = (
 
         path.unshift({
             type: 'ns',
-            at: (nsMap[parent] as RealizedNamespace).children.indexOf(ns),
+            child: ns,
             idx: parent,
         });
         ns = parent;
@@ -525,7 +525,7 @@ function extractToToplevel(
     };
     const parent = state.nsMap[nsParent.idx] as RealizedNamespace;
     const children = parent.children.slice();
-    children.splice(nsParent.at, 0, nns);
+    children.splice(children.indexOf(nsParent.idx), 0, nns);
     update.nsMap[nsParent.idx] = {
         ...parent,
         children,
