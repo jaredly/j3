@@ -15,6 +15,7 @@ const sanMap = {
     '@': '$at',
     '!': '$ex',
     '|': '$bar',
+    '()': '$unit',
 };
 
 const kwds = 'case var if return super break while for default';

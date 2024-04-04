@@ -1530,6 +1530,7 @@
                         (, "!=" (generic ["k"] (tfns [k k] tbool)))
                         (, ">=" (concrete (tfns [tint tint] tbool)))
                         (, "<=" (concrete (tfns [tint tint] tbool)))
+                        (, "()" (concrete (tcon "()" -1)))
                         (,
                         "trace"
                             (kk
