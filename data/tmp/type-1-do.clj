@@ -533,7 +533,7 @@
                        (fatal "occurs check")
                            (map/set map/nil var type))))
 
-(** A State monad **)
+(** ## A State monad **)
 
 (deftype (result good bad) (ok good) (err bad))
 
@@ -1627,9 +1627,7 @@ foldr
                         (, "set" (, 1 set/nil))
                         (, "->" (, 2 set/nil))])
                     map/nil)
-                [;(@! (deftype (array a) (cons a (array a)) (nil)))
-                ;(@! (deftype (option a) (some a) (none)))
-                (@! (deftype (, a b) (, a b)))
+                [(@! (deftype (, a b) (, a b)))
                 (@! (deftype (,, a b c) (,, a b c)))
                 (@! (deftype (,,, a b c d) (,,, a b c d)))
                 (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))
