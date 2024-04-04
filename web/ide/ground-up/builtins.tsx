@@ -110,7 +110,6 @@ export function builtins() {
         },
         sanitize,
         $setTracer(nw: null | Tracer) {
-            console.log('setting tracer', nw);
             tracer = nw;
         },
         $trace(loc: number, info: any, value: any) {

@@ -4,14 +4,16 @@ import { unique } from './getResults';
 export const depSort = <T,>(
     nodes: ({
         id: number;
-        names: { name: string; loc: number }[];
-        deps: { name: string }[];
+        names: { name: string; loc: number; kind: 'value' | 'type' }[];
+        deps: { name: string; kind: 'value' | 'type' }[];
         hidden?: boolean;
     } & T)[],
 ) => {
     const idForName: { [name: string]: number } = {};
     nodes.forEach((node) =>
-        node.names.forEach(({ name }) => (idForName[name] = node.id)),
+        node.names.forEach(
+            ({ name, kind }) => (idForName[name + ' ' + kind] = node.id),
+        ),
     );
 
     // Record<a, b> where a depends on b
@@ -23,7 +25,9 @@ export const depSort = <T,>(
     nodes.forEach((node) => {
         if (node.deps.length) hasDeps = true;
         edges[node.id] = unique(
-            node.deps.map(({ name }) => idForName[name]).filter(filterNulls),
+            node.deps
+                .map(({ name, kind }) => idForName[name + ' ' + kind])
+                .filter(filterNulls),
         );
         edges[node.id].forEach((id) => {
             if (!back[id]) {

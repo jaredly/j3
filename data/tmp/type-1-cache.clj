@@ -1624,7 +1624,7 @@
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)))
 
-(deftype name-kind (value) (kind/type))
+(deftype name-kind (value) (type))
 
 (deftype analysis
     (** externals

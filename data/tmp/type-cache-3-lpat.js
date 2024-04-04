@@ -17,7 +17,7 @@ return /*10977*/s/*<10977*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 10964');})(/*!*//*10967*/locs/*<10967*/)/*<10964*/ }/*<10956*/ }/*<10956*/ }/*<10956*/;
 
 const value = ({type: "value"});
-const kind$sltype = ({type: "kind/type"});
+const type = ({type: "type"});
 const map$slhas = /*13428*/function name_13428(map) { return /*13428*/function name_13428(k) { return /*13436*/(function match_13436($target) {
 if ($target.type === "some") {
 return /*13445*/true/*<13445*/

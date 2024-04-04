@@ -578,7 +578,6 @@ export const registerNames = (
     for (let name of cache.deps![top].names) {
         results.jumpToName[name.name] = name.loc;
         if (name.kind === 'value') {
-            console.log('registering', name.name);
             if (idForName[name.name] != null) {
                 cache.deps![top].duplicate = true;
                 results.produce[top] = [
