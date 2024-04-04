@@ -617,7 +617,7 @@ foldr
         (pbool _ l) (tcon "bool" l)))
 
 (defn t-expr [tenv expr nidx]
-    (force (run-> (t-expr-inner tenv expr) nidx))
+    (force ((state-f (t-expr-inner tenv expr)) nidx))
         ;(let [
         l                    (expr-loc expr)
         _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
@@ -717,24 +717,23 @@ foldr
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
         (elet pat init body l)   (let-> [inited (t-expr-inner tenv init)]
                                      (pat-and-body tenv pat body inited false))
-        ;(ematch target cases l)
-        ;(let-> [
-            result-var                      (new-type-var "match-res" l)
-            (, target-subst target-type)    (t-expr tenv target)
-            (,, _ target-subst result-type) (foldr->
-                                                (,, target-type target-subst result-var)
-                                                    cases
-                                                    (fn [(,, target-type subst result) (, pat body)]
-                                                    (let-> [
-                                                        (, subst body) (pat-and-body tenv pat body (,, subst target-type) false)
-                                                        unified-subst  (unify-inner (type-apply subst result) body l)
-                                                        composed       (<- (compose-subst "ematch" unified-subst subst))]
-                                                        (<-
-                                                            (,,
-                                                                (type-apply composed target-type)
-                                                                    composed
-                                                                    (type-apply composed result))))))]
-            (<- (, target-subst result-type)))
+        (ematch target cases l)  (let-> [
+                                     result-var                      (new-type-var "match-res" l)
+                                     (, target-subst target-type)    (t-expr-inner tenv target)
+                                     (,, _ target-subst result-type) (foldr->
+                                                                         (,, target-type target-subst result-var)
+                                                                             cases
+                                                                             (fn [(,, target-type subst result) (, pat body)]
+                                                                             (let-> [
+                                                                                 (, subst body) (pat-and-body tenv pat body (, subst target-type) false)
+                                                                                 unified-subst  (unify-inner (type-apply subst result) body l)
+                                                                                 composed       (<- (compose-subst "ematch" unified-subst subst))]
+                                                                                 (<-
+                                                                                     (,,
+                                                                                         (type-apply composed target-type)
+                                                                                             composed
+                                                                                             (type-apply composed result))))))]
+                                     (<- (, target-subst result-type)))
         _                        (<-err "cannot infer type for ${(valueToString expr)}")))
 
 (** ## Patterns **)
@@ -874,7 +873,9 @@ foldr
             1 1)))
 
 (defn infer-show [tenv x]
-    (type-to-string (force (run-> (infer tenv x) 0))))
+    (match (run-> (infer tenv x) 0)
+        (ok v)  (type-to-string v)
+        (err e) "Fatal runtime: ${e}"))
 
 (infer-show basic (@ (let [(, a b) (, 2 true)] (, a b))))
 
@@ -964,8 +965,7 @@ foldr
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
                                                       (<- tenv/nil))
-        (sdeftype tname tnl targs constructors l) (<-
-                                                      (infer-deftype tenv' set/nil tname tnl targs constructors l))))
+        (sdeftype tname tnl targs constructors l) (infer-deftype tenv' set/nil tname tnl targs constructors l)))
 
 (force
     (run->
@@ -1045,12 +1045,16 @@ foldr
 
 (defn several [tenv stmts]
     (match stmts
-        []               (fatal "Final stmt should be an expr")
-        [(sexpr expr _)] (force (run-> (infer tenv expr) 0))
-        [one ..rest]     (several (tenv/merge tenv (infer-stmtss tenv [one])) rest)))
+        []               (<-err "Final stmt should be an expr")
+        [(sexpr expr _)] (let-> [_ (idx-> 0)] (infer tenv expr))
+        [one ..rest]     (let-> [tenv' (infer-stmtss tenv [one])]
+                             (several (tenv/merge tenv tenv') rest))))
 
 (,
-    (fn [x] (type-to-string (several basic x)))
+    (fn [x]
+        (match (run-> (several basic x) 0)
+            (ok t)  (type-to-string t)
+            (err e) e))
         [(,
         [(@! (deftype (array a) (cons a (array a)) (nil)))
             (@!
@@ -1110,35 +1114,6 @@ foldr
         (,
         [(@! (deftype kind (star) (kfun kind kind))) (@! (let [(kfun m n) (star)] 1))]
             "int")])
-
-;(several
-    (** This was a test case I needed to figure out. **)
-        (foldl
-        (tenv/set-constructors
-            builtin-env
-                "stmt"
-                0
-                (map/from-list
-                [(,
-                    "sexpr"
-                        (tconstructor set/nil [(tcon "expr" -1) (tint)] (tcon "stmt" -1)))]))
-            [(,
-            "tenv/merge"
-                (concrete (tfns [(tcon "tenv" -1) (tcon "tenv" -1)] (tcon "tenv" -1))))
-            (,
-            "infer-stmt"
-                (concrete (tfns [(tcon "tenv" -1) (tcon "stmt" -1)] (tcon "tenv" -1))))
-            (,
-            "infer"
-                (concrete (tfns [(tcon "tenv" -1) (tcon "expr" -1)] (tcon "tenv" -1))))]
-            (fn [c (, a b)] (tenv/set-type c a b)))
-        [(@!
-        (defn several [tenv stmts]
-            (match stmts
-                []               (fatal "Fainal stmt should be an expr")
-                [(sexpr expr _)] (infer tenv expr)
-                [one ..rest]     (several (tenv/merge tenv (infer-stmt tenv one)) rest))))
-        (@! several)])
 
 (** ## Some debugging fns **)
 
@@ -1216,40 +1191,36 @@ foldr
                     _        true))
                 (map/to-list externals))))
 
-(defn infer-several-inner [bound (,, subst types nidx) (, var (sdef name _ body l))]
-    (let [
-        (,, body-subst body-type nidx) (t-expr (tenv-apply subst bound) body nidx)
-        both                           (compose-subst "infer-several" body-subst subst)
-        selfed                         (type-apply both var)
-        (, u-subst nidx)               (unify selfed body-type nidx l)
-        subst                          (compose-subst "infer-several-2" u-subst both)]
-        (,, subst [(type-apply subst body-type) ..types] nidx)))
+(defn infer-several-inner [bound (, subst types) (, var (sdef name _ body l))]
+    (let-> [
+        (, body-subst body-type) (t-expr-inner (tenv-apply subst bound) body)
+        both                     (<- (compose-subst "infer-several" body-subst subst))
+        selfed                   (<- (type-apply both var))
+        u-subst                  (unify-inner selfed body-type l)
+        subst                    (<- (compose-subst "infer-several-2" u-subst both))]
+        (<- (, subst [(type-apply subst body-type) ..types]))))
 
 (defn infer-several [tenv stmts]
-    (let [
-        nidx                    0
-        names                   (map
-                                    stmts
-                                        (fn [stmt]
-                                        (match stmt
-                                            (sdef name _ _ _) name
-                                            _                 (fatal "Cant infer-several with sdefs? idk maybe you can ..."))))
-        (,, bound vars nidx)    (vars-for-names
-                                    (map stmts (fn [(sdef name _ _ l)] (, name l)))
-                                        nidx
-                                        tenv)
-        (,, bound missing nidx) (find-missing bound nidx (externals-defs stmts))
-        (,, subst types nidx)   (foldr
-                                    (,, map/nil [] nidx)
-                                        (zip vars stmts)
-                                        (infer-several-inner bound))
-        _                       (report-missing subst missing)]
-        (zip names (map types (type-apply subst)))))
+    (let-> [
+        _                 (idx-> 0)
+        names             (<-
+                              (map
+                                  stmts
+                                      (fn [stmt]
+                                      (match stmt
+                                          (sdef name _ _ _) name
+                                          _                 (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
+        (, bound vars)    (vars-for-names (map stmts (fn [(sdef name _ _ l)] (, name l))) tenv)
+        (, bound missing) (find-missing bound (externals-defs stmts))
+        (, subst types)   (foldr-> (, map/nil []) (zip vars stmts) (infer-several-inner bound))
+        _                 (report-missing subst missing)]
+        (<- (zip names (map types (type-apply subst))))))
 
 (,
-    (errorToString
-        (fn [x]
-            (map (infer-several basic x) (fn [(, _ type)] (type-to-string type)))))
+    (fn [x]
+        (match (run-> (infer-several basic x) 0)
+            (ok v)  (map v (fn [(, _ t)] (type-to-string t)))
+            (err e) [e]))
         [(,
         [(@! (defn even [x] (odd (- x 1) x)))
             (@! (defn odd [x y] "${(even x)}"))
@@ -1264,76 +1235,85 @@ foldr
             ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])
         (,
         [(@! (defn what [a] (+ 2 ho)))]
-            "Fatal runtime: Missing variables\n - ho (15537) : inferred as int")])
+            ["Missing variables\n - ho (15537) : inferred as int"])])
 
 (** ## Testing Errors **)
 
 (defn infer-stmts [tenv stmts]
-    (foldl
+    (foldl->
         tenv
             stmts
-            (fn [tenv stmt] (tenv/merge tenv (infer-stmtss tenv [stmt])))))
+            (fn [tenv stmt]
+            (let-> [tenv' ((infer-stmtss tenv [stmt]))] (<- (tenv/merge tenv tenv'))))))
 
 (,
-    (errorToString (infer-stmts builtin-env))
+    (fn [stmts]
+        (match (run-> (infer-stmts builtin-env stmts) 0)
+            (err e) e
+            (ok _)  "No error?"))
         [(,
         [(@! (defn hello [a] (+ 1 a))) (@! (hello "a"))]
-            "Fatal runtime: cant unify int (10720) and string (10738)")
+            "cant unify int (10720) and string (10738)")
         (,
         [(@! (deftype one (two) (three int))) (@! (two 1))]
-            "Fatal runtime: cant unify one (10756) and (fn [int] a) (10753)")])
+            "cant unify one (10756) and (fn [int] a) (10753)")])
 
 (** ## deftype and typealias **)
 
 (defn infer-deftype [tenv' bound tname tnl targs constructors l]
-    (let [
-        names           (map constructors (fn [(,,, name _ _ _)] name))
-        final           (foldl
-                            (tcon tname tnl)
-                                targs
-                                (fn [body (, arg al)] (tapp body (tvar arg al) l)))
-        free-set        (foldl set/nil targs (fn [free (, arg _)] (set/add free arg)))
-        (, values cons) (foldl
+    (let-> [
+        names           (<- (map constructors (fn [(,,, name _ _ _)] name)))
+        final           (<-
+                            (foldl
+                                (tcon tname tnl)
+                                    targs
+                                    (fn [body (, arg al)] (tapp body (tvar arg al) l))))
+        free-set        (<- (foldl set/nil targs (fn [free (, arg _)] (set/add free arg))))
+        (, values cons) (foldl->
                             (, map/nil map/nil)
                                 constructors
                                 (fn [(, values cons) (,,, name nl args l)]
-                                (let [
-                                    args (map args (fn [arg] (type-with-free arg free-set)))
-                                    args (map args (subst-aliases (tenv/alias tenv')))
-                                    _    (map
-                                             args
-                                                 (fn [arg]
+                                (let-> [
+                                    args (<- (map args (fn [arg] (type-with-free arg free-set))))
+                                    args (<- (map args (subst-aliases (tenv/alias tenv'))))
+                                    _    (map->
+                                             (fn [arg]
                                                  (match (bag/to-list (externals-type (set/add bound tname) arg))
-                                                     []    true
-                                                     names (fatal
+                                                     []    (<- true)
+                                                     names (<-err
                                                                "Unbound types (in deftype ${
                                                                    tname
                                                                    }) ${
                                                                    (join ", " (map names (fn [(,, name _ _)] name)))
-                                                                   }"))))]
-                                    (,
-                                        (map/set
-                                            values
-                                                name
-                                                (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
-                                            (map/set cons name (tconstructor free-set args final))))))]
-        (tenv
-            values
-                cons
-                (map/set map/nil tname (, (len targs) (set/from-list names)))
-                map/nil)))
+                                                                   }")))
+                                                 args)]
+                                    (<-
+                                        (,
+                                            (map/set
+                                                values
+                                                    name
+                                                    (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                (map/set cons name (tconstructor free-set args final)))))))]
+        (<-
+            (tenv
+                values
+                    cons
+                    (map/set map/nil tname (, (len targs) (set/from-list names)))
+                    map/nil))))
 
 (defn infer-stypes [tenv' stypes salias]
-    (let [
-        names                    (foldl
-                                     (map salias (fn [(,, name _ _)] name))
-                                         stypes
-                                         (fn [names (sdeftype name _ _ _ _)] [name ..names]))
-        (tenv _ _ types aliases) tenv'
-        bound                    (set/merge
-                                     (set/from-list (map/keys types))
-                                         (set/merge (set/from-list names) (set/from-list (map/keys aliases))))
-        tenv                     (foldl
+    (let-> [
+        names                    (<-
+                                     (foldl
+                                         (map salias (fn [(,, name _ _)] name))
+                                             stypes
+                                             (fn [names (sdeftype name _ _ _ _)] [name ..names])))
+        (tenv _ _ types aliases) (<- tenv')
+        bound                    (<-
+                                     (set/merge
+                                         (set/from-list (map/keys types))
+                                             (set/merge (set/from-list names) (set/from-list (map/keys aliases)))))
+        tenv                     (foldl->
                                      tenv/nil
                                          salias
                                          (fn [tenv (,, name args body)]
@@ -1341,19 +1321,19 @@ foldr
                                              (externals-type
                                                  (set/merge bound (set/from-list (map args fst)))
                                                      body))
-                                             []    (tenv/add-alias tenv name (, (map args fst) body))
-                                             names (fatal
+                                             []    (<- (tenv/add-alias tenv name (, (map args fst) body)))
+                                             names (<-err
                                                        "Unbound types ${(join ", " (map names (fn [(,, name _ _)] name)))}"))))
-        merged                   (tenv/merge tenv tenv')
-        tenv                     (foldl
+        merged                   (<- (tenv/merge tenv tenv'))
+        tenv                     (foldl->
                                      tenv
                                          stypes
                                          (fn [tenv (sdeftype name tnl args constructors l)]
-                                         (tenv/merge
-                                             (infer-deftype merged bound name tnl args constructors l)
-                                                 tenv)))
-        tenv'                    (tenv/merge tenv tenv')]
-        tenv))
+                                         (let-> [
+                                             tenv' (infer-deftype merged bound name tnl args constructors l)]
+                                             (<- (tenv/merge tenv' tenv)))))
+        tenv'                    (<- (tenv/merge tenv tenv'))]
+        (<- tenv)))
 
 (** ## Statements (w/ circular dependencies) **)
 
@@ -1376,28 +1356,33 @@ foldr
 (defn infer-defns [tenv stmts]
     (match stmts
         [one] (infer-stmt tenv one)
-        _     (foldl
-                  tenv/nil
-                      (infer-several tenv stmts)
-                      (fn [tenv (, name type)]
-                      (tenv/set-type tenv name (generalize tenv type))))))
+        _     (let-> [zipped (infer-several tenv stmts)]
+                  (<-
+                      (foldl
+                          tenv/nil
+                              zipped
+                              (fn [tenv (, name type)]
+                              (tenv/set-type tenv name (generalize tenv type))))))))
 
 (defn infer-stmtss [tenv' stmts]
-    (let [
-        (,,, sdefs stypes salias sexps) (split-stmts stmts [] [] [] [])
+    (let-> [
+        (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
         type-tenv                       (infer-stypes tenv' stypes salias)
-        tenv'                           (tenv/merge type-tenv tenv')
+        tenv'                           (<- (tenv/merge type-tenv tenv'))
         val-tenv                        (infer-defns tenv' sdefs)
-        _                               (map sexps (infer (tenv/merge val-tenv tenv')))]
-        (tenv/merge type-tenv val-tenv)))
+        _                               (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
+        (<- (tenv/merge type-tenv val-tenv))))
 
-(infer-stmtss
-    (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
-        [(@! (typealias one (, int string)))
-        (@! (deftype (, a b) (, a b)))
-        (@! (deftype one (two int)))
-        (@! (deftype kind (star) (kfun kind kind)))
-        (@! (let [(kfun m n) (star)] 1))])
+(force
+    (run->
+        (infer-stmtss
+            (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
+                [(@! (typealias one (, int string)))
+                (@! (deftype (, a b) (, a b)))
+                (@! (deftype one (two int)))
+                (@! (deftype kind (star) (kfun kind kind)))
+                (@! (let [(kfun m n) (star)] 1))])
+            0))
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
@@ -1660,7 +1645,8 @@ foldr
                         (tnamed (trace-fmt a))
                         (tfmted a string)
                         (tfmt a (fn [a] string))))]
-                (fn [tenv stmt] (tenv/merge tenv (infer-stmtss tenv [stmt]))))))
+                (fn [tenv stmt]
+                (tenv/merge tenv (force (run-> (infer-stmtss tenv [stmt]) 0)))))))
 
 (infer-show builtin-env (@ ,))
 
@@ -1706,7 +1692,11 @@ foldr
 ((eval
     "({0: {0: env_nil, 1: infer_stmts,  2: add_stmt,  3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
-        (inference builtin-env infer-stmtss tenv/merge infer)
+        (inference
+            builtin-env
+                (fn [tenv stmts] (force (run-> (infer-stmtss tenv stmts) 0)))
+                tenv/merge
+                (fn [tenv expr] (force (run-> (infer tenv expr) 0))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
