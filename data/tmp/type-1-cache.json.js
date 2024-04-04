@@ -29,6 +29,9 @@ const fst = /*13743*/function name_13743({0: a}) { return /*13752*/a/*<13752*/ }
 
 const dot = /*16114*/function name_16114(a) { return /*16114*/function name_16114(b) { return /*16114*/function name_16114(c) { return /*16123*//*16124*/a/*<16124*/(/*16123*//*16125*//*16126*/b/*<16126*/(/*16125*//*16127*/c/*<16127*/)/*<16125*/)/*<16123*/ }/*<16114*/ }/*<16114*/ }/*<16114*/;
 
+const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
+const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
+const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const tcolor = (v0) => ({type: "tcolor", 0: v0});
 const tbold = (v0) => ({type: "tbold", 0: v0});
 const titalic = (v0) => ({type: "titalic", 0: v0});
@@ -47,9 +50,6 @@ const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1});
 const cst$slidentifier = (v0) => (v1) => ({type: "cst/identifier", 0: v0, 1: v1});
 const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2});
 const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1});
-const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
-const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
-const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const type_free = /*754*/function name_754(type) { return /*761*/(function match_761($target) {
 if ($target.type === "tvar") {
 {

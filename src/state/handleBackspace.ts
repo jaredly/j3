@@ -114,7 +114,7 @@ export function handleBackspace(
                 const text = split
                     .slice(0, item.source.start)
                     .concat(split.slice(item.source.end));
-                if (!text.length) {
+                if (!text.length && node.type !== 'stringText') {
                     return {
                         type: 'update',
                         map: {

@@ -214,7 +214,7 @@
                                                                                     (fn [body init]
                                                                                     (let [(, pat value) init]
                                                                                         (eapp
-                                                                                            (eapp (evar "->" el) (parse-expr value) el)
+                                                                                            (eapp (evar ">>=" el) (parse-expr value) el)
                                                                                                 (elambda (parse-pat pat) body l)
                                                                                                 l))))
         (cst/list [(cst/identifier "let" _) .._] l)                         (fatal "Invalid 'let' ${(int-to-string l)}")
@@ -327,7 +327,7 @@
         (,
         (@@ (let-> [v hi] v2))
             (eapp
-            (eapp (evar "->" 6213) (evar "hi" 6216) 6213)
+            (eapp (evar ">>=" 6213) (evar "hi" 6216) 6213)
                 (elambda (pvar "v" 6215) (evar "v2" 6217) 6212)
                 6212))
         (, (@@ (fn [a] 1)) (elambda (pvar "a" 1238) (eprim (pint 1 1239) 1239) 1235))

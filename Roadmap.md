@@ -1,4 +1,9 @@
 
+
+- [x] let-> should drop -> (mapped to ti-then) in everywhere. thanks
+  (🤔 could be >>= instead? is that what I want? idk)
+
+
 // Here's what we got folks
 
 infer_stmts = [tenv stmts] tenv

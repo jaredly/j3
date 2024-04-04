@@ -523,7 +523,9 @@ export const getKeyUpdate = (
 
     if (
         key === '<' &&
-        (node.type === 'identifier' ||
+        ((node.type === 'identifier' &&
+            (flast.type === 'end' ||
+                (flast.type === 'subtext' && flast.at === text.length))) ||
             node.type === 'hash' ||
             (node.type === 'list' && flast.type === 'end'))
     ) {
@@ -800,7 +802,11 @@ export const insertText = (
             fullPath.slice(0, -1),
             map,
             hashNames[idx],
-            multi?.type === 'subtext' ? multi.at : undefined,
+            multi?.type === 'subtext'
+                ? multi.at
+                : multi?.type === 'start'
+                ? 0
+                : undefined,
         );
     }
 
