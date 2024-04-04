@@ -103,6 +103,15 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
+(deftype prim (pint int int) (pbool bool int))
+
+(deftype pat
+    (pany int)
+        (pvar string int)
+        (pcon string (array pat) int)
+        (pstr string int)
+        (pprim prim int))
+
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
@@ -125,15 +134,6 @@
         (pcon c pats _) "(${c} ${(join " " (map pats pat-to-string))})"
         (pstr s _)      "\"${s}\""
         (pprim _ _)     "prim"))
-
-(deftype prim (pint int int) (pbool bool int))
-
-(deftype pat
-    (pany int)
-        (pvar string int)
-        (pcon string (array pat) int)
-        (pstr string int)
-        (pprim prim int))
 
 (deftype type
     (tvar string int)
@@ -538,12 +538,9 @@
 (deftype (result good bad) (ok good) (err bad))
 
 (deftype (StateT state err value)
-    (StateT (fn [state] (result (, state value) err))))
+    (StateT (fn [state] (, state (result value err)))))
 
-(defn run-> [(StateT f) state]
-    (match (f state)
-        (ok (, _ value)) (ok value)
-        (err e)          (err e)))
+(defn run-> [(StateT f) state] (let [(, _ result) (f state)] result))
 
 (defn state-f [(StateT f)] f)
 
@@ -551,16 +548,16 @@
     (StateT
         (fn [state]
             (match (f state)
-                (err e)              (err e)
-                (ok (, state value)) ((state-f (next value)) state)))))
+                (, state (err e))    (, state (err e))
+                (, state (ok value)) ((state-f (next value)) state)))))
 
-(defn <- [x] (StateT (fn [state] (ok (, state x)))))
+(defn <- [x] (StateT (fn [state] (, state (ok x)))))
 
-(defn <-err [e] (StateT (fn [_] (err e))))
+(defn <-err [e] (StateT (fn [state] (, state (err e)))))
 
-(def <-state (StateT (fn [state] (ok (, state state)))))
+(def <-state (StateT (fn [state] (, state (ok state)))))
 
-(defn state-> [v] (StateT (fn [old] (ok (, v old)))))
+(defn state-> [v] (StateT (fn [old] (, v (ok old)))))
 
 (defn map-> [f arr]
     (match arr
@@ -1404,12 +1401,135 @@
 
 (** ## Collecting types of everything **)
 
+;(deftype expr
+    (eprim prim int)
+        (estr string (array (,, expr string int)) int)
+        (evar string int)
+        (equot expr int)
+        (equot/stmt stmt int)
+        (equot/pat pat int)
+        (equot/type type int)
+        (equotquot cst int)
+        (elambda pat expr int)
+        (eapp expr expr int)
+        (elet pat expr expr int)
+        (ematch expr (array (, pat expr)) int))
+
+(defn expr->s [expr]
+    (match expr
+        (eprim prim int)            (prim->s prim)
+        (estr string templates int) "\"${
+                                        string
+                                        }${
+                                        (join
+                                            ""
+                                                (map templates (fn [(,, expr suffix _)] "${(expr->s expr)}${suffix}")))
+                                        }\""
+        (evar string int)           string
+        (elambda pat expr int)      "(fn [${(pat->s pat)}] ${(expr->s expr)})"
+        (eapp target arg int)       "(${(expr->s target)} ${(expr->s arg)})"
+        (elet pat init body int)    "(let [${(pat->s pat)} ${(expr->s init)}]\n  ${(expr->s body)})"
+        (ematch expr cases int)     "(match ${
+                                        (expr->s expr)
+                                        }\n  ${
+                                        (join
+                                            "\n  "
+                                                (map cases (fn [(, pat body)] "${(pat->s pat)}t${(expr->s body)}")))
+                                        }"))
+
+;(deftype prim (pint int int) (pbool bool int))
+
+(defn prim->s [prim]
+    (match prim
+        (pint num _)     (its num)
+        (pbool bool int) (if bool
+                             "true"
+                                 "false")))
+
+(defn pat->s [pat]
+    (match pat
+        (pany int)             "_"
+        (pvar string int)      string
+        (pcon string args int) "(${string}${(join "" (map args (fn [pat] " ${(pat->s pat)}")))})"
+        (pstr string int)      string
+        (pprim prim int)       (prim->s prim)))
+
+;(deftype pat
+    (pany int)
+        (pvar string int)
+        (pcon string (array pat) int)
+        (pstr string int)
+        (pprim prim int))
+
+(defn pats-by-loc [pat]
+    (match pat
+        (pany int)             empty
+        (pvar string int)      (one (, int (evar string int)))
+        (pcon string pats int) (foldl empty (map pats pats-by-loc) bag/and)
+        (pstr string int)      empty
+        (pprim prim int)       empty))
+
+(defn things-by-loc [expr]
+    (bag/and
+        (one (, (expr-loc expr) expr))
+            (match expr
+            (estr string templates int) (foldl
+                                            empty
+                                                (map templates (fn [(,, expr _ _)] (things-by-loc expr)))
+                                                bag/and)
+            (elambda pat expr int)      (bag/and (pats-by-loc pat) (things-by-loc expr))
+            (eapp target arg int)       (bag/and (things-by-loc target) (things-by-loc arg))
+            (elet pat init body int)    (bag/and
+                                            (pats-by-loc pat)
+                                                (bag/and (things-by-loc init) (things-by-loc body)))
+            (ematch expr cases int)     (bag/and
+                                            (things-by-loc expr)
+                                                (foldl
+                                                empty
+                                                    (map cases (fn [(, pat expr)] (things-by-loc expr)))
+                                                    bag/and))
+            _                           empty)))
+
+(defn map/add [map arg value]
+    (map/set
+        map
+            arg
+            (match (map/get map arg)
+            (none)        [value]
+            (some values) [value ..values])))
+
 (defn show-all-types [tenv expr]
     (let [
-        (, type (,, _ types subst)) (force
-                                        (run/nil->
-                                            (let-> [type (infer tenv expr) state <-state] (<- (, type state)))))]
-        type))
+        (, (,, _ types subst) result) ((state-f (infer tenv expr)) state/nil)
+        type-map                      (foldr
+                                          map/nil
+                                              types
+                                              (fn [map (, loc type)] (map/add map loc (type-apply subst type))))
+        final                         (match result
+                                          (ok v)  (type-to-string v)
+                                          (err e) e)
+        exprs                         (foldr
+                                          map/nil
+                                              (bag/to-list (things-by-loc expr))
+                                              (fn [map (, loc expr)] (map/add map loc expr)))]
+        "Result: ${
+            final
+            }\nExprs:\n${
+            (join
+                "\n\n"
+                    (map
+                    (map/to-list exprs)
+                        (fn [(, loc exprs)]
+                        "${
+                            (join ";t" (map exprs expr->s))
+                            }\n -> ${
+                            (match (map/get type-map loc)
+                                (none)   "No type at ${(its loc)}"
+                                (some t) "${(join ";t" (map t type-to-string))}")
+                            }")))
+            }"))
+
+(show-all-types builtin-env (@ (fn [x b] (+ x 1))))
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
