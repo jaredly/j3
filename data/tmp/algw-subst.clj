@@ -603,7 +603,7 @@
 (def <-subst (let-> [(,, _ _ subst) <-state] (<- subst)))
 
 (defn idx-> [idx]
-    (let-> [(,, _ b c) <-state _ (state-> (,, idx b c))] (<- 0)))
+    (let-> [(,, _ b c) <-state _ (state-> (,, idx b c))] (<- ())))
 
 (defn record-> [loc type]
     (let-> [
@@ -656,6 +656,12 @@
                                      (tfmt type type-to-string-raw)])]
         (,, subst type nidx)))
 
+(def tenv/apply-> (apply-> tenv-apply))
+
+(def type/apply-> (apply-> type-apply))
+
+(defn apply-> [f tenv] (let-> [subst <-subst] (<- (f subst tenv))))
+
 (defn t-expr-inner [tenv expr]
     (match expr
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
@@ -698,8 +704,7 @@
                                                       _             "$arg")
                                                       l)
                                      body     (pat-and-body tenv pat body arg-type true)
-                                     subst    <-subst
-                                     arg-type (<- (type-apply subst arg-type))]
+                                     arg-type (type/apply-> arg-type)]
                                      (<- (tfn arg-type body l)))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
@@ -710,15 +715,11 @@
         (eapp target arg l)      (let-> [
                                      result-var  (new-type-var "res" l)
                                      target-type (t-expr tenv target)
-                                     subst       <-subst
-                                     arg-type    (t-expr (tenv-apply subst tenv) arg)
-                                     subst       <-subst
-                                     _           (unify-inner
-                                                     (type-apply subst target-type)
-                                                         (tfn arg-type result-var l)
-                                                         l)
-                                     subst       <-subst]
-                                     (<- (type-apply subst result-var)))
+                                     arg-tenv    (tenv/apply-> tenv)
+                                     arg-type    (t-expr arg-tenv arg)
+                                     target-type (type/apply-> target-type)
+                                     _           (unify-inner target-type (tfn arg-type result-var l) l)]
+                                     (type/apply-> result-var))
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
@@ -742,7 +743,7 @@
         (ematch target cases l)  (let-> [
                                      result-var        (new-type-var "match-res" l)
                                      target-type       (t-expr tenv target)
-                                     (, _ result-type) (foldr->
+                                     (, _ result-type) (foldl->
                                                            (, target-type result-var)
                                                                cases
                                                                (fn [(, target-type result) (, pat body)]
@@ -776,7 +777,7 @@
                                           (map/to-list schemes)
                                           (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme))))
         body-type             (t-expr (tenv-apply composed bound-env) body)]
-        (<- (type-apply composed body-type))))
+        (type/apply-> body-type)))
 
 (defn t-pat [tenv pat]
     (let-> [(, t bindings) (t-pat-inner tenv pat) _ (record-> (pat-loc pat) t)]
@@ -896,7 +897,7 @@
 (infer-show basic (@ (let [(, a b) (, 2 true)] (, a b))))
 
 (,
-    (errorToString (infer-show basic))
+    (infer-show basic)
         [(, (@ +) "(fn [int int] int)")
         (, (@ "") "string")
         (, (@ "hi ${"ho"}") "string")
@@ -1400,6 +1401,15 @@
                 (@! (deftype one (two int)))
                 (@! (deftype kind (star) (kfun kind kind)))
                 (@! (let [(kfun m n) (star)] 1))])))
+
+(** ## Collecting types of everything **)
+
+(defn show-all-types [tenv expr]
+    (let [
+        (, type (,, _ types subst)) (force
+                                        (run/nil->
+                                            (let-> [type (infer tenv expr) state <-state] (<- (, type state)))))]
+        type))
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)

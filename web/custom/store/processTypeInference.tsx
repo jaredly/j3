@@ -38,6 +38,7 @@ export function processTypeInference<
         };
     } catch (err) {
         delete env.cache.types[groupKey];
+        console.error(err);
         group.forEach(
             (node) =>
                 (env.results.produce[node.id] = [

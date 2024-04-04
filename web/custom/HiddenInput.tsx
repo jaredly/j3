@@ -38,17 +38,24 @@ export function HiddenInput({
     }, [state.at]);
 
     useEffect(() => {
-        window.addEventListener(
-            'blur',
-            (evt) => {
-                setTimeout(() => {
-                    if (document.activeElement === document.body) {
-                        hiddenInput.current?.focus();
-                    }
-                }, 50);
-            },
-            true,
-        );
+        const key = (evt: KeyboardEvent) => {
+            if (evt.key === 'd' && evt.metaKey) {
+                evt.preventDefault();
+            }
+        };
+        window.addEventListener('keydown', key);
+        const fn = () => {
+            setTimeout(() => {
+                if (document.activeElement === document.body) {
+                    hiddenInput.current?.focus();
+                }
+            }, 50);
+        };
+        window.addEventListener('blur', fn, true);
+        return () => {
+            window.removeEventListener('keydown', key);
+            window.removeEventListener('blur', fn, true);
+        };
     }, []);
 
     const hiddenInput = useRef(null as null | HTMLInputElement);
