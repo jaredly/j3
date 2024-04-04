@@ -1,7 +1,14 @@
 
 
-- [x] let-> should drop -> (mapped to ti-then) in everywhere. thanks
-  (🤔 could be >>= instead? is that what I want? idk)
+- [x] let-> should drop >>= (mapped to ti-then) in everywhere. thanks
+- [x] thih working!
+- [ ] gotta get deftype n stuff for thih going, so I can actually try it out.
+
+
+UGH the caching logic for getResults is so convoluted. :(
+
+
+# type-1-cache =>
 
 
 // Here's what we got folks
