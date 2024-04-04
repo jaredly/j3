@@ -267,11 +267,7 @@ export const getResults = <
                 const names = evaluator.analysis.stmtNames(stmt);
                 const deps = evaluator.analysis.dependencies(stmt);
                 cache.deps![top.top] = { names, deps };
-                // TODO could work harder to cache these, but it's fine
-                //     names: names!,
-                // if (cache.nodes[top.top].parsed?.names) {
-                //     registerNames(cache, top.top, results, idForName);
-                // }
+                registerNames(cache, top.top, results, idForName);
             }
         }
     });
@@ -582,6 +578,7 @@ export const registerNames = (
     for (let name of cache.deps![top].names) {
         results.jumpToName[name.name] = name.loc;
         if (name.kind === 'value') {
+            console.log('registering', name.name);
             if (idForName[name.name] != null) {
                 cache.deps![top].duplicate = true;
                 results.produce[top] = [

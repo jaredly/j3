@@ -318,7 +318,7 @@ export const fnsEvaluator = (
             if (idx != null) {
                 withTracing(traceMap, idx, env.values, env);
             } else {
-                san.$setTracer(null);
+                env.values.$setTracer(null);
             }
         },
 
@@ -412,7 +412,7 @@ const compileStmt = (
             }
             const value = fn(values);
 
-            san.$setTracer(null);
+            env.values.$setTracer(null);
             return {
                 env,
                 display: [

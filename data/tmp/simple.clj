@@ -30,7 +30,9 @@ nil
 
 (def hi 10)
 
-(def hio (lolz 10 23 aa bb))
+(def hio (lolz 100 23 aa bb))
+
+cons
 
 (let [one 23] (xx one))
 

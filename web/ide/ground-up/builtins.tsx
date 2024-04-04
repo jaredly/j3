@@ -122,8 +122,6 @@ export function builtins() {
                         ? { type: 'tfmt', 0: value, 1: info.formatter }
                         : { type: 'tval', 0: value },
                 ]);
-            } else {
-                console.log('not tracing, sorry', loc);
             }
             // tracer?.(loc, value, info);
             return value;

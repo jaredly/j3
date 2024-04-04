@@ -553,8 +553,8 @@
         (pbool _ l) (tcon "bool" l)))
 
 (defn t-expr [tenv expr nidx]
-    ;(t-expr-inner tenv expr nidx)
-        (let [
+    (t-expr-inner tenv expr nidx)
+        ;(let [
         l                    (expr-loc expr)
         _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
         (,, subst type nidx) (t-expr-inner tenv expr nidx)
@@ -612,7 +612,7 @@
                                                                   _             "$arg")
                                                                   nidx
                                                                   l)
-                                     (,, subst body nidx) (pat-and-body tenv pat body (,, map/nil arg-type nidx))
+                                     (,, subst body nidx) (pat-and-body tenv pat body (,, map/nil arg-type nidx) true)
                                      arg-type             (type-apply subst arg-type)]
                                      (,, subst (tfn arg-type body l) nidx))
         (** Function application (target arg)
@@ -655,7 +655,7 @@
             - infer the type of the value
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
-        (elet pat init body l)   (pat-and-body tenv pat body (t-expr tenv init nidx))
+        (elet pat init body l)   (pat-and-body tenv pat body (t-expr tenv init nidx) false)
         (ematch target cases l)  (let [
                                      (, result-var nidx)                   (new-type-var "match-res" nidx l)
                                      (,, target-subst target-type nidx)    (t-expr tenv target nidx)
@@ -664,7 +664,7 @@
                                                                                    cases
                                                                                    (fn [(,,, target-type subst result nidx) (, pat body)]
                                                                                    (let [
-                                                                                       (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx))
+                                                                                       (,, subst body nidx)   (pat-and-body tenv pat body (,, subst target-type nidx) false)
                                                                                        (, unified-subst nidx) (unify (type-apply subst result) body nidx l)
                                                                                        composed               (compose-subst "ematch" unified-subst subst)]
                                                                                        (,,,
@@ -677,14 +677,18 @@
 
 (** ## Patterns **)
 
-(defn pat-and-body [tenv pat body (,, value-subst value-type nidx)]
+(defn pat-and-body [tenv pat body (,, value-subst value-type nidx) monomorphic]
     (** Yay!! Now we have verification. **)
         (let [
         (,, pat-type bindings nidx)    (t-pat tenv pat nidx)
         (, unified-subst nidx)         (unify value-type pat-type nidx (pat-loc pat))
         composed                       (compose-subst "pat-and-body" unified-subst value-subst)
         bindings                       (map/map (type-apply composed) bindings)
-        schemes                        (map/map (generalize (tenv-apply composed tenv)) bindings)
+        schemes                        (map/map
+                                           (if monomorphic
+                                               (scheme set/nil)
+                                                   (generalize (tenv-apply composed tenv)))
+                                               bindings)
         bound-env                      (foldr
                                            (tenv-apply value-subst tenv)
                                                (map/to-list schemes)
@@ -993,7 +997,6 @@
                     [one ..rest] (f (foldr init rest f) one))))
             (@! foldr)]
             "(fn [a (array b) (fn [a b] a)] a)")
-        (,  )
         (,
         [(@!
             (defn what [f a]
