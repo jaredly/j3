@@ -503,7 +503,7 @@ const compileStmt = (
     } catch (err) {
         return {
             env,
-            display: `JS Syntax Error: ${(err as Error).message}\n${js}`,
+            display: [`JS Syntax Error: ${(err as Error).message}\n${js}`],
             values: {},
         };
     }

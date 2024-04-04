@@ -1190,11 +1190,12 @@
 (defn ti-return [x]
     (TI (fn [subst tenv nidx] (ok (,,, subst tenv nidx x)))))
 
+(def -> ti-then)
+
 (defn map/ti [f arr]
     (match arr
         []           (ti-return [])
-        [one ..rest] (let-> [res (ti-then (f one)) rest (ti-then (map/ti f rest))]
-                         (ti-return [res ..rest]))))
+        [one ..rest] (let-> [res (f one) rest (map/ti f rest)] (ti-return [res ..rest]))))
 
 (defn ti-then [ti next]
     (TI
@@ -1209,7 +1210,7 @@
         (err e) (err e)))
 
 (defn fresh-inst [(forall ks qt)]
-    (let-> [ts (ti-then (map/ti new-tvar ks))]
+    (let-> [ts (map/ti new-tvar ks)]
         (ti-return (inst/qual ts inst/type qt))))
 
 (defn inst/type [types type]
@@ -1229,12 +1230,10 @@
     (infer e t)
         (fn [class-env (array assump) e] (TI (, (array pred) t))))
 
-(defn ntv [kind] (ti-then (new-tvar kind)))
-
-(defn tenv/constr [(type-env constrs _) name]
+(defn tenv/constr [(type-env constrs _ _) name]
     (map/get constrs name))
 
-(defn tenv/value [(type-env _ values) name] (map/get values name))
+(defn tenv/value [(type-env _ values _) name] (map/get values name))
 
 (defn ti-from-result [result]
     (match result
@@ -1246,20 +1245,19 @@
 (defn sequence [tis]
     (match tis
         []           (ti-return [])
-        [one]        (let-> [res (ti-then one)] (ti-return [res]))
-        [one ..rest] (let-> [res (ti-then one) rest (ti-then (sequence rest))]
-                         (ti-return [res ..rest]))))
+        [one]        (let-> [res one] (ti-return [res]))
+        [one ..rest] (let-> [res one rest (sequence rest)] (ti-return [res ..rest]))))
 
 (** ## Inference! **)
 
 (defn infer/prim [prim]
     (match prim
         (pbool _ _)  (ti-return (, [] tbool))
-        (pfloat _ _) (let-> [v (ntv star)] (ti-return (, [(isin "floating" v)] v)))
-        (pint _ _)   (let-> [v (ntv star)] (ti-return (, [(isin "num" v)] v)))))
+        (pfloat _ _) (let-> [v (new-tvar star)] (ti-return (, [(isin "floating" v)] v)))
+        (pint _ _)   (let-> [v (new-tvar star)] (ti-return (, [(isin "num" v)] v)))))
 
 (defn infer/pats [pats]
-    (let-> [psasts (ti-then (map/ti infer/pat pats))]
+    (let-> [psasts (map/ti infer/pat pats)]
         (let [
             ps (concat (map (fn [(,, ps' _ _)] ps') psasts))
             as (concat (map (fn [(,, _ as' _)] as') psasts))
@@ -1268,20 +1266,20 @@
 
 (defn infer/pat [pat]
     (match pat
-        (pvar name l)          (let-> [v (ntv star)] (ti-return (,, [] [(!>! name (to-scheme v))] v)))
-        (pany l)               (let-> [v (ntv star)] (ti-return (,, [] [] v)))
+        (pvar name l)          (let-> [v (new-tvar star)] (ti-return (,, [] [(!>! name (to-scheme v))] v)))
+        (pany l)               (let-> [v (new-tvar star)] (ti-return (,, [] [] v)))
         ; (pas name inner l)
-        (pprim prim l)         (let-> [(, ps t) (ti-then (infer/prim prim))] (ti-return (,, ps [] t)))
+        (pprim prim l)         (let-> [(, ps t) (infer/prim prim)] (ti-return (,, ps [] t)))
         (pcon name patterns l) (TI
                                    (fn [subst tenv nidx]
                                        (match (tenv/constr tenv name)
                                            (none)        (fatal "Unknonwn constructor ${name}")
                                            (some scheme) (ti-run
                                                              (let-> [
-                                                                 (,, ps as ts) (ti-then (infer/pats patterns))
-                                                                 t'            (ntv star)
-                                                                 (=> qs t)     (ti-then (fresh-inst scheme))
-                                                                 _             (ti-then (unify t (foldr t' ts (fn [res arg] (tfn arg res)))))]
+                                                                 (,, ps as ts) (infer/pats patterns)
+                                                                 t'            (new-tvar star)
+                                                                 (=> qs t)     (fresh-inst scheme)
+                                                                 _             (unify t (foldr t' ts (fn [res arg] (tfn arg res))))]
                                                                  (ti-return (,, (concat [ps qs]) as t')))
                                                                  subst
                                                                  tenv
@@ -1298,25 +1296,23 @@
     (match expr
         (evar name l)            (match (find-scheme name as)
                                      (err e) (ti-err e)
-                                     (ok sc) (let-> [(=> ps t) (ti-then (fresh-inst sc))] (ti-return (, ps t))))
+                                     (ok sc) (let-> [(=> ps t) (fresh-inst sc)] (ti-return (, ps t))))
         (estr first templates l) (let-> [
-                                     results        (ti-then
-                                                        (map/ti (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates)))
-                                     (, ps types)   (ti-then (ti-return (unzip results)))
-                                     results'       (ti-then
-                                                        (map/ti
-                                                            (fn [_]
-                                                                (fresh-inst (forall [star] (=> [(isin "pretty" (tgen 0 -1))] (tgen 0 -1)))))
-                                                                types))
-                                     (, ps' types') (ti-then (ti-return (unzip (map (fn [(=> a b)] (, a b)) results'))))
-                                     _              (ti-then (map/ti (fn [(, a b)] (unify a b)) (zip types types')))]
+                                     results        (map/ti (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
+                                     (, ps types)   (ti-return (unzip results))
+                                     results'       (map/ti
+                                                        (fn [_]
+                                                            (fresh-inst (forall [star] (=> [(isin "pretty" (tgen 0 -1))] (tgen 0 -1)))))
+                                                            types)
+                                     (, ps' types') (ti-return (unzip (map (fn [(=> a b)] (, a b)) results')))
+                                     _              (map/ti (fn [(, a b)] (unify a b)) (zip types types'))]
                                      (ti-return (, (concat [(concat ps) (concat ps')]) tstring)))
         (eprim prim l)           (infer/prim prim)
         (eapp target arg l)      (let-> [
-                                     (, ps target-type) (ti-then (infer/expr ce as target))
-                                     (, qs arg-type)    (ti-then (infer/expr ce as arg))
-                                     result-var         (ntv star)
-                                     _                  (ti-then (unify (tfn arg-type result-var) target-type))]
+                                     (, ps target-type) ((infer/expr ce as target))
+                                     (, qs arg-type)    ((infer/expr ce as arg))
+                                     result-var         (new-tvar star)
+                                     _                  ((unify (tfn arg-type result-var) target-type))]
                                      (ti-return (, (concat [ps qs]) result-var)))
         (elambda pat body l)     (infer/expr
                                      ce
@@ -1330,28 +1326,25 @@
                                              (eapp (evar "match" l) target l)
                                              l))
         (elet bindings body l)   (let-> [
-                                     (, ps as') (ti-then (infer/binding-group ce as bindings))
-                                     (, qs t)   (ti-then (infer/expr ce (concat [as' as]) body))]
+                                     (, ps as') (infer/binding-group ce as bindings)
+                                     (, qs t)   (infer/expr ce (concat [as' as]) body)]
                                      (ti-return (, (concat [ps qs]) t)))))
 
 (defn infer/alt [ce as (, pats body)]
     (let-> [
-        (,, ps as' ts) (ti-then (infer/pats pats))
-        (, qs t)       (ti-then (infer/expr ce (concat [as' as]) body))]
+        (,, ps as' ts) (infer/pats pats)
+        (, qs t)       (infer/expr ce (concat [as' as]) body)]
         (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))]
             (ti-return (, (concat [ps qs]) res-type)))))
 
 (defn infer/alts [ce as alts t]
     (let-> [
-        psts (ti-then (map/ti (infer/alt ce as) alts))
-        _    (ti-then (map/ti (unify t) (map snd psts)))]
+        psts ((map/ti (infer/alt ce as) alts))
+        _    ((map/ti (unify t) (map snd psts)))]
         (ti-return (concat (map fst psts)))))
 
 (defn infer/expl [ce as (,, i sc alts)]
-    (let-> [
-        (=> qs t) (ti-then (fresh-inst sc))
-        ps        (ti-then (infer/alts ce as alts t))
-        s         (ti-then get-subst)]
+    (let-> [(=> qs t) (fresh-inst sc) ps (infer/alts ce as alts t) s (get-subst)]
         
             (let [
             qs' (preds/apply s qs)
@@ -1361,7 +1354,7 @@
             gs  (without (set/to-list (type/tv t')) fs tyvar=)
             sc' (quantify gs (=> qs' t'))
             ps' (filter (fn [x] (not (entail ce qs' x))) (preds/apply s ps))]
-            (let-> [(, ds rs) (ti-then (split ce fs gs ps'))]
+            (let-> [(, ds rs) ((split ce fs gs ps'))]
                 (if (!= sc sc')
                     (ti-err "signature too general")
                         (match rs
@@ -1369,15 +1362,13 @@
                         _  (ti-err "context too weak")))))))
 
 (defn infer/impls [ce as bs]
-    (let-> [ts (ti-then (map/ti (fn [_] (new-tvar star)) bs))]
+    (let-> [ts ((map/ti (fn [_] (new-tvar star)) bs))]
         (let [
             is    (map fst bs)
             scs   (map toScheme ts)
             as'   (+++ (zipWith !>! is scs) as)
             altss (map snd bs)]
-            (let-> [
-                pss (ti-then (sequence (zipWith (infer/alts ce as') altss ts)))
-                s   (ti-then get-subst)]
+            (let-> [pss ((sequence (zipWith (infer/alts ce as') altss ts))) s (get-subst)]
                 (let [
                     ps' (preds/apply s (concat pss))
                     ts' (map (type/apply s) ts)
@@ -1389,10 +1380,9 @@
                     vss (map type/tv ts')
                     gs  (without (set/to-list (foldr1 set/merge vss)) fs tyvar=)]
                     (let-> [
-                        (, ds rs) (ti-then
-                                      (** This intersect call is the part that makes it so that, if you have multiple bindings in a group,
-                                          the only variables that can have typeclass constraints are ones that appear in every binding. **)
-                                          (split ce fs (foldr1 (intersect tyvar=) (map set/to-list vss)) ps'))]
+                        (, ds rs) ((** This intersect call is the part that makes it so that, if you have multiple bindings in a group,
+                                      the only variables that can have typeclass constraints are ones that appear in every binding. **)
+                                      (split ce fs (foldr1 (intersect tyvar=) (map set/to-list vss)) ps'))]
                         (if (restricted bs)
                             (let [
                                 gs'  (without gs (set/to-list (preds/tv rs)) tyvar=)
@@ -1405,16 +1395,14 @@
     (let [
         expl-assumps (map (fn [(,, name scheme _)] (!>! name scheme)) explicit)]
         (let-> [
-            (, impl-preds impl-assumps) (ti-then
-                                            (infer/seq
-                                                infer/impls
-                                                    class-env
-                                                    (+++ expl-assumps as)
-                                                    implicits))
-            expl-preds                  (ti-then
-                                            (map/ti
-                                                (infer/expl class-env (concat [impl-assumps expl-assumps as]))
-                                                    explicit))]
+            (, impl-preds impl-assumps) (infer/seq
+                                            infer/impls
+                                                class-env
+                                                (+++ expl-assumps as)
+                                                implicits)
+            expl-preds                  (map/ti
+                                            (infer/expl class-env (concat [impl-assumps expl-assumps as]))
+                                                explicit)]
             (ti-return
                 (,
                     (+++ impl-preds (concat expl-preds))
@@ -1424,17 +1412,17 @@
     (match assumptions
         []         (ti-return (, [] []))
         [bs ..bss] (let-> [
-                       (, ps as')  (ti-then (ti ce as bs))
-                       (, qs as'') (ti-then (infer/seq ti ce (+++ as' as) bss))]
+                       (, ps as')  (ti ce as bs)
+                       (, qs as'') (infer/seq ti ce (+++ as' as) bss)]
                        (ti-return (, (+++ ps qs) (+++ as'' as'))))))
 
 (defn infer/program [tenv ce as bindgroups]
     (ti-run
         (let-> [
-            (, preds assumps) (ti-then (infer/seq infer/binding-group ce as bindgroups))
-            subst0            (ti-then get-subst)
-            reduced           (ti-then (ti-from-result (reduce ce (preds/apply subst0 preds))))
-            subst             (ti-then (ti-from-result (defaultSubst ce [] reduced)))]
+            (, preds assumps) (infer/seq infer/binding-group ce as bindgroups)
+            subst0            (get-subst)
+            reduced           (ti-from-result (reduce ce (preds/apply subst0 preds)))
+            subst             (ti-from-result (defaultSubst ce [] reduced))]
             (ti-return
                 (map (assump/apply (compose-subst subst subst0)) assumps)))
             map/nil
@@ -1445,15 +1433,14 @@
 
 (defn split [ce fs gs ps]
     (let-> [
-        ps'       (ti-then (ti-from-result (reduce ce ps)))
-        (, ds rs) (ti-then
-                      (ti-return
-                          (partition
-                              ps'
-                                  (fn [(isin name type)]
-                                  (every (set/to-list (type/tv type)) (fn [x] (contains fs x tyvar=)))))))
-        rs'       (ti-then (ti-from-result (defaultedPreds ce (concat [fs gs]) rs)))]
-        (ti-return (, ds (without rs rs' pred=)))))
+        ps'       (ti-from-result (reduce ce ps))
+        (, ds rs) (ti-return
+                      (partition
+                          ps'
+                              (fn [(isin name type)]
+                              (every (set/to-list (type/tv type)) (fn [x] (contains fs x tyvar=))))))
+        rs'       (ti-from-result (defaultedPreds ce (concat [fs gs]) rs))]
+        (ti-return (, ds (without rs rs' pred= )))))
 
 (typealias ambiguity (, tyvar (array pred)))
 
@@ -1780,7 +1767,8 @@
             [(, "ok" (tuple-scheme (generics [[] []] (tfn g0 (tresult g0 g1)))))
                 (, "err" (tuple-scheme (generics [[] []] (tfn g1 (tresult g0 g1)))))
                 (, "," (tuple-scheme (generics [[] []] (tfns [g0 g1] (mkpair g0 g1)))))])
-            (map/from-list [])))
+            (map/from-list [])
+            map/nil))
 
 (def program-results->s
     (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
@@ -1874,7 +1862,7 @@
                                        (, (tcon (tycon name star) tnl) 0)
                                            args
                                            (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
-        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) args)
+        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) 0 args)
         (, assumps' constructors') (foldl
                                        (, [] map/nil)
                                            constructors

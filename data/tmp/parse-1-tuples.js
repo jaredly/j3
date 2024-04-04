@@ -57,6 +57,9 @@ const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1});
 const pcon = (v0) => (v1) => (v2) => ({type: "pcon", 0: v0, 1: v1, 2: v2});
 const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1});
 const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1});
+const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
+const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
+const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1});
 const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1});
 const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1});
@@ -65,9 +68,6 @@ const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1,
 const one = (v0) => ({type: "one", 0: v0});
 const many = (v0) => ({type: "many", 0: v0});
 const empty = ({type: "empty"});
-const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
-const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
-const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
 const join = /*132*/function name_132(sep) { return /*132*/function name_132(items) { return /*139*/(function match_139($target) {
 if ($target.type === "nil") {
 return /*143*/""/*<143*/
@@ -2106,7 +2106,7 @@ if ($target.type === ",") {
 let name = $target[0];
 {
 let l = $target[1];
-return /*8258*//*8258*//*8258*//*8295*/just_trace/*<8295*/(/*8258*//*8296*/l/*<8296*/)/*<8258*/(/*8258*//*8297*/trace/*<8297*/)/*<8258*/(/*8258*//*8298*/name/*<8298*/)/*<8258*/
+return /*8258*//*8258*//*8258*//*8295*/just_trace/*<8295*/(/*8258*//*8296*/l/*<8296*/)/*<8258*/(/*8258*//*8297*/trace/*<8297*/)/*<8258*/(/*8258*//*8299*//*8298*/sanitize/*<8298*/(/*8299*//*8300*/name/*<8300*/)/*<8299*/)/*<8258*/
 }
 }
 }

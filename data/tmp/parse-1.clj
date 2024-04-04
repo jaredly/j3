@@ -651,7 +651,9 @@
                                                 }) {${
                                                 (match (bag/to-list (pat-names-loc pat))
                                                     []    ""
-                                                    names (join "\n" (map names (fn [(, name l)] (just-trace l trace name)))))
+                                                    names (join
+                                                              "\n"
+                                                                  (map names (fn [(, name l)] (just-trace l trace (sanitize name))))))
                                                 } return ${
                                                 (compile body trace)
                                                 } }"
