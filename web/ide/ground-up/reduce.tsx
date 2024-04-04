@@ -78,7 +78,6 @@ export const reduceUpdate = (
                     meta[+key] = value;
                 }
             });
-            console.log('met aupdate', meta);
             return { ...state, meta };
         }
         default:

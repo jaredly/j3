@@ -1,4 +1,20 @@
 
+// Here's what we got folks
+
+infer_stmts = [tenv stmts] tenv
+add_stmt = [tenv tenv] tenv
+infer = [tenv expr] type
+externals_stmt = [stmt] (list locedname)
+externals_expr [expr] (list locedname)
+names = [stmt] (list locedname)
+type_to_string [type] string
+get_type [tenv string] (option type)
+
+
+
+
+
+
 THIH
 
 I really need ... type aliases. pleeease.

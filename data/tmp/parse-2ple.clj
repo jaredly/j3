@@ -1,5 +1,5 @@
 (def builtins
-    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
+    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl', '!': '$ex'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger; if (raw == '()') return 'null';\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
 (** ## Our AST & CST **)
 
@@ -179,7 +179,8 @@
                                                                              (parse-expr cond)
                                                                                  [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
                                                                                  l)
-        (cst/list [(cst/identifier "fn" _) (cst/array [arg] _) body] b)  (elambda (parse-pat arg) (parse-expr body) b)
+        ;(cst/list [(cst/identifier "fn" _) (cst/array [arg] _) body] b)
+        ;(elambda (parse-pat arg) (parse-expr body) b)
         (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)  (let [
                                                                              body (parse-expr body)
                                                                              arg  (foldr
@@ -199,11 +200,18 @@
                                                                                  (fn [body init]
                                                                                  (let [(, pat value) init]
                                                                                      (elet (parse-pat pat) (parse-expr value) body l))))
-        (cst/list [target ..args] l)                                     (foldl
-                                                                             (parse-expr target)
-                                                                                 args
-                                                                                 (fn [target arg] (eapp target (parse-expr arg) l)))
+        (cst/list [target ..args] l)                                     (let [args (apply-args args l) ]
+                                                                             (match target
+                                                                                 (cst/identifier "," _) args
+                                                                                 _                      (eapp (parse-expr target) args l)))
+        (cst/list [] l)                                                  (evar "()" l)
         (cst/array args l)                                               (parse-array args l)))
+
+(defn apply-args [args l]
+    (match args
+        []                     (evar "()" l)
+        [(cst/spread inner _)] (parse-expr inner)
+        [one ..rest]           (eapp (eapp (evar "," l) (parse-expr one) l) (apply-args rest l) l)))
 
 (parse-expr (@@ (@! 12)))
 
@@ -267,7 +275,12 @@
                 (eprim (pint 1 4457) 4457)
                 (elet (pvar "b" 4458) (eprim (pint 2 4459) 4459) (evar "a" 4460) 4453)
                 4453))
-        (, (@@ (fn [a] 1)) (elambda (pvar "a" 1238) (eprim (pint 1 1239) 1239) 1235))
+        (,
+        (@@ (fn [a] 1))
+            (elambda
+            (pcon "," [(pvar "a" 1238) (pcon "()" [] -1)] 1235)
+                (eprim (pint 1 1239) 1239)
+                1235))
         (,
         (@@ (fn [a b] 2))
             (elambda
@@ -280,7 +293,10 @@
         (,
         (@@ (fn [(, a b)] a))
             (elambda
-            (pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911)
+            (pcon
+                ","
+                    [(pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911) (pcon "()" [] -1)]
+                    1908)
                 (evar "a" 1915)
                 1908))
         (,
@@ -389,7 +405,14 @@
                 1968))
         (,
         (@@ (defn a [m] m))
-            (sdef "a" 2051 (elambda (pvar "m" 2055) (evar "m" 2053) 2049) 2049))])
+            (sdef
+            "a"
+                2051
+                (elambda
+                (pcon "," [(pvar "m" 2055) (pcon "()" [] -1)] 2049)
+                    (evar "m" 2053)
+                    2049)
+                2049))])
 
 (** ## Debugging Helpers **)
 
@@ -418,22 +441,25 @@
 
 (def its int-to-string)
 
-(defn trace-and-block [loc trace value js]
+(defn trace-and-block [loc (, trace _) value js]
     (match (map/get trace loc)
         (none)      js
         (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});\n${js}"))
 
-(defn trace-wrap [loc trace js]
+(defn trace-wrap [loc (, trace _) js]
     (match (map/get trace loc)
         (none)      js
         (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${js})"))
 
-(defn trace-and [loc trace value js]
+(defn trace-and [loc (, trace _) value js]
     (match (map/get trace loc)
         (none)      js
         (some info) "($trace(${(its loc)}, ${(jsonify info)}, ${value}), ${js})"))
 
-(defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
+(defn source-map [loc enabled js]
+    (if enabled
+        "/*${(its loc)}*/${js}/*<${(its loc)}*/"
+            js))
 
 (** ## Compilation **)
 
@@ -485,15 +511,15 @@
     (match pat
         (pany _)           (none)
         (pvar name l)      (some (sanitize name))
-        (pcon name args l) (match (foldr
-                               []
+        (pcon name args l) (match (foldl
+                               (, 0 [])
                                    args
-                                   (fn [res arg]
+                                   (fn [(, i res) arg]
                                    (match (just-pat arg)
-                                       (none)      res
-                                       (some what) [what ..res])))
-                               []    none
-                               items (some "{${(join ", " items)}}"))
+                                       (none)      (, (+ i 1) res)
+                                       (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res]))))
+                               (, _ [])    none
+                               (, _ items) (some "{${(join ", " (rev items []))}}"))
         (pstr _ _)         (fatal "Cant use string as a pattern in this location")
         (pprim _ _)        (fatal "Cant use primitive as a pattern in this location")))
 
@@ -503,9 +529,10 @@
         _        default_))
 
 (defn compile [expr trace]
-    (let [loc (expr-loc expr)]
+    (let [loc (expr-loc expr) (, _ sm) trace]
         (source-map
             loc
+                sm
                 (trace-wrap
                 loc
                     trace
@@ -532,6 +559,7 @@
                                                 (pbool bool _) (match bool
                                                                    true  "true"
                                                                    false "false"))
+                    (evar "()" _)           "null"
                     (evar name l)           (sanitize name)
                     (equot inner l)         (jsonify inner)
                     (equot/stmt inner l)    (jsonify inner)
@@ -554,8 +582,24 @@
                                                 (compile body trace)
                                                 };})(/*!*/)"
                     (eapp fn arg l)         (match fn
-                                                (elambda name _ _) "(${(compile fn trace)})(/*${(its l)}*/${(compile arg trace)})"
-                                                _                  "${(compile fn trace)}(/*${(its l)}*/${(compile arg trace)})")
+                                                (elambda name _ _) "(${
+                                                                       (compile fn trace)
+                                                                       })(${
+                                                                       (if sm
+                                                                           "/*${(its l)}*/"
+                                                                               "")
+                                                                       }${
+                                                                       (compile arg trace)
+                                                                       })"
+                                                _                  "${
+                                                                       (compile fn trace)
+                                                                       }(${
+                                                                       (if sm
+                                                                           "/*${(its l)}*/"
+                                                                               "")
+                                                                       }${
+                                                                       (compile arg trace)
+                                                                       })")
                     (ematch target cases l) "(function match_${
                                                 (its l)
                                                 }($target) {\n${
@@ -572,7 +616,19 @@
                                                 (compile target trace)
                                                 })")))))
 
-(defn run [v] (eval (compile (parse-expr v) map/nil)))
+(,
+    (fn [x] (compile (parse-expr x) (, map/nil false)))
+        [(, (@@ 1) "1")
+        (,
+        (@@ (fn [a b] 2))
+            "function name_6388({0: a, 1: {0: b}}) { return 2 }")
+        (, (@@ (fn [a] 2)) "function name_6550({0: a}) { return 2 }")
+        (, (@@ ()) "null")
+        (, (@@ (, 1 2 3)) )
+        (, (@@ (lol 1 2)) )
+        (, (@@ (lol 1)) )])
+
+(defn run [v] (eval (compile (parse-expr v) (, map/nil true))))
 
 (,
     run
@@ -585,6 +641,8 @@
         (, (@@ (+ 2 3)) 5)
         (, (@@ "a${2}b") "a2b")
         (, (@@ ((fn [a] (+ a 2)) 21)) 23)
+        (, (@@ (, 1 ..(, 2 ..()))) (, 1 (, 2 null)))
+        (, (@@ ((fn [a b] (+ a b)) (, 1 (, 2 ())))) )
         (, (@@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@@
@@ -641,11 +699,17 @@
         (@@ (deftype face (red) (black)))
             "const red = ({type: \"red\"});\nconst black = ({type: \"black\"});")])
 
-(deftype parse-and-compile
-    (parse-and-compile
+(deftype parse-and-compile2
+    (parse-and-compile2
         (fn [cst] stmt)
             (fn [cst] expr)
-            (fn [stmt (map int bool)] string)
-            (fn [expr (map int bool)] string)))
+            (fn [stmt (, (map int bool) bool)] string)
+            (fn [expr (, (map int bool) bool)] string)))
 
-;(parse-and-compile parse-stmt parse-expr compile-stmt compile)
+6468
+
+(parse-and-compile2
+    parse-stmt
+        parse-expr
+        compile-stmt
+        compile)

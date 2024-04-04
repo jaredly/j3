@@ -6,6 +6,16 @@
 
 "Hello ${1111}"
 
+(, 1 2 3 4)
+
+(match (, 1 2 3)
+    (, 2 _)   1
+    (, a b c) c)
+
+(@@
+    (match 1
+        (, 1 2 3) 1))
+
 nil
 
 ((fn [a] (a "")) ,)
@@ -37,7 +47,7 @@ nil
 (match (, 1 2)
     (, a (, b "")) 1)
 
-(fn [(, a "")] 1)
+(fn [(, a nm)] 1)
 
 (** Recursive functions **)
 

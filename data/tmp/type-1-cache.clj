@@ -3,6 +3,8 @@
 
 (deftype (option a) (some a) (none))
 
+(deftype (array a) (cons a (array a)) (nil))
+
 (defn at [arr i default_]
     (match arr
         []           default_
@@ -80,16 +82,23 @@
 (** ## Our AST
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
+(deftype cst
+    (cst/list (array cst) int)
+        (cst/array (array cst) int)
+        (cst/spread cst int)
+        (cst/identifier string int)
+        (cst/string string (array (,, cst string int)) int))
+
 (deftype expr
     (eprim prim int)
-        (estr first (array (,, expr string int)) int)
+        (estr string (array (,, expr string int)) int)
         (evar string int)
         (equot expr int)
         (equot/stmt stmt int)
         (equot/pat pat int)
         (equot/type type int)
         (equotquot cst int)
-        (elambda string int expr int)
+        (elambda pat expr int)
         (eapp expr expr int)
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
@@ -97,7 +106,7 @@
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
-        (elambda n _ b _)    "(fn [${n}] ${(expr-to-string b)})"
+        (elambda n b _)      "(fn [${(pat-to-string n)}] ${(expr-to-string b)})"
         (eapp a b _)         "(${(expr-to-string a)} ${(expr-to-string b)})"
         (eprim (pint n _) _) (int-to-string n)
         (ematch t cases _)   "(match ${
@@ -141,18 +150,18 @@
 
 (defn expr-loc [expr]
     (match expr
-        (estr _ _ l)      l
-        (eprim _ l)       l
-        (evar _ l)        l
-        (equotquot _ l)   l
-        (equot _ l)       l
-        (equot/stmt _ l)  l
-        (equot/pat _ l)   l
-        (equot/type _ l)  l
-        (elambda _ _ _ l) l
-        (elet _ _ _ l)    l
-        (eapp _ _ l)      l
-        (ematch _ _ l)    l))
+        (estr _ _ l)     l
+        (eprim _ l)      l
+        (evar _ l)       l
+        (equotquot _ l)  l
+        (equot _ l)      l
+        (equot/stmt _ l) l
+        (equot/pat _ l)  l
+        (equot/type _ l) l
+        (elambda _ _ l)  l
+        (elet _ _ _ l)   l
+        (eapp _ _ l)     l
+        (ematch _ _ l)   l))
 
 (defn type/set-loc [loc type]
     (match type
@@ -544,8 +553,8 @@
         (pbool _ l) (tcon "bool" l)))
 
 (defn t-expr [tenv expr nidx]
-    (t-expr-inner tenv expr nidx)
-        ;(let [
+    ;(t-expr-inner tenv expr nidx)
+        (let [
         l                    (expr-loc expr)
         _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
         (,, subst type nidx) (t-expr-inner tenv expr nidx)
@@ -586,14 +595,26 @@
             - add the type variable to the typing environment
             - infer the body, using the augmented environment
             - if the body's subst has some binding for our arg variable, use that **)
-        (elambda name nl body l) (let [
-                                     (, arg-type nidx)              (new-type-var name nidx l)
-                                     env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
-                                     (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
-                                     (,,
-                                         body-subst
-                                             (tfn (type-apply body-subst arg-type) body-type l)
-                                             nidx))
+        ;(elambda name nl body l)
+        ;(let [
+            (, arg-type nidx)              (new-type-var name nidx l)
+            env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
+            (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
+            (,,
+                body-subst
+                    (tfn (type-apply body-subst arg-type) body-type l)
+                    nidx))
+        (** Lambdas, now with pats **)
+        (elambda pat body l)     (let [
+                                     (, arg-type nidx)    (new-type-var
+                                                              (match pat
+                                                                  (pvar name _) name
+                                                                  _             "$arg")
+                                                                  nidx
+                                                                  l)
+                                     (,, subst body nidx) (pat-and-body tenv pat body (,, map/nil arg-type nidx))
+                                     arg-type             (type-apply subst arg-type)]
+                                     (,, subst (tfn arg-type body l) nidx))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
@@ -972,6 +993,7 @@
                     [one ..rest] (f (foldr init rest f) one))))
             (@! foldr)]
             "(fn [a (array b) (fn [a b] a)] a)")
+        (,  )
         (,
         [(@!
             (defn what [f a]
@@ -1375,30 +1397,32 @@
 
 (defn externals [bound expr]
     (match expr
-        (evar name l)               (if (set/has bound name)
-                                        empty
-                                            (one (,, name (value) l)))
-        (eprim prim l)              empty
-        (estr first templates int)  (many (map templates (fn [(,, expr _ _)] (externals bound expr))))
-        (equot expr int)            empty
-        (equot/type _ _)            empty
-        (equot/pat _ _)             empty
-        (equot/stmt _ _)            empty
-        (equotquot cst int)         empty
-        (elambda name int body int) (externals (set/add bound name) body)
-        (elet pat init body l)      (bag/and
-                                        (bag/and (pat-externals pat) (externals bound init))
-                                            (externals (set/merge bound (pat-names pat)) body))
-        (eapp target arg int)       (bag/and (externals bound target) (externals bound arg))
-        (ematch expr cases int)     (bag/and
-                                        (externals bound expr)
-                                            (foldl
-                                            empty
-                                                cases
-                                                (fn [bag (, pat body)]
-                                                (bag/and
-                                                    (bag/and bag (pat-externals pat))
-                                                        (externals (set/merge bound (pat-names pat)) body)))))))
+        (evar name l)              (if (set/has bound name)
+                                       empty
+                                           (one (,, name (value) l)))
+        (eprim prim l)             empty
+        (estr first templates int) (many (map templates (fn [(,, expr _ _)] (externals bound expr))))
+        (equot expr int)           empty
+        (equot/type _ _)           empty
+        (equot/pat _ _)            empty
+        (equot/stmt _ _)           empty
+        (equotquot cst int)        empty
+        (elambda pat body int)     (bag/and
+                                       (pat-externals pat)
+                                           (externals (set/merge bound (pat-names pat)) body))
+        (elet pat init body l)     (bag/and
+                                       (bag/and (pat-externals pat) (externals bound init))
+                                           (externals (set/merge bound (pat-names pat)) body))
+        (eapp target arg int)      (bag/and (externals bound target) (externals bound arg))
+        (ematch expr cases int)    (bag/and
+                                       (externals bound expr)
+                                           (foldl
+                                           empty
+                                               cases
+                                               (fn [bag (, pat body)]
+                                               (bag/and
+                                                   (bag/and bag (pat-externals pat))
+                                                       (externals (set/merge bound (pat-names pat)) body)))))))
 
 (,
     (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
@@ -1597,7 +1621,7 @@
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)))
 
-(deftype name-kind (value) (type))
+(deftype name-kind (value) (kind/type))
 
 (deftype analysis
     (** externals

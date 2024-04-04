@@ -246,6 +246,7 @@
             (array (, string int))
             (array (,,, string int (array type) int))
             int)
+        (stypealias string int (array (, string int)) type int)
         (sdef string int expr int)
         (sexpr expr int))
 
@@ -1147,7 +1148,9 @@
         (type-env
         (map string scheme)
             ; (types) name => (, (array kind) (set name))
-            (map string (, (array kind) (set string)))))
+            (map string (, (array kind) (set string)))
+            ; typealiases
+            (map string (, (array kind) type))))
 
 (def tenv/nil (type-env map/nil map/nil))
 
@@ -1337,8 +1340,6 @@
         (, qs t)       (ti-then (infer/expr ce (concat [as' as]) body))]
         (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))]
             (ti-return (, (concat [ps qs]) res-type)))))
-
-
 
 (defn infer/alts [ce as alts t]
     (let-> [
@@ -1844,11 +1845,89 @@
                     (even 10)))
             "it: bool")])
 
+(deftype full-env (full-env type-env class-env (array assump)))
+
+(def builtin-full
+    (full-env builtin-tenv builtin-ce builtin-assumptions))
+
+(defn infer-stmt [(full-env tenv ce assumps) stmt]
+    (match stmt
+        (sdef name nl body l)                  (match (infer/program tenv ce assumps [(, [] [[(, name [(, [] body)])]])])
+                                                   (ok (,,, subst tenv nidx assumps)) subst
+                                                   (err e)                            (fatal e))
+        (stypealias name nl args type l)       map/nil
+        (sdeftype name nl args constructors l) map/nil
+        (sexpr body l)                         (match (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])
+                                                   (ok (,,, subst tenv nidx assumps)) subst
+                                                   (err e)                            (fatal e))))
+
+(defn infer-alias [(full-env tenv ce assumps) (,, name args type)]
+    (fatal "ok here we are")
+        ;(full-env tenv ce assumps))
+
+(defn infer-deftype [(full-env (type-env constructors types aliases) ce assumps)
+    (,,, name tnl args constructors)]
+    ; TODO make it so we can do higher kinds
+        (let [
+        names                      (map (fn [(,,, name _ _ _)] name) constructors)
+        (, final _)                (foldl
+                                       (, (tcon (tycon name star) tnl) 0)
+                                           args
+                                           (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
+        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) args)
+        (, assumps' constructors') (foldl
+                                       (, [] map/nil)
+                                           constructors
+                                           (fn [(, assumps constructors) (,,, name nl args l)]
+                                           (let [
+                                                    
+                                               what (, "cons" (g [[]] (tfns [g0 (mklist g0)] (mklist g0))))
+                                               gens (fn [classes body]
+                                                        (,
+                                                            (map (fn [_] star) classes)
+                                                                (=>
+                                                                (concat (mapi (fn [cls i] (map (mk-pred (tgen i -1)) cls)) 0 classes))
+                                                                    body)))]
+                                               1)))]
+        1))
+
+(defn infer-types [full aliases deftypes]
+    (let [names (map (fn [(,, name args type)] name) aliases)]
+        (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
+
+(defn infer-defs [(full-env tenv ce assumps) defs]
+    (match (infer/program
+        tenv
+            ce
+            assumps
+            [(, [] [(map (fn [(, name body)] (, name [(, [] body)])) defs)])])
+        (ok (,,, subst tenv nidx assumps)) (full-env tenv ce assumps)
+        (err e)                            (fatal e)))
+
+(deftype name-kind (value) (type))
+
+(typealias locname (,, string name-kind int))
+
+(deftype evaluator
+    (evaluator
+        full-env
+            (fn [full-env (array stmt)] full-env)
+            (fn [full-env full-env] full-env)
+            (fn [full-env expr] full-env)
+            (fn [stmt] (array locname))
+            (fn [expr] (array locname))
+            (fn [stmt] (array locname))
+            (fn [type] string)
+            (fn [full-env string] (option type))))
+
+infer/program
+
 (** ## Export as Evaluator **)
 
-;((eval
+((eval
     "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
-    (typecheck
+    (evaluator builtin-full infer-stmts)
+        ;(typecheck
         (inference builtin-env infer-stmtss tenv/merge infer)
             (analysis externals-stmt externals-list names)
             type-to-string
