@@ -14,6 +14,7 @@ export type Tracer = (
 ) => void;
 
 export function builtins() {
+    console.log('Producing builtins. At your service.');
     let tracer: null | Tracer = null;
     let env = {
         // Math
@@ -109,16 +110,20 @@ export function builtins() {
         },
         sanitize,
         $setTracer(nw: null | Tracer) {
+            console.log('setting tracer', nw);
             tracer = nw;
         },
         $trace(loc: number, info: any, value: any) {
             if (tracer) {
+                console.log('doing a tracer', loc, value);
                 tracer([
                     { type: 'tloc', 0: loc },
                     info.formatter
                         ? { type: 'tfmt', 0: value, 1: info.formatter }
                         : { type: 'tval', 0: value },
                 ]);
+            } else {
+                console.log('not tracing, sorry', loc);
             }
             // tracer?.(loc, value, info);
             return value;

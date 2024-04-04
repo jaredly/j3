@@ -938,7 +938,7 @@ return /*4768*/l/*<4768*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 4708');})(/*!*//*4710*/expr/*<4710*/)/*<4708*/ }/*<4702*/;
 
-const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5});
+const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6});
 const externals = /*6839*/function name_6839(bound) { return /*6839*/function name_6839(expr) { return /*6845*/(function match_6845($target) {
 if ($target.type === "evar") {
 {
@@ -2169,4 +2169,4 @@ throw new Error('let pattern not matched 456. ' + valueToString($target));})(/*!
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 410');})(/*!*//*412*/stmt/*<412*/)/*<410*/ }/*<404*/ }/*<404*/;
 
-return /*6451*//*6453*//*6452*/eval/*<6452*/(/*6453*//*6454*/"({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt}) => ({type: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt})"/*<6454*/)/*<6453*/(/*6451*//*5763*//*5763*//*5763*//*5763*//*5763*//*5763*//*5765*/parse_and_compile/*<5765*/(/*5763*//*5766*/parse_stmt/*<5766*/)/*<5763*/(/*5763*//*5767*/parse_expr/*<5767*/)/*<5763*/(/*5763*//*5768*/compile_stmt/*<5768*/)/*<5763*/(/*5763*//*5770*/compile/*<5770*/)/*<5763*/(/*5763*//*6487*/names/*<6487*/)/*<5763*/(/*5763*//*6488*/externals_stmt/*<6488*/)/*<5763*/)/*<6451*/
+return /*6451*//*6453*//*6452*/eval/*<6452*/(/*6453*//*6454*/"({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr})"/*<6454*/)/*<6453*/(/*6451*//*5763*//*5763*//*5763*//*5763*//*5763*//*5763*//*5763*//*5765*/parse_and_compile/*<5765*/(/*5763*//*5766*/parse_stmt/*<5766*/)/*<5763*/(/*5763*//*5767*/parse_expr/*<5767*/)/*<5763*/(/*5763*//*5768*/compile_stmt/*<5768*/)/*<5763*/(/*5763*//*5770*/compile/*<5770*/)/*<5763*/(/*5763*//*6487*/names/*<6487*/)/*<5763*/(/*5763*//*6488*/externals_stmt/*<6488*/)/*<5763*/(/*5763*//*8146*/function name_8146(expr) { return /*8150*//*8151*/bag$slto_list/*<8151*/(/*8150*//*8152*//*8152*//*8153*/externals/*<8153*/(/*8152*//*8154*/set$slnil/*<8154*/)/*<8152*/(/*8152*//*8155*/expr/*<8155*/)/*<8152*/)/*<8150*/ }/*<8146*/)/*<5763*/)/*<6451*/

@@ -243,19 +243,32 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
         };
 
         const data = parse(node);
-        if (!data) return {};
+        if (!data) {
+            console.error(`Fixture plugin: failed to parse node`);
+            console.log(node);
+            return {};
+        }
         let test: null | Function = null;
+        const results: {
+            [key: number]: { expected: any; found: any; error?: string };
+        } = {};
         if (data.test) {
             try {
                 test = evaluate(data.test.node);
             } catch (err) {
-                return {};
+                data.fixtures.forEach((item) => {
+                    if (item.type === 'line' && item.input) {
+                        results[item.input.node.loc] = {
+                            error: (err as Error).message,
+                            expected: null,
+                            found: null,
+                        };
+                    }
+                });
+                return { results };
             }
             if (typeof test !== 'function') return {};
         }
-        const results: {
-            [key: number]: { expected: any; found: any; error?: string };
-        } = {};
         data.fixtures.forEach((item) => {
             if (
                 item.type === 'line' &&
@@ -493,7 +506,10 @@ function statusIndicator(
         return '🚧 ';
     }
     const res = results[item.input.node.loc];
-    if (!res || res.error) {
+    if (!res) {
+        return '🌀';
+    }
+    if (res.error) {
         return '🛑 ';
     }
     return equal(res.expected, res.found) ? '✅ ' : '🚨 ';

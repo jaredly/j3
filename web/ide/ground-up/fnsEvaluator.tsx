@@ -316,7 +316,7 @@ export const fnsEvaluator = (
 
         setTracing(idx, traceMap, env) {
             if (idx != null) {
-                withTracing(traceMap, idx, san, env);
+                withTracing(traceMap, idx, env.values, env);
             } else {
                 san.$setTracer(null);
             }
@@ -381,8 +381,8 @@ const compileStmt = (
         try {
             js = data['compile'](stmts[0][0])(mm);
         } catch (err) {
-            console.log('error');
-            console.error(err);
+            // console.log('error');
+            // console.error(err);
             return {
                 env,
                 display: [new MyEvalError(`Compilation Error`, err as Error)],
@@ -408,7 +408,7 @@ const compileStmt = (
         }
         try {
             if (meta[stmts[0][1]]?.traceTop) {
-                withTracing(traceMap, stmts[0][1], san, env);
+                withTracing(traceMap, stmts[0][1], env.values, env);
             }
             const value = fn(values);
 

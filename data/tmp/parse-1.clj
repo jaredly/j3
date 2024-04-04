@@ -534,6 +534,11 @@
         (none)      js
         (some info) "($trace(${(its loc)}, ${(jsonify info)}, ${value}), ${js})"))
 
+(defn just-trace [loc trace value]
+    (match (map/get trace loc)
+        (none)      ""
+        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});"))
+
 (defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
 
 (** ## Compilation **)
@@ -643,8 +648,12 @@
                                                 (its l)
                                                 }(${
                                                 (orr "_" (just-pat pat))
-                                                }) { return ${
-                                                (trace-and l trace "body" (compile body trace))
+                                                }) {${
+                                                (match (bag/to-list (pat-names-loc pat))
+                                                    []    ""
+                                                    names (join "\n" (map names (fn [(, name l)] (just-trace l trace name)))))
+                                                } return ${
+                                                (compile body trace)
                                                 } }"
                     (elet pat init body l)  "(function let_${
                                                 (its l)
@@ -791,6 +800,17 @@
         (pstr string int)  set/nil
         (pprim prim int)   set/nil))
 
+(defn pat-names-loc [pat]
+    (match pat
+        (pany _)           empty
+        (pvar name l)      (one (, name l))
+        (pcon name args l) (foldl
+                               empty
+                                   args
+                                   (fn [bound arg] (bag/and bound (pat-names-loc arg))))
+        (pstr string int)  empty
+        (pprim prim int)   empty))
+
 (defn pat-externals [pat]
     (match pat
         (** Soo this should be probably a (type)? Or rather, we should look up the corresponding type, and depend on that instead. **)
@@ -886,16 +906,18 @@
             (fn [stmt (map int bool)] string)
             (fn [expr (map int bool)] string)
             (fn [stmt] (array (,, string name-kind int)))
-            (fn [stmt] (array (,, string name-kind int)))))
+            (fn [stmt] (array (,, string name-kind int)))
+            (fn [expr] (array (,, string name-kind int)))))
 
 ((eval
-    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt}) => ({type: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt})")
+    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr})")
     (parse-and-compile
         parse-stmt
             parse-expr
             compile-stmt
             compile
             names
-            externals-stmt))
+            externals-stmt
+            (fn [expr] (bag/to-list (externals set/nil expr)))))
 
 6885

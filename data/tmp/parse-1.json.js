@@ -38,6 +38,18 @@ return /*8019*/v/*<8019*/
 return /*8021*/$default/*<8021*/
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 8013');})(/*!*//*8015*/v/*<8015*/)/*<8013*/ }/*<8006*/ }/*<8006*/;
 
+const just_trace = /*8259*/function name_8259(loc) { return /*8259*/function name_8259(trace) { return /*8259*/function name_8259(value) { return /*8267*/(function match_8267($target) {
+if ($target.type === "none") {
+return /*8275*/""/*<8275*/
+}
+if ($target.type === "some") {
+{
+let info = $target[0];
+return /*8281*/`\$trace(${/*8285*//*8287*/its/*<8287*/(/*8285*//*8288*/loc/*<8288*/)/*<8285*/}, ${/*8289*//*8291*/jsonify/*<8291*/(/*8289*//*8292*/info/*<8292*/)/*<8289*/}, ${/*8293*/value/*<8293*/});`/*<8281*/
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8267');})(/*!*//*8269*//*8269*//*8270*/map$slget/*<8270*/(/*8269*//*8271*/trace/*<8271*/)/*<8269*/(/*8269*//*8272*/loc/*<8272*/)/*<8269*/)/*<8267*/ }/*<8259*/ }/*<8259*/ }/*<8259*/;
+
 const nil = ({type: "nil"});
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1});
 const pany = (v0) => ({type: "pany", 0: v0});
@@ -521,6 +533,51 @@ return /*8002*//*8003*/fatal/*<8003*/(/*8002*//*8004*/"Cant use primitive as a p
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 7895');})(/*!*//*7897*/pat/*<7897*/)/*<7895*/ }/*<7888*/;
 
+const pat_names_loc = /*8184*/function name_8184(pat) { return /*8191*/(function match_8191($target) {
+if ($target.type === "pany") {
+return /*8197*/empty/*<8197*/
+}
+if ($target.type === "pvar") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return /*8240*//*8241*/one/*<8241*/(/*8240*//*8236*//*8236*//*8237*/$co/*<8237*/(/*8236*//*8238*/name/*<8238*/)/*<8236*/(/*8236*//*8239*/l/*<8239*/)/*<8236*/)/*<8240*/
+}
+}
+}
+if ($target.type === "pcon") {
+{
+let name = $target[0];
+{
+let args = $target[1];
+{
+let l = $target[2];
+return /*8211*//*8211*//*8211*//*8212*/foldl/*<8212*/(/*8211*//*8213*/empty/*<8213*/)/*<8211*/(/*8211*//*8214*/args/*<8214*/)/*<8211*/(/*8211*//*8215*/function name_8215(bound) { return /*8215*/function name_8215(arg) { return /*8220*//*8220*//*8221*/bag$sland/*<8221*/(/*8220*//*8222*/bound/*<8222*/)/*<8220*/(/*8220*//*8223*//*8224*/pat_names_loc/*<8224*/(/*8223*//*8225*/arg/*<8225*/)/*<8223*/)/*<8220*/ }/*<8215*/ }/*<8215*/)/*<8211*/
+}
+}
+}
+}
+if ($target.type === "pstr") {
+{
+let string = $target[0];
+{
+let int = $target[1];
+return /*8230*/empty/*<8230*/
+}
+}
+}
+if ($target.type === "pprim") {
+{
+let prim = $target[0];
+{
+let int = $target[1];
+return /*8235*/empty/*<8235*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8191');})(/*!*//*8193*/pat/*<8193*/)/*<8191*/ }/*<8184*/;
+
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2});
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1});
@@ -938,7 +995,7 @@ return /*4768*/l/*<4768*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 4708');})(/*!*//*4710*/expr/*<4710*/)/*<4708*/ }/*<4702*/;
 
-const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5});
+const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6});
 const externals = /*6839*/function name_6839(bound) { return /*6839*/function name_6839(expr) { return /*6845*/(function match_6845($target) {
 if ($target.type === "evar") {
 {
@@ -2037,7 +2094,25 @@ let pat = $target[0];
 let body = $target[1];
 {
 let l = $target[2];
-return /*2797*/`function name_${/*5957*//*5426*/its/*<5426*/(/*5957*//*5958*/l/*<5958*/)/*<5957*/}(${/*7860*//*7860*//*8028*/orr/*<8028*/(/*7860*//*8029*/"_"/*<8029*/)/*<7860*/(/*7860*//*8031*//*8032*/just_pat/*<8032*/(/*8031*//*8033*/pat/*<8033*/)/*<8031*/)/*<7860*/}) { return ${/*7864*//*7864*//*7864*//*7864*//*7878*/trace_and/*<7878*/(/*7864*//*7879*/l/*<7879*/)/*<7864*/(/*7864*//*7880*/trace/*<7880*/)/*<7864*/(/*7864*//*7881*/"body"/*<7881*/)/*<7864*/(/*7864*//*7884*//*7884*//*7885*/compile/*<7885*/(/*7884*//*7886*/body/*<7886*/)/*<7884*/(/*7884*//*7887*/trace/*<7887*/)/*<7884*/)/*<7864*/} }`/*<2797*/
+return /*2797*/`function name_${/*5957*//*5426*/its/*<5426*/(/*5957*//*5958*/l/*<5958*/)/*<5957*/}(${/*7860*//*7860*//*8028*/orr/*<8028*/(/*7860*//*8029*/"_"/*<8029*/)/*<7860*/(/*7860*//*8031*//*8032*/just_pat/*<8032*/(/*8031*//*8033*/pat/*<8033*/)/*<8031*/)/*<7860*/}) {${/*8168*/(function match_8168($target) {
+if ($target.type === "nil") {
+return /*8179*/""/*<8179*/
+}
+{
+let names = $target;
+return /*8182*//*8182*//*8183*/join/*<8183*/(/*8182*//*8244*/"\n"/*<8244*/)/*<8182*/(/*8182*//*8248*//*8248*//*8249*/map/*<8249*/(/*8248*//*8250*/names/*<8250*/)/*<8248*/(/*8248*//*8251*/function name_8251($fn_arg) { return /*8251*/(function match_8251($target) {
+if ($target.type === ",") {
+{
+let name = $target[0];
+{
+let l = $target[1];
+return /*8258*//*8258*//*8258*//*8295*/just_trace/*<8295*/(/*8258*//*8296*/l/*<8296*/)/*<8258*/(/*8258*//*8297*/trace/*<8297*/)/*<8258*/(/*8258*//*8298*/name/*<8298*/)/*<8258*/
+}
+}
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8251');})(/*!*//*-1*/$fn_arg/*<-1*/)/*<8251*/ }/*<8251*/)/*<8248*/)/*<8182*/
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8168');})(/*!*//*8242*//*8243*/bag$slto_list/*<8243*/(/*8242*//*8173*//*8174*/pat_names_loc/*<8174*/(/*8173*//*8175*/pat/*<8175*/)/*<8173*/)/*<8242*/)/*<8168*/} return ${/*7884*//*7884*//*7885*/compile/*<7885*/(/*7884*//*7886*/body/*<7886*/)/*<7884*/(/*7884*//*7887*/trace/*<7887*/)/*<7884*/} }`/*<2797*/
 }
 }
 }
@@ -2169,4 +2244,4 @@ throw new Error('let pattern not matched 456. ' + valueToString($target));})(/*!
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 410');})(/*!*//*412*/stmt/*<412*/)/*<410*/ }/*<404*/ }/*<404*/;
 
-return {type: 'fns', bag$sland, bag$slfold, bag$slto_list, builtins, compile, compile_pat, compile_stmt, cons, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, dot, eapp, elambda, elet, ematch, empty, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, escape_string, estr, evar, expr_loc, externals, externals_stmt, externals_type, foldl, foldr, fst, its, join, just_pat, many, map, mapi, mk_deftype, names, nil, none, one, orr, pairs, pany, parse_and_compile, parse_array, parse_expr, parse_pat, parse_pat_tuple, parse_stmt, parse_tuple, parse_type, pat_externals, pat_loc, pat_loop, pat_names, pbool, pcon, pint, pprim, pstr, pvar, replaces, rev, run, sdef, sdeftype, sexpr, snd, some, source_map, stypealias, tapp, tapps, tcon, trace_and, trace_and_block, trace_wrap, tvar, type, value}
+return {type: 'fns', bag$sland, bag$slfold, bag$slto_list, builtins, compile, compile_pat, compile_stmt, cons, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, dot, eapp, elambda, elet, ematch, empty, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, escape_string, estr, evar, expr_loc, externals, externals_stmt, externals_type, foldl, foldr, fst, its, join, just_pat, just_trace, many, map, mapi, mk_deftype, names, nil, none, one, orr, pairs, pany, parse_and_compile, parse_array, parse_expr, parse_pat, parse_pat_tuple, parse_stmt, parse_tuple, parse_type, pat_externals, pat_loc, pat_loop, pat_names, pat_names_loc, pbool, pcon, pint, pprim, pstr, pvar, replaces, rev, run, sdef, sdeftype, sexpr, snd, some, source_map, stypealias, tapp, tapps, tcon, trace_and, trace_and_block, trace_wrap, tvar, type, value}
