@@ -456,26 +456,6 @@
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
-(** ## Instantiate
-    This takes a scheme and generates fresh type variables for everything in the "generics" set.
-    This allows us to have different instantiations of a given type variable when we e.g. use the same function twice in two different ways. Without this, the following wouldn't work:
-    (let [a (cons 1) b (cons "hi")] 1)
-    Because the type variable in the type for cons would be the same in both cases. With instantiate, the type for cons gets a fresh type variable at each usage. **)
-
-(defn instantiate [(scheme vars t) l]
-    (let-> [
-        names      (<- (set/to-list vars))
-        with-types (map-> (fn [name] (new-type-var name l)) names)
-        subst      (<- (map/from-list (zip names with-types)))]
-        (<- (, (type-apply subst t) subst))))
-
-(force
-    (run/nil-> (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)))
-
-(defn new-type-var [prefix l]
-    (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
-        (<- (tvar "${prefix}:${(its nidx)}" l))))
-
 (** ## A State monad **)
 
 (deftype (result good bad) (ok good) (err bad))
@@ -532,6 +512,27 @@
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
 
+(** ## Instantiate
+    This takes a scheme and generates fresh type variables for everything in the "generics" set.
+    This allows us to have different instantiations of a given type variable when we e.g. use the same function twice in two different ways. Without this, the following wouldn't work:
+    (let [a (cons 1) b (cons "hi")] 1)
+    Because the type variable in the type for cons would be the same in both cases. With instantiate, the type for cons gets a fresh type variable at each usage. **)
+
+(defn instantiate [(scheme vars t) l]
+    (let-> [
+        names      (<- (set/to-list vars))
+        with-types (map-> (fn [name] (new-type-var name l)) names)
+        subst      (<- (map/from-list (zip names with-types)))]
+        (<- (, (type-apply subst t) subst))))
+
+(force
+    type-error->s
+        (run/nil-> (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)))
+
+(defn new-type-var [prefix l]
+    (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
+        (<- (tvar "${prefix}:${(its nidx)}" l))))
+
 (** ## Unification
     Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution; otherwise we recurse.
     Importantly, unify doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
@@ -555,7 +556,7 @@
                            [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
         (, subst nidx)))
 
-(typealias type-error (, string (array (, string int))))
+(typealias type-error-t (, string (array (, string int))))
 
 (defn type-error [message loced-items] (, message loced-items))
 
