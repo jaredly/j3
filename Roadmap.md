@@ -1,4 +1,35 @@
 
+# Type Inference n stuff plans:
+
+so what we want to report, from `infer-stmts2`
+- hover: (map int (array type))
+- annotate: (map int type)
+  -> this is how we get "inferred annotations" for things like
+    - let values...
+    - function parameters...
+    - def whatsits
+  - so, these could get suuuper chatty, especially if I don't do a good
+    job of ..shrinking them? like reverse-typealiasing.
+    which shouldn't be too onerous, ... but
+    anyway.
+
+ALSO
+ERRORS
+should be of the form
+(, string (array (, string int)))
+that is to say, an informative message, and then
+a list of "some text" and "loc" pairs.
+I think that's the best strategy.
+
+- [x] STEP 1 - make the change in algw-subst
+- [ ] STEP 2 - get the typescript backend on board!!! with the goodness
+
+
+ALSO
+types should have not just one loc, but ideally multiple? ... so we can track herkunft.
+but maybe I'll find even better things.
+
+#
 
 - [x] let-> should drop >>= (mapped to ti-then) in everywhere. thanks
 - [x] thih working!

@@ -476,63 +476,6 @@
     (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
         (<- (tvar "${prefix}:${(its nidx)}" l))))
 
-(** ## Unification
-    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution; otherwise we recurse.
-    Importantly, unify doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
-    If two types are irreconcilable, it throws an exception.
-    The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
-
-(defn unify [t1 t2 nidx l]
-    (unify-inner t1 t2 l)
-        ;(let [
-        l1             (type-loc t1)
-        l2             (type-loc t2)
-        _              (trace
-                           [(tloc l)
-                               (tloc l1)
-                               (tloc l2)
-                               (ttext "unify")
-                               (tfmt t1 type-to-string-raw)
-                               (tfmt t2 type-to-string-raw)])
-        (, subst nidx) (unify-inner t1 t2 nidx l)
-        _              (trace
-                           [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
-        (, subst nidx)))
-
-(defn unify-inner [t1 t2 l]
-    (match (, t1 t2)
-        (, (tapp target-1 arg-1 _) (tapp target-2 arg-2 _)) (let-> [
-                                                                _     (unify-inner target-1 target-2 l)
-                                                                subst <-subst
-                                                                _     (unify-inner (type-apply subst arg-1) (type-apply subst arg-2) l)]
-                                                                (<- ()))
-        (, (tvar var _) t)                                  (var-bind var t)
-        (, t (tvar var _))                                  (var-bind var t)
-        (, (tcon a la) (tcon b lb))                         (if (= a b)
-                                                                (<- ())
-                                                                    (<-err "cant unify ${a} (${(its la)}) and ${b} (${(its lb)})"))
-        _                                                   (<-err
-                                                                "cant unify ${
-                                                                    (type-to-string t1)
-                                                                    } (${
-                                                                    (its (type-loc t1))
-                                                                    }) and ${
-                                                                    (type-to-string t2)
-                                                                    } (${
-                                                                    (its (type-loc t2))
-                                                                    })")))
-
-
-
-(defn var-bind [var type]
-    (match type
-        (tvar v _) (if (= var v)
-                       (<- ())
-                           (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))
-        _          (if (set/has (type-free type) var)
-                       (<-err "occurs check")
-                           (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))))
-
 (** ## A State monad **)
 
 (deftype (result good bad) (ok good) (err bad))
@@ -574,10 +517,10 @@
         (ok v)  (<- v)
         (err e) (<-err e)))
 
-(defn force [result]
+(defn force [e->s result]
     (match result
         (ok v)  v
-        (err e) (fatal "Result Error ${e}")))
+        (err e) (fatal "Result Error ${(e->s e)}")))
 
 (defn foldl-> [init values f]
     (match values
@@ -588,6 +531,66 @@
     (match values
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
+
+(** ## Unification
+    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution; otherwise we recurse.
+    Importantly, unify doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
+    If two types are irreconcilable, it throws an exception.
+    The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
+
+(defn unify [t1 t2 nidx l]
+    (unify-inner t1 t2 l)
+        ;(let [
+        l1             (type-loc t1)
+        l2             (type-loc t2)
+        _              (trace
+                           [(tloc l)
+                               (tloc l1)
+                               (tloc l2)
+                               (ttext "unify")
+                               (tfmt t1 type-to-string-raw)
+                               (tfmt t2 type-to-string-raw)])
+        (, subst nidx) (unify-inner t1 t2 nidx l)
+        _              (trace
+                           [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
+        (, subst nidx)))
+
+(typealias type-error (, string (array (, string int))))
+
+(defn type-error [message loced-items] (, message loced-items))
+
+(defn unify-inner [t1 t2 l]
+    (match (, t1 t2)
+        (, (tapp target-1 arg-1 _) (tapp target-2 arg-2 _)) (let-> [
+                                                                _     (unify-inner target-1 target-2 l)
+                                                                subst <-subst
+                                                                _     (unify-inner (type-apply subst arg-1) (type-apply subst arg-2) l)]
+                                                                (<- ()))
+        (, (tvar var l) t)                                  (var-bind var t l)
+        (, t (tvar var l))                                  (var-bind var t l)
+        (, (tcon a la) (tcon b lb))                         (if (= a b)
+                                                                (<- ())
+                                                                    (<-err
+                                                                    (type-error "Incompatible type constructors" [(, a la) (, b lb)])))
+        _                                                   (<-err
+                                                                (type-error
+                                                                    "Incompatible types"
+                                                                        [(, (type-to-string t1) (type-loc t1))
+                                                                        (, (type-to-string t2) (type-loc t2))]))))
+
+
+
+(defn var-bind [var type l]
+    (match type
+        (tvar v _) (if (= var v)
+                       (<- ())
+                           (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))
+        _          (if (set/has (type-free type) var)
+                       (<-err
+                           (type-error
+                               "Cycle found while unifying type with type variable"
+                                   [(, (type-to-string-raw type) (type-loc type)) (, var l)]))
+                           (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))))
 
 (** ## Type Inference State **)
 
@@ -664,7 +667,7 @@
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
         (evar "()" l)            (<- (tcon "()" l))
         (evar name l)            (match (tenv/type tenv name)
-                                     (none)       (<-err "Unbound variable ${name} (${(its l)})")
+                                     (none)       (<-err (type-error "Unbound variable" [(, name l)]))
                                      (some found) (let-> [(, t _) (instantiate found l)] (<- (type/set-loc l t))))
         (equot _ l)              (<- (tcon "expr" l))
         (equot/stmt _ l)         (<- (tcon "stmt" l))
@@ -751,7 +754,10 @@
                                                                    subst <-subst]
                                                                    (<- (, (type-apply subst target-type) (type-apply subst result))))))]
                                      (<- result-type))
-        _                        (<-err "cannot infer type for ${(valueToString expr)}")))
+        _                        (<-err
+                                     (type-error
+                                         "Expression not supported (?)"
+                                             [(, (expr->s expr) (expr-loc expr))]))))
 
 (** ## Patterns **)
 
@@ -800,7 +806,7 @@
         (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
         (pcon name args l)    (let-> [
                                   (tconstructor free cargs cres) (match (tenv/con tenv name)
-                                                                     (none)   (<-err "Unknown constructor: ${name}")
+                                                                     (none)   (<-err (type-error "Unknown type constructor" [(, name l)]))
                                                                      (some v) (<- v))
                                   (, tres tsubst)                (instantiate (scheme free cres) l)
                                   tres                           (<- (type/set-loc l tres))
@@ -809,15 +815,13 @@
                                   zipped                         (<- (zip args cargs))
                                   _                              (if (!= (len args) (len cargs))
                                                                      (<-err
-                                                                         "Wrong number of arguments to constructor ${
-                                                                             name
-                                                                             } (${
-                                                                             (its l)
-                                                                             }): given ${
-                                                                             (its (len args))
-                                                                             }, but the type constructor has ${
-                                                                             (its (len cargs))
-                                                                             }")
+                                                                         (type-error
+                                                                             "Wrong number of arguments to type constructor: given ${
+                                                                                 (its (len args))
+                                                                                 }, but the type constructor expects ${
+                                                                                 (its (len cargs))
+                                                                                 }"
+                                                                                 [(, name l)]))
                                                                          (<- ()))
                                   bindings                       (foldl->
                                                                      map/nil
@@ -886,10 +890,17 @@
             (match 1
                 1 1))))
 
+(defn type-error->s [(, message names)]
+    "${
+        message
+        }${
+        (join "" (map names (fn [(, name loc)] "\n - ${name} (${(its loc)})")))
+        }")
+
 (defn infer-show [tenv x]
     (match (run/nil-> (infer tenv x))
         (ok v)  (type-to-string v)
-        (err e) "Fatal runtime: ${e}"))
+        (err e) "${(type-error->s e)}"))
 
 (infer-show basic (@ (let [(, a b) (, 2 true)] (, a b))))
 
@@ -913,7 +924,7 @@
         (, (@ (fn [a] (+ 2 a))) "(fn [int] int)")
         (,
         (@ ((fn [(, a _)] (a 2)) (, 1 2)))
-            "Fatal runtime: cant unify (fn [int] a) (11080) and int (11085)")
+            "Incompatible types\n - (fn [int] a) (11080)\n - int (11085)")
         (, (@ (fn [(, a _)] (a 2))) "(fn [(, (fn [int] a) b)] a)")
         (,
         (@
@@ -938,13 +949,15 @@
         (, (@ (fn [x] (let [(, a b) (, 1 x)] b))) "(fn [a] a)")
         (,
         (@ (fn [x] (, (x 1) (x "1" ))))
-            "Fatal runtime: cant unify int (12195) and string (12197)")
+            "Incompatible type constructors\n - int (12195)\n - string (12197)")
         (, (@ (let [id (fn [x] (let [y x] y))] ((id id) 2))) "int")
-        (, (@ (let [id (fn [x] (x x))] id)) "Fatal runtime: occurs check")
+        (,
+        (@ (let [id (fn [x] (x x))] id))
+            "Cycle found while unifying type with type variable\n - (fn [x:1] res:2) (3135)\n - x:1 (3136)")
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] a)")
         (,
         (@ (2 2))
-            "Fatal runtime: cant unify int (3170) and (fn [int] a) (3169)")
+            "Incompatible types\n - int (3170)\n - (fn [int] a) (3169)")
         (,  )])
 
 (** ## Statements (simple, no mutual dependencies) **)
@@ -983,10 +996,12 @@
         (sdeftype tname tnl targs constructors l) (infer-deftype tenv' set/nil tname tnl targs constructors l)))
 
 (force
-    (run/nil->
+    type-error->s
+        (run/nil->
         (infer-stmt
             (force
-                (run/nil-> (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))))
+                type-error->s
+                    (run/nil-> (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))))
                 (@! (typealias what (hello string))))))
 
 (defn map/has [map k]
@@ -1059,7 +1074,7 @@
 
 (defn several [tenv stmts]
     (match stmts
-        []               (<-err "Final stmt should be an expr")
+        []               (<-err (type-error "Final stmt should be an expr" []))
         [(sexpr expr _)] (let-> [_ (idx-> 0)] (infer tenv expr))
         [one ..rest]     (let-> [tenv' (infer-stmtss tenv [one])]
                              (several (tenv/merge tenv tenv') rest))))
@@ -1172,14 +1187,11 @@
                                     (fn [(, result maps) t]
                                     (let [(, text maps) (tts-inner t maps false)] (, [text ..result] maps))))]
                  (<-err
-                     "Missing variables\n - ${
-                         (join
-                             "\n - "
-                                 (map
-                                 (zip missing (rev text []))
-                                     (fn [(, (, name loc) type)]
-                                     "${name} (${(int-to-string loc)}) : inferred as ${type}")))
-                         }"))))
+                     (type-error
+                         "Missing variables"
+                             (map
+                             (zip missing (rev text []))
+                                 (fn [(, (, name loc) type)] (, "${name} inferred as ${type}" loc))))))))
 
 (defn tenv/values [(tenv values _ _ _)] values)
 
@@ -1251,7 +1263,7 @@
             ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])
         (,
         [(@! (defn what [a] (+ 2 ho)))]
-            ["Missing variables\n - ho (15537) : inferred as int"])])
+            [(, "Missing variables" [(, "ho inferred as int" 15537)])])])
 
 (** ## Testing Errors **)
 
@@ -1262,17 +1274,22 @@
             (fn [tenv stmt]
             (let-> [tenv' ((infer-stmtss tenv [stmt]))] (<- (tenv/merge tenv tenv'))))))
 
+(fn [stmts]
+    (match (run/nil-> (infer-stmts builtin-env stmts))
+        (err e) (type-error->s e)
+        (ok _)  "No error?"))
+
 (,
     (fn [stmts]
         (match (run/nil-> (infer-stmts builtin-env stmts))
-            (err e) e
+            (err e) (type-error->s e)
             (ok _)  "No error?"))
         [(,
         [(@! (defn hello [a] (+ 1 a))) (@! (hello "a"))]
-            "cant unify int (10720) and string (10738)")
+            "Incompatible type constructors\n - int (10720)\n - string (10738)")
         (,
         [(@! (deftype one (two) (three int))) (@! (two 1))]
-            "cant unify one (10756) and (fn [int] a) (10753)")])
+            "Incompatible types\n - one (10756)\n - (fn [int] a) (10753)")])
 
 (** ## deftype and typealias **)
 
@@ -1297,11 +1314,9 @@
                                                  (match (bag/to-list (externals-type (set/add bound tname) arg))
                                                      []    (<- true)
                                                      names (<-err
-                                                               "Unbound types (in deftype ${
-                                                                   tname
-                                                                   }) ${
-                                                                   (join ", " (map names (fn [(,, name _ _)] name)))
-                                                                   }")))
+                                                               (type-error
+                                                                   "Unbound types in deftype ${tname}"
+                                                                       (map names (fn [(,, name _ l)] (, name l)))))))
                                                  args)]
                                     (<-
                                         (,
@@ -1339,7 +1354,7 @@
                                                      body))
                                              []    (<- (tenv/add-alias tenv name (, (map args fst) body)))
                                              names (<-err
-                                                       "Unbound types ${(join ", " (map names (fn [(,, name _ _)] name)))}"))))
+                                                       (type-error "Unbound types" (map names (fn [(,, name _ l)] (, name l))))))))
         merged                   (<- (tenv/merge tenv tenv'))
         tenv                     (foldl->
                                      tenv
@@ -1390,7 +1405,8 @@
         (<- (tenv/merge type-tenv val-tenv))))
 
 (force
-    (run/nil->
+    type-error->s
+        (run/nil->
         (infer-stmtss
             (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
                 [(@! (typealias one (, int string)))
@@ -1507,7 +1523,7 @@
                                               (fn [map (, loc type)] (map/add map loc (type-apply subst type))))
         final                         (match result
                                           (ok v)  (type-to-string v)
-                                          (err e) e)
+                                          (err e) (type-error->s e))
         exprs                         (foldr
                                           map/nil
                                               (bag/to-list (things-by-loc expr))
@@ -1791,7 +1807,9 @@
                         (tfmted a string)
                         (tfmt a (fn [a] string))))]
                 (fn [tenv stmt]
-                (tenv/merge tenv (force (run/nil-> (infer-stmtss tenv [stmt]))))))))
+                (tenv/merge
+                    tenv
+                        (force type-error->s (run/nil-> (infer-stmtss tenv [stmt]))))))))
 
 (infer-show builtin-env (@ ,))
 
@@ -1839,9 +1857,10 @@
     (typecheck
         (inference
             builtin-env
-                (fn [tenv stmts] (force (run/nil-> (infer-stmtss tenv stmts))))
+                (fn [tenv stmts]
+                (force type-error->s (run/nil-> (infer-stmtss tenv stmts))))
                 tenv/merge
-                (fn [tenv expr] (force (run/nil-> (infer tenv expr)))))
+                (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr)))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
