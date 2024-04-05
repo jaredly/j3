@@ -17,13 +17,9 @@ import { closeListLike } from './closeListLike';
 import { handleBackspace } from './handleBackspace';
 import { handleStringText } from './handleStringText';
 import { modChildren } from './modChildren';
-import {
-    goLeft,
-    goLeftUntil,
-    goRight,
-    goRightUntil,
-    selectStart,
-} from './navigate';
+import { selectStart } from './navigate';
+import { goRight, goRightUntil } from './goRightUntil';
+import { goLeft, goLeftUntil } from './goLeftUntil';
 import { newNodeBefore, newNodeAfter } from './newNodeBefore';
 import {
     mergeNew,
@@ -1029,6 +1025,7 @@ export function replaceWith(path: Path[], newThing: NewThing): StateUpdate {
 
 export type NewThing = {
     map: UpdateMap;
+    nsMap?: NsMap;
     idx: number;
     selection: Path[];
 };

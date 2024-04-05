@@ -1,6 +1,7 @@
 import { ListLikeContents, Map, MNode, MNodeExtra, NsMap } from '../types/mcst';
 import { newBlank } from './newNodes';
-import { goLeft, selectEnd } from './navigate';
+import { selectEnd } from './navigate';
+import { goLeft } from './goLeftUntil';
 import {
     Mods,
     StateChange,

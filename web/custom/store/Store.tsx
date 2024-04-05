@@ -24,7 +24,7 @@ import {
     repr,
     ProduceItem,
 } from '../../ide/ground-up/Evaluators';
-import { goRight } from '../../../src/state/navigate';
+import { goRight } from '../../../src/state/goRightUntil';
 import { cmpFullPath } from '../../../src/state/path';
 
 export type NUIResults = {

@@ -13,9 +13,9 @@ let's drag and drop baby. gotta have it.
 
 - [x] cmd+click should select the whole thing
   - oh nice
-- [ ] cmd+drag should drag
+- [x] cmd+drag should drag
   - [x] show the drag dest, lets abuse multicursor :D :D :D
-  - [ ] now make it drop... like its a spot
+  - [x] now make it drop... like its a spot
 
 
 # What are things even cslled

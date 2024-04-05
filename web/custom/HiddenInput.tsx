@@ -11,7 +11,7 @@ import { UIState, Action, NUIState } from './UIState';
 import { getRegNode } from './Hover';
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
-import { goRight } from '../../src/state/navigate';
+import { goRight } from '../../src/state/goRightUntil';
 // import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({

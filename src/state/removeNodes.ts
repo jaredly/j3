@@ -1,6 +1,7 @@
 import { UpdateMap } from './getKeyUpdate';
 import { fromMCST, Map, NsMap } from '../types/mcst';
-import { goLeft, selectStart } from './navigate';
+import { selectStart } from './navigate';
+import { goLeft } from './goLeftUntil';
 import { StateChange } from './getKeyUpdate';
 import { Node, NodeExtra, stringText } from '../types/cst';
 import { commonAncestor } from './clipboard';

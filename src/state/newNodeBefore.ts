@@ -32,6 +32,7 @@ export const newNodeAfter = (
                         ...newThing.selection,
                     ]),
                 nsMap: {
+                    ...newThing.nsMap,
                     [parent.idx]: { ...ns, children },
                     [nid]: {
                         type: 'normal',
@@ -125,6 +126,7 @@ export const newNodeBefore = (
                         ...newThing.selection,
                     ]),
                 nsMap: {
+                    ...newThing.nsMap,
                     [parent.idx]: { ...ns, children },
                     [nid]: {
                         type: 'normal',

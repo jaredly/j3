@@ -31,6 +31,7 @@ import { Algo, Trace } from '../infer/types';
 import { findTops, verifyPath } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
 import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
+import { moveNode } from '../../../src/state/moveNode';
 
 export const reduceUpdate = (
     state: NUIState,
@@ -249,10 +250,14 @@ export const actionToUpdate = (
             }
             return;
         }
-        // case 'collapse':
-        //     return action;
-        // case 'namespace-rename':
-        //     return action;
+        case 'move':
+            return moveNode(action.source, action.dest, state);
+        case 'copy':
+        case 'menu-select':
+        case 'namespace-rename':
+            return;
+        default:
+            const _: never = action;
     }
 };
 

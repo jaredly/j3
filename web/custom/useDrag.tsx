@@ -5,14 +5,6 @@ import { closestSelection } from './closestSelection';
 import { selectEnd } from '../../src/state/navigate';
 import { Path } from '../store';
 
-const pathStartsWith = (one: Path[], prefix: Path[]) => {
-    for (let i = 0; i < prefix.length; i++) {
-        if (!one[i]) return false;
-        if (!equal(one[i], prefix[i])) return false;
-    }
-    return true;
-};
-
 export function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
     const [drag, setDrag] = useState(
         null as null | 'select' | { type: 'move'; path: Path[]; idx: number },
@@ -35,23 +27,35 @@ export function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
                 });
                 const { idx, path } = drag;
 
-                if (sel) {
-                    if (pathStartsWith(sel, path)) {
-                        // bad news
-                        console.log('invalid drop location');
-                    }
+                if (!sel) {
+                    dispatch({
+                        type: 'select',
+                        at: [
+                            {
+                                start: [...path, { type: 'start', idx }],
+                                end: [...path, { type: 'end', idx }],
+                            },
+                        ],
+                    });
+                    return;
                 }
 
-                // OK so now we do the moveroo.
+                // setTimeout(() => {
                 dispatch({
-                    type: 'select',
-                    at: [
-                        {
-                            start: [...path, { type: 'start', idx }],
-                            end: [...path, { type: 'end', idx }],
-                        },
-                    ],
+                    type: 'move',
+                    source: { idx, path },
+                    dest: sel,
                 });
+                // }, 500);
+
+                // if (sel) {
+                //     if (pathStartsWith(sel, path)) {
+                //         // bad news
+                //         console.log('invalid drop location');
+                //     }
+                // }
+
+                // OK so now we do the moveroo.
             }
         };
         const move = (evt: MouseEvent) => {

@@ -123,6 +123,8 @@ const actionToUpdate = (
             }
             return;
         }
+        case 'move':
+            return;
         // case 'collapse':
         //     return action;
     }

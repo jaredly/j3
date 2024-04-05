@@ -4,7 +4,7 @@ import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover } from '../../custom/Hover';
 import { NUIState } from '../../custom/UIState';
 
-import { goLeftUntil } from '../../../src/state/navigate';
+import { goLeftUntil } from '../../../src/state/goLeftUntil';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { Store, WithStore, useGlobalState } from '../../custom/store/Store';

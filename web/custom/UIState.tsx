@@ -246,6 +246,7 @@ export type UpdatableAction =
     | StateUpdate
     | { type: 'hover'; path: Path[] }
     | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
+    | { type: 'move'; source: { path: Path[]; idx: number }; dest: Path[] }
     | { type: 'copy'; items: ClipboardItem[] }
     | { type: 'menu'; selection: number }
     | { type: 'menu-select'; path: Path[]; item: AutoCompleteReplace }
