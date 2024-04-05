@@ -89,18 +89,21 @@
         (cst/identifier string int)
         (cst/string string (array (,, cst string int)) int))
 
+(deftype quot
+    (quot/expr expr)
+        (quot/stmt stmt)
+        (quot/type type)
+        (quot/pat pat)
+        (quot/quot cst))
+
 (deftype expr
     (eprim prim int)
         (estr string (array (,, expr string int)) int)
         (evar string int)
-        (equot expr int)
-        (equot/stmt stmt int)
-        (equot/pat pat int)
-        (equot/type type int)
-        (equotquot cst int)
-        (elambda pat expr int)
-        (eapp expr expr int)
-        (elet pat expr expr int)
+        (equot quot int)
+        (elambda (array pat) expr int)
+        (eapp expr (array expr) int)
+        (elet (array (, pat expr)) expr int)
         (ematch expr (array (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
@@ -115,8 +118,12 @@
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
-        (elambda n b _)      "(fn [${(pat-to-string n)}] ${(expr-to-string b)})"
-        (eapp a b _)         "(${(expr-to-string a)} ${(expr-to-string b)})"
+        (elambda pats b _)   "(fn [${
+                                 (join " " (map pats pat-to-string ))
+                                 }] ${
+                                 (expr-to-string b)
+                                 })"
+        (eapp a args _)      "(${(expr-to-string a)} ${(join " " (map args expr-to-string))})"
         (eprim (pint n _) _) (int-to-string n)
         (ematch t cases _)   "(match ${
                                  (expr-to-string t)
@@ -150,18 +157,14 @@
 
 (defn expr-loc [expr]
     (match expr
-        (estr _ _ l)     l
-        (eprim _ l)      l
-        (evar _ l)       l
-        (equotquot _ l)  l
-        (equot _ l)      l
-        (equot/stmt _ l) l
-        (equot/pat _ l)  l
-        (equot/type _ l) l
-        (elambda _ _ l)  l
-        (elet _ _ _ l)   l
-        (eapp _ _ l)     l
-        (ematch _ _ l)   l))
+        (estr _ _ l)    l
+        (eprim _ l)     l
+        (evar _ l)      l
+        (equot _ l)     l
+        (elambda _ _ l) l
+        (elet _ _ l)    l
+        (eapp _ _ l)    l
+        (ematch _ _ l)  l))
 
 (defn type/set-loc [loc type]
     (match type
@@ -670,11 +673,15 @@
         (evar name l)            (match (tenv/type tenv name)
                                      (none)       (<-err (type-error "Unbound variable" [(, name l)]))
                                      (some found) (let-> [(, t _) (instantiate found l)] (<- (type/set-loc l t))))
-        (equot _ l)              (<- (tcon "expr" l))
-        (equot/stmt _ l)         (<- (tcon "stmt" l))
-        (equot/pat _ l)          (<- (tcon "pat" l))
-        (equot/type _ l)         (<- (tcon "type" l))
-        (equotquot _ l)          (<- (tcon "cst" l))
+        (equot quot l)           (<-
+                                     (tcon
+                                         (match quot
+                                             (quot/expr _) "expr"
+                                             (quot/stmt _) "stmt"
+                                             (quot/quot _) "cst"
+                                             (quot/type _) "type"
+                                             (quot/pat _)  "pat")
+                                             l))
         (eprim prim _)           (<- (t-prim prim))
         (estr first templates l) (let-> [
                                      string-type (<- (tcon "string" l))
@@ -698,29 +705,35 @@
                     (tfn (type-apply body-subst arg-type) body-type l)
                     nidx))
         (** Lambdas, now with pats **)
-        (elambda pat body l)     (let-> [
-                                     arg-type (new-type-var
-                                                  (match pat
-                                                      (pvar name _) name
-                                                      _             "$arg")
-                                                      l)
-                                     body     (pat-and-body tenv pat body arg-type true)
-                                     arg-type (type/apply-> arg-type)]
-                                     (<- (tfn arg-type body l)))
+        (elambda pats body l)    (match pats
+                                     [pat] (let-> [
+                                               arg-type (new-type-var
+                                                            (match pat
+                                                                (pvar name _) name
+                                                                _             "$arg")
+                                                                l)
+                                               body     (pat-and-body tenv pat body arg-type true)
+                                               arg-type (type/apply-> arg-type)]
+                                               (<- (tfn arg-type body l)))
+                                     _     (t-expr tenv (foldr body pats (fn [body pat] (elambda [pat] body l)))))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
             - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
             - unify the target type with a function (arg type) => return value type variable
             - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
-        (eapp target arg l)      (let-> [
-                                     result-var  (new-type-var "res" l)
-                                     target-type (t-expr tenv target)
-                                     arg-tenv    (tenv/apply-> tenv)
-                                     arg-type    (t-expr arg-tenv arg)
-                                     target-type (type/apply-> target-type)
-                                     _           (unify-inner target-type (tfn arg-type result-var l) l)]
-                                     (type/apply-> result-var))
+        (eapp target args l)     (match args
+                                     [arg] (let-> [
+                                               result-var  (new-type-var "res" l)
+                                               target-type (t-expr tenv target)
+                                               arg-tenv    (tenv/apply-> tenv)
+                                               arg-type    (t-expr arg-tenv arg)
+                                               target-type (type/apply-> target-type)
+                                               _           (unify-inner target-type (tfn arg-type result-var l) l)]
+                                               (type/apply-> result-var))
+                                     _     (t-expr
+                                               tenv
+                                                   (foldl target args (fn [target arg] (eapp target [arg] l)))))
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
@@ -739,8 +752,15 @@
             - infer the type of the value
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
-        (elet pat init body l)   (let-> [inited (t-expr tenv init)]
-                                     (pat-and-body tenv pat body inited false))
+        (elet bindings body l)   (match bindings
+                                     [(, pat init)] (let-> [inited (t-expr tenv init)]
+                                                        (pat-and-body tenv pat body inited false))
+                                     _              (t-expr
+                                                        tenv
+                                                            (foldr
+                                                            body
+                                                                bindings
+                                                                (fn [body (, pat init)] (elet [(, pat init)] body l)))))
         (ematch target cases l)  (let-> [
                                      result-var        (new-type-var "match-res" l)
                                      target-type       (t-expr tenv target)
@@ -1418,20 +1438,6 @@
 
 (** ## Collecting types of everything **)
 
-;(deftype expr
-    (eprim prim int)
-        (estr string (array (,, expr string int)) int)
-        (evar string int)
-        (equot expr int)
-        (equot/stmt stmt int)
-        (equot/pat pat int)
-        (equot/type type int)
-        (equotquot cst int)
-        (elambda pat expr int)
-        (eapp expr expr int)
-        (elet pat expr expr int)
-        (ematch expr (array (, pat expr)) int))
-
 (defn expr->s [expr]
     (match expr
         (eprim prim int)            (prim->s prim)
@@ -1443,9 +1449,15 @@
                                                 (map templates (fn [(,, expr suffix _)] "${(expr->s expr)}${suffix}")))
                                         }\""
         (evar string int)           string
-        (elambda pat expr int)      "(fn [${(pat->s pat)}] ${(expr->s expr)})"
-        (eapp target arg int)       "(${(expr->s target)} ${(expr->s arg)})"
-        (elet pat init body int)    "(let [${(pat->s pat)} ${(expr->s init)}]\n  ${(expr->s body)})"
+        (elambda pats expr int)     "(fn [${(join " " (map pats pat->s))}] ${(expr->s expr)})"
+        (eapp target args int)      "(${(expr->s target)} ${(join " " (map args expr->s))})"
+        (elet bindings body int)    "(let [${
+                                        (join
+                                            " "
+                                                (map bindings (fn [(, pat init)] "${(pat->s pat)} ${(expr->s init)}")))
+                                        }]\n  ${
+                                        (expr->s body)
+                                        })"
         (ematch expr cases int)     "(match ${
                                         (expr->s expr)
                                         }\n  ${
@@ -1494,11 +1506,20 @@
                                             empty
                                                 (map templates (fn [(,, expr _ _)] (things-by-loc expr)))
                                                 bag/and)
-            (elambda pat expr int)      (bag/and (pats-by-loc pat) (things-by-loc expr))
-            (eapp target arg int)       (bag/and (things-by-loc target) (things-by-loc arg))
-            (elet pat init body int)    (bag/and
-                                            (pats-by-loc pat)
-                                                (bag/and (things-by-loc init) (things-by-loc body)))
+            (elambda pats expr int)     (bag/and
+                                            (foldl empty (map pats pats-by-loc) bag/and)
+                                                (things-by-loc expr))
+            (eapp target args int)      (bag/and
+                                            (things-by-loc target)
+                                                (foldl empty (map args things-by-loc) bag/and))
+            (elet bindings body int)    (bag/and
+                                            (foldl
+                                                empty
+                                                    (map
+                                                    bindings
+                                                        (fn [(, pat init)] (bag/and (pats-by-loc pat) (things-by-loc init))))
+                                                    bag/and)
+                                                (things-by-loc body))
             (ematch expr cases int)     (bag/and
                                             (things-by-loc expr)
                                                 (foldl
@@ -1607,34 +1628,45 @@
         (pcon name args l) (bag/and (one (,, name (value) l)) (many (map args pat-externals)))
         _                  empty))
 
-(defn externals [bound expr]
-    (match expr
-        (evar name l)              (if (set/has bound name)
-                                       empty
-                                           (one (,, name (value) l)))
+(defn externals 
+    [bound expr]
+        (match expr
+        (evar name l)              (match (set/has bound name)
+                                       true empty
+                                       _    (one (,, name (value) l)))
         (eprim prim l)             empty
-        (estr first templates int) (many (map templates (fn [(,, expr _ _)] (externals bound expr))))
+        (estr first templates int) (many
+                                       (map
+                                           templates
+                                               (fn [arg]
+                                               (match arg
+                                                   (,, expr _ _) (externals bound expr)))))
         (equot expr int)           empty
-        (equot/type _ _)           empty
-        (equot/pat _ _)            empty
-        (equot/stmt _ _)           empty
-        (equotquot cst int)        empty
-        (elambda pat body int)     (bag/and
-                                       (pat-externals pat)
-                                           (externals (set/merge bound (pat-names pat)) body))
-        (elet pat init body l)     (bag/and
-                                       (bag/and (pat-externals pat) (externals bound init))
-                                           (externals (set/merge bound (pat-names pat)) body))
-        (eapp target arg int)      (bag/and (externals bound target) (externals bound arg))
+        (elambda pats body int)    (bag/and
+                                       (foldl empty (map pats pat-externals) bag/and)
+                                           (externals (foldl bound (map pats pat-names) set/merge) body))
+        (elet bindings body l)     (let [
+                                       (, bag bound) (foldl
+                                                         (, empty bound)
+                                                             bindings
+                                                             (fn [(, bag bound) (, pat init)]
+                                                             (,
+                                                                 (bag/and bag (bag/and (pat-externals pat) (externals bound init)))
+                                                                     (set/merge bound (pat-names pat)))))]
+                                       (bag/and bag (externals bound body)))
+        (eapp target args int)     (bag/and
+                                       (externals bound target)
+                                           (foldl empty (map args (externals bound)) bag/and))
         (ematch expr cases int)    (bag/and
                                        (externals bound expr)
                                            (foldl
                                            empty
                                                cases
-                                               (fn [bag (, pat body)]
-                                               (bag/and
-                                                   (bag/and bag (pat-externals pat))
-                                                       (externals (set/merge bound (pat-names pat)) body)))))))
+                                               (fn [bag arg]
+                                               (match arg
+                                                   (, pat body) (bag/and
+                                                                    (bag/and bag (pat-externals pat))
+                                                                        (externals (set/merge bound (pat-names pat)) body))))))))
 
 (,
     (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
