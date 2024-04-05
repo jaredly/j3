@@ -139,11 +139,13 @@ export const Render = React.memo(
         // console.log('render', props.idx);
         const inner = (
             <div
-                style={{
-                    backgroundColor: values.hover
-                        ? 'rgb(100,100,100)'
-                        : 'unset',
-                }}
+                style={
+                    {
+                        // backgroundColor: values.hover
+                        //     ? 'rgb(100,100,100)'
+                        //     : 'unset',
+                    }
+                }
                 // onMouseEnter={() => {
                 //     store.dispatch({ type: 'hover', path });
                 // }}
@@ -258,10 +260,8 @@ export const RenderNNode = (
     props: RenderProps & { nnode: NNode; values: Values; hoverPath: Path[] },
 ): JSX.Element | null => {
     const { nnode, idx, path } = props;
-    const { reg, display, dispatch, node, selection, errors } = props.values;
+    const { reg, dispatch, node, selection, errors } = props.values;
     const store = useGetStore();
-
-    const edgeSelected = selection?.edge;
 
     const coverageLevel = selection?.coverage;
 
@@ -362,7 +362,9 @@ export const RenderNNode = (
                             rainbow[path.length % rainbow.length],
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
-                        fontVariationSettings: edgeSelected ? '"wght" 900' : '',
+                        fontVariationSettings: props.values.hover
+                            ? '"wght" 900'
+                            : '',
                         ...selectStyle,
                         ...errorStyle,
                     }}
