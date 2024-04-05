@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NamespacePlugin } from '../UIState';
 import { urlForId } from '../../ide/ground-up/reduce';
 
-export const evaluatorPlugin: NamespacePlugin<string | number, string> = {
+export const evaluatorPlugin: NamespacePlugin<
+    { type: 'error'; message: string } | { type: 'success'; text: string },
+    string
+> = {
     id: 'evaluator',
     title: 'Save Evaluator',
 
@@ -49,11 +52,21 @@ export const evaluatorPlugin: NamespacePlugin<string | number, string> = {
                             >
                                 {options ?? 'Set name'}
                             </button>
-                            {typeof results === 'string'
-                                ? results
-                                : `Saved at ${new Date(
-                                      results,
-                                  ).toLocaleTimeString()}`}
+                            {results.type === 'error' ? results.message : null}
+                            {options && results.type === 'success' ? (
+                                <Saver
+                                    onClick={() =>
+                                        fetch(urlForId(options), {
+                                            body: results.text,
+                                            method: 'POST',
+                                        })
+                                    }
+                                >
+                                    {(saving) =>
+                                        saving ? 'Saving...' : 'Save'
+                                    }
+                                </Saver>
+                            ) : null}
                         </div>
                     ),
                 },
@@ -70,27 +83,58 @@ export const evaluatorPlugin: NamespacePlugin<string | number, string> = {
     process(node, state, evaluator, results, options) {
         if (!options || !options.endsWith('.js')) {
             // throw new Error(`Bad name`);
-            return options ? `Name must end in .js` : `Please set a name`;
+            return {
+                type: 'error',
+                message: options ? `Name must end in .js` : `Please set a name`,
+            };
         }
         if (
             node.type === 'blank' ||
             node.type === 'comment' ||
             node.type === 'comment-node'
         ) {
-            return `Expression must not be blank or comment`; // ignoring
+            return {
+                type: 'error',
+                message: `Expression must not be blank or comment`,
+            };
+        }
+        if (!evaluator.toFile) {
+            return { type: 'error', message: `No toFile for evaluator` };
         }
         let text;
         try {
-            text = evaluator.toFile?.(state, node.loc).js;
+            text = evaluator.toFile!(state, node.loc).js;
         } catch (err) {
             console.error(err);
-            return `Failed ` + (err as Error).message;
+            return {
+                type: 'error',
+                message: `Failed ` + (err as Error).message,
+            };
         }
-        fetch(urlForId(options), {
-            body: text,
-            method: 'POST',
-        });
-        // console.log(text);
-        return Date.now();
+        return { type: 'success', text }; // Date.now();
     },
+};
+
+const Saver = ({
+    onClick,
+    children,
+}: {
+    onClick: () => Promise<unknown>;
+    children: (v: boolean) => JSX.Element | string;
+}) => {
+    const [saving, setSaving] = useState(false);
+    return (
+        <button
+            onClick={() => {
+                setSaving(true);
+                onClick()
+                    .catch(() => {})
+                    .then(() => {
+                        setSaving(false);
+                    });
+            }}
+        >
+            {children(saving)}
+        </button>
+    );
 };

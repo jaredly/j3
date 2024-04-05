@@ -23,7 +23,7 @@ I think that's the best strategy.
 
 - [x] STEP 1 - make the change in algw-subst
 - [ ] STEP 2 - get the typescript backend on board!!! with the goodness
-  - [ ] OH ok so I do want (lambdas) and (apps) to have array arguments. lets stop messing around.
+  - [x] OH ok so I do want (lambdas) and (apps) to have array arguments. lets stop messing around.
 
 
 ALSO
