@@ -866,6 +866,15 @@
 (defn infer [tenv expr]
     (let-> [
         (, tenv missing) (find-missing tenv (externals set/nil expr))
+        _                (<-
+                             (match missing
+                                 (, [] [])   1
+                                 (, names _) (fatal
+                                                 "Sorry cant let this stand. names missing ${
+                                                     (join ", " (map names fst))
+                                                     }, but tenv has ${
+                                                     (join ", " (map/keys (tenv/values tenv)))
+                                                     }")))
         type             (t-expr tenv expr)
         subst            <-subst
         _                (report-missing subst missing)]
@@ -882,6 +891,7 @@
         (map/from-list
             [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
                 (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
+                (, "()" (scheme set/nil (tcon "()" -1)))
                 (,
                 ","
                     (scheme
@@ -934,6 +944,7 @@
         (, (@ "hi ${"ho"}") "string")
         (, (@ (fn [x] "hi ${x}")) "(fn [string] string)")
         (, (@ (let [a 1] a)) "int")
+        (, (@ (let [x ()] x)) "()")
         (, (@ (let [(, a b) (, 21 true)] (, a b))) "(, int bool)")
         (,
         (@
@@ -980,8 +991,7 @@
         (, (@ (fn [m] (let [y m] (let [x (y true)] x)))) "(fn [(fn [bool] a)] a)")
         (,
         (@ (2 2))
-            "Incompatible types\n - int (3170)\n - (fn [int] a) (3169)")
-        (,  )])
+            "Incompatible types\n - int (3170)\n - (fn [int] a) (3169)")])
 
 (** ## Statements (simple, no mutual dependencies) **)
 
@@ -1106,7 +1116,7 @@
     (fn [x]
         (match (run/nil-> (several basic x))
             (ok t)  (type-to-string t)
-            (err e) e))
+            (err e) (type-error->s e)))
         [(,
         [(@! (deftype (array a) (cons a (array a)) (nil)))
             (@!
@@ -1211,7 +1221,7 @@
                                     (let [(, text maps) (tts-inner t maps false)] (, [text ..result] maps))))]
                  (<-err
                      (type-error
-                         "Missing variables"
+                         "Missing variables???"
                              (map
                              (zip missing (rev text []))
                                  (fn [(, (, name loc) type)] (, "${name} inferred as ${type}" loc))))))))
@@ -1271,7 +1281,7 @@
     (fn [x]
         (match (run/nil-> (infer-several basic x))
             (ok v)  (map v (fn [(, _ t)] (type-to-string t)))
-            (err e) [e]))
+            (err e) [(type-error->s e)]))
         [(,
         [(@! (defn even [x] (odd (- x 1) x)))
             (@! (defn odd [x y] "${(even x)}"))
@@ -1286,7 +1296,7 @@
             ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])
         (,
         [(@! (defn what [a] (+ 2 ho)))]
-            [(, "Missing variables" [(, "ho inferred as int" 15537)])])])
+            ["Missing variables\n - ho inferred as int (15537)"])])
 
 (** ## Testing Errors **)
 
@@ -1468,8 +1478,6 @@
                                                 (map cases (fn [(, pat body)] "${(pat->s pat)}t${(expr->s body)}")))
                                         }"))
 
-;(deftype prim (pint int int) (pbool bool int))
-
 (defn prim->s [prim]
     (match prim
         (pint num _)     (its num)
@@ -1484,13 +1492,6 @@
         (pcon string args int) "(${string}${(join "" (map args (fn [pat] " ${(pat->s pat)}")))})"
         (pstr string int)      string
         (pprim prim int)       (prim->s prim)))
-
-;(deftype pat
-    (pany int)
-        (pvar string int)
-        (pcon string (array pat) int)
-        (pstr string int)
-        (pprim prim int))
 
 (defn pats-by-loc [pat]
     (match pat
@@ -1671,14 +1672,15 @@
                                                                         (externals (set/merge bound (pat-names pat)) body))))))))
 
 (,
-    (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
+    (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil" "()"])))
         [(, (@ hi) [(,, "hi" (value) 16110)])
         (, (@ [1 2 c]) [(,, "c" (value) 16144)])
         (,
         (@ (one two three))
             [(,, "one" (value) 16158)
             (,, "two" (value) 16159)
-            (,, "three" (value) 16160)])])
+            (,, "three" (value) 16160)])
+        (, (@ ()) [])])
 
 (defn dot [a b c] (a (b c)))
 
@@ -1773,6 +1775,7 @@
                         (, "!=" (generic ["k"] (tfns [k k] tbool)))
                         (, ">=" (concrete (tfns [tint tint] tbool)))
                         (, "<=" (concrete (tfns [tint tint] tbool)))
+                        (, "()" (concrete (tcon "()" -1)))
                         (,
                         "trace"
                             (kk
@@ -1864,7 +1867,8 @@
         check-stmts **)
         (inference
         tenv
-            (fn [tenv (array stmt)] tenv)
+            (fn [tenv (array stmt)] (, tenv (array (, int type))))
+            ;(fn [tenv (array stmt)] tenv)
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)))
 
@@ -1888,12 +1892,16 @@
 (def externals-list (fn [x] (bag/to-list (externals set/nil x))))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts,  2: add_stmt,  3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts2,  2: add_stmt,  3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference
             builtin-env
                 (fn [tenv stmts]
-                (force type-error->s (run/nil-> (infer-stmtss tenv stmts))))
+                (let [
+                    (, (,, _ types subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
+                    (match result
+                        (ok tenv) (, tenv (map types (fn [(, loc type)] (, loc (type-apply subst type)))))
+                        (err e)   (fatal (type-error->s e)))))
                 tenv/merge
                 (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr)))))
             (analysis externals-stmt externals-list names)

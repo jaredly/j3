@@ -158,6 +158,7 @@
         (cst/array [] l)                              (pcon "nil" [] l)
         (cst/array [(cst/spread inner _)] _)          (parse-pat inner)
         (cst/array [one ..rest] l)                    (pcon "cons" [(parse-pat one) (parse-pat (cst/array rest l))] l)
+        (cst/list [] l)                               (pcon "()" [] l)
         (cst/list [(cst/identifier "," il) ..args] l) (parse-pat-tuple args il l)
         (cst/list [(cst/identifier name _) ..rest] l) (pcon name (map rest parse-pat) l)
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
@@ -950,5 +951,3 @@
             names
             externals-stmt
             (fn [expr] (bag/to-list (externals set/nil expr)))))
-
-6885
