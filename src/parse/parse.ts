@@ -14,7 +14,7 @@ import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
 import { fromMCST, Map, MNode, NsMap } from '../types/mcst';
 import { applyMenuItem } from '../to-ast/autoComplete';
-import { fixMissingReferences } from '../../web/custom/reduce';
+import { fixMissingReferences } from '../../web/custom/old-stuff/reduce';
 import GraphemeSplitter from 'grapheme-splitter';
 import { NUIState } from '../../web/custom/UIState';
 

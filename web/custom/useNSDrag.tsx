@@ -41,52 +41,6 @@ export type DragState = {
     };
 };
 
-export const useLatest = <T,>(v: T) => {
-    const r = useRef(v);
-    r.current = v;
-    return r;
-};
-
-export const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
-    // console.log('regs', nsReg);
-    let closest = null as null | [number, DOMRect, Path[]];
-    // let offset = 4;
-    let boffset = 13;
-    let aoffset = 3;
-    let insideOffset = 20;
-    for (let v of Object.values(nsReg)) {
-        if (!v) continue;
-        const box = v.node.getBoundingClientRect();
-        const dist =
-            evt.clientY < box.top
-                ? box.top - evt.clientY
-                : evt.clientY > box.bottom
-                ? evt.clientY - box.bottom
-                : 0;
-        if (!closest || closest[0] > dist) {
-            closest = [dist, box, v.path];
-        }
-    }
-    if (closest) {
-        const [_, box, path] = closest;
-        const position =
-            evt.clientX > box.left + insideOffset * 3
-                ? 'inside'
-                : evt.clientY < (box.bottom + box.top) / 2
-                ? 'before'
-                : 'after';
-        return {
-            path,
-            x: box.left + (position === 'inside' ? insideOffset : 0),
-            y: position === 'before' ? box.top - boffset : box.bottom + aoffset,
-            w: 200,
-            h: 10,
-            position,
-        };
-    }
-    return null;
-};
-
 export const useNSDrag = (
     state: NUIState,
     dispatch: React.Dispatch<Action>,
@@ -109,7 +63,7 @@ export const useNSDrag = (
                 setDrag({ ...drag, moved: true, drop: findDrop(nsReg, evt) });
             }
         };
-        const up = (evt: MouseEvent) => {
+        const up = () => {
             const drag = latestDrag.current;
             if (drag && !drag?.moved) {
                 drag.onClick();
@@ -288,3 +242,49 @@ function dropAction(drag: DragState, state: NUIState): Action {
         };
     }
 }
+
+export const useLatest = <T,>(v: T) => {
+    const r = useRef(v);
+    r.current = v;
+    return r;
+};
+
+export const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
+    // console.log('regs', nsReg);
+    let closest = null as null | [number, DOMRect, Path[]];
+    // let offset = 4;
+    let boffset = 13;
+    let aoffset = 3;
+    let insideOffset = 20;
+    for (let v of Object.values(nsReg)) {
+        if (!v) continue;
+        const box = v.node.getBoundingClientRect();
+        const dist =
+            evt.clientY < box.top
+                ? box.top - evt.clientY
+                : evt.clientY > box.bottom
+                ? evt.clientY - box.bottom
+                : 0;
+        if (!closest || closest[0] > dist) {
+            closest = [dist, box, v.path];
+        }
+    }
+    if (closest) {
+        const [_, box, path] = closest;
+        const position =
+            evt.clientX > box.left + insideOffset * 3
+                ? 'inside'
+                : evt.clientY < (box.bottom + box.top) / 2
+                ? 'before'
+                : 'after';
+        return {
+            path,
+            x: box.left + (position === 'inside' ? insideOffset : 0),
+            y: position === 'before' ? box.top - boffset : box.bottom + aoffset,
+            w: 200,
+            h: 10,
+            position,
+        };
+    }
+    return null;
+};

@@ -4,10 +4,19 @@
 
 let's drag and drop baby. gotta have it.
 
-- [ ] HOVER Should highlight the parens
+- [x] HOVER Should highlight the parens
+  - it's ... not perfect, for sure ... but it's pretty ok? I guess?
 
 - [ ] TODO, `normalizeSelections` is a huge pain, I should just calculate once whether we're "reversed",
   and store that as an attribute on the cursor. `start, end, reversed`
+
+
+- [x] cmd+click should select the whole thing
+  - oh nice
+- [ ] cmd+drag should drag
+  - [x] show the drag dest, lets abuse multicursor :D :D :D
+  - [ ] now make it drop... like its a spot
+
 
 # What are things even cslled
 

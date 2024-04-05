@@ -139,6 +139,8 @@ export const Render = React.memo(
         // console.log('render', props.idx);
         const inner = (
             <div
+                data-path={JSON.stringify(path)}
+                data-idx={idx}
                 style={
                     {
                         // backgroundColor: values.hover

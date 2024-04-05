@@ -4,7 +4,7 @@ import { Env } from '../../../../src/to-ast/library';
 import { Node as CNode } from '../../../../src/types/cst';
 import { ListLikeContents } from '../../../../src/types/mcst';
 import { useLocalStorage } from '../../../Debug';
-import { Root } from '../../../custom/Root';
+import { Root } from '../../../custom/old-stuff/Root';
 import { calcResults, stateFromMap } from '../../Test';
 import { TraceKind, Tree, algos } from '../types';
 import { Node } from './Tree';

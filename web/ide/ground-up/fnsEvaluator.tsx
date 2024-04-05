@@ -16,7 +16,7 @@ import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
 import { LocedName } from '../../custom/store/sortTops';
-import { filterNulls } from '../../custom/reduce';
+import { filterNulls } from '../../custom/old-stuff/reduce';
 import { unique } from '../../custom/store/getResults';
 import { builtins } from './builtins';
 

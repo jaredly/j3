@@ -6,7 +6,7 @@ import { plugins } from '../plugins';
 import { NUIResults } from './Store';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
-import { filterNulls } from '../reduce';
+import { filterNulls } from '../old-stuff/reduce';
 import React from 'react';
 import { valueToString } from '../../ide/ground-up/reduce';
 import { parseNodesAndDeps, sortTopsWithDeps } from './parseNodesAndDeps';

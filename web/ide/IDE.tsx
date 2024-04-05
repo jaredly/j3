@@ -2,7 +2,7 @@
 
 import React, { useEffect, useReducer, useState } from 'react';
 import { Env, Sandbox } from '../../src/to-ast/library';
-import { reduce } from '../custom/reduce';
+import { reduce } from '../custom/old-stuff/reduce';
 import { uiState } from '../custom/ByHand';
 import { Action, UIState } from '../custom/UIState';
 import { Namespaces } from './Namespaces';

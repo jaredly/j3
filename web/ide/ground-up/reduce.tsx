@@ -24,7 +24,7 @@ import {
     calcHistoryItem,
     filterNulls,
     undoRedo,
-} from '../../custom/reduce';
+} from '../../custom/old-stuff/reduce';
 import { verticalMove } from '../../custom/verticalMove';
 import { newResults } from '../Test';
 import { Algo, Trace } from '../infer/types';

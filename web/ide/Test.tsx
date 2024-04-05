@@ -12,9 +12,13 @@ import { ListLikeContents, fromMCST } from '../../src/types/mcst';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
 import { Hover, calc } from '../custom/Hover';
-import { Root } from '../custom/Root';
+import { Root } from '../custom/old-stuff/Root';
 import { Action, NUIState, UpdatableAction } from '../custom/UIState';
-import { UIStateChange, calcHistoryItem, undoRedo } from '../custom/reduce';
+import {
+    UIStateChange,
+    calcHistoryItem,
+    undoRedo,
+} from '../custom/old-stuff/reduce';
 import { verticalMove } from '../custom/verticalMove';
 
 // These register themselves into `./infer/types:algos`

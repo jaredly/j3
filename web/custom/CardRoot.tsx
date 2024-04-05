@@ -1,11 +1,4 @@
-import equal from 'fast-deep-equal';
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
@@ -15,7 +8,7 @@ import { NSTop } from './NSTop';
 import { Action, NUIState, RealizedNamespace } from './UIState';
 import { Reg } from './types';
 import { useNSDrag } from './useNSDrag';
-import { closestSelection } from './verticalMove';
+import { closestSelection } from './closestSelection';
 import {
     MyEvalError,
     FullEvalator,
@@ -24,6 +17,7 @@ import {
     ProduceItem,
 } from '../ide/ground-up/Evaluators';
 import { NsMap } from '../../src/types/mcst';
+import { useDrag } from './useDrag';
 
 export function CardRoot({
     state,
@@ -79,6 +73,7 @@ export function CardRoot({
             }}
             {...dragProps}
             onMouseDown={(evt) => {
+                if (evt.metaKey) return;
                 let current = evt.target as HTMLElement;
                 while (current && current !== document.body) {
                     if (current.classList.contains('rich-text')) return;
@@ -161,59 +156,6 @@ export function useRegs(state: NUIState): Reg {
         }
         state.regs[idx][loc ?? 'main'] = node ? { node, path } : null;
     }, []);
-}
-
-function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
-    const [drag, setDrag] = useState(false);
-    const currentState = useRef(state);
-    currentState.current = state;
-
-    useEffect(() => {
-        if (!drag) {
-            return;
-        }
-        const up = () => {
-            setDrag(false);
-        };
-        const move = (evt: MouseEvent) => {
-            const state = currentState.current;
-            const sel = closestSelection(state.regs, {
-                x: evt.clientX, // + window.scrollX,
-                y: evt.clientY, // + window.scrollY,
-            });
-            if (sel) {
-                const at = state.at.slice();
-                const idx = at.length - 1;
-                if (equal(sel, at[idx].start)) {
-                    at[idx] = { start: sel };
-                    dispatch({ type: 'select', at });
-                } else {
-                    at[idx] = { ...at[idx], end: sel };
-                    dispatch({ type: 'select', at });
-                }
-            }
-        };
-        document.addEventListener('mouseup', up, { capture: true });
-        document.addEventListener('mousemove', move);
-        return () => {
-            document.removeEventListener('mousemove', move);
-            document.removeEventListener('mouseup', up, { capture: true });
-        };
-    }, [drag]);
-    return {
-        onMouseDownCapture: (evt: React.MouseEvent) => {
-            if ((evt.target as HTMLElement).getAttribute('data-handle')) {
-                return;
-            }
-            let current = evt.target as HTMLElement;
-            while (current && current !== document.body) {
-                if (current.classList.contains('rich-text')) return;
-                current = current.parentElement!;
-            }
-
-            setDrag(true);
-        },
-    };
 }
 
 export const isAncestor = (node: HTMLElement, parent: HTMLElement) => {

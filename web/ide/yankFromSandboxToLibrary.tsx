@@ -1,4 +1,4 @@
-import { prevMap } from '../custom/reduce';
+import { prevMap } from '../custom/old-stuff/reduce';
 import { NodeExtra } from '../../src/types/cst';
 import { MNodeList, Map } from '../../src/types/mcst';
 import {

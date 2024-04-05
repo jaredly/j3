@@ -4,7 +4,7 @@ import { findTops } from '../../ide/ground-up/findTops';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
 import { layout } from '../../../src/layout';
 import { NUIResults } from './Store';
-import { filterNulls } from '../reduce';
+import { filterNulls } from '../old-stuff/reduce';
 import { depSort } from './depSort';
 import { Node } from '../../../src/types/cst';
 
