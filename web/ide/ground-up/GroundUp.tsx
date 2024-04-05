@@ -164,7 +164,9 @@ export const GroundUp = ({
                     />
                 </div>
                 <div style={{ flex: 1, overflow: 'auto' }}>
-                    {debug.selection ? <ShowAt at={state.at} /> : null}
+                    {debug.selection ? (
+                        <ShowAt at={state.at} hover={state.hover} />
+                    ) : null}
                     {renderTraces(results, state, store)}
                 </div>
             </div>
@@ -220,7 +222,7 @@ const showPath = (path: Path[]) => {
     );
 };
 
-const ShowAt = ({ at }: { at: NUIState['at'] }) => {
+const ShowAt = ({ at, hover }: { at: NUIState['at']; hover: Path[] }) => {
     return (
         <>
             {at.map(({ start, end }, i) => (
@@ -230,6 +232,7 @@ const ShowAt = ({ at }: { at: NUIState['at'] }) => {
                     {end ? showPath(end) : null}
                 </div>
             ))}
+            <div>{showPath(hover)}</div>
         </>
     );
 };

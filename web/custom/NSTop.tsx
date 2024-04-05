@@ -13,7 +13,8 @@ import {
     ProduceItem,
 } from '../ide/ground-up/Evaluators';
 import { plugins } from './plugins';
-import { Store, useExpanded, useGetStore, useNode } from './store/Store';
+import { Store, useExpanded, useGetStore } from './store/Store';
+import { useNode } from './store/useNode';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 
 const PluginRender = ({

@@ -1,4 +1,25 @@
 
+
+## BUT HERE WE GO
+
+let's drag and drop baby. gotta have it.
+
+- [ ] HOVER Should highlight the parens
+
+- [ ] TODO, `normalizeSelections` is a huge pain, I should just calculate once whether we're "reversed",
+  and store that as an attribute on the cursor. `start, end, reversed`
+
+# What are things even cslled
+
+LOLok
+
+  (parse-1-args.json)
+- parse-1-args.js for the parser (includes (, 1 2 3) -> (, 1 (, 2 3)) and (fn [a b c] d))
+  (type-args.json)
+- type-args.js ^ is type-1-do + the args
+
+and algw-subst is type-1-do + the args + we're changing a whole bunch of stuff.
+
 # Type Inference n stuff plans:
 
 so what we want to report, from `infer-stmts2`

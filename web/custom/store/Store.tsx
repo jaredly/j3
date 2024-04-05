@@ -15,10 +15,8 @@ import { MNode, fromMCST } from '../../../src/types/mcst';
 import { Reg } from '../types';
 import { CoverageLevel } from '../../../src/state/clipboard';
 import { Path } from '../../store';
-import { isCoveredBySelection } from '../isCoveredBySelection';
 import equal from 'fast-deep-equal';
 import { useLatest } from '../useNSDrag';
-import { normalizeSelections } from '../CardRoot';
 import { TraceMap, loadEv } from '../../ide/ground-up/loadEv';
 import {
     FullEvalator,
@@ -161,7 +159,7 @@ const noopStore: Store = {
     },
 };
 
-const StoreCtx = createContext<Store>(noopStore);
+export const StoreCtx = createContext<Store>(noopStore);
 
 export const WithStore = ({
     store,
@@ -186,6 +184,7 @@ export type Values = {
         edge: boolean;
         coverage: CoverageLevel;
     };
+    hover?: boolean;
     dispatch: React.Dispatch<Action>;
 };
 
@@ -303,60 +302,4 @@ export const useSubscribe = <T,>(
     }, []);
 
     return saved.current!;
-};
-
-export const useNode = (idx: number, path: Path[]): Values => {
-    const store = useContext(StoreCtx);
-    let [state, setState] = useState(() =>
-        getValues(idx, store, store.getState(), store.getResults()),
-    );
-    const diff = state.node.loc !== idx;
-    if (diff) {
-        throw new Error(`ok cant handle the idx actually changing`);
-    }
-
-    const pathRef = useLatest(path);
-    const selection = useSubscribe(
-        () => {
-            const path = pathRef.current;
-            const state = store.getState();
-
-            // man we're running this calculation quite a lot
-            const sel = normalizeSelections(state.at, state.nsMap);
-            const edgeSelected = sel.some(
-                (s) =>
-                    s.start[s.start.length - 1].idx === idx ||
-                    (s.end && s.end[s.end.length - 1].idx === idx),
-            );
-            const coverageLevel = isCoveredBySelection(
-                sel,
-                path,
-                state.map,
-                state.nsMap,
-            );
-
-            return coverageLevel
-                ? { edge: edgeSelected, coverage: coverageLevel }
-                : undefined;
-        },
-        (notify) => {
-            let la = store.getState().at;
-            store.on('selection', (f) => {
-                if (f.at !== la) {
-                    la = f.at;
-                }
-                notify();
-            });
-        },
-        [path],
-    );
-
-    useEffect(() => {
-        return store.onChange(idx, (state, results) => {
-            // Node is being deleted, ignore. This'll unmount in a minute
-            if (!state.map[idx]) return;
-            setState(getValues(idx, store, state, results));
-        });
-    }, [idx]);
-    return { ...state, selection };
 };

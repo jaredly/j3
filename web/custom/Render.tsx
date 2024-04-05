@@ -6,10 +6,12 @@ import { getNestedNodes, NNode } from '../../src/state/getNestedNodes';
 import { isCoveredBySelection } from './isCoveredBySelection';
 import { RenderProps } from './types';
 import { splitNamespaces } from '../../src/db/hash-tree';
-import { useGetStore, useNode, Values } from './store/Store';
+import { useGetStore, Values } from './store/Store';
+import { useNode } from './store/useNode';
 import equal from 'fast-deep-equal';
 import { RichText } from './RichText';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
+import { Path } from '../store';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -135,7 +137,25 @@ export const Render = React.memo(
             return <span>DEEP</span>;
         }
         // console.log('render', props.idx);
-        const inner = <RenderNNode {...props} nnode={nnode} values={values} />;
+        const inner = (
+            <div
+                style={{
+                    backgroundColor: values.hover
+                        ? 'rgb(100,100,100)'
+                        : 'unset',
+                }}
+                // onMouseEnter={() => {
+                //     store.dispatch({ type: 'hover', path });
+                // }}
+            >
+                <RenderNNode
+                    {...props}
+                    nnode={nnode}
+                    values={values}
+                    hoverPath={path}
+                />
+            </div>
+        );
 
         if (values.meta?.trace || values.meta?.traceTop) {
             return (
@@ -235,7 +255,7 @@ export const Render = React.memo(
 );
 
 export const RenderNNode = (
-    props: RenderProps & { nnode: NNode; values: Values },
+    props: RenderProps & { nnode: NNode; values: Values; hoverPath: Path[] },
 ): JSX.Element | null => {
     const { nnode, idx, path } = props;
     const { reg, display, dispatch, node, selection, errors } = props.values;
@@ -244,8 +264,6 @@ export const RenderNNode = (
     const edgeSelected = selection?.edge;
 
     const coverageLevel = selection?.coverage;
-
-    // const errors = props.errors[node.loc];
 
     const errorStyle = errors?.length
         ? {
@@ -283,7 +301,9 @@ export const RenderNNode = (
                         ...(nnode.style ?? {}),
                     }}
                     ref={(node) => reg(node, idx, path, 'outside')}
-                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    onMouseEnter={() =>
+                        dispatch({ type: 'hover', path: props.hoverPath })
+                    }
                 >
                     {/* {props.debug ? nnode.type : null} */}
                     {(props.firstLineOnly && firstRenderable != -1
@@ -349,7 +369,8 @@ export const RenderNNode = (
                     onMouseEnter={() =>
                         dispatch({
                             type: 'hover',
-                            path: path.concat({ idx, type: 'start' }),
+                            path: props.hoverPath,
+                            // path.concat({ idx, type: 'start' }),
                         })
                     }
                 >
@@ -424,7 +445,8 @@ export const RenderNNode = (
                     onMouseEnter={() =>
                         dispatch({
                             type: 'hover',
-                            path: path.concat({ idx, at: 0, type: 'subtext' }),
+                            path: props.hoverPath,
+                            //path.concat({ idx, at: 0, type: 'subtext' }),
                         })
                     }
                     onClick={(evt) => {
@@ -506,7 +528,9 @@ export const RenderNNode = (
                             flexDirection: 'column',
                             // gap: '0 8px',
                         }}
-                        onMouseEnter={() => dispatch({ type: 'hover', path })}
+                        onMouseEnter={() =>
+                            dispatch({ type: 'hover', path: props.hoverPath })
+                        }
                     >
                         {nnode.firstLine.map((node, i) => (
                             <RenderNNode {...props} nnode={node} key={i} />
@@ -560,7 +584,9 @@ export const RenderNNode = (
                         display: 'grid',
                         // gap: '0 8px'
                     }}
-                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    onMouseEnter={() =>
+                        dispatch({ type: 'hover', path: props.hoverPath })
+                    }
                 >
                     {nnode.firstLine.length ? (
                         <span
@@ -634,7 +660,9 @@ export const RenderNNode = (
         case 'indent':
             return (
                 <span
-                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    onMouseEnter={() =>
+                        dispatch({ type: 'hover', path: props.hoverPath })
+                    }
                     style={{ display: 'inline-block', paddingLeft: 10 }}
                 >
                     <RenderNNode {...props} nnode={nnode.child} />
