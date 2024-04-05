@@ -115,90 +115,8 @@ export const useNSDrag = (
                 drag.onClick();
             }
             if (drag?.drop && canDrop(drag)) {
-                let target = drag.drop.path[
-                    drag.drop.path.length - 1
-                ] as NsPath;
-                console.log('dropping', target, drag.source);
-                // const nsMap: NsUpdateMap = {};
-                let targetParent = state.nsMap[target.idx] as RealizedNamespace;
-                let children = targetParent.children.slice();
-                const oldParent = state.nsMap[
-                    drag.source.idx
-                ] as RealizedNamespace;
-                const nid = drag.source.child;
-                const moving = state.nsMap[nid] as RealizedNamespace;
-                let tpath = drag.drop.path;
-
-                if (drag.drop.position === 'inside') {
-                    let tid = target.child;
-                    targetParent = state.nsMap[tid] as RealizedNamespace;
-                    children = targetParent.children.slice();
-                    target = {
-                        type: 'ns',
-                        idx: tid,
-                        child: targetParent.collapsed
-                            ? children[children.length - 1]
-                            : children[0],
-                    };
-                    tpath = tpath.concat([target]);
-                } else {
-                    tpath = tpath.slice();
-                    const last = { ...tpath[tpath.length - 1] } as Extract<
-                        Path,
-                        { type: 'ns' }
-                    >;
-                    tpath[tpath.length - 1] = last;
-                }
-
-                const selection = tpath.concat([
-                    { type: 'ns-top', idx: nid },
-                    { type: 'start', idx: moving.top },
-                ]);
-
-                for (let i = 0; i < tpath.length; i++) {}
-
-                if (target.idx === drag.source.idx) {
-                    children.splice(children.indexOf(drag.source.child), 1);
-                    const at = children.indexOf(target.child);
-                    children.splice(
-                        at + (drag.drop.position === 'after' ? 1 : 0),
-                        0,
-                        nid,
-                    );
-                    dispatch({
-                        type: 'ns',
-                        nsMap: {
-                            [targetParent.id]: {
-                                ...targetParent,
-                                children,
-                            },
-                        },
-                        selection: selection,
-                    });
-                } else {
-                    children.splice(
-                        children.indexOf(target.child) +
-                            (drag.drop.position === 'after' ? 1 : 0),
-                        0,
-                        nid,
-                    );
-                    dispatch({
-                        type: 'ns',
-                        nsMap: {
-                            [targetParent.id]: {
-                                ...targetParent,
-                                children,
-                            },
-                            [oldParent.id]: {
-                                ...oldParent,
-                                children: oldParent.children.filter(
-                                    (id) => id !== nid,
-                                ),
-                            },
-                        },
-                        selection,
-                    });
-                }
+                const action = dropAction(drag, state);
+                dispatch(action);
             }
             setDrag(null);
         };
@@ -294,3 +212,79 @@ export type NsReg = {
         dest: { idx: number; child: number };
     } | null;
 };
+
+function dropAction(drag: DragState, state: NUIState): Action {
+    const drop = drag.drop!;
+    let target = drop.path[drop.path.length - 1] as NsPath;
+    // console.log('dropping', target, drag.source);
+    let targetParent = state.nsMap[target.idx] as RealizedNamespace;
+    let children = targetParent.children.slice();
+    const oldParent = state.nsMap[drag.source.idx] as RealizedNamespace;
+    const nid = drag.source.child;
+    const moving = state.nsMap[nid] as RealizedNamespace;
+    let tpath = drop.path;
+
+    if (drop.position === 'inside') {
+        let tid = target.child;
+        targetParent = state.nsMap[tid] as RealizedNamespace;
+        children = targetParent.children.slice();
+        target = {
+            type: 'ns',
+            idx: tid,
+            child: targetParent.collapsed
+                ? children[children.length - 1]
+                : children[0],
+        };
+        tpath = tpath.concat([target]);
+    } else {
+        tpath = tpath.slice();
+        const last = { ...tpath[tpath.length - 1] } as Extract<
+            Path,
+            { type: 'ns' }
+        >;
+        tpath[tpath.length - 1] = last;
+    }
+
+    const selection = tpath.concat([
+        { type: 'ns-top', idx: nid },
+        { type: 'start', idx: moving.top },
+    ]);
+
+    // for (let i = 0; i < tpath.length; i++) {}
+    if (target.idx === drag.source.idx) {
+        children.splice(children.indexOf(drag.source.child), 1);
+        const at = children.indexOf(target.child);
+        children.splice(at + (drop.position === 'after' ? 1 : 0), 0, nid);
+        return {
+            type: 'ns',
+            nsMap: {
+                [targetParent.id]: {
+                    ...targetParent,
+                    children,
+                },
+            },
+            selection: selection,
+        };
+    } else {
+        children.splice(
+            children.indexOf(target.child) +
+                (drop.position === 'after' ? 1 : 0),
+            0,
+            nid,
+        );
+        return {
+            type: 'ns',
+            nsMap: {
+                [targetParent.id]: {
+                    ...targetParent,
+                    children,
+                },
+                [oldParent.id]: {
+                    ...oldParent,
+                    children: oldParent.children.filter((id) => id !== nid),
+                },
+            },
+            selection,
+        };
+    }
+}

@@ -24,7 +24,7 @@ const PluginRender = ({
     ns: RealizedNamespace;
 }) => {
     const pid = typeof ns.plugin === 'string' ? ns.plugin : ns.plugin!.id;
-    const options = typeof ns.plugin === 'string' ? null : ns.plugin!.options;
+    // const options = typeof ns.plugin === 'string' ? null : ns.plugin!.options;
     const plugin = plugins.find((p) => p.id === pid)!;
 
     const values = useNode(props.idx, props.path);
@@ -45,7 +45,14 @@ const PluginRender = ({
                 <Render {...props} />
             </div>
         );
-    return <RenderNNode {...props} values={values} nnode={rn} />;
+    return (
+        <RenderNNode
+            {...props}
+            values={values}
+            nnode={rn}
+            hoverPath={props.path}
+        />
+    );
 };
 
 export const hasErrors = (id: number, store: Store): boolean => {
