@@ -75,9 +75,9 @@ export function parseNodesAndDeps<
                         state.meta[+id] !== lastState.meta[+id],
                 )
             ) {
-                console.log(
-                    `No map/meta changes for ${top.top}, reusing display`,
-                );
+                // console.log(
+                //     `No map/meta changes for ${top.top}, reusing display`,
+                // );
                 Object.assign(results.display, cache.nodes[top.top].display);
 
                 if (cache.deps?.[top.top]?.names) {

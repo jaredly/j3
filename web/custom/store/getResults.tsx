@@ -93,13 +93,25 @@ export const getResults = <
     results.env = evaluator.init();
     results.tenv = evaluator.initType?.();
     sortedTops.forEach((group, i) => {
+        const ids = group.map((g) => g.id).sort();
+        const groupKey = ids.join(':');
+        const stmts = collectStatements<Stmt>(group, cache, results);
         const isPlugin = group.some((node) => topsById[node.id].ns.plugin);
         if (isPlugin) {
+            if (stmts) {
+                processTypeInference<Env, Stmt, Expr>(
+                    stmts,
+                    group,
+                    groupKey,
+                    ids,
+                    stuff,
+                );
+            }
+
             handlePluginGroup<Env, Stmt, Expr>(group, stuff);
             return;
         }
 
-        const stmts = collectStatements<Stmt>(group, cache, results);
         if (!stmts) return;
 
         const allDeps = unique(
@@ -108,8 +120,6 @@ export const getResults = <
                 .map((n) => idForName[n.name])
                 .filter(filterNulls),
         );
-        const ids = group.map((g) => g.id).sort();
-        const groupKey = ids.join(':');
         const retype =
             !evaluator.analysis ||
             !cache.types[groupKey] ||
@@ -174,7 +184,10 @@ export const processPlugin = (
     state: NUIState,
     evaluator: AnyEnv,
 ) => {
-    results.produce[node.loc] = ['evaluated by plugin'];
+    if (!results.produce[node.loc]) {
+        results.produce[node.loc] = [];
+    }
+    results.produce[node.loc].push('evaluated by plugin');
     const pid = typeof plugin === 'string' ? plugin : plugin.id;
     const options = typeof plugin === 'string' ? null : plugin.options;
     const pl = plugins.find((p) => p.id === pid);

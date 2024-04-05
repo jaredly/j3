@@ -1,7 +1,7 @@
 (defn lol [x]
     (if x
         1
-            (what )))
+            2))
 
-(what )
+(lol true)
 

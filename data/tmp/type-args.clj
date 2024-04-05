@@ -1,3 +1,5 @@
+(** ## type-1-do for parse-1-args **)
+
 (** ## Prelude
     some handy functions **)
 
@@ -1623,6 +1625,7 @@
                         (, "!=" (generic ["k"] (tfns [k k] tbool)))
                         (, ">=" (concrete (tfns [tint tint] tbool)))
                         (, "<=" (concrete (tfns [tint tint] tbool)))
+                        (, "()" (concrete (tcon "()" -1)))
                         (,
                         "trace"
                             (kk
