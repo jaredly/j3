@@ -14,7 +14,6 @@ export type Tracer = (
 ) => void;
 
 export function builtins() {
-    console.log('Producing builtins. At your service.');
     let tracer: null | Tracer = null;
     let env = {
         // Math

@@ -679,9 +679,6 @@
                                                         args
                                                         (fn [target arg] "${target}(${(compile arg trace)})"))
                                                 }"
-                    ;(match fn
-                        (elambda _ _ _) "(${(compile fn trace)})(/*${(its l)}*/${(compile arg trace)})"
-                        _               "${(compile fn trace)}(/*${(its l)}*/${(compile arg trace)})")
                     (ematch target cases l) "(function match_${
                                                 (its l)
                                                 }($target) {\n${

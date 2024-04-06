@@ -84,21 +84,16 @@ export const bootstrapEvaluator = (
                         return;
                     }
                     js.push(raw);
+                    const full =
+                        '{' + env.source.join('\n') + '\nreturn ' + raw + '}';
                     try {
-                        const res = new Function(
-                            envArgs,
-                            '{' +
-                                env.source.join('\n') +
-                                '\nreturn ' +
-                                raw +
-                                '}',
-                        )(san);
+                        const res = new Function(envArgs, full)(san);
                         display[+loc] = valueToString(res);
                         values._ = res;
                     } catch (err) {
-                        console.log(envArgs);
-                        console.log(raw);
-                        console.error(err);
+                        // console.log(envArgs);
+                        // console.log(full);
+                        // console.error(err);
                         display[+loc] = new Error(
                             'Error evaluating! ' +
                                 (err as Error).message +

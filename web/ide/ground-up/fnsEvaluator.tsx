@@ -35,24 +35,6 @@ const makeTuple = (values: any[]) => {
     return res;
 };
 
-// const callFn = (fn: Function, args: any[], convention: CallingConvention) => {
-//     switch (convention) {
-//         case 'curried': {
-//             args.forEach((arg) => {
-//                 fn = fn(arg);
-//             });
-//             return fn;
-//         }
-//         case 'tuple':
-//             if (args.length === 1) {
-//                 return fn(args[0]);
-//             }
-//             return fn(makeTuple(args));
-//         case 'tuple-nil':
-//             return fn(makeTuple(args.concat([{ type: '()' }])));
-//     }
-// };
-
 export const fnsEvaluator = (
     id: string,
     data: any,
@@ -65,9 +47,14 @@ export const fnsEvaluator = (
         !data['compile'] ||
         !data['compile_stmt']
     ) {
-        console.log('NOPE', Object.keys(data));
-        return null;
+        const keys = ['parse_stmt', 'parse_expr', 'compile', 'compile_stmt'];
+        throw new Error(
+            `Can't produce a fnsEvaluator: ${keys.map(
+                (k) => `${k}: ${!!data[k]}`,
+            )} : ${Object.keys(data)}`,
+        );
     }
+
     return {
         id,
         init() {

@@ -119,16 +119,16 @@ export type FullEvalator<
     };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
-    toFile?(state: NUIState, target?: number): { js: string; errors: Errors };
+    toFile(state: NUIState, target?: number): { js: string; errors: Errors };
 };
 
 export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     id: 'repr',
     init: () => ({ values: {} }),
-    parse(node: Node, errors: Errors) {
+    parse(node: Node) {
         return node;
     },
-    parseExpr(node: Node, errors: Errors) {
+    parseExpr(node: Node) {
         return node;
     },
     setTracing(idx) {},
@@ -139,8 +139,11 @@ export const repr: FullEvalator<{ values: {} }, Node, Node> = {
         });
         return { env, display, values: {} };
     },
-    evaluate(expr, env) {
+    evaluate() {
         return null;
+    },
+    toFile() {
+        return { js: 'lol its a repr', errors: {} };
     },
 };
 

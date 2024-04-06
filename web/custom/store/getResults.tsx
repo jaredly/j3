@@ -98,7 +98,7 @@ export const getResults = <
         const stmts = collectStatements<Stmt>(group, cache, results);
         const isPlugin = group.some((node) => topsById[node.id].ns.plugin);
         if (isPlugin) {
-            if (stmts) {
+            if (stmts && evaluator.infer) {
                 processTypeInference<Env, Stmt, Expr>(
                     stmts,
                     group,

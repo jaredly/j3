@@ -1,7 +1,6 @@
-import { FullEvalator, MyEvalError } from '../../ide/ground-up/Evaluators';
-import { NUIResults } from './Store';
 import equal from 'fast-deep-equal';
-import { DepsOrNoDeps, ResultsCache, ChangesMap } from './ResultsCache';
+import { MyEvalError } from '../../ide/ground-up/Evaluators';
+import { DepsOrNoDeps } from './ResultsCache';
 import { ResultsEnv } from './getResults';
 
 export function processTypeInference<

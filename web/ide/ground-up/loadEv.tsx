@@ -35,7 +35,6 @@ export const evaluatorFromText = (
     text.forEach((text) => {
         const result = new Function(envArgs, '{' + text + '}')(san);
         if (result.type === 'typecheck') {
-            console.log('TYPECHECK');
             const {
                 0: env_nil,
                 1: infer_stmt,
@@ -81,7 +80,6 @@ export const evaluatorFromText = (
         } else if (result.type === 'fns') {
             Object.assign(data, result);
         } else {
-            console.log('NOT A TYPE', result.type);
             Object.assign(data, result);
         }
     });
