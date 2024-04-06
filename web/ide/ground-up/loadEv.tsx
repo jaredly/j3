@@ -80,6 +80,7 @@ export const evaluatorFromText = (
         } else if (result.type === 'fns') {
             Object.assign(data, result);
         } else {
+            console.log(id, `Why is this ...`, Object.keys(data));
             Object.assign(data, result);
         }
     });
@@ -94,7 +95,7 @@ export const evaluatorFromText = (
         return bootstrapEvaluator(id, data);
     }
 
-    console.log('no data sorry', data);
+    console.log(id, 'no data sorry??', data.type);
 
     return null;
 };

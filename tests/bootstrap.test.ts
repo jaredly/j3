@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'bun:test';
-import { NUIState } from '../web/custom/UIState';
+import { NUIState, RealizedNamespace } from '../web/custom/UIState';
 import { stateToBootstrapJs } from '../web/ide/ground-up/to-file';
 import { bootstrap } from '../web/ide/ground-up/Evaluators';
 import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
@@ -45,15 +45,24 @@ test(`run self-1.json`, async () => {
             evaluator === null
                 ? bootstrap
                 : evaluatorFromText(
-                      `some ev`,
+                      `some ev for ${evaluator.join(' ')}`,
                       evaluator.map((id) => evaluators[id]),
                   );
 
         if (!ev) {
             throw new Error(`couldnt make an evaluator ${id}`);
         }
+        let tid;
+        Object.keys(state.nsMap).forEach((id) => {
+            const ns = state.nsMap[+id] as RealizedNamespace;
+            if (typeof ns.plugin === 'string') {
+                return;
+            } else if (ns.plugin?.id === 'evaluator') {
+                tid = ns.top;
+            }
+        });
 
-        const result = ev.toFile(state);
+        const result = ev.toFile(state, tid);
         // if (Object.keys(result.errors).length) {
         //     throw new Error(JSON.stringify(result.errors));
         // }
