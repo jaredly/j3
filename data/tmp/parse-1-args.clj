@@ -597,10 +597,11 @@
         (pcon name args l) (match (foldl
                                (, 0 [])
                                    args
-                                   (fn [(, i res) arg]
-                                   (match (just-pat arg)
-                                       (none)      (, (+ i 1) res)
-                                       (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res]))))
+                                   (fn [result arg]
+                                   (let [(, i res) result]
+                                       (match (just-pat arg)
+                                           (none)      (, (+ i 1) res)
+                                           (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res])))))
                                (, _ [])    none
                                (, _ items) (some "{${(join ", " (rev items []))}}"))
         (pstr _ _)         (fatal "Cant use string as a pattern in this location")
@@ -659,7 +660,9 @@
                                                             []    ""
                                                             names (join
                                                                       "\n"
-                                                                          (map names (fn [(, name l)] (just-trace l trace (sanitize name))))))
+                                                                          (map
+                                                                          names
+                                                                              (fn [arg] (let [(, name l) arg] (just-trace l trace (sanitize name)))))))
                                                         } return ${
                                                         body
                                                         } }"))
@@ -862,10 +865,15 @@
                                            empty
                                                (map
                                                bindings
-                                                   (fn [(, pat init)] (bag/and (pat-externals pat) (externals bound init))))
+                                                   (fn [arg]
+                                                   (let [(, pat init) arg]
+                                                       (bag/and (pat-externals pat) (externals bound init)))))
                                                bag/and)
                                            (externals
-                                           (foldl bound (map bindings (fn [(, pat _)] (pat-names pat))) set/merge)
+                                           (foldl
+                                               bound
+                                                   (map bindings (fn [arg] (let [(, pat _) arg] (pat-names pat))))
+                                                   set/merge)
                                                body))
         (eapp target args int)     (bag/and
                                        (externals bound target)
