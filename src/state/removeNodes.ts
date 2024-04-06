@@ -40,6 +40,66 @@ export const removeNodes = (
     );
 
     // hmmm changed?
+    let update: UpdateMap = removeNodesFromWithinNode(ancestor, map, toRemove);
+
+    if (update[-2] !== undefined) {
+        console.log('got some');
+        delete update[-2];
+    }
+    console.log('removing', update);
+
+    const updated = { ...map, ...update } as Map;
+
+    let left = start;
+
+    let parent = start[start.length - 2];
+    if (parent.type === 'child' && parent.at === 0) {
+        const node = updated[parent.idx];
+        if ('values' in node) {
+            if (!node.values.length) {
+                left = start.slice(0, -2).concat({
+                    idx: parent.idx,
+                    type: 'inside',
+                });
+            } else {
+                left = selectStart(
+                    node.values[0],
+                    start.slice(0, -2).concat({
+                        idx: parent.idx,
+                        type: 'child',
+                        at: 0,
+                    }),
+                    updated,
+                )!;
+            }
+        }
+    }
+
+    // const left = getKeyUpdate('ArrowLeft', map, { start }, () => -100);
+    // let left = goLeft(start, map)?.selection;
+    // if (!left) {
+    //     console.log('cannot left');
+    //     return;
+    // }
+    while (!validatePath(updated, left!, hashNames)) {
+        left = goLeft(left!, map, nsMap, cards)?.selection!;
+        if (!left) {
+            console.log('cannot left');
+            return;
+        }
+    }
+
+    return {
+        type: 'update',
+        map: update,
+        selection: left,
+    };
+};
+function removeNodesFromWithinNode(
+    ancestor: number,
+    map: Map,
+    toRemove: { [idx: number]: boolean },
+) {
     let update: UpdateMap = {};
 
     transformNode(fromMCST(ancestor, map), {
@@ -125,57 +185,5 @@ export const removeNodes = (
             }
         },
     });
-
-    if (update[-2] !== undefined) {
-        console.log('got some');
-        delete update[-2];
-    }
-    console.log('removing', update);
-
-    const updated = { ...map, ...update } as Map;
-
-    let left = start;
-
-    let parent = start[start.length - 2];
-    if (parent.type === 'child' && parent.at === 0) {
-        const node = updated[parent.idx];
-        if ('values' in node) {
-            if (!node.values.length) {
-                left = start.slice(0, -2).concat({
-                    idx: parent.idx,
-                    type: 'inside',
-                });
-            } else {
-                left = selectStart(
-                    node.values[0],
-                    start.slice(0, -2).concat({
-                        idx: parent.idx,
-                        type: 'child',
-                        at: 0,
-                    }),
-                    updated,
-                )!;
-            }
-        }
-    }
-
-    // const left = getKeyUpdate('ArrowLeft', map, { start }, () => -100);
-    // let left = goLeft(start, map)?.selection;
-    // if (!left) {
-    //     console.log('cannot left');
-    //     return;
-    // }
-    while (!validatePath(updated, left!, hashNames)) {
-        left = goLeft(left!, map, nsMap, cards)?.selection!;
-        if (!left) {
-            console.log('cannot left');
-            return;
-        }
-    }
-
-    return {
-        type: 'update',
-        map: update,
-        selection: left,
-    };
-};
+    return update;
+}

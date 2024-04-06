@@ -3,7 +3,7 @@ import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
 import { StateChange, UpdateMap } from './getKeyUpdate';
 import { Path } from './path';
 import { newNodeAfter, newNodeBefore } from './newNodeBefore';
-import { ListLikeContents, NsMap } from '../types/mcst';
+import { ListLikeContents, Map, NsMap } from '../types/mcst';
 
 export const moveNode = (
     { path, idx }: { path: Path[]; idx: number },
@@ -24,7 +24,7 @@ export const moveNode = (
 
     const last = dest[dest.length - 1];
     let nsMap: NsMap | undefined = undefined;
-    const updateMap: UpdateMap = {};
+    const updateMap: Map = {};
     const ppath = path[path.length - 1];
     if (ppath.type === 'child') {
         const parent = state.map[ppath.idx] as ListLikeContents & {
@@ -48,11 +48,17 @@ export const moveNode = (
         return;
     }
 
-    if (last.type === 'subtext') {
-        if (last.at === 0) {
+    if (
+        last.type === 'subtext' ||
+        last.type === 'start' ||
+        last.type === 'end'
+    ) {
+        const before =
+            (last.type === 'subtext' && last.at === 0) || last.type === 'start';
+        if (before) {
             return newNodeBefore(
                 dest,
-                state.map,
+                state.map, // { ...state.map, ...updateMap },
                 state.nsMap,
                 {
                     idx,
@@ -66,7 +72,7 @@ export const moveNode = (
 
         return newNodeAfter(
             dest,
-            state.map,
+            state.map, // { ...state.map, ...updateMap },
             state.nsMap,
             { idx, map: updateMap, nsMap, selection: [{ type: 'start', idx }] },
             state.nidx,

@@ -1,6 +1,15 @@
 
+## algw-subst?
 
-## BUT HERE WE GO
+it ... seems to be mega slow
+
+this is the part where I want to do some actual
+CLI tests, making sure the bootstrap process is locked down,
+and also for performance comparisons.
+
+
+## [x] Drag and Drop!!!
+not perfect, but passable??
 
 let's drag and drop baby. gotta have it.
 
@@ -16,7 +25,6 @@ let's drag and drop baby. gotta have it.
 - [x] cmd+drag should drag
   - [x] show the drag dest, lets abuse multicursor :D :D :D
   - [x] now make it drop... like its a spot
-
 
 # What are things even cslled
 
