@@ -79,8 +79,10 @@ export const evaluatorFromText = (
             });
         } else if (result.type === 'fns') {
             Object.assign(data, result);
+        } else if (result.type === 'bootstrap') {
+            Object.assign(data, result);
         } else {
-            console.log(id, `Why is this ...`, Object.keys(data));
+            console.log(id, `The result type is unknown...?`, result.type);
             Object.assign(data, result);
         }
     });

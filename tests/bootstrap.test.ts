@@ -68,6 +68,6 @@ test(`run self-1.json`, async () => {
         // }
 
         evaluators[+id] = result.js;
-        writeFileSync('./ugh' + id + '.js', result.js);
+        // writeFileSync('./ugh' + id + '.js', result.js);
     }
 });
