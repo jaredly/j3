@@ -28,16 +28,34 @@ or thih?
 const evaluators: { [key: number]: string } = {};
 
 const fixtures = {
-    0: { file: 'self-1.json', evaluator: null },
-    1: { file: 'parse-1-args.json', evaluator: [0] },
-    2: { file: 'type-args.json', evaluator: [1] },
-    3: { file: 'parse-1-args.json', evaluator: [1, 2] },
-    4: { file: 'type-args.json', evaluator: [1, 2] },
+    0: { name: 'bootstrap -> self-1', file: 'self-1.json', evaluator: null },
+    1: { name: 'self-1 -> parse-1', file: 'parse-1-args.json', evaluator: [0] },
+    2: { name: 'parse-1 -> type-args', file: 'type-args.json', evaluator: [1] },
+    3: {
+        name: 'parse-1 + type-args -> parse-1',
+        file: 'parse-1-args.json',
+        evaluator: [1, 2],
+    },
+    4: {
+        name: 'parse-1 + type-args -> type-args',
+        file: 'type-args.json',
+        evaluator: [1, 2],
+    },
+    5: {
+        name: 'parse-1 + type-args -> algw-subst',
+        file: 'algw-subst.json',
+        evaluator: [1, 2],
+    },
+    6: {
+        name: 'parse-1 + algw-subst -> algw-subst',
+        file: 'algw-subst.json',
+        evaluator: [1, 5],
+    },
 };
 
 test(`run self-1.json`, async () => {
-    for (let [id, { file, evaluator }] of Object.entries(fixtures)) {
-        console.log(`Processing ${id}`);
+    for (let [id, { name, file, evaluator }] of Object.entries(fixtures)) {
+        console.log(`Processing ${id}: ${name}`);
         const state: NUIState = await Bun.file(
             join(__dirname, '../data/tmp/', file),
         ).json();
@@ -62,7 +80,9 @@ test(`run self-1.json`, async () => {
             }
         });
 
+        let a = performance.now();
         const result = ev.toFile(state, tid);
+        console.log('took ', (performance.now() - a).toFixed(0), 'times');
         // if (Object.keys(result.errors).length) {
         //     throw new Error(JSON.stringify(result.errors));
         // }

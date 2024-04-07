@@ -8,6 +8,10 @@ CLI tests, making sure the bootstrap process is locked down,
 and also for performance comparisons.
 
 
+- [x] get a test file running, doing the ... bootstrap chain
+- [x] indicate how long it takes
+- [ ] have them ... run their plugins too? Yeah.
+
 ## [x] Drag and Drop!!!
 not perfect, but passable??
 
