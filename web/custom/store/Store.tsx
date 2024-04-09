@@ -211,6 +211,7 @@ export const getValues = (
         results.hashNames[idx],
         results.display[idx]?.layout,
     );
+    // console.log(`getValues ${idx}`, results.errors[idx], store.getEvaluator());
 
     return {
         errors: results.errors[idx],

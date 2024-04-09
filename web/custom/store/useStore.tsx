@@ -96,6 +96,12 @@ export const useStore = (initialState: NUIState) => {
 
                         evtListeners.results.forEach((f) => f(state));
                         evtListeners.all.forEach((f) => f(state));
+
+                        Object.keys(results.errors).forEach((key) => {
+                            nodeListeners[key].forEach((f) =>
+                                f(state, results),
+                            );
+                        });
                     });
                 }
                 let nextResults = results;

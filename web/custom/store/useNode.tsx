@@ -11,6 +11,9 @@ export const useNode = (idx: number, path: Path[]): Values => {
     let [state, setState] = useState(() =>
         getValues(idx, store, store.getState(), store.getResults()),
     );
+
+    // console.log(`useNode`, idx, state);
+
     const diff = state.node.loc !== idx;
     if (diff) {
         throw new Error(`ok cant handle the idx actually changing`);

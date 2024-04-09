@@ -181,7 +181,7 @@ export const GroundUp = ({
             <Hover
                 state={state}
                 dispatch={store.dispatch}
-                calc={calculateHovers(state, results)}
+                calc={() => calculateHovers(state, results)}
             />
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
@@ -232,65 +232,64 @@ const ShowAt = ({ at, hover }: { at: NUIState['at']; hover: Path[] }) => {
     );
 };
 
-function calculateHovers(
-    state: NUIState,
-    results: NUIResults,
-): () => {
+type StyleProp = NonNullable<React.ComponentProps<'div'>['style']>;
+
+type HoverItem = {
     idx: number;
     text: string;
-    style?: React.CSSProperties | undefined;
-}[] {
-    return () => {
-        // Check errors
-        for (let i = state.hover.length - 1; i >= 0; i--) {
-            const last = state.hover[i].idx;
-            const node = state.map[last];
-            let next;
-            try {
-                next = advancePath(state.hover[i], node, state, true);
-            } catch (err) {
-                continue;
-            }
+    style?: StyleProp;
+};
 
-            const idx = next.loc;
-            const errs = results.errors[idx];
-            if (errs?.length) {
-                return [
-                    {
-                        idx: idx,
-                        text: errs.join('\n'),
-                        style: {
-                            color: '#f66',
-                        },
-                    },
-                ];
-            }
+function calculateHovers(state: NUIState, results: NUIResults): HoverItem[] {
+    const hovers: HoverItem[] = [];
+
+    // Check errors
+    for (let i = state.hover.length - 1; i >= 0; i--) {
+        const last = state.hover[i].idx;
+        const node = state.map[last];
+        let next;
+        try {
+            next = advancePath(state.hover[i], node, state, true);
+        } catch (err) {
+            continue;
         }
+        if (!next) break;
 
-        // Ok types
-        for (let i = state.hover.length - 1; i >= 0; i--) {
-            const last = state.hover[i].idx;
-            const node = state.map[last];
-            let next;
-            try {
-                next = advancePath(state.hover[i], node, state, true);
-            } catch (err) {
-                continue;
-            }
-
-            const idx = next.loc;
-
-            const hovers = results.hover[idx];
-            if (hovers?.length) {
-                return [{ idx: idx, text: hovers.join('\n') }];
-            }
-            const errs = results.errors[idx];
-            if (errs?.length) {
-                return [{ idx: idx, text: errs.join('\n') }];
-            }
+        const idx = next.loc;
+        const errs = results.errors[idx];
+        if (errs?.length) {
+            hovers.push({
+                idx: idx,
+                text: errs.join('\n'),
+                style: {
+                    color: '#f66',
+                },
+            });
+            break;
         }
-        return [];
-    };
+    }
+
+    // Ok types
+    for (let i = state.hover.length - 1; i >= 0; i--) {
+        const last = state.hover[i].idx;
+        const node = state.map[last];
+        let next;
+        try {
+            next = advancePath(state.hover[i], node, state, true);
+        } catch (err) {
+            continue;
+        }
+        if (!next) break;
+
+        const idx = next.loc;
+
+        const current = results.hover[idx];
+        if (current?.length) {
+            hovers.push({ idx: idx, text: current.join('\n') });
+            break;
+        }
+    }
+    return hovers;
 }
 
 function ShowEvaluators({
