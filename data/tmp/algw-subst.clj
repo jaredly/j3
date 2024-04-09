@@ -738,31 +738,24 @@
                                      body-type              (type/apply-> body-type)
                                      arg-types              (map-> type/apply-> arg-types)]
                                      (<- (foldr body-type arg-types (fn [body arg] (tfn arg body l)))))
-        ;(match pats
-            [pat] (let-> [
-                      arg-type (pat-name pat)
-                      body     (pat-and-body tenv pat body arg-type true)
-                      arg-type (type/apply-> arg-type)]
-                      (<- (tfn arg-type body l)))
-            _     (t-expr tenv (foldr body pats (fn [body pat] (elambda [pat] body l)))))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
             - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
             - unify the target type with a function (arg type) => return value type variable
             - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
-        (eapp target args l)     (match args
-                                     [arg] (let-> [
-                                               result-var  (new-type-var "res" l)
-                                               target-type (t-expr tenv target)
-                                               arg-tenv    (tenv/apply-> tenv)
-                                               arg-type    (t-expr arg-tenv arg)
-                                               target-type (type/apply-> target-type)
-                                               _           (unify-inner target-type (tfn arg-type result-var l) l)]
-                                               (type/apply-> result-var))
-                                     _     (t-expr
-                                               tenv
-                                                   (foldl target args (fn [target arg] (eapp target [arg] l)))))
+        (eapp target args l)     (foldl
+                                     (t-expr tenv target)
+                                         args
+                                         (fn [target-> arg]
+                                         (let-> [
+                                             result-var  (new-type-var "res" l)
+                                             target-type target->
+                                             arg-tenv    (tenv/apply-> tenv)
+                                             arg-type    (t-expr arg-tenv arg)
+                                             target-type (type/apply-> target-type)
+                                             _           (unify-inner target-type (tfn arg-type result-var l) l)]
+                                             (type/apply-> result-var))))
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
@@ -1466,6 +1459,18 @@
                 (@! (deftype kind (star) (kfun kind kind)))
                 (@! (let [(kfun m n) (star)] 1))])))
 
+(force
+    type-error->s
+        (run/nil->
+        (infer-stmtss
+            builtin-env
+                [(@! (deftype (array a) (cons a (array a)) (nil)))
+                (@!
+                (defn mapi [i values f]
+                    (match values
+                        []           []
+                        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)])))])))
+
 (** ## Collecting types of everything
     useful for debugging our "hover for type" infrastructure. **)
 
@@ -1589,7 +1594,7 @@
                             }")))
             }"))
 
-(show-all-types builtin-env (@ (fn [x b] (+ x 1))))
+(show-all-types builtin-env (@ ((fn [x b] (+ x 1)) 12 "hi")))
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)

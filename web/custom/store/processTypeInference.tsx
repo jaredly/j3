@@ -23,10 +23,22 @@ export function processTypeInference<
     ids: number[],
     env: ResultsEnv<Stmt, Env, Expr>,
 ) {
-    const { result, typesAndLocs } = env.evaluator.infer!(
-        Object.values(stmts),
-        env.results.tenv,
-    );
+    let result;
+    let typesAndLocs;
+    try {
+        ({ result, typesAndLocs } = env.evaluator.infer!(
+            Object.values(stmts),
+            env.results.tenv,
+        ));
+    } catch (err) {
+        group.forEach(
+            (node) =>
+                (env.results.produce[node.id] = [
+                    new MyEvalError('Ugh something died', err as Error),
+                ]),
+        );
+        return true;
+    }
 
     if (env.evaluator.typeToString) {
         env.cache.hover[groupKey] = {};
