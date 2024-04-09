@@ -668,6 +668,13 @@
 
 (defn apply-> [f tenv] (let-> [subst <-subst] (<- (f subst tenv))))
 
+(defn pat-name [pat]
+    (new-type-var
+        (match pat
+            (pvar name _) name
+            _             "$arg")
+            (pat-loc pat)))
+
 (defn t-expr-inner [tenv expr]
     (match expr
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
@@ -707,17 +714,37 @@
                     (tfn (type-apply body-subst arg-type) body-type l)
                     nidx))
         (** Lambdas, now with pats **)
-        (elambda pats body l)    (match pats
-                                     [pat] (let-> [
-                                               arg-type (new-type-var
-                                                            (match pat
-                                                                (pvar name _) name
-                                                                _             "$arg")
-                                                                l)
-                                               body     (pat-and-body tenv pat body arg-type true)
-                                               arg-type (type/apply-> arg-type)]
-                                               (<- (tfn arg-type body l)))
-                                     _     (t-expr tenv (foldr body pats (fn [body pat] (elambda [pat] body l)))))
+        (elambda pats body l)    (let-> [
+                                     arg-types              (map-> pat-name pats)
+                                     pts                    (map-> (t-pat tenv) pats)
+                                     (, pat-types bindings) (<-
+                                                                (foldr
+                                                                    (, [] map/nil)
+                                                                        pts
+                                                                        (fn [(, ptypes bindings) (, pt bs)]
+                                                                        (, [pt ..ptypes] (map/merge bindings bs)))))
+                                     _                      (map->
+                                                                (fn [(, argt patt)] (unify-inner argt patt l))
+                                                                    (zip arg-types pat-types))
+                                     composed               <-subst
+                                     bindings               (<- (map/map (type-apply composed) bindings))
+                                     schemes                (<- (map/map (scheme set/nil) bindings))
+                                     bound-env              (<-
+                                                                (foldr
+                                                                    (tenv-apply composed tenv)
+                                                                        (map/to-list schemes)
+                                                                        (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme))))
+                                     body-type              (t-expr (tenv-apply composed bound-env) body)
+                                     body-type              (type/apply-> body-type)
+                                     arg-types              (map-> type/apply-> arg-types)]
+                                     (<- (foldr body-type arg-types (fn [body arg] (tfn arg body l)))))
+        ;(match pats
+            [pat] (let-> [
+                      arg-type (pat-name pat)
+                      body     (pat-and-body tenv pat body arg-type true)
+                      arg-type (type/apply-> arg-type)]
+                      (<- (tfn arg-type body l)))
+            _     (t-expr tenv (foldr body pats (fn [body pat] (elambda [pat] body l)))))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
@@ -1212,7 +1239,7 @@
                                     (let [(, text maps) (tts-inner t maps false)] (, [text ..result] maps))))]
                  (<-err
                      (type-error
-                         "Missing variables???"
+                         "Missing variables"
                              (map
                              (zip missing (rev text []))
                                  (fn [(, (, name loc) type)] (, "${name} inferred as ${type}" loc))))))))

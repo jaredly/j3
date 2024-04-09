@@ -130,7 +130,7 @@ export const GroundUp = ({
                     />
                 ))}
             </WithStore>
-            <div>{JSON.stringify(results.hover)}</div>
+            {/* <div>{JSON.stringify(results.hover)}</div> */}
             <div
                 style={{
                     position: 'fixed',
@@ -190,6 +190,7 @@ export const GroundUp = ({
                         } catch (err) {
                             continue;
                         }
+                        if (!next) continue;
 
                         const idx = next.loc;
 
