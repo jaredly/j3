@@ -62,6 +62,13 @@ export function processTypeInference<
 
         const text = showError(result.err);
 
+        result.err.items.forEach((item) => {
+            if (!env.results.errors[item.loc]) {
+                env.results.errors[item.loc] = [];
+            }
+            env.results.errors[item.loc].push(text);
+        });
+
         group.forEach(
             (node) =>
                 (env.results.produce[node.id] = [

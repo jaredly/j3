@@ -191,7 +191,6 @@ export type Values = {
 
 export const getValues = (
     idx: number,
-    // path: Path[],
     store: Store,
     state: NUIState,
     results: NUIResults,

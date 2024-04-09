@@ -1865,7 +1865,7 @@
     (fatal "ok here we are")
         ;(full-env tenv ce assumps))
 
-(defn infer-deftype [(full-env (type-env constructors types aliases) ce assumps)
+(defn infer-deftype [(full-env (type-env constructors- types- aliases-) ce assumps)
     (,,, name tnl args constructors)]
     ; TODO make it so we can do higher kinds
         (let [
@@ -1874,12 +1874,13 @@
                                        (, (tcon (tycon name star) tnl) 0)
                                            args
                                            (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
-        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) 0-> args)
+        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) 0 args)
         (, assumps' constructors') (foldl
                                        (, [] map/nil)
                                            constructors
                                            (fn [(, assumps constructors) (,,, name nl args l)]
-                                           (let [
+                                           
+                                               ;(let [
                                                     
                                                what (, "cons" (g [[]] (tfns [g0 (mklist g0)] (mklist g0))))
                                                gens (fn [classes body]

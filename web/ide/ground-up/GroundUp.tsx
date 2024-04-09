@@ -7,7 +7,12 @@ import { NUIState } from '../../custom/UIState';
 import { goLeftUntil } from '../../../src/state/goLeftUntil';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
-import { Store, WithStore, useGlobalState } from '../../custom/store/Store';
+import {
+    NUIResults,
+    Store,
+    WithStore,
+    useGlobalState,
+} from '../../custom/store/Store';
 import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
@@ -131,6 +136,7 @@ export const GroundUp = ({
                 ))}
             </WithStore>
             {/* <div>{JSON.stringify(results.hover)}</div> */}
+            <pre>{JSON.stringify(results.errors, null, 2)}</pre>
             <div
                 style={{
                     position: 'fixed',
@@ -175,36 +181,7 @@ export const GroundUp = ({
             <Hover
                 state={state}
                 dispatch={store.dispatch}
-                calc={() => {
-                    for (let i = state.hover.length - 1; i >= 0; i--) {
-                        const last = state.hover[i].idx;
-                        const node = state.map[last];
-                        let next;
-                        try {
-                            next = advancePath(
-                                state.hover[i],
-                                node,
-                                state,
-                                true,
-                            );
-                        } catch (err) {
-                            continue;
-                        }
-                        if (!next) continue;
-
-                        const idx = next.loc;
-
-                        const hovers = results.hover[idx];
-                        if (hovers?.length) {
-                            return [{ idx: idx, text: hovers.join('\n') }];
-                        }
-                        const errs = results.errors[idx];
-                        if (errs?.length) {
-                            return [{ idx: idx, text: errs.join('\n') }];
-                        }
-                    }
-                    return [];
-                }}
+                calc={calculateHovers(state, results)}
             />
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
@@ -254,6 +231,67 @@ const ShowAt = ({ at, hover }: { at: NUIState['at']; hover: Path[] }) => {
         </>
     );
 };
+
+function calculateHovers(
+    state: NUIState,
+    results: NUIResults,
+): () => {
+    idx: number;
+    text: string;
+    style?: React.CSSProperties | undefined;
+}[] {
+    return () => {
+        // Check errors
+        for (let i = state.hover.length - 1; i >= 0; i--) {
+            const last = state.hover[i].idx;
+            const node = state.map[last];
+            let next;
+            try {
+                next = advancePath(state.hover[i], node, state, true);
+            } catch (err) {
+                continue;
+            }
+
+            const idx = next.loc;
+            const errs = results.errors[idx];
+            if (errs?.length) {
+                return [
+                    {
+                        idx: idx,
+                        text: errs.join('\n'),
+                        style: {
+                            color: '#f66',
+                        },
+                    },
+                ];
+            }
+        }
+
+        // Ok types
+        for (let i = state.hover.length - 1; i >= 0; i--) {
+            const last = state.hover[i].idx;
+            const node = state.map[last];
+            let next;
+            try {
+                next = advancePath(state.hover[i], node, state, true);
+            } catch (err) {
+                continue;
+            }
+
+            const idx = next.loc;
+
+            const hovers = results.hover[idx];
+            if (hovers?.length) {
+                return [{ idx: idx, text: hovers.join('\n') }];
+            }
+            const errs = results.errors[idx];
+            if (errs?.length) {
+                return [{ idx: idx, text: errs.join('\n') }];
+            }
+        }
+        return [];
+    };
+}
 
 function ShowEvaluators({
     state,

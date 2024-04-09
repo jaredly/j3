@@ -1,4 +1,9 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, {
+    PropsWithChildren,
+    PropsWithoutRef,
+    useLayoutEffect,
+    useState,
+} from 'react';
 import { getType } from '../../src/get-type/get-types-new';
 import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
 import { nodeForType } from '../../src/to-cst/nodeForType';
@@ -57,6 +62,8 @@ export const calc = (
     return found;
 };
 
+type StyleProp = NonNullable<React.ComponentProps<'div'>['style']>;
+
 export const Hover = ({
     state,
     dispatch,
@@ -64,7 +71,7 @@ export const Hover = ({
 }: {
     state: NUIState;
     dispatch: React.Dispatch<Action>;
-    calc: () => { idx: number; text: string }[];
+    calc: () => { idx: number; text: string; style?: StyleProp }[];
 }) => {
     const found = calc();
 
@@ -111,16 +118,17 @@ export const Hover = ({
                 {found.map((f, i) => (
                     <div
                         key={i}
-                        style={
-                            i > 0
+                        style={{
+                            ...(i > 0
                                 ? {
                                       borderTop:
                                           '1px solid rgba(200,200,200,0.4)',
                                       marginTop: 4,
                                       paddingTop: 4,
                                   }
-                                : undefined
-                        }
+                                : undefined),
+                            ...f.style,
+                        }}
                     >
                         {f.text}
                     </div>

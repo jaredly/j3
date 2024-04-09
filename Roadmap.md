@@ -9,6 +9,7 @@
   so we can know all of the things that ought to have a type. love it.
 - [ ] Alsoooo let's get a lot more fancy with our type rendering.
   What I want... is
+- [ ] render type errors more inline, pleeeease
 
 ## algw-subst?
 
