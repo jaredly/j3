@@ -1877,12 +1877,16 @@
                                            (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
         free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) 0 top-args)
         (, assumps' constructors') (foldl
-                                       (,assumps  map/nil)
+                                       (, assumps constructors-)
                                            constructors
                                            (fn [(, assumps constructors) (,,, name nl args l)]
-                                           (let [typ (tfns args final) assump (generics (map (fn [_] []) top-args) typ)]
-                                               (, [assump ..assumps] (map/set constructors name typ)))))]
-        1))
+                                           (let [
+                                               typ            (tfns args final)
+                                               (, kinds qual) (generics (map (fn [_] []) top-args) typ)]
+                                               (,
+                                                   [(!>! name (forall kinds qual)) ..assumps]
+                                                       (map/set constructors name (forall kinds qual))))))]
+        (full-env (type-env constructors' types- aliases-) ce assumps')))
 
 (defn infer-types [full aliases deftypes]
     (let [names (map (fn [(,, name args type)] name) aliases)]

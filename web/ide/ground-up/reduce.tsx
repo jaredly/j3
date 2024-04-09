@@ -647,7 +647,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     }
     const update = actionToUpdate(state, action);
     if (!update) {
-        console.log(`Unable to turn action into update`, action);
+        // console.log(`Unable to turn action into update`, action);
         return state;
     }
     const next = reduceUpdate(state, update);
