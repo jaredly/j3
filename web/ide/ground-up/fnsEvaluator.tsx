@@ -65,11 +65,47 @@ export const fnsEvaluator = (
             return data['env_nil'];
         },
         infer(stmts, env) {
-            // data['infer_stmts2'](env)(wrapArray(stmts));
+            if (data['infer_stmts2']) {
+                const result: {
+                    type: ',';
+                    0:
+                        | { type: 'ok'; 0: any }
+                        | {
+                              type: 'err';
+                              0: {
+                                  type: ',';
+                                  0: string;
+                                  1: arr<{ type: ','; 0: string; 1: number }>;
+                              };
+                          };
+                    1: arr<{ type: ','; 0: number; 1: any }>;
+                } = data['infer_stmts2'](env)(wrapArray(stmts));
+                // return {
+                //     result:
+                // }
+                // STOPSHIP
+                // START HERE
+            }
             // ... results?
             // or ... waht if I make a `infer2` function?
             // yeah maybe.
-            return data['infer_stmts'](env)(wrapArray(stmts));
+            try {
+                return {
+                    result: {
+                        type: 'ok',
+                        value: data['infer_stmts'](env)(wrapArray(stmts)),
+                    },
+                    typesAndLocs: [],
+                };
+            } catch (err) {
+                return {
+                    result: {
+                        type: 'err',
+                        err: { message: (err as Error).message, items: [] },
+                    },
+                    typesAndLocs: [],
+                };
+            }
         },
         inferExpr(expr, env) {
             return data['infer'](env)(expr);

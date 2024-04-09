@@ -93,7 +93,21 @@ export type FullEvalator<
 
     // Type checker stuff
     initType?(): TypeEnv;
-    infer?(stmts: Stmt[], env: TypeEnv): TypeEnv;
+    infer?(
+        stmts: Stmt[],
+        env: TypeEnv,
+    ): {
+        result:
+            | { type: 'ok'; value: TypeEnv }
+            | {
+                  type: 'err';
+                  err: {
+                      message: string;
+                      items: { name: string; loc: number }[];
+                  };
+              };
+        typesAndLocs: { type: Type; loc: number }[];
+    };
     inferExpr?(expr: Expr, env: TypeEnv): Type;
     addTypes?(env: TypeEnv, nenv: TypeEnv): TypeEnv;
     typeForName?(env: TypeEnv, name: string): Type;
