@@ -1695,6 +1695,59 @@ const infer_alias = /*20892*/function name_20892({0: tenv, 1: ce, 2: assumps}) {
 
  return /*20924*//*20925*/fatal/*<20925*//*20924*/(/*20926*/"ok here we are"/*<20926*/)/*<20924*/ } }/*<20892*/;
 
+const infer_deftype = /*20932*/function name_20932({0: {0: constructors_, 1: types_, 2: aliases_}, 1: ce, 2: assumps}) {
+
+
+
+ return function name_20932({0: name, 1: tnl, 2: top_args, 3: constructors}) {
+
+
+ return /*20948*/(function let_20948() {const $target = /*20958*//*20959*/map/*<20959*//*20958*/(/*20961*/function name_20961({0: name}) { return /*20971*/name/*<20971*/ }/*<20961*/)(/*21007*/constructors/*<21007*/)/*<20958*/;
+{
+let names = $target;
+return (function let_20948() {const $target = /*20973*//*20974*/foldl/*<20974*//*20973*/(/*20999*//*21000*/$co/*<21000*//*20999*/(/*20975*//*20976*/tcon/*<20976*//*20975*/(/*20977*//*20978*/tycon/*<20978*//*20977*/(/*20979*/name/*<20979*/)(/*21008*/star/*<21008*/)/*<20977*/)(/*20981*/tnl/*<20981*/)/*<20975*/)(/*21001*/0/*<21001*/)/*<20999*/)(/*20983*/top_args/*<20983*/)(/*20985*/function name_20985({0: body, 1: i}) {
+ return function name_20985({0: arg, 1: al}) {
+ return /*21009*//*21010*/$co/*<21010*//*21009*/(/*20993*//*20994*/tapp/*<20994*//*20993*/(/*20995*/body/*<20995*/)(/*20996*//*20997*/tgen/*<20997*//*20996*/(/*20998*/i/*<20998*/)(/*21005*/al/*<21005*/)/*<20996*/)(/*21006*/al/*<21006*/)/*<20993*/)(/*21011*//*21012*/$pl/*<21012*//*21011*/(/*21013*/i/*<21013*/)(/*21014*/1/*<21014*/)/*<21011*/)/*<21009*/ } }/*<20985*/)/*<20973*/;
+if ($target.type === ",") {
+{
+let final = $target[0];
+return (function let_20948() {const $target = /*21115*//*21116*/mapi/*<21116*//*21115*/(/*21118*/function name_21118({0: arg, 1: al}) {
+ return function name_21118(i) { return /*21123*//*21124*/$co/*<21124*//*21123*/(/*21125*/name/*<21125*/)(/*21126*//*21127*/tgen/*<21127*//*21126*/(/*21128*/i/*<21128*/)(/*21129*/al/*<21129*/)/*<21126*/)/*<21123*/ } }/*<21118*/)(/*21146*/0/*<21146*/)(/*21135*/top_args/*<21135*/)/*<21115*/;
+{
+let free_idxs = $target;
+return (function let_20948() {const $target = /*21020*//*21021*/foldl/*<21021*//*21020*/(/*21031*//*21022*/$coassumps/*<21022*//*21031*/(/*21032*/map$slnil/*<21032*/)/*<21031*/)(/*21023*/constructors/*<21023*/)(/*21024*/function name_21024({0: assumps, 1: constructors}) {
+ return function name_21024({0: name, 1: nl, 2: args, 3: l}) {
+
+
+ return /*21388*/(function let_21388() {const $target = /*21406*//*21407*/tfns/*<21407*//*21406*/(/*21408*/args/*<21408*/)(/*21411*/final/*<21411*/)/*<21406*/;
+{
+let typ = $target;
+return (function let_21388() {const $target = /*21394*//*21395*/generics/*<21395*//*21394*/(/*21396*//*21397*/map/*<21397*//*21396*/(/*21399*/function name_21399(_) { return /*21404*/nil/*<21404*/ }/*<21399*/)(/*21405*/top_args/*<21405*/)/*<21396*/)(/*21425*/typ/*<21425*/)/*<21394*/;
+{
+let assump = $target;
+return /*21393*//*21412*/$co/*<21412*//*21393*/(/*21413*//*21413*/cons/*<21413*//*21413*/(/*21414*/assump/*<21414*/)(/*21415*/assumps/*<21415*/)/*<21413*/)(/*21419*//*21420*/map$slset/*<21420*//*21419*/(/*21421*/constructors/*<21421*/)(/*21422*/name/*<21422*/)(/*21423*/typ/*<21423*/)/*<21419*/)/*<21393*/
+};
+throw new Error('let pattern not matched 21392. ' + valueToString($target));})(/*!*/)
+};
+throw new Error('let pattern not matched 21424. ' + valueToString($target));})(/*!*/)/*<21388*/ } }/*<21024*/)/*<21020*/;
+if ($target.type === ",") {
+{
+let assumps$qu = $target[0];
+{
+let constructors$qu = $target[1];
+return /*20984*/1/*<20984*/
+}
+}
+};
+throw new Error('let pattern not matched 21019. ' + valueToString($target));})(/*!*/)
+};
+throw new Error('let pattern not matched 21114. ' + valueToString($target));})(/*!*/)
+}
+};
+throw new Error('let pattern not matched 21016. ' + valueToString($target));})(/*!*/)
+};
+throw new Error('let pattern not matched 20957. ' + valueToString($target));})(/*!*/)/*<20948*/ } }/*<20932*/;
+
 const unify_err = /*21204*/function name_21204(t1) { return function name_21204(t2) { return function name_21204(e) { return /*21213*//*21214*/err/*<21214*//*21213*/(/*21215*/`Unable to unify ${/*21217*//*21218*/type_$gts/*<21218*//*21217*/(/*21219*/t1/*<21219*/)/*<21217*/} and ${/*21221*//*21222*/type_$gts/*<21222*//*21221*/(/*21223*/t2/*<21223*/)/*<21221*/}\n-> ${/*21225*/e/*<21225*/}`/*<21215*/)/*<21213*/ } } }/*<21204*/;
 
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1});
@@ -3631,4 +3684,4 @@ return /*20842*//*20843*/fatal/*<20843*//*20842*/(/*20844*/e/*<20844*/)/*<20842*
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 20798');})(/*!*//*20800*//*20801*/infer$slprogram/*<20801*//*20800*/(/*20802*/tenv/*<20802*/)(/*20803*/ce/*<20803*/)(/*20804*/assumps/*<20804*/)(/*20805*//*20805*/cons/*<20805*//*20805*/(/*20806*//*20807*/$co/*<20807*//*20806*/(/*20808*/nil/*<20808*/)(/*20809*//*20809*/cons/*<20809*//*20809*/(/*20810*//*20811*/map/*<20811*//*20810*/(/*20813*/function name_20813({0: name, 1: body}) {
  return /*20822*//*20823*/$co/*<20823*//*20822*/(/*20824*/name/*<20824*/)(/*20825*//*20825*/cons/*<20825*//*20825*/(/*20826*//*20827*/$co/*<20827*//*20826*/(/*20828*/nil/*<20828*/)(/*20829*/body/*<20829*/)/*<20826*/)(/*20825*/nil/*<20825*/)/*<20825*/)/*<20822*/ }/*<20813*/)(/*20812*/defs/*<20812*/)/*<20810*/)(/*20809*/nil/*<20809*/)/*<20809*/)/*<20806*/)(/*20805*/nil/*<20805*/)/*<20805*/)/*<20800*/)/*<20798*/ } }/*<20787*/;
 
-return {type: 'fns', $bar_$gt, $eq$gt, $ex$gt$ex, $gt$gt$eq, $lt_, $pl$pl$pl, TI, add_class, add_inst, add_prelude_classes, add_subst, all, ambiguities, any, apply_transformers, array$eq, assump$slapply, assump$sltv, assump_$gts, assumps_$gts, at, builtin_assumptions, builtin_ce, builtin_env, builtin_full, builtin_instances, builtin_tenv, by_inst, by_super, candidates, class$slord, class_env, class_env$slnil, class_env$slstd, compose_subst, compose_transformers, concat, concrete, cons, contains, core_classes, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, defaultSubst, defaultedPreds, defined, dot, eapp, elambda, elet, ematch, empty, entail, enumId, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, err, estr, evaluator, evar, every, example_insts, filter, find, find_scheme, find_some, foldl, foldr, foldr1, forall, fresh_inst, fst, full_env, g0, g1, g2, gen_name, generic, generics, get_constructor, get_subst, get_tenv, head, id, in_hnf, infer$slalt, infer$slalts, infer$slbinding_group, infer$slexpl, infer$slexpr, infer$slimpls, infer$slpat, infer$slpats, infer$slprim, infer$slprogram, infer$slseq, infer_alias, infer_defs, infer_stmt, infer_types, initial_env, inst$slpred, inst$slpreds, inst$slqual, inst$sltype, insts, intersect, isin, join, joinor, kfun, kind$eq, kind_$gts, letters, lift, list$slget, map, map$slhas, map$slok, map$slti, map_err, mapi, matchPred, merge, mgu, mguPred, mk_deftype, mk_pred, mkcon, mklist, mkpair, modify, new_tvar, next_idx, nil, none, not, nullSubst, numClasses, num_classes, ok, ok$gt$gt$eq, ok_$gtti, overlap, pairs, pany, parse_array, parse_binding, parse_expr, parse_pat, parse_stmt, parse_type, partition, pbool, pcon, pfloat, pint, pprim, pred$eq, pred$slapply, pred$sltv, pred_$gts, preds$slapply, preds$sltv, preds_$gts, program_results_$gts, pstr, pvar, qual$eq, qual$slapply, qual$sltv, quantify, reduce, replaces, restricted, result_$gts, rev, sc_entail, scheme$eq, scheme$slapply, scheme$sltv, sdef, sdeftype, sequence, set$slintersect, sexpr, simplify, simplify_inner, snd, some, split, star, star_con, stdClasses, stypealias, subst_$gts, supers, tapp, tapps, tarrow, tbool, tchar, tcon, tdouble, tenv$slconstr, tenv$slnil, tenv$slvalue, tfloat, tfn, tfns, tgen, ti_err, ti_from_result, ti_return, ti_run, ti_then, tint, tinteger, tlist, tmap, toScheme, to_hnf, to_hnfs, to_scheme, toption, tratio, trational, tresult, tss_$gts, tstar, tstring, ttuple2, tunit, tuple_assump, tuple_scheme, tvar, tycon, tycon$eq, tycon$slkind, tycon_$gts, type, type$eq, type$slapply, type$slhnf, type$slkind, type$sltv, type_$gtfn, type_$gts, type_env, type_match, types_$gts, tyvar, tyvar$eq, tyvar$slkind, tyvar_$gts, unify, unify_err, unwrap_tapp, unwrap_tuple, unzip, value, varBind, vps_$gts, withDefaults, without, wrap_tuple, zip, zipWith}
+return {type: 'fns', $bar_$gt, $eq$gt, $ex$gt$ex, $gt$gt$eq, $lt_, $pl$pl$pl, TI, add_class, add_inst, add_prelude_classes, add_subst, all, ambiguities, any, apply_transformers, array$eq, assump$slapply, assump$sltv, assump_$gts, assumps_$gts, at, builtin_assumptions, builtin_ce, builtin_env, builtin_full, builtin_instances, builtin_tenv, by_inst, by_super, candidates, class$slord, class_env, class_env$slnil, class_env$slstd, compose_subst, compose_transformers, concat, concrete, cons, contains, core_classes, cst$slarray, cst$slidentifier, cst$sllist, cst$slspread, cst$slstring, defaultSubst, defaultedPreds, defined, dot, eapp, elambda, elet, ematch, empty, entail, enumId, eprim, equot, equot$slpat, equot$slstmt, equot$sltype, equotquot, err, estr, evaluator, evar, every, example_insts, filter, find, find_scheme, find_some, foldl, foldr, foldr1, forall, fresh_inst, fst, full_env, g0, g1, g2, gen_name, generic, generics, get_constructor, get_subst, get_tenv, head, id, in_hnf, infer$slalt, infer$slalts, infer$slbinding_group, infer$slexpl, infer$slexpr, infer$slimpls, infer$slpat, infer$slpats, infer$slprim, infer$slprogram, infer$slseq, infer_alias, infer_defs, infer_deftype, infer_stmt, infer_types, initial_env, inst$slpred, inst$slpreds, inst$slqual, inst$sltype, insts, intersect, isin, join, joinor, kfun, kind$eq, kind_$gts, letters, lift, list$slget, map, map$slhas, map$slok, map$slti, map_err, mapi, matchPred, merge, mgu, mguPred, mk_deftype, mk_pred, mkcon, mklist, mkpair, modify, new_tvar, next_idx, nil, none, not, nullSubst, numClasses, num_classes, ok, ok$gt$gt$eq, ok_$gtti, overlap, pairs, pany, parse_array, parse_binding, parse_expr, parse_pat, parse_stmt, parse_type, partition, pbool, pcon, pfloat, pint, pprim, pred$eq, pred$slapply, pred$sltv, pred_$gts, preds$slapply, preds$sltv, preds_$gts, program_results_$gts, pstr, pvar, qual$eq, qual$slapply, qual$sltv, quantify, reduce, replaces, restricted, result_$gts, rev, sc_entail, scheme$eq, scheme$slapply, scheme$sltv, sdef, sdeftype, sequence, set$slintersect, sexpr, simplify, simplify_inner, snd, some, split, star, star_con, stdClasses, stypealias, subst_$gts, supers, tapp, tapps, tarrow, tbool, tchar, tcon, tdouble, tenv$slconstr, tenv$slnil, tenv$slvalue, tfloat, tfn, tfns, tgen, ti_err, ti_from_result, ti_return, ti_run, ti_then, tint, tinteger, tlist, tmap, toScheme, to_hnf, to_hnfs, to_scheme, toption, tratio, trational, tresult, tss_$gts, tstar, tstring, ttuple2, tunit, tuple_assump, tuple_scheme, tvar, tycon, tycon$eq, tycon$slkind, tycon_$gts, type, type$eq, type$slapply, type$slhnf, type$slkind, type$sltv, type_$gtfn, type_$gts, type_env, type_match, types_$gts, tyvar, tyvar$eq, tyvar$slkind, tyvar_$gts, unify, unify_err, unwrap_tapp, unwrap_tuple, unzip, value, varBind, vps_$gts, withDefaults, without, wrap_tuple, zip, zipWith}

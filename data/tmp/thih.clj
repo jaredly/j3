@@ -1866,30 +1866,22 @@
         ;(full-env tenv ce assumps))
 
 (defn infer-deftype [(full-env (type-env constructors- types- aliases-) ce assumps)
-    (,,, name tnl args constructors)]
+    (,,, name tnl top-args constructors)]
     ; TODO make it so we can do higher kinds
+        ;  and type classes! can't do that just yet.
         (let [
         names                      (map (fn [(,,, name _ _ _)] name) constructors)
         (, final _)                (foldl
                                        (, (tcon (tycon name star) tnl) 0)
-                                           args
+                                           top-args
                                            (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
-        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) 0 args)
+        free-idxs                  (mapi (fn [(, arg al) i] (, name (tgen i al))) 0 top-args)
         (, assumps' constructors') (foldl
-                                       (, [] map/nil)
+                                       (,assumps  map/nil)
                                            constructors
                                            (fn [(, assumps constructors) (,,, name nl args l)]
-                                           
-                                               ;(let [
-                                                    
-                                               what (, "cons" (g [[]] (tfns [g0 (mklist g0)] (mklist g0))))
-                                               gens (fn [classes body]
-                                                        (,
-                                                            (map (fn [_] star) classes)
-                                                                (=>
-                                                                (concat (mapi (fn [cls i] (map (mk-pred (tgen i -1)) cls)) 0 classes))
-                                                                    body)))]
-                                               1)))]
+                                           (let [typ (tfns args final) assump (generics (map (fn [_] []) top-args) typ)]
+                                               (, [assump ..assumps] (map/set constructors name typ)))))]
         1))
 
 (defn infer-types [full aliases deftypes]

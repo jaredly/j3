@@ -40,6 +40,7 @@ export const useStore = (initialState: NUIState) => {
         let debugExecOrder = { current: false };
 
         const updateResults = adaptiveBounce(() => {
+            const prev = results;
             // console.log('updating results');
             results = getResults(
                 state,
@@ -50,6 +51,24 @@ export const useStore = (initialState: NUIState) => {
 
             evtListeners.results.forEach((f) => f(state));
             evtListeners.all.forEach((f) => f(state));
+
+            const changed: Record<string, true> = {};
+
+            Object.keys(results.errors).forEach((key) => {
+                if (!equal(prev.errors[+key], results.errors[+key])) {
+                    changed[key] = true;
+                }
+            });
+
+            Object.keys(results.display).forEach((key) => {
+                if (!equal(prev.display[+key], results.display[+key])) {
+                    changed[key] = true;
+                }
+            });
+
+            Object.keys(changed).forEach((key) => {
+                nodeListeners[key]?.forEach((f) => f(state, results));
+            });
         });
 
         loadEvaluator(state.evaluator, (ev, async) => {
@@ -65,6 +84,9 @@ export const useStore = (initialState: NUIState) => {
 
                 evtListeners.results.forEach((f) => f(state));
                 evtListeners.all.forEach((f) => f(state));
+                Object.keys(results.errors).forEach((key) => {
+                    nodeListeners[key]?.forEach((f) => f(state, results));
+                });
             }
         });
 
