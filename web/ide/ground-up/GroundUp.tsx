@@ -13,6 +13,7 @@ import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
 import { valueToString } from './reduce';
 import { renderTraces } from './renderTraces';
+import { advancePath } from './findTops';
 
 export type Results = {
     display: Display;
@@ -129,6 +130,7 @@ export const GroundUp = ({
                     />
                 ))}
             </WithStore>
+            <div>{JSON.stringify(results.hover)}</div>
             <div
                 style={{
                     position: 'fixed',
@@ -176,9 +178,28 @@ export const GroundUp = ({
                 calc={() => {
                     for (let i = state.hover.length - 1; i >= 0; i--) {
                         const last = state.hover[i].idx;
-                        const errs = results.errors[last];
+                        const node = state.map[last];
+                        let next;
+                        try {
+                            next = advancePath(
+                                state.hover[i],
+                                node,
+                                state,
+                                true,
+                            );
+                        } catch (err) {
+                            continue;
+                        }
+
+                        const idx = next.loc;
+
+                        const hovers = results.hover[idx];
+                        if (hovers?.length) {
+                            return [{ idx: idx, text: hovers.join('\n') }];
+                        }
+                        const errs = results.errors[idx];
                         if (errs?.length) {
-                            return [{ idx: last, text: errs.join('\n') }];
+                            return [{ idx: idx, text: errs.join('\n') }];
                         }
                     }
                     return [];
@@ -188,10 +209,6 @@ export const GroundUp = ({
             <WithStore store={store}>
                 <CommandPalette />
             </WithStore>
-            {/* {selTop ? JSON.stringify(results.tops[selTop].data) : null} */}
-            {/* {selTop != null ? <ViewJson v={results.tops[selTop].data} /> : null} */}
-            {/* {JSON.stringify(state.at)} */}
-            {/* <div>{JSON.stringify(state.hover)}</div> */}
         </div>
     );
 };

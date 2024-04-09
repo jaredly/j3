@@ -1,4 +1,15 @@
 
+## Hover for Type please and thank you
+
+- [x] basic hover for type, boring text
+- [x] gotta cache those
+- [ ] I want ... probably a way to indicate 'here are expressions that *should* have types',
+  so that I can highlight them not having types if there was a type error.
+  .. yeah. So like, in the case of a type error, we call `data['expression_locs']`
+  so we can know all of the things that ought to have a type. love it.
+- [ ] Alsoooo let's get a lot more fancy with our type rendering.
+  What I want... is
+
 ## algw-subst?
 
 it ... seems to be mega slow

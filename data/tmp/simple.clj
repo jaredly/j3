@@ -1,10 +1,10 @@
 (deftype (array a) (cons a (array a)) (nil))
 
-"Hello0"
+"Heallo0"
 
 ,
 
-"Hello ${1111}"
+"Hellso ${1111}"
 
 (, 1 2 3 4)
 
@@ -13,7 +13,7 @@
     (, a b c) c)
 
 (@@
-    (match 1
+    (match 1a
         (, 1 2 3) 1))
 
 nil

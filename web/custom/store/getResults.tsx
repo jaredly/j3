@@ -136,6 +136,7 @@ export const getResults = <
             );
             if (failed) return;
         }
+        Object.assign(results.hover, cache.hover[groupKey]);
 
         if (cache.types[groupKey] && evaluator.addTypes) {
             results.tenv = evaluator.addTypes!(
@@ -268,6 +269,7 @@ export function emptyResults(): NUIResults {
         errors: {},
         hashNames: {},
         produce: {},
+        hover: {},
         env: { values: {} },
         traces: [],
         pluginResults: {},

@@ -9,6 +9,7 @@ export type ResultsCache<Stmt> = {
     lastEvaluator: AnyEnv | null;
     lastState: null | NUIState;
     settings: { debugExecOrder: boolean };
+    hover: { [top: string]: { [loc: number]: string[] } };
     // the result of `fromMCST`
     // and the IDs of all included nodes. We can do a quick
     // check of each of the `ids` to see if we need to recalculate

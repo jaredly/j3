@@ -33,6 +33,7 @@ export type NUIResults = {
     display: Display;
     hashNames: { [loc: string]: string };
     produce: { [key: string]: ProduceItem[] };
+    hover: { [loc: number]: string[] };
     env: { values: { [key: string]: any } };
     tenv: any;
     traces: TraceMap;

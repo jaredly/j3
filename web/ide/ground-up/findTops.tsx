@@ -47,7 +47,7 @@ export const verifyPath = (path: Path[], state: NUIState) => {
             );
         }
         try {
-            node = advance(p, node, state, i === path.length - 1);
+            node = advancePath(p, node, state, i === path.length - 1);
             if (!node) throw new Error(`Node returned doesn't exist...`);
         } catch (err) {
             throw new Error(
@@ -91,12 +91,18 @@ export const childPath = (parent: MNode, child: number): PathChild | null => {
     return null;
 };
 
-const advance = (p: Path, node: MNode, state: NUIState, isLast: boolean) => {
+export const advancePath = (
+    p: Path,
+    node: MNode,
+    state: NUIState,
+    isLast: boolean,
+) => {
     switch (p.type) {
         case 'ns':
         case 'card':
-        case 'ns-top':
             throw new Error('invalid placement ' + p.type);
+        case 'ns-top':
+            return state.map[(state.nsMap[p.idx] as RealizedNamespace).top];
         case 'child':
             if (!('values' in node)) {
                 throw new Error(`child, of node ${node.type}`);

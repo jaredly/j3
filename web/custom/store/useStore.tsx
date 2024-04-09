@@ -10,6 +10,7 @@ import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
 export const useStore = (initialState: NUIState) => {
     const cache = useMemo<ResultsCache<any>>(
         () => ({
+            hover: {},
             nodes: {},
             types: {},
             results: {},
