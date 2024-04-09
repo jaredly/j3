@@ -65,6 +65,10 @@ export const fnsEvaluator = (
             return data['env_nil'];
         },
         infer(stmts, env) {
+            // data['infer_stmts2'](env)(wrapArray(stmts));
+            // ... results?
+            // or ... waht if I make a `infer2` function?
+            // yeah maybe.
             return data['infer_stmts'](env)(wrapArray(stmts));
         },
         inferExpr(expr, env) {

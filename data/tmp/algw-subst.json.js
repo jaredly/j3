@@ -1272,7 +1272,7 @@ const tenv$slmerge = /*11632*/function name_11632({0: values, 1: constructors, 2
 
  return /*11642*//*11653*/tenv/*<11653*//*11642*/(/*11654*//*11655*/map$slmerge/*<11655*//*11654*/(/*11656*/values/*<11656*/)(/*11657*/nvalues/*<11657*/)/*<11654*/)(/*11658*//*11659*/map$slmerge/*<11659*//*11658*/(/*11660*/constructors/*<11660*/)(/*11661*/ncons/*<11661*/)/*<11658*/)(/*11662*//*11663*/map$slmerge/*<11663*//*11662*/(/*11664*/types/*<11664*/)(/*11665*/ntypes/*<11665*/)/*<11662*/)(/*13302*//*13303*/map$slmerge/*<13303*//*13302*/(/*13304*/alias/*<13304*/)(/*13305*/nalias/*<13305*/)/*<13302*/)/*<11642*/ } }/*<11632*/;
 
-const inference = (v0) => (v1) => (v2) => (v3) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3});
+const inference = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
 const analysis = (v0) => (v1) => (v2) => ({type: "analysis", 0: v0, 1: v1, 2: v2});
 const check_invariant = /*12411*/function name_12411(place) { return function name_12411(new_subst) { return function name_12411(old_subst) { return /*12421*//*12422*/foldl/*<12422*//*12421*/(/*12528*//*12530*/none/*<12530*//*12528*//*<12528*/)(/*12424*//*12425*/map$slkeys/*<12425*//*12424*/(/*12426*/old_subst/*<12426*/)/*<12424*/)(/*12428*/function name_12428(current) { return function name_12428(key) { return /*12487*/(function match_12487($target) {
 if ($target.type === "some") {

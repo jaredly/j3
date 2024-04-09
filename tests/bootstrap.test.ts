@@ -37,19 +37,24 @@ const fixtures = {
         evaluator: [1, 2],
     },
     4: {
-        name: 'parse-1 + type-args -> type-args',
+        name: 'parse-1 (2) + type-args -> type-args',
         file: 'type-args.json',
-        evaluator: [1, 2],
+        evaluator: [3, 2],
     },
     5: {
         name: 'parse-1 + type-args -> algw-subst',
         file: 'algw-subst.json',
-        evaluator: [1, 2],
+        evaluator: [3, 4],
     },
     6: {
         name: 'parse-1 + algw-subst -> algw-subst',
         file: 'algw-subst.json',
         evaluator: [1, 5],
+    },
+    7: {
+        name: 'p1+ta -> algw-subst',
+        file: 'algw-subst.json',
+        evaluator: [3, 4],
     },
 };
 

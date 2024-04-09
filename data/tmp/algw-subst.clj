@@ -446,10 +446,6 @@
             [(, "x" (tcon "a-mapped" -1))
             (, "a" (tcon "a-mapped" -1))
             (, "b" (tvar "c" -1))])
-        (** c does not get applied to the b in new-subst **)
-        (,
-        [(, "c" (tcon "int" -1))]
-            [(, "c" (tcon "int" -1)) (, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))])
         (** "a" gets the "b" substitution applied to it, and then overrides the "a" from new-subst **)
         (, [(, "a" (tvar "b" -1))] [(, "a" (tvar "c" -1)) (, "b" (tvar "c" -1))])])
 
@@ -461,7 +457,10 @@
 (defn generalize [tenv t]
     (scheme (set/diff (type-free t) (tenv-free tenv)) t))
 
-(** ## A State monad **)
+(** ## A State monad
+    Given that we're going 100% immutable, having a State monad is really handy so you're not having to manually pass around a "next unique id" or "here are the current substitutions" everywhere.
+    Because we don't have type classes in our language at the moment (more on that later), our "do notation" is limited to a single monad, for the whole file. Because of that, we'll be combining the classic "StateT" monad from haskell with an "Either left right" (which I call Result ok err, because I like the names Rust uses much better).
+    Because we want to be able to access the intermediate type inference state even in the case of a unification error, we put the result inside the state monad, instead of the other way around. **)
 
 (deftype (result good bad) (ok good) (err bad))
 
@@ -516,6 +515,43 @@
     (match values
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
+
+(** ## Type Inference State
+    The original "Algorithm W Step by Step" paper uses a state monad for the first (generating unique identifiers for type variables), but not for the "substitutions" thing. Originally, I copied their code faithfully, but (1) their code had a bug in it where compose-subst was called with arguments in the wrong order at one point, (2) the "Typing Haskell in Haskell" algorithm is similar to alg-w in a lot of ways, and puts their substitutions equivalent in the state monad, and (3) keeping it in the state monad makes it easier for me to figure out the types of every expression after the fact, allowing me to have very nice "hover-for-type" functionality. **)
+
+(typealias
+    (State value)
+        (StateT (, int (array (,, int type (map string type)))) value))
+
+(def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
+
+(def <-subst (let-> [(,, _ _ subst) <-state] (<- subst)))
+
+(defn idx-> [idx]
+    (let-> [(,, _ b c) <-state _ (state-> (,, idx b c))] (<- ())))
+
+(defn record-> [loc type]
+    (let-> [
+        (,, idx types subst) <-state
+        _                    (state-> (,, idx [(, loc type) ..types] subst))]
+        (<- ())))
+
+(def <-types (let-> [(,, _ types _) <-state] (<- types)))
+
+(defn subst-> [new-subst]
+    (let-> [
+        (,, idx types subst) <-state
+        _                    (state-> (,, idx types (compose-subst "" new-subst subst)))]
+        (<- ())))
+
+(def state/nil (,, 0 [] map/nil))
+
+(defn run/nil-> [st] (run-> st state/nil))
+
+(defn run/record [st]
+    (run->
+        (let-> [value st types <-types] (<- (, value types)))
+            state/nil))
 
 (** ## Instantiate
     This takes a scheme and generates fresh type variables for everything in the "generics" set.
@@ -597,42 +633,6 @@
                                "Cycle found while unifying type with type variable"
                                    [(, (type-to-string-raw type) (type-loc type)) (, var l)]))
                            (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))))
-
-(** ## Type Inference State **)
-
-(typealias
-    (State value)
-        (StateT (, int (array (,, int type (map string type)))) value))
-
-(def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
-
-(def <-subst (let-> [(,, _ _ subst) <-state] (<- subst)))
-
-(defn idx-> [idx]
-    (let-> [(,, _ b c) <-state _ (state-> (,, idx b c))] (<- ())))
-
-(defn record-> [loc type]
-    (let-> [
-        (,, idx types subst) <-state
-        _                    (state-> (,, idx [(, loc type) ..types] subst))]
-        (<- ())))
-
-(def <-types (let-> [(,, _ types _) <-state] (<- types)))
-
-(defn subst-> [new-subst]
-    (let-> [
-        (,, idx types subst) <-state
-        _                    (state-> (,, idx types (compose-subst "" new-subst subst)))]
-        (<- ())))
-
-(def state/nil (,, 0 [] map/nil))
-
-(defn run/nil-> [st] (run-> st state/nil))
-
-(defn run/record [st]
-    (run->
-        (let-> [value st types <-types] (<- (, value types)))
-            state/nil))
 
 (** ## Type Inference!
     Extensions to the HM algorithm:
@@ -1439,7 +1439,8 @@
                 (@! (deftype kind (star) (kfun kind kind)))
                 (@! (let [(kfun m n) (star)] 1))])))
 
-(** ## Collecting types of everything **)
+(** ## Collecting types of everything
+    useful for debugging our "hover for type" infrastructure. **)
 
 (defn expr->s [expr]
     (match expr
@@ -1858,8 +1859,9 @@
         check-stmts **)
         (inference
         tenv
-            ;(fn [tenv (array stmt)] (, tenv (array (, intlet thi type))))
             (fn [tenv (array stmt)] tenv)
+            (fn [tenv (array stmt)]
+            (, (result tenv type-error-t) (array (, int type))))
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)))
 
@@ -1883,18 +1885,16 @@
 (def externals-list (fn [x] (bag/to-list (externals set/nil x))))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts,  2: add_stmt,  3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference
             builtin-env
                 (fn [tenv stmts]
                 (force type-error->s (run/nil-> (infer-stmtss tenv stmts))))
-                ;(fn [tenv stmts]
+                (fn [tenv stmts]
                 (let [
                     (, (,, _ types subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
-                    (match result
-                        (ok tenv) (, tenv (map types (fn [(, loc type)] (, loc (type-apply subst type)))))
-                        (err e)   (fatal (type-error->s e)))))
+                    (, result (map types (fn [(, loc type)] (, loc (type-apply subst type)))))))
                 tenv/merge
                 (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr)))))
             (analysis externals-stmt externals-list names)

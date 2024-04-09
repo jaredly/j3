@@ -11,6 +11,8 @@ and also for performance comparisons.
 - [x] get a test file running, doing the ... bootstrap chain
 - [x] indicate how long it takes
 - [ ] have them ... run their plugins too? Yeah.
+  - so that tests run. and then ...
+- [ ] and ... it looks like algw-subst isn't actually really slow??
 
 ## [x] Drag and Drop!!!
 not perfect, but passable??

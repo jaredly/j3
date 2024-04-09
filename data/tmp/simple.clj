@@ -133,5 +133,3 @@ nil
 a
 
 (def m a)
-
-(lol what is this)

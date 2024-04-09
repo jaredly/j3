@@ -1272,7 +1272,7 @@ const tenv$slmerge = /*11632*/function name_11632({0: values, 1: constructors, 2
 
  return /*11642*//*11653*/tenv/*<11653*//*11642*/(/*11654*//*11655*/map$slmerge/*<11655*//*11654*/(/*11656*/values/*<11656*/)(/*11657*/nvalues/*<11657*/)/*<11654*/)(/*11658*//*11659*/map$slmerge/*<11659*//*11658*/(/*11660*/constructors/*<11660*/)(/*11661*/ncons/*<11661*/)/*<11658*/)(/*11662*//*11663*/map$slmerge/*<11663*//*11662*/(/*11664*/types/*<11664*/)(/*11665*/ntypes/*<11665*/)/*<11662*/)(/*13302*//*13303*/map$slmerge/*<13303*//*13302*/(/*13304*/alias/*<13304*/)(/*13305*/nalias/*<13305*/)/*<13302*/)/*<11642*/ } }/*<11632*/;
 
-const inference = (v0) => (v1) => (v2) => (v3) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3});
+const inference = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4});
 const analysis = (v0) => (v1) => (v2) => ({type: "analysis", 0: v0, 1: v1, 2: v2});
 const check_invariant = /*12411*/function name_12411(place) { return function name_12411(new_subst) { return function name_12411(old_subst) { return /*12421*//*12422*/foldl/*<12422*//*12421*/(/*12528*//*12530*/none/*<12530*//*12528*//*<12528*/)(/*12424*//*12425*/map$slkeys/*<12425*//*12424*/(/*12426*/old_subst/*<12426*/)/*<12424*/)(/*12428*/function name_12428(current) { return function name_12428(key) { return /*12487*/(function match_12487($target) {
 if ($target.type === "some") {
@@ -2811,7 +2811,23 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 6659');})(/*!*//
 
 const infer_stmts = /*10723*/function name_10723(tenv) { return function name_10723(stmts) { return /*10730*//*10731*/foldl_$gt/*<10731*//*10730*/(/*10732*/tenv/*<10732*/)(/*10733*/stmts/*<10733*/)(/*10734*/function name_10734(tenv) { return function name_10734(stmt) { return /*17324*//*17325*/$gt$gt$eq/*<17325*//*17324*/(/*17329*//*17330*//*17331*/infer_stmtss/*<17331*//*17330*/(/*17332*/tenv/*<17332*/)(/*17333*//*17333*/cons/*<17333*//*17333*/(/*17334*/stmt/*<17334*/)(/*17333*/nil/*<17333*/)/*<17333*/)/*<17330*//*17329*//*<17329*/)(/*17324*/function name_17324(tenv$qu) { return /*17335*//*17336*/$lt_/*<17336*//*17335*/(/*15424*//*15425*/tenv$slmerge/*<15425*//*15424*/(/*15426*/tenv/*<15426*/)(/*15427*/tenv$qu/*<15427*/)/*<15424*/)/*<17335*/ }/*<17324*/)/*<17324*/ } }/*<10734*/)/*<10730*/ } }/*<10723*/;
 
-return /*11773*//*11778*//*11779*/eval/*<11779*//*11778*/(/*11775*/"({0: {0: env_nil, 1: infer_stmts,  2: add_stmt,  3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) "/*<11775*/)/*<11778*//*11773*/(/*4983*//*5008*/typecheck/*<5008*//*4983*/(/*11753*//*11754*/inference/*<11754*//*11753*/(/*11766*/builtin_env/*<11766*/)(/*19890*/function name_19890(tenv) { return function name_19890(stmts) { return /*19895*//*19896*/force/*<19896*//*19895*/(/*19900*/type_error_$gts/*<19900*/)(/*19897*//*19898*/run$slnil_$gt/*<19898*//*19897*/(/*19899*//*19901*/infer_stmtss/*<19901*//*19899*/(/*19902*/tenv/*<19902*/)(/*19903*/stmts/*<19903*/)/*<19899*/)/*<19897*/)/*<19895*/ } }/*<19890*/)(/*11765*/tenv$slmerge/*<11765*/)(/*17375*/function name_17375(tenv) { return function name_17375(expr) { return /*17381*//*17376*/force/*<17376*//*17381*/(/*19084*/type_error_$gts/*<19084*/)(/*17383*//*17382*/run$slnil_$gt/*<17382*//*17383*/(/*17385*//*17384*/infer/*<17384*//*17385*/(/*17386*/tenv/*<17386*/)(/*17387*/expr/*<17387*/)/*<17385*/)/*<17383*/)/*<17381*/ } }/*<17375*/)/*<11753*/)(/*11755*//*7376*/analysis/*<7376*//*11755*/(/*11756*/externals_stmt/*<11756*/)(/*15633*/externals_list/*<15633*/)(/*7573*/names/*<7573*/)/*<11755*/)(/*11764*/type_to_string/*<11764*/)(/*10087*/function name_10087(tenv) { return function name_10087(name) { return /*10103*/(function match_10103($target) {
+return /*11773*//*11778*//*11779*/eval/*<11779*//*11778*/(/*11775*/"({0: {0: env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) "/*<11775*/)/*<11778*//*11773*/(/*4983*//*5008*/typecheck/*<5008*//*4983*/(/*11753*//*11754*/inference/*<11754*//*11753*/(/*11766*/builtin_env/*<11766*/)(/*19890*/function name_19890(tenv) { return function name_19890(stmts) { return /*19895*//*19896*/force/*<19896*//*19895*/(/*19900*/type_error_$gts/*<19900*/)(/*19897*//*19898*/run$slnil_$gt/*<19898*//*19897*/(/*19899*//*19901*/infer_stmtss/*<19901*//*19899*/(/*19902*/tenv/*<19902*/)(/*19903*/stmts/*<19903*/)/*<19899*/)/*<19897*/)/*<19895*/ } }/*<19890*/)(/*17360*/function name_17360(tenv) { return function name_17360(stmts) { return /*17367*/(function let_17367() {const $target = /*19839*//*19837*//*19838*/state_f/*<19838*//*19837*/(/*17371*//*17370*/infer_stmtss/*<17370*//*17371*/(/*17372*/tenv/*<17372*/)(/*17373*/stmts/*<17373*/)/*<17371*/)/*<19837*//*19839*/(/*19840*/state$slnil/*<19840*/)/*<19839*/;
+if ($target.type === ",") {
+if ($target[0].type === ",,") {
+{
+let types = $target[0][1];
+{
+let subst = $target[0][2];
+{
+let result = $target[1];
+return /*19929*//*19930*/$co/*<19930*//*19929*/(/*19949*/result/*<19949*/)(/*19932*//*19933*/map/*<19933*//*19932*/(/*19934*/types/*<19934*/)(/*19935*/function name_19935({0: loc, 1: type}) {
+ return /*19942*//*19943*/$co/*<19943*//*19942*/(/*19944*/loc/*<19944*/)(/*19945*//*19946*/type_apply/*<19946*//*19945*/(/*19947*/subst/*<19947*/)(/*19948*/type/*<19948*/)/*<19945*/)/*<19942*/ }/*<19935*/)/*<19932*/)/*<19929*/
+}
+}
+}
+}
+};
+throw new Error('let pattern not matched 19847. ' + valueToString($target));})(/*!*/)/*<17367*/ } }/*<17360*/)(/*11765*/tenv$slmerge/*<11765*/)(/*17375*/function name_17375(tenv) { return function name_17375(expr) { return /*17381*//*17376*/force/*<17376*//*17381*/(/*19084*/type_error_$gts/*<19084*/)(/*17383*//*17382*/run$slnil_$gt/*<17382*//*17383*/(/*17385*//*17384*/infer/*<17384*//*17385*/(/*17386*/tenv/*<17386*/)(/*17387*/expr/*<17387*/)/*<17385*/)/*<17383*/)/*<17381*/ } }/*<17375*/)/*<11753*/)(/*11755*//*7376*/analysis/*<7376*//*11755*/(/*11756*/externals_stmt/*<11756*/)(/*15633*/externals_list/*<15633*/)(/*7573*/names/*<7573*/)/*<11755*/)(/*11764*/type_to_string/*<11764*/)(/*10087*/function name_10087(tenv) { return function name_10087(name) { return /*10103*/(function match_10103($target) {
 if ($target.type === "some") {
 {
 let v = $target[0];
