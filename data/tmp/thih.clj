@@ -1845,6 +1845,8 @@
                     (even 10)))
             "it: bool")])
 
+(** ## Producing the functions for an Evaluator **)
+
 (deftype full-env (full-env type-env class-env (array assump)))
 
 (def builtin-full
@@ -1888,6 +1890,89 @@
                                                        (map/set constructors name (forall kinds qual))))))]
         (full-env (type-env constructors' types- aliases-) ce assumps')))
 
+(defn foldl-> [init values f]
+    (match values
+        []           (<- init)
+        [one ..rest] (let-> [one (f init one)] (foldl-> one rest f))))
+
+(defn foldr-> [init values f]
+    (match values
+        []           (<- init)
+        [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
+
+(defn infer-deftype2 [tenv' bound tname tnl targs constructors l]
+    (let-> [
+        names           (<- (map (fn [(,,, name _ _ _)] name) constructors))
+        final           (<-
+                            (foldl
+                                (tcon (tycon tname star) tnl)
+                                    targs
+                                    (fn [body (, arg al)] (tapp body (tvar arg al) l))))
+        free-set        (<- (foldl set/nil targs (fn [free (, arg _)] (set/add free arg))))
+        (, values cons) (foldl->
+                            (, map/nil map/nil)
+                                constructors
+                                (fn [(, values cons) (,,, name nl args l)]
+                                (let-> [
+                                    args (<- (map (fn [arg] (type-with-free arg free-set)) args))
+                                    args (<- (map (subst-aliases (tenv/alias tenv')) args))
+                                    _    (map->
+                                             (fn [arg]
+                                                 (match (bag/to-list (externals-type (set/add bound tname) arg))
+                                                     []    (<- true)
+                                                     names (<-err
+                                                               (type-error
+                                                                   "Unbound types in deftype ${tname}"
+                                                                       (map (fn [(,, name _ l)] (, name l)) names)))))
+                                                 args)]
+                                    (<-
+                                        (,
+                                            (map/set
+                                                values
+                                                    name
+                                                    (scheme free-set (foldr final args (fn [body arg] (tfn arg body)))))
+                                                (map/set cons name (tconstructor free-set args final)))))))]
+        (<-
+            (tenv
+                values
+                    cons
+                    (map/set map/nil tname (, (len targs) (set/from-list names)))
+                    map/nil))))
+
+(defn infer-stypes [tenv' stypes salias]
+    (let-> [
+        names                    (<-
+                                     (foldl
+                                         (map salias (fn [(,, name _ _)] name))
+                                             stypes
+                                             (fn [names (sdeftype name _ _ _ _)] [name ..names])))
+        (tenv _ _ types aliases) (<- tenv')
+        bound                    (<-
+                                     (set/merge
+                                         (set/from-list (map/keys types))
+                                             (set/merge (set/from-list names) (set/from-list (map/keys aliases)))))
+        tenv                     (foldl->
+                                     tenv/nil
+                                         salias
+                                         (fn [tenv (,, name args body)]
+                                         (match (bag/to-list
+                                             (externals-type
+                                                 (set/merge bound (set/from-list (map args fst)))
+                                                     body))
+                                             []    (<- (tenv/add-alias tenv name (, (map args fst) body)))
+                                             names (<-err
+                                                       (type-error "Unbound types" (map names (fn [(,, name _ l)] (, name l))))))))
+        merged                   (<- (tenv/merge tenv tenv'))
+        tenv                     (foldl->
+                                     tenv
+                                         stypes
+                                         (fn [tenv (sdeftype name tnl args constructors l)]
+                                         (let-> [
+                                             tenv' (infer-deftype merged bound name tnl args constructors l)]
+                                             (<- (tenv/merge tenv' tenv)))))
+        tenv'                    (<- (tenv/merge tenv tenv'))]
+        (<- tenv)))
+
 (defn infer-types [full aliases deftypes]
     (let [names (map (fn [(,, name args type)] name) aliases)]
         (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
@@ -1900,6 +1985,40 @@
             [(, [] [(map (fn [(, name body)] (, name [(, [] body)])) defs)])])
         (ok (,,, subst tenv nidx assumps)) (full-env tenv ce assumps)
         (err e)                            (fatal e)))
+
+(defn split-stmts [stmts sdefs stypes salias sexps]
+    (match stmts
+        []           (,,, sdefs stypes salias sexps)
+        [one ..rest] (match one
+                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps)
+                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps)
+                         (stypealias name _ args body _) (split-stmts
+                                                             rest
+                                                                 sdefs
+                                                                 stypes
+                                                                 [(,, name args body) ..salias]
+                                                                 sexps)
+                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
+
+(defn infer-defns [tenv stmts]
+    (match stmts
+        [one] (infer-stmt tenv one)
+        _     (let-> [zipped (infer-several tenv stmts)]
+                  (<-
+                      (foldl
+                          tenv/nil
+                              zipped
+                              (fn [tenv (, name type)]
+                              (tenv/set-type tenv name (generalize tenv type))))))))
+
+(defn infer-stmtss [tenv' stmts]
+    (let-> [
+        (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
+        type-tenv                       (infer-stypes tenv' stypes salias)
+        tenv'                           (<- (tenv/merge type-tenv tenv'))
+        val-tenv                        (infer-defns tenv' sdefs)
+        _                               (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
+        (<- (tenv/merge type-tenv val-tenv))))
 
 (deftype name-kind (value) (type))
 

@@ -119,7 +119,7 @@ const serializeFile = (state: NUIState) => {
             .map((id) => renderNodeToString(id.top, state.map, 0, display))
             .join('\n\n')
             .replaceAll(/[“”]/g, '"'),
-        js: fileToJs(state),
+        // js: fileToJs(state),
     };
 };
 
@@ -219,11 +219,11 @@ createServer(async (req, res) => {
         }
         writeFileSync(full, raw);
         try {
-            const { clj, js } = serializeFile(state);
+            const { clj } = serializeFile(state);
             writeFileSync(full.replace('.json', '.clj'), clj);
-            if (js) {
-                writeFileSync(full + '.js', js);
-            }
+            // if (js) {
+            //     writeFileSync(full + '.js', js);
+            // }
         } catch (err) {
             console.log('Agh what');
             console.error(err);
