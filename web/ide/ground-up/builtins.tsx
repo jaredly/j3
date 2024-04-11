@@ -59,7 +59,8 @@ export function builtins() {
             (d: d) => ({ type: ',,,', 0: a, 1: b, 2: c, 3: d }),
         '++': (items: arr<string>) => unwrapArray(items).join(''),
         'map/nil': [],
-        'map/set': (m: [any, any][]) => (k: any) => (v: any) => [[k, v], ...m],
+        'map/set': (m: [any, any][]) => (k: any) => (v: any) =>
+            [[k, v], ...m.filter((i) => i[0] !== k)],
         'map/rm': (m: [any, any][]) => (k: any) =>
             m.filter((i) => !equal(i[0], k)),
         'map/get': (m: [any, any][]) => (k: any) => {
