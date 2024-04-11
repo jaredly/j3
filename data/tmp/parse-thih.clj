@@ -1,7 +1,71 @@
 (def builtins
     "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
-(** ## Our AST & CST **)
+
+
+(** ## Type Schemes **)
+
+(** Some more types **)
+
+(deftype pred (isin string type))
+
+(deftype (qual t) (=> (array pred) t))
+
+(defn array= [a b v=]
+    (match (, a b)
+        (, [] [])             true
+        (, [a0 ..a] [b0 ..b]) (if (v= a0 b0)
+                                  (array= a b v=)
+                                      false)))
+
+(defn qual= [(=> preds t) (=> preds' t') t=]
+    (if (array= preds preds' pred=)
+        (t= t t')
+            false))
+
+(defn pred->s [(isin name type)] "${(type->s type)} ∈ ${name}")
+
+(defn pred= [(isin id type) (isin id' type')]
+    (if (= id id')
+        (type= type type')
+            false))
+
+(deftype scheme (forall (array kind) (qual type)))
+
+(defn scheme= [(forall kinds qual) (forall kinds' qual')]
+    (if (array= kinds kinds' kind=)
+        (qual= qual qual' type=)
+            false))
+
+;(defn scheme/apply [subst (forall ks qt)]
+    (forall ks (qual/apply subst qt type/apply)))
+
+;(defn scheme/tv [(forall ks qt)] (qual/tv qt type/tv))
+
+;(defn quantify [vs qt]
+    (let [
+        vs'   (filter (fn [v] (any (tyvar= v) vs)) (set/to-list (qual/tv qt type/tv)))
+        ks    (map tyvar/kind vs')
+        subst (map/from-list (mapi (fn [v i] (, v (tgen i -1))) 0 vs'))]
+        (forall ks (qual/apply subst qt type/apply))))
+
+(defn to-scheme [t] (forall [] (=> [] t)))
+
+(deftype assump (!>! string scheme))
+
+;(defn assump/apply [subst (!>! id sc)]
+    (!>! id (scheme/apply subst sc)))
+
+;(defn assump/tv [(!>! id sc)] (scheme/tv sc))
+
+;(defn find-scheme [id assumps]
+    (match assumps
+        []                    (err "Unbound identifier ${id}")
+        [(!>! id' sc) ..rest] (if (= id id')
+                                  (ok sc)
+                                      (find-scheme id rest))))
+
+(** ## Our AST **)
 
 (deftype cst
     (cst/list (array cst) int)
@@ -12,7 +76,218 @@
 
 (deftype (array a) (nil) (cons a (array a)))
 
+(typealias id string)
+
+(typealias alt (, (array pat) expr))
+
+(typealias impl (, id (array alt)))
+
+(typealias expl (,, id scheme (array alt)))
+
+(typealias bindgroup (, (array expl) (array (array impl))))
+
 (deftype expr
+    (eprim prim int)
+        (estr string (array (,, expr string int)) int)
+        (evar string int)
+        (equot expr int)
+        (equot/stmt stmt int)
+        (equot/pat pat int)
+        (equot/type type int)
+        (equotquot cst int)
+        (elambda pat expr int)
+        (eapp expr expr int)
+        (elet bindgroup expr int)
+        (ematch expr (array (, pat expr)) int))
+
+(deftype prim (pint int int) (pfloat float int) (pbool bool int))
+
+(deftype pat
+    (pany int)
+        (pvar string int)
+        (pcon string (array pat) int)
+        (pstr string int)
+        (pprim prim int))
+
+(deftype type
+    (tvar tyvar int)
+        (tapp type type int)
+        (tcon tycon int)
+        (tgen int int))
+
+(deftype stmt
+    (sdeftype
+        string
+            int
+            (array (, string int))
+            (array (,,, string int (array type) int))
+            int)
+        (stypealias string int (array (, string int)) type int)
+        (sdef string int expr int)
+        (sexpr expr int))
+
+(defn enumId [num] "v${(int-to-string num)}")
+
+(deftype kind (star) (kfun kind kind))
+
+(deftype tyvar (tyvar string kind))
+
+(deftype tycon (tycon string kind))
+
+(** ## deriving eq and show ... lol **)
+
+(defn kind= [a b]
+    (match (, a b)
+        (, (star) (star))           true
+        (, (kfun a b) (kfun a' b')) (if (kind= a a')
+                                        (kind= b b')
+                                            false)
+        _                           false))
+
+(defn kind->s [a]
+    (match a
+        (star)     "*"
+        (kfun a b) "(${(kind->s a)}->${(kind->s b)})"))
+
+(defn tyvar= [(tyvar name kind) (tyvar name' kind')]
+    (if (= name name')
+        (kind= kind kind')
+            false))
+
+(defn tyvar->s [(tyvar name kind)]
+    (match kind
+        (star) name
+        _      "[${name} : ${(kind->s kind)}]"))
+
+(defn type->fn [type]
+    (match type
+        (tapp (tapp (tcon (tycon "(->)" _) _) arg _) result _) (match (type->fn result)
+                                                                   (, args result) (, [arg ..args] result))
+        _                                                      (, [] type)))
+
+(defn unwrap-tapp [target args]
+    (match target
+        (tapp a b _) (unwrap-tapp a [b ..args])
+        _            (, target args)))
+
+;(type->fn (tfn tint (tfn tfloat tbool)))
+
+(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
+
+(defn at [i lst]
+    (match lst
+        []           (fatal "index out of range")
+        [one ..rest] (if (<= i 0)
+                         one
+                             (at (- i 1) rest))))
+
+(defn gen-name [num] "${(at num letters)}")
+
+(defn type->s [type]
+    (match type
+        (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
+        (tapp target arg _)        (match (type->fn type)
+                                       (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
+                                                           "(${(type->s target)} ${(join " " (map args type->s))})")
+                                       (, args result) "(fn [${(join " " (map args type->s))}] ${(type->s result)})")
+        (tcon (tycon "(,)" _) _)   ","
+        (tcon (tycon "[]" _) _)    "list"
+        (tcon (tycon name _) _)    name
+        (tcon con _)               (tycon->s con)
+        (tgen num _)               (gen-name num)))
+
+;(type->s tstring)
+
+;(type->s (mkpair tint tbool))
+
+;(type->s (tfn tint (tfn tfloat tbool)))
+
+(defn type= [a b]
+    (match (, a b)
+        (, (tvar ty _) (tvar ty' _))                  (tyvar= ty ty')
+        (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
+                                                          (type= arg arg')
+                                                              false)
+        (, (tcon tycon _) (tcon tycon' _))            (tycon= tycon tycon')
+        (, (tgen n _) (tgen n' _))                    (= n n')))
+
+(defn tycon= [(tycon name kind) (tycon name' kind')]
+    (if (= name name')
+        (kind= kind kind')
+            false))
+
+(defn tycon->s [(tycon name kind)]
+    (match kind
+        (star) name
+        _      "[${name} : ${(kind->s kind)}]"))
+
+(defn star-con [name] (tcon (tycon name star) -1))
+
+(defn assump->s [(!>! name (forall kinds (=> preds type)))]
+    "${
+        name
+        }: ${
+        (match kinds
+            [] ""
+            _  "${
+                   (join
+                       "; "
+                           (mapi 0 kinds (fn [i kind] "${(gen-name i)} ${(kind->s kind)}")))
+                   }; ")
+        }${
+        (match preds
+            [] ""
+            _  "${(join "; " (map preds pred->s))}; ")
+        }${
+        (type->s type)
+        }")
+
+(defn type/kind [type]
+    (match type
+        (tcon tc _)  (tycon/kind tc)
+        (tvar u _)   (tyvar/kind u)
+        (tapp t _ l) (match (type/kind t)
+                         (kfun _ k) k
+                         _          (fatal "Invalid type application ${(int-to-string l)}"))))
+
+(typealias subst (array (, tyvar type)))
+
+(def nullSubst [])
+
+(defn |-> [u t] (map/set map/nil u t))
+
+;(defn abc/apply [subst abc] abc)
+
+;(defn abc/tv [t] (array tyvar))
+
+(defn type/apply [subst type]
+    (match type
+        (tvar tyvar _)        (match (map/get subst tyvar)
+                                  (none)      type
+                                  (some type) type)
+        (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
+        _                     type))
+
+(typealias class (, (array string) (array (qual pred))))
+
+(typealias inst (qual pred))
+
+;(def types->s (dot (join "\n") (fn [x] (map x type->s))))
+
+;(def assumps->s (dot (join "\n") (map assump->s)))
+
+(** ## Our AST & CST **)
+
+;(deftype cst
+    (cst/list (array cst) int)
+        (cst/array (array cst) int)
+        (cst/spread cst int)
+        (cst/identifier string int)
+        (cst/string string (array (,, cst string int)) int))
+
+;(deftype (array a) (nil) (cons a (array a)))
+
+;(deftype expr
     (eprim prim int)
         (estr string (array (,, expr string int)) int)
         (evar string int)
@@ -26,30 +301,30 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
-(deftype prim (pint int int) (pbool bool int))
+;(deftype prim (pint int int) (pfloat float int) (pbool bool int))
 
-(deftype pat
+;(deftype pat
     (pany int)
         (pvar string int)
         (pcon string (array pat) int)
         (pstr string int)
         (pprim prim int))
 
-(defn enumId [num] "v${(int-to-string num)}")
+;(defn enumId [num] "v${(int-to-string num)}")
 
-(deftype kind (star) (kfun kind kind))
+;(deftype kind (star) (kfun kind kind))
 
-(deftype tyvar (tyvar string kind))
+;(deftype tyvar (tyvar string kind))
 
-(deftype type
+;(deftype type
     (tvar tyvar int)
         (tapp type type int)
         (tcon tycon int)
         (tgen int int))
 
-(deftype tycon (tycon string kind))
+;(deftype tycon (tycon string kind))
 
-(defn star-con [name] (tcon (tycon name star) -1))
+;(defn star-con [name] (tcon (tycon name star) -1))
 
 (def tunit (star-con "()"))
 
@@ -81,7 +356,7 @@
 
 (defn tycon/kind [(tycon v k)] k)
 
-(defn type/kind [type]
+;(defn type/kind [type]
     (match type
         (tcon tc _)  (tycon/kind tc)
         (tvar u _)   (tyvar/kind u)
@@ -91,15 +366,15 @@
 
 ;(typealias subst (array (, tyvar type)))
 
-(def nullSubst [])
+;(def nullSubst [])
 
-(defn |-> [u t] [(, u t)])
+;(defn |-> [u t] [(, u t)])
 
 ;(defn abc/apply [subst abc] abc)
 
 ;(defn abc/tv [t] (array tyvar))
 
-(deftype stmt
+;(deftype stmt
     (sdeftype
         string
             int
@@ -179,26 +454,47 @@
 
 (defn parse-type [type]
     (match type
-        (cst/identifier id l)                                          (tcon id l)
+        (cst/identifier id l)                                          (tcon (tycon id star) l)
         (cst/list [] l)                                                (fatal "(parse-type) with empty list")
         (cst/list [(cst/identifier "fn" _) (cst/array args _) body] _) (foldl
                                                                            (parse-type body)
                                                                                (rev args [])
-                                                                               (fn [body arg] (tapp (tapp (tcon "->" -1) (parse-type arg) -1) body -1)))
+                                                                               (fn [body arg]
+                                                                               (tapp
+                                                                                   (tapp (tcon (tycon "->" (kfun star star)) -1) (parse-type arg) -1)
+                                                                                       body
+                                                                                       -1)))
         (cst/list items l)                                             (tapps (rev (map items parse-type) []) l)
         _                                                              (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
 (,
     parse-type
-        [(, (@@ (hi ho)) (tapp (tcon "hi" 5527) (tcon "ho" 5528) 5526))
+        [(,
+        (@@ (hi ho))
+            (tapp (tcon (tycon "hi" (star)) 5527) (tcon (tycon "ho" (star)) 5528) 5526))
         (,
         (@@ (fn [x] y))
-            (tapp (tapp (tcon "->" -1) (tcon "x" 5558) -1) (tcon "y" 5559) -1))
+            (tapp
+            (tapp
+                (tcon (tycon "->" (kfun (star) (star))) -1)
+                    (tcon (tycon "x" (star)) 5558)
+                    -1)
+                (tcon (tycon "y" (star)) 5559)
+                -1))
         (,
         (@@ (fn [a b] c))
             (tapp
-            (tapp (tcon "->" -1) (tcon "a" 5688) -1)
-                (tapp (tapp (tcon "->" -1) (tcon "b" 5689) -1) (tcon "c" 5690) -1)
+            (tapp
+                (tcon (tycon "->" (kfun (star) (star))) -1)
+                    (tcon (tycon "a" (star)) 5688)
+                    -1)
+                (tapp
+                (tapp
+                    (tcon (tycon "->" (kfun (star) (star))) -1)
+                        (tcon (tycon "b" (star)) 5689)
+                        -1)
+                    (tcon (tycon "c" (star)) 5690)
+                    -1)
                 -1))])
 
 (defn parse-pat [pat]
@@ -231,7 +527,9 @@
                                                                                  l)
         (cst/identifier id l)                                            (match (string-to-int id)
                                                                              (some int) (eprim (pint int l) l)
-                                                                             (none)     (evar id l))
+                                                                             (none)     (match (string-to-float id)
+                                                                                            (some float) (eprim (pfloat float l) l)
+                                                                                            (none)       (evar id l)))
         (cst/list [(cst/identifier "@" _) body] l)                       (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                      (equotquot body l)
         (cst/list [(cst/identifier "@!" _) body] l)                      (equot/stmt (parse-stmt body) l)
@@ -244,14 +542,7 @@
         (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)  (foldr
                                                                              (parse-expr body)
                                                                                  args
-                                                                                 (fn [body arg]
-                                                                                 (match arg
-                                                                                     (cst/identifier name l) (elambda name l body b)
-                                                                                     _                       (elambda
-                                                                                                                 "$fn-arg"
-                                                                                                                     -1
-                                                                                                                     (ematch (evar "$fn-arg" -1) [(, (parse-pat arg) body)] b)
-                                                                                                                     b))))
+                                                                                 (fn [body arg] (elambda (parse-pat arg) body b)))
         (cst/list [(cst/identifier "match" _) target ..cases] l)         (ematch
                                                                              (parse-expr target)
                                                                                  (map
@@ -263,7 +554,9 @@
                                                                                  (pairs inits)
                                                                                  (fn [body init]
                                                                                  (let [(, pat value) init]
-                                                                                     (elet (parse-pat pat) (parse-expr value) body l))))
+                                                                                     (match pat
+                                                                                         (cst/identifier name l) (elet (, [] [[(, name [(, [] (parse-expr value))])]]) body l)
+                                                                                         _                       (elet (, [] [[(, "it" [(, [(parse-pat pat)] (parse-expr value))])]]) body l)))))
         (cst/list [target ..args] l)                                     (foldl
                                                                              (parse-expr target)
                                                                                  args
@@ -288,11 +581,14 @@
                 (evar "b" 3403)
                 3401))
         (, (@@ "hi") (estr "hi" [] 1177))
-        (, (@@ (@t a)) (equot/type (tcon "a" 5333) 5331))
+        (, (@@ (@t a)) (equot/type (tcon (tycon "a" (star)) 5333) 5331))
         (,
         (@@ (@t (a b c)))
             (equot/type
-            (tapp (tapp (tcon "a" 5364) (tcon "b" 5365) 5363) (tcon "c" 5366) 5363)
+            (tapp
+                (tapp (tcon (tycon "a" (star)) 5364) (tcon (tycon "b" (star)) 5365) 5363)
+                    (tcon (tycon "c" (star)) 5366)
+                    5363)
                 5360))
         (, (@@ (@p _)) (equot/pat (pany 5349) 5346))
         (,
@@ -328,27 +624,21 @@
         (,
         (@@ (let [a 1 b 2] a))
             (elet
-            (pvar "a" 4456)
-                (eprim (pint 1 4457) 4457)
-                (elet (pvar "b" 4458) (eprim (pint 2 4459) 4459) (evar "a" 4460) 4453)
-                4453))
-        (, (@@ (fn [a] 1)) (elambda "a" 1238 (eprim (pint 1 1239) 1239) 1235))
+            (, [] [[(, "a" [(, [] (eprim (pint 1 4457) 4457))])]])
+                (elet (, [] [[(, "b" [(, [] (eprim (pint 2 4459) 4459))])]]) (evar "a" 4460) 4458)
+                4456))
+        (, (@@ (fn [a] 1)) (elambda (pvar "a" 1238) (eprim (pint 1 1239) 1239) 1235))
         (,
         (@@ (fn [a b] 2))
             (elambda
-            "a"
-                1256
-                (elambda "b" 1257 (eprim (pint 2 1258) 1258) 1253)
+            (pvar "a" 1256)
+                (elambda (pvar "b" 1257) (eprim (pint 2 1258) 1258) 1253)
                 1253))
         (,
         (@@ (fn [(, a b)] a))
             (elambda
-            "$fn-arg"
-                -1
-                (ematch
-                (evar "$fn-arg" -1)
-                    [(, (pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911) (evar "a" 1915))]
-                    1908)
+            (pcon "," [(pvar "a" 1913) (pvar "b" 1914)] 1911)
+                (evar "a" 1915)
                 1908))
         (,
         (@@ (+ 1 2))
@@ -361,15 +651,20 @@
             (eapp (evar "int-to-string" 1615) (eprim (pint 23 1616) 1616) 1614))
         (,
         (@@ (let [x 2] x))
-            (elet (pvar "x" 1679) (eprim (pint 2 1680) 1680) (evar "x" 1681) 1676))
+            (elet (, [] [[(, "x" [(, [] (eprim (pint 2 1680) 1680))])]]) (evar "x" 1681) 1679))
         (,
         (@@ (let [(, a b) (, 2 3)] 1))
             (elet
-            (pcon "," [(pvar "a" 1794) (pvar "b" 1795)] 1792)
-                (eapp
-                (eapp (evar "," 1797) (eprim (pint 2 1798) 1798) 1796)
-                    (eprim (pint 3 1799) 1799)
-                    1796)
+            (,
+                []
+                    [[(,
+                    "it"
+                        [(,
+                        [(pcon "," [(pvar "a" 1794) (pvar "b" 1795)] 1792)]
+                            (eapp
+                            (eapp (evar "," 1797) (eprim (pint 2 1798) 1798) 1796)
+                                (eprim (pint 3 1799) 1799)
+                                1796))])]])
                 (eprim (pint 1 1800) 1800)
                 1789))
         (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 3110) 3108))
@@ -434,8 +729,8 @@
             "what"
                 1335
                 []
-                [(,,, "one" 1337 [(tcon "int" 1338)] 1336)
-                (,,, "two" 1340 [(tcon "bool" 1341)] 1339)]
+                [(,,, "one" 1337 [(tcon (tycon "int" (star)) 1338)] 1336)
+                (,,, "two" 1340 [(tcon (tycon "bool" (star)) 1341)] 1339)]
                 1333))
         (,
         (@@ (deftype (array a) (nil) (cons (array a))))
@@ -444,7 +739,14 @@
                 1486
                 [(, "a" 1487)]
                 [(,,, "nil" 1489 [] 1488)
-                (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
+                (,,,
+                "cons"
+                    1491
+                    [(tapp
+                    (tcon (tycon "array" (star)) 1493)
+                        (tcon (tycon "a" (star)) 1494)
+                        1492)]
+                    1490)]
                 1483))
         (,
         (@@ (+ 1 2))
@@ -456,7 +758,7 @@
                 1968))
         (,
         (@@ (defn a [m] m))
-            (sdef "a" 2051 (elambda "m" 2055 (evar "m" 2053) 2049) 2049))])
+            (sdef "a" 2051 (elambda (pvar "m" 2055) (evar "m" 2053) 2049) 2049))])
 
 (** ## Debugging Helpers **)
 
@@ -470,18 +772,18 @@
 
 (defn expr-loc [expr]
     (match expr
-        (estr _ _ l)      l
-        (eprim _ l)       l
-        (evar _ l)        l
-        (equotquot _ l)   l
-        (equot _ l)       l
-        (equot/stmt _ l)  l
-        (equot/pat _ l)   l
-        (equot/type _ l)  l
-        (elambda _ _ _ l) l
-        (elet _ _ _ l)    l
-        (eapp _ _ l)      l
-        (ematch _ _ l)    l))
+        (estr _ _ l)     l
+        (eprim _ l)      l
+        (evar _ l)       l
+        (equotquot _ l)  l
+        (equot _ l)      l
+        (equot/stmt _ l) l
+        (equot/pat _ l)  l
+        (equot/type _ l) l
+        (elambda _ _ l)  l
+        (elet _ _ l)     l
+        (eapp _ _ l)     l
+        (ematch _ _ l)   l))
 
 (def its int-to-string)
 
@@ -548,75 +850,107 @@
                                    (pat-loop target args 0 inner trace)
                                    }\n}")))
 
+(defn orr [default v]
+    (match v
+        (some v) v
+        _        default))
+
+(defn just-pat [pat]
+    (match pat
+        (pany _)           (none)
+        (pvar name l)      (some (sanitize name))
+        (pcon name args l) (match (foldl
+                               (, 0 [])
+                                   args
+                                   (fn [(, i res) arg]
+                                   (match (just-pat arg)
+                                       (none)      (, (+ i 1) res)
+                                       (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res]))))
+                               (, _ [])    none
+                               (, _ items) (some "{${(join ", " (rev items []))}}"))
+        (pstr _ _)         (fatal "Cant use string as a pattern in this location")
+        (pprim _ _)        (fatal "Cant use primitive as a pattern in this location")))
+
+(defn concat [lists]
+    (match lists
+        []                     []
+        [[] ..rest]            (concat rest)
+        [[one ..rest] ..lists] [one ..(concat [rest ..lists])]))
+
 (defn compile [expr trace]
     (let [loc (expr-loc expr)]
-        (source-map
+        (trace-wrap
             loc
-                (trace-wrap
-                loc
-                    trace
-                    (match expr
-                    (estr first tpls l)      (match tpls
-                                                 [] "\"${(escape-string (unescapeString first))}\""
-                                                 _  "`${
-                                                        (escape-string (unescapeString first))
-                                                        }${
-                                                        (join
-                                                            ""
-                                                                (map
-                                                                tpls
-                                                                    (fn [item]
-                                                                    (let [(,, expr suffix l) item]
-                                                                        "${${
-                                                                            (compile expr trace)
-                                                                            }}${
-                                                                            (escape-string (unescapeString suffix))
-                                                                            }"))))
-                                                        }`")
-                    (eprim prim l)           (match prim
-                                                 (pint int _)   (int-to-string int)
-                                                 (pbool bool _) (match bool
-                                                                    true  "true"
-                                                                    false "false"))
-                    (evar name l)            (sanitize name)
-                    (equot inner l)          (jsonify inner)
-                    (equot/stmt inner l)     (jsonify inner)
-                    (equot/type inner l)     (jsonify inner)
-                    (equot/pat inner l)      (jsonify inner)
-                    (equotquot inner l)      (jsonify inner)
-                    (elambda name nl body l) (++
-                                                 ["function name_${(its l)}("
-                                                     (sanitize name)
-                                                     ") { return "
-                                                     (trace-and nl trace (sanitize name) (compile body trace))
-                                                     " }"])
-                    (elet pat init body l)   "(function let_${
-                                                 (its l)
-                                                 }() {const $target = ${
-                                                 (compile init trace)
-                                                 };\n${
-                                                 (compile-pat pat "$target" "return ${(compile body trace)}" trace)
-                                                 };\nthrow new Error('let pattern not matched ${
-                                                 (its (pat-loc pat))
-                                                 }. ' + valueToString($target));})(/*!*/)"
-                    (eapp fn arg l)          (match fn
-                                                 (elambda name _ _ _) "(${(compile fn trace)})(/*${(its l)}*/${(compile arg trace)})"
-                                                 _                    "${(compile fn trace)}(/*${(its l)}*/${(compile arg trace)})")
-                    (ematch target cases l)  "(function match_${
-                                                 (its l)
-                                                 }($target) {\n${
-                                                 (join
-                                                     "\n"
-                                                         (map
-                                                         cases
-                                                             (fn [case]
-                                                             (let [(, pat body) case]
-                                                                 (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
-                                                 }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
-                                                 (its l)
-                                                 }');})(/*!*/${
-                                                 (compile target trace)
-                                                 })")))))
+                trace
+                (match expr
+                (estr first tpls l)           (match tpls
+                                                  [] "\"${(escape-string (unescapeString first))}\""
+                                                  _  "`${
+                                                         (escape-string (unescapeString first))
+                                                         }${
+                                                         (join
+                                                             ""
+                                                                 (map
+                                                                 tpls
+                                                                     (fn [item]
+                                                                     (let [(,, expr suffix l) item]
+                                                                         "${${
+                                                                             (compile expr trace)
+                                                                             }}${
+                                                                             (escape-string (unescapeString suffix))
+                                                                             }"))))
+                                                         }`")
+                (eprim prim l)                (match prim
+                                                  (pint int _)     (int-to-string int)
+                                                  (pfloat float _) (jsonify float)
+                                                  (pbool bool _)   (match bool
+                                                                       true  "true"
+                                                                       false "false"))
+                (evar name l)                 (sanitize name)
+                (equot inner l)               (jsonify inner)
+                (equot/stmt inner l)          (jsonify inner)
+                (equot/type inner l)          (jsonify inner)
+                (equot/pat inner l)           (jsonify inner)
+                (equotquot inner l)           (jsonify inner)
+                (elambda pat body l)          "function name_${
+                                                  (its l)
+                                                  }(${
+                                                  (orr "_" (just-pat pat))
+                                                  }) { return ${
+                                                  (compile body trace)
+                                                  } }"
+                (elet (, [] inferred) body l) (foldl
+                                                  (compile body trace)
+                                                      (concat inferred)
+                                                      (fn [body (, name [(, [] init)])]
+                                                      "(function let_${
+                                                          (its l)
+                                                          }() {const ${
+                                                          (sanitize name)
+                                                          } = ${
+                                                          (compile init trace)
+                                                          };\n${
+                                                          ("return ${body}"
+                                                              ;(compile-pat pat "$target" "return ${body}" trace))
+                                                          };\nthrow new Error('let pattern not matched. ' + valueToString($target));\n})()"))
+                (eapp fn arg l)               (match fn
+                                                  (elambda _ _ _) "(${(compile fn trace)})(${(compile arg trace)})"
+                                                  _               "${(compile fn trace)}(${(compile arg trace)})")
+                (ematch target cases l)       "(function match_${
+                                                  (its l)
+                                                  }($target) {\n${
+                                                  (join
+                                                      "\n"
+                                                          (map
+                                                          cases
+                                                              (fn [case]
+                                                              (let [(, pat body) case]
+                                                                  (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
+                                                  }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
+                                                  (its l)
+                                                  }');\n})(${
+                                                  (compile target trace)
+                                                  })"))))
 
 (compile
     (parse-expr
@@ -626,42 +960,49 @@
             )
         map/nil)
 
+(parse-expr (@@ (let [a 1 b 2] (+ a b))))
+
 (compile (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil)
+
+(compile (parse-expr (@@ ((fn [a] (+ a 2)) 21))) map/nil)
 
 (defn run [v] (eval (compile (parse-expr v) map/nil)))
 
 (,
     run
-        [(, (@@ 1) 1)
+        [(, (@@ (jsonify 1)) "1")
         (, (@@ "hello") "hello")
         (, (@@ "\"") "\"")
         (, (@@ "\n") "\n")
         (, (@@ "\\n") "\\n")
         (, (@@ "\\\n") "\\\n")
-        (, (@@ (+ 2 3)) 5)
+        (, (@@ (jsonify (+ 2 3))) "5")
         (, (@@ "a${2}b") "a2b")
-        (, (@@ ((fn [a] (+ a 2)) 21)) 23)
-        (, (@@ (let [one 1 two 2] (+ 1 2))) 3)
+        (, (@@ (jsonify ((fn [a] (+ a 2)) 21))) "23")
+        (, (@@ (jsonify (let [one 1 two 2] (+ 1 2)))) "3")
         (,
         (@@
-            (match 2
-                2 1))
-            1)
-        (, (@@ (let [a/b 2] a/b)) 2)
+            (jsonify
+                (match 2
+                    2 1)))
+            "1")
+        (, (@@ (jsonify (let [a/b 2] a/b))) "2")
         (,
         (@@
-            (match true
-                true 1
-                2    3))
-            1)
+            (jsonify
+                (match true
+                    true 1
+                    2    3)))
+            "1")
         (, (@@  "`${1}") "`1")
         (, (@@ "${${1}") "${1")
         (,
         (@@
-            (match [1]
-                []      []
-                [a ..b] a))
-            1)])
+            (jsonify
+                (match [1]
+                    []      []
+                    [a ..b] a)))
+            "1")])
 
 (defn compile-stmt [stmt trace]
     (match stmt
@@ -705,3 +1046,7 @@
             (fn [expr (map int bool)] string)))
 
 (parse-and-compile parse-stmt parse-expr compile-stmt compile)
+
+((eval
+    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile})")
+    (parse-and-compile parse-stmt parse-expr compile-stmt compile))

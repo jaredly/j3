@@ -21,7 +21,7 @@ export const loadEv = async (
 
 export const evaluatorFromText = (
     id: string,
-    text: string[],
+    texts: string[],
 ): FullEvalator<
     { values: { [key: string]: any } },
     stmt & { loc: number },
@@ -32,8 +32,14 @@ export const evaluatorFromText = (
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
 
     let data: any = {};
-    text.forEach((text) => {
-        const result = new Function(envArgs, '{' + text + '}')(san);
+    for (let text of texts) {
+        let result;
+        try {
+            result = new Function(envArgs, '{' + text + '}')(san);
+        } catch (err) {
+            console.error(err);
+            return null;
+        }
         if (result.type === 'typecheck') {
             const {
                 0: env_nil,
@@ -85,7 +91,7 @@ export const evaluatorFromText = (
             console.log(id, `The result type is unknown...?`, result.type);
             Object.assign(data, result);
         }
-    });
+    }
     if (data.type === 'full') {
         return data;
     }

@@ -1,4 +1,5 @@
 const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1});
+const pfloat = (v0) => (v1) => ({type: "pfloat", 0: v0, 1: v1});
 const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1});
 const snd = /*527*/function name_527(tuple) { return /*533*/(function let_533() {const $target = /*540*/tuple/*<540*/;
 if ($target.type === ",") {
@@ -1584,7 +1585,17 @@ return /*1061*//*1061*//*1062*/eprim/*<1062*/(/*1061*//*1063*//*1063*//*1064*/pi
 }
 }
 if ($target.type === "none") {
+return /*8329*/(function match_8329($target) {
+if ($target.type === "some") {
+{
+let float = $target[0];
+return /*8341*//*8341*//*8342*/eprim/*<8342*/(/*8341*//*8343*//*8343*//*8344*/pfloat/*<8344*/(/*8343*//*8345*/float/*<8345*/)/*<8343*/(/*8343*//*8346*/l/*<8346*/)/*<8343*/)/*<8341*/(/*8341*//*8347*/l/*<8347*/)/*<8341*/
+}
+}
+if ($target.type === "none") {
 return /*1068*//*1068*//*1069*/evar/*<1069*/(/*1068*//*1071*/id/*<1071*/)/*<1068*/(/*1068*//*3537*/l/*<3537*/)/*<1068*/
+}
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 8329');})(/*!*//*8331*//*8332*/string_to_float/*<8332*/(/*8331*//*8333*/id/*<8333*/)/*<8331*/)/*<8329*/
 }
 throw new Error('failed to match ' + jsonify($target) + '. Loc: 970');})(/*!*//*1055*//*1056*/string_to_int/*<1056*/(/*1055*//*1057*/id/*<1057*/)/*<1055*/)/*<970*/
 }
@@ -2014,6 +2025,12 @@ if ($target.type === "pint") {
 {
 let int = $target[0];
 return /*2763*//*2764*/int_to_string/*<2764*/(/*2763*//*2765*/int/*<2765*/)/*<2763*/
+}
+}
+if ($target.type === "pfloat") {
+{
+let float = $target[0];
+return /*8359*//*8360*/jsonify/*<8360*/(/*8359*//*8361*/float/*<8361*/)/*<8359*/
 }
 }
 if ($target.type === "pbool") {

@@ -26,7 +26,7 @@
         (elet pat expr expr int)
         (ematch expr (array (, pat expr)) int))
 
-(deftype prim (pint int int) (pbool bool int))
+(deftype prim (pint int int) (pfloat float int) (pbool bool int))
 
 (deftype pat
     (pany int)
@@ -181,7 +181,9 @@
                                                                                     l)
         (cst/identifier id l)                                               (match (string-to-int id)
                                                                                 (some int) (eprim (pint int l) l)
-                                                                                (none)     (evar id l))
+                                                                                (none)     (match (string-to-float id)
+                                                                                               (some float) (eprim (pfloat float l) l)
+                                                                                               (none)       (evar id l)))
         (cst/list [(cst/identifier "@" _) body] l)                          (equot (parse-expr body) l)
         (cst/list [(cst/identifier "@@" _) body] l)                         (equotquot body l)
         (cst/list [(cst/identifier "@!" _) body] l)                         (equot/stmt (parse-stmt body) l)
@@ -634,10 +636,11 @@
                                                                            }"))))
                                                        }`")
                     (eprim prim l)          (match prim
-                                                (pint int _)   (int-to-string int)
-                                                (pbool bool _) (match bool
-                                                                   true  "true"
-                                                                   false "false"))
+                                                (pint int _)     (int-to-string int)
+                                                (pfloat float _) (jsonify float)
+                                                (pbool bool _)   (match bool
+                                                                     true  "true"
+                                                                     false "false"))
                     (evar name l)           (sanitize name)
                     (equot inner l)         (jsonify inner)
                     (equot/stmt inner l)    (jsonify inner)
@@ -699,36 +702,39 @@
 
 (,
     run
-        [(, (@@ 1) 1)
+        [(, (@@ (jsonify 1)) "1")
         (, (@@ "hello") "hello")
         (, (@@ "\"") "\"")
         (, (@@ "\n") "\n")
         (, (@@ "\\n") "\\n")
         (, (@@ "\\\n") "\\\n")
-        (, (@@ (+ 2 3)) 5)
+        (, (@@ (jsonify (+ 2 3))) "5")
         (, (@@ "a${2}b") "a2b")
-        (, (@@ ((fn [a] (+ a 2)) 21)) 23)
-        (, (@@ (let [one 1 two 2] (+ 1 2))) 3)
+        (, (@@ (jsonify ((fn [a] (+ a 2)) 21))) "23")
+        (, (@@ (jsonify (let [one 1 two 2] (+ 1 2)))) "3")
         (,
         (@@
-            (match 2
-                2 1))
-            1)
-        (, (@@ (let [a/b 2] a/b)) 2)
+            (jsonify
+                (match 2
+                    2 1)))
+            "1")
+        (, (@@ (jsonify (let [a/b 2] a/b))) "2")
         (,
         (@@
-            (match true
-                true 1
-                2    3))
-            1)
+            (jsonify
+                (match true
+                    true 1
+                    2    3)))
+            "1")
         (, (@@  "`${1}") "`1")
         (, (@@ "${${1}") "${1")
         (,
         (@@
-            (match [1]
-                []      []
-                [a ..b] a))
-            1)])
+            (jsonify
+                (match [1]
+                    []      []
+                    [a ..b] a)))
+            "1")])
 
 (defn compile-stmt [stmt trace]
     (match stmt

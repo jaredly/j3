@@ -61,6 +61,9 @@ export const fnsEvaluator = (
             return { js: [], values: sanitizedEnv(builtins()) };
         },
 
+        // @ts-ignore
+        _data: data,
+
         initType() {
             return data['env_nil'];
         },
@@ -141,17 +144,23 @@ export const fnsEvaluator = (
             data['externals_stmt'] && data['names']
                 ? {
                       dependencies(stmt) {
-                          const deps = unwrapArray<{
-                              type: ',';
-                              0: string;
-                              1: { type: 'value' | 'type' };
-                              2: number;
-                          }>(data['externals_stmt'](stmt));
-                          return deps.map((item) => ({
-                              name: item[0],
-                              loc: item[2],
-                              kind: item[1].type,
-                          }));
+                          try {
+                              const deps = unwrapArray<{
+                                  type: ',';
+                                  0: string;
+                                  1: { type: 'value' | 'type' };
+                                  2: number;
+                              }>(data['externals_stmt'](stmt));
+                              return deps.map((item) => ({
+                                  name: item[0],
+                                  loc: item[2],
+                                  kind: item[1].type,
+                              }));
+                          } catch (err) {
+                              console.warn(`Cant get dependencies`, stmt);
+                              console.error(err);
+                              return [];
+                          }
                       },
 
                       stmtNames(stmt) {

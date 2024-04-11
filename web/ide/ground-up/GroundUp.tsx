@@ -136,7 +136,7 @@ export const GroundUp = ({
                 ))}
             </WithStore>
             {/* <div>{JSON.stringify(results.hover)}</div> */}
-            <pre>{JSON.stringify(results.errors, null, 2)}</pre>
+            {/* <pre>{JSON.stringify(results.errors, null, 2)}</pre> */}
             <div
                 style={{
                     position: 'fixed',

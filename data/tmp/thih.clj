@@ -791,6 +791,24 @@
 
 (** ## Type Unification **)
 
+(** Some more types **)
+
+(deftype pred (isin string type))
+
+(defn qual= [(=> preds t) (=> preds' t') t=]
+    (if (array= preds preds' pred=)
+        (t= t t')
+            false))
+
+(deftype (qual t) (=> (array pred) t))
+
+(defn pred->s [(isin name type)] "${(type->s type)} ∈ ${name}")
+
+(defn pred= [(isin id type) (isin id' type')]
+    (if (= id id')
+        (type= type type')
+            false))
+
 (def matchPred (lift type-match))
 
 (def mguPred (lift mgu))
@@ -812,22 +830,6 @@
 
 (defn qual/apply [subst (=> preds t) t/apply]
     (=> (map (pred/apply subst) preds) (t/apply subst t)))
-
-(defn pred= [(isin id type) (isin id' type')]
-    (if (= id id')
-        (type= type type')
-            false))
-
-(deftype pred (isin string type))
-
-(defn pred->s [(isin name type)] "${(type->s type)} ∈ ${name}")
-
-(defn qual= [(=> preds t) (=> preds' t') t=]
-    (if (array= preds preds' pred=)
-        (t= t t')
-            false))
-
-(deftype (qual t) (=> (array pred) t))
 
 (defn type-match [t1 t2]
     (** We're trying to find a substitution that will turn t1 into t2  **)
@@ -911,6 +913,11 @@
     (class-env
         (map string (, (array string) (array (qual pred))))
             (array type)))
+
+(defn class-env/merge [(class-env classes defaults) (class-env classes' defaults')]
+    (class-env
+        (map/merge classes classes')
+            (concat [defaults defaults'])))
 
 (def class-env/nil (class-env map/nil []))
 
@@ -1152,7 +1159,14 @@
             ; typealiases
             (map string (, (array kind) type))))
 
-(def tenv/nil (type-env map/nil map/nil))
+(def tenv/nil (type-env map/nil map/nil map/nil))
+
+(defn tenv/merge [(type-env const_ types aliases)
+    (type-env const' types' aliases')]
+    (type-env
+        (map/merge const_ const')
+            (map/merge types types')
+            (map/merge aliases aliases')))
 
 (defn map-err [f v]
     (match v
@@ -1527,7 +1541,7 @@
             (fn [(, a preds)] "${(tyvar->s a)} ${(join ";" (map pred->s preds))}")
                 vps)))
 
-(defn empty [x]
+(defn is-empty [x]
     (match x
         [] true
         _  false))
@@ -1536,7 +1550,7 @@
     (let [
         vps (ambiguities ce known-variables predicates)
         tss (map (candidates ce) vps)]
-        (if (any empty tss)
+        (if (any is-empty tss)
             (err
                 "Cannot resolve ambiguity vps: ${
                     (vps->s vps)
@@ -1756,7 +1770,9 @@
                     (, "floating" ["float" "double"])
                     (, "realfrac" ["float" "double"])
                     (, "show" ["unit" "char" "int" "float" "double" "bool" "ordering"])
-                    (, "pretty" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    (,
+                    "pretty"
+                        ["unit" "char" "int" "string" "float" "double" "bool" "ordering"])
                     (, "ix" ["unit" "char" "int" "bool" "ordering"])]))]))
 
 (defn dot [a b c] (a (b c)))
@@ -1852,16 +1868,25 @@
 (def builtin-full
     (full-env builtin-tenv builtin-ce builtin-assumptions))
 
+filter
+
 (defn infer-stmt [(full-env tenv ce assumps) stmt]
     (match stmt
         (sdef name nl body l)                  (match (infer/program tenv ce assumps [(, [] [[(, name [(, [] body)])]])])
-                                                   (ok (,,, subst tenv nidx assumps)) subst
+                                                   (ok (,,, subst tenv nidx assumps)) (filter (fn [(!>! n _)] (= n name)) assumps)
                                                    (err e)                            (fatal e))
-        (stypealias name nl args type l)       map/nil
-        (sdeftype name nl args constructors l) map/nil
+        (stypealias name nl args type l)       []
+        (sdeftype name nl args constructors l) []
         (sexpr body l)                         (match (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])
-                                                   (ok (,,, subst tenv nidx assumps)) subst
+                                                   (ok (,,, subst tenv nidx assumps)) []
                                                    (err e)                            (fatal e))))
+
+(defn infer [(full-env tenv ce assumps) body]
+    (match (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])
+        (ok (,,, subst tenv nidx assumps)) (match (filter (fn [(!>! n _)] (= n "it")) assumps)
+                                               [(!>! n (forall what (=> kinds typ)))] typ
+                                               _                                      (fatal "No type found"))
+        (err e)                            (fatal e)))
 
 (defn infer-alias [(full-env tenv ce assumps) (,, name args type)]
     (fatal "ok here we are")
@@ -1900,7 +1925,7 @@
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
 
-(defn infer-deftype2 [tenv' bound tname tnl targs constructors l]
+;(defn infer-deftype2 [tenv' bound tname tnl targs constructors l]
     (let-> [
         names           (<- (map (fn [(,,, name _ _ _)] name) constructors))
         final           (<-
@@ -1939,11 +1964,11 @@
                     (map/set map/nil tname (, (len targs) (set/from-list names)))
                     map/nil))))
 
-(defn infer-stypes [tenv' stypes salias]
+;(defn infer-stypes [tenv' stypes salias]
     (let-> [
         names                    (<-
                                      (foldl
-                                         (map salias (fn [(,, name _ _)] name))
+                                         (map (fn [(,, name _ _)] name) salias)
                                              stypes
                                              (fn [names (sdeftype name _ _ _ _)] [name ..names])))
         (tenv _ _ types aliases) (<- tenv')
@@ -2000,7 +2025,7 @@
                                                                  sexps)
                          (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
-(defn infer-defns [tenv stmts]
+;(defn infer-defns [tenv stmts]
     (match stmts
         [one] (infer-stmt tenv one)
         _     (let-> [zipped (infer-several tenv stmts)]
@@ -2011,7 +2036,7 @@
                               (fn [tenv (, name type)]
                               (tenv/set-type tenv name (generalize tenv type))))))))
 
-(defn infer-stmtss [tenv' stmts]
+;(defn infer-stmtss [tenv' stmts]
     (let-> [
         (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
         type-tenv                       (infer-stypes tenv' stypes salias)
@@ -2029,25 +2054,210 @@
         full-env
             (fn [full-env (array stmt)] full-env)
             (fn [full-env full-env] full-env)
-            (fn [full-env expr] full-env)
+            (fn [full-env expr] type)
             (fn [stmt] (array locname))
             (fn [expr] (array locname))
             (fn [stmt] (array locname))
             (fn [type] string)
             (fn [full-env string] (option type))))
 
+(defn infer-stmts [(full-env tenv ce assumps) stmts]
+    (full-env
+        tenv/nil
+            class-env/nil
+            (foldl
+            assumps
+                stmts
+                (fn [assumps stmt] (infer-stmt (full-env tenv ce assumps) stmt)))))
+
+(defn full-env/merge [(full-env a b c) (full-env d e f)]
+    (full-env (tenv/merge a d) (class-env/merge b e) (concat [c f])))
+
+
+
 infer/program
+
+
+
+(** ## Dependency analysis
+    Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
+
+(deftype (bag a) (one a) (many (array (bag a))) (empty))
+
+(defn bag/and [first second]
+    (match (, first second)
+        (, (empty) a)           a
+        (, a (empty))           a
+        (, (many [a]) (many b)) (many [a ..b])
+        (, a (many b))          (many [a ..b])
+        _                       (many [first second])))
+
+(defn bag/fold [f init bag]
+    (match bag
+        (empty)      init
+        (one v)      (f init v)
+        (many items) (foldr init items (bag/fold f))))
+
+(defn concat-two [one two]
+    (match one
+        []           two
+        [one]        [one ..two]
+        [one ..rest] [one ..(concat-two rest two)]))
+
+(defn bag/to-list [bag]
+    (match bag
+        (empty)     []
+        (one a)     [a]
+        (many bags) (foldr
+                        []
+                            bags
+                            (fn [res bag]
+                            (match bag
+                                (empty) res
+                                (one a) [a ..res]
+                                _       (concat-two (bag/to-list bag) res))))))
+
+(,
+    bag/to-list
+        [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [1 2 10])])
+
+(defn pat-names [pat]
+    (match pat
+        (pany _)           set/nil
+        (pvar name l)      (set/add set/nil name)
+        (pcon name args l) (foldl
+                               set/nil
+                                   args
+                                   (fn [bound arg] (set/merge bound (pat-names arg))))
+        (pstr string int)  set/nil
+        (pprim prim int)   set/nil))
+
+(defn pat-externals [pat]
+    (match pat
+        (** Soo this should be probably a (type)? **)
+        (pcon name args l) (bag/and (one (,, name (value) l)) (many (map pat-externals args)))
+        _                  empty))
+
+(defn externals 
+    [bound expr]
+        (match expr
+        (evar name l)                       (match (set/has bound name)
+                                                true empty
+                                                _    (one (,, name (value) l)))
+        (eprim prim l)                      empty
+        (estr first templates int)          (many
+                                                (map
+                                                    (fn [arg]
+                                                        (match arg
+                                                            (,, expr _ _) (externals bound expr)))
+                                                        templates))
+        (equot expr int)                    empty
+        (elambda pats body int)             (bag/and
+                                                (foldl empty (map pat-externals [pats]) bag/and)
+                                                    (externals (foldl bound (map pat-names [pats]) set/merge) body))
+        (elet (, explicit inferred) body l) (let [
+                                                (, bag bound) (foldl
+                                                                  (, empty bound)
+                                                                      inferred
+                                                                      (fn [(, bag bound) items]
+                                                                      (foldl
+                                                                          (, bag bound)
+                                                                              items
+                                                                              (fn [(, bag bound) (, name alts)]
+                                                                              (foldl
+                                                                                  (, bag bound)
+                                                                                      alts
+                                                                                      (fn [(, bag bound) (, pats init)]
+                                                                                      (,
+                                                                                          (foldl bag (map pat-externals pats) bag/and)
+                                                                                              (foldl bound (map pat-names pats) set/merge))))))))]
+                                                (bag/and bag (externals bound body)))
+        (eapp target args int)              (bag/and
+                                                (externals bound target)
+                                                    (foldl empty (map (externals bound) [args]) bag/and))
+        (ematch expr cases int)             (bag/and
+                                                (externals bound expr)
+                                                    (foldl
+                                                    empty
+                                                        cases
+                                                        (fn [bag arg]
+                                                        (match arg
+                                                            (, pat body) (bag/and
+                                                                             (bag/and bag (pat-externals pat))
+                                                                                 (externals (set/merge bound (pat-names pat)) body))))))))
+
+(,
+    (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil" "()"])))
+        [(, (@ hi) [(,, "hi" (value) 16110)])
+        (, (@ [1 2 c]) [(,, "c" (value) 16144)])
+        (,
+        (@ (one two three))
+            [(,, "one" (value) 16158)
+            (,, "two" (value) 16159)
+            (,, "three" (value) 16160)])
+        (, (@ ()) [])])
+
+;(defn dot [a b c] (a (b c)))
+
+(defn externals-type [bound t]
+    (match t
+        (tvar _ _)              empty
+        (tcon (tycon name _) l) (if (set/has bound name)
+                                    empty
+                                        (one (,, name (type) l)))
+        (tapp one two _)        (bag/and (externals-type bound one) (externals-type bound two))))
+
+(defn names [stmt]
+    (match stmt
+        (sdef name l _ _)                  [(,, name (value) l)]
+        (sexpr _ _)                        []
+        (stypealias name l _ _ _)          [(,, name (type) l)]
+        (sdeftype name l _ constructors _) [(,, name (type) l)
+                                               ..(map (fn [(,,, name l _ _)] (,, name (value) l)) constructors)]))
+
+(defn externals-stmt [stmt]
+    (bag/to-list
+        (match stmt
+            (sdeftype string int free constructors int) (let [frees (set/from-list (map fst free))]
+                                                            (many
+                                                                (map
+                                                                    (fn [(,,, name l args _)]
+                                                                        (match args
+                                                                            [] empty
+                                                                            _  (many (map (externals-type frees) args))))
+                                                                        constructors)))
+            (stypealias name _ args body _)             (let [frees (set/from-list (map fst args))]
+                                                            (externals-type frees body))
+            (sdef name int body int)                    (externals (set/add set/nil name) body)
+            (sexpr expr int)                            (externals set/nil expr))))
+
+;(bag/to-list
+    (externals
+        set/nil
+            (@
+            (fn [x]
+                (+
+                    x
+                        23
+                        (match hello
+                        (one a) a
+                        (two b) (+ b c)
+                        _       [mx]))))))
 
 (** ## Export as Evaluator **)
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
-    (evaluator builtin-full infer-stmts)
-        ;(typecheck
-        (inference builtin-env infer-stmtss tenv/merge infer)
-            (analysis externals-stmt externals-list names)
-            type-to-string
-            (fn [tenv name]
-            (match (tenv/type tenv name)
-                (some v) (some (scheme/type v))
-                _        (none)))))
+    "({0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer,\n  4: externals_stmt, 5: externals_expr, 6: names,\n  7: type_to_string, 8: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    (evaluator
+        builtin-full
+            infer-stmts
+            full-env/merge
+            infer
+            externals-stmt
+            (fn [expr] (bag/to-list (externals set/nil expr)))
+            names
+            type->s
+            (fn [(full-env tenv ce assumps) name]
+            (match (filter (fn [(!>! n _)] (= n name)) assumps)
+                [(!>! _ (forall _ (=> _ typ))) .._] (some typ)
+                _                                   (none)))))
