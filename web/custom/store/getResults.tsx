@@ -53,15 +53,19 @@ export const getResults = <
 >(
     state: NUIState,
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
-    debugExecOrder: boolean,
+    debug: { execOrder: boolean; disableEvaluation: boolean },
     cache: ResultsCache<Stmt>,
 ) => {
-    maybeResetCache<Env, Stmt, Expr>(cache, evaluator, debugExecOrder);
+    maybeResetCache<Env, Stmt, Expr>(
+        cache,
+        debug.disableEvaluation ? null : evaluator,
+        debug.execOrder,
+    );
     const lastState = cache.lastState;
     cache.lastState = state;
 
     const tops = findTops(state);
-    if (!evaluator) {
+    if (!evaluator || debug.disableEvaluation) {
         return resultsWithoutEvaluator<Stmt>(tops, state, cache);
     }
 
@@ -162,7 +166,7 @@ export const getResults = <
         }
     });
 
-    if (debugExecOrder) {
+    if (debug.execOrder) {
         sortedTops.forEach((group, i) => {
             showExecOrder(group, results, i);
         });

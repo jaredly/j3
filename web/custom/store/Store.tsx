@@ -54,7 +54,7 @@ export type Store = {
     ): () => void;
     // everyChange(fn: (state: NUIState) => void): () => void;
     on(evt: Evt, fn: (state: NUIState) => void): () => void;
-    setDebug(execOrder: boolean): void;
+    setDebug(execOrder: boolean, disableEvaluation: boolean): void;
 };
 
 export const allNodesBetween = (

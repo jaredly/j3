@@ -30,6 +30,7 @@ export type Debug = {
     ids: boolean;
     execOrder: boolean;
     selection: boolean;
+    disableEvaluation: boolean;
 };
 
 export const GroundUp = ({
@@ -49,14 +50,15 @@ export const GroundUp = ({
         ids: false,
         execOrder: false,
         selection: false,
+        disableEvaluation: false,
     });
 
     const store = useStore(initial);
     const { state, results } = useGlobalState(store);
 
     useEffect(() => {
-        store.setDebug(debug.execOrder);
-    }, [debug.execOrder]);
+        store.setDebug(debug.execOrder, debug.disableEvaluation);
+    }, [debug.execOrder, debug.disableEvaluation]);
 
     let first = useRef(true);
     useEffect(() => {
@@ -149,7 +151,14 @@ export const GroundUp = ({
                     flexDirection: 'column',
                 }}
             >
-                {(['ids', 'selection', 'execOrder'] as const).map((k) => (
+                {(
+                    [
+                        'ids',
+                        'selection',
+                        'execOrder',
+                        'disableEvaluation',
+                    ] as const
+                ).map((k) => (
                     <div key={k}>
                         <label>
                             <input

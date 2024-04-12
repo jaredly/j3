@@ -55,7 +55,7 @@ one
 
 many
 
-(many [1])
+(many [1 2 3 4 5 7 8 9 0])
 
 empty
 

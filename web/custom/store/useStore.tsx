@@ -37,17 +37,14 @@ export const useStore = (initialState: NUIState) => {
 
         let state = initialState;
         let evaluator: FullEvalator<any, any, any> | null = null;
-        let debugExecOrder = { current: false };
+        const debug = {
+            current: { execOrder: false, disableEvaluation: false },
+        };
 
         const updateResults = adaptiveBounce(() => {
             const prev = results;
             // console.log('updating results');
-            results = getResults(
-                state,
-                evaluator,
-                debugExecOrder.current,
-                cache,
-            );
+            results = getResults(state, evaluator, debug.current, cache);
 
             evtListeners.results.forEach((f) => f(state));
             evtListeners.all.forEach((f) => f(state));
@@ -75,12 +72,7 @@ export const useStore = (initialState: NUIState) => {
             evaluator = ev;
             console.log('loaded new', async);
             if (async) {
-                results = getResults(
-                    state,
-                    evaluator,
-                    debugExecOrder.current,
-                    cache,
-                );
+                results = getResults(state, evaluator, debug.current, cache);
 
                 evtListeners.results.forEach((f) => f(state));
                 evtListeners.all.forEach((f) => f(state));
@@ -90,16 +82,12 @@ export const useStore = (initialState: NUIState) => {
             }
         });
 
-        let results = getResults(
-            state,
-            evaluator,
-            debugExecOrder.current,
-            cache,
-        );
+        let results = getResults(state, evaluator, debug.current, cache);
 
         return {
-            setDebug(nv) {
-                debugExecOrder.current = nv;
+            setDebug(nv, disableEvaluation) {
+                debug.current.execOrder = nv;
+                debug.current.disableEvaluation = disableEvaluation;
                 updateResults();
             },
             dispatch(action) {
@@ -112,7 +100,7 @@ export const useStore = (initialState: NUIState) => {
                         results = getResults(
                             state,
                             evaluator,
-                            debugExecOrder.current,
+                            debug.current,
                             cache,
                         );
 
