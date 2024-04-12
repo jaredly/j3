@@ -1,6 +1,7 @@
 import React, {
     PropsWithChildren,
     PropsWithoutRef,
+    useEffect,
     useLayoutEffect,
     useState,
 } from 'react';
@@ -75,6 +76,28 @@ export const Hover = ({
 }) => {
     const found = calc();
 
+    const [show, setShow] = useState(false);
+
+    useEffect(() => {
+        const down = (evt: KeyboardEvent) => {
+            if (evt.key === 'Alt') {
+                setShow(true);
+            }
+        };
+        const up = (evt: KeyboardEvent) => {
+            if (evt.key === 'Alt') {
+                setShow(false);
+            }
+            console.log(evt.key);
+        };
+        document.addEventListener('keydown', down);
+        document.addEventListener('keyup', up);
+        return () => {
+            document.removeEventListener('keydown', down);
+            document.removeEventListener('keyup', up);
+        };
+    }, []);
+
     const node = found.length ? getRegNode(found[0].idx, state.regs) : null;
     // if (!node || found == null)
     //     return (
@@ -86,7 +109,7 @@ export const Hover = ({
     //                 : null}
     //         </div>
     //     );
-    if (!node || !found.length) return null;
+    if (!node || !found.length || !show) return null;
 
     const box = subRect(
         node.getBoundingClientRect(),

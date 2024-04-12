@@ -1157,7 +1157,7 @@
 
 (deftype scheme (forall (array kind) (qual type)))
 
-(defn scunaheme= [(forall kinds qual) (forall kinds' qual')]
+(defn scheme= [(forall kinds qual) (forall kinds' qual')]
     (if (array= kinds kinds' kind=)
         (qual= qual qual' type=)
             false))

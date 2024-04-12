@@ -69,6 +69,10 @@ export const getResults = <
         return resultsWithoutEvaluator<Stmt>(tops, state, cache);
     }
 
+    const TIME = 1;
+
+    if (TIME) console.time('parse');
+
     // By the end of this, `cache.nodes` will be populated for
     // each `top.top`
     const { changes, idForName, results } = parseNodesAndDeps(
@@ -79,7 +83,12 @@ export const getResults = <
         evaluator,
     );
 
+    if (TIME) console.timeEnd('parse');
+    if (TIME) console.time('sort');
+
     const sortedTops: DepsOrNoDeps[][] = sortTopsWithDeps<Stmt>(cache, tops);
+
+    if (TIME) console.timeEnd('sort');
 
     const topsById: Record<number, ReturnType<typeof findTops>[0]> = {};
     tops.forEach((top) => (topsById[top.top] = top));
@@ -94,28 +103,23 @@ export const getResults = <
         evaluator,
     };
 
-    results.env = evaluator.init();
-    results.tenv = evaluator.initType?.();
-    sortedTops.forEach((group, i) => {
+    const meta = sortedTops.map((group) => {
         const ids = group.map((g) => g.id).sort();
         const groupKey = ids.join(':');
         const stmts = collectStatements<Stmt>(group, cache, results);
         const isPlugin = group.some((node) => topsById[node.id].ns.plugin);
-        if (isPlugin) {
-            if (stmts && evaluator.infer) {
-                processTypeInference<Env, Stmt, Expr>(
-                    stmts,
-                    group,
-                    groupKey,
-                    ids,
-                    stuff,
-                );
-            }
+        return { ids, groupKey, stmts, isPlugin };
+    });
 
-            handlePluginGroup<Env, Stmt, Expr>(group, stuff);
-            return;
-        }
+    const groupChanges: {
+        [groupKey: string]: { type?: boolean; value?: boolean };
+    } = {};
 
+    if (TIME) console.time('type');
+    results.tenv = evaluator.initType?.();
+    sortedTops.forEach((group, i) => {
+        const { isPlugin, stmts, groupKey, ids } = meta[i];
+        groupChanges[groupKey] = {};
         if (!stmts) return;
 
         const allDeps = unique(
@@ -130,7 +134,10 @@ export const getResults = <
             group.some((node) => changes[node.id].stmt) ||
             allDeps.some((id) => changes[id].type);
 
+        groupChanges[groupKey].type = retype;
+
         if (retype && evaluator.infer && results.tenv) {
+            if (TIME > 1) console.time(`type - ${groupKey}`);
             const failed = processTypeInference<Env, Stmt, Expr>(
                 stmts,
                 group,
@@ -138,9 +145,9 @@ export const getResults = <
                 ids,
                 stuff,
             );
+            if (TIME > 1) console.timeEnd(`type - ${groupKey}`);
             if (failed) return;
         }
-        Object.assign(results.hover, cache.hover[groupKey]);
 
         if (cache.types[groupKey] && evaluator.addTypes) {
             results.tenv = evaluator.addTypes!(
@@ -149,8 +156,31 @@ export const getResults = <
             );
         }
 
+        Object.assign(results.hover, cache.hover[groupKey]);
+    });
+    if (TIME) console.timeEnd('type');
+
+    if (TIME) console.time('eval');
+    results.env = evaluator.init();
+    sortedTops.forEach((group, i) => {
+        const { isPlugin, stmts, groupKey, ids } = meta[i];
+
+        if (isPlugin) {
+            handlePluginGroup<Env, Stmt, Expr>(group, stuff);
+            return;
+        }
+
+        if (!stmts) return;
+
+        const allDeps = unique(
+            group
+                .flatMap((node) => node.deps ?? [])
+                .map((n) => idForName[n.name])
+                .filter(filterNulls),
+        );
+
         const reEval =
-            retype ||
+            groupChanges[groupKey].type ||
             group.some(
                 (node) =>
                     changes[node.id].ns ||
@@ -165,6 +195,7 @@ export const getResults = <
             cacheEvaluation<Stmt>(group, results, cache);
         }
     });
+    if (TIME) console.timeEnd('eval');
 
     if (debug.execOrder) {
         sortedTops.forEach((group, i) => {

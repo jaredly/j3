@@ -952,6 +952,8 @@
             (fn [stmt] (array (,, string name-kind int)))
             (fn [expr] (array (,, string name-kind int)))))
 
+1
+
 ((eval
     "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr})")
     (parse-and-compile

@@ -1,5 +1,59 @@
 
+## CACHING the type information:
+
+results without `env` is 1.7mb for THIH.
+hrm actually what I probably want
+is to persist `ResultsCache`, sans `.results`.
+That would be super nice.
+That does mean that the `lastEvaluator` would need to
+use a `serializable key` instead of the evaluator itself.
+But thats easy to do.
+
+## Lookin in to perf stuff
+
+- [x] WHY does "type"ing have a 100ms constant overhead?
+  WOWZZ for parse-1-args, its an 800ms constant overhead
+  Ahah, I was always re-typing all Plugins. lol bad move.
+
+- [x] ok, now that the "constant overhead for re-typing everything" is in much better shape,
+  I can probably let go of perf for a minute?
+
+- [ ] so, algw-subst vs type-args ... it's like 3x slower :( sad day. I guess its doing a lot more?
+  alsoo ... it's like fundamentally a less efficient algorithm. because its
+  using a bunch of subst stuff that it doesn't actually need, right?
+  like, things that it cant possibly use.
+  should I try to make it more efficient?
+  - [ ] nah, I mean maybe I can work on that for THIH? Because that's the one that's more ... pressing?
+  - Yeah, because: now that the Plugins issue is out of the way,
+    update after editing is down to <100ms.
+    Even though initial load takes 8s 😬.
+    OH HERE's a Q:
+    Can I also cache ... the type infos?
+    Like I really should be able to, right?
+    the type env is just jsonnnn I think.
+    That would be super nice actually.
+    - RES without
+
+...
+
+So ... thikning about THIH.
+It's bascially:
+algw + kinds + type classes.
+
+Now, type classes probably don't make a ton of sense without kinds
+BUT
+you can just add kinds first, right? What would that look like.
+
+```clj
+(deftype (mywhat a:(* -> *))
+  (lol (a int))
+  (who (a float)))
+```
+
+
 ## Hover for Type please and thank you
+
+- [x] ONLY SHOW HOVER IF ALT KEY IS PRESSED
 
 - [x] basic hover for type, boring text
 - [x] gotta cache those

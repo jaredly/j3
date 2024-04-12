@@ -2376,7 +2376,7 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 8447');})(/*!*//
 
 const simplify = /*8490*/function name_8490(ce) { return /*8498*//*8499*/simplify_inner/*<8499*//*8498*/(/*8500*/ce/*<8500*/)(/*8501*/nil/*<8501*/)/*<8498*/ }/*<8490*/;
 
-const scunaheme$eq = /*8564*/function name_8564({0: kinds, 1: qual}) {
+const scheme$eq = /*8564*/function name_8564({0: kinds, 1: qual}) {
  return function name_8564({0: kinds$qu, 1: qual$qu}) {
  return /*8579*/(function match_8579($target) {
 if ($target === true) {
@@ -2997,7 +2997,7 @@ if ($target.type === "nil") {
 return /*23778*/""/*<23778*/
 }
 return /*23782*/`${/*23764*//*23767*/join/*<23767*//*23764*/(/*23768*/" "/*<23768*/)(/*23770*//*23771*/map/*<23771*//*23770*/(/*23772*/pred_$gts/*<23772*/)(/*23773*/preds/*<23773*/)/*<23770*/)/*<23764*/}; `/*<23782*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 23774');})(/*!*//*23776*/preds/*<23776*/)/*<23774*/}${/*23785*//*23787*/type_debug_$gts/*<23787*//*23785*/(/*23788*/t/*<23788*/)/*<23785*/}`/*<23742*/ }/*<23730*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 23774');})(/*!*//*23776*/preds/*<23776*/)/*<23774*/}${/*23785*//*23787*/type_$gts/*<23787*//*23785*/(/*23788*/t/*<23788*/)/*<23785*/}`/*<23742*/ }/*<23730*/;
 
 const qual_$gts = /*23855*/function name_23855(t_$gts) { return function name_23855({0: preds, 1: t}) {
  return /*23865*/`${/*23867*/(function match_23867($target) {
