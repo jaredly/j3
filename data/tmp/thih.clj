@@ -990,15 +990,17 @@
                 (equot/type inner l)          (jsonify inner)
                 (equot/pat inner l)           (jsonify inner)
                 (equotquot inner l)           (jsonify inner)
-                (elambda pats body l)         "function name_${
+                (elambda pats body l)         "function lambda_${
                                                   (its l)
                                                   }(${
                                                   (join
-                                                      ", "
+                                                      ") { return function lambda_${(its l)}("
                                                           (mapi (fn [pat i] (orr "_${(int-to-string i)}" (just-pat pat))) 0 pats))
                                                   }) { return ${
                                                   (compile body trace)
-                                                  } }"
+                                                  } ${
+                                                  (join "" (map (fn [_] "}") pats))
+                                                  }"
                 (elet (, [] inferred) body l) (foldl
                                                   (compile body trace)
                                                       (concat inferred)
