@@ -40,6 +40,10 @@
 
 (lol true)
 
+(def xyz (lol "asd"))
+
+(defn xyzz [a] 20)
+
 (defn hi [x] "Hi ${(+ x 2)}")
 
 (** ## A mildly complex function **)

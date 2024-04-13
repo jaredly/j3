@@ -12,8 +12,19 @@ But thats easy to do.
 
 - [x] lastEvaluator should be a `key` instead of the real thing
 - [x] when saving, save the cache
-- [ ] when loading, load the cache
+- [x] when loading, load the cache
+- [x] How to bust? Do "disableEvaluation". Nice.
 
+
+## Next steps for thih:
+
+- [x] return schemes not types
+  - `type-to-string` needs to ... know about quals. and preds.
+  - so like ... ok yeah the thing we retunr should be the ... scheme, not the type.
+- [ ] why do I keep getting "kinds dont match" for toplevel exprs?
+- [ ] ok we really need to better convert toplevel defns.
+  - [ ] WHICH MEANS its args type, people. lambda (array pat) expr, yes please and thank you.
+  - [ ] WHICH we can now do, because we're colocating the parser. Love to see it.
 
 
 

@@ -5012,20 +5012,10 @@ if ($target.type === "cons") {
 if ($target[0].type === "!>!") {
 {
 let n = $target[0][0];
-if ($target[0][1].type === "forall") {
 {
-let what = $target[0][1][0];
-if ($target[0][1][1].type === "=>") {
-{
-let kinds = $target[0][1][1][0];
-{
-let typ = $target[0][1][1][1];
+let scheme = $target[0][1];
 if ($target[1].type === "nil") {
-return /*22379*/typ/*<22379*/
-}
-}
-}
-}
+return /*22379*/scheme/*<22379*/
 }
 }
 }
@@ -5050,18 +5040,14 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 22322');})(/*!*/
 const infer$slprogram_no_default = /*24289*/function name_24289(tenv) { return function name_24289(ce) { return function name_24289(as) { return function name_24289(bindgroups) { return /*24299*//*24300*/ti_run/*<24300*//*24299*/(/*24301*//*24302*/$gt$gt$eq/*<24302*//*24301*/(/*24308*//*24309*/infer$slseq/*<24309*//*24308*/(/*24310*/infer$slbinding_group/*<24310*/)(/*24311*/ce/*<24311*/)(/*24312*/as/*<24312*/)(/*24313*/bindgroups/*<24313*/)/*<24308*/)(/*24301*/function name_24301({0: preds, 1: assumps}) {
  return /*24301*//*24302*/$gt$gt$eq/*<24302*//*24301*/(/*24315*//*24316*/get_subst/*<24316*//*24315*//*<24315*/)(/*24301*/function name_24301(subst0) { return /*24301*//*24302*/$gt$gt$eq/*<24302*//*24301*/(/*24318*//*24319*/ti_from_result/*<24319*//*24318*/(/*24320*//*24321*/reduce/*<24321*//*24320*/(/*24322*/ce/*<24322*/)(/*24323*//*24324*/preds$slapply/*<24324*//*24323*/(/*24325*/subst0/*<24325*/)(/*24326*/preds/*<24326*/)/*<24323*/)/*<24320*/)/*<24318*/)(/*24301*/function name_24301(reduced) { return /*24301*//*24302*/$gt$gt$eq/*<24302*//*24301*/(/*24328*//*24329*/ti_from_result/*<24329*//*24328*/(/*24330*//*24331*/defaultSubst/*<24331*//*24330*/(/*24332*/ce/*<24332*/)(/*24333*/nil/*<24333*/)(/*24334*/reduced/*<24334*/)/*<24330*/)/*<24328*/)(/*24301*/function name_24301(subst) { return /*24335*//*24336*/ti_return/*<24336*//*24335*/(/*24364*//*24365*/$co/*<24365*//*24364*/(/*24366*/preds/*<24366*/)(/*24337*//*24338*/map/*<24338*//*24337*/(/*24339*//*24340*/assump$slapply/*<24340*//*24339*/(/*24341*/subst0/*<24341*/)/*<24339*/)(/*24345*/assumps/*<24345*/)/*<24337*/)/*<24364*/)/*<24335*/ }/*<24301*/)/*<24301*/ }/*<24301*/)/*<24301*/ }/*<24301*/)/*<24301*/ }/*<24301*/)/*<24301*/)(/*24346*/map$slnil/*<24346*/)(/*24347*/tenv/*<24347*/)(/*24348*/0/*<24348*/)/*<24299*/ } } } }/*<24289*/;
 
-return /*20484*//*20487*//*20488*/eval/*<20488*//*20487*/(/*20489*/"({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, \n }) "/*<20489*/)/*<20487*//*20484*/(/*20529*//*20783*/evaluator/*<20783*//*20529*/(/*24498*//*20784*/inferator/*<20784*//*24498*/(/*24499*/builtin_full/*<24499*/)(/*20786*/infer_stmts/*<20786*/)(/*22155*/full_env$slmerge/*<22155*/)(/*22156*/infer/*<22156*/)(/*22160*/type_$gts/*<22160*/)(/*22161*/function name_22161({0: tenv, 1: ce, 2: assumps}) {
+return /*20484*//*20487*//*20488*/eval/*<20488*//*20487*/(/*20489*/"({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, \n }) "/*<20489*/)/*<20487*//*20484*/(/*20529*//*20783*/evaluator/*<20783*//*20529*/(/*24498*//*20784*/inferator/*<20784*//*24498*/(/*24499*/builtin_full/*<24499*/)(/*20786*/infer_stmts/*<20786*/)(/*22155*/full_env$slmerge/*<22155*/)(/*22156*/infer/*<22156*/)(/*22160*/scheme_$gts/*<22160*/)(/*22161*/function name_22161({0: tenv, 1: ce, 2: assumps}) {
 
  return function name_22161(name) { return /*23371*/(function match_23371($target) {
 if ($target.type === "cons") {
 if ($target[0].type === "!>!") {
-if ($target[0][1].type === "forall") {
-if ($target[0][1][1].type === "=>") {
 {
-let typ = $target[0][1][1][1];
-return /*23412*//*23401*/some/*<23401*//*23412*/(/*23413*/typ/*<23413*/)/*<23412*/
-}
-}
+let scheme = $target[0][1];
+return /*23412*//*23401*/some/*<23401*//*23412*/(/*23413*/scheme/*<23413*/)/*<23412*/
 }
 }
 }

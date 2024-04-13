@@ -875,8 +875,6 @@
 
 (defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
 
-
-
 (** ## Compilation **)
 
 (defn escape-string [string]
@@ -2264,8 +2262,8 @@ filter
 (defn infer [(full-env tenv ce assumps) body]
     (match (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])
         (ok (,,, subst tenv nidx assumps)) (match (filter (fn [(!>! n _)] (= n "it")) assumps)
-                                               [(!>! n (forall what (=> kinds typ)))] typ
-                                               _                                      (fatal "No type found"))
+                                               [(!>! n scheme)] scheme
+                                               _                (fatal "No type found"))
         (err e)                            (fatal e)))
 
 (defn infer-alias [(full-env tenv ce assumps) (,, name args type)]
@@ -2545,10 +2543,6 @@ filter
 
 (full-env->s builtin-full)
 
-infer/program
-
-
-
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
 
@@ -2727,9 +2721,9 @@ infer/program
         full-env
             (fn [full-env (array stmt)] full-env)
             (fn [full-env full-env] full-env)
-            (fn [full-env expr] type)
-            (fn [type] string)
-            (fn [full-env string] (option type))))
+            (fn [full-env expr] scheme)
+            (fn [scheme] string)
+            (fn [full-env string] (option scheme))))
 
 (deftype parser
     (parser
@@ -2748,11 +2742,11 @@ infer/program
                 infer-stmts
                 full-env/merge
                 infer
-                type->s
+                scheme->s
                 (fn [(full-env tenv ce assumps) name]
                 (match (filter (fn [(!>! n _)] (= n name)) assumps)
-                    [(!>! _ (forall _ (=> _ typ))) .._] (some typ)
-                    _                                   (none))))
+                    [(!>! _ scheme) .._] (some scheme)
+                    _                    (none))))
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))

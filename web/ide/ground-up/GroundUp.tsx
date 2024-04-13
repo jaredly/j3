@@ -41,7 +41,11 @@ export const GroundUp = ({
     listing,
 }: {
     id: string;
-    initial: { state: NUIState; cache?: ResultsCache<any>; evaluator: AnyEnv };
+    initial: {
+        state: NUIState;
+        cache?: ResultsCache<any>;
+        evaluator?: AnyEnv | null;
+    };
     listing: string[] | null;
     save: (state: NUIState, cache: ResultsCache<any>) => void;
 }) => {
