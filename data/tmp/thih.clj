@@ -1199,9 +1199,19 @@
                           map/nil
                               (|-> u t))
         _             (if (set/has (type/tv t) u)
-                          (fatal "Occurs check fails")
-                              (if (!= (tyvar/kind u) (type/kind t))
-                              (fatal "kinds do not match")
+                          (fatal
+                              "Occurs check fails: ${(type->s t)} contains ${(tyvar->s u)}")
+                              (if (not (kind= (tyvar/kind u) (type/kind t)))
+                              (fatal
+                                  "kinds do not match: type variable ${
+                                      (tyvar->s u)
+                                      } has kind ${
+                                      (kind->s (tyvar/kind u))
+                                      }, but ${
+                                      (type->s t)
+                                      } has kind ${
+                                      (kind->s (type/kind t))
+                                      }")
                                   (|-> u t)))))
 
 (defn mgu [t1 t2]
@@ -2187,14 +2197,14 @@
                     1
                         2)))
             "it: a *; a ∈ num; (fn [bool] a)")
-        (, (@@ [1]) "it: (list int)")
+        (, (@@ [1]) "it: (array int)")
         (,
         (@@
             (match (ok 1)
                 (ok v)  v
                 (err e) 10))
             "it: int")
-        (, (@@ (cons 1 [2.0])) "it: (list double)")
+        (, (@@ (cons 1 [2.0])) "it: (array double)")
         (,
         (@@
             (match (, 1 true)
@@ -2539,7 +2549,8 @@ filter
             (@@ (deftype bog (bog (bag int))))
             (@@ (def x (hi 10)))
             (@@ (def y (bog (hi 1))))]
-            "# Type Env\n## Constructors\n - hi: *; (fn [a] (bag a))\n - bog: (fn [(bag int)] bog)\n# Class Env\n## Instances\n## Defaults\n# Assumps\nhi: a *; (fn [a] (bag a))\nbog: (fn [(bag int)] bog)\nx: (bag int)\ny: bog")])
+            "# Type Env\n## Constructors\n - hi: *; (fn [a] (bag a))\n - bog: (fn [(bag int)] bog)\n# Class Env\n## Instances\n## Defaults\n# Assumps\nhi: a *; (fn [a] (bag a))\nbog: (fn [(bag int)] bog)\nx: (bag int)\ny: bog")
+        (, [(@@ (defn lol [x] "Lol ${x}")) (@@ (lol true))] "")])
 
 (full-env->s builtin-full)
 

@@ -38,7 +38,7 @@
 
 (defn lol [x] "Hi ${x}")
 
-(lol true)
+(lol 10)
 
 (def xyz (lol "asd"))
 
