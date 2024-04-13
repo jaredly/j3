@@ -250,6 +250,19 @@
         (sdef string int expr int)
         (sexpr expr int))
 
+;(definstance
+    (Types Pred)
+        {apply (fn [s (isin i t)] (isin i (apply s t))) tv (fn [(isin i t)] (tv t))})
+
+;(defclass (Types t) {apply (fn [subst t] t) tv (fn [t] (array tyvar))})
+
+(** Ok so for "instance declarations"
+    instance (something =>) something where
+        the functions are then implemented
+    in a runtime way, we want ... to produce something like
+    register$instance(unique-id, { apply: (a, b) => c, tv: (a) => v }
+    So the unique-id can be the loc, which is kinda neat. **)
+
 (defn enumId [num] "v${(int-to-string num)}")
 
 (deftype kind (star) (kfun kind kind))
