@@ -16,9 +16,10 @@ import {
 import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
-import { valueToString } from './reduce';
 import { renderTraces } from './renderTraces';
 import { advancePath } from './findTops';
+import { ResultsCache } from '../../custom/store/ResultsCache';
+import { AnyEnv } from '../../custom/store/getResults';
 
 export type Results = {
     display: Display;
@@ -40,9 +41,9 @@ export const GroundUp = ({
     listing,
 }: {
     id: string;
-    initial: NUIState;
+    initial: { state: NUIState; cache?: ResultsCache<any>; evaluator: AnyEnv };
     listing: string[] | null;
-    save: (state: NUIState) => void;
+    save: (state: NUIState, cache: ResultsCache<any>) => void;
 }) => {
     // const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
 
@@ -53,8 +54,8 @@ export const GroundUp = ({
         disableEvaluation: false,
     });
 
-    const store = useStore(initial);
-    const { state, results } = useGlobalState(store);
+    const store = useStore(initial.state, initial.cache, initial.evaluator);
+    const { state, results, cache } = useGlobalState(store);
 
     useEffect(() => {
         store.setDebug(debug.execOrder, debug.disableEvaluation);
@@ -66,8 +67,16 @@ export const GroundUp = ({
             first.current = false;
             return;
         }
-        save({ ...state, regs: {} });
-    }, [state.map, state.nsMap, state.cards, state.evaluator, state.meta, id]);
+        save({ ...state, regs: {} }, cache);
+    }, [
+        state.map,
+        state.nsMap,
+        state.cards,
+        state.evaluator,
+        state.meta,
+        id,
+        cache.run,
+    ]);
 
     useEffect(() => {
         // @ts-ignore

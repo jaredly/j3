@@ -32,6 +32,7 @@ import { findTops, verifyPath } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
 import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
 import { moveNode } from '../../../src/state/moveNode';
+import { ResultsCache } from '../../custom/store/ResultsCache';
 
 export const reduceUpdate = (
     state: NUIState,
@@ -547,11 +548,20 @@ const initialState = (): NUIState => {
 
 export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 
-export const saveState = async (id: string, state: NUIState) => {
+const stripCache = (cache?: ResultsCache<any>) => {
+    if (!cache) return cache;
+    return { ...cache, results: {}, lastState: null };
+};
+
+export const saveState = async (
+    id: string,
+    state: NUIState,
+    cache?: ResultsCache<any>,
+) => {
     try {
         const res = await fetch(urlForId(id), {
             method: 'POST',
-            body: JSON.stringify(state),
+            body: JSON.stringify({ state, cache: stripCache(cache) }),
             headers: { 'Content-type': 'application/json' },
         });
         if (res.status !== 200) {

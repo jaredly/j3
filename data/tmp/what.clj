@@ -32,9 +32,13 @@
 
 (** ## Type class stuff **)
 
-(fn [x] (+ x 2))
+(defn plus3 [x] (+ x 3))
 
-(fn [x] "Hi ${x}")
+(plus3 2)
+
+(defn lol [x] "Hi ${x}")
+
+(lol true)
 
 (defn hi [x] "Hi ${(+ x 2)}")
 
@@ -50,10 +54,6 @@
 (deftype (array a) (cons a (array a)) (nil))
 
 (deftype (bag a) (empty) (one a) (many (array a)))
-
-one
-
-many
 
 (many [1 2 3 4 5 7 8 9 0])
 

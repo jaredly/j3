@@ -6,7 +6,8 @@ import { Node } from '../../../src/types/cst';
 import { AnyEnv } from './getResults';
 
 export type ResultsCache<Stmt> = {
-    lastEvaluator: AnyEnv | null;
+    run: number;
+    lastEvaluator: string | null;
     lastState: null | NUIState;
     settings: { debugExecOrder: boolean };
     hover: { [top: string]: { [loc: number]: string[] } };

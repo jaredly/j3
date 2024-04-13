@@ -3,21 +3,33 @@ import { NUIState } from '../UIState';
 import equal from 'fast-deep-equal';
 import { reduce } from '../../ide/ground-up/reduce';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
-import { getResults } from './getResults';
+import { AnyEnv, getResults } from './getResults';
 import { ResultsCache } from './ResultsCache';
 import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
 
-export const useStore = (initialState: NUIState) => {
+export const useStore = (
+    initialState: NUIState,
+    initialCache?: ResultsCache<any>,
+    initialEvaluator?: AnyEnv,
+) => {
     const cache = useMemo<ResultsCache<any>>(
-        () => ({
-            hover: {},
-            nodes: {},
-            types: {},
-            results: {},
-            lastState: null,
-            lastEvaluator: null,
-            settings: { debugExecOrder: false },
-        }),
+        () =>
+            initialCache
+                ? (console.log(
+                      'Using a saed cache',
+                      initialCache.lastEvaluator,
+                  ),
+                  { ...initialCache, lastState: initialState })
+                : {
+                      run: 0,
+                      hover: {},
+                      nodes: {},
+                      types: {},
+                      results: {},
+                      lastState: null,
+                      lastEvaluator: null,
+                      settings: { debugExecOrder: false },
+                  },
         [],
     );
 
@@ -36,7 +48,8 @@ export const useStore = (initialState: NUIState) => {
         };
 
         let state = initialState;
-        let evaluator: FullEvalator<any, any, any> | null = null;
+        let evaluator: FullEvalator<any, any, any> | null =
+            initialEvaluator ?? null;
         const debug = {
             current: { execOrder: false, disableEvaluation: false },
         };
@@ -68,19 +81,26 @@ export const useStore = (initialState: NUIState) => {
             });
         });
 
-        loadEvaluator(state.evaluator, (ev, async) => {
-            evaluator = ev;
-            console.log('loaded new', async);
-            if (async) {
-                results = getResults(state, evaluator, debug.current, cache);
+        if (!initialEvaluator) {
+            loadEvaluator(state.evaluator, (ev, async) => {
+                evaluator = ev;
+                console.log('loaded new', async);
+                if (async) {
+                    results = getResults(
+                        state,
+                        evaluator,
+                        debug.current,
+                        cache,
+                    );
 
-                evtListeners.results.forEach((f) => f(state));
-                evtListeners.all.forEach((f) => f(state));
-                Object.keys(results.errors).forEach((key) => {
-                    nodeListeners[key]?.forEach((f) => f(state, results));
-                });
-            }
-        });
+                    evtListeners.results.forEach((f) => f(state));
+                    evtListeners.all.forEach((f) => f(state));
+                    Object.keys(results.errors).forEach((key) => {
+                        nodeListeners[key]?.forEach((f) => f(state, results));
+                    });
+                }
+            });
+        }
 
         let results = getResults(state, evaluator, debug.current, cache);
 
@@ -221,6 +241,7 @@ export const useStore = (initialState: NUIState) => {
             getEvaluator: () => evaluator,
             getState: () => state,
             getResults: () => results,
+            getCache: () => cache,
             reg(node, idx, path, loc) {
                 if (!state.regs[idx]) {
                     state.regs[idx] = {};

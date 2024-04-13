@@ -69,6 +69,8 @@ export const getResults = <
         return resultsWithoutEvaluator<Stmt>(tops, state, cache);
     }
 
+    cache.run += 1;
+
     const TIME = 1;
 
     if (TIME) console.time('parse');
@@ -321,16 +323,18 @@ export function maybeResetCache<
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
     debugExecOrder: boolean,
 ) {
+    const eid = evaluator?.id ?? null;
     if (
-        cache.lastEvaluator !== evaluator ||
+        cache.lastEvaluator !== eid ||
         cache.settings.debugExecOrder !== debugExecOrder
     ) {
+        console.log('resetting cache', cache.lastEvaluator, eid);
         cache.results = {};
         cache.types = {};
         cache.nodes = {};
         cache.deps = evaluator?.analysis ? {} : undefined;
         cache.lastState = null;
-        cache.lastEvaluator = evaluator;
+        cache.lastEvaluator = eid;
         cache.settings.debugExecOrder = debugExecOrder;
     }
 }

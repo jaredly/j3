@@ -76,7 +76,6 @@ export const transformNode = (
         case 'hash':
         case 'blank':
         case 'comment':
-        case 'comment-node':
         case 'accessText':
         case 'stringText':
         case 'attachment':
@@ -140,6 +139,7 @@ export const transformNode = (
             node = annot !== node.annot ? { ...node, annot } : node;
             break;
         }
+        case 'comment-node':
         case 'spread': {
             const contents = transformNode(
                 node.contents,

@@ -291,6 +291,18 @@ export const paste = (
                 const lns = state.at[0].start.findLast(
                     (n) => n.type === 'ns',
                 )! as Extract<Path, { type: 'ns' }>;
+
+                Object.keys(map).forEach((k) => {
+                    if (state.map[+k]) {
+                        throw new Error('overwriting!' + k);
+                    }
+                });
+                Object.keys(nsMap).forEach((k) => {
+                    if (state.map[+k]) {
+                        throw new Error('overwriting nsMap!' + k);
+                    }
+                });
+
                 const parent = state.nsMap[lns.idx] as RealizedNamespace;
                 const children = parent.children.slice();
                 children.splice(children.indexOf(lns.child) + 1, 0, ...added);

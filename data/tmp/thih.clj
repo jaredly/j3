@@ -831,6 +831,288 @@
                 (elambda (pvar "m" 12868) (evar "m" 12869) 12864)
                 12864))])
 
+(** ## Debugging Helpers **)
+
+(defn pat-loc [pat]
+    (match pat
+        (pany l)     l
+        (pprim _ l)  l
+        (pstr _ l)   l
+        (pvar _ l)   l
+        (pcon _ _ l) l))
+
+(defn expr-loc [expr]
+    (match expr
+        (estr _ _ l)     l
+        (eprim _ l)      l
+        (evar _ l)       l
+        (equotquot _ l)  l
+        (equot _ l)      l
+        (equot/stmt _ l) l
+        (equot/pat _ l)  l
+        (equot/type _ l) l
+        (elambda _ _ l)  l
+        (elet _ _ l)     l
+        (eapp _ _ l)     l
+        (ematch _ _ l)   l))
+
+(def its int-to-string)
+
+(defn trace-and-block [loc trace value js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});\n${js}"))
+
+(defn trace-wrap [loc trace js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${js})"))
+
+(defn trace-and [loc trace value js]
+    (match (map/get trace loc)
+        (none)      js
+        (some info) "($trace(${(its loc)}, ${(jsonify info)}, ${value}), ${js})"))
+
+(defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
+
+
+
+(** ## Compilation **)
+
+(defn escape-string [string]
+    (replaces
+        string
+            [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\\"") (, "`" "\\`") (, "$" "\\$")]))
+
+(escape-string (unescapeString "\n"))
+
+(defn pat-loop [target args i inner trace]
+    (match args
+        []           inner
+        [arg ..rest] (compile-pat
+                         arg
+                             "${target}[${(its i)}]"
+                             (pat-loop target rest (+ i 1) inner trace)
+                             trace)))
+
+(defn compile-pat [pat target inner trace]
+    (trace-and-block
+        (pat-loc pat)
+            trace
+            target
+            (match pat
+            (pany l)           inner
+            (pprim prim l)     (match prim
+                                   (pint int _)   "if (${target} === ${(its int)}) {\n${inner}\n}"
+                                   (pbool bool _) "if (${
+                                                      target
+                                                      } === ${
+                                                      (match bool
+                                                          true "true"
+                                                          _    "false")
+                                                      }) {\n${
+                                                      inner
+                                                      }\n}")
+            (pstr str l)       "if (${target} === \"${str}\"){\n${inner}\n}"
+            (pvar name l)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
+            (pcon name args l) "if (${
+                                   target
+                                   }.type === \"${
+                                   name
+                                   }\") {\n${
+                                   (pat-loop target args 0 inner trace)
+                                   }\n}")))
+
+(defn orr [default v]
+    (match v
+        (some v) v
+        _        default))
+
+(defn just-pat [pat]
+    (match pat
+        (pany _)           (none)
+        (pvar name l)      (some (sanitize name))
+        (pcon name args l) (match (foldl
+                               (, 0 [])
+                                   args
+                                   (fn [(, i res) arg]
+                                   (match (just-pat arg)
+                                       (none)      (, (+ i 1) res)
+                                       (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res]))))
+                               (, _ [])    none
+                               (, _ items) (some "{${(join ", " (rev items []))}}"))
+        (pstr _ _)         (fatal "Cant use string as a pattern in this location")
+        (pprim _ _)        (fatal "Cant use primitive as a pattern in this location")))
+
+(defn mapr [a b] (map b a))
+
+;(defn concat [lists]
+    (match lists
+        []                     []
+        [[] ..rest]            (concat rest)
+        [[one ..rest] ..lists] [one ..(concat [rest ..lists])]))
+
+(defn compile [expr trace]
+    (let [loc (expr-loc expr)]
+        (trace-wrap
+            loc
+                trace
+                (match expr
+                (estr first tpls l)           (match tpls
+                                                  [] "\"${(escape-string (unescapeString first))}\""
+                                                  _  "`${
+                                                         (escape-string (unescapeString first))
+                                                         }${
+                                                         (join
+                                                             ""
+                                                                 (mapr
+                                                                 tpls
+                                                                     (fn [item]
+                                                                     (let [(,, expr suffix l) item]
+                                                                         "${${
+                                                                             (compile expr trace)
+                                                                             }}${
+                                                                             (escape-string (unescapeString suffix))
+                                                                             }"))))
+                                                         }`")
+                (eprim prim l)                (match prim
+                                                  (pint int _)     (int-to-string int)
+                                                  (pfloat float _) (jsonify float)
+                                                  (pbool bool _)   (match bool
+                                                                       true  "true"
+                                                                       false "false"))
+                (evar name l)                 (sanitize name)
+                (equot inner l)               (jsonify inner)
+                (equot/stmt inner l)          (jsonify inner)
+                (equot/type inner l)          (jsonify inner)
+                (equot/pat inner l)           (jsonify inner)
+                (equotquot inner l)           (jsonify inner)
+                (elambda pat body l)          "function name_${
+                                                  (its l)
+                                                  }(${
+                                                  (orr "_" (just-pat pat))
+                                                  }) { return ${
+                                                  (compile body trace)
+                                                  } }"
+                (elet (, [] inferred) body l) (foldl
+                                                  (compile body trace)
+                                                      (concat inferred)
+                                                      (fn [body (, name [(, [] init)])]
+                                                      "(function let_${
+                                                          (its l)
+                                                          }() {const ${
+                                                          (sanitize name)
+                                                          } = ${
+                                                          (compile init trace)
+                                                          };\n${
+                                                          ("return ${body}"
+                                                              ;(compile-pat pat "$target" "return ${body}" trace))
+                                                          };\nthrow new Error('let pattern not matched. ' + valueToString($target));\n})()"))
+                (eapp fn arg l)               (match fn
+                                                  (elambda _ _ _) "(${(compile fn trace)})(${(compile arg trace)})"
+                                                  _               "${(compile fn trace)}(${(compile arg trace)})")
+                (ematch target cases l)       "(function match_${
+                                                  (its l)
+                                                  }($target) {\n${
+                                                  (join
+                                                      "\n"
+                                                          (mapr
+                                                          cases
+                                                              (fn [case]
+                                                              (let [(, pat body) case]
+                                                                  (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
+                                                  }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
+                                                  (its l)
+                                                  }');\n})(${
+                                                  (compile target trace)
+                                                  })"))))
+
+(compile
+    (parse-expr
+        (@@
+            (match 2
+                1 2))
+            )
+        map/nil)
+
+(parse-expr (@@ (let [a 1 b 2] (+ a b))))
+
+(compile (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil)
+
+(compile (parse-expr (@@ ((fn [a] (+ a 2)) 21))) map/nil)
+
+(defn run [v] (eval (compile (parse-expr v) map/nil)))
+
+(,
+    run
+        [(, (@@ (jsonify 1)) "1")
+        (, (@@ "hello") "hello")
+        (, (@@ "\"") "\"")
+        (, (@@ "\n") "\n")
+        (, (@@ "\\n") "\\n")
+        (, (@@ "\\\n") "\\\n")
+        (, (@@ (jsonify (+ 2 3))) "5")
+        (, (@@ "a${2}b") "a2b")
+        (, (@@ (jsonify ((fn [a] (+ a 2)) 21))) "23")
+        (, (@@ (jsonify (let [one 1 two 2] (+ 1 2)))) "3")
+        (,
+        (@@
+            (jsonify
+                (match 2
+                    2 1)))
+            "1")
+        (, (@@ (jsonify (let [a/b 2] a/b))) "2")
+        (,
+        (@@
+            (jsonify
+                (match true
+                    true 1
+                    2    3)))
+            "1")
+        (, (@@  "`${1}") "`1")
+        (, (@@ "${${1}") "${1")
+        (,
+        (@@
+            (jsonify
+                (match [1]
+                    []      []
+                    [a ..b] a)))
+            "1")])
+
+(defn compile-stmt [stmt trace]
+    (match stmt
+        (sexpr expr l)                      (compile expr trace)
+        (sdef name nl body l)               (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+        (sdeftype name nl type-arg cases l) (join
+                                                "\n"
+                                                    (mapr
+                                                    cases
+                                                        (fn [case]
+                                                        (let [(,,, name2 nl args l) case]
+                                                            (++
+                                                                ["const "
+                                                                    (sanitize name2)
+                                                                    " = "
+                                                                    (++ (mapi (fn [_ i] (++ ["(v" (int-to-string i) ") => "])) 0 args))
+                                                                    "({type: \""
+                                                                    name2
+                                                                    "\""
+                                                                    (++
+                                                                    (mapi
+                                                                        (fn [_ i] (++ [", " (int-to-string i) ": v" (int-to-string i)]))
+                                                                            0
+                                                                            args))
+                                                                    "});"])))))))
+
+(,
+    (fn [x] (compile-stmt (parse-stmt x) map/nil))
+        [(,
+        (@@ (deftype (array a) (cons a (array a)) (nil)))
+            "const cons = (v0) => (v1) => ({type: \"cons\", 0: v0, 1: v1});\nconst nil = ({type: \"nil\"});")
+        (,
+        (@@ (deftype face (red) (black)))
+            "const red = ({type: \"red\"});\nconst black = ({type: \"black\"});")])
+
 (** ## Type Unification **)
 
 (** Some more types **)
@@ -1518,6 +1800,18 @@
             tenv
             0))
 
+(defn infer/program-no-default [tenv ce as bindgroups]
+    (ti-run
+        (let-> [
+            (, preds assumps) (infer/seq infer/binding-group ce as bindgroups)
+            subst0            (get-subst)
+            reduced           (ti-from-result (reduce ce (preds/apply subst0 preds)))
+            subst             (ti-from-result (defaultSubst ce [] reduced))]
+            (ti-return (, preds (map (assump/apply subst0) assumps))))
+            map/nil
+            tenv
+            0))
+
 (** ## Type Classes Stuff **)
 
 (defn split [ce fs gs ps]
@@ -1943,7 +2237,17 @@ filter
 
 (defn infer-stmt [(full-env tenv ce assumps) stmt]
     (match stmt
-        (sdef name nl body l)                  (match (infer/program tenv ce assumps [(, [] [[(, name [(, [] body)])]])])
+        (sdef name nl body l)                  (match (infer/program
+                                                   tenv
+                                                       ce
+                                                       assumps
+                                                       [(,
+                                                       []
+                                                           [[(,
+                                                           name
+                                                               [(match body
+                                                               (elambda pat inner l) (, [pat] inner)
+                                                               _                     (, [] body))])]])])
                                                    (ok (,,, subst tenv nidx assumps)) (full-env
                                                                                           type-env/nil
                                                                                               class-env/nil
@@ -2159,18 +2463,6 @@ filter
 
 (typealias locname (,, string name-kind int))
 
-(deftype evaluator
-    (evaluator
-        full-env
-            (fn [full-env (array stmt)] full-env)
-            (fn [full-env full-env] full-env)
-            (fn [full-env expr] type)
-            (fn [stmt] (array locname))
-            (fn [expr] (array locname))
-            (fn [stmt] (array locname))
-            (fn [type] string)
-            (fn [full-env string] (option type))))
-
 (defn infer-stmts [env stmts]
     (foldl
         full-env/nil
@@ -2180,6 +2472,8 @@ filter
 
 (defn full-env/merge [(full-env a b c) (full-env d e f)]
     (full-env (tenv/merge a d) (class-env/merge b e) (concat [c f])))
+
+(** ## Debuggings **)
 
 (defn type-env->s [(type-env constructors types aliases)]
     "## Constructors${
@@ -2229,6 +2523,10 @@ filter
         }\n# Assumps${
         (ljoin "\n" (map assump->s assumps))
         }")
+
+(infer-stmts
+    builtin-full
+        (map parse-stmt [(@@ (defn x [y] (+ y 1))) (@@ (defn y [z] z))]))
 
 (,
     (fn [x] (full-env->s (infer-stmts builtin-full (map parse-stmt x))))
@@ -2418,18 +2716,45 @@ infer/program
 
 (** ## Export as Evaluator **)
 
+(deftype analysis
+    (analysis
+        (fn [stmt] (array locname))
+            (fn [expr] (array locname))
+            (fn [stmt] (array locname))))
+
+(deftype inferator
+    (inferator
+        full-env
+            (fn [full-env (array stmt)] full-env)
+            (fn [full-env full-env] full-env)
+            (fn [full-env expr] type)
+            (fn [type] string)
+            (fn [full-env string] (option type))))
+
+(deftype parser
+    (parser
+        (fn [cst] stmt)
+            (fn [cst] expr)
+            (fn [stmt (map int string)] string)
+            (fn [expr (map int string)] string)))
+
+(deftype evaluator (evaluator inferator analysis parser))
+
 ((eval
-    "({0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer,\n  4: externals_stmt, 5: externals_expr, 6: names,\n  7: type_to_string, 8: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, \n }) ")
     (evaluator
-        builtin-full
-            infer-stmts
-            full-env/merge
-            infer
+        (inferator
+            builtin-full
+                infer-stmts
+                full-env/merge
+                infer
+                type->s
+                (fn [(full-env tenv ce assumps) name]
+                (match (filter (fn [(!>! n _)] (= n name)) assumps)
+                    [(!>! _ (forall _ (=> _ typ))) .._] (some typ)
+                    _                                   (none))))
+            (analysis
             externals-stmt
-            (fn [expr] (bag/to-list (externals set/nil expr)))
-            names
-            type->s
-            (fn [(full-env tenv ce assumps) name]
-            (match (filter (fn [(!>! n _)] (= n name)) assumps)
-                [(!>! _ (forall _ (=> _ typ))) .._] (some typ)
-                _                                   (none)))))
+                (fn [expr] (bag/to-list (externals set/nil expr)))
+                names)
+            (parser parse-stmt parse-expr compile-stmt compile)))

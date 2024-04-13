@@ -26,6 +26,7 @@ import {
 } from '../../ide/ground-up/Evaluators';
 import { goRight } from '../../../src/state/goRightUntil';
 import { cmpFullPath } from '../../../src/state/path';
+import { ResultsCache } from './ResultsCache';
 
 export type NUIResults = {
     jumpToName: { [name: string]: number };
@@ -46,6 +47,7 @@ export type Store = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
     getResults(): NUIResults;
+    getCache(): ResultsCache<any>;
     getEvaluator(): FullEvalator<any, any, any> | null;
     reg: Reg;
     onChange(
@@ -141,6 +143,9 @@ const noopStore: Store = {
         throw new Error('');
     },
     getResults() {
+        throw new Error('');
+    },
+    getCache() {
         throw new Error('');
     },
     getEvaluator() {
@@ -254,6 +259,7 @@ export const useGlobalState = (store: Store) => {
     const [state, setState] = useState({
         state: store.getState(),
         results: store.getResults(),
+        cache: store.getCache(),
     });
     useEffect(
         () =>
@@ -261,6 +267,7 @@ export const useGlobalState = (store: Store) => {
                 setState({
                     state: store.getState(),
                     results: store.getResults(),
+                    cache: store.getCache(),
                 }),
             ),
         [],

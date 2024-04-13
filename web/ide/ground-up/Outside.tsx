@@ -4,6 +4,10 @@ import { debounce } from './reduce';
 import { useHash, urlForId, saveState, loadState } from './reduce';
 import { GroundUp } from './GroundUp';
 import { useLocalStorage } from '../../Debug';
+import { ResultsCache } from '../../custom/store/ResultsCache';
+import { loadEvaluator } from '../../custom/store/Store';
+import { FullEvalator } from './Evaluators';
+import { AnyEnv } from '../../custom/store/getResults';
 
 export const Outside = () => {
     const [listing, setListing] = useState(null as null | string[]);
@@ -190,8 +194,8 @@ export const Loader = ({
 
     const save = useMemo(
         () =>
-            onlyLast<NUIState>(
-                (state) => {
+            onlyLast<{ state: NUIState; cache: ResultsCache<any> }>(
+                ({ state, cache }) => {
                     const now = Date.now();
                     // console.log(`Time since last save`, now - lastSaveTime);
                     if (now - lastSaveTime < 200) {
@@ -199,7 +203,7 @@ export const Loader = ({
                     }
                     lastSaveTime = now;
                     latest.current = state;
-                    return saveState(id, state);
+                    return saveState(id, state, cache);
                 },
                 // minimum time after last change
                 500,
@@ -210,20 +214,32 @@ export const Loader = ({
         [id],
     );
 
-    const [initial, setInitial] = useState(null as null | NUIState);
+    const [initial, setInitial] = useState(
+        null as null | {
+            state: NUIState;
+            cache?: ResultsCache<any>;
+            evaluator?: FullEvalator<any, any, any> | null;
+        },
+    );
 
     useEffect(() => {
-        fetch(urlForId(id)).then(
-            (res) =>
-                res.status === 200
-                    ? res.json().then((state) => {
-                          setInitial(loadState(state));
-                      })
-                    : setInitial(loadState()),
-            (err) => {
-                setInitial(loadState());
-            },
-        );
+        fetch(urlForId(id))
+            .then(async (res) => {
+                if (res.status !== 200) {
+                    return setInitial({ state: loadState() });
+                }
+                const state = await res.json();
+                const cache = await fetch(urlForId(id) + '.cache').then((res) =>
+                    res.status === 200 ? res.json() : null,
+                );
+                const evaluator = await new Promise<AnyEnv | null>((res) =>
+                    loadEvaluator(state.evaluator, (ev) => res(ev)),
+                );
+                setInitial({ state: loadState(state), cache, evaluator });
+            })
+            .catch((err) => {
+                setInitial({ state: loadState() });
+            });
     }, [id]);
 
     if (!initial) return <div>Loading...</div>;
@@ -242,7 +258,12 @@ export const Loader = ({
             >
                 Clone
             </button>
-            <GroundUp id={id} listing={listing} save={save} initial={initial} />
+            <GroundUp
+                id={id}
+                listing={listing}
+                save={(state, cache) => save({ state, cache })}
+                initial={initial}
+            />
         </div>
     );
 };

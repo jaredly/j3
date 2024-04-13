@@ -9,6 +9,16 @@ That does mean that the `lastEvaluator` would need to
 use a `serializable key` instead of the evaluator itself.
 But thats easy to do.
 
+
+- [x] lastEvaluator should be a `key` instead of the real thing
+- [x] when saving, save the cache
+- [ ] when loading, load the cache
+
+
+
+
+
+
 ## Lookin in to perf stuff
 
 - [x] WHY does "type"ing have a 100ms constant overhead?

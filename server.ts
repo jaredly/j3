@@ -6,6 +6,7 @@ import {
     readFileSync,
     readdirSync,
     statSync,
+    unlinkSync,
     writeFileSync,
 } from 'fs';
 import { IncomingMessage, createServer } from 'http';
@@ -19,6 +20,7 @@ import { bootstrap } from './web/ide/ground-up/Evaluators';
 import { evaluatorFromText } from './web/ide/ground-up/loadEv';
 import { compressState } from './web/custom/compressState';
 import { stateToBootstrapJs } from './web/ide/ground-up/to-file';
+import { ResultsCache } from './web/custom/store/ResultsCache';
 
 const base = path.join(__dirname, 'data');
 
@@ -198,7 +200,8 @@ createServer(async (req, res) => {
             return res.end('Need an end ok');
         }
         mkdirSync(path.dirname(full), { recursive: true });
-        let state: NUIState = JSON.parse(await readBody(req));
+        let { state, cache }: { state: NUIState; cache?: ResultsCache<any> } =
+            JSON.parse(await readBody(req));
         const last = state.history[state.history.length - 1].ts;
         state = compressState(state);
 
@@ -217,6 +220,14 @@ createServer(async (req, res) => {
                 return res.end('History regression!');
             }
         }
+
+        const cacheFile = full + '.cache';
+        if (cache) {
+            writeFileSync(cacheFile, JSON.stringify(cache));
+        } else if (existsSync(cacheFile)) {
+            unlinkSync(cacheFile);
+        }
+
         writeFileSync(full, raw);
         try {
             const { clj } = serializeFile(state);
