@@ -24,9 +24,10 @@ But thats easy to do.
   - `type-to-string` needs to ... know about quals. and preds.
   - so like ... ok yeah the thing we retunr should be the ... scheme, not the type.
 - [x] why do I keep getting "kinds dont match" for toplevel exprs? (oh it was caching, and my EQ was === not structure)
-- [ ] ok we really need to better convert toplevel defns.
-  - [ ] WHICH MEANS its args type, people. lambda (array pat) expr, yes please and thank you.
-  - [ ] WHICH we can now do, because we're colocating the parser. Love to see it.
+- [x] ok we really need to better convert toplevel defns.
+  - [x] WHICH MEANS its args type, people. lambda (array pat) expr, yes please and thank you.
+  - [x] WHICH we can now do, because we're colocating the parser. Love to see it.
+- [ ] lambda args ... finished? What's the other thing? oh, app. Let's do that too.
 - [ ] and then I can do `defclass` and `definstance`
 
 

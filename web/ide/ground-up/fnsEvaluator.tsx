@@ -339,7 +339,7 @@ export const fnsEvaluator = (
                                 ? `${names[i][0]}⁚ ${data['type_to_string'](
                                       type[0],
                                   )}`
-                                : `No type for ${names[i][0]}`,
+                                : new Error(`No type for ${names[i][0]}`),
                         ),
                     );
                 }

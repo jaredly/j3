@@ -36,11 +36,11 @@
 
 (plus3 2)
 
-(defn lol [x] "Hi ${x}")
+(defn lol [a x] "Hi ${x}")
 
-(lol 10)
+(lol true 10)
 
-(def xyz (lol "asd"))
+(def xyz (lol 10 "asd"))
 
 (defn xyzz [a] 20)
 

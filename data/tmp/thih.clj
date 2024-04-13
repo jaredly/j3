@@ -219,8 +219,8 @@
         (equot/pat pat int)
         (equot/type type int)
         (equotquot cst int)
-        (elambda pat expr int)
-        (eapp expr expr int)
+        (elambda (array pat) expr int)
+        (eapp expr (array expr) int)
         (elet bindgroup expr int)
         (ematch expr (array (, pat expr)) int))
 
@@ -584,10 +584,7 @@
                                                                                 (parse-expr cond)
                                                                                     [(, (pprim (pbool true l) l) (parse-expr yes)) (, (pany l) (parse-expr no))]
                                                                                     l)
-        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)     (foldr
-                                                                                (parse-expr body)
-                                                                                    args
-                                                                                    (fn [body arg] (elambda (parse-pat arg) body b)))
+        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)     (elambda (map parse-pat args) (parse-expr body) b)
         (cst/list [(cst/identifier "fn" _) .._] l)                          (fatal "Invalid 'fn' ${(int-to-string l)}")
         (cst/list [(cst/identifier "match" _) target ..cases] l)            (ematch
                                                                                 (parse-expr target)
@@ -618,12 +615,9 @@
                                                                                     (pairs inits)
                                                                                     (fn [body init]
                                                                                     (let [(, pat value) init]
-                                                                                        (eapp (parse-expr value) (elambda (parse-pat pat) body l) l))))
+                                                                                        (eapp (parse-expr value) [(elambda [(parse-pat pat)] body l)] l))))
         (cst/list [(cst/identifier "let" _) .._] l)                         (fatal "Invalid 'let' ${(int-to-string l)}")
-        (cst/list [target ..args] l)                                        (foldl
-                                                                                (parse-expr target)
-                                                                                    args
-                                                                                    (fn [target arg] (eapp target (parse-expr arg) l)))
+        (cst/list [target ..args] l)                                        (eapp (parse-expr target) (map parse-expr args) l)
         (cst/array args l)                                                  (parse-array args l)))
 
 (parse-expr (@@ (@! 12)))
@@ -632,7 +626,7 @@
     (match args
         []                     (evar "nil" l)
         [(cst/spread inner _)] (parse-expr inner)
-        [one ..rest]           (eapp (eapp (evar "cons" l) (parse-expr one) l) (parse-array rest l) l)))
+        [one ..rest]           (eapp (evar "cons" l) [(parse-expr one) (parse-array rest l)] l)))
 
 (,
     parse-expr
@@ -640,8 +634,8 @@
         (,
         (@@ [1 ..b])
             (eapp
-            (eapp (evar "cons" 11741) (eprim (pint 1 11742) 11742) 11741)
-                (evar "b" 11744)
+            (evar "cons" 11741)
+                [(eprim (pint 1 11742) 11742) (evar "b" 11744)]
                 11741))
         (, (@@ "hi") (estr "hi" [] 11772))
         (, (@@ (@t a)) (equot/type (tcon (tycon "a" (star)) 11786) 11784))
@@ -660,10 +654,7 @@
                 a
                     b))
             (ematch
-            (eapp
-                (eapp (evar "=" 11849) (evar "a" 11850) 11848)
-                    (evar "b" 11851)
-                    11848)
+            (eapp (evar "=" 11849) [(evar "a" 11850) (evar "b" 11851)] 11848)
                 [(, (pprim (pbool true 11846) 11846) (evar "a" 11852))
                 (, (pany 11846) (evar "b" 11853))]
                 11846))
@@ -673,11 +664,12 @@
         (,
         (@@ [1 2])
             (eapp
-            (eapp (evar "cons" 11933) (eprim (pint 1 11934) 11934) 11933)
+            (evar "cons" 11933)
+                [(eprim (pint 1 11934) 11934)
                 (eapp
-                (eapp (evar "cons" 11933) (eprim (pint 2 11935) 11935) 11933)
-                    (evar "nil" 11933)
-                    11933)
+                (evar "cons" 11933)
+                    [(eprim (pint 2 11935) 11935) (evar "nil" 11933)]
+                    11933)]
                 11933))
         (, (@@ 12) (eprim (pint 12 11981) 11981))
         (,
@@ -699,34 +691,34 @@
         (@@ (let-> [v hi] v2))
             (eapp
             (evar "hi" 12090)
-                (elambda (pvar "v" 12089) (evar "v2" 12091) 12086)
+                [(elambda [(pvar "v" 12089)] (evar "v2" 12091) 12086)]
                 12086))
         (,
         (@@ (fn [a] 1))
-            (elambda (pvar "a" 12134) (eprim (pint 1 12135) 12135) 12131))
+            (elambda [(pvar "a" 12134)] (eprim (pint 1 12135) 12135) 12131))
         (,
         (@@ (fn [a b] 2))
             (elambda
-            (pvar "a" 12156)
-                (elambda (pvar "b" 12157) (eprim (pint 2 12158) 12158) 12153)
+            [(pvar "a" 12156) (pvar "b" 12157)]
+                (eprim (pint 2 12158) 12158)
                 12153))
         (,
         (@@ (fn [(, a b)] a))
             (elambda
-            (pcon "," [(pvar "a" 12187) (pvar "b" 12188)] 12185)
+            [(pcon "," [(pvar "a" 12187) (pvar "b" 12188)] 12185)]
                 (evar "a" 12189)
                 12182))
         (,
         (@@ (+ 1 2))
             (eapp
-            (eapp (evar "+" 12233) (eprim (pint 1 12234) 12234) 12232)
-                (eprim (pint 2 12235) 12235)
+            (evar "+" 12233)
+                [(eprim (pint 1 12234) 12234) (eprim (pint 2 12235) 12235)]
                 12232))
         (,
         (@@ (int-to-string 23))
             (eapp
             (evar "int-to-string" 12266)
-                (eprim (pint 23 12267) 12267)
+                [(eprim (pint 23 12267) 12267)]
                 12265))
         (,
         (@@ (let [x 2] x))
@@ -735,8 +727,8 @@
         (@@ (let [(, a b) (, 2 3)] 1))
             (ematch
             (eapp
-                (eapp (evar "," 12325) (eprim (pint 2 12326) 12326) 12324)
-                    (eprim (pint 3 12327) 12327)
+                (evar "," 12325)
+                    [(eprim (pint 2 12326) 12326) (eprim (pint 3 12327) 12327)]
                     12324)
                 [(,
                 (pcon "," [(pvar "a" 12322) (pvar "b" 12323)] 12320)
@@ -832,8 +824,8 @@
         (@@ (+ 1 2))
             (sexpr
             (eapp
-                (eapp (evar "+" 12829) (eprim (pint 1 12830) 12830) 12828)
-                    (eprim (pint 2 12831) 12831)
+                (evar "+" 12829)
+                    [(eprim (pint 1 12830) 12830) (eprim (pint 2 12831) 12831)]
                     12828)
                 12828))
         (,
@@ -841,7 +833,7 @@
             (sdef
             "a"
                 12866
-                (elambda (pvar "m" 12868) (evar "m" 12869) 12864)
+                (elambda [(pvar "m" 12868)] (evar "m" 12869) 12864)
                 12864))])
 
 (** ## Debugging Helpers **)
@@ -998,10 +990,12 @@
                 (equot/type inner l)          (jsonify inner)
                 (equot/pat inner l)           (jsonify inner)
                 (equotquot inner l)           (jsonify inner)
-                (elambda pat body l)          "function name_${
+                (elambda pats body l)         "function name_${
                                                   (its l)
                                                   }(${
-                                                  (orr "_" (just-pat pat))
+                                                  (join
+                                                      ", "
+                                                          (mapi (fn [pat i] (orr "_${(int-to-string i)}" (just-pat pat))) 0 pats))
                                                   }) { return ${
                                                   (compile body trace)
                                                   } }"
@@ -1019,9 +1013,10 @@
                                                           ("return ${body}"
                                                               ;(compile-pat pat "$target" "return ${body}" trace))
                                                           };\nthrow new Error('let pattern not matched. ' + valueToString($target));\n})()"))
-                (eapp fn arg l)               (match fn
-                                                  (elambda _ _ _) "(${(compile fn trace)})(${(compile arg trace)})"
-                                                  _               "${(compile fn trace)}(${(compile arg trace)})")
+                (eapp fn args l)              (let [args (join ")(" (map (fn [arg] (compile arg trace)) args))]
+                                                  (match fn
+                                                      (elambda _ _ _) "(${(compile fn trace)})(${args})"
+                                                      _               "${(compile fn trace)}(${args})"))
                 (ematch target cases l)       "(function match_${
                                                   (its l)
                                                   }($target) {\n${
@@ -1700,22 +1695,24 @@
                                      _              (map/ti (fn [(, a b)] (unify a b)) (zip types types'))]
                                      (<- (, (concat [(concat ps) (concat ps')]) tstring)))
         (eprim prim l)           (infer/prim prim)
-        (eapp target arg l)      (let-> [
-                                     (, ps target-type) (infer/expr ce as target)
-                                     (, qs arg-type)    (infer/expr ce as arg)
-                                     result-var         (new-tvar star)
-                                     _                  (unify (tfn arg-type result-var) target-type)]
-                                     (<- (, (concat [ps qs]) result-var)))
-        (elambda pat body l)     (infer/expr
+        (eapp target args l)     (match args
+                                     [arg]        (let-> [
+                                                      (, ps target-type) (infer/expr ce as target)
+                                                      (, qs arg-type)    (infer/expr ce as arg)
+                                                      result-var         (new-tvar star)
+                                                      _                  (unify (tfn arg-type result-var) target-type)]
+                                                      (<- (, (concat [ps qs]) result-var)))
+                                     [one ..rest] (infer/expr ce as (eapp (eapp target [one] l) rest l)))
+        (elambda pats body l)    (infer/expr
                                      ce
                                          as
-                                         (elet (, [] [[(, "lambda-arg" [(, [pat] body)])]]) (evar "lambda-arg" l) l))
+                                         (elet (, [] [[(, "lambda-arg" [(, pats body)])]]) (evar "lambda-arg" l) l))
         (ematch target cases l)  (infer/expr
                                      ce
                                          as
                                          (elet
                                          (, [] [[(, "match" (map (fn [(, pat body)] (, [pat] body)) cases))]])
-                                             (eapp (evar "match" l) target l)
+                                             (eapp (evar "match" l) [target] l)
                                              l))
         (elet bindings body l)   (let-> [
                                      (, ps as') (infer/binding-group ce as bindings)
@@ -2267,8 +2264,8 @@ filter
                                                            [[(,
                                                            name
                                                                [(match body
-                                                               (elambda pat inner l) (, [pat] inner)
-                                                               _                     (, [] body))])]])])
+                                                               (elambda pats inner l) (, pats inner)
+                                                               _                      (, [] body))])]])])
                                                    (ok (,,, subst tenv nidx assumps)) (full-env
                                                                                           type-env/nil
                                                                                               class-env/nil
@@ -2641,8 +2638,8 @@ filter
                                                         templates))
         (equot expr int)                    empty
         (elambda pats body int)             (bag/and
-                                                (foldl empty (map pat-externals [pats]) bag/and)
-                                                    (externals (foldl bound (map pat-names [pats]) set/merge) body))
+                                                (foldl empty (map pat-externals pats) bag/and)
+                                                    (externals (foldl bound (map pat-names pats) set/merge) body))
         (elet (, explicit inferred) body l) (let [
                                                 (, bag bound) (foldl
                                                                   (, empty bound)
@@ -2662,7 +2659,7 @@ filter
                                                 (bag/and bag (externals bound body)))
         (eapp target args int)              (bag/and
                                                 (externals bound target)
-                                                    (foldl empty (map (externals bound) [args]) bag/and))
+                                                    (foldl empty (map (externals bound) args) bag/and))
         (ematch expr cases int)             (bag/and
                                                 (externals bound expr)
                                                     (foldl
