@@ -12,7 +12,8 @@ import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
-import { FullEvalator } from '../ide/ground-up/Evaluators';
+import { Errors, FullEvalator } from '../ide/ground-up/Evaluators';
+import { LocedName } from './store/sortTops';
 
 export type MetaData = {
     trace?: {
@@ -175,16 +176,21 @@ export type RealizedNamespace = {
     hidden?: boolean;
     children: number[];
     collapsed?: boolean;
-    plugin?: string | { id: string; options: any }; // hash or something, or just a name ya know
+    plugin?: { id: string; options: any }; // hash or something, or just a name ya know
     display?: { id: string; options: any };
     // PLUGINS get evaluated ... after everything else?
     //
 };
 
-export type NamespacePlugin<Results, Options> = {
+export type NamespacePlugin<Results, Parsed, Options> = {
     id: string;
     title: string;
     test(node: Node): boolean;
+    parse(
+        node: Node,
+        errors: Errors,
+        evaluator: FullEvalator<any, any, any>,
+    ): { parsed: Parsed; deps: LocedName[] };
     process(
         node: Node,
         state: NUIState,

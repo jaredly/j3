@@ -175,16 +175,16 @@ export const advancePath = (
             return node;
     }
 };
+export type Top = {
+    top: number;
+    path: Path[];
+    ns: RealizedNamespace;
+};
 
-export const findTops = (state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>) => {
-    let all: {
-        top: number;
-        path: Path[];
-        // hidden?: boolean;
-        // plugin?: RealizedNamespace['plugin'];
-        // display?: RealizedNamespace['display'];
-        ns: RealizedNamespace;
-    }[] = [];
+export const findTops = (
+    state: Pick<NUIState, 'cards' | 'nsMap' | 'map'>,
+): Top[] => {
+    let all: Top[] = [];
     const seen: { [top: number]: boolean } = { [-1]: true };
     const add = (id: number, path: Path[]) => {
         const ns = state.nsMap[id];
