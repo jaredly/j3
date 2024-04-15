@@ -1,4 +1,8 @@
 
+## Ergh
+
+I gotta put stuff into a WebWorker...
+
 ## Implementing type classes
 
 - [ ] CAN I assume, that type class predicates will always have a simple variable as the left-hand thing?
