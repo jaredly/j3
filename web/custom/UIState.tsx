@@ -190,9 +190,9 @@ export type NamespacePlugin<Results, Parsed, Options> = {
         node: Node,
         errors: Errors,
         evaluator: FullEvalator<any, any, any>,
-    ): { parsed: Parsed; deps: LocedName[] };
+    ): { parsed: Parsed; deps: LocedName[] } | null;
     process(
-        node: Node,
+        parsed: Parsed,
         state: NUIState,
         evaluator: FullEvalator<any, any, any>,
         results: NUIResults,
@@ -202,7 +202,7 @@ export type NamespacePlugin<Results, Parsed, Options> = {
         options: Options,
     ): Results;
     render(
-        node: Node,
+        parsed: Parsed,
         results: Results,
         store: Store,
         ns: RealizedNamespace,

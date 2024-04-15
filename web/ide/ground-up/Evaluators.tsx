@@ -116,6 +116,7 @@ export type FullEvalator<
     analysis?: {
         dependencies(stmt: Stmt): LocedName[];
         stmtNames(stmt: Stmt): LocedName[];
+        exprDependencies(stmt: Expr): LocedName[];
     };
 
     addStatements(

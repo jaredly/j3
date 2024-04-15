@@ -10,28 +10,39 @@ import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { useGetStore } from '../store/Store';
 import { highlightIdxs } from '../NSTop';
+import { Errors } from '../../ide/ground-up/Evaluators';
+import { AnyEnv } from '../store/getResults';
+import { LocedName } from '../store/sortTops';
 
 type RefNode = Extract<NNode, { type: 'ref' }> & { path: Path };
 
-type LineFixture = {
+type LineFixture<Expr> = {
     type: 'line';
     loc: number;
     input: null | {
         node: Node;
         child: RefNode;
+        expr?: Expr;
     };
     output: null | {
         node: Node;
         child: RefNode;
+        expr?: Expr;
     };
 };
 
-type Data = {
-    test: null | { node: Node; child: RefNode };
+type Data<Expr> = {
+    test: null | { node: Node; child: RefNode; expr?: Expr };
     fxid: number;
     fixtures: (
-        | LineFixture
-        | { type: 'unknown'; node: Node; child: RefNode; loc: number }
+        | LineFixture<Expr>
+        | {
+              type: 'unknown';
+              node: Node;
+              child: RefNode;
+              loc: number;
+              expr?: Expr;
+          }
     )[];
 };
 
@@ -47,11 +58,32 @@ const parseTuple = (node: Node) => {
     return null;
 };
 
-const parseFixture = (
+const parseExpr =
+    (evaluator: AnyEnv, errors: Errors, deps: LocedName[]) => (node: Node) => {
+        try {
+            const expr = evaluator.parseExpr(node, errors);
+            if (expr) {
+                deps.push(
+                    ...(evaluator.analysis?.exprDependencies(expr) ?? []),
+                );
+            }
+            return expr;
+        } catch (err) {
+            if (!errors[node.loc]) {
+                errors[node.loc] = [];
+            }
+            errors[node.loc].push(
+                `Failed to parse node ${(err as Error).message}`,
+            );
+        }
+    };
+
+const parseFixture = <Expr,>(
     item: Node,
     path: Path,
     ancestors: Path[],
-): Data['fixtures'][0] => {
+    parseExpr: (node: Node) => Expr | undefined,
+): Data<Expr>['fixtures'][0] => {
     const inner = parseTuple(item);
     if (!inner?.length || inner.length != 2) {
         return {
@@ -59,6 +91,7 @@ const parseFixture = (
             loc: item.loc,
             node: item,
             child: { type: 'ref', path, id: item.loc, ancestors },
+            expr: parseExpr(item),
         };
     } else {
         return {
@@ -66,6 +99,7 @@ const parseFixture = (
             loc: item.loc,
             input: {
                 node: inner[0],
+                expr: parseExpr(inner[0]),
                 child: {
                     path: { idx: item.loc, type: 'child', at: 1 },
                     ancestors: [...ancestors, path],
@@ -76,6 +110,7 @@ const parseFixture = (
             output: inner[1]
                 ? {
                       node: inner[1],
+                      expr: parseExpr(inner[1]),
                       child: {
                           path: { idx: item.loc, type: 'child', at: 2 },
                           ancestors: [...ancestors, path],
@@ -88,7 +123,10 @@ const parseFixture = (
     }
 };
 
-const parse = (node: Node): Data | void => {
+const parse = <Expr,>(
+    node: Node,
+    parseExpr: (node: Node) => Expr | undefined,
+): Data<Expr> | void => {
     if (node.type === 'blank') {
         return;
     }
@@ -97,7 +135,12 @@ const parse = (node: Node): Data | void => {
             test: null,
             fxid: node.loc,
             fixtures: node.values.map((item, i) =>
-                parseFixture(item, { type: 'child', at: i, idx: node.loc }, []),
+                parseFixture(
+                    item,
+                    { type: 'child', at: i, idx: node.loc },
+                    [],
+                    parseExpr,
+                ),
             ),
         };
     }
@@ -109,6 +152,7 @@ const parse = (node: Node): Data | void => {
             return {
                 test: {
                     node: test,
+                    expr: parseExpr(test),
                     child: {
                         path: { idx: node.loc, type: 'child', at: 1 },
                         id: test.loc,
@@ -125,6 +169,7 @@ const parse = (node: Node): Data | void => {
                             idx: fixtures.loc,
                         },
                         [{ idx: node.loc, type: 'child', at: 2 }],
+                        parseExpr,
                     ),
                 ),
             };
@@ -139,17 +184,24 @@ const findLastIndex = <T,>(arr: T[], f: (t: T) => boolean) => {
     return -1;
 };
 
-export const fixturePlugin: NamespacePlugin<any, any> = {
+type Expr = { _phantom: 'expr' };
+
+export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {
     id: 'fixture',
     title: 'Fixture tests',
     test: (node: Node) => {
-        return parse(node) != null;
+        return parse(node, (node) => undefined) != null;
+    },
+    parse(node, errors, evaluator) {
+        const deps: LocedName[] = [];
+        const parsed = parse(node, parseExpr(evaluator, errors, deps));
+        return parsed ? { parsed, deps } : null;
     },
     newNodeAfter(path, map, nsMap, nidx) {
         const tid = path.findIndex((p) => p.type === 'ns-top');
         if (tid === -1) return null;
         const node = fromMCST(path[tid + 1].idx, map);
-        const parsed = parse(node);
+        const parsed = parse(node, () => null);
         if (!parsed) return null;
         const cidx = findLastIndex(path, (p) => p.type === 'child');
         if (cidx === -1) return null;
@@ -233,28 +285,31 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
         console.log('parsed', path, node, parsed);
         return null;
     },
-    process(node: Node, { meta }, evaluator, { traces, env }) {
+    process(data, { meta }, evaluator, { traces, env }) {
         const setTracing = (idx: number | null) =>
             evaluator.setTracing(idx, traces, env);
-        const evaluate = (node: Node) => {
-            const errors = {};
-            const expr = evaluator.parseExpr(node, errors);
+        const evaluate = (expr: Expr) => {
+            // const errors = {};
+            // const expr = evaluator.parseExpr(node, errors);
             return evaluator.evaluate(expr, env, meta);
         };
 
-        const data = parse(node);
-        if (!data) {
-            console.error(`Fixture plugin: failed to parse node`);
-            console.log(node);
-            return {};
-        }
+        // const data = parse(node);
+        // if (!data) {
+        //     console.error(`Fixture plugin: failed to parse node`);
+        //     console.log(node);
+        //     return {};
+        // }
         let test: null | Function = null;
         const results: {
             [key: number]: { expected: any; found: any; error?: string };
         } = {};
         if (data.test) {
+            if (!data.test.expr) {
+                return {};
+            }
             try {
-                test = evaluate(data.test.node);
+                test = evaluate(data.test.expr);
             } catch (err) {
                 data.fixtures.forEach((item) => {
                     if (item.type === 'line' && item.input) {
@@ -270,23 +325,18 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
             if (typeof test !== 'function') return {};
         }
         data.fixtures.forEach((item) => {
-            if (
-                item.type === 'line' &&
-                item.input &&
-                item.input?.node.type !== 'blank'
-            ) {
+            if (item.type === 'line' && item.input?.expr) {
                 try {
                     if (meta[item.input.node.loc]?.traceTop) {
                         setTracing(item.input.node.loc);
                     }
                     results[item.input.node.loc] = {
-                        expected:
-                            item.output?.node.type !== 'blank'
-                                ? evaluate(item.output!.node)
-                                : null,
+                        expected: item.output?.expr
+                            ? evaluate(item.output?.expr)
+                            : null,
                         found: test
-                            ? test(evaluate(item.input.node))
-                            : evaluate(item.input.node),
+                            ? test(evaluate(item.input.expr))
+                            : evaluate(item.input.expr),
                     };
                 } catch (err) {
                     // console.error(err);
@@ -305,14 +355,12 @@ export const fixturePlugin: NamespacePlugin<any, any> = {
         return results;
     },
     render(
-        node: Node,
+        data: Data<Expr>,
         results: {
             [key: number]: { expected: any; found: any; error?: string };
         },
         store,
     ): NNode | void {
-        const data = parse(node);
-        if (!data) return;
         return {
             type: 'horiz',
             children: [
@@ -430,7 +478,7 @@ function StatusMessage({
     results,
     dispatch,
 }: {
-    item: LineFixture;
+    item: LineFixture<any>;
     results: {
         [key: number]: {
             expected: any;
@@ -499,7 +547,7 @@ function StatusMessage({
 }
 
 function statusIndicator(
-    item: LineFixture,
+    item: LineFixture<any>,
     results: { [key: number]: { expected: any; found: any; error?: string } },
 ): string {
     if (!item.input || !item.output) {
