@@ -3,6 +3,33 @@
 
 I gotta put stuff into a WebWorker...
 
+What does that mean?
+What am I putting into the web worker?
+- type inference (infer_stmts2)
+- compilation probably
+- and evaluation? I guess?
+- yeah that's probably wise.
+
+hrm ok this seems like it might be a little bit ... involved.
+is it weird that I want two webworkers?
+One for "changes to this whatsit"
+and one for "doing all the changes across the board"
+
+
+
+So ...
+on change,
+we find `tops` that changed,
+send the new infos to the web worker(s)
+
+ugh ok this is going to be ... a big change.
+
+Can i really deal with all that asynchrony?
+
+
+
+
+
 ## Implementing type classes
 
 - [ ] CAN I assume, that type class predicates will always have a simple variable as the left-hand thing?

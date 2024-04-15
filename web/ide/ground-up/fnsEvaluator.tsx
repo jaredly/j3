@@ -417,11 +417,17 @@ const compileStmt = (
 ) => {
     const mm = prepareMeta(meta, data['parse_version'] === 2);
 
-    const externals: { type: ','; 0: string; 1: number }[] = data[
-        'externals_stmt'
-    ]
-        ? stmts.flatMap((stmt) => unwrapArray(data['externals_stmt'](stmt)))
-        : [];
+    let externals: { type: ','; 0: string; 1: number }[] = [];
+    if (data['externals_stmt']) {
+        try {
+            externals = stmts.flatMap((stmt) =>
+                unwrapArray(data['externals_stmt'](stmt)),
+            );
+        } catch (err) {
+            console.error('Unable to calculate externals');
+            console.error(err);
+        }
+    }
     const { needed, values } = assembleExternals(externals, env, san, names);
 
     if (stmts.length === 1 && stmts[0].type === 'sexpr') {

@@ -3,7 +3,7 @@ import { NUIState } from '../UIState';
 import equal from 'fast-deep-equal';
 import { reduce } from '../../ide/ground-up/reduce';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
-import { AnyEnv, getResults } from './getResults';
+import { AnyEnv, emptyResults, getResults } from './getResults';
 import { ResultsCache } from './ResultsCache';
 import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
 
@@ -57,7 +57,12 @@ export const useStore = (
         const updateResults = adaptiveBounce(() => {
             const prev = results;
             // console.log('updating results');
-            results = getResults(state, evaluator, debug.current, cache);
+            try {
+                results = getResults(state, evaluator, debug.current, cache);
+            } catch (err) {
+                console.error(err);
+                return;
+            }
 
             evtListeners.results.forEach((f) => f(state));
             evtListeners.all.forEach((f) => f(state));
@@ -102,7 +107,13 @@ export const useStore = (
             });
         }
 
-        let results = getResults(state, evaluator, debug.current, cache);
+        let results: NUIResults;
+        try {
+            results = getResults(state, evaluator, debug.current, cache);
+        } catch (err) {
+            console.error(err);
+            results = emptyResults();
+        }
 
         return {
             setDebug(nv, disableEvaluation) {
