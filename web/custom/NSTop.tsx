@@ -233,15 +233,21 @@ const renderProduce = (
     dispatch: React.Dispatch<Action>,
 ) => {
     return value?.map((item, i) => (
-        <div key={i}>{renderProduceItem(item, state, dispatch)}</div>
+        <div key={i}>
+            <RenderProduceItem value={item} state={state} dispatch={dispatch} />
+        </div>
     ));
 };
 
-const renderProduceItem = (
-    value: ProduceItem,
-    state: NUIState,
-    dispatch: React.Dispatch<Action>,
-) => {
+const RenderProduceItem = ({
+    value,
+    state,
+    dispatch,
+}: {
+    value: ProduceItem;
+    state: NUIState;
+    dispatch: React.Dispatch<Action>;
+}) => {
     if (value instanceof MyEvalError) {
         let parts: JSX.Element[] = highlightIdxs(
             value.source.message,
@@ -303,9 +309,11 @@ const renderProduceItem = (
         return <div>Error {value.message}</div>;
     }
     if (typeof value === 'string') {
-        return value.length > 1000 ? value.slice(0, 1000) + '...' : value;
+        return (
+            <>{value.length > 1000 ? value.slice(0, 1000) + '...' : value}</>
+        );
     }
-    if (!value) return 'No value?';
+    if (!value) return <>No value?</>;
     return value;
 };
 

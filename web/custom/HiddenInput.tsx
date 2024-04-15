@@ -64,7 +64,7 @@ export function HiddenInput({
         <input
             ref={hiddenInput}
             autoFocus
-            value="whaa"
+            value=""
             style={{
                 width: 0,
                 height: 0,

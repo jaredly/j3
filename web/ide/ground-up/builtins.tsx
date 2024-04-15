@@ -26,6 +26,8 @@ export function builtins() {
         '=': (a: number) => (b: number) => equal(a, b),
         '!=': (a: number) => (b: number) => !equal(a, b),
         unescapeString: slash,
+        'show-pretty': (v: any) => JSON.stringify(v),
+        show: (v: any) => JSON.stringify(v),
 
         'int-to-string': (a: number) => a + '',
         string_to_float: (a: string) => {

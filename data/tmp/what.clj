@@ -59,6 +59,30 @@
 
 (deftype (bag a) (empty) (one a) (many (array a)))
 
+"My bag ${empty} and ${(many [(one 2) empty])}"
+
+(definstance
+    (=> (pretty a) (pretty (array a)))
+        {show-pretty (fn [items] "[${(join " " (map show-pretty items))}]")})
+
+(definstance
+    (=> (pretty (array a)) (pretty (bag a)))
+        {show-pretty (fn [bag] (show-pretty (bag/to-list bag)))})
+
+(deftype suit (hearts) (spades) (clubs) (diamonds))
+
+(definstance
+    (pretty suit)
+        {
+        show-pretty (fn [suit]
+                        (match suit
+                            (hearts)   "️❤️"
+                            (spades)   "️♠️"
+                            (clubs)    "️♣️"
+                            (diamonds) "️♦️"))})
+
+"${(hearts)}"
+
 (many [1 2 3 4 5 7 8 9 0])
 
 empty

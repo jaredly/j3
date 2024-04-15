@@ -28,6 +28,7 @@ export function cacheEvaluation<Stmt>(
         }
     });
 }
+
 export function evaluateGroup<
     Env extends { values: { [key: string]: any } },
     Stmt,
@@ -50,9 +51,13 @@ export function evaluateGroup<
         renderValue,
     );
     group.forEach((node) => {
-        stuff.results.produce[node.id] = Array.isArray(display[node.id])
-            ? (display[node.id] as any)
-            : [display[node.id]];
+        const prev = stuff.results.produce[node.id] ?? [];
+        stuff.results.produce[node.id] = [
+            ...prev,
+            ...(Array.isArray(display[node.id])
+                ? (display[node.id] as any)
+                : [display[node.id]]),
+        ];
         if (!node.names) {
             Object.assign(stuff.results.env.values, values);
         } else {

@@ -194,6 +194,7 @@
 (deftype cst
     (cst/list (array cst) int)
         (cst/array (array cst) int)
+        (cst/record (array cst) int)
         (cst/spread cst int)
         (cst/identifier string int)
         (cst/string string (array (,, cst string int)) int))
@@ -248,11 +249,27 @@
             int)
         (stypealias string int (array (, string int)) type int)
         (sdef string int expr int)
-        (sexpr expr int))
+        (sexpr expr int)
+        (sdefinstance
+        string
+            int
+            type
+            (array pred)
+            (array (,, string int expr))
+            int)
+        (sdefclass string int (array (, string type))))
+
+;(lol)
 
 ;(definstance
     (Types Pred)
         {apply (fn [s (isin i t)] (isin i (apply s t))) tv (fn [(isin i t)] (tv t))})
+
+;(definstance
+    (=> (Types a) (Types (array a)))
+        {
+        apply (fn [s] (map (apply s)))
+        tv    (fn [t] (foldl set/nil (map tv t) set/merge))})
 
 ;(defclass (Types t) {apply (fn [subst t] t) tv (fn [t] (array tyvar))})
 
@@ -309,7 +326,7 @@
 
 (type->fn (tfn tint (tfn tfloat tbool)))
 
-(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
+(def letters ["ɑ" "β" "ɣ" "δ" "ɷ" "η" "ρ"])
 
 (defn at [i lst]
     (match lst
@@ -378,7 +395,7 @@
     "${
         (match preds
             [] ""
-            _  "${(join "; " (map pred->s preds))} ")
+            _  "${(join "; " (map pred->s preds))} |=> ")
         }${
         (t->s t)
         }")
@@ -617,7 +634,9 @@
                                                                                     (let [(, pat value) init]
                                                                                         (eapp (parse-expr value) [(elambda [(parse-pat pat)] body l)] l))))
         (cst/list [(cst/identifier "let" _) .._] l)                         (fatal "Invalid 'let' ${(int-to-string l)}")
-        (cst/list [target ..args] l)                                        (eapp (parse-expr target) (map parse-expr args) l)
+        (cst/list [target ..args] l)                                        (match args
+                                                                                [] (parse-expr target)
+                                                                                _  (eapp (parse-expr target) (map parse-expr args) l))
         (cst/array args l)                                                  (parse-array args l)))
 
 (parse-expr (@@ (@! 12)))
@@ -759,6 +778,21 @@
                     _                                              (fatal "Invalid type constructor"))))
             l))
 
+;((sdefinstance
+    string
+        int
+        type
+        (array pred)
+        (array (,, string int expr))
+        int)
+    (sdefclass string int (array (, string type))))
+
+(defn splitlast [arr]
+    (match arr
+        []           (fatal "empty splitlast")
+        [one]        (, [] one)
+        [one ..rest] (let [(, more last) (splitlast rest)] (, [one ..more] last))))
+
 (defn parse-stmt [cst]
     (match cst
         (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)      (sdef id li (parse-expr value) l)
@@ -790,7 +824,47 @@
                                                                                           (cst/identifier _ l) l
                                                                                           (cst/array _ l)      l
                                                                                           (cst/string _ _ l)   l
-                                                                                          (cst/spread _ l)     l))))
+                                                                                          (cst/spread _ l)     l))
+        (cst/list
+            [(cst/identifier "definstance" _)
+                (cst/list [(cst/identifier cls cl) typ] _)
+                (cst/record items _)]
+                l) (sdefinstance
+                                                                                      cls
+                                                                                          cl
+                                                                                          (parse-type typ)
+                                                                                          []
+                                                                                          (map
+                                                                                          (fn [(, name value)]
+                                                                                              (match name
+                                                                                                  (cst/identifier name l) (,, name l (parse-expr value))
+                                                                                                  _                       (fatal "Invalid record name")))
+                                                                                              (pairs items))
+                                                                                          l)
+        (cst/list
+            [(cst/identifier "definstance" _)
+                (cst/list [(cst/identifier "=>" _) ..predlist] _)
+                (cst/record items _)]
+                l) (let [
+                                                                                      (, preds (isin name typ)) (splitlast
+                                                                                                                    (map
+                                                                                                                        (fn [pred]
+                                                                                                                            (match pred
+                                                                                                                                (cst/list [(cst/identifier cls cl) typ] _) (isin cls (parse-type typ))
+                                                                                                                                _                                          (fatal "Invalid predicate ${(its l)}")))
+                                                                                                                            predlist))]
+                                                                                      (sdefinstance
+                                                                                          name
+                                                                                              l
+                                                                                              typ
+                                                                                              preds
+                                                                                              (map
+                                                                                              (fn [(, name value)]
+                                                                                                  (match name
+                                                                                                      (cst/identifier name l) (,, name l (parse-expr value))
+                                                                                                      _                       (fatal "Invalid record name")))
+                                                                                                  (pairs items))
+                                                                                              l))))
 
 (,
     parse-stmt
@@ -1148,7 +1222,7 @@
 (defn lift [m (isin i t) (isin i' t')]
     (if (= i i')
         (m t t')
-            (fatal "classes differ")))
+            (err "classes differ: ${i} vs ${i'}")))
 
 (defn pred/tv [(isin i t)] (type/tv t))
 
@@ -1173,12 +1247,18 @@
                                               err     err)
         (, (tvar u _) t)                  (if (kind= (tyvar/kind u) (type/kind t))
                                               (ok (|-> u t))
-                                                  (err "Different Kinds"))
+                                                  (err
+                                                  "Different Kinds ${
+                                                      (kind->s (tyvar/kind u))
+                                                      } vs ${
+                                                      (kind->s (type/kind t))
+                                                      }"))
         (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
                                               (ok map/nil)
                                                   (err
                                                   "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"))
-        _                                 (err "Unable to match ${(type->s t1)} vs ${(type->s t2)}")))
+        _                                 (err
+                                              "Unable to match ${(type->s' true t1)} vs ${(type->s' true t2)}")))
 
 (defn type/tv [t]
     (match t
@@ -1384,13 +1464,12 @@
 
 (by-inst builtin-env (isin "num" tint))
 
-(defn by-inst [ce pred]
+(defn by-inst [(class-env classes _) pred]
     (let [
-        (isin i t)            pred
-        (class-env classes _) ce
-        (, _ insts)           (match (map/get classes i)
-                                  (some s) s
-                                  _        (fatal "unknown name ${i}"))]
+        (isin i t)  pred
+        (, _ insts) (match (map/get classes i)
+                        (some s) s
+                        _        (fatal "unknown name ${i}"))]
         (find-some
             (fn [(=> ps h)]
                 (match (matchPred h pred)
@@ -1413,6 +1492,7 @@
     (match type
         (tvar _ _)   true
         (tcon _ _)   false
+        (tgen _ _)   (fatal "hnf got a tgen, shouldn't happen")
         (tapp t _ _) (type/hnf t)))
 
 (defn in-hnf [(isin _ t)] (type/hnf t))
@@ -2052,6 +2132,7 @@
                 (, "index" (generic ["ix"] (tfns [(mkpair g0 g0) g0] tint)))
                 (, "inRange" (generic ["ix"] (tfns [(mkpair g0 g0) g0] tbool)))
                 (, "rangeSize" (generic ["ix"] (tfns [(mkpair g0 g0)] tint)))
+                (, "show-pretty" (generic ["pretty"] (tfn g0 tstring)))
                 ; monadss
                 (,
                 "return"
@@ -2129,10 +2210,10 @@
             (int-ratio "realfrac")
             (show list)
             (show option)
-            (show result)
+            (show2 result)
             (int-ratio "show")
-            (show pair)
-            (ix pair)
+            (show2 pair)
+            (ix2 pair)
             (generics [] (isin "monad" (tcon (tycon "option" (kfun star star)) -1)))
             (generics [] (isin "monad" (tcon (tycon "list" (kfun star star)) -1)))
             ..(concat
@@ -2163,7 +2244,10 @@
 
 (def builtin-ce
     (apply-transformers
-        (map (fn [(, _ (=> a b))] (add-inst a b)) builtin-instances)
+        (map
+            (fn [(, kinds (=> preconditions assertion))]
+                (add-inst preconditions assertion))
+                builtin-instances)
             (add-prelude-classes initial-env)))
 
 (def builtin-tenv
@@ -2193,6 +2277,9 @@
                     builtin-assumptions
                     [(, [] [[(parse-binding v)]])])))
         [(, (@@ 11) "it: int")
+        (,
+        (@@ (< (, "" "")))
+            "Can't find an instance for class 'ord' for type (, string string)")
         (, (@@ (+ 1 2)) "it: int")
         (, (@@ (fn [a] (+ 1 a))) "it: a *; a ∈ num; (fn [a] a)")
         (, (@@ "Hello") "it: string")

@@ -334,13 +334,14 @@ export const fnsEvaluator = (
                         data['get_type'](tenv)(name[0]),
                     );
                     (display[+id] as any[]).push(
-                        ...types.map((type, i) =>
-                            type.type === 'some'
-                                ? `${names[i][0]}⁚ ${data['type_to_string'](
-                                      type[0],
-                                  )}`
-                                : new Error(`No type for ${names[i][0]}`),
-                        ),
+                        ...types.map((type, i) => {
+                            if (type.type === 'some') {
+                                return `${names[i][0]}⁚ ${data[
+                                    'type_to_string'
+                                ](type[0])}`;
+                            }
+                            return new Error(`No type for ${names[i][0]}`);
+                        }),
                     );
                 }
             });

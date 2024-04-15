@@ -1,4 +1,46 @@
 
+## TYPE CLASSES
+
+Getting nested type classes to work...
+
+it looks like I need to do tyvar instead of tgen??? Not sure about that....
+
+
+
+INSTANTIATE THE TYPECLASSES IN ADD_INST
+
+fresh-inst on all that jazz
+
+
+
+
+
+Thinking my way through type class instances...
+
+When choosing an instance ...
+BTW strings should just turn into `show-pretty`, instead of doing
+the custom "pretty" dealio.
+  - ... eh, maybe I don't want to mess.
+  - anyway... I need ... to be able to know ... what ... instances are being used.
+    not to mention, what instances are wanted by a function call.
+
+    hello: num a => (fn [a] int)
+
+    hello(numCls)(a) => int
+    ...
+    .....
+    .......
+
+    SO
+    I need ... to be able to know:
+    - at function definitino (lambda) time,
+      what are the type classes in play
+    - at function call (eapp) time,
+      what did we get resolved to
+    <- these should get plopped on the state monad.
+    right next to the assumps that we're accumulating.
+    We'll call that critical info.
+
 
 
 ## CACHING the type information:
@@ -27,7 +69,9 @@ But thats easy to do.
 - [x] ok we really need to better convert toplevel defns.
   - [x] WHICH MEANS its args type, people. lambda (array pat) expr, yes please and thank you.
   - [x] WHICH we can now do, because we're colocating the parser. Love to see it.
-- [ ] lambda args ... finished? What's the other thing? oh, app. Let's do that too.
+- [x] lambda args ... finished? What's the other thing?
+- [x] oh, eapp. Let's do that too.
+- [ ] definstance...probably
 - [ ] and then I can do `defclass` and `definstance`
 
 
