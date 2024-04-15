@@ -12,7 +12,7 @@ import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { AnyEnv } from './getResults';
 
-type Parsed<Stmt> =
+export type Parsed<Stmt> =
     | void
     | {
           type: 'plugin';
@@ -33,7 +33,7 @@ type Parsed<Stmt> =
           errors: Errors;
       };
 
-export type ImmediateCache<Stmt> = {
+export type ImmediateResults<Stmt> = {
     lastState: null | NUIState;
 
     jumpToName: {
@@ -83,24 +83,25 @@ export const getImmediateResults = <
 >(
     state: NUIState,
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
-    cache: ImmediateCache<Stmt>,
+    results: ImmediateResults<Stmt>,
 ) => {
     const tops = findTops(state);
 
-    tops.forEach((top) => (cache.changes[top.top] = {}));
+    tops.forEach((top) => (results.changes[top.top] = {}));
+
+    const lastState = results.lastState;
 
     for (let top of tops) {
-        const changes = cache.changes[top.top];
-        const lastState = cache.lastState;
+        const changes = results.changes[top.top];
 
         // Fresh!
-        if (!cache.nodes[top.top] || !lastState) {
-            cache.nodes[top.top] = getFreshResults(top, state, evaluator);
-            cache.changes[top.top] = allChanged;
+        if (!results.nodes[top.top] || !lastState) {
+            results.nodes[top.top] = getFreshResults(top, state, evaluator);
+            results.changes[top.top] = allChanged;
             continue;
         }
 
-        const ncache = cache.nodes[top.top];
+        const ncache = results.nodes[top.top];
 
         changes.plugin = ncache.ns.plugin !== top.ns.plugin;
         ncache.ns = top.ns;
@@ -145,7 +146,25 @@ export const getImmediateResults = <
         }
     }
 
-    cache.lastState = state;
+    results.jumpToName = { value: {}, type: {} };
+    for (let top of tops) {
+        const parsed = results.nodes[top.top].parsed;
+        if (parsed?.type === 'success') {
+            for (let name of parsed.names) {
+                if (results.jumpToName[name.kind][name.name]) {
+                    if (!parsed.duplicates) {
+                        parsed.duplicates = [name];
+                    } else {
+                        parsed.duplicates.push(name);
+                    }
+                } else {
+                    results.jumpToName[name.kind][name.name] = name.loc;
+                }
+            }
+        }
+    }
+
+    results.lastState = state;
 };
 
 const getParsed = (
