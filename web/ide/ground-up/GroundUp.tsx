@@ -20,6 +20,7 @@ import { renderTraces } from './renderTraces';
 import { advancePath } from './findTops';
 import { ResultsCache } from '../../custom/store/ResultsCache';
 import { AnyEnv } from '../../custom/store/getResults';
+import { useSyncStore } from '../../custom/store/useSyncStore';
 
 export type Results = {
     display: Display;
@@ -58,7 +59,8 @@ export const GroundUp = ({
         disableEvaluation: false,
     });
 
-    const store = useStore(initial.state, initial.cache, initial.evaluator);
+    const store = useSyncStore(initial.state, undefined, initial.evaluator);
+    // const store = useStore(initial.state, initial.cache, initial.evaluator);
     const { state, results, cache } = useGlobalState(store);
 
     useEffect(() => {

@@ -1,4 +1,16 @@
 
+
+# ImmediateResults
+
+- [ ] ok, we do gotta treat `immediateResults` as immutable, I think... right?
+  ORR I need to do a much more fine-grained approach to "changed" tracking, of individual nodes.
+  So that I can know "did the error state update for this node" etc.
+  - [ ] OK yeah, in getImmediateResults track all the nodes that need to be re-rendered. Should be fine
+    - layout
+    - parse errors or not
+
+
+
 ## Ergh
 
 I gotta put stuff into a WebWorker...
@@ -25,6 +37,26 @@ send the new infos to the web worker(s)
 ugh ok this is going to be ... a big change.
 
 Can i really deal with all that asynchrony?
+
+
+
+>>>>
+>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>
+>>>>>>
+>>>
+>
+
+Alrighty.
+
+`getResults ...
+
+
+
+
+
+
 
 
 

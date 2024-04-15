@@ -33,8 +33,17 @@ export type Parsed<Stmt> =
           errors: Errors;
       };
 
+export const blankInitialResults = (): ImmediateResults<any> => ({
+    lastState: null,
+    lastEvaluator: null,
+    jumpToName: { value: {}, type: {} },
+    nodes: {},
+    changes: {},
+});
+
 export type ImmediateResults<Stmt> = {
     lastState: null | NUIState;
+    lastEvaluator: string | null;
 
     jumpToName: {
         value: Record<string, number>;
@@ -58,6 +67,9 @@ export type ImmediateResults<Stmt> = {
             plugin?: boolean;
             meta?: boolean;
             source?: boolean;
+            // This gives us access to the "previous parsedness"
+            // so we can know what individual MNodes to update, e.g.
+            // if the "error status" changed.
             parsed?: boolean;
         }
     >;
@@ -87,6 +99,8 @@ export const getImmediateResults = <
 ) => {
     const tops = findTops(state);
 
+    const nodeChanges: Record<number, number> = {};
+
     tops.forEach((top) => (results.changes[top.top] = {}));
 
     const lastState = results.lastState;
@@ -98,6 +112,9 @@ export const getImmediateResults = <
         if (!results.nodes[top.top] || !lastState) {
             results.nodes[top.top] = getFreshResults(top, state, evaluator);
             results.changes[top.top] = allChanged;
+            results.nodes[top.top].ids.forEach(
+                (id) => (nodeChanges[id] = top.top),
+            );
             continue;
         }
 
@@ -107,24 +124,39 @@ export const getImmediateResults = <
         ncache.ns = top.ns;
 
         // Source change!
-        if (ncache.ids.some((id) => state.map[id] !== lastState.map[id])) {
+        const changed = ncache.ids.filter(
+            (id) => state.map[id] !== lastState.map[id],
+        );
+        if (changed.length) {
+            console.log('map change', top.top);
+            changed.forEach((id) => (nodeChanges[id] = top.top));
             const ids: number[] = [];
             const node = fromMCST(top.top, state.map, ids);
 
             if (!equal(ncache.node, node)) {
+                console.log('node change', top.top);
                 changes.source = true;
                 ncache.node = node;
                 ncache.ids = ids;
+                const prevLayout = ncache.layout;
                 ncache.layout = {};
                 layout(top.top, 0, state.map, ncache.layout, {}, true);
+                ncache.ids.forEach((id) => {
+                    if (!equal(prevLayout[id], ncache.layout[id])) {
+                        nodeChanges[id] = top.top;
+                    }
+                });
             }
         }
 
         // Meta change!
-        changes.meta = ncache.ids.some(
+        const metaChanges = ncache.ids.filter(
             (id) => state.meta[id] !== ncache.meta[id],
         );
+        changes.meta = metaChanges.length > 0;
         if (changes.meta) {
+            console.log('meta change', top.top);
+            metaChanges.forEach((id) => (nodeChanges[id] = top.top));
             ncache.meta = {};
             ncache.ids.forEach((id) => {
                 if (state.meta[id]) {
@@ -135,13 +167,24 @@ export const getImmediateResults = <
 
         // Parsed change!
         if (!evaluator) {
+            recordNodeChanges(ncache.parsed, nodeChanges, top.top);
             changes.parsed = ncache.parsed !== undefined;
             ncache.parsed = undefined;
-        } else if (changes.plugin || changes.source) {
+        } else if (
+            changes.plugin ||
+            changes.source ||
+            evaluator.id !== results.lastEvaluator
+        ) {
             const parsed = getParsed(top.ns.plugin, evaluator, ncache.node);
-            changes.parsed = !equal(parsed, ncache.parsed);
-            if (changes.parsed) {
+            if (!equal(parsed, ncache.parsed)) {
+                console.log('parsed change', top.top);
+                // NOTE: This is overly conservative, because we're not actually checking
+                // if the errors change. Any nodes that have errors, even if they're the
+                // same between runs, will get rerendered. I think that's fine.
+                recordNodeChanges(ncache.parsed, nodeChanges, top.top);
+                recordNodeChanges(parsed, nodeChanges, top.top);
                 ncache.parsed = parsed;
+                changes.parsed = true;
             }
         }
     }
@@ -152,6 +195,7 @@ export const getImmediateResults = <
         if (parsed?.type === 'success') {
             for (let name of parsed.names) {
                 if (results.jumpToName[name.kind][name.name]) {
+                    nodeChanges[name.loc] = top.top;
                     if (!parsed.duplicates) {
                         parsed.duplicates = [name];
                     } else {
@@ -165,6 +209,8 @@ export const getImmediateResults = <
     }
 
     results.lastState = state;
+
+    return nodeChanges;
 };
 
 const getParsed = (
@@ -241,3 +287,21 @@ function getFreshResults<
             : undefined,
     };
 }
+
+const recordNodeChanges = (
+    parsed: Parsed<unknown> | undefined,
+    nodeChanges: Record<number, number>,
+    top: number,
+) => {
+    if (parsed?.type === 'failure') {
+        // got to clear error marks
+        Object.keys(parsed.errors).forEach((id) => {
+            nodeChanges[+id] = top;
+        });
+    }
+    if (parsed?.type === 'success' && parsed.duplicates) {
+        parsed.duplicates.forEach(({ loc }) => {
+            nodeChanges[loc] = top;
+        });
+    }
+};

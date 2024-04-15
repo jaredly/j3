@@ -15,11 +15,7 @@ export const useStore = (
     const cache = useMemo<ResultsCache<any>>(
         () =>
             initialCache
-                ? (console.log(
-                      'Using a saed cache',
-                      initialCache.lastEvaluator,
-                  ),
-                  { ...initialCache, lastState: initialState })
+                ? { ...initialCache, lastState: initialState }
                 : {
                       run: 0,
                       hover: {},
