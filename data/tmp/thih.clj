@@ -326,7 +326,7 @@
 
 (type->fn (tfn tint (tfn tfloat tbool)))
 
-(def letters ["ɑ" "β" "ɣ" "δ" "ɷ" "η" "ρ"])
+(def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i"])
 
 (defn at [i lst]
     (match lst
@@ -377,7 +377,8 @@
                                                           (type= arg arg')
                                                               false)
         (, (tcon tycon _) (tcon tycon' _))            (tycon= tycon tycon')
-        (, (tgen n _) (tgen n' _))                    (= n n')))
+        (, (tgen n _) (tgen n' _))                    (= n n')
+        _                                             false))
 
 (defn tycon= [(tycon name kind) (tycon name' kind')]
     (if (= name name')
@@ -488,7 +489,7 @@
 
 (def tdouble (star-con "double"))
 
-(def tlist (tcon (tycon "array" (kfun star star)) -1))
+(def tlist (tcon (tycon "list" (kfun star star)) -1))
 
 (def tarrow (tcon (tycon "(->)" (kfun star (kfun star star))) -1))
 
@@ -1995,7 +1996,12 @@
         "\n"
             "no vps"
             (map
-            (fn [(, a preds)] "${(tyvar->s a)} ${(join ";" (map pred->s preds))}")
+            (fn [(, a preds)]
+                "${
+                    (tyvar->s a)
+                    } is in predicates: ${
+                    (join ";" (map pred->s preds))
+                    }")
                 vps)))
 
 (defn is-empty [x]
@@ -2009,10 +2015,12 @@
         tss (map (candidates ce) vps)]
         (if (any is-empty tss)
             (err
-                "Cannot resolve ambiguity vps: ${
+                "Cannot resolve ambiguities: ${
                     (vps->s vps)
-                    } tss: ${
+                    } defaults for variables: ${
                     (tss->s tss)
+                    } with known variables: ${
+                    (join "; " (map tyvar->s known-variables))
                     }")
                 (ok (f vps (map head tss))))))
 
@@ -2219,19 +2227,25 @@
             ..(concat
             (map
                 (fn [(, cls names)] (map (fn [name] (, [] (=> [] (isin cls (mkcon name))))) names))
-                    [(, "eq" ["unit" "char" "int" "float" "double" "bool" "ordering"])
-                    (, "ord" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    [(,
+                    "eq"
+                        ["unit" "char" "int" "float" "double" "bool" "ordering" "string"])
+                    (,
+                    "ord"
+                        ["unit" "char" "int" "float" "double" "bool" "ordering" "string"])
                     (, "num" ["int" "float" "double"])
                     (, "real" ["int" "float" "double"])
                     (, "integral" ["int"])
                     (, "fractional" ["float" "double"])
                     (, "floating" ["float" "double"])
                     (, "realfrac" ["float" "double"])
-                    (, "show" ["unit" "char" "int" "float" "double" "bool" "ordering"])
+                    (,
+                    "show"
+                        ["unit" "char" "int" "float" "double" "bool" "ordering" "string"])
                     (,
                     "pretty"
                         ["unit" "char" "int" "string" "float" "double" "bool" "ordering"])
-                    (, "ix" ["unit" "char" "int" "bool" "ordering"])]))]))
+                    (, "ix" ["unit" "char" "int" "bool" "ordering" "string"])]))]))
 
 (defn dot [a b c] (a (b c)))
 
@@ -2245,8 +2259,11 @@
 (def builtin-ce
     (apply-transformers
         (map
-            (fn [(, kinds (=> preconditions assertion))]
-                (add-inst preconditions assertion))
+            (fn [(, kinds qt)]
+                (let [
+                    tvars                        (mapi (fn [tv i] (tvar (tyvar (gen-name i) tv) -1)) 0 kinds)
+                    (=> preconditions assertion) (inst/qual tvars inst/pred qt)]
+                    (add-inst preconditions assertion)))
                 builtin-instances)
             (add-prelude-classes initial-env)))
 
@@ -2261,7 +2278,7 @@
             (map/from-list
             [(, "int" (, [] set/nil))
                 (, "double" (, [] set/nil))
-                (, "array" (, [star] (set/from-list ["cons" "nil"])))
+                (, "list" (, [star] (set/from-list ["cons" "nil"])))
                 (, "result" (, [star star] (set/from-list ["ok" "err"])))])
             map/nil))
 
@@ -2277,9 +2294,7 @@
                     builtin-assumptions
                     [(, [] [[(parse-binding v)]])])))
         [(, (@@ 11) "it: int")
-        (,
-        (@@ (< (, "" "")))
-            "Can't find an instance for class 'ord' for type (, string string)")
+        (, (@@ (< (, 2 1))) "it: (fn [(, int int)] bool)")
         (, (@@ (+ 1 2)) "it: int")
         (, (@@ (fn [a] (+ 1 a))) "it: a *; a ∈ num; (fn [a] a)")
         (, (@@ "Hello") "it: string")
@@ -2296,14 +2311,14 @@
                     1
                         2)))
             "it: a *; a ∈ num; (fn [bool] a)")
-        (, (@@ [1]) "it: (array int)")
+        (, (@@ [1]) "it: (list int)")
         (,
         (@@
             (match (ok 1)
                 (ok v)  v
                 (err e) 10))
             "it: int")
-        (, (@@ (cons 1 [2.0])) "it: (array double)")
+        (, (@@ (cons 1 [2.0])) "it: (list double)")
         (,
         (@@
             (match (, 1 true)
@@ -2329,7 +2344,8 @@
                         true
                             (even (- x 1))))]
                     (even 10)))
-            "it: bool")])
+            "it: bool")
+        (, (@@ (fn [x] "${(return "")}")) )])
 
 (** ## Producing the functions for an Evaluator **)
 
@@ -2826,6 +2842,8 @@ filter
             (fn [expr] (array locname))
             (fn [stmt] (array locname))))
 
+(typealias type-error-t (, string (array (, int string))))
+
 (deftype inferator
     (inferator
         full-env
@@ -2833,7 +2851,9 @@ filter
             (fn [full-env full-env] full-env)
             (fn [full-env expr] scheme)
             (fn [scheme] string)
-            (fn [full-env string] (option scheme))))
+            (fn [full-env string] (option scheme))
+            (fn [full-env (array stmt)]
+            (, (result full-env type-error-t) (array (, int type))))))
 
 (deftype parser
     (parser

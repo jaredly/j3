@@ -1,15 +1,31 @@
 
-## TYPE CLASSES
+## Implementing type classes
 
-Getting nested type classes to work...
+- [ ] CAN I assume, that type class predicates will always have a simple variable as the left-hand thing?
+  `toHnf` implies that I might have `(a b) E ord` where `a` is a type variable of kind `* -> *`.
+  But I'm not sure how to make...
+  AHA
+  `(defn nested-pred [x] (< (return "")))` produces a `(b string) E ord` constraint.
+  ... not sure how to provide that proof, but here we are.
 
-it looks like I need to do tyvar instead of tgen??? Not sure about that....
+  so ... yeah that identifier I use for a given predicate should probably be `idx` or something,
+  not the gen number, or the name of the type variable. It could be the `index into the preds list`, I guess?
+  hmmmm.
+
+SO WHen I'm collapsing predicates, I need to remember "how to get there from here".
+So I know how to transform the simplified predicate into the complex version.
 
 
+BUT FIRST
 
-INSTANTIATE THE TYPECLASSES IN ADD_INST
+I do need to get "hover for type" working.
 
-fresh-inst on all that jazz
+
+## TYPE CLASSES - they type check, its great
+
+- [x] INSTANTIATE THE TYPECLASSES IN ADD_INST
+
+
 
 
 
