@@ -102,7 +102,10 @@ export function NSMenu({
                         dispatch({
                             type: 'ns',
                             nsMap: {
-                                [ns.id]: { ...ns, plugin: plugin.id },
+                                [ns.id]: {
+                                    ...ns,
+                                    plugin: { id: plugin.id, options: null },
+                                },
                             },
                         });
                     }}

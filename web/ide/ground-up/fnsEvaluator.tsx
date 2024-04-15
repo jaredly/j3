@@ -141,7 +141,7 @@ export const fnsEvaluator = (
         },
 
         analysis:
-            data['externals_stmt'] && data['names']
+            data['externals_stmt'] && data['externals_expr'] && data['names']
                 ? {
                       dependencies(stmt) {
                           try {
@@ -151,6 +151,25 @@ export const fnsEvaluator = (
                                   1: { type: 'value' | 'type' };
                                   2: number;
                               }>(data['externals_stmt'](stmt));
+                              return deps.map((item) => ({
+                                  name: item[0],
+                                  loc: item[2],
+                                  kind: item[1].type,
+                              }));
+                          } catch (err) {
+                              console.warn(`Cant get dependencies`, stmt);
+                              console.error(err);
+                              return [];
+                          }
+                      },
+                      exprDependencies(stmt) {
+                          try {
+                              const deps = unwrapArray<{
+                                  type: ',';
+                                  0: string;
+                                  1: { type: 'value' | 'type' };
+                                  2: number;
+                              }>(data['externals_expr'](stmt));
                               return deps.map((item) => ({
                                   name: item[0],
                                   loc: item[2],
