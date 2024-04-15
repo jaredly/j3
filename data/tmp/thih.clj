@@ -337,6 +337,13 @@
 
 (defn gen-name [num] "${(at num letters)}")
 
+(defn type-loc [type]
+    (match type
+        (tvar _ l)   l
+        (tapp _ _ l) l
+        (tcon _ l)   l
+        (tgen _ l)   l))
+
 (defn type->s' [show-kind type]
     (match type
         (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
@@ -1223,7 +1230,7 @@
 (defn lift [m (isin i t) (isin i' t')]
     (if (= i i')
         (m t t')
-            (err "classes differ: ${i} vs ${i'}")))
+            (err (, "classes differ: ${i} vs ${i'}" []))))
 
 (defn pred/tv [(isin i t)] (type/tv t))
 
@@ -1249,17 +1256,23 @@
         (, (tvar u _) t)                  (if (kind= (tyvar/kind u) (type/kind t))
                                               (ok (|-> u t))
                                                   (err
-                                                  "Different Kinds ${
-                                                      (kind->s (tyvar/kind u))
-                                                      } vs ${
-                                                      (kind->s (type/kind t))
-                                                      }"))
+                                                  (,
+                                                      "Different Kinds ${
+                                                          (kind->s (tyvar/kind u))
+                                                          } vs ${
+                                                          (kind->s (type/kind t))
+                                                          }"
+                                                          [])))
         (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
                                               (ok map/nil)
                                                   (err
-                                                  "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"))
+                                                  (,
+                                                      "Unable to match types ${(tycon->s tc1)} and ${(tycon->s tc2)}"
+                                                          [])))
         _                                 (err
-                                              "Unable to match ${(type->s' true t1)} vs ${(type->s' true t2)}")))
+                                              (,
+                                                  "Unable to match ${(type->s' true t1)} vs ${(type->s' true t2)}"
+                                                      []))))
 
 (defn type/tv [t]
     (match t
@@ -1286,24 +1299,27 @@
 
 (defn varBind [u t]
     (match t
-        (tvar name _) (if (= name u)
-                          map/nil
-                              (|-> u t))
+        (tvar name _) (ok
+                          (if (= name u)
+                              map/nil
+                                  (|-> u t)))
         _             (if (set/has (type/tv t) u)
-                          (fatal
-                              "Occurs check fails: ${(type->s t)} contains ${(tyvar->s u)}")
+                          (err
+                              (, "Occurs check fails: ${(type->s t)} contains ${(tyvar->s u)}" []))
                               (if (not (kind= (tyvar/kind u) (type/kind t)))
-                              (fatal
-                                  "kinds do not match: type variable ${
-                                      (tyvar->s u)
-                                      } has kind ${
-                                      (kind->s (tyvar/kind u))
-                                      }, but ${
-                                      (type->s t)
-                                      } has kind ${
-                                      (kind->s (type/kind t))
-                                      }")
-                                  (|-> u t)))))
+                              (err
+                                  (,
+                                      "kinds do not match: type variable ${
+                                          (tyvar->s u)
+                                          } has kind ${
+                                          (kind->s (tyvar/kind u))
+                                          }, but ${
+                                          (type->s t)
+                                          } has kind ${
+                                          (kind->s (type/kind t))
+                                          }"
+                                          []))
+                                  (ok (|-> u t))))))
 
 (defn mgu [t1 t2]
     (match (, t1 t2)
@@ -1312,12 +1328,15 @@
                                             (ok s1) (match (mgu (type/apply s1 r) (type/apply s1 r'))
                                                         (err e) (err e)
                                                         (ok s2) (ok (compose-subst s2 s1))))
-        (, (tvar u l) t)                (ok (varBind u t))
-        (, t (tvar u l))                (ok (varBind u t))
-        (, (tcon tc1 _) (tcon tc2 _))   (if (tycon= tc1 tc2)
+        (, (tvar u l) t)                (varBind u t)
+        (, t (tvar u l))                (varBind u t)
+        (, (tcon tc1 l1) (tcon tc2 l2)) (if (tycon= tc1 tc2)
                                             (ok map/nil)
-                                                (err "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}"))
-        (, a b)                         (err "Cant unify ${(type->s a)} and ${(type->s b)}")))
+                                                (err
+                                                (,
+                                                    "Incompatible types ${(tycon->s tc1)} vs ${(tycon->s tc2)}"
+                                                        [(, l1 (tycon->s tc1)) (, l2 (tycon->s tc2))])))
+        (, a b)                         (err (, "Cant unify ${(type->s a)} and ${(type->s b)}" []))))
 
 (** ## Type Class stuff **)
 
@@ -1509,11 +1528,13 @@
             (match (by-inst ce p)
             (none)    (let [(isin name type) p]
                           (err
-                              "Can't find an instance for class '${
-                                  name
-                                  }' for type ${
-                                  (type->s type)
-                                  }"))
+                              (,
+                                  "Can't find an instance for class '${
+                                      name
+                                      }' for type ${
+                                      (type->s type)
+                                      }"
+                                      [])))
             (some ps) (to-hnfs ce ps))))
 
 (defn simplify-inner [ce rs preds]
@@ -1577,12 +1598,12 @@
 
 (defn assump/tv [(!>! id sc)] (scheme/tv sc))
 
-(defn find-scheme [id assumps]
+(defn find-scheme [id assumps l]
     (match assumps
-        []                    (err "Unbound identifier ${id}")
+        []                    (err (, "Unbound identifier" [(, l id)]))
         [(!>! id' sc) ..rest] (if (= id id')
                                   (ok sc)
-                                      (find-scheme id rest))))
+                                      (find-scheme id rest l))))
 
 (** ## Monad alert **)
 
@@ -1614,14 +1635,14 @@
 (deftype (TI a)
     (TI
         (fn [(map tyvar type) type-env int]
-            (result (,,, (map tyvar type) type-env int a) string))))
+            (,,, (map tyvar type) type-env int (result a type-error-t)))))
 
 (defn ti-return [x]
-    (TI (fn [subst tenv nidx] (ok (,,, subst tenv nidx x)))))
+    (TI (fn [subst tenv nidx] (,,, subst tenv nidx (ok x)))))
 
 (def <- ti-return)
 
-(defn ti-err [v] (TI (fn [_ _ _] (err v))))
+(defn ti-err [v] (TI (fn [a b c] (,,, a b c (err v)))))
 
 (defn ti-run [(TI f) subst tenv nidx] (f subst tenv nidx))
 
@@ -1629,8 +1650,8 @@
     (TI
         (fn [subst tenv nidx]
             (match (ti-run ti subst tenv nidx)
-                (err e)                          (err e)
-                (ok (,,, subst tenv nidx value)) (ti-run (next value) subst tenv nidx)))))
+                (,,, a b c (err e))              (,,, a b c (err e))
+                (,,, subst tenv nidx (ok value)) (ti-run (next value) subst tenv nidx)))))
 
 (def >>= ti-then)
 
@@ -1661,24 +1682,28 @@
                           (mgu (type/apply subst t1) (type/apply subst t2))))]
         (add-subst u)))
 
-(defn unify-err [t1 t2 e]
+(defn unify-err [t1 t2 (, msg items)]
     (err
-        "Unable to unify ${
-            (type-debug->s t1)
-            } and ${
-            (type-debug->s t2)
-            }\n-> ${
-            e
-            }"))
+        (,
+            "Unable to unify ${
+                (type-debug->s t1)
+                } and ${
+                (type-debug->s t2)
+                }\n-> ${
+                msg
+                }"
+                [(, (type-loc t1) (type-debug->s t1))
+                (, (type-loc t2) (type-debug->s t2))
+                ..items])))
 
-(def get-subst (TI (fn [subst tenv n] (ok (,,, subst tenv n subst)))))
+(def get-subst (TI (fn [subst tenv n] (,,, subst tenv n (ok subst)))))
 
 (defn add-subst [new-subst]
     (TI
         (fn [subst tenv n]
-            (ok (,,, (compose-subst new-subst subst) tenv n 0)))))
+            (,,, (compose-subst new-subst subst) tenv n (ok ())))))
 
-(def next-idx (TI (fn [s t n] (ok (,,, s t (+ n 1) n)))))
+(def next-idx (TI (fn [s t n] (,,, s t (+ n 1) (ok n)))))
 
 (defn new-tvar [kind]
     (let-> [idx next-idx] (<- (tvar (tyvar (enumId idx) kind) -1))))
@@ -1736,12 +1761,12 @@
             ts (map (fn [(,, _ _ t)] t) psasts)]
             (ti-return (,, ps as ts)))))
 
-(def get-tenv (TI (fn [s tenv n] (ok (,,, s tenv n tenv)))))
+(def get-tenv (TI (fn [s tenv n] (,,, s tenv n (ok tenv)))))
 
-(defn get-constructor [name]
+(defn get-constructor [name l]
     (let-> [tenv get-tenv]
         (match (tenv/constr tenv name)
-            (none)        (ti-err "Unknown constructor ${name}")
+            (none)        (ti-err (, "Unknown constructor" [(, l name)]))
             (some scheme) (<- scheme))))
 
 (defn infer/pat [pat]
@@ -1751,7 +1776,7 @@
         ; (pas name inner l)
         (pprim prim l)         (let-> [(, ps t) (infer/prim prim)] (ti-return (,, ps [] t)))
         (pcon name patterns l) (let-> [
-                                   scheme        (get-constructor name)
+                                   scheme        (get-constructor name l)
                                    (,, ps as ts) (infer/pats patterns)
                                    t'            (new-tvar star)
                                    (=> qs t)     (fresh-inst scheme)
@@ -1765,7 +1790,7 @@
 
 (defn infer/expr [ce as expr]
     (match expr
-        (evar name l)            (let-> [sc (ok->ti (find-scheme name as)) (=> ps t) (fresh-inst sc)]
+        (evar name l)            (let-> [sc (ok->ti (find-scheme name as l)) (=> ps t) (fresh-inst sc)]
                                      (<- (, ps t)))
         (estr first templates l) (let-> [
                                      results        (map/ti (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
@@ -1827,10 +1852,10 @@
             ps' (filter (fn [x] (not (entail ce qs' x))) (preds/apply s ps))]
             (let-> [(, ds rs) ((split ce fs gs ps'))]
                 (if (!= sc sc')
-                    (ti-err "signature too general")
+                    (ti-err (, "signature too general" []))
                         (match rs
                         [] (ti-return ds)
-                        _  (ti-err "context too weak")))))))
+                        _  (ti-err (, "context too weak" []))))))))
 
 (defn infer/impls [ce as bs]
     (let-> [ts ((map/ti (fn [_] (new-tvar star)) bs))]
@@ -2015,13 +2040,15 @@
         tss (map (candidates ce) vps)]
         (if (any is-empty tss)
             (err
-                "Cannot resolve ambiguities: ${
-                    (vps->s vps)
-                    } defaults for variables: ${
-                    (tss->s tss)
-                    } with known variables: ${
-                    (join "; " (map tyvar->s known-variables))
-                    }")
+                (,
+                    "Cannot resolve ambiguities: ${
+                        (vps->s vps)
+                        } defaults for variables: ${
+                        (tss->s tss)
+                        } with known variables: ${
+                        (join "; " (map tyvar->s known-variables))
+                        }"
+                        []))
                 (ok (f vps (map head tss))))))
 
 (def defaultedPreds (withDefaults (fn [vps ts] (concat (map snd vps)))))
@@ -2282,8 +2309,20 @@
                 (, "result" (, [star star] (set/from-list ["ok" "err"])))])
             map/nil))
 
+(defn type-error->s [(, msg items)]
+    "${
+        msg
+        }${
+        (ljoin
+            "\n - "
+                (map (fn [(, loc name)] "${name} (${(int-to-string loc)})") items))
+        }")
+
 (def program-results->s
-    (result->s (fn [(,,, abc tenv a b)] (join "\n" (map assump->s b)))))
+    (fn [(,,, abc tenv a result)]
+        (match result
+            (ok b)  (join "\n" (map assump->s b))
+            (err e) "Error! ${(type-error->s e)}")))
 
 (,
     (fn [v]
@@ -2345,7 +2384,10 @@
                             (even (- x 1))))]
                     (even 10)))
             "it: bool")
-        (, (@@ (fn [x] "${(return "")}")) )])
+        (,
+        (@@ (fn [x] "${(return "")}"))
+            "Error! Cannot resolve ambiguities: [v2 : (*->*)] is in predicates: ((var v2 (*->*)) string) ∈ pretty;(var v2 (*->*)) ∈ monad defaults for variables: [empty] with known variables: v1")
+        (, (@@ (fn [x] (< (, "" "")))) "it: a *; (fn [a (, string string)] bool)")])
 
 (** ## Producing the functions for an Evaluator **)
 
@@ -2360,36 +2402,42 @@ filter
 
 (defn infer-stmt [(full-env tenv ce assumps) stmt]
     (match stmt
-        (sdef name nl body l)                  (match (infer/program
-                                                   tenv
-                                                       ce
-                                                       assumps
-                                                       [(,
-                                                       []
-                                                           [[(,
-                                                           name
-                                                               [(match body
-                                                               (elambda pats inner l) (, pats inner)
-                                                               _                      (, [] body))])]])])
-                                                   (ok (,,, subst tenv nidx assumps)) (full-env
-                                                                                          type-env/nil
-                                                                                              class-env/nil
-                                                                                              (filter (fn [(!>! n _)] (= n name)) assumps))
-                                                   (err e)                            (fatal e))
+        (sdef name nl body l)                  (let [
+                                                   (,,, subst tenv nidx result) (infer/program
+                                                                                    tenv
+                                                                                        ce
+                                                                                        assumps
+                                                                                        [(,
+                                                                                        []
+                                                                                            [[(,
+                                                                                            name
+                                                                                                [(match body
+                                                                                                (elambda pats inner l) (, pats inner)
+                                                                                                _                      (, [] body))])]])])]
+                                                   (match result
+                                                       (ok assumps) (full-env
+                                                                        type-env/nil
+                                                                            class-env/nil
+                                                                            (filter (fn [(!>! n _)] (= n name)) assumps))
+                                                       (err e)      (fatal (type-error->s e))))
         (stypealias name nl args type l)       full-env/nil
         (sdeftype name nl args constructors l) (infer-deftype
                                                    (full-env tenv ce assumps)
                                                        (,,, name nl args constructors))
-        (sexpr body l)                         (match (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])
-                                                   (ok (,,, subst tenv nidx assumps)) full-env/nil
-                                                   (err e)                            (fatal e))))
+        (sexpr body l)                         (let [
+                                                   (,,, subst tenv nidx result) (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
+                                                   (match result
+                                                       (ok assumps) full-env/nil
+                                                       (err e)      (fatal (type-error->s e))))))
 
 (defn infer [(full-env tenv ce assumps) body]
-    (match (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])
-        (ok (,,, subst tenv nidx assumps)) (match (filter (fn [(!>! n _)] (= n "it")) assumps)
-                                               [(!>! n scheme)] scheme
-                                               _                (fatal "No type found"))
-        (err e)                            (fatal e)))
+    (let [
+        (,,, subst tenv nidx result) (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
+        (match result
+            (ok assumps) (match (filter (fn [(!>! n _)] (= n "it")) assumps)
+                             [(!>! n scheme)] scheme
+                             _                (fatal "No type found"))
+            (err e)      (fatal (type-error->s e)))))
 
 (defn infer-alias [(full-env tenv ce assumps) (,, name args type)]
     (fatal "ok here we are")
@@ -2540,13 +2588,15 @@ filter
         (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
 
 (defn infer-defs [(full-env tenv ce assumps) defs]
-    (match (infer/program
-        tenv
-            ce
-            assumps
-            [(, [] [(map (fn [(, name body)] (, name [(, [] body)])) defs)])])
-        (ok (,,, subst tenv nidx assumps)) (full-env tenv ce assumps)
-        (err e)                            (fatal e)))
+    (let [
+        (,,, subst tenv nidx result) (infer/program
+                                         tenv
+                                             ce
+                                             assumps
+                                             [(, [] [(map (fn [(, name body)] (, name [(, [] body)])) defs)])])]
+        (match result
+            (ok assumps) (full-env tenv ce assumps)
+            (err e)      (fatal (type-error->s e)))))
 
 (defn split-stmts [stmts sdefs stypes salias sexps]
     (match stmts
@@ -2665,7 +2715,9 @@ filter
             (@@ (def x (hi 10)))
             (@@ (def y (bog (hi 1))))]
             "# Type Env\n## Constructors\n - hi: *; (fn [a] (bag a))\n - bog: (fn [(bag int)] bog)\n# Class Env\n## Instances\n## Defaults\n# Assumps\nhi: a *; (fn [a] (bag a))\nbog: (fn [(bag int)] bog)\nx: (bag int)\ny: bog")
-        (, [(@@ (defn lol [x] "Lol ${x}")) (@@ (lol true))] "")])
+        (,
+        [(@@ (defn lol [x] "Lol ${x}")) (@@ (lol true))]
+            "# Type Env\n## Constructors\n# Class Env\n## Instances\n## Defaults\n# Assumps\nlol: a *; a ∈ pretty; (fn [a] string)")])
 
 (full-env->s builtin-full)
 
@@ -2865,7 +2917,7 @@ filter
 (deftype evaluator (evaluator inferator analysis parser))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, // infer_stmts2 \n }) ")
     (evaluator
         (inferator
             builtin-full
@@ -2876,7 +2928,8 @@ filter
                 (fn [(full-env tenv ce assumps) name]
                 (match (filter (fn [(!>! n _)] (= n name)) assumps)
                     [(!>! _ scheme) .._] (some scheme)
-                    _                    (none))))
+                    _                    (none)))
+                (fn [env stms] (, (fatal "Stopship") [])))
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))
