@@ -96,7 +96,8 @@ export const setupSyncStore = (
     return {
         setDebug(execOrder, disableEvaluation) {
             // throw new Error(`todo`);
-            console.error('ignoring sotry');
+            // console.error('ignoring sotry');
+            send({ type: 'debug', execOrder });
         },
         async dispatch(action) {
             if (inProcess) return alert(`Dispatch not finished`);

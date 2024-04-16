@@ -43,6 +43,7 @@ export const nodeToSortable = (node: NodeResults<any>): Sortable | null => {
 export function calculateInitialState(
     nodes: ImmediateResults<any>['nodes'],
     evaluator: AnyEnv,
+    debugExecOrder: boolean,
 ) {
     const topForLoc: Record<number, number> = {};
     Object.values(nodes).forEach((node) => {
@@ -134,7 +135,9 @@ export function calculateInitialState(
     }
 
     let env = evaluator.init();
+    let i = -1;
     for (let group of sorted) {
+        i++;
         if (group.length === 1 && group[0].isPlugin) {
             // umm gotta plugin please
             continue;
@@ -174,6 +177,14 @@ export function calculateInitialState(
                     }
                 });
             }
+
+            if (debugExecOrder) {
+                results.tops[one.id].produce.push(
+                    `Exec order ${i}\nDeps: ${one.deps
+                        .map((n) => n.name)
+                        .join(', ')}`,
+                );
+            }
         });
 
         Object.entries(added.display).forEach(([key, produce]) => {
@@ -183,5 +194,5 @@ export function calculateInitialState(
         });
     }
 
-    return { evaluator, nodes: nodes, results };
+    return { evaluator, nodes: nodes, results, debugExecOrder };
 }

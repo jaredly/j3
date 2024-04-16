@@ -62,4 +62,5 @@ export type State = {
     evaluator: AnyEnv | null;
     nodes: ImmediateResults<any>['nodes'];
     results?: AsyncResults;
+    debugExecOrder?: boolean;
 };

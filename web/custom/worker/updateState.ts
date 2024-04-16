@@ -91,7 +91,9 @@ export function updateState(
     }
 
     let env = state.evaluator.init();
+    let i = -1;
     for (let group of sorted) {
+        i++;
         if (group.length === 1 && group[0].isPlugin) {
             // umm gotta plugin please
             continue;
@@ -101,7 +103,11 @@ export function updateState(
         if (!state.results.groups[groupKey].changed) {
             group.forEach((one) => {
                 state.results!.tops[one.id].changes = {};
+
+                Object.assign(env.values, state.results!.tops[one.id].values);
             });
+
+            // env
 
             continue;
         }
@@ -148,6 +154,14 @@ export function updateState(
                             added.values[name.name];
                     }
                 });
+            }
+
+            if (state.debugExecOrder) {
+                state.results!.tops[one.id].produce.push(
+                    `Exec order ${i}\nDeps: ${one.deps
+                        .map((n) => n.name)
+                        .join(', ')}`,
+                );
             }
         });
 

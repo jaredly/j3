@@ -19,7 +19,8 @@ export type Message =
     | {
           type: 'update';
           nodes: ImmediateResults<any>['nodes'];
-      };
+      }
+    | { type: 'debug'; execOrder: boolean };
 
 export type Sendable = {
     produce: ProduceItem[];
@@ -56,6 +57,13 @@ const handleMessage = async (
     state: State | null,
 ): Promise<State | null> => {
     switch (msg.type) {
+        case 'debug':
+            if (!state || !state.evaluator) return state;
+            return calculateInitialState(
+                state.nodes,
+                state.evaluator,
+                msg.execOrder,
+            );
         case 'initial': {
             const evaluator: AnyEnv | null = await new Promise((res) =>
                 loadEvaluator(msg.evaluator, res),
@@ -70,7 +78,7 @@ const handleMessage = async (
                 };
             }
 
-            return calculateInitialState(msg.nodes, evaluator);
+            return calculateInitialState(msg.nodes, evaluator, false);
         }
         case 'update': {
             if (!state) throw new Error(`cant update`);
