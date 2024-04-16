@@ -1,5 +1,5 @@
 import { Node } from '../../../../src/types/cst';
-import { filterNulls } from '../../../custom/old-stuff/reduce';
+import { filterNulls } from '../../../custom/old-stuff/filterNulls';
 import { arr, filterBlanks, wrapArray } from './parse';
 
 export type jcst =

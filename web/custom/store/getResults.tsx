@@ -10,7 +10,7 @@ import { plugins } from '../plugins';
 import { NUIResults } from './Store';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
-import { filterNulls } from '../old-stuff/reduce';
+import { filterNulls } from '../old-stuff/filterNulls';
 import React from 'react';
 import { valueToString } from '../../ide/ground-up/valueToString';
 import { parseNodesAndDeps, sortTopsWithDeps } from './parseNodesAndDeps';
@@ -22,6 +22,7 @@ import {
 } from './handlePluginGroup';
 import { ResultsCache, DepsOrNoDeps, ChangesMap } from './ResultsCache';
 import { Path } from '../../store';
+import { unique } from './unique';
 
 export type { AnyEnv };
 
@@ -212,11 +213,6 @@ export const getResults = <
     }
 
     return results;
-};
-
-export const unique = <T extends string | number>(names: T[]) => {
-    const seen: Partial<Record<T, true>> = {};
-    return names.filter((k) => (seen[k] ? false : (seen[k] = true)));
 };
 
 export const processPlugin = (

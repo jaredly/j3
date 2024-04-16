@@ -9,7 +9,7 @@
 
 (defn two [x y] (, (show y) (, (map show x) (show x))))
 
-(defn)
+(defn one [x] (fn s))
 
 (** so, this should turn into (defn two [show-a x y] (, (map (tcls show show-a) x) ((tcls show (show-array show-a)) x)))
     right? tcls ... um lol it needs kind-level polymorphism? so we won't do that. we could ... do (.show show-a), if we had a record type.

@@ -5,7 +5,7 @@ import { NUIResults } from './Store';
 import { fromMCST } from '../../../src/types/mcst';
 import equal from 'fast-deep-equal';
 import { depSort } from './depSort';
-import { filterNulls } from '../old-stuff/reduce';
+import { filterNulls } from '../old-stuff/filterNulls';
 import { Display } from '../../../src/to-ast/library';
 import { Path } from '../../store';
 import { registerNames, emptyResults } from './getResults';

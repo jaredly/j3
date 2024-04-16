@@ -54,6 +54,15 @@ const handleMessage = async (
             const evaluator: AnyEnv | null = await new Promise((res) =>
                 loadEvaluator(msg.evaluator, res),
             );
+            console.log('loaded ev', evaluator);
+
+            // STOSHIP: START HERE
+            // We want to:
+            // - group & sort tops by deps (maybe with caching??? idk.)
+            // - do the type inference that's needed
+            // - do the evaluation that's needed
+            // - send back info, so the web UI can update.
+
             return { evaluator };
         }
     }

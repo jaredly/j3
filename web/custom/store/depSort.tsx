@@ -1,5 +1,5 @@
-import { filterNulls } from '../old-stuff/reduce';
-import { unique } from './getResults';
+import { filterNulls } from '../old-stuff/filterNulls';
+import { unique } from './unique';
 
 export const depSort = <T,>(
     nodes: ({

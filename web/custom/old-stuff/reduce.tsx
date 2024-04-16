@@ -338,10 +338,6 @@ export const findAdded = <T,>(shorter: T[], longer: T[]) => {
     }
 };
 
-export const filterNulls = <T,>(
-    value: T,
-): value is Exclude<T, null | undefined | void> => value != null;
-
 export const calcHistoryItem = (
     state: NUIState,
     next: NUIState,

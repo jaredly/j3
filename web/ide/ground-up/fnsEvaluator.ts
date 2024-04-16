@@ -10,9 +10,9 @@ import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
 import { LocedName } from '../../custom/store/sortTops';
-import { filterNulls } from '../../custom/old-stuff/reduce';
-import { unique } from '../../custom/store/getResults';
+import { unique } from '../../custom/store/unique';
 import { builtins } from './builtins';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled

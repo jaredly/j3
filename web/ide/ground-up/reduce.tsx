@@ -22,9 +22,9 @@ import {
 import {
     UIStateChange,
     calcHistoryItem,
-    filterNulls,
     undoRedo,
 } from '../../custom/old-stuff/reduce';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { verticalMove } from '../../custom/verticalMove';
 import { newResults } from '../Test';
 import { Algo, Trace } from '../infer/types';

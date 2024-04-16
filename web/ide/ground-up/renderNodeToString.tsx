@@ -3,7 +3,7 @@ import { Map } from '../../../src/types/mcst';
 import { NNode, getNestedNodes } from '../../../src/state/getNestedNodes';
 import { white } from './reduce';
 import { Block, StyledText } from '@blocknote/core';
-import { filterNulls } from '../../custom/old-stuff/reduce';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 
 export const renderNodeToString = (
     top: number,

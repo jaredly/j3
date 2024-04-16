@@ -4,8 +4,8 @@ import { expr, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { NUIState } from '../../custom/UIState';
 import { urlForId } from './urlForId';
-// import { bootstrapEvaluator } from './bootstrapEvaluator';
-// import { fnsEvaluator } from './fnsEvaluator';
+import { bootstrapEvaluator } from './bootstrapEvaluator';
+import { fnsEvaluator } from './fnsEvaluator';
 import { builtins } from './builtins';
 import { valueToString } from './valueToString';
 
