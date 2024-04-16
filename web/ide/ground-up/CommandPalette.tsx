@@ -20,7 +20,7 @@ import { FullEvalator } from './Evaluators';
 
 export const CommandPalette = () => {
     const store = useGetStore();
-    const { state, results } = useGlobalState(store);
+    const { state } = useGlobalState(store);
 
     const [open, setOpen] = useState(false);
     const ref = React.useRef<HTMLInputElement>(null);
@@ -313,19 +313,21 @@ const getCommands = (
             commands.push({
                 type: 'super',
                 title: 'Jump to...',
-                children: Object.entries(res.jumpToName).map(([name, loc]) => ({
-                    type: 'plain',
-                    title: name,
-                    action() {
-                        const path = pathForIdx(loc, store.getState());
-                        if (path != null) {
-                            dispatch({
-                                type: 'select',
-                                at: [{ start: path }],
-                            });
-                        }
-                    },
-                })),
+                children: Object.entries(res.jumpToName.value).map(
+                    ([name, loc]) => ({
+                        type: 'plain',
+                        title: name,
+                        action() {
+                            const path = pathForIdx(loc, store.getState());
+                            if (path != null) {
+                                dispatch({
+                                    type: 'select',
+                                    at: [{ start: path }],
+                                });
+                            }
+                        },
+                    }),
+                ),
             });
         }
     }

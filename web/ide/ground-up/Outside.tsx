@@ -194,8 +194,8 @@ export const Loader = ({
 
     const save = useMemo(
         () =>
-            onlyLast<{ state: NUIState; cache: ResultsCache<any> }>(
-                ({ state, cache }) => {
+            onlyLast<{ state: NUIState }>(
+                ({ state }) => {
                     const now = Date.now();
                     // console.log(`Time since last save`, now - lastSaveTime);
                     if (now - lastSaveTime < 200) {
@@ -203,7 +203,7 @@ export const Loader = ({
                     }
                     lastSaveTime = now;
                     latest.current = state;
-                    return saveState(id, state, cache);
+                    return saveState(id, state);
                 },
                 // minimum time after last change
                 500,
@@ -261,7 +261,7 @@ export const Loader = ({
             <GroundUp
                 id={id}
                 listing={listing}
-                save={(state, cache) => save({ state, cache })}
+                save={(state) => save({ state })}
                 initial={initial}
             />
         </div>

@@ -41,7 +41,7 @@ export type NUIState = {
     };
     history: HistoryItem[];
     cards: Card[];
-    nsMap: { [key: number]: SandboxNamespace };
+    nsMap: { [key: number]: RealizedNamespace };
     meta: MetaDataMap;
     evaluator?: string | string[] | null;
     // config?: {
@@ -218,14 +218,14 @@ export type NamespacePlugin<Results, Parsed, Options> = {
 };
 
 export type SandboxNamespace =
-    | {
-          id: number;
-          type: 'placeholder';
-          hash: string;
-          // just holding a place
-          // don't need to know the children, b/c it doesn't really exist.
-      }
-    | RealizedNamespace;
+    // | {
+    //       id: number;
+    //       type: 'placeholder';
+    //       hash: string;
+    //       // just holding a place
+    //       // don't need to know the children, b/c it doesn't really exist.
+    //   }
+    RealizedNamespace;
 
 export type UIState = { ctx: Ctx } & NUIState;
 

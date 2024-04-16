@@ -458,7 +458,7 @@ export const RenderNNode = (
                             evt.stopPropagation();
                             evt.preventDefault();
                             const found =
-                                store.getResults().jumpToName[nnode.text];
+                                store.getResults().jumpToName.value[nnode.text];
                             if (found != null) {
                                 const path = pathForIdx(
                                     found,

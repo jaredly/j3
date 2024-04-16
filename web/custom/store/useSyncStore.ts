@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { NUIState } from '../UIState';
+import { NUIState, RealizedNamespace } from '../UIState';
 import equal from 'fast-deep-equal';
 import { reduce } from '../../ide/ground-up/reduce';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
@@ -8,6 +8,7 @@ import { ResultsCache } from './ResultsCache';
 import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
 import {
     ImmediateResults,
+    NodeResults,
     blankInitialResults,
     getImmediateResults,
 } from './getImmediateResults';
@@ -30,11 +31,7 @@ export const setupSyncStore = (
     initialEvaluator?: AnyEnv | null,
 ): Store => {
     const nodeListeners: {
-        [key: string]: ((
-            state: NUIState,
-            // results: ImmediateResults<any>['nodes'][0],
-            results: NUIResults,
-        ) => void)[];
+        [key: string]: ((state: NUIState, results: NodeResults<any>) => void)[];
     } = {};
 
     const evtListeners: Record<Evt, ((state: NUIState) => void)[]> = {
@@ -64,18 +61,18 @@ export const setupSyncStore = (
 
     let inProcess = false;
 
-    const oldResults = emptyResults();
-    copyToOldResults(oldResults, results);
-    const cache: ResultsCache<any> = {
-        run: 0,
-        hover: {},
-        nodes: {},
-        types: {},
-        results: {},
-        lastState: null,
-        lastEvaluator: null,
-        settings: { debugExecOrder: false },
-    };
+    // const oldResults = emptyResults();
+    // copyToOldResults(oldResults, results);
+    // const cache: ResultsCache<any> = {
+    //     run: 0,
+    //     hover: {},
+    //     nodes: {},
+    //     types: {},
+    //     results: {},
+    //     lastState: null,
+    //     lastEvaluator: null,
+    //     settings: { debugExecOrder: false },
+    // };
 
     return {
         setDebug(execOrder, disableEvaluation) {
@@ -97,21 +94,24 @@ export const setupSyncStore = (
 
             const nodeChanges = getImmediateResults(state, evaluator, results);
 
-            copyToOldResults(oldResults, results);
+            // copyToOldResults(oldResults, results);
 
             const nsChanged = calcNSChanged(results, state, lastState);
+            // console.log('ns changed', nsChanged);
             Object.keys(nsChanged).forEach((key) => {
                 nodeListeners[`ns:${key}`]?.forEach((f) =>
-                    f(state, oldResults),
+                    f(state, results.nodes[+key]),
                 );
             });
+            // console.log(
+            //     'node list',
+            //     Object.keys(nodeListeners).filter((n) => n.startsWith('ns:')),
+            // );
 
             Object.keys(nodeChanges).forEach((id) => {
-                console.log('node change', id);
-                nodeListeners[id]?.forEach((f) => f(state, oldResults));
-                // nodeListeners[id].forEach((f) =>
-                //     f(state, results.nodes[nodeChanges[+id]]),
-                // );
+                nodeListeners[id]?.forEach((f) =>
+                    f(state, results.nodes[nodeChanges[+id]]),
+                );
             });
 
             evtListeners.all.forEach((f) => f(state));
@@ -133,8 +133,8 @@ export const setupSyncStore = (
 
         getEvaluator: () => evaluator,
         getState: () => state,
-        getResults: () => oldResults,
-        getCache: () => cache,
+        getResults: () => results,
+        // getCache: () => cache,
         reg(node, idx, path, loc) {
             if (!state.regs[idx]) {
                 state.regs[idx] = {};
@@ -179,24 +179,25 @@ function calcNSChanged(
     });
     Object.keys(state.nsMap).forEach((key) => {
         if (state.nsMap[+key] !== lastState.nsMap[+key]) {
+            // const top = state.nsMap[+key].top;
             nsChanged[+key] = true;
         }
     });
     return nsChanged;
 }
 
-function copyToOldResults(
-    oldResults: NUIResults,
-    results: ImmediateResults<any>,
-) {
-    oldResults.jumpToName = results.jumpToName.value;
-    oldResults.display = {};
-    oldResults.errors = {};
-    Object.keys(results.nodes).forEach((top) => {
-        const node = results.nodes[+top];
-        Object.assign(oldResults.display, node.layout);
-        if (node.parsed?.type === 'failure') {
-            Object.assign(oldResults.errors, node.parsed.errors);
-        }
-    });
-}
+// function copyToOldResults(
+//     oldResults: NUIResults,
+//     results: ImmediateResults<any>,
+// ) {
+//     oldResults.jumpToName = results.jumpToName.value;
+//     oldResults.display = {};
+//     oldResults.errors = {};
+//     Object.keys(results.nodes).forEach((top) => {
+//         const node = results.nodes[+top];
+//         Object.assign(oldResults.display, node.layout);
+//         if (node.parsed?.type === 'failure') {
+//             Object.assign(oldResults.errors, node.parsed.errors);
+//         }
+//     });
+// }

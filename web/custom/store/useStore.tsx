@@ -5,7 +5,13 @@ import { reduce } from '../../ide/ground-up/reduce';
 import { FullEvalator } from '../../ide/ground-up/Evaluators';
 import { AnyEnv, emptyResults, getResults } from './getResults';
 import { ResultsCache } from './ResultsCache';
-import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
+import {
+    OldStore as Store,
+    NUIResults,
+    adaptiveBounce,
+    loadEvaluator,
+    Evt,
+} from './Store';
 
 export const useStore = (
     initialState: NUIState,

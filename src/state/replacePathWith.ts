@@ -45,14 +45,14 @@ export const replacePath = (
     switch (parent.type) {
         case 'ns': {
             const parentNs = nsMap[parent.idx];
-            if (parentNs.type === 'placeholder') {
-                throw new Error('sandbox placeholder');
-            }
+            // if (parentNs.type === 'placeholder') {
+            //     throw new Error('sandbox placeholder');
+            // }
             const nsid = parent.child;
             const ns = nsMap[nsid];
-            if (ns.type === 'placeholder') {
-                throw new Error('sandbox placeholder');
-            }
+            // if (ns.type === 'placeholder') {
+            //     throw new Error('sandbox placeholder');
+            // }
             return {
                 update: {},
                 nsMap: { [nsid]: { ...ns, top: newIdx } },
@@ -60,9 +60,9 @@ export const replacePath = (
         }
         case 'ns-top':
             const parentNs = nsMap[parent.idx];
-            if (parentNs.type === 'placeholder') {
-                throw new Error('sandbox placeholder');
-            }
+            // if (parentNs.type === 'placeholder') {
+            //     throw new Error('sandbox placeholder');
+            // }
             return {
                 update: {},
                 nsMap: { [parent.idx]: { ...parentNs, top: newIdx } },

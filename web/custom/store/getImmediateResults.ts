@@ -41,6 +41,16 @@ export const blankInitialResults = (): ImmediateResults<any> => ({
     changes: {},
 });
 
+export type NodeResults<Stmt> = {
+    ns: RealizedNamespace;
+    // toMCST
+    node: Node;
+    ids: number[];
+    layout: NUIResults['display'];
+    parsed: Parsed<Stmt>;
+    meta: MetaDataMap;
+};
+
 export type ImmediateResults<Stmt> = {
     lastState: null | NUIState;
     lastEvaluator: string | null;
@@ -50,15 +60,7 @@ export type ImmediateResults<Stmt> = {
         type: Record<string, number>;
     };
     nodes: {
-        [top: number]: {
-            ns: RealizedNamespace;
-            // toMCST
-            node: Node;
-            ids: number[];
-            layout: NUIResults['display'];
-            parsed: Parsed<Stmt>;
-            meta: MetaDataMap;
-        };
+        [top: number]: NodeResults<Stmt>;
     };
 
     changes: Record<
@@ -101,24 +103,24 @@ export const getImmediateResults = <
 
     const nodeChanges: Record<number, number> = {};
 
-    tops.forEach((top) => (results.changes[top.top] = {}));
+    tops.forEach((top) => (results.changes[top.ns.id] = {}));
 
     const lastState = results.lastState;
 
     for (let top of tops) {
-        const changes = results.changes[top.top];
+        const changes = results.changes[top.ns.id];
 
         // Fresh!
-        if (!results.nodes[top.top] || !lastState) {
-            results.nodes[top.top] = getFreshResults(top, state, evaluator);
-            results.changes[top.top] = allChanged;
-            results.nodes[top.top].ids.forEach(
-                (id) => (nodeChanges[id] = top.top),
+        if (!results.nodes[top.ns.id] || !lastState) {
+            results.nodes[top.ns.id] = getFreshResults(top, state, evaluator);
+            results.changes[top.ns.id] = allChanged;
+            results.nodes[top.ns.id].ids.forEach(
+                (id) => (nodeChanges[id] = top.ns.id),
             );
             continue;
         }
 
-        const ncache = results.nodes[top.top];
+        const ncache = results.nodes[top.ns.id];
 
         changes.plugin = ncache.ns.plugin !== top.ns.plugin;
         ncache.ns = top.ns;
@@ -128,13 +130,13 @@ export const getImmediateResults = <
             (id) => state.map[id] !== lastState.map[id],
         );
         if (changed.length) {
-            console.log('map change', top.top);
-            changed.forEach((id) => (nodeChanges[id] = top.top));
+            // console.log('map change', top.top);
+            changed.forEach((id) => (nodeChanges[id] = top.ns.id));
             const ids: number[] = [];
             const node = fromMCST(top.top, state.map, ids);
 
             if (!equal(ncache.node, node)) {
-                console.log('node change', top.top);
+                // console.log('node change', top.top);
                 changes.source = true;
                 ncache.node = node;
                 ncache.ids = ids;
@@ -148,7 +150,7 @@ export const getImmediateResults = <
                             ncache.layout[id]?.layout,
                         )
                     ) {
-                        nodeChanges[id] = top.top;
+                        nodeChanges[id] = top.ns.id;
                     }
                 });
             }
@@ -160,8 +162,8 @@ export const getImmediateResults = <
         );
         changes.meta = metaChanges.length > 0;
         if (changes.meta) {
-            console.log('meta change', top.top);
-            metaChanges.forEach((id) => (nodeChanges[id] = top.top));
+            // console.log('meta change', top.top);
+            metaChanges.forEach((id) => (nodeChanges[id] = top.ns.id));
             ncache.meta = {};
             ncache.ids.forEach((id) => {
                 if (state.meta[id]) {
@@ -172,7 +174,7 @@ export const getImmediateResults = <
 
         // Parsed change!
         if (!evaluator) {
-            recordNodeChanges(ncache.parsed, nodeChanges, top.top);
+            recordNodeChanges(ncache.parsed, nodeChanges, top.ns.id);
             changes.parsed = ncache.parsed !== undefined;
             ncache.parsed = undefined;
         } else if (
@@ -182,12 +184,12 @@ export const getImmediateResults = <
         ) {
             const parsed = getParsed(top.ns.plugin, evaluator, ncache.node);
             if (!equal(parsed, ncache.parsed)) {
-                console.log('parsed change', top.top);
+                // console.log('parsed change', top.top);
                 // NOTE: This is overly conservative, because we're not actually checking
                 // if the errors change. Any nodes that have errors, even if they're the
                 // same between runs, will get rerendered. I think that's fine.
-                recordNodeChanges(ncache.parsed, nodeChanges, top.top);
-                recordNodeChanges(parsed, nodeChanges, top.top);
+                recordNodeChanges(ncache.parsed, nodeChanges, top.ns.id);
+                recordNodeChanges(parsed, nodeChanges, top.ns.id);
                 ncache.parsed = parsed;
                 changes.parsed = true;
             }
@@ -196,11 +198,11 @@ export const getImmediateResults = <
 
     results.jumpToName = { value: {}, type: {} };
     for (let top of tops) {
-        const parsed = results.nodes[top.top].parsed;
+        const parsed = results.nodes[top.ns.id].parsed;
         if (parsed?.type === 'success') {
             for (let name of parsed.names) {
                 if (results.jumpToName[name.kind][name.name]) {
-                    nodeChanges[name.loc] = top.top;
+                    nodeChanges[name.loc] = top.ns.id;
                     if (!parsed.duplicates) {
                         parsed.duplicates = [name];
                     } else {
@@ -228,7 +230,7 @@ const getParsed = (
         const plugin = plugins.find((p) => p.id === pluginConfig!.id);
         const result = plugin?.parse(node, errors, evaluator);
         if (!result) {
-            if (Object.keys(errors)) {
+            if (Object.keys(errors).length) {
                 return { type: 'failure', errors };
             } else {
                 return;
@@ -244,7 +246,7 @@ const getParsed = (
         const errors: Errors = {};
         const stmt = evaluator?.parse(node, errors);
         if (!stmt) {
-            if (Object.keys(errors)) {
+            if (Object.keys(errors).length) {
                 return { type: 'failure', errors };
             } else {
                 return undefined;

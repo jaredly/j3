@@ -96,7 +96,6 @@ export const Test = ({ env }: { env: Env }) => {
                 state={state}
                 dispatch={dispatch}
                 menu={undefined}
-                display={{}}
             />
             <Root
                 state={state}

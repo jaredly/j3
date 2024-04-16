@@ -31,7 +31,8 @@ const PluginRender = ({
     const values = useNode(props.idx, props.path);
     const expanded = useExpanded(props.idx);
     const store = useGetStore();
-    const results = store.getResults().pluginResults[props.idx];
+    const parsed = store.getResults().nodes[ns.id]?.parsed;
+    const results = parsed?.type === 'plugin' ? parsed.parsed : null;
     const rn = useMemo(
         () =>
             results != null
@@ -64,8 +65,7 @@ export const hasErrors = (id: number, store: Store): boolean => {
         debugger;
         return false;
     }
-    const errs = results.produce[ns.top]?.some((pr) => pr instanceof Error);
-    if (errs) {
+    if (results.nodes[ns.id].parsed?.type === 'failure') {
         return true;
     }
     return ns.children.some((id) => hasErrors(id, store));
@@ -73,10 +73,6 @@ export const hasErrors = (id: number, store: Store): boolean => {
 
 function NSTop({
     idx,
-    // ns,
-    // state,
-    // dispatch,
-    // produce,
     path,
     nsReg,
     drag,
@@ -85,10 +81,6 @@ function NSTop({
     idx: number;
     nsReg: NsReg;
     path: Path[];
-    // dispatch: React.Dispatch<Action>;
-    // state: NUIState;
-    // ns: RealizedNamespace;
-    // produce: { [key: number]: ProduceItem[] };
     drag: Drag;
     debug: Debug;
 }) {

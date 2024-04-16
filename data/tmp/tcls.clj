@@ -9,6 +9,8 @@
 
 (defn two [x y] (, (show y) (, (map show x) (show x))))
 
+(defn)
+
 (** so, this should turn into (defn two [show-a x y] (, (map (tcls show show-a) x) ((tcls show (show-array show-a)) x)))
     right? tcls ... um lol it needs kind-level polymorphism? so we won't do that. we could ... do (.show show-a), if we had a record type.
     Or ... if there was a show_impl function of type (fn [(show-map a) a] string).
@@ -30,17 +32,18 @@
         (some a) a
         _        0))
 
-(defn a1 [a b c] (, (> a b) ;(> c (, a b))))
+(defn a1 [a b c] (, (> a b)))
 
 (show 1)
 
 (deftype (option a) (some a) (none))
 
-(show (some ""))
+(show (some "lol what is this"))
 
 (show [true])
+
+hello
 
 (< true false)
 
 (< (, "" ""))
-

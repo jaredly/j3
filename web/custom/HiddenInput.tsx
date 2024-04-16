@@ -12,20 +12,19 @@ import { getRegNode } from './Hover';
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { goRight } from '../../src/state/goRightUntil';
+import { useGetStore } from './store/Store';
 // import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({
     state,
     dispatch,
     menu,
-    display,
     hashNames,
 }: {
     state: NUIState;
     dispatch: React.Dispatch<Action>;
     menu?: { path: Path[]; items: AutoCompleteResult[] };
     hashNames: { [hash: string]: string };
-    display: Ctx['display'];
 }) {
     useEffect(() => {
         if (
@@ -59,6 +58,7 @@ export function HiddenInput({
     }, []);
 
     const hiddenInput = useRef(null as null | HTMLInputElement);
+    const store = useGetStore();
 
     return (
         <input
@@ -83,6 +83,12 @@ export function HiddenInput({
                 }
 
                 dispatch({ type: 'copy', items });
+
+                const display: Ctx['display'] = {};
+                const results = store.getResults();
+                Object.values(results.nodes).forEach((nodeResults) => {
+                    Object.assign(display, nodeResults.layout);
+                });
 
                 const text = clipboardText(items, display);
                 navigator.clipboard.write([

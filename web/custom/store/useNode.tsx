@@ -5,11 +5,19 @@ import { useLatest } from '../useNSDrag';
 import { normalizeSelections } from '../CardRoot';
 import { Values, StoreCtx, getValues, useSubscribe } from './Store';
 import equal from 'fast-deep-equal';
+import { NUIState, RealizedNamespace } from '../UIState';
+
+const findNs = (path: Path[]) => path.find((p) => p.type === 'ns-top')!.idx;
 
 export const useNode = (idx: number, path: Path[]): Values => {
     const store = useContext(StoreCtx);
     let [state, setState] = useState(() =>
-        getValues(idx, store, store.getState(), store.getResults()),
+        getValues(
+            idx,
+            store,
+            store.getState(),
+            store.getResults().nodes[findNs(path)],
+        ),
     );
 
     // console.log(`useNode`, idx, state);

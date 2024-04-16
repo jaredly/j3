@@ -16,7 +16,7 @@ import {
 import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
-import { renderTraces } from './renderTraces';
+import { RenderTraces } from './renderTraces';
 import { advancePath } from './findTops';
 import { ResultsCache } from '../../custom/store/ResultsCache';
 import { AnyEnv } from '../../custom/store/getResults';
@@ -48,7 +48,7 @@ export const GroundUp = ({
         evaluator?: AnyEnv | null;
     };
     listing: string[] | null;
-    save: (state: NUIState, cache: ResultsCache<any>) => void;
+    save: (state: NUIState) => void;
 }) => {
     // const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
 
@@ -61,7 +61,7 @@ export const GroundUp = ({
 
     const store = useSyncStore(initial.state, undefined, initial.evaluator);
     // const store = useStore(initial.state, initial.cache, initial.evaluator);
-    const { state, results, cache } = useGlobalState(store);
+    const { state } = useGlobalState(store);
 
     useEffect(() => {
         store.setDebug(debug.execOrder, debug.disableEvaluation);
@@ -73,7 +73,7 @@ export const GroundUp = ({
             first.current = false;
             return;
         }
-        save({ ...state, regs: {} }, cache);
+        save({ ...state, regs: {} });
     }, [
         state.map,
         state.nsMap,
@@ -81,7 +81,7 @@ export const GroundUp = ({
         state.evaluator,
         state.meta,
         id,
-        cache.run,
+        // cache.run,
     ]);
 
     useEffect(() => {
@@ -132,7 +132,6 @@ export const GroundUp = ({
             }}
         >
             <HiddenInput
-                display={results.display}
                 state={state}
                 dispatch={store.dispatch}
                 menu={undefined}
@@ -196,14 +195,14 @@ export const GroundUp = ({
                     {debug.selection ? (
                         <ShowAt at={state.at} hover={state.hover} />
                     ) : null}
-                    {renderTraces(results, state, store)}
+                    {/* STOPSHIP <RenderTraces /> */}
                 </div>
             </div>
-            <Hover
+            {/* STOPSHIP <Hover
                 state={state}
                 dispatch={store.dispatch}
-                calc={() => calculateHovers(state, results)}
-            />
+                calc={() => calculateHovers(state)}
+            /> */}
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
                 <CommandPalette />

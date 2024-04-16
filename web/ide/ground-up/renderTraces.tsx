@@ -1,12 +1,12 @@
 import React from 'react';
 import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
-import { Store } from '../../custom/store/Store';
+import { Store, useGetStore } from '../../custom/store/Store';
 import { pathForIdx } from './CommandPalette';
 import { LocError, MyEvalError, Produce as Produce } from './Evaluators';
 import { TraceMap } from './loadEv';
 
-export function renderTraces(
+export function RenderTraces(
     results: {
         errors: { [loc: number]: string[] };
         display: Display;
@@ -19,6 +19,8 @@ export function renderTraces(
     state: NUIState,
     store: Store,
 ): React.ReactNode {
+    // const store =useGetStore()
+
     return Object.entries(results.traces).map(([top, traces]) => (
         <div key={top} style={{ maxWidth: 500, overflow: 'auto' }}>
             <div

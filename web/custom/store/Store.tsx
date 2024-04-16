@@ -27,6 +27,7 @@ import {
 import { goRight } from '../../../src/state/goRightUntil';
 import { cmpFullPath } from '../../../src/state/path';
 import { ResultsCache } from './ResultsCache';
+import { ImmediateResults, NodeResults } from './getImmediateResults';
 
 export type NUIResults = {
     jumpToName: { [name: string]: number };
@@ -44,6 +45,22 @@ export type NUIResults = {
 export type Evt = 'selection' | 'hover' | 'map' | 'nsMap' | 'all' | 'results';
 
 export type Store = {
+    dispatch: React.Dispatch<Action>;
+    getState(): NUIState;
+    getResults(): ImmediateResults<any>;
+    // getCache(): ResultsCache<any>;
+    getEvaluator(): FullEvalator<any, any, any> | null;
+    reg: Reg;
+    onChange(
+        idx: number | string,
+        fn: (state: NUIState, results: NodeResults<any>) => void,
+    ): () => void;
+    // everyChange(fn: (state: NUIState) => void): () => void;
+    on(evt: Evt, fn: (state: NUIState) => void): () => void;
+    setDebug(execOrder: boolean, disableEvaluation: boolean): void;
+};
+
+export type OldStore = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
     getResults(): NUIResults;
@@ -137,32 +154,19 @@ export const adaptiveBounce = (fn: () => void) => {
     };
 };
 
+const nope = () => {
+    throw new Error('noop');
+};
+
 const noopStore: Store = {
     setDebug() {},
-    dispatch() {
-        throw new Error('');
-    },
-    getResults() {
-        throw new Error('');
-    },
-    getCache() {
-        throw new Error('');
-    },
-    getEvaluator() {
-        throw new Error('');
-    },
-    getState() {
-        throw new Error('');
-    },
-    onChange(idx, fn) {
-        throw new Error('');
-    },
-    on(evt, fn) {
-        throw new Error('');
-    },
-    reg(a, b, c, d) {
-        throw new Error('');
-    },
+    dispatch: nope,
+    getEvaluator: nope,
+    getResults: nope,
+    getState: nope,
+    onChange: nope,
+    on: nope,
+    reg: nope,
 };
 
 export const StoreCtx = createContext<Store>(noopStore);
@@ -198,8 +202,9 @@ export const getValues = (
     idx: number,
     store: Store,
     state: NUIState,
-    results: NUIResults,
+    results: NodeResults<any>,
 ): Values => {
+    if (!results) debugger;
     if (!state.map[idx]) {
         return {
             dispatch() {},
@@ -213,16 +218,16 @@ export const getValues = (
     const nnode = getNestedNodes(
         state.map[idx],
         state.map,
-        results.hashNames[idx],
-        results.display[idx]?.layout,
+        undefined,
+        results.layout[idx]?.layout,
     );
-    // console.log(`getValues ${idx}`, results.errors[idx], store.getEvaluator());
+    const parsed = results.parsed;
 
     return {
-        errors: results.errors[idx],
+        errors: parsed?.type === 'failure' ? parsed.errors[idx] : undefined,
         dispatch: store.dispatch,
         meta: state.meta?.[idx] ?? null,
-        display: results.display[idx],
+        display: results.layout[idx] ?? {},
         node: state.map[idx],
         reg: store.reg,
         nnode,
@@ -258,16 +263,16 @@ export const useExpanded = (idx: number): Node => {
 export const useGlobalState = (store: Store) => {
     const [state, setState] = useState({
         state: store.getState(),
-        results: store.getResults(),
-        cache: store.getCache(),
+        // results: store.getResults(),
+        // cache: store.getCache(),
     });
     useEffect(
         () =>
             store.on('all', () =>
                 setState({
                     state: store.getState(),
-                    results: store.getResults(),
-                    cache: store.getCache(),
+                    // results: store.getResults(),
+                    // cache: store.getCache(),
                 }),
             ),
         [],
