@@ -10,7 +10,7 @@ import {
     getImmediateResults,
 } from './getImmediateResults';
 import { AnyEnv } from './getResults';
-import { Message } from '../worker';
+import { Message } from '../worker/worker';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -61,7 +61,7 @@ export const setupSyncStore = (
 
     let inProcess = false;
 
-    const worker = new Worker(new URL('../worker/index.ts', import.meta.url), {
+    const worker = new Worker(new URL('../worker/worker.ts', import.meta.url), {
         type: 'module',
     });
     const send = (msg: Message) => worker.postMessage(msg);

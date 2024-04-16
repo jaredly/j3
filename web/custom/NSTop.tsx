@@ -246,50 +246,50 @@ const RenderProduceItem = ({
     // state: NUIState;
     // dispatch: React.Dispatch<Action>;
 }) => {
-    if (value instanceof MyEvalError) {
-        let parts: JSX.Element[] = highlightIdxs(
-            value.source.message,
-            // state,
-            // dispatch,
-        );
-        return (
-            <div style={{ color: 'rgb(255,50,50)' }}>
-                {value.message + '\n'}
-                {parts}
-            </div>
-        );
-    }
-    if (value instanceof LocError) {
-        let parts = highlightIdxs(value.message);
-        return (
-            <div>
-                Traceback: {parts}
-                {value.locs.map((n, i) => (
-                    <JumpTo loc={n.loc}>
-                        idx: {n.loc} ({n.row}:{n.col})
-                    </JumpTo>
-                ))}
-                {/* <pre>
-                    {value.js
-                        .split('\n')
-                        .map(
-                            (l, i) => `${(i + 1 + '').padStart(3, ' ')} : ${l}`,
-                        )
-                        .join('\n')}
-                </pre> */}
-            </div>
-        );
-    }
-    if (value instanceof Error) {
-        return <div>Error {value.message}</div>;
-    }
     if (typeof value === 'string') {
         return (
             <>{value.length > 1000 ? value.slice(0, 1000) + '...' : value}</>
         );
     }
-    if (!value) return <>No value?</>;
-    return value;
+    switch (value.type) {
+        case 'eval': {
+            let parts: JSX.Element[] = highlightIdxs(value.inner);
+            return (
+                <div style={{ color: 'rgb(255,50,50)' }}>
+                    {value.message + '\n'}
+                    {parts}
+                </div>
+            );
+        }
+        case 'withjs': {
+            let parts = highlightIdxs(value.message);
+            return (
+                <div>
+                    {parts}
+                    <i>Not doing symbolication because it wont really work</i>
+                    {/* {value.locs.map((n, i) => (
+                        <JumpTo loc={n.loc}>
+                            idx: {n.loc} ({n.row}:{n.col})
+                        </JumpTo>
+                    ))} */}
+                    {/* <pre>
+                        {value.js
+                            .split('\n')
+                            .map(
+                                (l, i) => `${(i + 1 + '').padStart(3, ' ')} : ${l}`,
+                            )
+                            .join('\n')}
+                    </pre> */}
+                </div>
+            );
+        }
+        case 'error': {
+            return <div>Error {value.message}</div>;
+        }
+        case 'pre':
+            return <pre>{value.text}</pre>;
+    }
+    return <b>Unrecognized produce item {JSON.stringify(value)}</b>;
 };
 
 export function highlightIdxs(msg: string) {

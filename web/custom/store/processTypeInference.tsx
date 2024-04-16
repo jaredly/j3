@@ -35,7 +35,11 @@ export function processTypeInference<
         group.forEach(
             (node) =>
                 (env.results.produce[node.id] = [
-                    new MyEvalError('Ugh something died', err as Error),
+                    {
+                        type: 'eval',
+                        message: 'Ugh something died',
+                        inner: (err as Error).message,
+                    },
                 ]),
         );
         return true;
@@ -71,7 +75,7 @@ export function processTypeInference<
         group.forEach(
             (node) =>
                 (env.results.produce[node.id] = [
-                    new MyEvalError('Type Checker', new Error(text)),
+                    { type: 'error', message: 'Type Checker: ' + text },
                 ]),
         );
         return true;

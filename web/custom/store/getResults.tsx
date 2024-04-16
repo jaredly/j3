@@ -1,18 +1,12 @@
 import { MetaData, NUIState, RealizedNamespace } from '../UIState';
 import { findTops } from '../../ide/ground-up/findTops';
-import {
-    FullEvalator,
-    AnyEnv,
-    ProduceItem,
-} from '../../ide/ground-up/FullEvalator';
+import { FullEvalator, AnyEnv } from '../../ide/ground-up/FullEvalator';
 import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { NUIResults } from './Store';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import { filterNulls } from '../old-stuff/filterNulls';
-import React from 'react';
-import { valueToString } from '../../ide/ground-up/valueToString';
 import { parseNodesAndDeps, sortTopsWithDeps } from './parseNodesAndDeps';
 import { processTypeInference } from './processTypeInference';
 import {
@@ -252,11 +246,13 @@ function collectStatements<Stmt>(
                     Object.keys(cache.nodes[node.id].parseErrors ?? {}).length
                 ) {
                     results.produce[node.id] = [
-                        new Error(
-                            `Parse error, or no stmt idk ${JSON.stringify(
+                        {
+                            type: 'error',
+
+                            message: `Parse error, or no stmt idk ${JSON.stringify(
                                 cache.nodes[node.id].parseErrors,
                             )}`,
-                        ),
+                        },
                     ];
                 }
             });
@@ -381,7 +377,10 @@ export const registerNames = (
             if (idForName[name.name] != null) {
                 cache.deps![top].duplicate = true;
                 results.produce[top] = [
-                    new Error(`Name already defined: ${name.name}`),
+                    {
+                        type: 'error',
+                        message: `Name already defined: ${name.name}`,
+                    },
                 ];
 
                 return true;
@@ -390,23 +389,4 @@ export const registerNames = (
             idForName[name.name] = top;
         }
     }
-};
-
-export const displayFunction = (config?: {
-    id: string;
-    options: any;
-}): undefined | ((v: any) => ProduceItem[]) => {
-    if (!config) return;
-    if (config.id === 'pre') {
-        return (value) => {
-            if (typeof value === 'string') {
-                return [<pre>{value}</pre>];
-            }
-            return [<pre key={0}>{JSON.stringify(value, null, 2)}</pre>];
-        };
-    }
-    if (config.id === 'none') {
-        return () => [];
-    }
-    return (value) => [valueToString(value)];
 };

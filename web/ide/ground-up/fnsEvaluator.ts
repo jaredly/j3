@@ -432,7 +432,12 @@ const compileStmt = (
     names?:
         | null
         | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
-) => {
+): {
+    env: any;
+    display: ProduceItem[];
+    values: Record<string, any>;
+    js?: string;
+} => {
     const mm = prepareMeta(meta, data['parse_version'] === 2);
 
     let externals: { type: ','; 0: string; 1: number }[] = [];
@@ -459,7 +464,14 @@ const compileStmt = (
             // console.error(err);
             return {
                 env,
-                display: [new MyEvalError(`Compilation Error`, err as Error)],
+                display: [
+                    {
+                        type: 'eval',
+                        message: `Compilation Error`,
+                        inner: (err as Error).message,
+                        stack: (err as Error).stack,
+                    },
+                ],
                 values: {},
             };
         }
@@ -473,9 +485,12 @@ const compileStmt = (
             return {
                 env,
                 display: [
-                    `JS Syntax Error: ${
-                        (err as Error).message
-                    }\n${js}\nDeps: ${needed.join(',')}`,
+                    {
+                        type: 'error',
+                        message: `JS Syntax Error: ${
+                            (err as Error).message
+                        }\n${js}\nDeps: ${needed.join(',')}`,
+                    },
                 ],
                 values: {},
             };
@@ -507,7 +522,13 @@ const compileStmt = (
             );
             return {
                 env,
-                display: [new LocError(err as Error, fn + '')],
+                display: [
+                    {
+                        type: 'withjs',
+                        message: (err as Error).message,
+                        js: fn + '',
+                    },
+                ],
                 values: {},
             };
         }
@@ -520,7 +541,14 @@ const compileStmt = (
         console.error(err);
         return {
             env,
-            display: [new MyEvalError(`Compilation Error`, err as Error)],
+            display: [
+                {
+                    type: 'eval',
+                    message: `Compilation Error`,
+                    inner: (err as Error).message,
+                    stack: (err as Error).stack,
+                },
+            ],
             values: {},
         };
     }

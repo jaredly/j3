@@ -70,7 +70,11 @@ export const bootstrapEvaluator = (
                         }
                     } catch (err) {
                         console.error(err);
-                        display[+loc] = err as Error;
+                        display[+loc] = {
+                            type: 'error',
+                            message: (err as Error).message,
+                            stack: (err as Error).stack,
+                        };
                     }
                 }
                 if (stmt.type === 'sexpr') {
@@ -79,9 +83,11 @@ export const bootstrapEvaluator = (
                         raw = benv.values['compile-st'](stmt);
                     } catch (err) {
                         console.error(err);
-                        display[+loc] = new Error(
-                            'Compilation failed: ' + (err as Error).message,
-                        );
+                        display[+loc] = {
+                            type: 'error',
+                            message:
+                                'Compilation failed: ' + (err as Error).message,
+                        };
                         return;
                     }
                     js.push(raw);
@@ -95,12 +101,12 @@ export const bootstrapEvaluator = (
                         // console.log(envArgs);
                         // console.log(full);
                         // console.error(err);
-                        display[+loc] = new Error(
-                            'Error evaluating! ' +
-                                (err as Error).message +
-                                '\n' +
-                                raw,
-                        );
+                        display[+loc] = {
+                            type: 'withjs',
+                            message:
+                                'Error evaluating! ' + (err as Error).message,
+                            js: raw,
+                        };
                     }
                 }
             });

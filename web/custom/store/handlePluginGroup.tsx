@@ -2,7 +2,8 @@ import { NUIState, RealizedNamespace } from '../UIState';
 import { FullEvalator } from '../../ide/ground-up/FullEvalator';
 import { NUIResults } from './Store';
 import { Path } from '../../store';
-import { ResultsEnv, displayFunction, processPlugin } from './getResults';
+import { ResultsEnv, processPlugin } from './getResults';
+import { displayFunction } from './displayFunction';
 import { DepsOrNoDeps, ResultsCache, ChangesMap } from './ResultsCache';
 
 export function cacheEvaluation<Stmt>(

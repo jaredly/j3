@@ -89,11 +89,12 @@ export function parseNodesAndDeps<
                             .length
                     ) {
                         results.produce[top.top] = [
-                            new Error(
-                                `Parse error, or no stmt idk ${JSON.stringify(
+                            {
+                                type: 'error',
+                                message: `Parse error, or no stmt idk ${JSON.stringify(
                                     cache.nodes[top.top].parseErrors,
                                 )}`,
-                            ),
+                            },
                         ];
                     }
                 }
@@ -136,7 +137,9 @@ export function parseNodesAndDeps<
         if (!stmt) {
             // console.log('no stmt', node, errors);
             if (Object.keys(errors).length) {
-                results.produce[top.top] = [new Error(JSON.stringify(errors))];
+                results.produce[top.top] = [
+                    { type: 'error', message: JSON.stringify(errors) },
+                ];
             }
         }
         cache.nodes[top.top] = {

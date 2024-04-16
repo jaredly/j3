@@ -5,7 +5,13 @@ import { LocedName } from '../../custom/store/sortTops';
 import { LocError, MyEvalError } from './Evaluators';
 
 export type Errors = { [key: number]: string[] };
-export type ProduceItem = JSX.Element | string | LocError | MyEvalError | Error;
+
+export type ProduceItem =
+    | string
+    | { type: 'withjs'; message: string; js: string; stack?: string }
+    | { type: 'eval'; message: string; inner: string; stack?: string }
+    | { type: 'error'; message: string; stack?: string }
+    | { type: 'pre'; text: string };
 export type Produce = ProduceItem | ProduceItem[];
 
 export type AnyEnv = FullEvalator<any, any, any>;

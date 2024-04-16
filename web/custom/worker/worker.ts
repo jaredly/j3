@@ -12,7 +12,7 @@ import { depSort } from '../store/depSort';
 import { filterNulls } from '../old-stuff/filterNulls';
 import { LocedName } from '../store/sortTops';
 import { showError } from '../store/processTypeInference';
-import { displayFunction } from '../store/getResults';
+import { displayFunction } from '../store/displayFunction';
 
 export type Message = {
     type: 'initial';
@@ -227,7 +227,10 @@ function calculateInitialState(nodes: Message['nodes'], evaluator: AnyEnv) {
                     add(results.tops[topForLoc[loc]].errors, loc, text);
                 });
                 group.forEach((g) =>
-                    results.tops[g.id].produce.push(new Error(text)),
+                    results.tops[g.id].produce.push({
+                        type: 'error',
+                        message: text,
+                    }),
                 );
                 continue;
             }
