@@ -74,5 +74,6 @@ export const useNode = (idx: number, path: Path[]): Values => {
             setState(getValues(idx, store, state, results));
         });
     }, [idx]);
+
     return { ...state, selection, hover };
 };

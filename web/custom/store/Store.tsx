@@ -51,7 +51,7 @@ export type Store = {
     getEvaluator(): FullEvalator<any, any, any> | null;
     reg: Reg;
     onChange(
-        idx: number,
+        idx: number | string,
         fn: (state: NUIState, results: NUIResults) => void,
     ): () => void;
     // everyChange(fn: (state: NUIState) => void): () => void;
