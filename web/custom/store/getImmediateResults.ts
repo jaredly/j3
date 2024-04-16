@@ -115,7 +115,7 @@ export const getImmediateResults = <
 
     const lastState = results.lastState;
 
-    console.time('get immediate');
+    // console.time('get immediate');
 
     for (let top of tops) {
         const changes = results.changes[top.ns.id];
@@ -227,7 +227,7 @@ export const getImmediateResults = <
 
     results.lastState = state;
 
-    console.timeEnd('get immediate');
+    // console.timeEnd('get immediate');
 
     return nodeChanges;
 };

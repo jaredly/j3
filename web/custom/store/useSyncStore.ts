@@ -82,7 +82,7 @@ export const setupSyncStore = (
         const msg: ToPage = evt.data;
         switch (msg.type) {
             case 'results': {
-                console.log('got worker response', msg.results);
+                // console.log('got worker response', msg.results);
                 Object.assign(workerResults.nodes, msg.results);
                 Object.keys(msg.results).forEach((key) => {
                     nodeListeners[`ns:${key}`]?.forEach((f) =>
