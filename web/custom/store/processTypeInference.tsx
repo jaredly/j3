@@ -23,10 +23,11 @@ export function processTypeInference<
     ids: number[],
     env: ResultsEnv<Stmt, Env, Expr>,
 ) {
+    if (!env.evaluator.inference) return;
     let result;
     let typesAndLocs;
     try {
-        ({ result, typesAndLocs } = env.evaluator.infer!(
+        ({ result, typesAndLocs } = env.evaluator.inference.infer(
             Object.values(stmts),
             env.results.tenv,
         ));
@@ -40,22 +41,20 @@ export function processTypeInference<
         return true;
     }
 
-    if (env.evaluator.typeToString) {
-        env.cache.hover[groupKey] = {};
-        typesAndLocs.forEach(({ loc, type }) => {
-            if (!env.cache.hover[groupKey][loc]) {
-                env.cache.hover[groupKey][loc] = [];
-            }
-            // Sooo it would be really nice to be able to
-            // do some "click to jump" on the type. ...
-            // not totally sure how quite to do it.
-            env.cache.hover[groupKey][loc].push(
-                env.evaluator.typeToString!(type),
-            );
-        });
+    env.cache.hover[groupKey] = {};
+    typesAndLocs.forEach(({ loc, type }) => {
+        if (!env.cache.hover[groupKey][loc]) {
+            env.cache.hover[groupKey][loc] = [];
+        }
+        // Sooo it would be really nice to be able to
+        // do some "click to jump" on the type. ...
+        // not totally sure how quite to do it.
+        env.cache.hover[groupKey][loc].push(
+            env.evaluator.inference!.typeToString(type),
+        );
+    });
 
-        Object.assign(env.results.hover, env.cache.hover[groupKey]);
-    }
+    Object.assign(env.results.hover, env.cache.hover[groupKey]);
 
     if (result.type !== 'ok') {
         delete env.cache.types[groupKey];
@@ -81,7 +80,7 @@ export function processTypeInference<
     const types = group.flatMap((node) =>
         node.names
             ?.filter((n) => n.kind === 'value')
-            .map((n) => env.evaluator.typeForName!(tenv, n.name)),
+            .map((n) => env.evaluator.inference!.typeForName(tenv, n.name)),
     );
     const gCache = env.cache.types[groupKey];
     const changed = !equal(gCache?.types, types);

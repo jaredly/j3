@@ -12,6 +12,14 @@ import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { AnyEnv } from './getResults';
 
+export type SuccessParsed<Stmt> = {
+    type: 'success';
+    stmt: Stmt;
+    names: LocedName[];
+    deps: LocedName[];
+    duplicates?: LocedName[];
+};
+
 export type Parsed<Stmt> =
     | void
     | {
@@ -21,17 +29,8 @@ export type Parsed<Stmt> =
           // but they do have deps.
           deps: LocedName[];
       }
-    | {
-          type: 'success';
-          stmt: Stmt;
-          names: LocedName[];
-          deps: LocedName[];
-          duplicates?: LocedName[];
-      }
-    | {
-          type: 'failure';
-          errors: Errors;
-      };
+    | SuccessParsed<Stmt>
+    | { type: 'failure'; errors: Errors };
 
 export const blankInitialResults = (): ImmediateResults<any> => ({
     lastState: null,

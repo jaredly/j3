@@ -45,7 +45,6 @@ export function evaluateGroup<
     const { env, display, values } = stuff.evaluator.addStatements(
         stmts,
         stuff.results.env as any,
-        stuff.results.tenv,
         stuff.state.meta,
         stuff.results.traces,
         renderValue,

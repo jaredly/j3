@@ -22,26 +22,28 @@ export type FullEvalator<
     parseExpr(node: Node, errors: Errors): Expr | void;
 
     // Type checker stuff
-    initType?(): TypeEnv;
-    infer?(
-        stmts: Stmt[],
-        env: TypeEnv,
-    ): {
-        result:
-            | { type: 'ok'; value: TypeEnv }
-            | {
-                  type: 'err';
-                  err: {
-                      message: string;
-                      items: { name: string; loc: number }[];
+    inference?: {
+        initType(): TypeEnv;
+        infer(
+            stmts: Stmt[],
+            env: TypeEnv,
+        ): {
+            result:
+                | { type: 'ok'; value: TypeEnv }
+                | {
+                      type: 'err';
+                      err: {
+                          message: string;
+                          items: { name: string; loc: number }[];
+                      };
                   };
-              };
-        typesAndLocs: { type: Type; loc: number }[];
+            typesAndLocs: { type: Type; loc: number }[];
+        };
+        inferExpr(expr: Expr, env: TypeEnv): Type;
+        addTypes(env: TypeEnv, nenv: TypeEnv): TypeEnv;
+        typeForName(env: TypeEnv, name: string): Type;
+        typeToString(type: Type): string;
     };
-    inferExpr?(expr: Expr, env: TypeEnv): Type;
-    addTypes?(env: TypeEnv, nenv: TypeEnv): TypeEnv;
-    typeForName?(env: TypeEnv, name: string): Type;
-    typeToString?(type: Type): string;
 
     analysis?: {
         dependencies(stmt: Stmt): LocedName[];
@@ -52,7 +54,7 @@ export type FullEvalator<
     addStatements(
         stmts: { [key: number]: Stmt },
         env: Env,
-        tenv: TypeEnv,
+        // tenv: TypeEnv,
         meta: MetaDataMap,
         trace: TraceMap,
         renderResult?: (v: any) => ProduceItem[],

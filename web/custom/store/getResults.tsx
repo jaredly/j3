@@ -125,7 +125,7 @@ export const getResults = <
     } = {};
 
     if (TIME) console.time('type');
-    results.tenv = evaluator.initType?.();
+    results.tenv = evaluator.inference?.initType();
     sortedTops.forEach((group, i) => {
         const { isPlugin, stmts, groupKey, ids } = meta[i];
         groupChanges[groupKey] = {};
@@ -145,7 +145,7 @@ export const getResults = <
 
         groupChanges[groupKey].type = retype;
 
-        if (retype && evaluator.infer && results.tenv) {
+        if (retype && evaluator.inference && results.tenv) {
             if (TIME > 1) console.time(`type - ${groupKey}`);
             const failed = processTypeInference<Env, Stmt, Expr>(
                 stmts,
@@ -158,8 +158,8 @@ export const getResults = <
             if (failed) return;
         }
 
-        if (cache.types[groupKey] && evaluator.addTypes) {
-            results.tenv = evaluator.addTypes!(
+        if (cache.types[groupKey] && evaluator.inference) {
+            results.tenv = evaluator.inference.addTypes(
                 results.tenv,
                 cache.types[groupKey].env,
             );

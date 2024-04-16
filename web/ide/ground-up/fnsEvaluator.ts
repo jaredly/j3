@@ -58,80 +58,86 @@ export const fnsEvaluator = (
         // @ts-ignore
         _data: data,
 
-        initType() {
-            return data['env_nil'];
-        },
-        infer(stmts, env) {
-            if (data['infer_stmts2']) {
-                const result: {
-                    type: ',';
-                    0:
-                        | { type: 'ok'; 0: any }
-                        | {
-                              type: 'err';
-                              0: {
-                                  type: ',';
-                                  0: string;
-                                  1: arr<{ type: ','; 0: string; 1: number }>;
+        inference: {
+            initType() {
+                return data['env_nil'];
+            },
+            infer(stmts, env) {
+                if (data['infer_stmts2']) {
+                    const result: {
+                        type: ',';
+                        0:
+                            | { type: 'ok'; 0: any }
+                            | {
+                                  type: 'err';
+                                  0: {
+                                      type: ',';
+                                      0: string;
+                                      1: arr<{
+                                          type: ',';
+                                          0: string;
+                                          1: number;
+                                      }>;
+                                  };
                               };
-                          };
-                    1: arr<{ type: ','; 0: number; 1: any }>;
-                } = data['infer_stmts2'](env)(wrapArray(stmts));
-                return {
-                    result:
-                        result[0].type === 'ok'
-                            ? { type: 'ok', value: result[0][0] }
-                            : {
-                                  type: 'err',
-                                  err: {
-                                      message: result[0][0][0],
-                                      items: unwrapArray(result[0][0][1]).map(
-                                          (item) => ({
+                        1: arr<{ type: ','; 0: number; 1: any }>;
+                    } = data['infer_stmts2'](env)(wrapArray(stmts));
+                    return {
+                        result:
+                            result[0].type === 'ok'
+                                ? { type: 'ok', value: result[0][0] }
+                                : {
+                                      type: 'err',
+                                      err: {
+                                          message: result[0][0][0],
+                                          items: unwrapArray(
+                                              result[0][0][1],
+                                          ).map((item) => ({
                                               loc: item[1],
                                               name: item[0],
-                                          }),
-                                      ),
+                                          })),
+                                      },
                                   },
-                              },
-                    typesAndLocs: unwrapArray(result[1]).map((tal) => ({
-                        loc: tal[0],
-                        type: tal[1],
-                    })),
-                };
-            }
-            try {
-                return {
-                    result: {
-                        type: 'ok',
-                        value: data['infer_stmts'](env)(wrapArray(stmts)),
-                    },
-                    typesAndLocs: [],
-                };
-            } catch (err) {
-                return {
-                    result: {
-                        type: 'err',
-                        err: { message: (err as Error).message, items: [] },
-                    },
-                    typesAndLocs: [],
-                };
-            }
-        },
-        inferExpr(expr, env) {
-            return data['infer'](env)(expr);
-        },
-        addTypes(env, nenv) {
-            return data['add_stmt'](env)(nenv);
-        },
-        typeForName(env, name) {
-            const res = data['get_type'](env)(name);
-            if (res.type === 'some') {
-                return res[0];
-            }
-            return null;
-        },
-        typeToString(type) {
-            return data['type_to_string'](type);
+                        typesAndLocs: unwrapArray(result[1]).map((tal) => ({
+                            loc: tal[0],
+                            type: tal[1],
+                        })),
+                    };
+                }
+                try {
+                    return {
+                        result: {
+                            type: 'ok',
+                            value: data['infer_stmts'](env)(wrapArray(stmts)),
+                        },
+                        typesAndLocs: [],
+                    };
+                } catch (err) {
+                    return {
+                        result: {
+                            type: 'err',
+                            err: { message: (err as Error).message, items: [] },
+                        },
+                        typesAndLocs: [],
+                    };
+                }
+            },
+            inferExpr(expr, env) {
+                return data['infer'](env)(expr);
+            },
+            addTypes(env, nenv) {
+                return data['add_stmt'](env)(nenv);
+            },
+            typeForName(env, name) {
+                const res = data['get_type'](env)(name);
+                if (res.type === 'some') {
+                    return res[0];
+                }
+                return null;
+            },
+            typeToString(type) {
+                return data['type_to_string'](type);
+            },
         },
 
         analysis:
@@ -223,7 +229,7 @@ export const fnsEvaluator = (
                 throw new Error(`toFile requires analysis`);
             }
             let env = this.init();
-            let tenv = this.initType?.();
+            let tenv = this.inference?.initType();
             const errors: Errors = {};
             const allNames: LocedName[] = [];
             let ret: null | string = null;
@@ -264,7 +270,6 @@ export const fnsEvaluator = (
                 const result = this.addStatements(
                     group.map((g) => g.stmt),
                     env,
-                    tenv,
                     {},
                     {},
                 );
@@ -301,7 +306,7 @@ export const fnsEvaluator = (
             return { js: env.js.join('\n'), errors };
         },
 
-        addStatements(stmts, env, tenv, meta, trace, displayResult) {
+        addStatements(stmts, env, meta, trace, displayResult) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
             let names:
@@ -318,46 +323,46 @@ export const fnsEvaluator = (
                 );
             }
 
-            Object.entries(stmts).forEach(([id, stmt]) => {
-                display[+id] = [];
+            // Object.entries(stmts).forEach(([id, stmt]) => {
+            //     display[+id] = [];
 
-                if (stmt.type === 'sexpr' && tenv && data['infer']) {
-                    try {
-                        display[+id] = [
-                            data['type_to_string'](
-                                data['infer'](tenv)(stmt[0]),
-                            ),
-                        ];
-                    } catch (err) {
-                        display[+id] = [
-                            new MyEvalError('Type Checker', err as Error),
-                        ];
-                    }
-                }
+            //     if (stmt.type === 'sexpr' && tenv && data['infer']) {
+            //         try {
+            //             display[+id] = [
+            //                 data['type_to_string'](
+            //                     data['infer'](tenv)(stmt[0]),
+            //                 ),
+            //             ];
+            //         } catch (err) {
+            //             display[+id] = [
+            //                 new MyEvalError('Type Checker', err as Error),
+            //             ];
+            //         }
+            //     }
 
-                if (
-                    tenv &&
-                    data['names'] &&
-                    data['get_type'] &&
-                    stmt.type === 'sdef'
-                ) {
-                    const names: { type: ','; 0: string; 1: number }[] =
-                        unwrapArray(data['names'](stmt));
-                    const types: any[] = names.map((name) =>
-                        data['get_type'](tenv)(name[0]),
-                    );
-                    (display[+id] as any[]).push(
-                        ...types.map((type, i) => {
-                            if (type.type === 'some') {
-                                return `${names[i][0]}⁚ ${data[
-                                    'type_to_string'
-                                ](type[0])}`;
-                            }
-                            return new Error(`No type for ${names[i][0]}`);
-                        }),
-                    );
-                }
-            });
+            //     if (
+            //         tenv &&
+            //         data['names'] &&
+            //         data['get_type'] &&
+            //         stmt.type === 'sdef'
+            //     ) {
+            //         const names: { type: ','; 0: string; 1: number }[] =
+            //             unwrapArray(data['names'](stmt));
+            //         const types: any[] = names.map((name) =>
+            //             data['get_type'](tenv)(name[0]),
+            //         );
+            //         (display[+id] as any[]).push(
+            //             ...types.map((type, i) => {
+            //                 if (type.type === 'some') {
+            //                     return `${names[i][0]}⁚ ${data[
+            //                         'type_to_string'
+            //                     ](type[0])}`;
+            //                 }
+            //                 return new Error(`No type for ${names[i][0]}`);
+            //             }),
+            //         );
+            //     }
+            // });
 
             const res = compileStmt(
                 data,
