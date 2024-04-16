@@ -4,6 +4,10 @@ https://twitter.com/jaredforsyth/status/1709041488032645395
 https://twitter.com/welltypedwitch/status/1709129585613328657
 https://twitter.com/TimWhiting14/status/1780046115662135350
 
+# More Perf
+
+whyyy is it taking 30ms to just change a single thing.
+
 # Web in the Workers
 
 - [ ] `calculateInitialState` and `updateState` have a ton in common.
@@ -17,6 +21,8 @@ https://twitter.com/TimWhiting14/status/1780046115662135350
   and evaluator IDs should include like a `timestamp` (file save) time.
   AND cache should have a timestamp that needs to match the `state` in order
   for it to be valid.
+- [ ] let's punt parsing over the bridge into the worker. we don't actually use
+  it, and it will be nice to not need an evaluator in the main thread.
 
 
 - [x] why is it saying that namespaces need updating

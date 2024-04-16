@@ -192,6 +192,14 @@ export const getImmediateResults = <
             changes.source ||
             evaluator.id !== results.lastEvaluator
         ) {
+            // console.log(
+            //     'parsing here we are',
+            //     top.top,
+            //     changes.plugin,
+            //     changes.source,
+            //     evaluator.id,
+            //     results.lastEvaluator,
+            // );
             const parsed = getParsed(top.ns.plugin, evaluator, ncache.node);
             if (!equal(parsed, ncache.parsed)) {
                 // console.log('parsed change', top.top);
@@ -206,6 +214,7 @@ export const getImmediateResults = <
         }
     }
 
+    // console.time('jump');
     results.jumpToName = { value: {}, type: {} };
     for (let top of tops) {
         const parsed = results.nodes[top.ns.id].parsed;
@@ -224,8 +233,10 @@ export const getImmediateResults = <
             }
         }
     }
+    // console.timeEnd('jump');
 
     results.lastState = state;
+    results.lastEvaluator = evaluator?.id ?? null;
 
     // console.timeEnd('get immediate');
 

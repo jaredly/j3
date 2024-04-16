@@ -13,6 +13,7 @@ import { cmpFullPath } from '../../../src/state/path';
 import { ResultsCache } from './ResultsCache';
 import { ImmediateResults, NodeResults } from './getImmediateResults';
 import { Sendable } from '../worker/worker';
+import { WorkerResults } from './useSyncStore';
 
 export type NUIResults = {
     jumpToName: { [name: string]: number };
@@ -32,7 +33,10 @@ export type Evt = 'selection' | 'hover' | 'map' | 'nsMap' | 'all' | 'results';
 export type Store = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
-    getResults(): ImmediateResults<any>;
+    getResults(): {
+        results: ImmediateResults<any>;
+        workerResults: WorkerResults;
+    };
     // getCache(): ResultsCache<any>;
     getEvaluator(): FullEvalator<any, any, any> | null;
     reg: Reg;

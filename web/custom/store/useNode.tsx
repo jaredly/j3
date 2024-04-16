@@ -17,7 +17,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
             idx,
             store,
             store.getState(),
-            store.getResults().nodes[findNs(path)],
+            store.getResults().results.nodes[findNs(path)],
         ),
     );
 

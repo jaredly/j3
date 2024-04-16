@@ -105,7 +105,9 @@ export const setupSyncStore = (
             // console.time('dispatch');
             inProcess = true;
             const lastState = state;
+            // console.time('reduce');
             state = reduce(state, action);
+            // console.timeEnd('reduce');
 
             if (state.evaluator !== lastState.evaluator) {
                 let ev = await new Promise<AnyEnv | null>((res) =>
@@ -114,7 +116,9 @@ export const setupSyncStore = (
                 evaluator = ev;
             }
 
+            // console.time('get results');
             const nodeChanges = getImmediateResults(state, evaluator, results);
+            // console.timeEnd('get results');
 
             if (state.evaluator !== lastState.evaluator) {
                 send({
@@ -180,7 +184,7 @@ export const setupSyncStore = (
 
         getEvaluator: () => evaluator,
         getState: () => state,
-        getResults: () => results,
+        getResults: () => ({ results, workerResults }),
         // getCache: () => cache,
         reg(node, idx, path, loc) {
             if (!state.regs[idx]) {

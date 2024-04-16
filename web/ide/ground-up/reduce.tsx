@@ -567,26 +567,34 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (action.type === 'yank') {
         return state;
     }
+    // console.time('actionToUpdate');
     const update = actionToUpdate(state, action);
+    // console.timeEnd('actionToUpdate');
     if (!update) {
         // console.log(`Unable to turn action into update`, action);
         return state;
     }
+    // console.time('reduce update');
+    // console.log(update);
     const next = reduceUpdate(state, update);
+    // console.timeEnd('reduce update');
+    // console.time('calc history');
     const item = calcHistoryItem(state, next, '', action);
+    // console.timeEnd('calc history');
     if (item) {
         next.history = state.history.concat([item]);
     }
-    try {
-        verifyState(next);
-    } catch (err) {
-        console.warn(`Action failed`);
-        console.log(action);
-        console.log(update);
-        console.log(item);
-        console.error(err);
-        return state;
-    }
+    // TODO: this should be a "debug" thing that I can turn on...
+    // try {
+    //     verifyState(next);
+    // } catch (err) {
+    //     console.warn(`Action failed`);
+    //     console.log(action);
+    //     console.log(update);
+    //     console.log(item);
+    //     console.error(err);
+    //     return state;
+    // }
     return next;
 };
 

@@ -29,7 +29,7 @@ const PluginRender = ({
     const values = useNode(props.idx, props.path);
     const expanded = useExpanded(props.idx);
     const store = useGetStore();
-    const parsed = store.getResults().nodes[ns.id]?.parsed;
+    const parsed = store.getResults().results.nodes[ns.id]?.parsed;
     const results = parsed?.type === 'plugin' ? parsed.parsed : null;
     const rn = useMemo(
         () =>
@@ -57,7 +57,7 @@ const PluginRender = ({
 
 export const hasErrors = (id: number, store: Store): boolean => {
     const state = store.getState();
-    const results = store.getResults();
+    const { results } = store.getResults();
     const ns = state.nsMap[id] as RealizedNamespace;
     if (!ns) {
         debugger;

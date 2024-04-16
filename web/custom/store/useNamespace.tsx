@@ -34,7 +34,12 @@ export const getNSValues = (
 export const useNamespace = (idx: number, path: Path[]) => {
     const store = useContext(StoreCtx);
     const [state, setState] = useState(() =>
-        getNSValues(idx, store.getState(), store.getResults().nodes[idx], null),
+        getNSValues(
+            idx,
+            store.getState(),
+            store.getResults().results.nodes[idx],
+            store.getResults().workerResults.nodes[idx],
+        ),
     );
 
     useEffect(

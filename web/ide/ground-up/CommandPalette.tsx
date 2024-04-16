@@ -310,11 +310,11 @@ const getCommands = (
                 },
             });
 
-            const res = store.getResults();
+            const { results } = store.getResults();
             commands.push({
                 type: 'super',
                 title: 'Jump to...',
-                children: Object.entries(res.jumpToName.value).map(
+                children: Object.entries(results.jumpToName.value).map(
                     ([name, loc]) => ({
                         type: 'plain',
                         title: name,

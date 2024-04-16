@@ -85,7 +85,7 @@ export function HiddenInput({
                 dispatch({ type: 'copy', items });
 
                 const display: Ctx['display'] = {};
-                const results = store.getResults();
+                const { results } = store.getResults();
                 Object.values(results.nodes).forEach((nodeResults) => {
                     Object.assign(display, nodeResults.layout);
                 });

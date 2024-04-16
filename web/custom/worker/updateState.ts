@@ -71,14 +71,16 @@ export function updateState(
         const groupKey = group.map((g) => g.id).join(';');
 
         const sourceUpdate = group.some((g) => update[g.id]);
-        const depsUpdate = group.some((g) =>
-            g.deps.some((ln) => {
-                const got = topsForName[ln.name];
-                if (!got) return false;
-                return state.results!.groups[got.group].changed;
-                // if (state.results!.tops[got.top].changes.source)
-            }),
-        );
+        const depsUpdate =
+            sourceUpdate ||
+            group.some((g) =>
+                g.deps.some((ln) => {
+                    const got = topsForName[ln.name];
+                    if (!got) return false;
+                    return state.results!.groups[got.group].changed;
+                    // if (state.results!.tops[got.top].changes.source)
+                }),
+            );
 
         if (sourceUpdate || depsUpdate) {
             state.results.groups[groupKey] = {

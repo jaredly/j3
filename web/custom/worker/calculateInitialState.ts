@@ -10,6 +10,7 @@ import { filterNulls } from '../old-stuff/filterNulls';
 import { showError } from '../store/processTypeInference';
 import { displayFunction } from '../store/displayFunction';
 import { AsyncResults, Sortable } from './types';
+import { updateState } from './updateState';
 
 export const add = <K extends string | number, T>(
     obj: Record<K, T[]>,
@@ -45,6 +46,20 @@ export function calculateInitialState(
     evaluator: AnyEnv,
     debugExecOrder: boolean,
 ) {
+    return updateState(
+        {
+            evaluator,
+            nodes: {},
+            results: {
+                groups: {},
+                sorted: [],
+                tops: {},
+            },
+            debugExecOrder,
+        },
+        nodes,
+    );
+    /*
     console.warn('Calculating initial state');
     const topForLoc: Record<number, number> = {};
     Object.values(nodes).forEach((node) => {
@@ -196,4 +211,5 @@ export function calculateInitialState(
     }
 
     return { evaluator, nodes: nodes, results, debugExecOrder };
+    */
 }
