@@ -1,4 +1,9 @@
 
+Future papers to port:
+https://twitter.com/jaredforsyth/status/1709041488032645395
+https://twitter.com/welltypedwitch/status/1709129585613328657
+https://twitter.com/TimWhiting14/status/1780046115662135350
+
 
 # ImmediateResults
 
@@ -13,7 +18,7 @@
 - [x] why are we relayouting these other nodes that aren't really needing a rerender?
   - maybe I need a `layoutEqual` function
 - [x] don't rerender NSTops if I don't need to.
-- [ ] next up: drop `NUIResults`
+- [x] next up: drop `NUIResults`
 - [ ] then, let's do some Web Workers!
 
 
