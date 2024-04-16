@@ -145,10 +145,7 @@ export const GroundUp = ({
                         card={i}
                         state={state}
                         debug={debug}
-                        ev={store.getEvaluator()}
                         dispatch={store.dispatch}
-                        produce={results.produce}
-                        env={results.env}
                     />
                 ))}
             </WithStore>

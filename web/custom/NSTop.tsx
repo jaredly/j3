@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { ReactNode, useMemo } from 'react';
 import { Cursor } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Render, RenderNNode } from './Render';
@@ -16,6 +16,7 @@ import { plugins } from './plugins';
 import { Store, useExpanded, useGetStore } from './store/Store';
 import { useNode } from './store/useNode';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
+import { useNamespace } from './store/useNamespace';
 
 const PluginRender = ({
     ns,
@@ -70,25 +71,30 @@ export const hasErrors = (id: number, store: Store): boolean => {
     return ns.children.some((id) => hasErrors(id, store));
 };
 
-export function NSTop({
-    ns,
-    state,
-    dispatch,
-    produce,
+function NSTop({
+    idx,
+    // ns,
+    // state,
+    // dispatch,
+    // produce,
     path,
     nsReg,
     drag,
     debug,
 }: {
+    idx: number;
     nsReg: NsReg;
     path: Path[];
-    dispatch: React.Dispatch<Action>;
-    state: NUIState;
-    ns: RealizedNamespace;
-    produce: { [key: number]: ProduceItem[] };
+    // dispatch: React.Dispatch<Action>;
+    // state: NUIState;
+    // ns: RealizedNamespace;
+    // produce: { [key: number]: ProduceItem[] };
     drag: Drag;
     debug: Debug;
 }) {
+    const store = useGetStore();
+    const { ns, produce } = useNamespace(idx, path);
+
     const source = useMemo(() => {
         const last = path[path.length - 1];
         if (last.type !== 'ns') {
@@ -110,7 +116,7 @@ export function NSTop({
                 padding: 4,
             }}
             onMouseLeave={() => {
-                dispatch({ type: 'hover', path: [] });
+                store.dispatch({ type: 'hover', path: [] });
             }}
         >
             <div style={{ display: 'flex', flexDirection: 'row' }}>
@@ -120,7 +126,7 @@ export function NSTop({
                             drag={drag}
                             nsp={nsp}
                             ns={ns}
-                            dispatch={dispatch}
+                            dispatch={store.dispatch}
                             path={path}
                         />
                         {debug.ids ? (
@@ -172,11 +178,7 @@ export function NSTop({
                                         color: 'rgba(255,255,255,0.5)',
                                     }}
                                 >
-                                    {renderProduce(
-                                        produce[ns.top],
-                                        state,
-                                        dispatch,
-                                    )}
+                                    {renderProduce(produce)}
                                 </div>
                             ) : ns.collapsed ? (
                                 '...'
@@ -189,11 +191,7 @@ export function NSTop({
                                         color: 'rgba(255,255,255,0.5)',
                                     }}
                                 >
-                                    {renderProduce(
-                                        produce[ns.top],
-                                        state,
-                                        dispatch,
-                                    )}
+                                    {renderProduce(produce)}
                                 </div>
                             )}
                         </div>
@@ -202,57 +200,67 @@ export function NSTop({
             </div>
             <div style={{ marginLeft: 30, marginTop: 8, marginBottom: -8 }}>
                 {!ns.collapsed &&
-                    ns.children
-                        .map((id) => state.nsMap[id])
-                        .map((child, i) =>
-                            child.type === 'normal' ? (
-                                <NSTop
-                                    key={child.top}
-                                    debug={debug}
-                                    drag={drag}
-                                    nsReg={nsReg}
-                                    produce={produce}
-                                    ns={child}
-                                    path={path.concat({
-                                        type: 'ns' as const,
-                                        child: child.id,
-                                        idx: ns.id,
-                                    })}
-                                    state={state}
-                                    dispatch={dispatch}
-                                />
-                            ) : null,
-                        )}
+                    ns.children.map((id, i) => (
+                        <NSTop
+                            key={id}
+                            idx={id}
+                            debug={debug}
+                            drag={drag}
+                            nsReg={nsReg}
+                            path={path.concat({
+                                type: 'ns' as const,
+                                child: id,
+                                idx: ns.id,
+                            })}
+                        />
+                    ))}
             </div>
         </div>
     );
 }
-const renderProduce = (
-    value: ProduceItem[],
-    state: NUIState,
-    dispatch: React.Dispatch<Action>,
-) => {
+
+const pathEqual = (one: Path, two: Path) => {
+    return one.idx === two.idx && one.type === two.type;
+};
+
+const pathsEqual = (one: Path[], two: Path[]) => {
+    return (
+        one.length === two.length && one.every((p, i) => pathEqual(p, two[i]))
+    );
+};
+
+const Wrapped = React.memo(NSTop, (prevProps, nextProps) => {
+    return (
+        prevProps.idx === nextProps.idx &&
+        prevProps.debug === nextProps.debug &&
+        pathsEqual(prevProps.path, nextProps.path)
+    );
+});
+
+export { Wrapped as NSTop };
+
+const renderProduce = (value: ProduceItem[]) => {
     return value?.map((item, i) => (
         <div key={i}>
-            <RenderProduceItem value={item} state={state} dispatch={dispatch} />
+            <RenderProduceItem value={item} />
         </div>
     ));
 };
 
 const RenderProduceItem = ({
     value,
-    state,
-    dispatch,
-}: {
+}: // state,
+// dispatch,
+{
     value: ProduceItem;
-    state: NUIState;
-    dispatch: React.Dispatch<Action>;
+    // state: NUIState;
+    // dispatch: React.Dispatch<Action>;
 }) => {
     if (value instanceof MyEvalError) {
         let parts: JSX.Element[] = highlightIdxs(
             value.source.message,
-            state,
-            dispatch,
+            // state,
+            // dispatch,
         );
         return (
             <div style={{ color: 'rgb(255,50,50)' }}>
@@ -262,37 +270,14 @@ const RenderProduceItem = ({
         );
     }
     if (value instanceof LocError) {
-        let parts = highlightIdxs(value.message, state, dispatch);
+        let parts = highlightIdxs(value.message);
         return (
             <div>
                 Traceback: {parts}
                 {value.locs.map((n, i) => (
-                    <div
-                        className="hover"
-                        key={i}
-                        onMouseEnter={() => {
-                            const got = state.regs[n.loc];
-                            const node = got?.main ?? got?.outside;
-                            if (!node) return;
-                            node.node.style.backgroundColor = 'red';
-                        }}
-                        onClick={() => {
-                            const path = pathForIdx(n.loc, state);
-                            if (!path) return alert('nope');
-                            dispatch({
-                                type: 'select',
-                                at: [{ start: path }],
-                            });
-                        }}
-                        onMouseLeave={() => {
-                            const got = state.regs[n.loc];
-                            const node = got?.main ?? got?.outside;
-                            if (!node) return;
-                            node.node.style.backgroundColor = 'unset';
-                        }}
-                    >
+                    <JumpTo loc={n.loc}>
                         idx: {n.loc} ({n.row}:{n.col})
-                    </div>
+                    </JumpTo>
                 ))}
                 {/* <pre>
                     {value.js
@@ -317,11 +302,7 @@ const RenderProduceItem = ({
     return value;
 };
 
-export function highlightIdxs(
-    msg: string,
-    state: NUIState,
-    dispatch: React.Dispatch<Action>,
-) {
+export function highlightIdxs(msg: string) {
     let at = 0;
     let parts: JSX.Element[] = [];
     msg.replace(/\d+/g, (match, idx) => {
@@ -330,38 +311,9 @@ export function highlightIdxs(
         }
         const loc = +match;
         parts.push(
-            <button
-                key={idx}
-                onMouseDown={(evt) => evt.stopPropagation()}
-                style={{
-                    color: 'inherit',
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                }}
-                onMouseEnter={() => {
-                    const got = state.regs[loc];
-                    const node = got?.main ?? got?.outside;
-                    if (!node) return;
-                    node.node.style.outline = '1px solid red';
-                }}
-                onClick={() => {
-                    const path = pathForIdx(loc, state);
-                    if (!path) return alert('nope');
-                    dispatch({
-                        type: 'select',
-                        at: [{ start: path }],
-                    });
-                }}
-                onMouseLeave={() => {
-                    const got = state.regs[loc];
-                    const node = got?.main ?? got?.outside;
-                    if (!node) return;
-                    node.node.style.outline = 'unset';
-                }}
-            >
+            <JumpTo key={idx} loc={idx}>
                 {match}
-            </button>,
+            </JumpTo>,
         );
         at = idx + match.length;
         return '';
@@ -371,3 +323,40 @@ export function highlightIdxs(
     }
     return parts;
 }
+
+export const JumpTo = ({
+    children,
+    loc,
+}: {
+    children: ReactNode;
+    loc: number;
+}) => {
+    const store = useGetStore();
+    return (
+        <div
+            className="hover"
+            onMouseEnter={() => {
+                const got = store.getState().regs[loc];
+                const node = got?.main ?? got?.outside;
+                if (!node) return;
+                node.node.style.backgroundColor = 'red';
+            }}
+            onClick={() => {
+                const path = pathForIdx(loc, store.getState());
+                if (!path) return alert('nope');
+                store.dispatch({
+                    type: 'select',
+                    at: [{ start: path }],
+                });
+            }}
+            onMouseLeave={() => {
+                const got = store.getState().regs[loc];
+                const node = got?.main ?? got?.outside;
+                if (!node) return;
+                node.node.style.backgroundColor = 'unset';
+            }}
+        >
+            {children}
+        </div>
+    );
+};

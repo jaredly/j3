@@ -494,11 +494,7 @@ function StatusMessage({
     const res = results[item.input.node.loc];
     if (!res) return null;
     if (res.error)
-        return (
-            <span style={{ color: 'red' }}>
-                {highlightIdxs(res.error, store.getState(), dispatch)}
-            </span>
-        );
+        return <span style={{ color: 'red' }}>{highlightIdxs(res.error)}</span>;
     if (!equal(res.expected, res.found)) {
         return (
             <span

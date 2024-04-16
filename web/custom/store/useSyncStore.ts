@@ -99,6 +99,13 @@ export const setupSyncStore = (
 
             copyToOldResults(oldResults, results);
 
+            const nsChanged = calcNSChanged(results, state, lastState);
+            Object.keys(nsChanged).forEach((key) => {
+                nodeListeners[`ns:${key}`]?.forEach((f) =>
+                    f(state, oldResults),
+                );
+            });
+
             Object.keys(nodeChanges).forEach((id) => {
                 console.log('node change', id);
                 nodeListeners[id]?.forEach((f) => f(state, oldResults));
@@ -158,6 +165,25 @@ export const setupSyncStore = (
         },
     };
 };
+
+function calcNSChanged(
+    results: ImmediateResults<any>,
+    state: NUIState,
+    lastState: NUIState,
+) {
+    const nsChanged: Record<number, true> = {};
+    Object.entries(results.changes).forEach(([key, changes]) => {
+        if (changes.source || changes.parsed) {
+            nsChanged[+key] = true;
+        }
+    });
+    Object.keys(state.nsMap).forEach((key) => {
+        if (state.nsMap[+key] !== lastState.nsMap[+key]) {
+            nsChanged[+key] = true;
+        }
+    });
+    return nsChanged;
+}
 
 function copyToOldResults(
     oldResults: NUIResults,

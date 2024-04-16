@@ -1,52 +1,28 @@
 import React, { useCallback, useMemo } from 'react';
 import { orderStartAndEnd } from '../../src/parse/parse';
-import { Cursor, pathCard } from '../../src/state/getKeyUpdate';
+import { Cursor } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
-import { Debug, Results } from '../ide/ground-up/GroundUp';
+import { NsMap } from '../../src/types/mcst';
+import { Debug } from '../ide/ground-up/GroundUp';
 import { verifyState } from '../ide/ground-up/reduce';
 import { NSTop } from './NSTop';
-import { Action, NUIState, RealizedNamespace } from './UIState';
-import { Reg } from './types';
-import { useNSDrag } from './useNSDrag';
+import { Action, NUIState } from './UIState';
 import { closestSelection } from './closestSelection';
-import {
-    MyEvalError,
-    FullEvalator,
-    LocError,
-    Produce,
-    ProduceItem,
-} from '../ide/ground-up/Evaluators';
-import { NsMap } from '../../src/types/mcst';
+import { Reg } from './types';
 import { useDrag } from './useDrag';
+import { useNSDrag } from './useNSDrag';
 
 export function CardRoot({
     state,
     card,
     dispatch,
-    // results,
-    produce,
     debug,
-    env,
-    ev,
 }: {
     debug: Debug;
-    env: any;
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
-    // results: Results;
-    produce: { [key: number]: ProduceItem[] };
-    ev: FullEvalator<any, any, any> | void | null;
 }) {
-    const selections = React.useMemo(
-        () =>
-            normalizeSelections(
-                state.at.filter((s) => pathCard(s.start) === card),
-                state.nsMap,
-            ),
-        [state.at, card],
-    );
-    const reg = useRegs(state);
     const dragProps = useDrag(dispatch, state);
 
     const cardPath: Path[] = useMemo(
@@ -67,7 +43,6 @@ export function CardRoot({
     return (
         <div
             style={{
-                // maxWidth: 1400,
                 overflow: 'auto',
                 paddingBottom: 300,
             }}
@@ -90,11 +65,8 @@ export function CardRoot({
                 debug={debug}
                 nsReg={nsReg}
                 drag={dragObj}
-                ns={state.nsMap[state.cards[card].top] as RealizedNamespace}
+                idx={state.cards[card].top}
                 path={cardPath}
-                state={state}
-                dispatch={dispatch}
-                produce={produce}
             />
             {dragElements}
             {invalid ? (
