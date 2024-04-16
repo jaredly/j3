@@ -104,6 +104,7 @@ const next = async () => {
         Object.entries(state.results.tops).forEach(
             ([key, { changes, produce, errors, hover }]) => {
                 if (changes.results) {
+                    // console.log('a top change', key);
                     change = true;
                     updated[+key] = {
                         produce,

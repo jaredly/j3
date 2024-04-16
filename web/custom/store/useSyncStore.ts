@@ -79,10 +79,10 @@ export const setupSyncStore = (
     send({ type: 'initial', nodes: results.nodes, evaluator: state.evaluator });
 
     worker.addEventListener('message', (evt) => {
-        console.log('worker got a msg');
         const msg: ToPage = evt.data;
         switch (msg.type) {
             case 'results': {
+                // console.log('worker got results', msg.results);
                 // console.log('got worker response', msg.results);
                 Object.assign(workerResults.nodes, msg.results);
                 Object.keys(msg.results).forEach((key) => {
@@ -132,7 +132,6 @@ export const setupSyncStore = (
                     }
                 });
                 if (changed) {
-                    console.log(`changed?`, nodes);
                     send({ type: 'update', nodes });
                 }
             }

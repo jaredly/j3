@@ -25,11 +25,22 @@ export function updateState(
         Object.values(nodes).map(nodeToSortable).filter(filterNulls),
     );
 
+    // Reset changedness
+    Object.entries(state.results.groups).forEach(([key, res]) => {
+        res.changed = false;
+        res.tops.forEach((top) => {
+            state.results!.tops[top].changes = {};
+        });
+    });
+
+    Object.entries(state.results.tops).forEach(([key, res]) => {
+        res.changes = {};
+    });
+
     // So...
     // there's "needs re-type", and then there's "needs re-eval"
     // for now, I'm ignoring "needs re-type". I'm assuming that
     // a source change means 'needs re-eval'
-
     // Object.keys(update).forEach((key) => {
     //     // if (!state.results!.tops[+key]) {
     //     state.results!.tops[+key] = {
@@ -76,6 +87,7 @@ export function updateState(
                 tops: group.map((g) => g.id),
                 traces: {},
             };
+            // console.log('group needs update', groupKey);
         } else {
             if (!state.results.groups[groupKey]) {
                 throw new Error(
@@ -102,8 +114,8 @@ export function updateState(
         // This does "deep" change propagation
         if (!state.results.groups[groupKey].changed) {
             group.forEach((one) => {
+                // console.log('reset', one.id);
                 state.results!.tops[one.id].changes = {};
-
                 Object.assign(env.values, state.results!.tops[one.id].values);
             });
 
@@ -111,6 +123,8 @@ export function updateState(
 
             continue;
         }
+
+        // console.log('re-evaluate', groupKey);
 
         const stmts = group.reduce(
             (map, g) => (
@@ -138,6 +152,7 @@ export function updateState(
 
         group.forEach((one) => {
             // state.results!.tops[one.id].changes.results = true;
+            // console.log('Group setting results true', one.id);
             state.results!.tops[one.id] = {
                 changes: { results: true },
                 errors: {},

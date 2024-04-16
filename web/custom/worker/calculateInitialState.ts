@@ -45,6 +45,7 @@ export function calculateInitialState(
     evaluator: AnyEnv,
     debugExecOrder: boolean,
 ) {
+    console.warn('Calculating initial state');
     const topForLoc: Record<number, number> = {};
     Object.values(nodes).forEach((node) => {
         node.ids.forEach((id) => (topForLoc[id] = node.ns.id));

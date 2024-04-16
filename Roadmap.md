@@ -19,6 +19,8 @@ https://twitter.com/TimWhiting14/status/1780046115662135350
   for it to be valid.
 
 
+- [x] why is it saying that namespaces need updating
+
 # ImmediateResults
 
 - [x] ok, we do gotta treat `immediateResults` as immutable, I think... right?
