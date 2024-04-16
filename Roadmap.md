@@ -4,13 +4,27 @@ https://twitter.com/jaredforsyth/status/1709041488032645395
 https://twitter.com/welltypedwitch/status/1709129585613328657
 https://twitter.com/TimWhiting14/status/1780046115662135350
 
+# Web in the Workers
+
+- [ ] `calculateInitialState` and `updateState` have a ton in common.
+  We should be able to merge them quite easily.
+- [ ] THEENNNN we can get down to business, to hook up type inference.
+- [ ] anddd plugins! Gotta get our fixture tests back up
+- [ ] and then, please, yes lets do CACHING of the type infos.
+- [ ] oH and our immediateResults arent being cached either at the moment,
+  gotta fix that too. Don't need to re-parse everything all the time.
+- [ ] CACHEs should include the ID of the evaluator,
+  and evaluator IDs should include like a `timestamp` (file save) time.
+  AND cache should have a timestamp that needs to match the `state` in order
+  for it to be valid.
+
 
 # ImmediateResults
 
-- [ ] ok, we do gotta treat `immediateResults` as immutable, I think... right?
+- [x] ok, we do gotta treat `immediateResults` as immutable, I think... right?
   ORR I need to do a much more fine-grained approach to "changed" tracking, of individual nodes.
   So that I can know "did the error state update for this node" etc.
-  - [ ] OK yeah, in getImmediateResults track all the nodes that need to be re-rendered. Should be fine
+  - [x] OK yeah, in getImmediateResults track all the nodes that need to be re-rendered. Should be fine
     - layout
     - parse errors or not
 
@@ -19,7 +33,7 @@ https://twitter.com/TimWhiting14/status/1780046115662135350
   - maybe I need a `layoutEqual` function
 - [x] don't rerender NSTops if I don't need to.
 - [x] next up: drop `NUIResults`
-- [ ] then, let's do some Web Workers!
+- [x] then, let's do some Web Workers!
 
 
 

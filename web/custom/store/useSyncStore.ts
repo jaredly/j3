@@ -79,6 +79,7 @@ export const setupSyncStore = (
     send({ type: 'initial', nodes: results.nodes, evaluator: state.evaluator });
 
     worker.addEventListener('message', (evt) => {
+        console.log('worker got a msg');
         const msg: ToPage = evt.data;
         switch (msg.type) {
             case 'results': {
@@ -122,13 +123,18 @@ export const setupSyncStore = (
                     evaluator: state.evaluator,
                 });
             } else {
+                let changed = false;
                 const nodes: Record<number, NodeResults<any>> = {};
                 Object.entries(results.changes).forEach(([key, changes]) => {
                     if (changes.meta || changes.parsed || changes.plugin) {
+                        changed = true;
                         nodes[+key] = results.nodes[+key];
                     }
                 });
-                send({ type: 'update', nodes });
+                if (changed) {
+                    console.log(`changed?`, nodes);
+                    send({ type: 'update', nodes });
+                }
             }
 
             // copyToOldResults(oldResults, results);
