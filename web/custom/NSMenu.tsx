@@ -1,7 +1,7 @@
 import React from 'react';
 import { Action, NUIState, RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
-import { useGetStore } from './store/Store';
+import { useGetStore } from './store/StoreCtx';
 import { Node } from '../../src/types/cst';
 import { fromMCST } from '../../src/types/mcst';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';

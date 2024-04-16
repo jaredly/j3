@@ -1,5 +1,5 @@
 import { NUIState, RealizedNamespace } from '../UIState';
-import { FullEvalator } from '../../ide/ground-up/Evaluators';
+import { FullEvalator } from '../../ide/ground-up/FullEvalator';
 import { NUIResults } from './Store';
 import { Path } from '../../store';
 import { ResultsEnv, displayFunction, processPlugin } from './getResults';

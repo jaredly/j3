@@ -1,7 +1,7 @@
 import { NUIState } from '../UIState';
 import { fromMCST } from '../../../src/types/mcst';
 import { findTops } from '../../ide/ground-up/findTops';
-import { FullEvalator } from '../../ide/ground-up/Evaluators';
+import { FullEvalator } from '../../ide/ground-up/FullEvalator';
 import { layout } from '../../../src/layout';
 import { NUIResults } from './Store';
 import { filterNulls } from '../old-stuff/reduce';

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Cursors, isValidCursorLocation } from '../../custom/Cursors';
+import { Cursors } from '../../custom/Cursors';
+import { isValidCursorLocation } from '../../custom/isValidCursorLocation';
 import { HiddenInput } from '../../custom/HiddenInput';
 import { Hover } from '../../custom/Hover';
 import { NUIState } from '../../custom/UIState';
@@ -7,12 +8,8 @@ import { NUIState } from '../../custom/UIState';
 import { goLeftUntil } from '../../../src/state/goLeftUntil';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
-import {
-    NUIResults,
-    Store,
-    WithStore,
-    useGlobalState,
-} from '../../custom/store/Store';
+import { NUIResults, Store } from '../../custom/store/Store';
+import { StoreCtx, useGlobalState } from '../../custom/store/StoreCtx';
 import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
@@ -21,6 +18,16 @@ import { advancePath } from './findTops';
 import { ResultsCache } from '../../custom/store/ResultsCache';
 import { AnyEnv } from '../../custom/store/getResults';
 import { useSyncStore } from '../../custom/store/useSyncStore';
+
+export const WithStore = ({
+    store,
+    children,
+}: {
+    store: Store;
+    children: JSX.Element[] | JSX.Element;
+}) => {
+    return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>;
+};
 
 export type Results = {
     display: Display;

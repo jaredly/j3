@@ -1,12 +1,8 @@
-import React, {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { NsPath, Path } from '../../src/state/path';
 import { Action, NUIState, RealizedNamespace } from './UIState';
+import { useLatest } from './useLatest';
+import { NsReg, Drag } from './NsReg';
 
 export const canDrop = (drag: DragState) => {
     if (!drag.drop || !drag.moved) return false;
@@ -149,23 +145,13 @@ export const useNSDrag = (
         ),
     };
 };
-type StartDrag = (
+export type StartDrag = (
     evt: React.MouseEvent,
     source: DragState['source'],
     ns: RealizedNamespace,
     nsp: string,
     onClick: () => void,
 ) => void;
-
-export type Drag = { start: StartDrag; cancel: () => void };
-
-export type NsReg = {
-    [key: string]: {
-        node: HTMLDivElement;
-        path: Path[];
-        dest: { idx: number; child: number };
-    } | null;
-};
 
 function dropAction(drag: DragState, state: NUIState): Action {
     const drop = drag.drop!;
@@ -242,12 +228,6 @@ function dropAction(drag: DragState, state: NUIState): Action {
         };
     }
 }
-
-export const useLatest = <T,>(v: T) => {
-    const r = useRef(v);
-    r.current = v;
-    return r;
-};
 
 export const findDrop = (nsReg: NsReg, evt: MouseEvent): DragState['drop'] => {
     // console.log('regs', nsReg);

@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Path } from '../../src/state/path';
 import { Action, RealizedNamespace } from './UIState';
 import { isAncestor } from './CardRoot';
-import { Drag } from './useNSDrag';
+import { Drag } from './NsReg';
 import { NSMenu } from './NSMenu';
-import { useGetStore } from './store/Store';
+import { useGetStore } from './store/StoreCtx';
 import { hasErrors } from './NSTop';
 
 export const NSDragger = ({

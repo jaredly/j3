@@ -1,6 +1,10 @@
 import { MetaData, NUIState, RealizedNamespace } from '../UIState';
 import { findTops } from '../../ide/ground-up/findTops';
-import { FullEvalator, ProduceItem } from '../../ide/ground-up/Evaluators';
+import {
+    FullEvalator,
+    AnyEnv,
+    ProduceItem,
+} from '../../ide/ground-up/FullEvalator';
 import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { NUIResults } from './Store';
@@ -8,7 +12,7 @@ import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import { filterNulls } from '../old-stuff/reduce';
 import React from 'react';
-import { valueToString } from '../../ide/ground-up/reduce';
+import { valueToString } from '../../ide/ground-up/valueToString';
 import { parseNodesAndDeps, sortTopsWithDeps } from './parseNodesAndDeps';
 import { processTypeInference } from './processTypeInference';
 import {
@@ -18,6 +22,8 @@ import {
 } from './handlePluginGroup';
 import { ResultsCache, DepsOrNoDeps, ChangesMap } from './ResultsCache';
 import { Path } from '../../store';
+
+export type { AnyEnv };
 
 export type ResultsEnv<
     Stmt,
@@ -212,8 +218,6 @@ export const unique = <T extends string | number>(names: T[]) => {
     const seen: Partial<Record<T, true>> = {};
     return names.filter((k) => (seen[k] ? false : (seen[k] = true)));
 };
-
-export type AnyEnv = FullEvalator<any, any, any>;
 
 export const processPlugin = (
     results: NUIResults,

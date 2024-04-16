@@ -1,8 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { orderStartAndEnd } from '../../src/parse/parse';
 import { Cursor } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
-import { NsMap } from '../../src/types/mcst';
 import { Debug } from '../ide/ground-up/GroundUp';
 import { verifyState } from '../ide/ground-up/reduce';
 import { NSTop } from './NSTop';
@@ -110,15 +108,6 @@ function selectionAction(
             at: [{ start: sel }],
         };
     }
-}
-
-export function normalizeSelections(at: Cursor[], nsMap: NsMap): Cursor[] {
-    return at
-        .filter((s) => s.end)
-        .map(({ start, end }) => {
-            [start, end] = orderStartAndEnd(start, end!, nsMap);
-            return { start, end };
-        });
 }
 
 export function useRegs(state: NUIState): Reg {

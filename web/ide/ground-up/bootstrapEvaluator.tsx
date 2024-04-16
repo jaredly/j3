@@ -1,5 +1,6 @@
-import { Errors, FullEvalator, Produce, bootstrap } from './Evaluators';
-import { valueToString } from './reduce';
+import { bootstrap } from './Evaluators';
+import { Errors, FullEvalator, Produce } from './FullEvalator';
+import { valueToString } from './valueToString';
 import { findTops } from './findTops';
 import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';

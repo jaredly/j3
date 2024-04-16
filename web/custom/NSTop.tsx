@@ -6,14 +6,12 @@ import { Action, NUIState, RealizedNamespace } from './UIState';
 import { RenderProps } from './types';
 import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
-import { NsReg, Drag } from './useNSDrag';
-import {
-    MyEvalError,
-    LocError,
-    ProduceItem,
-} from '../ide/ground-up/Evaluators';
+import { NsReg, Drag } from './NsReg';
+import { MyEvalError, LocError } from '../ide/ground-up/Evaluators';
+import { ProduceItem } from '../ide/ground-up/FullEvalator';
 import { plugins } from './plugins';
-import { Store, useExpanded, useGetStore } from './store/Store';
+import { Store } from './store/Store';
+import { useExpanded, useGetStore } from './store/StoreCtx';
 import { useNode } from './store/useNode';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 import { useNamespace } from './store/useNamespace';

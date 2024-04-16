@@ -30,9 +30,11 @@ import { newResults } from '../Test';
 import { Algo, Trace } from '../infer/types';
 import { findTops, verifyPath } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
-import { arr, parseStmt, stmt, type_, unwrapArray } from './round-1/parse';
+import { parseStmt, stmt } from './round-1/parse';
 import { moveNode } from '../../../src/state/moveNode';
 import { ResultsCache } from '../../custom/store/ResultsCache';
+import { valueToString } from './valueToString';
+import { urlForId } from './urlForId';
 
 export const reduceUpdate = (
     state: NUIState,
@@ -291,30 +293,6 @@ export function bootstrapParse(
         .filter(filterNulls);
 }
 
-export function addTypeConstructors(
-    stmt: {
-        type: 'sdeftype';
-        0: string;
-        1: arr<{ type: ','; 0: string; 1: arr<type_> }>;
-    },
-    env: { [key: string]: any },
-) {
-    unwrapArray(stmt[1]).forEach((constr) => {
-        const cname = constr[0];
-        const next = (args: arr<type_>) => {
-            if (args.type === 'nil') {
-                return (values: any[]) => ({
-                    type: cname,
-                    ...values,
-                });
-            }
-            return (values: any[]) => (arg: any) =>
-                next(args[1])([...values, arg]);
-        };
-        env[cname] = next(constr[1])([]);
-    });
-}
-
 export function bootstrapEval(
     parsed: stmt[],
     env: { [key: string]: any },
@@ -335,36 +313,6 @@ export function bootstrapEval(
             produce[(stmt as any).loc] = (err as Error).message;
         }
     });
-}
-
-export function extractBuiltins(raw: string) {
-    const names: string[] = getConstNames(raw);
-    let res: any;
-    try {
-        res = new Function('', raw + `\nreturn {${names.join(', ')}}`)();
-    } catch (err) {
-        console.log('Failed to extract builtins');
-        console.error(err);
-        console.log(raw);
-        return {};
-    }
-    Object.keys(res).forEach((name) => {
-        let desan = name;
-        Object.entries(res.sanMap).forEach(([key, value]) => {
-            desan = desan.replaceAll(value as string, key);
-        });
-        res[desan] = res[name];
-    });
-    return res;
-}
-
-function getConstNames(raw: any) {
-    const names: string[] = [];
-    (raw as string).replaceAll(/^const ([a-zA-Z0-9_$]+)/gm, (v, name) => {
-        names.push(name);
-        return '';
-    });
-    return names;
 }
 
 export function calcResults(
@@ -440,40 +388,6 @@ export function calcResults(
     return results;
 }
 
-export const valueToString = (v: any): string => {
-    if (Array.isArray(v)) {
-        return `[${v.map(valueToString).join(', ')}]`;
-    }
-
-    if (typeof v === 'object' && v && 'type' in v) {
-        if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapArray(v);
-            return '[' + un.map(valueToString).join(' ') + ']';
-        }
-
-        let args = [];
-        for (let i = 0; i in v; i++) {
-            args.push(v[i]);
-        }
-        return `(${v.type}${args
-            .map((arg) => ' ' + valueToString(arg))
-            .join('')})`;
-    }
-    if (typeof v === 'string') {
-        if (v.includes('"') && !v.includes("'")) {
-            return (
-                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
-            );
-        }
-        return JSON.stringify(v); // + 'umraw' + v;
-    }
-    if (typeof v === 'function') {
-        return '<function>';
-    }
-
-    return '' + v;
-};
-
 /**
  * Debounce a function.
  *
@@ -545,8 +459,6 @@ const initialState = (): NUIState => {
         },
     };
 };
-
-export const urlForId = (id: string) => `http://localhost:9189/tmp/${id}`;
 
 const stripCache = (cache?: ResultsCache<any>) => {
     if (!cache) return cache;

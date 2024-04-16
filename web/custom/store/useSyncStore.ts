@@ -1,17 +1,17 @@
 import { useMemo } from 'react';
-import { NUIState, RealizedNamespace } from '../UIState';
-import equal from 'fast-deep-equal';
 import { reduce } from '../../ide/ground-up/reduce';
-import { FullEvalator } from '../../ide/ground-up/Evaluators';
-import { AnyEnv, emptyResults, getResults } from './getResults';
-import { ResultsCache } from './ResultsCache';
-import { Store, NUIResults, adaptiveBounce, loadEvaluator, Evt } from './Store';
+import { NUIState } from '../UIState';
+import { Evt, Store } from './Store';
+import { loadEvaluator } from '../../ide/ground-up/loadEv';
 import {
     ImmediateResults,
     NodeResults,
     blankInitialResults,
     getImmediateResults,
 } from './getImmediateResults';
+import { AnyEnv } from './getResults';
+import { Message } from '../worker';
+// import Worker from '../worker?worker'
 
 export const useSyncStore = (
     initialState: NUIState,
@@ -50,7 +50,7 @@ export const setupSyncStore = (
     let evaluator = initialEvaluator ?? null;
 
     if (!initialEvaluator && state.evaluator) {
-        throw new Error(
+        console.error(
             `evaluator needs to be provided, if state.evaluator is present`,
         );
     }
@@ -61,18 +61,11 @@ export const setupSyncStore = (
 
     let inProcess = false;
 
-    // const oldResults = emptyResults();
-    // copyToOldResults(oldResults, results);
-    // const cache: ResultsCache<any> = {
-    //     run: 0,
-    //     hover: {},
-    //     nodes: {},
-    //     types: {},
-    //     results: {},
-    //     lastState: null,
-    //     lastEvaluator: null,
-    //     settings: { debugExecOrder: false },
-    // };
+    const worker = new Worker(new URL('../worker/index.ts', import.meta.url), {
+        type: 'module',
+    });
+    const send = (msg: Message) => worker.postMessage(msg);
+    send({ type: 'initial', nodes: results.nodes, evaluator: state.evaluator });
 
     return {
         setDebug(execOrder, disableEvaluation) {

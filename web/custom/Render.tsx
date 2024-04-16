@@ -1,17 +1,17 @@
+import equal from 'fast-deep-equal';
 import React from 'react';
+import { splitNamespaces } from '../../src/db/hash-tree';
 import { splitGraphemes } from '../../src/parse/parse';
+import { NNode } from '../../src/state/getNestedNodes';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { getNestedNodes, NNode } from '../../src/state/getNestedNodes';
-import { isCoveredBySelection } from './isCoveredBySelection';
-import { RenderProps } from './types';
-import { splitNamespaces } from '../../src/db/hash-tree';
-import { useGetStore, Values } from './store/Store';
-import { useNode } from './store/useNode';
-import equal from 'fast-deep-equal';
-import { RichText } from './RichText';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
 import { Path } from '../store';
+import { RichText } from './RichText';
+import { Values } from './store/Store';
+import { useGetStore } from './store/StoreCtx';
+import { useNode } from './store/useNode';
+import { RenderProps } from './types';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];

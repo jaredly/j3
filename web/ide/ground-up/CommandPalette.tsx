@@ -10,13 +10,14 @@ import { selectStart } from '../../../src/state/navigate';
 import { MNode, Map, fromMCST } from '../../../src/types/mcst';
 import { Path } from '../../store';
 import { childPath } from './findTops';
-import { Store, useGetStore, useGlobalState } from '../../custom/store/Store';
+import { Store } from '../../custom/store/Store';
+import { useGetStore, useGlobalState } from '../../custom/store/StoreCtx';
 import {
     replacePath,
     replacePathWith,
 } from '../../../src/state/replacePathWith';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
-import { FullEvalator } from './Evaluators';
+import { FullEvalator } from './FullEvalator';
 
 export const CommandPalette = () => {
     const store = useGetStore();

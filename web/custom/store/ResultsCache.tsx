@@ -1,5 +1,5 @@
 import { NUIState, RealizedNamespace } from '../UIState';
-import { Errors, ProduceItem } from '../../ide/ground-up/Evaluators';
+import { Errors, ProduceItem } from '../../ide/ground-up/FullEvalator';
 import { NUIResults } from './Store';
 import { LocedName } from './sortTops';
 import { Node } from '../../../src/types/cst';

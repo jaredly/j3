@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NamespacePlugin } from '../UIState';
-import { urlForId } from '../../ide/ground-up/reduce';
+import { urlForId } from '../../ide/ground-up/urlForId';
 import { Node } from '../../../src/types/cst';
 
 export const evaluatorPlugin: NamespacePlugin<

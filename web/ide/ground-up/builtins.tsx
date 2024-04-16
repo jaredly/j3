@@ -1,5 +1,5 @@
 import { MetaData } from '../../custom/UIState';
-import { valueToString } from './reduce';
+import { valueToString } from './valueToString';
 import { slash } from './round-1/bootstrap';
 import { sanitize } from './round-1/sanitize';
 import { arr, unwrapArray, wrapArray } from './round-1/parse';

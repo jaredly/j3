@@ -52,23 +52,33 @@ class ErrorBoundary extends React.Component<
     }
 }
 
-initialData(location.hash ? location.hash.slice(1) : null).then(
-    (initial) =>
-        root.render(
-            // <React.StrictMode>
-            <ErrorBoundary>
-                {/* <IDE initial={initial} /> */}
-                <Outside />
-                {/* <Test env={initial.env} /> */}
-                {/* <Visualize env={initial.env} /> */}
-            </ErrorBoundary>,
-            // </React.StrictMode>,
-        ),
-    (err) => {
-        root.render(
-            <div style={{ margin: 64 }}>
-                Failed to initialize. {err.message}
-            </div>,
-        );
+const worker = new Worker(
+    new URL('./custom/worker/index.ts', import.meta.url),
+    {
+        type: 'module',
     },
 );
+worker.onmessage = (evt) => {
+    console.log('got a message0', evt.data);
+};
+
+// initialData(location.hash ? location.hash.slice(1) : null).then(
+//     (initial) =>
+//         root.render(
+//             // <React.StrictMode>
+//             <ErrorBoundary>
+//                 {/* <IDE initial={initial} /> */}
+//                 <Outside />
+//                 {/* <Test env={initial.env} /> */}
+//                 {/* <Visualize env={initial.env} /> */}
+//             </ErrorBoundary>,
+//             // </React.StrictMode>,
+//         ),
+//     (err) => {
+//         root.render(
+//             <div style={{ margin: 64 }}>
+//                 Failed to initialize. {err.message}
+//             </div>,
+//         );
+//     },
+// );

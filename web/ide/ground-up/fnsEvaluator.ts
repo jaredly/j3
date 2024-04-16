@@ -1,12 +1,6 @@
-import {
-    Errors,
-    MyEvalError,
-    FullEvalator,
-    LocError,
-    Produce,
-    ProduceItem,
-} from './Evaluators';
-import { valueToString } from './reduce';
+import { MyEvalError, LocError } from './Evaluators';
+import { Errors, FullEvalator, Produce, ProduceItem } from './FullEvalator';
+import { valueToString } from './valueToString';
 import { findTops } from './findTops';
 import { arr, expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';

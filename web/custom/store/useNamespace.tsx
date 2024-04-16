@@ -1,9 +1,10 @@
 import { useContext, useEffect, useState } from 'react';
-import { NUIResults, StoreCtx } from './Store';
+import { NUIResults } from './Store';
+import { StoreCtx } from './StoreCtx';
 import { Path } from '../../../src/state/path';
 import { NUIState, RealizedNamespace } from '../UIState';
 import { NodeResults } from './getImmediateResults';
-import { ProduceItem } from '../../ide/ground-up/Evaluators';
+import { ProduceItem } from '../../ide/ground-up/FullEvalator';
 
 // type NSValues = {}
 

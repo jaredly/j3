@@ -1,11 +1,13 @@
-import { FullEvalator, bootstrap } from './Evaluators';
-import { urlForId, valueToString } from './reduce';
+import { bootstrap, repr } from './Evaluators';
+import { FullEvalator } from './FullEvalator';
 import { expr, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
-import { MetaData, NUIState } from '../../custom/UIState';
-import { bootstrapEvaluator } from './bootstrapEvaluator';
-import { fnsEvaluator } from './fnsEvaluator';
+import { NUIState } from '../../custom/UIState';
+import { urlForId } from './urlForId';
+// import { bootstrapEvaluator } from './bootstrapEvaluator';
+// import { fnsEvaluator } from './fnsEvaluator';
 import { builtins } from './builtins';
+import { valueToString } from './valueToString';
 
 const jsUrl = (id: string) => urlForId(id) + (id.endsWith('.js') ? '' : '.js');
 
@@ -176,4 +178,27 @@ export type FnsEnv = {
     js: string[];
     values: { [key: string]: any };
     // typeCheck: any;
+};
+
+export const loadEvaluator = (
+    ev: NUIState['evaluator'],
+    fn: (ev: FullEvalator<any, any, any> | null, async: boolean) => void,
+) => {
+    if (typeof ev === 'string') {
+        switch (ev) {
+            case ':bootstrap:':
+                return fn(bootstrap, false);
+            case ':repr:':
+                return fn(repr, false);
+            default:
+                if (ev?.endsWith('.json')) {
+                    fn(null, false); // clear it out
+                    loadEv([ev]).then((ev) => fn(ev, true));
+                } else {
+                    fn(null, false);
+                }
+        }
+    } else if (ev) {
+        loadEv(ev).then((ev) => fn(ev, true));
+    }
 };

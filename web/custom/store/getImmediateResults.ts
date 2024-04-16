@@ -1,6 +1,6 @@
 import { useLoadSuggestionMenuItems } from '@blocknote/react';
 import { Node } from '../../../src/types/cst';
-import { Errors, FullEvalator } from '../../ide/ground-up/Evaluators';
+import { Errors, FullEvalator } from '../../ide/ground-up/FullEvalator';
 import { Top, findTops } from '../../ide/ground-up/findTops';
 import { MetaData, MetaDataMap, NUIState, RealizedNamespace } from '../UIState';
 import { ChangesMap, ResultsCache } from './ResultsCache';

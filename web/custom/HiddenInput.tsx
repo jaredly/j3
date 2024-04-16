@@ -12,7 +12,7 @@ import { getRegNode } from './Hover';
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { goRight } from '../../src/state/goRightUntil';
-import { useGetStore } from './store/Store';
+import { useGetStore } from './store/StoreCtx';
 // import { Ctx } from '../../src/to-ast/library';
 
 export function HiddenInput({

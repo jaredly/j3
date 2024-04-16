@@ -19,7 +19,7 @@ import {
     useEditorSelectionChange,
 } from '@blocknote/react';
 import { Path } from '../store';
-import { useGetStore } from './store/Store';
+import { useGetStore } from './store/StoreCtx';
 import { Reg } from './types';
 
 export const RichText = ({

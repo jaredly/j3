@@ -1,9 +1,11 @@
 import React from 'react';
 import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
-import { Store, useGetStore } from '../../custom/store/Store';
+import { Store } from '../../custom/store/Store';
+import { useGetStore } from '../../custom/store/StoreCtx';
 import { pathForIdx } from './CommandPalette';
-import { LocError, MyEvalError, Produce as Produce } from './Evaluators';
+import { LocError, MyEvalError } from './Evaluators';
+import { Produce as Produce } from './FullEvalator';
 import { TraceMap } from './loadEv';
 
 export function RenderTraces(

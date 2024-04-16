@@ -3,14 +3,14 @@ import { Node } from '../../../src/types/cst';
 import { Action, MetaDataMap, NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/getNestedNodes';
 import equal from 'fast-deep-equal';
-import { valueToString } from '../../ide/ground-up/reduce';
+import { valueToString } from '../../ide/ground-up/valueToString';
 import { Path } from '../../store';
 import { fromMCST } from '../../../src/types/mcst';
 import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
-import { useGetStore } from '../store/Store';
+import { useGetStore } from '../store/StoreCtx';
 import { highlightIdxs } from '../NSTop';
-import { Errors } from '../../ide/ground-up/Evaluators';
+import { Errors } from '../../ide/ground-up/FullEvalator';
 import { AnyEnv } from '../store/getResults';
 import { LocedName } from '../store/sortTops';
 

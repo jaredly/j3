@@ -3,7 +3,7 @@ import { getNodes } from './getNestedNodes';
 import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
 import { Card, RealizedNamespace, RegMap } from '../../web/custom/UIState';
-import { isValidCursorLocation } from '../../web/custom/Cursors';
+import { isValidCursorLocation } from '../../web/custom/isValidCursorLocation';
 import { selectEnd, pathSelForNode, pathChildEqual } from './navigate';
 
 export const goLeftUntil = (

@@ -12,7 +12,7 @@ import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
-import { Errors, FullEvalator } from '../ide/ground-up/Evaluators';
+import { Errors, FullEvalator } from '../ide/ground-up/FullEvalator';
 import { LocedName } from './store/sortTops';
 
 export type MetaData = {

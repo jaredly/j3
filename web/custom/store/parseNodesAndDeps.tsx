@@ -1,5 +1,5 @@
 import { NUIState, RealizedNamespace } from '../UIState';
-import { Errors, FullEvalator } from '../../ide/ground-up/Evaluators';
+import { Errors, FullEvalator } from '../../ide/ground-up/FullEvalator';
 import { layout } from '../../../src/layout';
 import { NUIResults } from './Store';
 import { fromMCST } from '../../../src/types/mcst';

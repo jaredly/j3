@@ -1,9 +1,10 @@
 import { useContext, useEffect, useState } from 'react';
 import { Path } from '../../store';
 import { isCoveredBySelection } from '../isCoveredBySelection';
-import { useLatest } from '../useNSDrag';
-import { normalizeSelections } from '../CardRoot';
-import { Values, StoreCtx, getValues, useSubscribe } from './Store';
+import { useLatest } from '../useLatest';
+import { normalizeSelections } from '../normalizeSelections';
+import { Values, getValues } from './Store';
+import { StoreCtx, useSubscribe } from './StoreCtx';
 import equal from 'fast-deep-equal';
 import { NUIState, RealizedNamespace } from '../UIState';
 
