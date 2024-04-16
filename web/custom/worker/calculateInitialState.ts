@@ -71,6 +71,7 @@ export function calculateInitialState(
     for (let group of sorted) {
         const groupKey = group.map((g) => g.id).join(';');
         results.groups[groupKey] = {
+            changed: true,
             tenv: null,
             tops: group.map((g) => g.id),
             traces: {},

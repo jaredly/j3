@@ -28,7 +28,12 @@ export type AsyncResults = {
         number,
         {
             produce: ProduceItem[];
-            changes: { type?: boolean; value?: boolean; results?: boolean };
+            changes: {
+                type?: boolean;
+                value?: boolean;
+                results?: boolean;
+                source?: boolean;
+            };
             errors: Record<number, string[]>;
             hover: Record<number, string[]>;
             pluginResults?: any;
@@ -45,6 +50,7 @@ export type AsyncResults = {
     groups: Record<
         string,
         {
+            changed: boolean;
             tops: number[];
             tenv: Tenv | null;
             traces: TraceMap;

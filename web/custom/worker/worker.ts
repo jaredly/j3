@@ -8,12 +8,18 @@ import { LocedName } from '../store/sortTops';
 
 import { calculateInitialState } from './calculateInitialState';
 import { State } from './types';
+import { updateState } from './updateState';
 
-export type Message = {
-    type: 'initial';
-    nodes: ImmediateResults<any>['nodes'];
-    evaluator: NUIState['evaluator'];
-};
+export type Message =
+    | {
+          type: 'initial';
+          nodes: ImmediateResults<any>['nodes'];
+          evaluator: NUIState['evaluator'];
+      }
+    | {
+          type: 'update';
+          nodes: ImmediateResults<any>['nodes'];
+      };
 
 export type Sendable = {
     produce: ProduceItem[];
@@ -66,6 +72,10 @@ const handleMessage = async (
 
             return calculateInitialState(msg.nodes, evaluator);
         }
+        case 'update': {
+            if (!state) throw new Error(`cant update`);
+            return updateState(state, msg.nodes);
+        }
     }
     return null;
 };
@@ -79,7 +89,6 @@ const next = async () => {
     if (running || !queue.length) return;
     running = true;
     const msg = queue.shift()!; // TODO can do fancy line skipping things, potentially.
-    const prev = state;
     state = await handleMessage(msg, state);
     if (state?.results) {
         const updated: Record<number, Sendable> = {};

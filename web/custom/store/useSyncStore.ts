@@ -77,12 +77,13 @@ export const setupSyncStore = (
     });
     const send = (msg: Message) => worker.postMessage(msg);
     send({ type: 'initial', nodes: results.nodes, evaluator: state.evaluator });
+
     worker.addEventListener('message', (evt) => {
         const msg: ToPage = evt.data;
         switch (msg.type) {
             case 'results': {
                 console.log('got worker response', msg.results);
-                Object.assign(workerResults, msg.results);
+                Object.assign(workerResults.nodes, msg.results);
                 Object.keys(msg.results).forEach((key) => {
                     nodeListeners[`ns:${key}`]?.forEach((f) =>
                         f(state, results.nodes[+key], msg.results[+key]),
@@ -99,7 +100,7 @@ export const setupSyncStore = (
         },
         async dispatch(action) {
             if (inProcess) return alert(`Dispatch not finished`);
-            console.time('dispatch');
+            // console.time('dispatch');
             inProcess = true;
             const lastState = state;
             state = reduce(state, action);
@@ -112,6 +113,22 @@ export const setupSyncStore = (
             }
 
             const nodeChanges = getImmediateResults(state, evaluator, results);
+
+            if (state.evaluator !== lastState.evaluator) {
+                send({
+                    type: 'initial',
+                    nodes: results.nodes,
+                    evaluator: state.evaluator,
+                });
+            } else {
+                const nodes: Record<number, NodeResults<any>> = {};
+                Object.entries(results.changes).forEach(([key, changes]) => {
+                    if (changes.meta || changes.parsed || changes.plugin) {
+                        nodes[+key] = results.nodes[+key];
+                    }
+                });
+                send({ type: 'update', nodes });
+            }
 
             // copyToOldResults(oldResults, results);
 
@@ -152,7 +169,7 @@ export const setupSyncStore = (
             }
 
             inProcess = false;
-            console.timeEnd('dispatch');
+            // console.timeEnd('dispatch');
         },
 
         getEvaluator: () => evaluator,

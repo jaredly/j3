@@ -27,6 +27,7 @@ export const getNSValues = (
             ),
         );
     }
+    console.log('get ns value', produce, results, remote);
     return { ns, produce };
 };
 
