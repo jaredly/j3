@@ -81,6 +81,15 @@ export type Map = {
     [key: number]: MNode;
 };
 export type NsMap = NUIState['nsMap'];
+
+export const layoutEqual = (one?: Layout, two?: Layout) => {
+    if (one?.type !== two?.type) return false;
+    if (one?.type === 'multiline' && two?.type === 'multiline') {
+        return one.pairs == two.pairs && one.tightFirst == two.tightFirst;
+    }
+    return true;
+};
+
 export type Layout =
     | {
           type: 'flat';

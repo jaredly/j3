@@ -100,6 +100,7 @@ export const setupSyncStore = (
             copyToOldResults(oldResults, results);
 
             Object.keys(nodeChanges).forEach((id) => {
+                console.log('node change', id);
                 nodeListeners[id]?.forEach((f) => f(state, oldResults));
                 // nodeListeners[id].forEach((f) =>
                 //     f(state, results.nodes[nodeChanges[+id]]),
@@ -164,6 +165,7 @@ function copyToOldResults(
 ) {
     oldResults.jumpToName = results.jumpToName.value;
     oldResults.display = {};
+    oldResults.errors = {};
     Object.keys(results.nodes).forEach((top) => {
         const node = results.nodes[+top];
         Object.assign(oldResults.display, node.layout);

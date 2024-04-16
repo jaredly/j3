@@ -6,7 +6,7 @@ import { MetaData, MetaDataMap, NUIState, RealizedNamespace } from '../UIState';
 import { ChangesMap, ResultsCache } from './ResultsCache';
 import { NUIResults } from './Store';
 import { LocedName } from './sortTops';
-import { fromMCST } from '../../../src/types/mcst';
+import { fromMCST, layoutEqual } from '../../../src/types/mcst';
 import equal from 'fast-deep-equal';
 import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
@@ -142,7 +142,12 @@ export const getImmediateResults = <
                 ncache.layout = {};
                 layout(top.top, 0, state.map, ncache.layout, {}, true);
                 ncache.ids.forEach((id) => {
-                    if (!equal(prevLayout[id], ncache.layout[id])) {
+                    if (
+                        !layoutEqual(
+                            prevLayout[id]?.layout,
+                            ncache.layout[id]?.layout,
+                        )
+                    ) {
                         nodeChanges[id] = top.top;
                     }
                 });

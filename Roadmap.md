@@ -10,6 +10,9 @@
     - parse errors or not
 
 
+- [ ] why are we relayouting these other nodes that aren't really needing a rerender?
+  - maybe I need a `layoutEqual` function
+
 
 ## Ergh
 
