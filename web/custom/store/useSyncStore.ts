@@ -10,7 +10,7 @@ import {
     getImmediateResults,
 } from './getImmediateResults';
 import { AnyEnv } from './getResults';
-import { Message } from '../worker/worker';
+import { Message, Sendable, ToPage } from '../worker/worker';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -25,13 +25,22 @@ export const useSyncStore = (
     return store;
 };
 
+export type WorkerResults = {
+    nodes: Record<number, Sendable>;
+    // probably more stuff? traces maybe?
+};
+
 export const setupSyncStore = (
     initialState: NUIState,
     initialResults?: ImmediateResults<any>,
     initialEvaluator?: AnyEnv | null,
 ): Store => {
     const nodeListeners: {
-        [key: string]: ((state: NUIState, results: NodeResults<any>) => void)[];
+        [key: string]: ((
+            state: NUIState,
+            results: NodeResults<any>,
+            worker: Sendable | null,
+        ) => void)[];
     } = {};
 
     const evtListeners: Record<Evt, ((state: NUIState) => void)[]> = {
@@ -48,6 +57,8 @@ export const setupSyncStore = (
         ? { ...initialResults, lastState: initialState }
         : blankInitialResults();
     let evaluator = initialEvaluator ?? null;
+
+    let workerResults: WorkerResults = { nodes: {} };
 
     if (!initialEvaluator && state.evaluator) {
         console.error(
@@ -66,6 +77,20 @@ export const setupSyncStore = (
     });
     const send = (msg: Message) => worker.postMessage(msg);
     send({ type: 'initial', nodes: results.nodes, evaluator: state.evaluator });
+    worker.addEventListener('message', (evt) => {
+        const msg: ToPage = evt.data;
+        switch (msg.type) {
+            case 'results': {
+                console.log('got worker response', msg.results);
+                Object.assign(workerResults, msg.results);
+                Object.keys(msg.results).forEach((key) => {
+                    nodeListeners[`ns:${key}`]?.forEach((f) =>
+                        f(state, results.nodes[+key], msg.results[+key]),
+                    );
+                });
+            }
+        }
+    });
 
     return {
         setDebug(execOrder, disableEvaluation) {
@@ -74,6 +99,7 @@ export const setupSyncStore = (
         },
         async dispatch(action) {
             if (inProcess) return alert(`Dispatch not finished`);
+            console.time('dispatch');
             inProcess = true;
             const lastState = state;
             state = reduce(state, action);
@@ -93,7 +119,7 @@ export const setupSyncStore = (
             // console.log('ns changed', nsChanged);
             Object.keys(nsChanged).forEach((key) => {
                 nodeListeners[`ns:${key}`]?.forEach((f) =>
-                    f(state, results.nodes[+key]),
+                    f(state, results.nodes[+key], workerResults.nodes[+key]),
                 );
             });
             // console.log(
@@ -103,7 +129,11 @@ export const setupSyncStore = (
 
             Object.keys(nodeChanges).forEach((id) => {
                 nodeListeners[id]?.forEach((f) =>
-                    f(state, results.nodes[nodeChanges[+id]]),
+                    f(
+                        state,
+                        results.nodes[nodeChanges[+id]],
+                        workerResults.nodes[nodeChanges[+id]],
+                    ),
                 );
             });
 
@@ -122,6 +152,7 @@ export const setupSyncStore = (
             }
 
             inProcess = false;
+            console.timeEnd('dispatch');
         },
 
         getEvaluator: () => evaluator,
@@ -170,12 +201,14 @@ function calcNSChanged(
             nsChanged[+key] = true;
         }
     });
-    Object.keys(state.nsMap).forEach((key) => {
-        if (state.nsMap[+key] !== lastState.nsMap[+key]) {
-            // const top = state.nsMap[+key].top;
-            nsChanged[+key] = true;
-        }
-    });
+    if (state.nsMap !== lastState.nsMap) {
+        Object.keys(state.nsMap).forEach((key) => {
+            if (state.nsMap[+key] !== lastState.nsMap[+key]) {
+                // const top = state.nsMap[+key].top;
+                nsChanged[+key] = true;
+            }
+        });
+    }
     return nsChanged;
 }
 

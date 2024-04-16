@@ -12,6 +12,7 @@ import { goRight } from '../../../src/state/goRightUntil';
 import { cmpFullPath } from '../../../src/state/path';
 import { ResultsCache } from './ResultsCache';
 import { ImmediateResults, NodeResults } from './getImmediateResults';
+import { Sendable } from '../worker/worker';
 
 export type NUIResults = {
     jumpToName: { [name: string]: number };
@@ -37,7 +38,11 @@ export type Store = {
     reg: Reg;
     onChange(
         idx: number | string,
-        fn: (state: NUIState, results: NodeResults<any>) => void,
+        fn: (
+            state: NUIState,
+            results: NodeResults<any>,
+            worker: Sendable | null,
+        ) => void,
     ): () => void;
     // everyChange(fn: (state: NUIState) => void): () => void;
     on(evt: Evt, fn: (state: NUIState) => void): () => void;

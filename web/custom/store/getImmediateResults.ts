@@ -11,6 +11,7 @@ import equal from 'fast-deep-equal';
 import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { AnyEnv } from './getResults';
+import { Sendable } from '../worker/worker';
 
 export type SuccessParsed<Stmt> = {
     type: 'success';
@@ -98,6 +99,14 @@ export const getImmediateResults = <
     evaluator: FullEvalator<Env, Stmt, Expr> | null,
     results: ImmediateResults<Stmt>,
 ) => {
+    if (
+        state.map === results.lastState?.map &&
+        state.meta === results.lastState?.meta
+    ) {
+        results.changes = {};
+        return {};
+    }
+
     const tops = findTops(state);
 
     const nodeChanges: Record<number, number> = {};
@@ -105,6 +114,8 @@ export const getImmediateResults = <
     tops.forEach((top) => (results.changes[top.ns.id] = {}));
 
     const lastState = results.lastState;
+
+    console.time('get immediate');
 
     for (let top of tops) {
         const changes = results.changes[top.ns.id];
@@ -215,6 +226,8 @@ export const getImmediateResults = <
     }
 
     results.lastState = state;
+
+    console.timeEnd('get immediate');
 
     return nodeChanges;
 };

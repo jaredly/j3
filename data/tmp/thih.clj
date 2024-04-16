@@ -1766,7 +1766,7 @@
 (defn get-constructor [name l]
     (let-> [tenv get-tenv]
         (match (tenv/constr tenv name)
-            (none)        (ti-err (, "Unknown constructor" [(, l name)]))
+            (none)        (ti-err (, "Unknown consssssssssssssructor" [(, l name)]))
             (some scheme) (<- scheme))))
 
 (defn infer/pat [pat]

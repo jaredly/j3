@@ -266,7 +266,7 @@ const RenderProduceItem = ({
             return (
                 <div>
                     {parts}
-                    <i>Not doing symbolication because it wont really work</i>
+                    {/* <i>Not doing symbolication because it wont really work</i> */}
                     {/* {value.locs.map((n, i) => (
                         <JumpTo loc={n.loc}>
                             idx: {n.loc} ({n.row}:{n.col})

@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component<
     { children: any },
     { hasError: Error | null }
 > {
-    state = { hasError: null };
+    state = { hasError: null as null | Error };
 
     static getDerivedStateFromError(error: any) {
         // Update state so the next render will show the fallback UI.
@@ -45,6 +45,7 @@ class ErrorBoundary extends React.Component<
                 <div style={{ margin: 32 }}>
                     <h1>Something went wrong.</h1>
                     {'' + this.state.hasError}
+                    <pre>{this.state.hasError.stack}</pre>
                 </div>
             );
         }

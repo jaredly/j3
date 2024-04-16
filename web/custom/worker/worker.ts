@@ -15,6 +15,19 @@ export type Message = {
     evaluator: NUIState['evaluator'];
 };
 
+export type Sendable = {
+    produce: ProduceItem[];
+    errors: Record<number, string[]>;
+    hover: Record<number, string[]>;
+};
+
+export type ToPage = {
+    type: 'results';
+    results: Record<number, Sendable>;
+};
+
+const sendBack = (msg: ToPage) => postMessage(msg);
+
 // | {
 //       type: 'cache';
 //       url: string;
@@ -66,7 +79,27 @@ const next = async () => {
     if (running || !queue.length) return;
     running = true;
     const msg = queue.shift()!; // TODO can do fancy line skipping things, potentially.
+    const prev = state;
     state = await handleMessage(msg, state);
+    if (state?.results) {
+        const updated: Record<number, Sendable> = {};
+        let change = false;
+        Object.entries(state.results.tops).forEach(
+            ([key, { changes, produce, errors, hover }]) => {
+                if (changes.results) {
+                    change = true;
+                    updated[+key] = {
+                        produce,
+                        errors,
+                        hover,
+                    };
+                }
+            },
+        );
+        if (change) {
+            sendBack({ type: 'results', results: updated });
+        }
+    }
     running = false;
     next();
 };

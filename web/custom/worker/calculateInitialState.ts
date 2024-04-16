@@ -139,8 +139,12 @@ export function calculateInitialState(
             continue;
         }
         const groupKey = group.map((g) => g.id).join(';');
-        const stmts = group.map(
-            (g) => (nodes[g.id].parsed as SuccessParsed<any>).stmt,
+        const stmts = group.reduce(
+            (map, g) => (
+                (map[g.id] = (nodes[g.id].parsed as SuccessParsed<any>).stmt),
+                map
+            ),
+            {} as Record<string, any>,
         );
         const meta: MetaDataMap = {};
         group.forEach((one) => {

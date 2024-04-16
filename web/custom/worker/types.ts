@@ -14,6 +14,15 @@ export type Sortable = {
     isPlugin: boolean;
 };
 
+/**
+ * Ok what can I send back over the pipe?
+ * What do I *need* to send?
+ * - produce
+ * - errors
+ * - hover
+ * - pluginResults? ... I mean yes ... will cross that bridge in a bit.
+ */
+
 export type AsyncResults = {
     tops: Record<
         number,

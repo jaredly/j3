@@ -376,7 +376,7 @@ export const fnsEvaluator = (
             );
 
             Object.keys(stmts).forEach((id) => {
-                display[+id].push(...res.display);
+                display[+id] = res.display;
             });
 
             return { env, display, values: res.values, js: res.js };
