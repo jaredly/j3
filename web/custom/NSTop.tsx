@@ -279,7 +279,7 @@ const RenderProduceItem = ({
         case 'withjs': {
             let parts = highlightIdxs(value.message);
             return (
-                <div>
+                <div style={{ color: 'rgb(255,50,50)' }}>
                     {parts}
                     {/* <i>Not doing symbolication because it wont really work</i> */}
                     {/* {value.locs.map((n, i) => (
@@ -299,7 +299,11 @@ const RenderProduceItem = ({
             );
         }
         case 'error': {
-            return <div>Error {value.message}</div>;
+            return (
+                <div style={{ color: 'rgb(255,50,50)' }}>
+                    Error {value.message}
+                </div>
+            );
         }
         case 'pre':
             return <pre>{value.text}</pre>;

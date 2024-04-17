@@ -11,6 +11,7 @@ import {
 } from './getImmediateResults';
 import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
+import equal from 'fast-deep-equal';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -82,14 +83,22 @@ export const setupSyncStore = (
         const msg: ToPage = evt.data;
         switch (msg.type) {
             case 'results': {
-                // console.log('worker got results', msg.results);
-                // console.log('got worker response', msg.results);
+                const changedNodes = calcChangedNodes(
+                    workerResults.nodes,
+                    msg.results,
+                );
+
                 Object.assign(workerResults.nodes, msg.results);
                 Object.keys(msg.results).forEach((key) => {
                     nodeListeners[`ns:${key}`]?.forEach((f) =>
                         f(state, results.nodes[+key], msg.results[+key]),
                     );
                 });
+                changedNodes.forEach(({ id, top }) =>
+                    nodeListeners[id]?.forEach((f) =>
+                        f(state, results.nodes[top], msg.results[top]),
+                    ),
+                );
             }
         }
     });
@@ -260,3 +269,45 @@ function calcNSChanged(
 //         }
 //     });
 // }
+
+const calcChangedNodes = (
+    nodes: Record<number, Sendable>,
+    newNodes: Record<number, Sendable>,
+) => {
+    const result: { top: number; id: number }[] = [];
+    Object.keys(newNodes).forEach((key) => {
+        const changed: number[] = [];
+        if (!nodes[+key]) {
+            Object.keys(newNodes[+key].errors).forEach((k) => {
+                if (!changed.includes(+k)) {
+                    changed.push(+k);
+                }
+            });
+            changed.forEach((id) => result.push({ id, top: +key }));
+            return;
+        }
+
+        const old = Object.keys(nodes[+key].errors);
+        const nw = Object.keys(newNodes[+key].errors);
+        old.forEach((k) => {
+            if (!nw.includes(k)) {
+                if (!changed.includes(+k)) {
+                    changed.push(+k);
+                }
+            }
+        });
+        nw.forEach((k) => {
+            if (
+                !old.includes(k) ||
+                !equal(nodes[+key].errors[+k], newNodes[+key].errors[+k])
+            ) {
+                if (!changed.includes(+k)) {
+                    changed.push(+k);
+                }
+            }
+        });
+
+        changed.forEach((id) => result.push({ id, top: +key }));
+    });
+    return result;
+};

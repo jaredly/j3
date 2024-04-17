@@ -18,6 +18,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
             store,
             store.getState(),
             store.getResults().results.nodes[findNs(path)],
+            store.getResults().workerResults.nodes[findNs(path)],
         ),
     );
 
@@ -77,10 +78,10 @@ export const useNode = (idx: number, path: Path[]): Values => {
     );
 
     useEffect(() => {
-        return store.onChange(idx, (state, results) => {
+        return store.onChange(idx, (state, results, asyncResults) => {
             // Node is being deleted, ignore. This'll unmount in a minute
             if (!state.map[idx]) return;
-            setState(getValues(idx, store, state, results));
+            setState(getValues(idx, store, state, results, asyncResults));
         });
     }, [idx]);
 

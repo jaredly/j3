@@ -58,6 +58,7 @@ export const NSDragger = ({
                 marginRight: 12,
                 color: hover ? 'white' : '#444',
                 position: 'relative',
+                width: 30,
             }}
             onContextMenu={(evt) => {
                 drag.cancel();

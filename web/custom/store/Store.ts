@@ -161,6 +161,7 @@ export const getValues = (
     store: Store,
     state: NUIState,
     results: NodeResults<any>,
+    workerResults?: Sendable | null,
 ): Values => {
     if (!results) debugger;
     if (!state.map[idx]) {
@@ -180,9 +181,14 @@ export const getValues = (
         results.layout[idx]?.layout,
     );
     const parsed = results.parsed;
+    let errors = parsed?.type === 'failure' ? parsed.errors[idx] : undefined;
+    const asyncErrors = workerResults?.errors[idx];
+    if (asyncErrors) {
+        errors = [...(errors ?? []), ...asyncErrors];
+    }
 
     return {
-        errors: parsed?.type === 'failure' ? parsed.errors[idx] : undefined,
+        errors,
         dispatch: store.dispatch,
         meta: state.meta?.[idx] ?? null,
         display: results.layout[idx] ?? {},

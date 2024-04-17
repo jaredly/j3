@@ -7,6 +7,8 @@ type-args
 # ERROR
 
 - [x] 'destroy is not a function" wen 'jump to lolz' in simple.json ...
+- [x] first render, errors arent showing up? (oh its because I'm not rerendering on worker message receipt)
+- [x] first run, values arent being propagated or something?
 - [ ] type hovers
 
 

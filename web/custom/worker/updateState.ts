@@ -8,6 +8,7 @@ import {
     PluginParsed,
     SuccessParsed,
 } from '../store/getImmediateResults';
+import { showError } from '../store/processTypeInference';
 import { unique } from '../store/unique';
 import { nodeToSortable } from './calculateInitialState';
 import { AsyncResults, Sortable, State } from './types';
@@ -59,6 +60,11 @@ export function updateState(
     //     //     state.results!.tops[+key].changes = { source: true };
     //     // }
     // });
+
+    const topForLoc: Record<number, number> = {};
+    Object.values(nodes).forEach((node) => {
+        node.ids.forEach((id) => (topForLoc[id] = node.ns.id));
+    });
 
     const topsForName: Record<string, { top: number; group: string }> = {};
     sorted.forEach((group) => {
@@ -151,20 +157,37 @@ export function updateState(
                 const res = state.evaluator.inference.infer(stmts, tenv);
                 if (res.result.type === 'ok') {
                     state.results.groups[groupKey].tenv = res.result.value;
+                    tenv = state.evaluator.inference.addTypes(
+                        tenv,
+                        res.result.value,
+                    );
                     state.results.groups[groupKey].typeFailed = false;
                 } else {
                     state.results.groups[groupKey].typeFailed = true;
                     const err = res.result.err;
+                    const text = showError(err);
                     group.forEach((item) => {
                         state.results!.tops[item.id].produce.push({
                             type: 'error',
-                            message: 'ok/err: ' + err.message,
+                            message: 'Type Inference: ' + text,
+                        });
+                        err.items.forEach(({ loc, name }) => {
+                            add(
+                                state.results!.tops[topForLoc[loc]].errors,
+                                loc,
+                                text,
+                            );
                         });
                     });
                 }
                 // TODO...
-                // res.typesAndLocs.forEach(tal => {
-                // })
+                res.typesAndLocs.forEach(({ loc, type }) => {
+                    add(
+                        state.results!.tops[topForLoc[loc]].hover,
+                        loc,
+                        state.evaluator!.inference!.typeToString(type),
+                    );
+                });
             } catch (err) {
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
@@ -212,7 +235,7 @@ export function updateState(
         if (state.results.groups[groupKey].typeFailed) {
             if (state.debugExecOrder) {
                 group.forEach((one) => {
-                    showExecOrder(state, one, i);
+                    showExecOrder(state.results!.tops, one, i);
                 });
             }
 
@@ -244,28 +267,16 @@ export function updateState(
         );
 
         group.forEach((one) => {
-            // state.results!.tops[one.id].changes.results = true;
-            // console.log('Group setting results true', one.id);
-            // state.results!.tops[one.id] = {
-            //     changes: { results: true },
-            //     errors: {},
-            //     hover: {},
-            //     produce: [],
-            //     values: {},
-            // };
-
-            const node = nodes[one.id];
-            if (node.parsed?.type === 'success') {
-                node.parsed.names.forEach((name) => {
-                    if (name.kind === 'value') {
-                        state.results!.tops[one.id].values[name.name] =
-                            added.values[name.name];
-                    }
-                });
-            }
+            one.names.forEach((name) => {
+                if (name.kind === 'value') {
+                    state.results!.tops[one.id].values[name.name] =
+                        added.values[name.name];
+                }
+            });
+            Object.assign(env.values, state.results!.tops[one.id].values);
 
             if (state.debugExecOrder) {
-                showExecOrder(state, one, i);
+                showExecOrder(state.results!.tops, one, i);
             }
         });
 
@@ -278,10 +289,20 @@ export function updateState(
 
     return { ...state, nodes };
 }
+
 function showExecOrder(tops: AsyncResults['tops'], one: Sortable, i: number) {
     tops[one.id].produce.push(
         `Exec order ${i}\nDeps: ${unique(one.deps.map((n) => n.name)).join(
             ', ',
-        )}`,
+        )}\nProduce: ${unique(one.names.map((n) => n.name)).join(', ')}`,
     );
 }
+
+export const add = <K extends string | number, T>(
+    obj: Record<K, T[]>,
+    k: K,
+    item: T,
+) => {
+    if (!obj[k]) obj[k] = [item];
+    else obj[k].push(item);
+};
