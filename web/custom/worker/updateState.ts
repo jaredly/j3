@@ -191,89 +191,10 @@ export function updateState(
             const stmts = group.map(
                 (g) => (nodes[g.id].parsed as SuccessParsed<any>).stmt,
             );
+            let res;
+            // debugger;
             try {
-                // debugger;
-                const res = state.evaluator.inference.infer(stmts, tenv);
-                if (res.result.type === 'ok') {
-                    state.results.groups[groupKey].tenv = res.result.value.env;
-                    const types = res.result.value.types;
-                    tenv = state.evaluator.inference.addTypes(
-                        tenv,
-                        res.result.value.env,
-                    );
-                    state.results.groups[groupKey].typeFailed = false;
-                    group.forEach((one) => {
-                        types.forEach((type) => {
-                            try {
-                                const text =
-                                    state.evaluator!.inference!.typeToString(
-                                        type,
-                                    );
-                                state.results!.tops[one.id].produce.push({
-                                    type: 'type',
-                                    text,
-                                });
-                            } catch (err) {
-                                state.results!.tops[one.id].produce.push({
-                                    type: 'error',
-                                    message: `Cant stringify type ${JSON.stringify(
-                                        type,
-                                    )}`,
-                                });
-                            }
-                        });
-
-                        one.names.forEach(({ name, kind }) => {
-                            if (kind !== 'value') return;
-                            try {
-                                const type =
-                                    state.evaluator!.inference!.typeForName(
-                                        tenv,
-                                        name,
-                                    );
-                                const text =
-                                    state.evaluator!.inference!.typeToString(
-                                        type,
-                                    );
-                                state.results!.tops[one.id].produce.push({
-                                    type: 'type',
-                                    text: `${name}: ${text}`,
-                                });
-                            } catch (err) {
-                                state.results!.tops[one.id].produce.push({
-                                    type: 'error',
-                                    message: `Cant get type for ${name}: ${
-                                        (err as Error).message
-                                    }`,
-                                });
-                            }
-                        });
-                    });
-                } else {
-                    state.results.groups[groupKey].typeFailed = true;
-                    const err = res.result.err;
-                    const text = showError(err);
-                    group.forEach((item) => {
-                        state.results!.tops[item.id].produce.push({
-                            type: 'error',
-                            message: 'Type Inference: ' + text,
-                        });
-                        err.items.forEach(({ loc, name }) => {
-                            add(
-                                state.results!.tops[topForLoc[loc]].errors,
-                                loc,
-                                text,
-                            );
-                        });
-                    });
-                }
-                res.typesAndLocs.forEach(({ loc, type }) => {
-                    add(
-                        state.results!.tops[topForLoc[loc]].hover,
-                        loc,
-                        state.evaluator!.inference!.typeToString(type),
-                    );
-                });
+                res = state.evaluator.inference.infer(stmts, tenv);
             } catch (err) {
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
@@ -283,7 +204,84 @@ export function updateState(
                             (err as Error).message,
                     });
                 });
+                continue;
             }
+            if (res.result.type === 'ok') {
+                state.results.groups[groupKey].tenv = res.result.value.env;
+                const types = res.result.value.types;
+                tenv = state.evaluator.inference.addTypes(
+                    tenv,
+                    res.result.value.env,
+                );
+                state.results.groups[groupKey].typeFailed = false;
+                group.forEach((one) => {
+                    types.forEach((type) => {
+                        try {
+                            const text =
+                                state.evaluator!.inference!.typeToString(type);
+                            state.results!.tops[one.id].produce.push({
+                                type: 'type',
+                                text,
+                            });
+                        } catch (err) {
+                            state.results!.tops[one.id].produce.push({
+                                type: 'error',
+                                message: `Cant stringify type ${JSON.stringify(
+                                    type,
+                                )}`,
+                            });
+                        }
+                    });
+
+                    one.names.forEach(({ name, kind }) => {
+                        if (kind !== 'value') return;
+                        try {
+                            const type =
+                                state.evaluator!.inference!.typeForName(
+                                    tenv,
+                                    name,
+                                );
+                            const text =
+                                state.evaluator!.inference!.typeToString(type);
+                            state.results!.tops[one.id].produce.push({
+                                type: 'type',
+                                text: `${name}: ${text}`,
+                            });
+                        } catch (err) {
+                            state.results!.tops[one.id].produce.push({
+                                type: 'error',
+                                message: `Cant get type for ${name}: ${
+                                    (err as Error).message
+                                }`,
+                            });
+                        }
+                    });
+                });
+            } else {
+                state.results.groups[groupKey].typeFailed = true;
+                const err = res.result.err;
+                const text = showError(err);
+                group.forEach((item) => {
+                    state.results!.tops[item.id].produce.push({
+                        type: 'error',
+                        message: 'Type Inference: ' + text,
+                    });
+                    err.items.forEach(({ loc, name }) => {
+                        add(
+                            state.results!.tops[topForLoc[loc]]?.errors ?? {},
+                            loc,
+                            text,
+                        );
+                    });
+                });
+            }
+            res.typesAndLocs.forEach(({ loc, type }) => {
+                add(
+                    state.results!.tops[topForLoc[loc]].hover,
+                    loc,
+                    state.evaluator!.inference!.typeToString(type),
+                );
+            });
         }
     }
 

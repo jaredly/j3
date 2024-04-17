@@ -2672,10 +2672,20 @@ filter
                 (infer-stypes tenv' stypes salias)
                     tenv'
                     (<- (tenv/merge type-tenv tenv')))
-            type-tenv                       (foldl-ok-> tenv' stypes infer-stmt)
+            type-tenv                       (foldl-ok->
+                                                full-env/nil
+                                                    stypes
+                                                    (fn [env stmt]
+                                                    (match (infer-stmt (full-env/merge tenv' env) stmt)
+                                                        (ok tenv) (ok (full-env/merge tenv env))
+                                                        (err e)   (err e))))
             val-tenv                        (infer-defns tenv' sdefs)
             types                           (map-ok-> (infer (full-env/merge val-tenv tenv')) sexps)]
-            (<- (full-env/merge type-tenv val-tenv)))))
+            (<- (, (full-env/merge type-tenv val-tenv) types)))))
+
+(infer-stmtss builtin-full [(parse-stmt (@@ (def x "hello ${12}")))])
+
+(infer-stmtss builtin-full [(parse-stmt (@@ (deftype m (n int))))])
 
 (deftype name-kind (value) (type))
 
@@ -2961,7 +2971,9 @@ filter
             (fn [scheme] string)
             (fn [full-env string] (option scheme))
             (fn [full-env (array stmt)]
-            (, (result (, full-env (array type)) type-error-t) (array (, int type))))))
+            (,
+                (result (, full-env (array scheme)) type-error-t)
+                    (array (, int type))))))
 
 (deftype parser
     (parser
@@ -2985,13 +2997,7 @@ filter
                 (match (filter (fn [(!>! n _)] (= n name)) assumps)
                     [(!>! _ scheme) .._] (some scheme)
                     _                    (none)))
-                (fn [env stms]
-                (let [result (infer-stmtss env stms)]
-                    (,
-                        (match result
-                            (ok v)  (ok (, v []))
-                            (err e) (err e))
-                            []))))
+                (fn [env stms] (let [result (infer-stmtss env stms)] (, result []))))
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))
@@ -2999,3 +3005,5 @@ filter
             (parser parse-stmt parse-expr compile-stmt compile)))
 
 27573
+
+(infer-stmtss builtin-full [(parse-stmt (@@ "hello ${12}"))])
