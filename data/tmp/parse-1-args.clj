@@ -1,8 +1,5 @@
 (** ## parse-1-tuples + fn/lambda/app have arrays **)
 
-;(def builtins
-    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var if return super break while for default';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
-
 (** ## Our AST & CST **)
 
 (deftype cst
@@ -942,6 +939,8 @@
             (sdef name int body int)                    (externals (set/add set/nil name) body)
             (sexpr expr int)                            (externals set/nil expr))))
 
+(** ## Export **)
+
 (deftype parse-and-compile
     (parse-and-compile
         (fn [cst] stmt)
@@ -951,8 +950,6 @@
             (fn [stmt] (array (,, string name-kind int)))
             (fn [stmt] (array (,, string name-kind int)))
             (fn [expr] (array (,, string name-kind int)))))
-
-1
 
 ((eval
     "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr})")
