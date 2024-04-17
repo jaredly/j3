@@ -1,15 +1,6 @@
 import { AnyEnv } from '../../ide/ground-up/FullEvalator';
-import { MetaDataMap } from '../UIState';
-import {
-    ImmediateResults,
-    NodeResults,
-    SuccessParsed,
-} from '../store/getImmediateResults';
-import { depSort } from '../store/depSort';
-import { filterNulls } from '../old-stuff/filterNulls';
-import { showError } from '../store/processTypeInference';
-import { displayFunction } from '../store/displayFunction';
-import { AsyncResults, Sortable } from './types';
+import { ImmediateResults, NodeResults } from '../store/getImmediateResults';
+import { Sortable } from './types';
 import { updateState } from './updateState';
 
 export const add = <K extends string | number, T>(

@@ -1,4 +1,14 @@
 
+# Bootstrap chain
+
+parse-1-args
+type-args
+
+
+
+
+#
+
 Future papers to port:
 https://twitter.com/jaredforsyth/status/1709041488032645395
 https://twitter.com/welltypedwitch/status/1709129585613328657
@@ -10,7 +20,7 @@ whyyy is it taking 30ms to just change a single thing.
 
 # Web in the Workers
 
-- [ ] `calculateInitialState` and `updateState` have a ton in common.
+- [x] `calculateInitialState` and `updateState` have a ton in common.
   We should be able to merge them quite easily.
 - [ ] THEENNNN we can get down to business, to hook up type inference.
 - [x] anddd plugins! Gotta get our fixture tests back up

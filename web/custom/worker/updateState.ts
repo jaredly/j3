@@ -71,6 +71,7 @@ export function updateState(
         });
     });
 
+    // Determine deep changedness
     for (let group of sorted) {
         const groupKey = group.map((g) => g.id).join(';');
 
@@ -83,7 +84,6 @@ export function updateState(
                     const got = topsForName[ln.name];
                     if (!got) return false;
                     return state.results!.groups[got.group].changed;
-                    // if (state.results!.tops[got.top].changes.source)
                 }),
             );
 
@@ -94,7 +94,6 @@ export function updateState(
                 tops: group.map((g) => g.id),
                 traces: {},
             };
-            // console.log('group needs update', groupKey);
         } else {
             if (!state.results.groups[groupKey]) {
                 throw new Error(
@@ -105,8 +104,74 @@ export function updateState(
         }
     }
 
+    for (let group of sorted) {
+        const groupKey = group.map((g) => g.id).join(';');
+        if (state.results.groups[groupKey].changed) {
+            group.forEach((one) => {
+                state.results!.tops[one.id] = {
+                    changes: { results: true },
+                    errors: {},
+                    hover: {},
+                    produce: [],
+                    values: {},
+                };
+            });
+        }
+    }
+
+    /**
+     * BIG QUESTION:
+     * - If I'm going to be ... caching ...
+     *   and something is changed ...
+     *   ok, I can reset the tops, I guess.
+     */
     if (state.evaluator.inference) {
         // TODO
+        let tenv = state.evaluator.inference.initType();
+        for (let group of sorted) {
+            const groupKey = group.map((g) => g.id).join(';');
+            // This does "deep" change propagation
+            if (!state.results.groups[groupKey].changed) {
+                if (state.results.groups[groupKey].tenv) {
+                    tenv = state.evaluator.inference.addTypes(
+                        tenv,
+                        state.results.groups[groupKey].tenv,
+                    );
+                }
+
+                continue;
+            }
+
+            const stmts = group.map(
+                (g) => (nodes[g.id].parsed as SuccessParsed<any>).stmt,
+            );
+            try {
+                const res = state.evaluator.inference.infer(stmts, tenv);
+                if (res.result.type === 'ok') {
+                    state.results.groups[groupKey].tenv = res.result.value;
+                } else {
+                    const err = res.result.err;
+                    group.forEach((item) => {
+                        state.results!.tops[item.id].produce.push({
+                            type: 'error',
+                            message: 'ok/err: ' + err.message,
+                        });
+                    });
+                }
+                // TODO...
+                // res.typesAndLocs.forEach(tal => {
+                // })
+            } catch (err) {
+                group.forEach((item) => {
+                    state.results!.tops[item.id].produce.push({
+                        type: 'error',
+                        message:
+                            'When doing infer for stmts: ' +
+                            (err as Error).message,
+                    });
+                });
+            }
+        }
     }
 
     let env = state.evaluator.init();
@@ -114,29 +179,7 @@ export function updateState(
     for (let group of sorted) {
         i++;
         const groupKey = group.map((g) => g.id).join(';');
-        if (group.length === 1 && group[0].isPlugin) {
-            const node = nodes[group[0].id];
-            const pluginConfig = node.ns.plugin;
-            const p = node.parsed as PluginParsed;
-            const plugin = workerPlugins[pluginConfig!.id];
-            state.results.tops[group[0].id] = {
-                changes: { results: true },
-                errors: {},
-                hover: {},
-                produce: [],
-                values: {},
-                pluginResults: plugin.process(
-                    p.parsed,
-                    node.meta,
-                    state.evaluator,
-                    state.results.groups[groupKey].traces,
-                    env,
-                    pluginConfig!.options,
-                ),
-            };
-            // umm gotta plugin please
-            continue;
-        }
+
         // This does "deep" change propagation
         if (!state.results.groups[groupKey].changed) {
             group.forEach((one) => {
@@ -145,8 +188,20 @@ export function updateState(
                 Object.assign(env.values, state.results!.tops[one.id].values);
             });
 
-            // env
+            continue;
+        }
 
+        if (group.length === 1 && group[0].isPlugin) {
+            const node = nodes[group[0].id];
+            const plugin = workerPlugins[node.ns.plugin!.id];
+            state.results.tops[group[0].id].pluginResults = plugin.process(
+                (node.parsed as PluginParsed).parsed,
+                node.meta,
+                state.evaluator,
+                state.results.groups[groupKey].traces,
+                env,
+                node.ns.plugin!.options,
+            );
             continue;
         }
 
@@ -179,13 +234,13 @@ export function updateState(
         group.forEach((one) => {
             // state.results!.tops[one.id].changes.results = true;
             // console.log('Group setting results true', one.id);
-            state.results!.tops[one.id] = {
-                changes: { results: true },
-                errors: {},
-                hover: {},
-                produce: [],
-                values: {},
-            };
+            // state.results!.tops[one.id] = {
+            //     changes: { results: true },
+            //     errors: {},
+            //     hover: {},
+            //     produce: [],
+            //     values: {},
+            // };
 
             const node = nodes[one.id];
             if (node.parsed?.type === 'success') {
