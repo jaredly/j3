@@ -1645,7 +1645,7 @@
         (ok v)  (<- v)
         (err e) (<-err e)))
 
-(defn force [e->s result]
+;(defn force [e->s result]
     (match result
         (ok v)  v
         (err e) (fatal "Result Error ${(e->s e)}")))
@@ -1756,18 +1756,11 @@
                 (, (type-loc t2) (type-debug->s t2))
                 ..items])))
 
-;(def get-subst (TI (fn [subst tenv n] (,,, subst tenv n (ok subst)))))
-
 (def add-subst subst->)
 
 (def get-subst <-subst)
 
-;(defn add-subst [new-subst]
-    (TI
-        (fn [subst tenv n]
-            (,,, (compose-subst new-subst subst) tenv n (ok ())))))
-
-(def next-idx (TI (fn [s t n] (,,, s t (+ n 1) (ok n)))))
+(def next-idx (let-> [nidx <-idx _ (idx-> (+ nidx 1))] (<- nidx)))
 
 (defn new-tvar [kind]
     (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
@@ -1786,7 +1779,7 @@
         (err e) (err e)))
 
 (defn fresh-inst [(forall ks qt)]
-    (let-> [ts (map/ti new-tvar ks)] (<- (inst/qual ts inst/type qt))))
+    (let-> [ts (map-> new-tvar ks)] (<- (inst/qual ts inst/type qt))))
 
 (defn inst/type [types type]
     (match type
@@ -1819,7 +1812,7 @@
         (pint _ _)   (let-> [v (new-tvar star)] (<- (, [(isin "num" v)] v)))))
 
 (defn infer/pats [pats]
-    (let-> [psasts (map/ti infer/pat pats)]
+    (let-> [psasts (map-> infer/pat pats)]
         (let [
             ps (concat (map (fn [(,, ps' _ _)] ps') psasts))
             as (concat (map (fn [(,, _ as' _)] as') psasts))
@@ -1853,19 +1846,21 @@
         []               (, [] [])
         [(, a b) ..rest] (let [(, left right) (unzip rest)] (, [a ..left] [b ..right]))))
 
+map->
+
 (defn infer/expr [ce as expr]
     (match expr
         (evar name l)            (let-> [sc (ok-> (find-scheme name as l)) (=> ps t) (fresh-inst sc)]
                                      (<- (, ps t)))
         (estr first templates l) (let-> [
-                                     results        (map/ti (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
+                                     results        (map-> (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
                                      (, ps types)   (<- (unzip results))
-                                     results'       (map/ti
+                                     results'       (map->
                                                         (fn [_]
                                                             (fresh-inst (forall [star] (=> [(isin "pretty" (tgen 0 -1))] (tgen 0 -1)))))
                                                             types)
                                      (, ps' types') (<- (unzip (map (fn [(=> a b)] (, a b)) results')))
-                                     _              (map/ti (fn [(, a b)] (unify a b)) (zip types types'))]
+                                     _              (map-> (fn [(, a b)] (unify a b)) (zip types types'))]
                                      (<- (, (concat [(concat ps) (concat ps')]) tstring)))
         (eprim prim l)           (infer/prim prim)
         (eapp target args l)     (match args
@@ -1900,9 +1895,7 @@
             (ti-return (, (concat [ps qs]) res-type)))))
 
 (defn infer/alts [ce as alts t]
-    (let-> [
-        psts ((map/ti (infer/alt ce as) alts))
-        _    ((map/ti (unify t) (map snd psts)))]
+    (let-> [psts ((map-> (infer/alt ce as) alts)) _ ((map-> (unify t) (map snd psts)))]
         (ti-return (concat (map fst psts)))))
 
 (defn infer/expl [ce as (,, i sc alts)]
@@ -1923,7 +1916,7 @@
                         _  (<-err (, "context too weak" []))))))))
 
 (defn infer/impls [ce as bs]
-    (let-> [ts ((map/ti (fn [_] (new-tvar star)) bs))]
+    (let-> [ts ((map-> (fn [_] (new-tvar star)) bs))]
         (let [
             is    (map fst bs)
             scs   (map toScheme ts)
@@ -1962,7 +1955,7 @@
                                                 class-env
                                                 (+++ expl-assumps as)
                                                 implicits)
-            expl-preds                  (map/ti
+            expl-preds                  (map->
                                             (infer/expl class-env (concat [impl-assumps expl-assumps as]))
                                                 explicit)]
             (<-
@@ -2730,24 +2723,30 @@ filter
         types                           (map-> (infer ce (concat2 c assumps)) sexps)]
         (<- (, (full-env/merge type-tenv (full-env a b c)) types))))
 
-(infer-stmtss builtin-full [(parse-stmt (@@ (def x "hello ${12}")))])
-
 foldl
 
-(infer-stmtss builtin-full [(parse-stmt (@@ (deftype m (n int))))])
+(run/nil->
+    (infer-stmtss builtin-env [] [(parse-stmt (@@ (def x "hello ${12}")))]))
+
+(run/nil->
+    (infer-stmtss builtin-env [] [(parse-stmt (@@ (deftype m (n int))))]))
 
 (deftype name-kind (value) (type))
 
 (typealias locname (,, string name-kind int))
 
-(defn infer-stmts [env stmts]
-    (let [>>= ok>>= <- ok]
-        (foldl-ok->
-            (, full-env/nil [])
-                stmts
-                (fn [(, env' tps) stmt]
-                (let-> [(, env types) (infer-stmt (full-env/merge env env') stmt) ]
-                    (<- (, (full-env/merge env' env) (concat [tps types]))))))))
+(defn infer-stmts [ce assumps stmts]
+    (foldl->
+        full-env/nil
+            stmts
+            (fn [(full-env tenv ce' assumps') stmt]
+            (let-> [
+                env (infer-stmt
+                        (class-env/merge ce ce')
+                            (concat2 assumps assumps')
+                            stmt)
+                ]
+                (<- (full-env/merge (full-env tenv ce' assumps') env))))))
 
 (defn full-env/merge [(full-env a b c) (full-env d e f)]
     (full-env (tenv/merge a d) (class-env/merge b e) (concat [c f])))
@@ -2803,21 +2802,30 @@ foldl
         (ljoin "\n" (map assump->s assumps))
         }")
 
-(infer-stmts
-    builtin-full
-        (map parse-stmt [(@@ (defn x [y] (+ y 1))) (@@ (defn y [z] z))]))
+(snd
+    (run/tenv->
+        builtin-tenv
+            (infer-stmts
+            builtin-ce
+                builtin-assumptions
+                (map parse-stmt [(@@ (defn x [y] (+ y 1))) (@@ (defn y [z] z))]))))
 
 (defn force [e->s v]
     (match v
         (ok v)  v
         (err e) (fatal (e->s e))))
 
+(defn test-stmt [x]
+    (full-env->s
+        (force
+            type-error->s
+                (snd
+                (run/tenv->
+                    builtin-tenv
+                        (infer-stmts builtin-ce builtin-assumptions (map parse-stmt x)))))))
+
 (,
-    (fn [x]
-        (full-env->s
-            (force
-                type-error->s
-                    (infer-stmts builtin-full (map parse-stmt x)))))
+    test-stmt
         [(,
         [(@@ (def x 1))]
             "# Type Env\n## Constructors\n# Class Env\n## Instances\n## Defaults\n# Assumps\nx: int")
@@ -3038,15 +3046,22 @@ foldl
     (evaluator
         (inferator
             builtin-full
-                (fn [x y] (force type-error->s (infer-stmts x y)))
+                (fn [(full-env tenv ce assumps) y]
+                (force
+                    type-error->s
+                        (snd (run/tenv-> tenv (infer-stmts ce assumps y)))))
                 full-env/merge
-                (fn [x y] (force type-error->s (infer x y)))
+                (fn [(full-env tenv ce assumps) y]
+                (force type-error->s (snd (run/tenv-> tenv (infer ce assumps y)))))
                 scheme->s
                 (fn [(full-env tenv ce assumps) name]
                 (match (filter (fn [(!>! n _)] (= n name)) assumps)
                     [(!>! _ scheme) .._] (some scheme)
                     _                    (none)))
-                (fn [env stms] (let [result (infer-stmtss env stms)] (, result []))))
+                (fn [(full-env tenv ce assumps) stms]
+                (let [
+                    (, (,,, _ types _ _) result) (run/tenv-> tenv (infer-stmtss ce assumps stms))]
+                    (, result types))))
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))
@@ -3055,4 +3070,8 @@ foldl
 
 27573
 
-(infer-stmtss builtin-full [(parse-stmt (@@ "hello ${12}"))])
+(r
+    (infer-stmtss
+        builtin-ce
+            builtin-assumptions
+            [(parse-stmt (@@ "hello ${12}"))]))

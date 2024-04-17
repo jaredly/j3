@@ -590,16 +590,17 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
         next.history = state.history.concat([item]);
     }
     // TODO: this should be a "debug" thing that I can turn on...
-    // try {
-    //     verifyState(next);
-    // } catch (err) {
-    //     console.warn(`Action failed`);
-    //     console.log(action);
-    //     console.log(update);
-    //     console.log(item);
-    //     console.error(err);
-    //     return state;
-    // }
+    try {
+        // verifyState(next);
+        verifySelection(next);
+    } catch (err) {
+        console.warn(`Action failed`);
+        console.log(action);
+        console.log(update);
+        console.log(item);
+        console.error(err);
+        return state;
+    }
     return next;
 };
 
@@ -638,6 +639,10 @@ export const verifyState = (state: NUIState) => {
         });
     }
 
+    verifySelection(state);
+};
+
+function verifySelection(state: NUIState) {
     state.at.forEach((cursor) => {
         try {
             verifyPath(cursor.start, state);
@@ -652,4 +657,4 @@ export const verifyState = (state: NUIState) => {
             );
         }
     });
-};
+}

@@ -6,6 +6,15 @@ type-args
 
 # ERROR
 
+TOP BUGS
+- [ ] WHY the double-eval right off?
+  might be a `debug` or something? or `evaluator` loding somehow
+- [ ] AGH why is my name deduping not working??
+- [ ] why parse errors keep stacking? so annoyinggg
+
+
+
+
 - [x] 'destroy is not a function" wen 'jump to lolz' in simple.json ...
 - [x] first render, errors arent showing up? (oh its because I'm not rerendering on worker message receipt)
 - [x] first run, values arent being propagated or something?

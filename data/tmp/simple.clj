@@ -32,6 +32,10 @@ nil
 
 (def hi 10)
 
+(def hi 1000)
+
+(defn aaaaaaaaaaaaaaa)
+
 (def hio (lolz 100 23 aa bb))
 
 cons
