@@ -12,7 +12,7 @@ type-args
 - [x] type & error hovers
 - [x] show a spinner when the worker is ... working.
 - [x] show types of defns n stuff pleassee
-- [ ] it would be ... quite nice ... to
+- [ ] it would be ... quite nice ... to ... incrementally send back updates.
 
 
 
