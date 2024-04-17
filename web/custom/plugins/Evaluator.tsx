@@ -102,18 +102,23 @@ const Saver = ({
     children: (v: boolean) => JSX.Element | string;
 }) => {
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(false);
     return (
         <button
             onClick={() => {
+                setError(false);
                 setSaving(true);
                 onClick()
-                    .catch(() => {})
+                    .catch((err) => {
+                        console.error(err);
+                        setError(true);
+                    })
                     .then(() => {
                         setSaving(false);
                     });
             }}
         >
-            {children(saving)}
+            {error ? 'Error!!' : children(saving)}
         </button>
     );
 };
