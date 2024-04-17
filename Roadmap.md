@@ -10,8 +10,9 @@ type-args
 - [x] first render, errors arent showing up? (oh its because I'm not rerendering on worker message receipt)
 - [x] first run, values arent being propagated or something?
 - [x] type & error hovers
-- [ ] show a spinner when the worker is ... working.
-- [ ] show types of defns n stuff pleassee
+- [x] show a spinner when the worker is ... working.
+- [x] show types of defns n stuff pleassee
+- [ ] it would be ... quite nice ... to
 
 
 

@@ -267,6 +267,8 @@ const RenderProduceItem = ({
         );
     }
     switch (value.type) {
+        case 'type':
+            return <div style={{ color: 'rgb(45 149 100)' }}>{value.text}</div>;
         case 'eval': {
             let parts: JSX.Element[] = highlightIdxs(value.inner);
             return (

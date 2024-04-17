@@ -8,6 +8,7 @@ export type Errors = { [key: number]: string[] };
 
 export type ProduceItem =
     | string
+    | { type: 'type'; text: string }
     | { type: 'withjs'; message: string; js: string; stack?: string }
     | { type: 'eval'; message: string; inner: string; stack?: string }
     | { type: 'error'; message: string; stack?: string }
@@ -35,7 +36,7 @@ export type FullEvalator<
             env: TypeEnv,
         ): {
             result:
-                | { type: 'ok'; value: TypeEnv }
+                | { type: 'ok'; value: { env: TypeEnv; types: Type[] } }
                 | {
                       type: 'err';
                       err: {

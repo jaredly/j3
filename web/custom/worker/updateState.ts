@@ -137,6 +137,11 @@ export function updateState(
         // TODO
         let tenv = state.evaluator.inference.initType();
         for (let group of sorted) {
+            // Pluginssss
+            if (group.length === 1 && group[0].isPlugin) {
+                continue;
+            }
+
             const groupKey = group.map((g) => g.id).join(';');
             // This does "deep" change propagation
             if (!state.results.groups[groupKey].changed) {
@@ -154,14 +159,63 @@ export function updateState(
                 (g) => (nodes[g.id].parsed as SuccessParsed<any>).stmt,
             );
             try {
+                // debugger;
                 const res = state.evaluator.inference.infer(stmts, tenv);
                 if (res.result.type === 'ok') {
-                    state.results.groups[groupKey].tenv = res.result.value;
+                    state.results.groups[groupKey].tenv = res.result.value.env;
+                    const types = res.result.value.types;
                     tenv = state.evaluator.inference.addTypes(
                         tenv,
-                        res.result.value,
+                        res.result.value.env,
                     );
                     state.results.groups[groupKey].typeFailed = false;
+                    group.forEach((one) => {
+                        types.forEach((type) => {
+                            try {
+                                const text =
+                                    state.evaluator!.inference!.typeToString(
+                                        type,
+                                    );
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'type',
+                                    text,
+                                });
+                            } catch (err) {
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'error',
+                                    message: `Cant stringify type ${JSON.stringify(
+                                        type,
+                                    )}`,
+                                });
+                            }
+                        });
+
+                        one.names.forEach(({ name, kind }) => {
+                            if (kind !== 'value') return;
+                            try {
+                                const type =
+                                    state.evaluator!.inference!.typeForName(
+                                        tenv,
+                                        name,
+                                    );
+                                const text =
+                                    state.evaluator!.inference!.typeToString(
+                                        type,
+                                    );
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'type',
+                                    text: `${name}: ${text}`,
+                                });
+                            } catch (err) {
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'error',
+                                    message: `Cant get type for ${name}: ${
+                                        (err as Error).message
+                                    }`,
+                                });
+                            }
+                        });
+                    });
                 } else {
                     state.results.groups[groupKey].typeFailed = true;
                     const err = res.result.err;

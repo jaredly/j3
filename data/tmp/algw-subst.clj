@@ -1447,8 +1447,8 @@
         type-tenv                       (infer-stypes tenv' stypes salias)
         tenv'                           (<- (tenv/merge type-tenv tenv'))
         val-tenv                        (infer-defns tenv' sdefs)
-        _                               (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
-        (<- (tenv/merge type-tenv val-tenv))))
+        expr-types                      (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
+        (<- (, (tenv/merge type-tenv val-tenv) expr-types))))
 
 (force
     type-error->s
@@ -1873,7 +1873,7 @@
                 (fn [tenv stmt]
                 (tenv/merge
                     tenv
-                        (force type-error->s (run/nil-> (infer-stmtss tenv [stmt]))))))))
+                        (fst (force type-error->s (run/nil-> (infer-stmtss tenv [stmt])))))))))
 
 (infer-show builtin-env (@ ,))
 
@@ -1895,7 +1895,7 @@
         tenv
             (fn [tenv (array stmt)] tenv)
             (fn [tenv (array stmt)]
-            (, (result tenv type-error-t) (array (, int type))))
+            (, (result (, tenv (array type)) type-error-t) (array (, int type))))
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)))
 
@@ -1919,7 +1919,7 @@
 (def externals-list (fn [x] (bag/to-list (externals set/nil x))))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference
             builtin-env

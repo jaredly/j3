@@ -68,7 +68,10 @@ export const fnsEvaluator = (
                           const result: {
                               type: ',';
                               0:
-                                  | { type: 'ok'; 0: any }
+                                  | {
+                                        type: 'ok';
+                                        0: { type: ','; 0: any; 1: arr<any> };
+                                    }
                                   | {
                                         type: 'err';
                                         0: {
@@ -86,7 +89,15 @@ export const fnsEvaluator = (
                           return {
                               result:
                                   result[0].type === 'ok'
-                                      ? { type: 'ok', value: result[0][0] }
+                                      ? {
+                                            type: 'ok',
+                                            value: {
+                                                env: result[0][0][0],
+                                                types: unwrapArray(
+                                                    result[0][0][1],
+                                                ),
+                                            },
+                                        }
                                       : {
                                             type: 'err',
                                             err: {
@@ -111,9 +122,12 @@ export const fnsEvaluator = (
                           return {
                               result: {
                                   type: 'ok',
-                                  value: data['infer_stmts'](env)(
-                                      wrapArray(stmts),
-                                  ),
+                                  value: {
+                                      env: data['infer_stmts'](env)(
+                                          wrapArray(stmts),
+                                      ),
+                                      types: [],
+                                  },
                               },
                               typesAndLocs: [],
                           };
