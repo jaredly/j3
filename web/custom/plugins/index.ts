@@ -4,5 +4,5 @@ import { fixturePlugin } from './Fixtures';
 
 export const plugins: NamespacePlugin<any, any, any>[] = [
     fixturePlugin,
-    // evaluatorPlugin,
+    evaluatorPlugin,
 ];

@@ -17,6 +17,7 @@ import {
 import { ResultsCache, DepsOrNoDeps, ChangesMap } from './ResultsCache';
 import { Path } from '../../store';
 import { unique } from './unique';
+import { workerPlugins } from '../plugins/worker';
 
 export type { AnyEnv };
 
@@ -222,12 +223,19 @@ export const processPlugin = (
     results.produce[node.loc].push('evaluated by plugin');
     const pid = typeof plugin === 'string' ? plugin : plugin.id;
     const options = typeof plugin === 'string' ? null : plugin.options;
-    const pl = plugins.find((p) => p.id === pid);
+    const pl = workerPlugins[pid];
     if (!pl) {
         results.produce[node.loc] = [`plugin ${pid} not found`];
         return;
     }
-    return pl.process(node, state, evaluator, results, options);
+    return pl.process(
+        node,
+        state,
+        evaluator,
+        results.traces,
+        results.env,
+        options,
+    );
 };
 
 function collectStatements<Stmt>(

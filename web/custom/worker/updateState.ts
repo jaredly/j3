@@ -1,9 +1,13 @@
 import { MetaDataMap } from '../UIState';
 import { filterNulls } from '../old-stuff/filterNulls';
+import { workerPlugins } from '../plugins/worker';
 import { depSort } from '../store/depSort';
 import { displayFunction } from '../store/displayFunction';
-import { ImmediateResults, SuccessParsed } from '../store/getImmediateResults';
-import { AnyEnv } from '../store/getResults';
+import {
+    ImmediateResults,
+    PluginParsed,
+    SuccessParsed,
+} from '../store/getImmediateResults';
 import { nodeToSortable } from './calculateInitialState';
 import { State } from './types';
 
@@ -70,7 +74,8 @@ export function updateState(
     for (let group of sorted) {
         const groupKey = group.map((g) => g.id).join(';');
 
-        const sourceUpdate = group.some((g) => update[g.id]);
+        const sourceUpdate =
+            !state.results.groups[groupKey] || group.some((g) => update[g.id]);
         const depsUpdate =
             sourceUpdate ||
             group.some((g) =>
@@ -108,11 +113,30 @@ export function updateState(
     let i = -1;
     for (let group of sorted) {
         i++;
+        const groupKey = group.map((g) => g.id).join(';');
         if (group.length === 1 && group[0].isPlugin) {
+            const node = nodes[group[0].id];
+            const pluginConfig = node.ns.plugin;
+            const p = node.parsed as PluginParsed;
+            const plugin = workerPlugins[pluginConfig!.id];
+            state.results.tops[group[0].id] = {
+                changes: { results: true },
+                errors: {},
+                hover: {},
+                produce: [],
+                values: {},
+                pluginResults: plugin?.process(
+                    p.parsed,
+                    node.meta,
+                    state.evaluator,
+                    state.results.groups[groupKey].traces,
+                    env,
+                    pluginConfig!.options,
+                ),
+            };
             // umm gotta plugin please
             continue;
         }
-        const groupKey = group.map((g) => g.id).join(';');
         // This does "deep" change propagation
         if (!state.results.groups[groupKey].changed) {
             group.forEach((one) => {

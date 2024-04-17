@@ -26,6 +26,7 @@ export type Sendable = {
     produce: ProduceItem[];
     errors: Record<number, string[]>;
     hover: Record<number, string[]>;
+    pluginResults: any;
 };
 
 export type ToPage = {
@@ -71,7 +72,7 @@ const handleMessage = async (
             console.log('loaded ev', evaluator);
 
             if (!evaluator) {
-                console.error(`cant load evaluator`);
+                console.error(`cant load evaluator?`);
                 return {
                     evaluator: null,
                     nodes: msg.nodes,
@@ -102,7 +103,7 @@ const next = async () => {
         const updated: Record<number, Sendable> = {};
         let change = false;
         Object.entries(state.results.tops).forEach(
-            ([key, { changes, produce, errors, hover }]) => {
+            ([key, { changes, produce, errors, hover, pluginResults }]) => {
                 if (changes.results) {
                     // console.log('a top change', key);
                     change = true;
@@ -110,6 +111,7 @@ const next = async () => {
                         produce,
                         errors,
                         hover,
+                        pluginResults,
                     };
                 }
             },

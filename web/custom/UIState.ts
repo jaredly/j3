@@ -14,6 +14,7 @@ import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
 import { Errors, FullEvalator } from '../ide/ground-up/FullEvalator';
 import { LocedName } from './store/sortTops';
+import { TraceMap } from '../ide/ground-up/loadEv';
 
 export type MetaData = {
     trace?: {
@@ -182,9 +183,7 @@ export type RealizedNamespace = {
     //
 };
 
-export type NamespacePlugin<Results, Parsed, Options> = {
-    id: string;
-    title: string;
+export type WorkerPlugin<Results, Parsed, Options> = {
     test(node: Node): boolean;
     parse(
         node: Node,
@@ -193,14 +192,35 @@ export type NamespacePlugin<Results, Parsed, Options> = {
     ): { parsed: Parsed; deps: LocedName[] } | null;
     process(
         parsed: Parsed,
-        state: NUIState,
+        meta: NUIState['meta'],
         evaluator: FullEvalator<any, any, any>,
-        results: NUIResults,
-        // meta: MetaDataMap,
-        // evaluate: (node: Node) => any,
-        // setTracing: (idx: number | null) => void,
+        traces: TraceMap,
+        env: any,
         options: Options,
     ): Results;
+};
+
+export type NamespacePlugin<Results, Parsed, Options> = {
+    id: string;
+    title: string;
+    // test(node: Node): boolean;
+    // parse(
+    //     node: Node,
+    //     errors: Errors,
+    //     evaluator: FullEvalator<any, any, any>,
+    // ): { parsed: Parsed; deps: LocedName[] } | null;
+    // process(
+    //     parsed: Parsed,
+    //     meta: NUIState['meta'],
+    //     evaluator: FullEvalator<any, any, any>,
+    //     traces: TraceMap,
+    //     env: any,
+    //     // results: NUIResults,
+    //     // meta: MetaDataMap,
+    //     // evaluate: (node: Node) => any,
+    //     // setTracing: (idx: number | null) => void,
+    //     options: Options,
+    // ): Results;
     render(
         parsed: Parsed,
         results: Results,

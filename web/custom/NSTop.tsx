@@ -29,12 +29,14 @@ const PluginRender = ({
     const values = useNode(props.idx, props.path);
     const expanded = useExpanded(props.idx);
     const store = useGetStore();
+    const results =
+        store.getResults().workerResults.nodes[ns.id]?.pluginResults;
     const parsed = store.getResults().results.nodes[ns.id]?.parsed;
-    const results = parsed?.type === 'plugin' ? parsed.parsed : null;
+    // const results = parsed?.type === 'plugin' ? parsed.parsed : null;
     const rn = useMemo(
         () =>
-            results != null
-                ? plugin.render(expanded, results, store, ns)
+            results != null && parsed?.type === 'plugin'
+                ? plugin.render(parsed.parsed, results, store, ns)
                 : null,
         [expanded, results, ns.plugin],
     );

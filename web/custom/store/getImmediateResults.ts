@@ -12,6 +12,7 @@ import { layout } from '../../../src/layout';
 import { plugins } from '../plugins';
 import { AnyEnv } from './getResults';
 import { Sendable } from '../worker/worker';
+import { workerPlugins } from '../plugins/worker';
 
 export type SuccessParsed<Stmt> = {
     type: 'success';
@@ -21,15 +22,17 @@ export type SuccessParsed<Stmt> = {
     duplicates?: LocedName[];
 };
 
+export type PluginParsed = {
+    type: 'plugin';
+    parsed: any;
+    // for now, plugins can't produce definitions...
+    // but they do have deps.
+    deps: LocedName[];
+};
+
 export type Parsed<Stmt> =
     | void
-    | {
-          type: 'plugin';
-          parsed: any;
-          // for now, plugins can't produce definitions...
-          // but they do have deps.
-          deps: LocedName[];
-      }
+    | PluginParsed
     | SuccessParsed<Stmt>
     | { type: 'failure'; errors: Errors };
 
@@ -250,7 +253,7 @@ const getParsed = (
 ): Parsed<any> => {
     if (pluginConfig) {
         const errors: Errors = {};
-        const plugin = plugins.find((p) => p.id === pluginConfig!.id);
+        const plugin = workerPlugins[pluginConfig!.id];
         const result = plugin?.parse(node, errors, evaluator);
         if (!result) {
             if (Object.keys(errors).length) {
