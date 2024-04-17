@@ -2469,6 +2469,7 @@ filter
         names                      (map (fn [(,,, name _ _ _)] name) constructors)
         top-kinds                  (map (fn [_] star) top-args)
         kind                       (foldl star top-kinds (fn [result arg] (kfun arg result)))
+        with-type                  (map/set map/nil name (, top-kinds (set/from-list names)))
         (, final _)                (foldl
                                        (, (tcon (tycon name kind) tnl) 0)
                                            top-args
@@ -2479,16 +2480,15 @@ filter
                                            constructors
                                            (fn [(, assumps constructors) (,,, name nl args l)]
                                            (let [
-                                               typ            (tfns (map (replace-tycons free-idxs types-) args) final)
+                                               typ            (tfns
+                                                                  (map (replace-tycons free-idxs (map/merge types- with-type)) args)
+                                                                      final)
                                                (, kinds qual) (generics (map (fn [_] []) top-args) typ)]
                                                (,
                                                    [(!>! name (forall kinds qual)) ..assumps]
                                                        (map/set constructors name (forall kinds qual))))))]
         (full-env
-            (type-env
-                constructors'
-                    (map/set map/nil name (, top-kinds (set/from-list names)))
-                    map/nil)
+            (type-env constructors' with-type map/nil)
                 class-env/nil
                 assumps')))
 

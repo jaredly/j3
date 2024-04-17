@@ -55,9 +55,7 @@
                          [one ..(filter f rest)]
                              (filter f rest))))
 
-(deftype (array a) (cons a (array a)) (nil))
-
-(deftype (bag a) (empty) (one a) (many (array a)))
+(deftype (bag a) (empty) (one a) (many (list a)))
 
 "My bag ${empty} and ${(many [(one 2) empty])}"
 

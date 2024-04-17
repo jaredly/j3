@@ -70,7 +70,7 @@ export const Hover = ({}: {}) => {
             if (evt.key === 'Alt') {
                 setShow(false);
             }
-            console.log(evt.key);
+            // console.log(evt.key);
         };
         document.addEventListener('keydown', down);
         document.addEventListener('keyup', up);
@@ -192,7 +192,7 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
         if (!next) break;
 
         const idx = next.loc;
-        const errs = results.nodes[ns.idx].errors[idx];
+        const errs = results.nodes[ns.idx]?.errors[idx];
         if (errs?.length) {
             hovers.push({
                 idx: idx,

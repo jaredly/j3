@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { Cursors } from '../../custom/Cursors';
 import { isValidCursorLocation } from '../../custom/isValidCursorLocation';
 import { HiddenInput } from '../../custom/HiddenInput';
@@ -29,7 +29,7 @@ export const WithStore = ({
     children,
 }: {
     store: Store;
-    children: JSX.Element[] | JSX.Element;
+    children: ReactNode | ReactNode[];
 }) => {
     return <StoreCtx.Provider value={store}>{children}</StoreCtx.Provider>;
 };
@@ -144,13 +144,13 @@ export const GroundUp = ({
                 // marginRight: 500,
             }}
         >
-            <HiddenInput
-                state={state}
-                dispatch={store.dispatch}
-                menu={undefined}
-                hashNames={{}}
-            />
             <WithStore store={store}>
+                <HiddenInput
+                    state={state}
+                    dispatch={store.dispatch}
+                    menu={undefined}
+                    hashNames={{}}
+                />
                 {state.cards.map((_, i) => (
                     <CardRoot
                         key={i}
