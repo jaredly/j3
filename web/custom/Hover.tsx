@@ -219,7 +219,7 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
 
         const idx = next.loc;
 
-        const current = results.nodes[ns.idx].hover[idx];
+        const current = results.nodes[ns.idx]?.hover[idx];
         if (current?.length) {
             hovers.push({ idx: idx, text: current.join('\n') });
             break;

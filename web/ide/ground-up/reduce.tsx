@@ -470,6 +470,7 @@ export const saveState = async (
     state: NUIState,
     cache?: ResultsCache<any>,
 ) => {
+    let ti = setTimeout(() => alert('Saving taking too long!'), 500);
     try {
         const res = await fetch(urlForId(id), {
             method: 'POST',
@@ -481,7 +482,9 @@ export const saveState = async (
                 `Error ${res.status} while saving state! ${await res.text()}`,
             );
         }
+        clearTimeout(ti);
     } catch (err) {
+        clearTimeout(ti);
         alert(`Error ${(err as Error).message} while saving state!`);
     }
 };

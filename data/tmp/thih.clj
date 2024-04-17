@@ -2612,8 +2612,8 @@ filter
                                                                  sexps)
                          (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
-;(defn infer-defns [tenv stmts]
-    (match stmts
+(defn infer-defns [tenv stmts]
+    ;(match stmts
         [one] (infer-stmt tenv one)
         _     (let-> [zipped (infer-several tenv stmts)]
                   (<-
@@ -2621,9 +2621,27 @@ filter
                           tenv/nil
                               zipped
                               (fn [tenv (, name type)]
-                              (tenv/set-type tenv name (generalize tenv type))))))))
+                              (tenv/set-type tenv name (generalize tenv type)))))))
+        (let [
+        (,,, subst tenv nidx result) (infer/program
+                                         tenv
+                                             ce
+                                             assumps
+                                             [(,
+                                             []
+                                                 [[(,
+                                                 name
+                                                     [(match body
+                                                     (elambda pats inner l) (, pats inner)
+                                                     _                      (, [] body))])]])])]
+        (match result
+            (ok assumps) (full-env
+                             type-env/nil
+                                 class-env/nil
+                                 (filter (fn [(!>! n _)] (= n name)) assumps))
+            (err e)      (fatal (type-error->s e)))))
 
-;(defn infer-stmtss [tenv' stmts]
+(defn infer-stmtss [tenv' stmts]
     (let-> [
         (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
         type-tenv                       (infer-stypes tenv' stypes salias)
@@ -2905,7 +2923,7 @@ filter
             (fn [scheme] string)
             (fn [full-env string] (option scheme))
             (fn [full-env (array stmt)]
-            (, (result full-env type-error-t) (array (, int type))))))
+            (, (result (, full-env (array type)) type-error-t) (array (, int type))))))
 
 (deftype parser
     (parser
@@ -2917,7 +2935,7 @@ filter
 (deftype evaluator (evaluator inferator analysis parser))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, // infer_stmts2 \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, infer_stmts2 \n }) ")
     (evaluator
         (inferator
             builtin-full

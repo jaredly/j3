@@ -301,11 +301,8 @@ const RenderProduceItem = ({
             );
         }
         case 'error': {
-            return (
-                <div style={{ color: 'rgb(255,50,50)' }}>
-                    Error {value.message}
-                </div>
-            );
+            let parts = highlightIdxs(value.message);
+            return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
         }
         case 'pre':
             return <pre>{value.text}</pre>;
@@ -344,7 +341,7 @@ export const JumpTo = ({
 }) => {
     const store = useGetStore();
     return (
-        <div
+        <span
             className="hover"
             onMouseEnter={() => {
                 const got = store.getState().regs[loc];
@@ -368,6 +365,6 @@ export const JumpTo = ({
             }}
         >
             {children}
-        </div>
+        </span>
     );
 };
