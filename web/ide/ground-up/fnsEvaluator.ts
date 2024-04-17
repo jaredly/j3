@@ -29,6 +29,36 @@ const makeTuple = (values: any[]) => {
     return res;
 };
 
+type InferExpr2 = {
+    type: ',';
+    0:
+        | { type: 'ok'; 0: any }
+        | {
+              type: 'err';
+              0: {
+                  type: ',';
+                  0: string;
+                  1: arr<{ type: ','; 0: string; 1: number }>;
+              };
+          };
+    1: arr<{ type: ','; 0: number; 1: any }>;
+};
+
+type InferStmts2 = {
+    type: ',';
+    0:
+        | { type: 'ok'; 0: { type: ','; 0: any; 1: arr<any> } }
+        | {
+              type: 'err';
+              0: {
+                  type: ',';
+                  0: string;
+                  1: arr<{ type: ','; 0: string; 1: number }>;
+              };
+          };
+    1: arr<{ type: ','; 0: number; 1: any }>;
+};
+
 export const fnsEvaluator = (
     id: string,
     data: any,
@@ -65,27 +95,9 @@ export const fnsEvaluator = (
                   },
                   infer(stmts, env) {
                       if (data['infer_stmts2']) {
-                          const result: {
-                              type: ',';
-                              0:
-                                  | {
-                                        type: 'ok';
-                                        0: { type: ','; 0: any; 1: arr<any> };
-                                    }
-                                  | {
-                                        type: 'err';
-                                        0: {
-                                            type: ',';
-                                            0: string;
-                                            1: arr<{
-                                                type: ',';
-                                                0: string;
-                                                1: number;
-                                            }>;
-                                        };
-                                    };
-                              1: arr<{ type: ','; 0: number; 1: any }>;
-                          } = data['infer_stmts2'](env)(wrapArray(stmts));
+                          const result: InferStmts2 = data['infer_stmts2'](env)(
+                              wrapArray(stmts),
+                          );
                           return {
                               result:
                                   result[0].type === 'ok'
@@ -145,7 +157,47 @@ export const fnsEvaluator = (
                       }
                   },
                   inferExpr(expr, env) {
-                      return data['infer'](env)(expr);
+                      if (data['infer2']) {
+                          const result: InferExpr2 = data['infer2'](env)(expr);
+                          return {
+                              typesAndLocs: unwrapArray(result[1]).map(
+                                  (res) => ({ loc: res[0], type: res[1] }),
+                              ),
+                              result:
+                                  result[0].type === 'ok'
+                                      ? { type: 'ok', value: result[0][0] }
+                                      : {
+                                            type: 'err',
+                                            err: {
+                                                message: result[0][0][0],
+                                                items: unwrapArray(
+                                                    result[0][0][1],
+                                                ).map((item) => ({
+                                                    loc: item[1],
+                                                    name: item[0],
+                                                })),
+                                            },
+                                        },
+                          };
+                      }
+                      try {
+                          const result = data['infer'](env)(expr);
+                          return {
+                              result: { type: 'ok', value: result },
+                              typesAndLocs: [],
+                          };
+                      } catch (err) {
+                          return {
+                              result: {
+                                  type: 'err',
+                                  err: {
+                                      message: (err as Error).message,
+                                      items: [],
+                                  },
+                              },
+                              typesAndLocs: [],
+                          };
+                      }
                   },
                   addTypes(env, nenv) {
                       return data['add_stmt'](env)(nenv);

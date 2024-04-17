@@ -137,11 +137,6 @@ export function updateState(
         // TODO
         let tenv = state.evaluator.inference.initType();
         for (let group of sorted) {
-            // Pluginssss
-            if (group.length === 1 && group[0].isPlugin) {
-                continue;
-            }
-
             const groupKey = group.map((g) => g.id).join(';');
             // This does "deep" change propagation
             if (!state.results.groups[groupKey].changed) {
@@ -150,6 +145,44 @@ export function updateState(
                         tenv,
                         state.results.groups[groupKey].tenv,
                     );
+                }
+
+                continue;
+            }
+
+            // Pluginssss
+            if (group.length === 1 && group[0].isPlugin) {
+                const node = nodes[group[0].id];
+                const plugin = workerPlugins[node.ns.plugin!.id];
+                const { result, typesAndLocs } = plugin.infer(
+                    (node.parsed as PluginParsed).parsed,
+                    state.evaluator!,
+                    tenv,
+                );
+                typesAndLocs.forEach(({ loc, type }) => {
+                    add(
+                        state.results!.tops[topForLoc[loc]].hover,
+                        loc,
+                        state.evaluator!.inference!.typeToString(type),
+                    );
+                });
+                if (result.type === 'err') {
+                    state.results.groups[groupKey].typeFailed = true;
+                    const err = result.err;
+                    const text = showError(err);
+                    group.forEach((item) => {
+                        state.results!.tops[item.id].produce.push({
+                            type: 'error',
+                            message: 'Type Inference: ' + text,
+                        });
+                        err.items.forEach(({ loc, name }) => {
+                            add(
+                                state.results!.tops[topForLoc[loc]].errors,
+                                loc,
+                                text,
+                            );
+                        });
+                    });
                 }
 
                 continue;
@@ -234,7 +267,6 @@ export function updateState(
                         });
                     });
                 }
-                // TODO...
                 res.typesAndLocs.forEach(({ loc, type }) => {
                     add(
                         state.results!.tops[topForLoc[loc]].hover,

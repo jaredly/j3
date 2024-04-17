@@ -207,8 +207,9 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
 
     // Ok types
     for (let i = state.hover.length - 1; i >= 0; i--) {
-        const last = state.hover[i].idx;
-        const node = state.map[last];
+        const last = state.hover[i];
+        if (last.type === 'ns' || last.type === 'card') break;
+        const node = state.map[last.idx];
         let next;
         try {
             next = advancePath(state.hover[i], node, state, true);

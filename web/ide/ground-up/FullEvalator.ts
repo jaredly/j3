@@ -16,6 +16,15 @@ export type ProduceItem =
 export type Produce = ProduceItem | ProduceItem[];
 
 export type AnyEnv = FullEvalator<any, any, any>;
+
+export type InferenceError = {
+    message: string;
+    items: {
+        name: string;
+        loc: number;
+    }[];
+};
+
 export type FullEvalator<
     Env extends { values: { [key: string]: any } },
     Stmt,
@@ -37,16 +46,18 @@ export type FullEvalator<
         ): {
             result:
                 | { type: 'ok'; value: { env: TypeEnv; types: Type[] } }
-                | {
-                      type: 'err';
-                      err: {
-                          message: string;
-                          items: { name: string; loc: number }[];
-                      };
-                  };
+                | { type: 'err'; err: InferenceError };
             typesAndLocs: { type: Type; loc: number }[];
         };
-        inferExpr(expr: Expr, env: TypeEnv): Type;
+        inferExpr(
+            expr: Expr,
+            env: TypeEnv,
+        ): {
+            result:
+                | { type: 'ok'; value: Type }
+                | { type: 'err'; err: InferenceError };
+            typesAndLocs: { type: Type; loc: number }[];
+        };
         addTypes(env: TypeEnv, nenv: TypeEnv): TypeEnv;
         typeForName(env: TypeEnv, name: string): Type;
         typeToString(type: Type): string;

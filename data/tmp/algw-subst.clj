@@ -1897,7 +1897,8 @@
             (fn [tenv (array stmt)]
             (, (result (, tenv (array type)) type-error-t) (array (, int type))))
             (fn [tenv tenv] tenv)
-            (fn [tenv expr] type)))
+            (fn [tenv expr] type)
+            (fn [tenv expr] (, (result type type-error-t) (array (, int type))))))
 
 (deftype name-kind (value) (type))
 
@@ -1919,21 +1920,26 @@
 (def externals-list (fn [x] (bag/to-list (externals set/nil x))))
 
 ((eval
-    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference
             builtin-env
                 (fn [tenv stmts]
-                (force type-error->s (run/nil-> (infer-stmtss tenv stmts))))
+                (fst (force type-error->s (run/nil-> (infer-stmtss tenv stmts)))))
                 (fn [tenv stmts]
                 (let [
                     (, (,, _ types subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
                     (, result (map types (fn [(, loc type)] (, loc (type-apply subst type)))))))
                 tenv/merge
-                (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr)))))
+                (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr))))
+                (fn [tenv expr]
+                (let [(, (,, _ types subst) result) ((state-f (infer tenv expr)) state/nil)]
+                    (, result (map types (fn [(, loc type)] (, loc (type-apply subst type))))))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)
                 (some v) (some (scheme/type v))
                 _        (none)))))
+
+19901

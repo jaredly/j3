@@ -190,6 +190,23 @@ export type WorkerPlugin<Results, Parsed, Options> = {
         errors: Errors,
         evaluator: FullEvalator<any, any, any>,
     ): { parsed: Parsed; deps: LocedName[] } | null;
+    infer(
+        parsed: Parsed,
+        evaluator: FullEvalator<any, any, any>,
+        tenv: any,
+    ): {
+        result:
+            | { type: 'ok'; value: null }
+            | {
+                  type: 'err';
+                  err: {
+                      message: string;
+                      items: { name: string; loc: number }[];
+                  };
+              };
+        typesAndLocs: { type: any; loc: number }[];
+    };
+
     process(
         parsed: Parsed,
         meta: NUIState['meta'],

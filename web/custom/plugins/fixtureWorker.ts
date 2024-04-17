@@ -7,6 +7,19 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     test: (node: Node) => {
         return parse(node, (node) => undefined) != null;
     },
+    infer(parsed, evaluator) {
+        return { result: { type: 'ok', value: null }, typesAndLocs: [] };
+    },
+    // infer(parsed, evaluator, tenv) {
+    //     const { result, typesAndLocs } = evaluator.inference!.inferExpr(
+    //         parsed.expr,
+    //         tenv,
+    //     );
+    //     return {
+    //         result: result.type === 'ok' ? { type: 'ok', value: null } : result,
+    //         typesAndLocs,
+    //     };
+    // },
     parse(node, errors, evaluator) {
         const deps: LocedName[] = [];
         const parsed = parse(node, parseExpr(evaluator, errors, deps));

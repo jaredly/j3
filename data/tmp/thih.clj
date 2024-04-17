@@ -2415,29 +2415,30 @@ filter
                                                                                                 (elambda pats inner l) (, pats inner)
                                                                                                 _                      (, [] body))])]])])]
                                                    (match result
-                                                       (ok assumps) (full-env
-                                                                        type-env/nil
-                                                                            class-env/nil
-                                                                            (filter (fn [(!>! n _)] (= n name)) assumps))
-                                                       (err e)      (fatal (type-error->s e))))
-        (stypealias name nl args type l)       full-env/nil
+                                                       (ok assumps) (ok
+                                                                        (full-env
+                                                                            type-env/nil
+                                                                                class-env/nil
+                                                                                (filter (fn [(!>! n _)] (= n name)) assumps)))
+                                                       (err e)      (err e)))
+        (stypealias name nl args type l)       (ok full-env/nil)
         (sdeftype name nl args constructors l) (infer-deftype
                                                    (full-env tenv ce assumps)
                                                        (,,, name nl args constructors))
         (sexpr body l)                         (let [
                                                    (,,, subst tenv nidx result) (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
                                                    (match result
-                                                       (ok assumps) full-env/nil
-                                                       (err e)      (fatal (type-error->s e))))))
+                                                       (ok assumps) (ok full-env/nil)
+                                                       (err e)      (err e)))))
 
 (defn infer [(full-env tenv ce assumps) body]
     (let [
         (,,, subst tenv nidx result) (infer/program tenv ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
         (match result
             (ok assumps) (match (filter (fn [(!>! n _)] (= n "it")) assumps)
-                             [(!>! n scheme)] scheme
-                             _                (fatal "No type found"))
-            (err e)      (fatal (type-error->s e)))))
+                             [(!>! n scheme)] (ok scheme)
+                             _                (err (, "No type found (for 'it')" [])))
+            (err e)      (err e))))
 
 (defn infer-alias [(full-env tenv ce assumps) (,, name args type)]
     (fatal "ok here we are")
@@ -2449,48 +2450,57 @@ filter
         [one ..rest] (kfun one (make-kind rest))))
 
 (defn replace-tycons [free-map types type]
-    (match type
-        (tcon (tycon name _) l) (match (map/get free-map name)
-                                    (some v) v
-                                    _        (match (map/get types name)
-                                                 (some (, kinds _)) (tcon (tycon name (make-kind kinds)) l)
-                                                 _                  (fatal "Unknonwn type constructor ${name}")))
-        (tapp a b l)            (tapp
-                                    (replace-tycons free-map types a)
-                                        (replace-tycons free-map types b)
-                                        l)
-        _                       type))
+    (let [<- ok >>= ok>>=]
+        (match type
+            (tcon (tycon name _) l) (match (map/get free-map name)
+                                        (some v) (ok v)
+                                        _        (match (map/get types name)
+                                                     (some (, kinds _)) (ok (tcon (tycon name (make-kind kinds)) l))
+                                                     _                  (err (, "Unknonwn type constructor" [(, l name)]))))
+            (tapp a b l)            (let-> [
+                                        a (replace-tycons free-map types a)
+                                        b (replace-tycons free-map types b)
+                                        ]
+                                        (<- (tapp a b l)))
+            _                       (ok type))))
 
 (defn infer-deftype [(full-env (type-env constructors- types- aliases-) ce assumps)
     (,,, name tnl top-args constructors)]
     ; TODO make it so we can do higher kinds
         ;  and type classes! can't do that just yet.
         (let [
-        names                      (map (fn [(,,, name _ _ _)] name) constructors)
-        top-kinds                  (map (fn [_] star) top-args)
-        kind                       (foldl star top-kinds (fn [result arg] (kfun arg result)))
-        with-type                  (map/set map/nil name (, top-kinds (set/from-list names)))
-        (, final _)                (foldl
-                                       (, (tcon (tycon name kind) tnl) 0)
-                                           top-args
-                                           (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
-        free-idxs                  (map/from-list (mapi (fn [(, arg al) i] (, arg (tgen i al))) 0 top-args))
-        (, assumps' constructors') (foldl
-                                       (, [] map/nil)
-                                           constructors
-                                           (fn [(, assumps constructors) (,,, name nl args l)]
-                                           (let [
-                                               typ            (tfns
-                                                                  (map (replace-tycons free-idxs (map/merge types- with-type)) args)
-                                                                      final)
-                                               (, kinds qual) (generics (map (fn [_] []) top-args) typ)]
-                                               (,
-                                                   [(!>! name (forall kinds qual)) ..assumps]
-                                                       (map/set constructors name (forall kinds qual))))))]
-        (full-env
-            (type-env constructors' with-type map/nil)
-                class-env/nil
-                assumps')))
+        <-          ok
+        >>=         ok>>=
+        names       (map (fn [(,,, name _ _ _)] name) constructors)
+        top-kinds   (map (fn [_] star) top-args)
+        kind        (foldl star top-kinds (fn [result arg] (kfun arg result)))
+        with-type   (map/set map/nil name (, top-kinds (set/from-list names)))
+        (, final _) (foldl
+                        (, (tcon (tycon name kind) tnl) 0)
+                            top-args
+                            (fn [(, body i) (, arg al)] (, (tapp body (tgen i al) al) (+ i 1))))
+        free-idxs   (map/from-list (mapi (fn [(, arg al) i] (, arg (tgen i al))) 0 top-args))
+        result      (foldl-ok->
+                        (, [] map/nil)
+                            constructors
+                            (fn [(, assumps constructors) (,,, name nl args l)]
+                            (let-> [
+                                args           (map-ok->
+                                                   (replace-tycons free-idxs (map/merge types- with-type))
+                                                       args)
+                                typ            (<- (tfns args final))
+                                (, kinds qual) (<- (generics (map (fn [_] []) top-args) typ))]
+                                (<-
+                                    (,
+                                        [(!>! name (forall kinds qual)) ..assumps]
+                                            (map/set constructors name (forall kinds qual)))))))]
+        (match result
+            (ok (, assumps' constructors') ) (ok
+                                                 (full-env
+                                                     (type-env constructors' with-type map/nil)
+                                                         class-env/nil
+                                                         assumps'))
+            (err e)                          (err e))))
 
 (infer-deftype
     full-env/nil
@@ -2504,6 +2514,12 @@ filter
     (match values
         []           (<- init)
         [one ..rest] (let-> [one (f init one)] (foldl-> one rest f))))
+
+(defn foldl-ok-> [init values f]
+    (let [<- ok >>= ok>>=]
+        (match values
+            []           (<- init)
+            [one ..rest] (let-> [one (f init one)] (foldl-ok-> one rest f)))))
 
 (defn foldr-> [init values f]
     (match values
@@ -2583,7 +2599,7 @@ filter
         tenv'                    (<- (tenv/merge tenv tenv'))]
         (<- tenv)))
 
-(defn infer-types [full aliases deftypes]
+;(defn infer-types [full aliases deftypes]
     (let [names (map (fn [(,, name args type)] name) aliases)]
         (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
 
@@ -2612,54 +2628,67 @@ filter
                                                                  sexps)
                          (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
-(defn infer-defns [tenv () stmts]
-    ;(match stmts
-        [one] (infer-stmt tenv one)
-        _     (let-> [zipped (infer-several tenv stmts)]
-                  (<-
-                      (foldl
-                          tenv/nil
-                              zipped
-                              (fn [tenv (, name type)]
-                              (tenv/set-type tenv name (generalize tenv type)))))))
-        (let [
+(defn infer-defns [(full-env tenv ce assumps) stmts]
+    (let [
+        names                        (set/from-list (map (fn [(sdef name _ _ _)] name) stmts))
         (,,, subst tenv nidx result) (infer/program
                                          tenv
                                              ce
                                              assumps
-                                             [(,
-                                             []
-                                                 [[(,
-                                                 name
-                                                     [(match body
-                                                     (elambda pats inner l) (, pats inner)
-                                                     _                      (, [] body))])]])])]
+                                             (map
+                                             (fn [(sdef name _ body _)]
+                                                 (,
+                                                     []
+                                                         [[(,
+                                                         name
+                                                             [(match body
+                                                             (elambda pats inner l) (, pats inner)
+                                                             _                      (, [] body))])]]))
+                                                 stmts))]
         (match result
-            (ok assumps) (full-env
-                             type-env/nil
-                                 class-env/nil
-                                 (filter (fn [(!>! n _)] (= n name)) assumps))
-            (err e)      (fatal (type-error->s e)))))
+            (ok assumps) (ok
+                             (full-env
+                                 type-env/nil
+                                     class-env/nil
+                                     (filter (fn [(!>! n _)] (set/has names n)) assumps)))
+            (err e)      (err e))))
+
+(defn map-> [f items]
+    (match items
+        []           (<- [])
+        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ]))))
+
+(defn map-ok-> [f items]
+    (let [>>= ok>>= <- ok]
+        (match items
+            []           (<- [])
+            [one ..rest] (let-> [one (f one) rest (map-ok-> f rest)] (<- [one ..rest])))))
 
 (defn infer-stmtss [tenv' stmts]
-    (let-> [
-        (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
-        type-tenv                       (infer-stypes tenv' stypes salias)
-        tenv'                           (<- (tenv/merge type-tenv tenv'))
-        val-tenv                        (infer-defns tenv' sdefs)
-        _                               (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
-        (<- (tenv/merge type-tenv val-tenv))))
+    (let [>>= ok>>= <- ok]
+        (let-> [
+            (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
+            ;(type-tenv
+                (infer-stypes tenv' stypes salias)
+                    tenv'
+                    (<- (tenv/merge type-tenv tenv')))
+            type-tenv                       (foldl-ok-> tenv' stypes infer-stmt)
+            val-tenv                        (infer-defns tenv' sdefs)
+            types                           (map-ok-> (infer (full-env/merge val-tenv tenv')) sexps)]
+            (<- (full-env/merge type-tenv val-tenv)))))
 
 (deftype name-kind (value) (type))
 
 (typealias locname (,, string name-kind int))
 
 (defn infer-stmts [env stmts]
-    (foldl
-        full-env/nil
-            stmts
-            (fn [env' stmt]
-            (full-env/merge env' (infer-stmt (full-env/merge env env') stmt)))))
+    (let [>>= ok>>= <- ok]
+        (foldl-ok->
+            full-env/nil
+                stmts
+                (fn [env' stmt]
+                (let-> [env (infer-stmt (full-env/merge env env') stmt) ]
+                    (<- (full-env/merge env' env)))))))
 
 (defn full-env/merge [(full-env a b c) (full-env d e f)]
     (full-env (tenv/merge a d) (class-env/merge b e) (concat [c f])))
@@ -2719,8 +2748,17 @@ filter
     builtin-full
         (map parse-stmt [(@@ (defn x [y] (+ y 1))) (@@ (defn y [z] z))]))
 
+(defn force [e->s v]
+    (match v
+        (ok v)  v
+        (err e) (fatal (e->s e))))
+
 (,
-    (fn [x] (full-env->s (infer-stmts builtin-full (map parse-stmt x))))
+    (fn [x]
+        (full-env->s
+            (force
+                type-error->s
+                    (infer-stmts builtin-full (map parse-stmt x)))))
         [(,
         [(@@ (def x 1))]
             "# Type Env\n## Constructors\n# Class Env\n## Instances\n## Defaults\n# Assumps\nx: int")
@@ -2935,21 +2973,29 @@ filter
 (deftype evaluator (evaluator inferator analysis parser))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, infer_stmts2 \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns', \n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, infer_stmts2 \n }) ")
     (evaluator
         (inferator
             builtin-full
-                infer-stmts
+                (fn [x y] (force type-error->s (infer-stmts x y)))
                 full-env/merge
-                infer
+                (fn [x y] (force type-error->s (infer x y)))
                 scheme->s
                 (fn [(full-env tenv ce assumps) name]
                 (match (filter (fn [(!>! n _)] (= n name)) assumps)
                     [(!>! _ scheme) .._] (some scheme)
                     _                    (none)))
-                (fn [env stms] (, (fatal "Stopship") [])))
+                (fn [env stms]
+                (let [result (infer-stmtss env stms)]
+                    (,
+                        (match result
+                            (ok v)  (ok (, v []))
+                            (err e) (err e))
+                            []))))
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))
                 names)
             (parser parse-stmt parse-expr compile-stmt compile)))
+
+27573

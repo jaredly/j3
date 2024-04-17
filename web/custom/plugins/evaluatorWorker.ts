@@ -20,6 +20,17 @@ export const evaluatorWorker: WorkerPlugin<
             return null;
         }
     },
+    infer(parsed, evaluator, tenv) {
+        const { result, typesAndLocs } = evaluator.inference!.inferExpr(
+            parsed.expr,
+            tenv,
+        );
+        // hoverrrrr pleeeeease
+        return {
+            result: result.type === 'ok' ? { type: 'ok', value: null } : result,
+            typesAndLocs,
+        };
+    },
 
     // So is this where ... we would kick things off?
     // ORRR what if the `store` is responsible for
