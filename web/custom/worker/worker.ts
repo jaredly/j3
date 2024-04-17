@@ -21,6 +21,7 @@ export type Message =
           nodes: ImmediateResults<any>['nodes'];
       }
     | { type: 'debug'; execOrder: boolean };
+// | { type: 'plugin'; id: number; top: number };
 
 export type Sendable = {
     produce: ProduceItem[];
@@ -33,6 +34,7 @@ export type ToPage = {
     type: 'results';
     results: Record<number, Sendable>;
 };
+// | { type: 'plugin'; id: number };
 
 const sendBack = (msg: ToPage) => postMessage(msg);
 

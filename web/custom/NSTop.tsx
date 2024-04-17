@@ -1,20 +1,18 @@
 import React, { ReactNode, useMemo } from 'react';
-import { Cursor } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
-import { Render, RenderNNode } from './Render';
-import { Action, NUIState, RealizedNamespace } from './UIState';
-import { RenderProps } from './types';
+import { pathForIdx } from '../ide/ground-up/CommandPalette';
+import { ProduceItem } from '../ide/ground-up/FullEvalator';
 import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
-import { NsReg, Drag } from './NsReg';
-import { MyEvalError, LocError } from '../ide/ground-up/Evaluators';
-import { ProduceItem } from '../ide/ground-up/FullEvalator';
+import { Drag, NsReg } from './NsReg';
+import { Render, RenderNNode } from './Render';
+import { RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
 import { Store } from './store/Store';
 import { useExpanded, useGetStore } from './store/StoreCtx';
-import { useNode } from './store/useNode';
-import { pathForIdx } from '../ide/ground-up/CommandPalette';
 import { useNamespace } from './store/useNamespace';
+import { useNode } from './store/useNode';
+import { RenderProps } from './types';
 
 const PluginRender = ({
     ns,
@@ -43,7 +41,7 @@ const PluginRender = ({
     if (!rn || results == null)
         return (
             <div>
-                {!results ? 'No plugin results...' : ''}
+                {results == null ? 'No plugin results...' : ''}
                 <Render {...props} />
             </div>
         );

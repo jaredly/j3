@@ -28,7 +28,7 @@ export const evaluatorWorker: WorkerPlugin<
     // "send your evaluator..."
     // OK SO
     process() {
-        return null;
+        return 'hello';
         // if (!options || !options.endsWith('.js')) {
         //     // throw new Error(`Bad name`);
         //     return {
