@@ -13,8 +13,16 @@ type-args
 - [x] show a spinner when the worker is ... working.
 - [x] show types of defns n stuff pleassee
 - [ ] it would be ... quite nice ... to ... incrementally send back updates.
-- [ ] ok why the heck is it taking 1.5 seconds to save?
+- [x] ok why the heck is it taking 1.5 seconds to save? lol it was 30mb
 - [ ] UHM Let's do some indication of `unused` variables!
+- [ ] and "highlight usages of the currently selected ident" would be super nice
+
+- [ ] tbh now that inference & stuff is async, the caching issue is somehwat less. Would still be
+  great to nail down ofc.
+
+- [ ] THIH gotta report hoverssss
+
+- [ ] lol skip intermediate requests, for reals
 
 ok lol thih is sooo big. let's maybe compress it?
 

@@ -350,6 +350,7 @@ export const JumpTo = ({
                 node.node.style.backgroundColor = 'red';
             }}
             onClick={() => {
+                console.log('jumping', loc);
                 const path = pathForIdx(loc, store.getState());
                 if (!path) return alert('nope');
                 store.dispatch({

@@ -523,7 +523,7 @@
 
 (typealias
     (State value)
-        (StateT (, int (array (,, int type (map string type)))) value))
+        (StateT (,, int (array (, int type)) (map string type)) value))
 
 (def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
 
