@@ -44,13 +44,17 @@ export const setupSyncStore = (
         ) => void)[];
     } = {};
 
-    const evtListeners: Record<Evt, ((state: NUIState) => void)[]> = {
+    const evtListeners: Record<
+        Evt,
+        ((state: NUIState, extra?: any) => void)[]
+    > = {
         all: [],
         hover: [],
         map: [],
         nsMap: [],
         results: [],
         selection: [],
+        pending: [],
     };
 
     let state = initialState;
@@ -71,16 +75,33 @@ export const setupSyncStore = (
         getImmediateResults(state, evaluator ?? null, results);
     }
 
+    let msgid = 0;
     let inProcess = false;
 
     const worker = new Worker(new URL('../worker/worker.ts', import.meta.url), {
         type: 'module',
     });
-    const send = (msg: Message) => worker.postMessage(msg);
-    send({ type: 'initial', nodes: results.nodes, evaluator: state.evaluator });
+
+    let pending: number[] = [];
+    const send = (msg: Message) => {
+        pending.push(msg.id);
+        evtListeners.pending.forEach((f) => f(state, pending.length));
+        worker.postMessage(msg);
+    };
+    send({
+        type: 'initial',
+        nodes: results.nodes,
+        evaluator: state.evaluator,
+        id: msgid++,
+    });
 
     worker.addEventListener('message', (evt) => {
         const msg: ToPage = evt.data;
+        const at = pending.indexOf(msg.id);
+        if (at !== -1) {
+            pending.splice(at, 1);
+            evtListeners.pending.forEach((f) => f(state, pending.length));
+        }
         switch (msg.type) {
             case 'results': {
                 const changedNodes = calcChangedNodes(
@@ -99,6 +120,7 @@ export const setupSyncStore = (
                         f(state, results.nodes[top], msg.results[top]),
                     ),
                 );
+                evtListeners.results.forEach((f) => f(state));
             }
         }
     });
@@ -107,7 +129,7 @@ export const setupSyncStore = (
         setDebug(execOrder, disableEvaluation) {
             // throw new Error(`todo`);
             // console.error('ignoring sotry');
-            send({ type: 'debug', execOrder });
+            send({ type: 'debug', execOrder, id: msgid++ });
         },
         async dispatch(action) {
             if (inProcess) {
@@ -140,6 +162,7 @@ export const setupSyncStore = (
                     type: 'initial',
                     nodes: results.nodes,
                     evaluator: state.evaluator,
+                    id: msgid++,
                 });
             } else {
                 let changed = false;
@@ -151,7 +174,7 @@ export const setupSyncStore = (
                     }
                 });
                 if (changed) {
-                    send({ type: 'update', nodes });
+                    send({ type: 'update', nodes, id: msgid++ });
                 }
             }
 

@@ -78,7 +78,7 @@ export const SandboxView = ({
                 }}
             />
             <Cursors at={state.at} regs={state.regs} />
-            <Hover
+            {/* <Hover
                 state={state}
                 dispatch={dispatch}
                 calc={() =>
@@ -86,7 +86,7 @@ export const SandboxView = ({
                         errorToString(err, state.ctx),
                     )
                 }
-            />
+            /> */}
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}

@@ -104,18 +104,20 @@ export const Cursors = ({
     );
 };
 
-export const subRect = (
-    one: DOMRect,
-    two: DOMRect,
-    color?: string,
-): {
+export type CursorRect = {
     left: number;
     top: number;
     height: number;
     bottom: number;
     right: number;
     color?: string;
-} => {
+};
+
+export const subRect = (
+    one: DOMRect,
+    two: DOMRect,
+    color?: string,
+): CursorRect => {
     return {
         left: one.left - two.left,
         top: one.top - two.top,

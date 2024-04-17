@@ -9,7 +9,11 @@ import { goLeftUntil } from '../../../src/state/goLeftUntil';
 import { Display } from '../../../src/to-ast/library';
 import { CardRoot } from '../../custom/CardRoot';
 import { NUIResults, Store } from '../../custom/store/Store';
-import { StoreCtx, useGlobalState } from '../../custom/store/StoreCtx';
+import {
+    StoreCtx,
+    useGetStore,
+    useGlobalState,
+} from '../../custom/store/StoreCtx';
 import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
 import { CommandPalette } from './CommandPalette';
@@ -18,6 +22,7 @@ import { advancePath } from './findTops';
 import { ResultsCache } from '../../custom/store/ResultsCache';
 import { AnyEnv } from '../../custom/store/getResults';
 import { useSyncStore } from '../../custom/store/useSyncStore';
+import { Spinner } from './Spinner';
 
 export const WithStore = ({
     store,
@@ -124,7 +129,7 @@ export const GroundUp = ({
         }
     }, [state.at, state.map, state.regs]);
 
-    const start = state.at.length ? state.at[0].start : null;
+    // const start = state.at.length ? state.at[0].start : null;
 
     useEffect(() => {
         console.log('ev', store.getEvaluator());
@@ -192,12 +197,14 @@ export const GroundUp = ({
                     </div>
                 ))}
                 <div>
-                    <ShowEvaluators
-                        state={state}
-                        store={store}
-                        listing={listing}
-                        id={id}
-                    />
+                    <WithStore store={store}>
+                        <ShowEvaluators
+                            state={state}
+                            store={store}
+                            listing={listing}
+                            id={id}
+                        />
+                    </WithStore>
                 </div>
                 <div style={{ flex: 1, overflow: 'auto' }}>
                     {debug.selection ? (
@@ -206,13 +213,9 @@ export const GroundUp = ({
                     {/* STOPSHIP <RenderTraces /> */}
                 </div>
             </div>
-            {/* STOPSHIP <Hover
-                state={state}
-                dispatch={store.dispatch}
-                calc={() => calculateHovers(state)}
-            /> */}
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
+                <Hover />
                 <CommandPalette />
             </WithStore>
         </div>
@@ -262,63 +265,16 @@ const ShowAt = ({ at, hover }: { at: NUIState['at']; hover: Path[] }) => {
 
 type StyleProp = NonNullable<React.ComponentProps<'div'>['style']>;
 
-type HoverItem = {
-    idx: number;
-    text: string;
-    style?: StyleProp;
+const usePending = () => {
+    const store = useGetStore();
+    const [state, setState] = useState(0);
+    useEffect(() => {
+        store.on('pending', (_, count) => {
+            setState(count);
+        });
+    });
+    return state;
 };
-
-function calculateHovers(state: NUIState, results: NUIResults): HoverItem[] {
-    const hovers: HoverItem[] = [];
-
-    // Check errors
-    for (let i = state.hover.length - 1; i >= 0; i--) {
-        const last = state.hover[i].idx;
-        const node = state.map[last];
-        let next;
-        try {
-            next = advancePath(state.hover[i], node, state, true);
-        } catch (err) {
-            continue;
-        }
-        if (!next) break;
-
-        const idx = next.loc;
-        const errs = results.errors[idx];
-        if (errs?.length) {
-            hovers.push({
-                idx: idx,
-                text: errs.join('\n'),
-                style: {
-                    color: '#f66',
-                },
-            });
-            break;
-        }
-    }
-
-    // Ok types
-    for (let i = state.hover.length - 1; i >= 0; i--) {
-        const last = state.hover[i].idx;
-        const node = state.map[last];
-        let next;
-        try {
-            next = advancePath(state.hover[i], node, state, true);
-        } catch (err) {
-            continue;
-        }
-        if (!next) break;
-
-        const idx = next.loc;
-
-        const current = results.hover[idx];
-        if (current?.length) {
-            hovers.push({ idx: idx, text: current.join('\n') });
-            break;
-        }
-    }
-    return hovers;
-}
 
 function ShowEvaluators({
     state,
@@ -331,6 +287,7 @@ function ShowEvaluators({
     listing: string[] | null;
     id: string;
 }) {
+    const pending = usePending();
     if (!state.evaluator)
         return evSelect(
             null,
@@ -361,6 +318,10 @@ function ShowEvaluators({
 
     return (
         <div>
+            <div style={{ color: pending > 0 ? 'green' : 'white' }}>
+                {pending > 0 ? <Spinner /> : null}
+                {pending} pending requests
+            </div>
             {state.evaluator.map((id, i) => (
                 <div key={id}>
                     {evSelect(

@@ -1,5 +1,7 @@
 (deftype (array a) (cons a (array a)) (nil))
 
+(defn hello [x] (+ 2 x))
+
 "Hello"
 
 ,

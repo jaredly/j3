@@ -42,6 +42,7 @@ export const useStore = (
             nsMap: [],
             results: [],
             selection: [],
+            pending: [],
         };
 
         let state = initialState;

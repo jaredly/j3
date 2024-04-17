@@ -118,7 +118,7 @@ export const Test = ({ env }: { env: Env }) => {
             >
                 {debug ? 'Debug on' : 'Debug off'}
             </button>
-            <Hover
+            {/* <Hover
                 state={state}
                 dispatch={dispatch}
                 calc={() => {
@@ -131,7 +131,7 @@ export const Test = ({ env }: { env: Env }) => {
                     }
                     return [];
                 }}
-            />
+            /> */}
             <Cursors at={state.at} regs={state.regs} />
             {/* {selTop ? JSON.stringify(results.tops[selTop].data) : null} */}
             {selTop != null ? <ViewJson v={results.tops[selTop].data} /> : null}

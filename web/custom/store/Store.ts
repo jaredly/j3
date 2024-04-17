@@ -28,7 +28,14 @@ export type NUIResults = {
     pluginResults: { [nsLoc: number]: any };
 };
 
-export type Evt = 'selection' | 'hover' | 'map' | 'nsMap' | 'all' | 'results';
+export type Evt =
+    | 'selection'
+    | 'hover'
+    | 'map'
+    | 'nsMap'
+    | 'all'
+    | 'results'
+    | 'pending';
 
 export type Store = {
     dispatch: React.Dispatch<Action>;
@@ -49,7 +56,7 @@ export type Store = {
         ) => void,
     ): () => void;
     // everyChange(fn: (state: NUIState) => void): () => void;
-    on(evt: Evt, fn: (state: NUIState) => void): () => void;
+    on(evt: Evt, fn: (state: NUIState, extra?: any) => void): () => void;
     setDebug(execOrder: boolean, disableEvaluation: boolean): void;
 };
 

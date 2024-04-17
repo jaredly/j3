@@ -1,22 +1,13 @@
-import React, {
-    PropsWithChildren,
-    PropsWithoutRef,
-    useEffect,
-    useLayoutEffect,
-    useState,
-} from 'react';
-import { getType } from '../../src/get-type/get-types-new';
-import { nodeToExpr } from '../../src/to-ast/nodeToExpr';
+import React, { useEffect, useState } from 'react';
+import { Ctx } from '../../src/to-ast/library';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
-import { errorToString } from '../../src/to-cst/show-errors';
-import { fromMCST } from '../../src/types/mcst';
-import { State } from '../../src/state/getKeyUpdate';
-import { Path } from '../../src/state/path';
-import { Action, NUIState, UIState } from './UIState';
-import { subRect } from './Cursors';
-import { Ctx } from '../../src/to-ast/library';
 import type { Error } from '../../src/types/types';
+import { advancePath } from '../ide/ground-up/findTops';
+import { CursorRect, subRect } from './Cursors';
+import { NUIState, UIState } from './UIState';
+import { useGetStore } from './store/StoreCtx';
+import { WorkerResults } from './store/useSyncStore';
 
 export const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
@@ -65,18 +56,9 @@ export const calc = (
 
 type StyleProp = NonNullable<React.ComponentProps<'div'>['style']>;
 
-export const Hover = ({
-    state,
-    dispatch,
-    calc,
-}: {
-    state: NUIState;
-    dispatch: React.Dispatch<Action>;
-    calc: () => { idx: number; text: string; style?: StyleProp }[];
-}) => {
-    const found = calc();
-
+export const Hover = ({}: {}) => {
     const [show, setShow] = useState(false);
+    const hover = useHover(show);
 
     useEffect(() => {
         const down = (evt: KeyboardEvent) => {
@@ -98,25 +80,9 @@ export const Hover = ({
         };
     }, []);
 
-    const node = found.length ? getRegNode(found[0].idx, state.regs) : null;
-    // if (!node || found == null)
-    //     return (
-    //         <div>
-    //             Hover {JSON.stringify(state.hover)} Node {!!node + ''} Found{' '}
-    //             {found ? found.idx + '' : 'no found'} um{' '}
-    //             {found
-    //                 ? Object.keys(state.regs[found.idx] ?? {}).join('')
-    //                 : null}
-    //         </div>
-    //     );
-    if (!node || !found.length || !show) return null;
+    if (!hover || !show) return null;
 
-    const box = subRect(
-        node.getBoundingClientRect(),
-        node.offsetParent!.getBoundingClientRect(),
-    );
-
-    const selectionIndex = state.menu?.selection ?? 0;
+    const { box, found } = hover;
 
     return (
         <div>
@@ -160,3 +126,104 @@ export const Hover = ({
         </div>
     );
 };
+
+type HoverItem = {
+    idx: number;
+    text: string;
+    style?: StyleProp;
+};
+
+const useHover = (show: boolean) => {
+    const [state, setState] = useState(
+        null as null | { box: CursorRect; found: HoverItem[] },
+    );
+    const store = useGetStore();
+
+    useEffect(() => {
+        if (!show) return;
+
+        const state = store.getState();
+        const results = store.getResults().workerResults;
+        setState(getHoverState(state, results));
+
+        const f = (state: NUIState) => {
+            setState(getHoverState(state, store.getResults().workerResults));
+        };
+
+        const one = store.on('hover', f);
+        const two = store.on('hover', f);
+        return () => {
+            one();
+            two();
+        };
+    }, [show]);
+
+    return state;
+};
+
+function getHoverState(state: NUIState, results: WorkerResults) {
+    const found = calculateHovers(state, results);
+    if (!found.length) return null;
+    const node = getRegNode(found[0].idx, state.regs);
+    if (!node) return null;
+    const box = subRect(
+        node.getBoundingClientRect(),
+        node.offsetParent!.getBoundingClientRect(),
+    );
+    return { box, found };
+}
+
+function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
+    const hovers: HoverItem[] = [];
+
+    const ns = state.hover.find((p) => p.type === 'ns-top');
+    if (!ns) return [];
+
+    // Check errors
+    for (let i = state.hover.length - 1; i >= 0; i--) {
+        const last = state.hover[i].idx;
+        const node = state.map[last];
+        let next;
+        try {
+            next = advancePath(state.hover[i], node, state, true);
+        } catch (err) {
+            continue;
+        }
+        if (!next) break;
+
+        const idx = next.loc;
+        const errs = results.nodes[ns.idx].errors[idx];
+        if (errs?.length) {
+            hovers.push({
+                idx: idx,
+                text: errs.join('\n'),
+                style: {
+                    color: '#f66',
+                },
+            });
+            break;
+        }
+    }
+
+    // Ok types
+    for (let i = state.hover.length - 1; i >= 0; i--) {
+        const last = state.hover[i].idx;
+        const node = state.map[last];
+        let next;
+        try {
+            next = advancePath(state.hover[i], node, state, true);
+        } catch (err) {
+            continue;
+        }
+        if (!next) break;
+
+        const idx = next.loc;
+
+        const current = results.nodes[ns.idx].hover[idx];
+        if (current?.length) {
+            hovers.push({ idx: idx, text: current.join('\n') });
+            break;
+        }
+    }
+    return hovers;
+}

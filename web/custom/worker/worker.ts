@@ -15,12 +15,14 @@ export type Message =
           type: 'initial';
           nodes: ImmediateResults<any>['nodes'];
           evaluator: NUIState['evaluator'];
+          id: number;
       }
     | {
           type: 'update';
           nodes: ImmediateResults<any>['nodes'];
+          id: number;
       }
-    | { type: 'debug'; execOrder: boolean };
+    | { type: 'debug'; execOrder: boolean; id: number };
 // | { type: 'plugin'; id: number; top: number };
 
 export type Sendable = {
@@ -33,6 +35,7 @@ export type Sendable = {
 export type ToPage = {
     type: 'results';
     results: Record<number, Sendable>;
+    id: number;
 };
 // | { type: 'plugin'; id: number };
 
@@ -103,12 +106,12 @@ const next = async () => {
     state = await handleMessage(msg, state);
     if (state?.results) {
         const updated: Record<number, Sendable> = {};
-        let change = false;
+        // let change = false;
         Object.entries(state.results.tops).forEach(
             ([key, { changes, produce, errors, hover, pluginResults }]) => {
                 if (changes.results) {
                     // console.log('a top change', key);
-                    change = true;
+                    // change = true;
                     updated[+key] = {
                         produce,
                         errors,
@@ -118,9 +121,9 @@ const next = async () => {
                 }
             },
         );
-        if (change) {
-            sendBack({ type: 'results', results: updated });
-        }
+        // if (change) {
+        sendBack({ type: 'results', results: updated, id: msg.id });
+        // }
     }
     running = false;
     next();
