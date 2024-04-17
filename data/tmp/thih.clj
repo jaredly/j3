@@ -2612,7 +2612,7 @@ filter
                                                                  sexps)
                          (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
-(defn infer-defns [tenv stmts]
+(defn infer-defns [tenv () stmts]
     ;(match stmts
         [one] (infer-stmt tenv one)
         _     (let-> [zipped (infer-several tenv stmts)]

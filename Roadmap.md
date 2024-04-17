@@ -13,8 +13,9 @@ type-args
 - [x] show a spinner when the worker is ... working.
 - [x] show types of defns n stuff pleassee
 - [ ] it would be ... quite nice ... to ... incrementally send back updates.
+- [ ] ok why the heck is it taking 1.5 seconds to save?
 
-
+ok lol thih is sooo big. let's maybe compress it?
 
 
 #

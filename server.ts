@@ -199,7 +199,9 @@ createServer(async (req, res) => {
             res.writeHead(400, headers('text/plain'));
             return res.end('Need an end ok');
         }
+
         mkdirSync(path.dirname(full), { recursive: true });
+
         let { state, cache }: { state: NUIState; cache?: ResultsCache<any> } =
             JSON.parse(await readBody(req));
         const last = state.history[state.history.length - 1].ts;

@@ -470,13 +470,15 @@ export const saveState = async (
     state: NUIState,
     cache?: ResultsCache<any>,
 ) => {
-    let ti = setTimeout(() => alert('Saving taking too long!'), 500);
+    let ti = 0; //setTimeout(() => alert('Saving taking too long!'), 500);
+    let now = Date.now();
     try {
         const res = await fetch(urlForId(id), {
             method: 'POST',
             body: JSON.stringify({ state, cache: stripCache(cache) }),
             headers: { 'Content-type': 'application/json' },
         });
+        console.log(`saving took ${Date.now() - now}ms`);
         if (res.status !== 200) {
             alert(
                 `Error ${res.status} while saving state! ${await res.text()}`,
