@@ -101,7 +101,13 @@ export const setupSyncStore = (
             send({ type: 'debug', execOrder });
         },
         async dispatch(action) {
-            if (inProcess) return alert(`Dispatch not finished`);
+            if (inProcess) {
+                // debugger;
+                console.error(`trying to dispatch`, action);
+                console.log('but we are in progress');
+                return;
+                // return alert(`Dispatch not finished`);
+            }
             // console.time('dispatch');
             inProcess = true;
             const lastState = state;

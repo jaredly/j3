@@ -151,8 +151,9 @@ function NSTop({
                                 />
                             ) : (
                                 <Render
-                                    debug={debug.ids}
+                                    key={ns.top}
                                     idx={ns.top}
+                                    debug={debug.ids}
                                     firstLineOnly={ns.collapsed}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },

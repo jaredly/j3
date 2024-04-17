@@ -9,9 +9,17 @@ import { extractBuiltins } from './extractBuiltins';
 import { addTypeConstructors } from './addTypeConstructors';
 import { findTops } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
-import { expr, parseExpr, parseStmt, stmt, unwrapArray } from './round-1/parse';
+import {
+    expr,
+    parseExpr,
+    parseStmt,
+    pat,
+    stmt,
+    unwrapArray,
+} from './round-1/parse';
 import { FullEvalator, Produce, Errors } from './FullEvalator';
 import { valueToString } from './valueToString';
+import { LocedName } from '../../custom/store/sortTops';
 
 // export type BasicEvaluator<T> = {};
 
@@ -101,6 +109,54 @@ export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     },
 };
 
+const patNames = (pat: pat): string[] => {
+    switch (pat.type) {
+        case 'pcon':
+            return unwrapArray(pat[1]).flatMap(patNames);
+        case 'pprim':
+        case 'pstr':
+        case 'pany':
+            return [];
+        case 'pvar':
+            return [pat[0]];
+    }
+};
+
+const dependencies = (expr: expr, names: string[], collect: LocedName[]) => {
+    switch (expr.type) {
+        case 'eapp':
+            dependencies(expr[0], names, collect);
+            dependencies(expr[1], names, collect);
+            return;
+        case 'elambda':
+            dependencies(expr[1], names.concat([expr[0]]), collect);
+            return;
+        case 'elet':
+            dependencies(expr[1], names, collect);
+            dependencies(expr[2], names.concat([expr[0]]), collect);
+            return;
+        case 'ematch':
+            dependencies(expr[0], names, collect);
+            unwrapArray(expr[1]).forEach((item) => {
+                dependencies(item[1], names.concat(patNames(item[0])), collect);
+            });
+            return;
+        case 'eprim':
+        case 'equot':
+            return;
+        case 'estr':
+            unwrapArray(expr[1]).forEach((tpl) => {
+                dependencies(tpl[0], names, collect);
+            });
+            return;
+        case 'evar':
+            if (!names.includes(expr[0])) {
+                collect.push({ name: expr[0], kind: 'value', loc: expr[1] });
+            }
+            return;
+    }
+};
+
 export const bootstrap: FullEvalator<
     { values: { [key: string]: any } },
     stmt & { loc: number },
@@ -109,6 +165,38 @@ export const bootstrap: FullEvalator<
     id: 'bootstrap',
     init: () => {
         return { values: builtins() };
+    },
+    analysis: {
+        dependencies(stmt) {
+            switch (stmt.type) {
+                case 'sdef': {
+                    const res: LocedName[] = [];
+                    dependencies(stmt[1], [], res);
+                    return res;
+                }
+                case 'sexpr': {
+                    const res: LocedName[] = [];
+                    dependencies(stmt[0], [], res);
+                    return res;
+                }
+                case 'sdeftype': {
+                    //
+                }
+            }
+            return [];
+        },
+        exprDependencies(expr) {
+            const res: LocedName[] = [];
+            dependencies(expr, [], res);
+            return res;
+        },
+        stmtNames(stmt) {
+            switch (stmt.type) {
+                case 'sdef':
+                    return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
+            }
+            return [];
+        },
     },
     parse(node, errors) {
         const ctx = { errors, display: {} };

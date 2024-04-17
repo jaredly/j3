@@ -30,7 +30,7 @@ export function builtins() {
         show: (v: any) => JSON.stringify(v),
 
         'int-to-string': (a: number) => a + '',
-        string_to_float: (a: string) => {
+        'string-to-float': (a: string) => {
             if (!a.match(/^\d*\.\d+$/)) {
                 return { type: 'none' };
             }
@@ -38,7 +38,7 @@ export function builtins() {
             if (!isNaN(v)) return { type: 'some', 0: v };
             return { type: 'none' };
         },
-        string_to_int: (a: string) => {
+        'string-to-int': (a: string) => {
             var v = parseInt(a);
             if (!isNaN(v) && '' + v === a) return { type: 'some', 0: v };
             return { type: 'none' };

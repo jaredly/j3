@@ -192,7 +192,7 @@ export const loadEvaluator = (
                 return fn(repr, false);
             default:
                 if (ev?.endsWith('.json')) {
-                    fn(null, false); // clear it out
+                    // fn(null, false); // clear it out
                     loadEv([ev]).then((ev) => fn(ev, true));
                 } else {
                     fn(null, false);
@@ -200,5 +200,7 @@ export const loadEvaluator = (
         }
     } else if (ev) {
         loadEv(ev).then((ev) => fn(ev, true));
+    } else {
+        fn(null, false);
     }
 };
