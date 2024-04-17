@@ -4,6 +4,11 @@
 parse-1-args
 type-args
 
+# ERROR
+
+- [x] 'destroy is not a function" wen 'jump to lolz' in simple.json ...
+- [ ] type hovers
+
 
 
 

@@ -111,10 +111,11 @@ export const GroundUp = ({
                     state.regs,
                 );
                 if (left) {
-                    return store.dispatch({
+                    store.dispatch({
                         type: 'select',
                         at: [{ start: left.selection }],
                     });
+                    return;
                 }
             }
         } catch (err) {

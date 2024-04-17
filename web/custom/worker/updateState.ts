@@ -8,8 +8,9 @@ import {
     PluginParsed,
     SuccessParsed,
 } from '../store/getImmediateResults';
+import { unique } from '../store/unique';
 import { nodeToSortable } from './calculateInitialState';
-import { State } from './types';
+import { AsyncResults, Sortable, State } from './types';
 
 export function updateState(
     state: State,
@@ -90,6 +91,7 @@ export function updateState(
         if (sourceUpdate || depsUpdate) {
             state.results.groups[groupKey] = {
                 changed: true,
+                typeFailed: false,
                 tenv: null,
                 tops: group.map((g) => g.id),
                 traces: {},
@@ -149,7 +151,9 @@ export function updateState(
                 const res = state.evaluator.inference.infer(stmts, tenv);
                 if (res.result.type === 'ok') {
                     state.results.groups[groupKey].tenv = res.result.value;
+                    state.results.groups[groupKey].typeFailed = false;
                 } else {
+                    state.results.groups[groupKey].typeFailed = true;
                     const err = res.result.err;
                     group.forEach((item) => {
                         state.results!.tops[item.id].produce.push({
@@ -205,7 +209,15 @@ export function updateState(
             continue;
         }
 
-        // console.log('re-evaluate', groupKey);
+        if (state.results.groups[groupKey].typeFailed) {
+            if (state.debugExecOrder) {
+                group.forEach((one) => {
+                    showExecOrder(state, one, i);
+                });
+            }
+
+            continue;
+        }
 
         const stmts = group.reduce(
             (map, g) => (
@@ -253,11 +265,7 @@ export function updateState(
             }
 
             if (state.debugExecOrder) {
-                state.results!.tops[one.id].produce.push(
-                    `Exec order ${i}\nDeps: ${one.deps
-                        .map((n) => n.name)
-                        .join(', ')}`,
-                );
+                showExecOrder(state, one, i);
             }
         });
 
@@ -269,4 +277,11 @@ export function updateState(
     }
 
     return { ...state, nodes };
+}
+function showExecOrder(tops: AsyncResults['tops'], one: Sortable, i: number) {
+    tops[one.id].produce.push(
+        `Exec order ${i}\nDeps: ${unique(one.deps.map((n) => n.name)).join(
+            ', ',
+        )}`,
+    );
 }

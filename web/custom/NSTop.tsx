@@ -57,13 +57,27 @@ const PluginRender = ({
 
 export const hasErrors = (id: number, store: Store): boolean => {
     const state = store.getState();
-    const { results } = store.getResults();
+    const { results, workerResults } = store.getResults();
     const ns = state.nsMap[id] as RealizedNamespace;
     if (!ns) {
         debugger;
         return false;
     }
     if (results.nodes[ns.id].parsed?.type === 'failure') {
+        return true;
+    }
+    if (Object.keys(workerResults.nodes[ns.id]?.errors ?? {}).length) {
+        return true;
+    }
+    if (
+        workerResults.nodes[ns.id]?.produce.some(
+            (p) =>
+                typeof p !== 'string' &&
+                (p.type === 'withjs' ||
+                    p.type === 'error' ||
+                    p.type === 'eval'),
+        )
+    ) {
         return true;
     }
     return ns.children.some((id) => hasErrors(id, store));

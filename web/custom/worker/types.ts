@@ -54,6 +54,7 @@ export type AsyncResults = {
             tops: number[];
             tenv: Tenv | null;
             traces: TraceMap;
+            typeFailed: boolean;
         }
     >;
 };
