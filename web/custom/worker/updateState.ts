@@ -125,7 +125,7 @@ export function updateState(
                 hover: {},
                 produce: [],
                 values: {},
-                pluginResults: plugin?.process(
+                pluginResults: plugin.process(
                     p.parsed,
                     node.meta,
                     state.evaluator,

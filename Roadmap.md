@@ -13,7 +13,7 @@ whyyy is it taking 30ms to just change a single thing.
 - [ ] `calculateInitialState` and `updateState` have a ton in common.
   We should be able to merge them quite easily.
 - [ ] THEENNNN we can get down to business, to hook up type inference.
-- [ ] anddd plugins! Gotta get our fixture tests back up
+- [x] anddd plugins! Gotta get our fixture tests back up
 - [ ] and then, please, yes lets do CACHING of the type infos.
 - [ ] oH and our immediateResults arent being cached either at the moment,
   gotta fix that too. Don't need to re-parse everything all the time.

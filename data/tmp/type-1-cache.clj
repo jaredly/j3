@@ -73,7 +73,7 @@
                          [one ..(filter f rest)]
                              (filter f rest))))
 
-(defn apply-tuple [fn (, a b)] (fn a b))
+(defn apply-tuple [f (, a b)] (f a b))
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
