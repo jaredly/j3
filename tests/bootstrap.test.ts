@@ -71,8 +71,8 @@ const fixtures = {
         evaluator: [1, 5],
     },
     7: {
-        name: 'p1+ta -> algw-subst',
-        file: 'algw-subst.json',
+        name: 'p1+ta -> thih',
+        file: 'thih.json',
         evaluator: [3, 4],
     },
     8: {
