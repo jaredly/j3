@@ -38,6 +38,7 @@ export type Sendable = {
     produce: ProduceItem[];
     errors: Record<number, string[]>;
     hover: Record<number, string[]>;
+    usages: Record<number, number[]>;
     pluginResults: any;
 };
 
@@ -126,13 +127,17 @@ const next = async () => {
             Object.assign(traces, group.traces);
         });
         Object.entries(state.results.tops).forEach(
-            ([key, { changes, produce, errors, hover, pluginResults }]) => {
+            ([
+                key,
+                { changes, produce, errors, usages, hover, pluginResults },
+            ]) => {
                 if (changes.results) {
                     updated[+key] = {
                         produce,
                         errors,
                         hover,
                         pluginResults,
+                        usages,
                     };
                 }
             },

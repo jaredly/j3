@@ -34,11 +34,11 @@ export type AsyncResults = {
                 results?: boolean;
                 source?: boolean;
             };
-            usages: Record<number, number[]>;
             errors: Record<number, string[]>;
             hover: Record<number, string[]>;
             pluginResults?: any;
             values: Record<string, any>;
+            usages: Record<number, number[]>;
         }
     >;
 

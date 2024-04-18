@@ -63,7 +63,6 @@ export function updateState(
             state.results!.tops[top].changes = {};
         });
     });
-
     Object.entries(state.results.tops).forEach(([key, res]) => {
         res.changes = {};
     });
@@ -72,11 +71,11 @@ export function updateState(
         if (!state.results!.tops[id]) {
             state.results!.tops[id] = {
                 changes: { results: true },
-                usages: {},
                 errors: {},
                 hover: {},
                 produce: [],
                 values: {},
+                usages: {},
             };
         } else {
             state.results!.tops[id].changes.results = true;
@@ -204,23 +203,12 @@ export function updateState(
                 );
                 typesAndLocs.forEach(({ loc, type }) => {
                     add(
-                        state.results!.tops[topForLoc[loc]].hover,
+                        state.results!.tops[group[0].id].hover,
                         loc,
                         state.evaluator!.inference!.typeToString(type),
                     );
                 });
-                Object.entries(usages).forEach(([key, locs]) => {
-                    if (!locs.length) {
-                        state.results!.tops[topForLoc[+key]].usages[+key] = [];
-                    }
-                    locs.forEach((loc) => {
-                        add(
-                            state.results!.tops[topForLoc[loc]].usages,
-                            +key,
-                            loc,
-                        );
-                    });
-                });
+                state.results.tops[group[0].id].usages = usages;
                 if (result.type === 'err') {
                     state.results.groups[groupKey].typeFailed = true;
                     const err = result.err;
