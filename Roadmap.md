@@ -7,13 +7,17 @@ type-args
 # ERROR
 
 TOP BUGS
-- [ ] WHY the double-eval right off?
+- [x] WHY the double-eval right off?
   might be a `debug` or something? or `evaluator` loding somehow
-- [ ] AGH why is my name deduping not working??
+- [x] AGH why is my name deduping not working??
 - [ ] why parse errors keep stacking? so annoyinggg
+- [ ] duplicate names
+- [x] the 'sorround' stuff not working
 
 
 
+
+### [ ] THIH Hover
 
 - [x] 'destroy is not a function" wen 'jump to lolz' in simple.json ...
 - [x] first render, errors arent showing up? (oh its because I'm not rerendering on worker message receipt)
@@ -31,7 +35,7 @@ TOP BUGS
 
 - [ ] THIH gotta report hoverssss
 
-- [ ] lol skip intermediate requests, for reals
+- [x] lol skip intermediate requests, for reals
 
 ok lol thih is sooo big. let's maybe compress it?
 

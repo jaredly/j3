@@ -85,6 +85,7 @@ export const setupSyncStore = (
     let pending: number[] = [];
     const send = (msg: Message) => {
         pending.push(msg.id);
+        console.log('->> pending', pending.length);
         evtListeners.pending.forEach((f) => f(state, pending.length));
         worker.postMessage(msg);
     };
@@ -97,11 +98,9 @@ export const setupSyncStore = (
 
     worker.addEventListener('message', (evt) => {
         const msg: ToPage = evt.data;
-        const at = pending.indexOf(msg.id);
-        if (at !== -1) {
-            pending.splice(at, 1);
-            evtListeners.pending.forEach((f) => f(state, pending.length));
-        }
+        console.log(`got back`, pending, msg);
+        pending = pending.filter((p) => p > msg.id);
+        evtListeners.pending.forEach((f) => f(state, pending.length));
         switch (msg.type) {
             case 'results': {
                 const changedNodes = calcChangedNodes(
@@ -131,7 +130,7 @@ export const setupSyncStore = (
             // console.error('ignoring sotry');
             send({ type: 'debug', execOrder, id: msgid++ });
         },
-        async dispatch(action) {
+        dispatch(action) {
             if (inProcess) {
                 // debugger;
                 console.error(`trying to dispatch`, action);
@@ -147,14 +146,19 @@ export const setupSyncStore = (
             // console.timeEnd('reduce');
 
             if (state.evaluator !== lastState.evaluator) {
-                let ev = await new Promise<AnyEnv | null>((res) =>
-                    loadEvaluator(state.evaluator, res),
-                );
-                evaluator = ev;
+                // let ev = await new Promise<AnyEnv | null>((res) =>
+                //     loadEvaluator(state.evaluator, res),
+                // );
+                // evaluator = ev;
+                // um idk
+                loadEvaluator(state.evaluator, (ev) => {
+                    evaluator = ev;
+                });
             }
 
             // console.time('get results');
             const nodeChanges = getImmediateResults(state, evaluator, results);
+            console.log('changes', nodeChanges);
             // console.timeEnd('get results');
 
             if (state.evaluator !== lastState.evaluator) {

@@ -574,6 +574,7 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     }
     // console.time('actionToUpdate');
     const update = actionToUpdate(state, action);
+    console.log(`update`, update);
     // console.timeEnd('actionToUpdate');
     if (!update) {
         // console.log(`Unable to turn action into update`, action);

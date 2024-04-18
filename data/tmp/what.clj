@@ -1,8 +1,8 @@
 (** ## Basic errors **)
 
-(1 "hello")
+((1 "hello"))
 
-("hi" 10)
+(ll (gnkklll ("hi" 10)))
 
 123
 

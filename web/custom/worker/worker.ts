@@ -25,6 +25,15 @@ export type Message =
     | { type: 'debug'; execOrder: boolean; id: number };
 // | { type: 'plugin'; id: number; top: number };
 
+const mergeMessages = (last: Message, next: Message) => {
+    if (last.type === 'update' && next.type === 'update') {
+        Object.assign(last.nodes, next.nodes);
+        last.id = next.id;
+        return true;
+    }
+    return false;
+};
+
 export type Sendable = {
     produce: ProduceItem[];
     errors: Record<number, string[]>;
@@ -64,7 +73,12 @@ const handleMessage = async (
 ): Promise<State | null> => {
     switch (msg.type) {
         case 'debug':
-            if (!state || !state.evaluator) return state;
+            if (
+                !state ||
+                !state.evaluator ||
+                msg.execOrder === state.debugExecOrder
+            )
+                return state;
             return calculateInitialState(
                 state.nodes,
                 state.evaluator,
@@ -77,7 +91,7 @@ const handleMessage = async (
             console.log('loaded ev', evaluator);
 
             if (!evaluator) {
-                console.error(`cant load evaluator?`);
+                // console.error(`cant load evaluator?`);
                 return {
                     evaluator: null,
                     nodes: msg.nodes,
@@ -126,12 +140,27 @@ const next = async () => {
         // }
     }
     running = false;
-    next();
+    // Wait a tick before handling the next one
+    setTimeout(() => {
+        next();
+    }, 10);
 };
 
 const enqueue = (msg: Message) => {
+    const last = queue.length > 0 ? queue[queue.length - 1] : null;
+    console.log(`here we are`, queue, queue.length, queue[queue.length - 1]);
+    if (last && mergeMessages(last, msg)) {
+        console.log('merged');
+        setTimeout(() => {
+            next();
+        }, 10);
+        return;
+    }
     queue.push(msg);
-    next();
+    console.log(`enqueued message`, queue.length, last, msg.type);
+    setTimeout(() => {
+        next();
+    }, 10);
 };
 
 onmessage = (evt) => {
@@ -140,5 +169,3 @@ onmessage = (evt) => {
     // switch (data.type) {
     // }
 };
-
-postMessage('hi');

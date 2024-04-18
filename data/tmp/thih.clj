@@ -434,7 +434,7 @@
         (tapp t _ l) (match (type/kind t)
                          (kfun _ k) k
                          _          (fatal
-                                        "Invalid type application ${
+                                        "Invalid ssssssssssssssssssstype application ${
                                             (int-to-string l)
                                             } while trying to determine the kind of ${
                                             (type->s type)
@@ -1660,33 +1660,6 @@
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
 
-(** ## Monad alert **)
-
-(deftype type-env
-    ; (type...constructors) name => type 
-        (type-env
-        (map string scheme)
-            ; (types) name => (, (array kind) (set name))
-            (map string (, (array kind) (set string)))
-            ; typealiases
-            (map string (, (array kind) type))))
-
-(def tenv/nil (type-env map/nil map/nil map/nil))
-
-(def type-env/nil tenv/nil)
-
-(defn tenv/merge [(type-env const_ types aliases)
-    (type-env const' types' aliases')]
-    (type-env
-        (map/merge const_ const')
-            (map/merge types types')
-            (map/merge aliases aliases')))
-
-(defn map-err [f v]
-    (match v
-        (ok _)  v
-        (err e) (f e)))
-
 (** ## Type inference state **)
 
 (typealias
@@ -1727,6 +1700,33 @@
 
 (def ti-return <-)
 
+(** ## Monad alert **)
+
+(deftype type-env
+    ; (type...constructors) name => type 
+        (type-env
+        (map string scheme)
+            ; (types) name => (, (array kind) (set name))
+            (map string (, (array kind) (set string)))
+            ; typealiases
+            (map string (, (array kind) type))))
+
+(def tenv/nil (type-env map/nil map/nil map/nil))
+
+(def type-env/nil tenv/nil)
+
+(defn tenv/merge [(type-env const_ types aliases)
+    (type-env const' types' aliases')]
+    (type-env
+        (map/merge const_ const')
+            (map/merge types types')
+            (map/merge aliases aliases')))
+
+(defn map-err [f v]
+    (match v
+        (ok _)  v
+        (err e) (f e)))
+
 (defn sequence [tis]
     (match tis
         []           (<- [])
@@ -1745,7 +1745,7 @@
 (defn unify-err [t1 t2 (, msg items)]
     (err
         (,
-            "Unable to unify ${
+            "Unable ssto unify ${
                 (type-debug->s t1)
                 } and ${
                 (type-debug->s t2)
@@ -1794,10 +1794,6 @@
 
 (defn inst/pred [types (isin c t)] (isin c (inst/type types t)))
 
-(typealias
-    (infer e t)
-        (fn [class-env (array assump) e] (TI (, (array pred) t))))
-
 (defn tenv/constr [(type-env constrs _ _) name]
     (map/get constrs name))
 
@@ -1818,8 +1814,6 @@
             as (concat (map (fn [(,, _ as' _)] as') psasts))
             ts (map (fn [(,, _ _ t)] t) psasts)]
             (ti-return (,, ps as ts)))))
-
-(def get-tenv (TI (fn [s tenv n] (,,, s tenv n (ok tenv)))))
 
 (defn get-constructor [name l]
     (let-> [tenv <-tenv]
@@ -3070,8 +3064,10 @@ foldl
 
 27573
 
-(r
-    (infer-stmtss
-        builtin-ce
-            builtin-assumptions
-            [(parse-stmt (@@ "hello ${12}"))]))
+(s
+    (run/tenv->
+        builtin-tenv
+            (infer-stmtss
+            builtin-ce
+                builtin-assumptions
+                [(parse-stmt (@@ "hello ${12}"))])))

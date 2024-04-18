@@ -142,11 +142,16 @@ export const getImmediateResults = <
         const changed = ncache.ids.filter(
             (id) => state.map[id] !== lastState.map[id],
         );
-        if (changed.length) {
+        const topChange = top.top !== lastState.nsMap[top.ns.id].top;
+        if (changed.length || topChange) {
             // console.log('map change', top.top);
             changed.forEach((id) => (nodeChanges[id] = top.ns.id));
             const ids: number[] = [];
             const node = fromMCST(top.top, state.map, ids);
+
+            if (topChange) {
+                nodeChanges[top.top] = top.ns.id;
+            }
 
             if (!equal(ncache.node, node)) {
                 // console.log('node change', top.top);
