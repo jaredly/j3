@@ -74,6 +74,8 @@ throw new Error('failed to match ' + jsonify($target) + '. Loc: 18656');})(/*!*/
 
 const type_error = /*18843*/function name_18843(message) { return function name_18843(loced_items) { return /*18850*//*18851*/$co/*<18851*//*18850*/(/*18852*/message/*<18852*/)(/*18853*/loced_items/*<18853*/)/*<18850*/ } }/*<18843*/;
 
+const debug_invariant = /*21237*/false/*<21237*/;
+
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1});
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2});
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1});
@@ -1882,7 +1884,12 @@ return /*12136*//*12156*/fatal/*<12156*//*12136*/(/*12157*/message/*<12157*/)/*<
 }
 }
 return /*963*//*964*/map$slmerge/*<964*//*963*/(/*965*//*966*/map$slmap/*<966*//*965*/(/*967*//*968*/type_apply/*<968*//*967*/(/*969*/new_subst/*<969*/)/*<967*/)(/*970*/old_subst/*<970*/)/*<965*/)(/*971*/new_subst/*<971*/)/*<963*/
-throw new Error('failed to match ' + jsonify($target) + '. Loc: 12160');})(/*!*//*12514*//*12515*/check_invariant/*<12515*//*12514*/(/*12516*/place/*<12516*/)(/*12517*/new_subst/*<12517*/)(/*12518*/old_subst/*<12518*/)/*<12514*/)/*<12160*/ } } }/*<956*/;
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 12160');})(/*!*//*21238*/(function match_21238($target) {
+if ($target === true) {
+return /*12514*//*12515*/check_invariant/*<12515*//*12514*/(/*12516*/place/*<12516*/)(/*12517*/new_subst/*<12517*/)(/*12518*/old_subst/*<12518*/)/*<12514*/
+}
+return /*21241*//*21242*/none/*<21242*//*21241*//*<21241*/
+throw new Error('failed to match ' + jsonify($target) + '. Loc: 21238');})(/*!*//*21240*/debug_invariant/*<21240*/)/*<21238*/)/*<12160*/ } } }/*<956*/;
 
 const tenv_free = /*985*/function name_985({0: types}) { return /*991*//*992*/foldr/*<992*//*991*/(/*994*/set$slnil/*<994*/)(/*995*//*996*/map/*<996*//*995*/(/*998*//*999*/map$slvalues/*<999*//*998*/(/*1000*/types/*<1000*/)/*<998*/)(/*21131*/function name_21131({0: s}) { return /*21139*//*21132*/scheme_free/*<21132*//*21139*/(/*21140*/s/*<21140*/)/*<21139*/ }/*<21131*/)/*<995*/)(/*1169*/set$slmerge/*<1169*/)/*<991*/ }/*<985*/;
 

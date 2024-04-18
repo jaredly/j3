@@ -446,8 +446,12 @@
                                                           }")
                                                       current))))))))
 
+(def debug-invariant false)
+
 (defn compose-subst [place new-subst old-subst]
-    (match (check-invariant place new-subst old-subst)
+    (match (if debug-invariant
+        (check-invariant place new-subst old-subst)
+            (none))
         (some message) (fatal message)
         _              (map/merge (map/map (type-apply new-subst) old-subst) new-subst)))
 

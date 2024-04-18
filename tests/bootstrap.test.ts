@@ -68,7 +68,7 @@ const fixtures = {
     6: {
         name: 'parse-1 + algw-subst -> algw-subst',
         file: 'algw-subst.json',
-        evaluator: [1, 5],
+        evaluator: [3, 5],
     },
     7: {
         name: 'p1+ta -> thih',
@@ -78,7 +78,7 @@ const fixtures = {
     8: {
         name: 'p1+as -> thih',
         file: 'thih.json',
-        evaluator: [3, 4],
+        evaluator: [3, 5],
     },
 };
 

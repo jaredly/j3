@@ -638,17 +638,7 @@
     (let-> [
         (, subst type) (t-expr-inner tenv expr)
         _              (record-> (expr-loc expr) type)]
-        (<- (, subst type)))
-        ;(let [
-        l                    (expr-loc expr)
-        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
-        (,, subst type nidx) (t-expr-inner tenv expr nidx)
-        _                    (trace
-                                 [(tloc l)
-                                     (tcolor "white")
-                                     (ttext "exir")
-                                     (tfmt type type-to-string-raw)])]
-        (,, subst type nidx)))
+        (<- (, subst type))))
 
 (defn t-expr-inner [tenv expr]
     (match expr

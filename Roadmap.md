@@ -2,6 +2,14 @@
 # SLowwwwwwww
 
 wow is it like, a lot slower now that I'm tracking usages?
+nope. algw-subst is just that slow.
+
+my guess: It's because of all the unnecessary (compose-subst)ing that I'm doing.
+b/c like 2s to 8s is huuuge
+
+- ok dropping the (compose-subst) invariant helpeddd took off .75s
+  from algw-subst -> algw-subst
+- [ ] BUG the NSDragger doesn't update when errors are no longer there
 
 # BUGGY - rm top node
 
