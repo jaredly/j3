@@ -1061,7 +1061,8 @@
                                                       selfed                 (<- (type-apply subst self))
                                                       _                      (unify-inner selfed t l)
                                                       subst                  <-subst
-                                                      t                      (<- (type-apply subst t))]
+                                                      t                      (<- (type-apply subst t))
+                                                      ()                     (record-> nl t false)]
                                                       (<- (tenv/set-type tenv/nil name (generalize tenv' t))))
         (stypealias name nl args body l)          (<-
                                                       (tenv
@@ -1317,8 +1318,8 @@
                                   stmts
                                       (fn [stmt]
                                       (match stmt
-                                          (sdef name _ _ _) name
-                                          _                 (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
+                                          (sdef name nl _ _) (, name nl)
+                                          _                  (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
         (, bound vars)    (vars-for-names (map stmts (fn [(sdef name _ _ l)] (, name l))) tenv)
         (, bound missing) (find-missing bound (externals-defs stmts))
         types             (foldr-> [] (zip vars stmts) (infer-several-inner bound))
@@ -1470,13 +1471,17 @@
 (defn infer-defns [tenv stmts]
     (match stmts
         [one] (infer-stmt tenv one)
-        _     (let-> [zipped (infer-several tenv stmts)]
+        _     (let-> [
+                  zipped (infer-several tenv stmts)
+                  _      (map-> (fn [(, (, name nl) type)] (record-> nl type false)) zipped)]
                   (<-
                       (foldl
                           tenv/nil
                               zipped
-                              (fn [tenv (, name type)]
+                              (fn [tenv (, (, name nl) type)]
                               (tenv/set-type tenv name (generalize tenv type))))))))
+
+map->
 
 (defn infer-stmtss [tenv' stmts]
     (let-> [
