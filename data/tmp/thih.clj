@@ -2544,7 +2544,7 @@ filter
                 [(, "a" 1)]
                 [(,,, "empty" 2 [] 39) (,,, "one" 4 [(tcon (tycon "a" star) 5)] 6)])))
 
-(defn foldl-> [init values f]
+;(defn foldl-> [init values f]
     (match values
         []           (<- init)
         [one ..rest] (let-> [one (f init one)] (foldl-> one rest f))))
@@ -2565,10 +2565,12 @@ filter
 
 (defn concat2 [a b] (concat [a b]))
 
-(defn foldr-> [init values f]
+;(defn foldr-> [init values f]
     (match values
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
+
+22088
 
 ;(defn infer-deftype2 [tenv' bound tname tnl targs constructors l]
     (let-> [
@@ -2693,10 +2695,10 @@ filter
                     class-env/nil
                     (filter (fn [(!>! n _)] (set/has names n)) assumps)))))
 
-(defn map-> [f items]
+;(defn map-> [f items]
     (match items
         []           (<- [])
-        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ]))))
+        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
 
 (defn map-ok-> [f items]
     (let [>>= ok>>= <- ok]

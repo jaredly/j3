@@ -30,12 +30,12 @@ export function updateState(
 
     const topsForName: Record<string, { top: number; group: string }> = {};
 
-    const namesTaken: Record<'value' | 'type', Record<string, true>> = {
+    const namesTaken: Record<'value' | 'type', Record<string, number>> = {
         value: {},
         type: {},
     };
 
-    const duplicates: { id: number; name: LocedName }[] = [];
+    const duplicates: { id: number; name: LocedName; taken: number }[] = [];
 
     // TODO: if none of the nodes have names/deps changes
     // STOPSHIP Maybe exclude duplicates here already?? Yeah. Just ditch it. get a better name if you want to be handled.
@@ -44,11 +44,15 @@ export function updateState(
             .map((node) => {
                 if (node.parsed?.type === 'success') {
                     for (let name of node.parsed.names) {
-                        if (namesTaken[name.kind][name.name]) {
-                            duplicates.push({ id: node.ns.id, name: name });
+                        if (namesTaken[name.kind][name.name] != null) {
+                            duplicates.push({
+                                id: node.ns.id,
+                                name: name,
+                                taken: namesTaken[name.kind][name.name],
+                            });
                             return null;
                         }
-                        namesTaken[name.kind][name.name] = true;
+                        namesTaken[name.kind][name.name] = name.loc;
                     }
                 }
                 return nodeToSortable(node);
@@ -67,7 +71,7 @@ export function updateState(
         res.changes = {};
     });
 
-    duplicates.forEach(({ id, name }) => {
+    duplicates.forEach(({ id, name, taken }) => {
         if (!state.results!.tops[id]) {
             state.results!.tops[id] = {
                 changes: { results: true },
@@ -81,9 +85,14 @@ export function updateState(
             state.results!.tops[id].changes.results = true;
         }
         state.results!.tops[id].produce = [
-            { type: 'error', message: 'Duplicate term name: ' + name.name },
+            {
+                type: 'error',
+                message: `Duplicate term name: ${name.name}, other location ${taken}`,
+            },
         ];
-        state.results!.tops[id].errors = { [name.loc]: [`Name already used`] };
+        state.results!.tops[id].errors = {
+            [name.loc]: [`Name already used: other location: ${taken}`],
+        };
     });
 
     // So...
