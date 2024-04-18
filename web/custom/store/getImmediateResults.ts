@@ -19,7 +19,7 @@ export type SuccessParsed<Stmt> = {
     stmt: Stmt;
     names: LocedName[];
     deps: LocedName[];
-    duplicates?: LocedName[];
+    // duplicates?: LocedName[];
 };
 
 export type PluginParsed = {
@@ -230,11 +230,11 @@ export const getImmediateResults = <
             for (let name of parsed.names) {
                 if (results.jumpToName[name.kind][name.name]) {
                     nodeChanges[name.loc] = top.ns.id;
-                    if (!parsed.duplicates) {
-                        parsed.duplicates = [name];
-                    } else {
-                        parsed.duplicates.push(name);
-                    }
+                    // if (!parsed.duplicates) {
+                    //     parsed.duplicates = [name];
+                    // } else {
+                    //     parsed.duplicates.push(name);
+                    // }
                 } else {
                     results.jumpToName[name.kind][name.name] = name.loc;
                 }
@@ -337,9 +337,9 @@ const recordNodeChanges = (
             nodeChanges[+id] = top;
         });
     }
-    if (parsed?.type === 'success' && parsed.duplicates) {
-        parsed.duplicates.forEach(({ loc }) => {
-            nodeChanges[loc] = top;
-        });
-    }
+    // if (parsed?.type === 'success' && parsed.duplicates) {
+    //     parsed.duplicates.forEach(({ loc }) => {
+    //         nodeChanges[loc] = top;
+    //     });
+    // }
 };

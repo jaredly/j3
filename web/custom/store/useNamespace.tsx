@@ -16,7 +16,7 @@ export const getNSValues = (
     remote: Sendable | null,
 ) => {
     const ns = state.nsMap[idx] as RealizedNamespace;
-    const produce: ProduceItem[] = remote?.produce ?? [];
+    const produce: ProduceItem[] = remote?.produce?.slice() ?? [];
     if (idx === 0) {
         return { ns, produce: [] };
     }

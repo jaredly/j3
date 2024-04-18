@@ -148,16 +148,16 @@ const next = async () => {
 
 const enqueue = (msg: Message) => {
     const last = queue.length > 0 ? queue[queue.length - 1] : null;
-    console.log(`here we are`, queue, queue.length, queue[queue.length - 1]);
+    // console.log(`here we are`, queue, queue.length, queue[queue.length - 1]);
     if (last && mergeMessages(last, msg)) {
-        console.log('merged');
+        // console.log('merged');
         setTimeout(() => {
             next();
         }, 10);
         return;
     }
     queue.push(msg);
-    console.log(`enqueued message`, queue.length, last, msg.type);
+    // console.log(`enqueued message`, queue.length, last, msg.type);
     setTimeout(() => {
         next();
     }, 10);

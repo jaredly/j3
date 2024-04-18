@@ -128,7 +128,6 @@ export const textStyle = (
 
 export const Render = React.memo(
     (props: RenderProps) => {
-        console.log(`render ${props.idx}`);
         const values = useNode(props.idx, props.path);
         const { node, nnode, display } = values;
         const { idx, path } = props;

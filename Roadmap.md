@@ -10,9 +10,12 @@ TOP BUGS
 - [x] WHY the double-eval right off?
   might be a `debug` or something? or `evaluator` loding somehow
 - [x] AGH why is my name deduping not working??
-- [ ] why parse errors keep stacking? so annoyinggg
-- [ ] duplicate names
+- [x] why parse errors keep stacking? so annoyinggg
 - [x] the 'sorround' stuff not working
+- [x] duplicate names - where am I tracking that?
+- [x] duplicate tracing isn't working on the very first time? Wieerrrd
+- [x] duplicate tracing needs to check cached tops!! (adding a (def y) *before* another (def y) doesn't indicate error)
+- [ ] OK SO I actually, let's just clear out the "parsed" duplicates thing.
 
 
 

@@ -85,7 +85,7 @@ export const setupSyncStore = (
     let pending: number[] = [];
     const send = (msg: Message) => {
         pending.push(msg.id);
-        console.log('->> pending', pending.length);
+        // console.log('->> pending', pending.length);
         evtListeners.pending.forEach((f) => f(state, pending.length));
         worker.postMessage(msg);
     };
@@ -98,7 +98,7 @@ export const setupSyncStore = (
 
     worker.addEventListener('message', (evt) => {
         const msg: ToPage = evt.data;
-        console.log(`got back`, pending, msg);
+        // console.log(`got back`, pending, msg);
         pending = pending.filter((p) => p > msg.id);
         evtListeners.pending.forEach((f) => f(state, pending.length));
         switch (msg.type) {
@@ -158,7 +158,7 @@ export const setupSyncStore = (
 
             // console.time('get results');
             const nodeChanges = getImmediateResults(state, evaluator, results);
-            console.log('changes', nodeChanges);
+            // console.log('changes', nodeChanges);
             // console.timeEnd('get results');
 
             if (state.evaluator !== lastState.evaluator) {

@@ -9,6 +9,7 @@ import {
     SuccessParsed,
 } from '../store/getImmediateResults';
 import { showError } from '../store/processTypeInference';
+import { LocedName } from '../store/sortTops';
 import { unique } from '../store/unique';
 import { nodeToSortable } from './calculateInitialState';
 import { AsyncResults, Sortable, State } from './types';
@@ -26,9 +27,33 @@ export function updateState(
         return state;
     }
     const nodes = { ...state.nodes, ...update };
+
+    const topsForName: Record<string, { top: number; group: string }> = {};
+
+    const namesTaken: Record<'value' | 'type', Record<string, true>> = {
+        value: {},
+        type: {},
+    };
+
+    const duplicates: { id: number; name: LocedName }[] = [];
+
     // TODO: if none of the nodes have names/deps changes
+    // STOPSHIP Maybe exclude duplicates here already?? Yeah. Just ditch it. get a better name if you want to be handled.
     const sorted = depSort(
-        Object.values(nodes).map(nodeToSortable).filter(filterNulls),
+        Object.values(nodes)
+            .map((node) => {
+                if (node.parsed?.type === 'success') {
+                    for (let name of node.parsed.names) {
+                        if (namesTaken[name.kind][name.name]) {
+                            duplicates.push({ id: node.ns.id, name: name });
+                            return null;
+                        }
+                        namesTaken[name.kind][name.name] = true;
+                    }
+                }
+                return nodeToSortable(node);
+            })
+            .filter(filterNulls),
     );
 
     // Reset changedness
@@ -41,6 +66,24 @@ export function updateState(
 
     Object.entries(state.results.tops).forEach(([key, res]) => {
         res.changes = {};
+    });
+
+    duplicates.forEach(({ id, name }) => {
+        if (!state.results!.tops[id]) {
+            state.results!.tops[id] = {
+                changes: { results: true },
+                errors: {},
+                hover: {},
+                produce: [],
+                values: {},
+            };
+        } else {
+            state.results!.tops[id].changes.results = true;
+        }
+        state.results!.tops[id].produce = [
+            { type: 'error', message: 'Duplicate term name: ' + name.name },
+        ];
+        state.results!.tops[id].errors = { [name.loc]: [`Name already used`] };
     });
 
     // So...
@@ -66,7 +109,6 @@ export function updateState(
         node.ids.forEach((id) => (topForLoc[id] = node.ns.id));
     });
 
-    const topsForName: Record<string, { top: number; group: string }> = {};
     sorted.forEach((group) => {
         const groupKey = group.map((g) => g.id).join(';');
         group.forEach((item) => {
@@ -126,7 +168,6 @@ export function updateState(
             });
         }
     }
-
     /**
      * BIG QUESTION:
      * - If I'm going to be ... caching ...
@@ -187,6 +228,10 @@ export function updateState(
 
                 continue;
             }
+            // const hasDuplicates = group.some((n) => {
+            //     const p = state.nodes[n.id].parsed!;
+            //     if (p.type === 'success' && p.duplicates?.length) return true;
+            // });
 
             const stmts = group.map(
                 (g) => (nodes[g.id].parsed as SuccessParsed<any>).stmt,
@@ -207,12 +252,14 @@ export function updateState(
                 continue;
             }
             if (res.result.type === 'ok') {
-                state.results.groups[groupKey].tenv = res.result.value.env;
                 const types = res.result.value.types;
+
+                state.results.groups[groupKey].tenv = res.result.value.env;
                 tenv = state.evaluator.inference.addTypes(
                     tenv,
                     res.result.value.env,
                 );
+
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
                     types.forEach((type) => {
