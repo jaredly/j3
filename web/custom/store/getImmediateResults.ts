@@ -42,6 +42,7 @@ export const blankInitialResults = (): ImmediateResults<any> => ({
     jumpToName: { value: {}, type: {} },
     nodes: {},
     changes: {},
+    topForLoc: {},
 });
 
 export type NodeResults<Stmt> = {
@@ -58,6 +59,7 @@ export type ImmediateResults<Stmt> = {
     lastState: null | NUIState;
     lastEvaluator: string | null;
 
+    topForLoc: Record<number, number>;
     jumpToName: {
         value: Record<string, number>;
         type: Record<string, number>;
@@ -241,7 +243,10 @@ export const getImmediateResults = <
             }
         }
     }
-    // console.timeEnd('jump');
+    // TODO this is a little leaky, doesn't clean up deleted nodes.
+    Object.values(results.nodes).forEach((node) => {
+        node.ids.forEach((id) => (results.topForLoc[id] = node.ns.id));
+    });
 
     results.lastState = state;
     results.lastEvaluator = evaluator?.id ?? null;

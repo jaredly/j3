@@ -248,7 +248,7 @@ const ShowErrors = () => {
                 item.type === 'eval'
             ) {
                 found.push({
-                    loc: state.nsMap[+key].top,
+                    loc: state.nsMap[+key]?.top,
                     errs: [item.message],
                 });
             }

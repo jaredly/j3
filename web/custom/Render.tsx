@@ -445,6 +445,9 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                         whiteSpace: 'pre',
+                        ...(props.values.unused
+                            ? { opacity: 0.5, fontStyle: 'italic' }
+                            : {}),
                     }}
                     onMouseEnter={() =>
                         dispatch({

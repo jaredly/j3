@@ -1,4 +1,8 @@
 
+# BUGGY - rm top node
+
+- need to report that a node isn't there anymore...
+
 # HOW TO SPEED
 
 I want a compilation pipeline that does optimizations.

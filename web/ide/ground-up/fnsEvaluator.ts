@@ -53,6 +53,7 @@ const getUsages = (data: InferExpr2[2]) => {
     const usages: Record<number, number[]> = {};
     unwrapArray(data[0]).forEach((loc) => (usages[loc] = []));
     unwrapArray(data[1]).forEach(({ 0: loc, 1: provider }) => {
+        if (loc === provider) return;
         if (!usages[provider]) {
             usages[provider] = [];
         }

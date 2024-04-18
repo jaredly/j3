@@ -11,7 +11,7 @@ import {
 } from './getImmediateResults';
 import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
-import equal from 'fast-deep-equal';
+import { calcChangedNodes } from './calcChangedNodes';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -29,6 +29,7 @@ export const useSyncStore = (
 export type WorkerResults = {
     nodes: Record<number, Sendable>;
     traces: TraceMap;
+    usages: Record<number, number[]>;
     // probably more stuff? traces maybe?
 };
 
@@ -42,6 +43,7 @@ export const setupSyncStore = (
             state: NUIState,
             results: NodeResults<any>,
             worker: Sendable | null,
+            unused: boolean,
         ) => void)[];
     } = {};
 
@@ -64,7 +66,7 @@ export const setupSyncStore = (
         : blankInitialResults();
     let evaluator = initialEvaluator ?? null;
 
-    let workerResults: WorkerResults = { nodes: {}, traces: {} };
+    let workerResults: WorkerResults = { nodes: {}, traces: {}, usages: {} };
 
     if (!initialEvaluator && state.evaluator) {
         console.error(
@@ -107,18 +109,25 @@ export const setupSyncStore = (
                 const changedNodes = calcChangedNodes(
                     workerResults.nodes,
                     msg.results,
+                    workerResults.usages,
                 );
-                Object.assign(workerResults.traces, msg.traces);
 
                 Object.assign(workerResults.nodes, msg.results);
+                Object.assign(workerResults.traces, msg.traces);
                 Object.keys(msg.results).forEach((key) => {
                     nodeListeners[`ns:${key}`]?.forEach((f) =>
-                        f(state, results.nodes[+key], msg.results[+key]),
+                        f(state, results.nodes[+key], msg.results[+key], false),
                     );
                 });
-                changedNodes.forEach(({ id, top }) =>
+
+                Object.keys(changedNodes).forEach((id) =>
                     nodeListeners[id]?.forEach((f) =>
-                        f(state, results.nodes[top], msg.results[top]),
+                        f(
+                            state,
+                            results.nodes[results.topForLoc[+id]],
+                            msg.results[results.topForLoc[+id]],
+                            workerResults.usages[+id]?.length === 0,
+                        ),
                     ),
                 );
                 evtListeners.results.forEach((f) => f(state));
@@ -190,7 +199,12 @@ export const setupSyncStore = (
             // console.log('ns changed', nsChanged);
             Object.keys(nsChanged).forEach((key) => {
                 nodeListeners[`ns:${key}`]?.forEach((f) =>
-                    f(state, results.nodes[+key], workerResults.nodes[+key]),
+                    f(
+                        state,
+                        results.nodes[+key],
+                        workerResults.nodes[+key],
+                        false,
+                    ),
                 );
             });
             // console.log(
@@ -204,6 +218,7 @@ export const setupSyncStore = (
                         state,
                         results.nodes[nodeChanges[+id]],
                         workerResults.nodes[nodeChanges[+id]],
+                        workerResults.usages[+id]?.length === 0,
                     ),
                 );
             });
@@ -282,61 +297,3 @@ function calcNSChanged(
     }
     return nsChanged;
 }
-
-// function copyToOldResults(
-//     oldResults: NUIResults,
-//     results: ImmediateResults<any>,
-// ) {
-//     oldResults.jumpToName = results.jumpToName.value;
-//     oldResults.display = {};
-//     oldResults.errors = {};
-//     Object.keys(results.nodes).forEach((top) => {
-//         const node = results.nodes[+top];
-//         Object.assign(oldResults.display, node.layout);
-//         if (node.parsed?.type === 'failure') {
-//             Object.assign(oldResults.errors, node.parsed.errors);
-//         }
-//     });
-// }
-
-const calcChangedNodes = (
-    nodes: Record<number, Sendable>,
-    newNodes: Record<number, Sendable>,
-) => {
-    const result: { top: number; id: number }[] = [];
-    Object.keys(newNodes).forEach((key) => {
-        const changed: number[] = [];
-        if (!nodes[+key]) {
-            Object.keys(newNodes[+key].errors).forEach((k) => {
-                if (!changed.includes(+k)) {
-                    changed.push(+k);
-                }
-            });
-            changed.forEach((id) => result.push({ id, top: +key }));
-            return;
-        }
-
-        const old = Object.keys(nodes[+key].errors);
-        const nw = Object.keys(newNodes[+key].errors);
-        old.forEach((k) => {
-            if (!nw.includes(k)) {
-                if (!changed.includes(+k)) {
-                    changed.push(+k);
-                }
-            }
-        });
-        nw.forEach((k) => {
-            if (
-                !old.includes(k) ||
-                !equal(nodes[+key].errors[+k], newNodes[+key].errors[+k])
-            ) {
-                if (!changed.includes(+k)) {
-                    changed.push(+k);
-                }
-            }
-        });
-
-        changed.forEach((id) => result.push({ id, top: +key }));
-    });
-    return result;
-};

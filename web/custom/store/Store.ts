@@ -53,6 +53,7 @@ export type Store = {
             state: NUIState,
             results: NodeResults<any>,
             worker: Sendable | null,
+            unused: boolean,
         ) => void,
     ): () => void;
     // everyChange(fn: (state: NUIState) => void): () => void;
@@ -153,6 +154,7 @@ export type Values = {
     meta: MetaData | null;
     display: Display[0];
     errors?: string[];
+    unused: boolean;
 
     reg: Reg;
     selection?: {
@@ -169,6 +171,7 @@ export const getValues = (
     state: NUIState,
     results: NodeResults<any>,
     workerResults?: Sendable | null,
+    unused = false,
 ): Values => {
     if (!results) debugger;
     if (!state.map[idx]) {
@@ -179,6 +182,7 @@ export const getValues = (
             reg() {},
             node: { type: 'blank', loc: -1 },
             nnode: { type: 'text', text: '' },
+            unused,
         };
     }
     const nnode = getNestedNodes(
@@ -201,6 +205,7 @@ export const getValues = (
         display: results.layout[idx] ?? {},
         node: state.map[idx],
         reg: store.reg,
+        unused,
         nnode,
     };
 };
