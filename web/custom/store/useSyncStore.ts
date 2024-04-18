@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { reduce } from '../../ide/ground-up/reduce';
 import { NUIState } from '../UIState';
 import { Evt, Store } from './Store';
-import { loadEvaluator } from '../../ide/ground-up/loadEv';
+import { TraceMap, loadEvaluator } from '../../ide/ground-up/loadEv';
 import {
     ImmediateResults,
     NodeResults,
@@ -28,6 +28,7 @@ export const useSyncStore = (
 
 export type WorkerResults = {
     nodes: Record<number, Sendable>;
+    traces: TraceMap;
     // probably more stuff? traces maybe?
 };
 
@@ -63,7 +64,7 @@ export const setupSyncStore = (
         : blankInitialResults();
     let evaluator = initialEvaluator ?? null;
 
-    let workerResults: WorkerResults = { nodes: {} };
+    let workerResults: WorkerResults = { nodes: {}, traces: {} };
 
     if (!initialEvaluator && state.evaluator) {
         console.error(
@@ -107,6 +108,7 @@ export const setupSyncStore = (
                     workerResults.nodes,
                     msg.results,
                 );
+                Object.assign(workerResults.traces, msg.traces);
 
                 Object.assign(workerResults.nodes, msg.results);
                 Object.keys(msg.results).forEach((key) => {

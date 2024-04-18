@@ -210,7 +210,9 @@ export const GroundUp = ({
                     {debug.selection ? (
                         <ShowAt at={state.at} hover={state.hover} />
                     ) : null}
-                    {/* STOPSHIP <RenderTraces /> */}
+                    <WithStore store={store}>
+                        <RenderTraces />
+                    </WithStore>
                 </div>
             </div>
             <Cursors at={state.at} regs={state.regs} />

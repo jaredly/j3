@@ -9,7 +9,7 @@ import {
 import { selectStart } from '../../../src/state/navigate';
 import { MNode, Map, fromMCST } from '../../../src/types/mcst';
 import { Path } from '../../store';
-import { childPath } from './findTops';
+import { childPath, findTops } from './findTops';
 import { Store } from '../../custom/store/Store';
 import { useGetStore, useGlobalState } from '../../custom/store/StoreCtx';
 import {
@@ -18,6 +18,7 @@ import {
 } from '../../../src/state/replacePathWith';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { FullEvalator } from './FullEvalator';
+import { Sendable } from '../../custom/worker/worker';
 
 export const CommandPalette = () => {
     const store = useGetStore();
@@ -331,9 +332,62 @@ const getCommands = (
                 ),
             });
         }
+
+        const next = findNextError(store, state, sel);
+        if (next != null) {
+            const path = pathForIdx(next, state);
+            if (path) {
+                commands.push({
+                    type: 'plain',
+                    title: 'Jump to next error',
+                    action() {
+                        dispatch({
+                            type: 'select',
+                            at: [{ start: path }],
+                        });
+                    },
+                });
+            }
+        }
     }
 
     return commands;
+};
+
+const resultError = (res: Sendable, top: number): number | null => {
+    if (!res) return null;
+    const eidx = Object.keys(res.errors);
+    if (eidx.length) {
+        return +eidx[0];
+    }
+    for (let p of res.produce) {
+        if (typeof p === 'string') continue;
+        if (p.type === 'eval' || p.type === 'error' || p.type === 'withjs') {
+            return top;
+        }
+    }
+    return null;
+};
+
+const findNextError = (store: Store, state: NUIState, sel: Path[]) => {
+    const ns = sel.find((p) => p.type === 'ns-top');
+    if (!ns) return null;
+    const results = store.getResults().workerResults.nodes;
+    const got = resultError(results[ns.idx], state.nsMap[ns.idx].top);
+    if (got != null) return got;
+    const tops = findTops(state);
+    const at = tops.findIndex((t) => t.ns.id === ns.idx);
+    if (at === -1) {
+        console.warn(`current ns not in tops??`, tops, ns);
+        return null;
+    }
+    for (let i = at + 1; i < tops.length; i++) {
+        const err = resultError(results[tops[i].ns.id], tops[i].top);
+        if (err != null) {
+            return err;
+        }
+    }
+    return null;
 };
 
 export const nodeChildren = (node: MNode): number[] => {

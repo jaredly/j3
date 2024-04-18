@@ -2,6 +2,13 @@
 
 (defn hello [x] (+ 2 x))
 
+(defn map [x f]
+    (match x
+        []           []
+        [one ..rest] [(f one) ..(map rest f)]))
+
+(map [1 2 3] (+ 2))
+
 "Hello"
 
 ,
@@ -32,7 +39,7 @@ nil
 
 (def hi 10)
 
-(xx 23)
+( 23)
 
 (def hi 1000)
 

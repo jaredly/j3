@@ -151,6 +151,15 @@
         (tapp type type int)
         (tcon string int))
 
+(defn type= [one two]
+    (match (, one two)
+        (, (tvar a _) (tvar b _))     (= a b)
+        (, (tapp a b _) (tapp c d _)) (if (type= a c)
+                                          (type= b d)
+                                              false)
+        (, (tcon a _) (tcon b _))     (= a b)
+        _                             false))
+
 (defn pat-loc [pat]
     (match pat
         (pany l)     l
@@ -523,7 +532,13 @@
 
 (typealias
     (State value)
-        (StateT (,, int (array (, int type)) (map string type)) value))
+        (StateT
+        (,, int (, type-record usage-record) (map string type))
+            value))
+
+(typealias usage-record (, (array int) (array (, int int))))
+
+(typealias type-record (array (, int type)))
 
 (def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
 
@@ -534,8 +549,20 @@
 
 (defn record-> [loc type]
     (let-> [
-        (,, idx types subst) <-state
-        _                    (state-> (,, idx [(, loc type) ..types] subst))]
+        (,, idx (, types usages) subst) <-state
+        _                               (state-> (,, idx (, [(, loc type) ..types] usages) subst))]
+        (<- ())))
+
+(defn record-usage-> [loc provider]
+    (let-> [
+        (,, idx (, types (, defs usages)) subst) <-state
+        _                                        (state-> (,, idx (, types (, defs [(, loc provider) ..usages])) subst))]
+        (<- ())))
+
+(defn record-defn-> [loc]
+    (let-> [
+        (,, idx (, types (, defs usages)) subst) <-state
+        _                                        (state-> (,, idx (, types (, [loc ..defs] usages)) subst))]
         (<- ())))
 
 (def <-types (let-> [(,, _ types _) <-state] (<- types)))
@@ -546,7 +573,7 @@
         _                    (state-> (,, idx types (compose-subst "" new-subst subst)))]
         (<- ())))
 
-(def state/nil (,, 0 [] map/nil))
+(def state/nil (,, 0 (, [] (, [] [])) map/nil))
 
 (defn run/nil-> [st] (run-> st state/nil))
 
@@ -571,6 +598,8 @@
 (force
     type-error->s
         (run/nil-> (instantiate (scheme (set/from-list ["a"]) (tvar "a" -1)) 10)))
+
+(defn scheme/t [(scheme _ t)] t)
 
 (defn new-type-var [prefix l]
     (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
@@ -683,7 +712,8 @@
         (evar "()" l)            (<- (tcon "()" l))
         (evar name l)            (match (tenv/type tenv name)
                                      (none)       (<-err (type-error "Unbound variable" [(, name l)]))
-                                     (some found) (let-> [(, t _) (instantiate found l)] (<- (type/set-loc l t))))
+                                     (some found) (let-> [(, t _) (instantiate found l) ;(record-> l (scheme/t found))]
+                                                      (<- (type/set-loc l t))))
         (equot quot l)           (<-
                                      (tcon
                                          (match quot
@@ -1924,10 +1954,22 @@
 
 (defn infer-stmts2 [tenv stmts]
     (let [
-        (, (,, _ types subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
-        (, result (map types (fn [(, loc type)] (, loc (type-apply subst type)))))))
+        (, (,, _ (, types (, defs usages)) subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
+        (, result (applied-types types subst))))
 
 (infer-stmts2 builtin-env [(@! (def x 10))])
+
+(defn applied-types [types subst]
+    (foldl
+        []
+            types
+            (fn [res (, loc type)]
+            (let [applied (type-apply subst type)]
+                (if (type= applied type)
+                    [(, loc type) ..res]
+                        [(, loc type) (, loc applied) ..res])))))
+
+foldl
 
 ((eval
     "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
@@ -1940,7 +1982,8 @@
                 tenv/merge
                 (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr))))
                 (fn [tenv expr]
-                (let [(, (,, _ types subst) result) ((state-f (infer tenv expr)) state/nil)]
+                (let [
+                    (, (,, _ (, types (, defs usages)) subst) result) ((state-f (infer tenv expr)) state/nil)]
                     (, result (map types (fn [(, loc type)] (, loc (type-apply subst type))))))))
             (analysis externals-stmt externals-list names)
             type-to-string

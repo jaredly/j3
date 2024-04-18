@@ -44,6 +44,7 @@ export type Sendable = {
 export type ToPage = {
     type: 'results';
     results: Record<number, Sendable>;
+    traces: TraceMap;
     id: number;
 };
 // | { type: 'plugin'; id: number };
@@ -116,16 +117,17 @@ let running = false;
 const next = async () => {
     if (running || !queue.length) return;
     running = true;
-    const msg = queue.shift()!; // TODO can do fancy line skipping things, potentially.
+    const msg = queue.shift()!;
     state = await handleMessage(msg, state);
     if (state?.results) {
         const updated: Record<number, Sendable> = {};
-        // let change = false;
+        const traces: TraceMap = {};
+        Object.values(state.results.groups).forEach((group) => {
+            Object.assign(traces, group.traces);
+        });
         Object.entries(state.results.tops).forEach(
             ([key, { changes, produce, errors, hover, pluginResults }]) => {
                 if (changes.results) {
-                    // console.log('a top change', key);
-                    // change = true;
                     updated[+key] = {
                         produce,
                         errors,
@@ -135,9 +137,7 @@ const next = async () => {
                 }
             },
         );
-        // if (change) {
-        sendBack({ type: 'results', results: updated, id: msg.id });
-        // }
+        sendBack({ type: 'results', results: updated, id: msg.id, traces });
     }
     running = false;
     // Wait a tick before handling the next one

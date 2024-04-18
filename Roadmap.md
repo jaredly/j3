@@ -17,11 +17,27 @@ TOP BUGS
 - [x] duplicate tracing needs to check cached tops!! (adding a (def y) *before* another (def y) doesn't indicate error)
 - [x] OK SO I actually, let's just clear out the "parsed" duplicates thing.
 - [ ] Can I get `hover the defined name` to work???? please???
+  - yeah I think what I want is, in addition to the `(array (, loc type))` report, we also
+    report `usage`s. which would be ... `(array (, client provider))`, but idx's.
+
+- missing should autocomplete
+-
 
 
-- [ ] ohhhhhh traces aren't going to be working yet, right?
+- JUMP TO next error... should be doable right?
+
+
+NEXT STEPS for reporting usages & uses
+- [ ] tenv/type needs to report the `idx` as well.
+- [ ] and then ... we can get down to business.
+
+
+- [x] ohhhhhh traces aren't going to be working yet, right?
   - yeah Sendable has to inclue `TraceMap`
 
+
+- [ ] 💡 might be cool to be able to "save/restore" the `meta` map of traces ... so that I can e.g. have a set of traces
+  that I use to debug a certain thing... idk if that's necessary tho 🤷
 
 
 ### [ ] THIH Hover
