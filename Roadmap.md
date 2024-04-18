@@ -24,7 +24,7 @@ TOP BUGS
 -
 
 
-- JUMP TO next error... should be doable right?
+- [x] JUMP TO next error... should be doable right?
 
 
 NEXT STEPS for reporting usages & uses
@@ -55,6 +55,7 @@ NEXT STEPS for reporting usages & uses
 
 - [ ] tbh now that inference & stuff is async, the caching issue is somehwat less. Would still be
   great to nail down ofc.
+    anddd we should move parsing to the worker, so that I only have to cache one thing.
 
 - [ ] THIH gotta report hoverssss
 

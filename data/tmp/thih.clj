@@ -3013,6 +3013,8 @@ foldl
 
 (typealias type-error-t (, string (array (, int string))))
 
+(typealias usage-record (, (array int) (array (, int int))))
+
 (deftype inferator
     (inferator
         full-env
@@ -3022,9 +3024,10 @@ foldl
             (fn [scheme] string)
             (fn [full-env string] (option scheme))
             (fn [full-env (array stmt)]
-            (,
+            (,,
                 (result (, full-env (array scheme)) type-error-t)
-                    (array (, int type))))))
+                    (array (, int type))
+                    usage-record))))
 
 (deftype parser
     (parser
@@ -3055,7 +3058,7 @@ foldl
                 (fn [(full-env tenv ce assumps) stms]
                 (let [
                     (, (,,, _ types _ _) result) (run/tenv-> tenv (infer-stmtss ce assumps stms))]
-                    (, result types))))
+                    (,, result types (, [] [])))))
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))
@@ -3064,7 +3067,7 @@ foldl
 
 27573
 
-(s
+(snd
     (run/tenv->
         builtin-tenv
             (infer-stmtss

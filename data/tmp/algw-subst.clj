@@ -322,7 +322,7 @@
 
 (deftype tenv
     (tenv
-        (map string scheme)
+        (map string (, scheme int))
             (map string tconstructor)
             (map string (, int (set string)))
             (map string (, (array string) type))))
@@ -374,7 +374,10 @@
     (set/diff (type-free type) vbls))
 
 (defn tenv-free [(tenv types _ _ _)]
-    (foldr set/nil (map (map/values types) scheme-free) set/merge))
+    (foldr
+        set/nil
+            (map (map/values types) (fn [(, s _)] (scheme-free s)))
+            set/merge))
 
 (,
     (fn [a] (set/to-list (scheme-free a)))
@@ -407,7 +410,11 @@
     (scheme vbls (type-apply (map-without subst vbls) type)))
 
 (defn tenv-apply [subst (tenv types cons names alias)]
-    (tenv (map/map (scheme-apply subst) types) cons names alias))
+    (tenv
+        (map/map (fn [(, s l)] (, (scheme-apply subst s) l)) types)
+            cons
+            names
+            alias))
 
 (** ## Composing substitution maps
     Note that compose-subst is not commutative. The old-subst map will get the new-subst substitutions applied to it, and then any conflicting keys go with new-subst.
@@ -559,7 +566,7 @@
         _                                        (state-> (,, idx (, types (, defs [(, loc provider) ..usages])) subst))]
         (<- ())))
 
-(defn record-defn-> [loc]
+(defn record-def-> [loc]
     (let-> [
         (,, idx (, types (, defs usages)) subst) <-state
         _                                        (state-> (,, idx (, types (, [loc ..defs] usages)) subst))]
@@ -713,9 +720,12 @@
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
         (evar "()" l)            (<- (tcon "()" l))
         (evar name l)            (match (tenv/type tenv name)
-                                     (none)       (<-err (type-error "Unbound variable" [(, name l)]))
-                                     (some found) (let-> [(, t _) (instantiate found l) () (record-> l (scheme/t found) true)]
-                                                      (<- (type/set-loc l t))))
+                                     (none)              (<-err (type-error "Unbound variable" [(, name l)]))
+                                     (some (, found fl)) (let-> [
+                                                             (, t _) (instantiate found l)
+                                                             ()      (record-> l (scheme/t found) true)
+                                                             ()      (record-usage-> l fl)]
+                                                             (<- (type/set-loc l t))))
         (equot quot l)           (<-
                                      (tcon
                                          (match quot
@@ -761,13 +771,13 @@
                                                                 (fn [(, argt patt)] (unify-inner argt patt l))
                                                                     (zip arg-types pat-types))
                                      composed               <-subst
-                                     bindings               (<- (map/map (type-apply composed) bindings))
-                                     schemes                (<- (map/map (scheme set/nil) bindings))
+                                     bindings               (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
+                                     schemes                (<- (map/map (fn [(, t l)] (, (scheme set/nil t) l)) bindings))
                                      bound-env              (<-
                                                                 (foldr
                                                                     (tenv-apply composed tenv)
                                                                         (map/to-list schemes)
-                                                                        (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme))))
+                                                                        (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
                                      body-type              (t-expr (tenv-apply composed bound-env) body)
                                      body-type              (type/apply-> body-type)
                                      arg-types              (map-> type/apply-> arg-types)]
@@ -844,18 +854,21 @@
         (, pat-type bindings) (t-pat tenv pat)
         _                     (unify-inner value-type pat-type (pat-loc pat))
         composed              <-subst
-        bindings              (<- (map/map (type-apply composed) bindings))
+        bindings              (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
         schemes               (<-
                                   (map/map
-                                      (if monomorphic
-                                          (scheme set/nil)
-                                              (generalize (tenv-apply composed tenv)))
+                                      (fn [(, t l)]
+                                          (,
+                                              (if monomorphic
+                                                  (scheme set/nil t)
+                                                      (generalize (tenv-apply composed tenv) t))
+                                                  l))
                                           bindings))
         bound-env             (<-
                                   (foldr
                                       (tenv-apply composed tenv)
                                           (map/to-list schemes)
-                                          (fn [tenv (, name scheme)] (tenv/set-type tenv name scheme))))
+                                          (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
         body-type             (t-expr (tenv-apply composed bound-env) body)]
         (type/apply-> body-type)))
 
@@ -878,8 +891,8 @@
 (defn t-pat-inner [tenv pat]
     (match pat
         (pany nl)             (let-> [var (new-type-var "any" nl)] (<- (, var map/nil)))
-        (pvar name nl)        (let-> [var (new-type-var name nl)]
-                                  (<- (, var (map/set map/nil name var))))
+        (pvar name nl)        (let-> [var (new-type-var name nl) () (record-def-> nl)]
+                                  (<- (, var (map/set map/nil name (, var nl)))))
         (pstr _ nl)           (<- (, (tcon "string" nl) map/nil))
         (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
         (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
@@ -915,7 +928,10 @@
                                                                                                            l)]
                                                                              (<- (map/merge bindings pat-bind)))))
                                   subst                          <-subst]
-                                  (<- (, (type-apply subst tres) (map/map (type-apply subst) bindings))))))
+                                  (<-
+                                      (,
+                                          (type-apply subst tres)
+                                              (map/map (fn [(, t l)] (, (type-apply subst t) l)) bindings))))))
 
 (** ## Top-level "infer expression" **)
 
@@ -936,18 +952,20 @@
 (def basic
     (tenv
         (map/from-list
-            [(, "+" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                (, "-" (scheme set/nil (tfn tint (tfn tint tint -1) -1)))
-                (, "()" (scheme set/nil (tcon "()" -1)))
+            [(, "+" (, (scheme set/nil (tfn tint (tfn tint tint -1) -1)) -1))
+                (, "-" (, (scheme set/nil (tfn tint (tfn tint tint -1) -1)) -1))
+                (, "()" (, (scheme set/nil (tcon "()" -1)) -1))
                 (,
                 ","
+                    (,
                     (scheme
-                    (set/from-list ["a" "b"])
-                        (tfn (tvar "a" -1)
-                        (tfn (tvar "b" -1)
-                            (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
-                                -1)
-                            -1)))])
+                        (set/from-list ["a" "b"])
+                            (tfn (tvar "a" -1)
+                            (tfn (tvar "b" -1)
+                                (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
+                                    -1)
+                                -1))
+                        -1))])
             (map/from-list
             [(,
                 ","
@@ -1048,7 +1066,8 @@
                                                       _                      (idx-> 0)
                                                       (** Make a type variable to represent the type of the value, for recursive calls, and add it to the tenv. **)
                                                       self                   (new-type-var name l)
-                                                      self-bound             (<- (tenv/set-type tenv' name (scheme set/nil self)))
+                                                      ()                     (record-def-> nl)
+                                                      self-bound             (<- (tenv/set-type tenv' name (, (scheme set/nil self) nl)))
                                                       (** Here we find all "unbound variables" in the expression, and create new type variables for them.
                                                           This makes for a much better experience, because instead of "unbound variable xyz", you can report
                                                           e.g. "unbound variable xyz, expected type: (fn [int] string)". **)
@@ -1063,7 +1082,7 @@
                                                       subst                  <-subst
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
-                                                      (<- (tenv/set-type tenv/nil name (generalize tenv' t))))
+                                                      (<- (tenv/set-type tenv/nil name (, (generalize tenv' t) nl))))
         (stypealias name nl args body l)          (<-
                                                       (tenv
                                                           map/nil
@@ -1256,7 +1275,10 @@
             names
             (fn [(, tenv vars) (, name loc)]
             (let-> [self (new-type-var name loc)]
-                (<- (, (tenv/set-type tenv name (scheme set/nil self)) [self ..vars]))))))
+                (<-
+                    (,
+                        (tenv/set-type tenv name (, (scheme set/nil self) loc))
+                            [self ..vars]))))))
 
 (defn report-missing [subst (, missing missing-vars)]
     (match missing-vars
@@ -1407,7 +1429,9 @@
                                             (map/set
                                                 values
                                                     name
-                                                    (scheme free-set (foldr final args (fn [body arg] (tfn arg body l)))))
+                                                    (,
+                                                    (scheme free-set (foldr final args (fn [body arg] (tfn arg body l))))
+                                                        nl))
                                                 (map/set cons name (tconstructor free-set args final)))))))]
         (<-
             (tenv
@@ -1479,7 +1503,7 @@
                           tenv/nil
                               zipped
                               (fn [tenv (, (, name nl) type)]
-                              (tenv/set-type tenv name (generalize tenv type))))))))
+                              (tenv/set-type tenv name (, (generalize tenv type) nl))))))))
 
 map->
 
@@ -1840,58 +1864,60 @@ map->
     (let [k (vbl "k") v (vbl "v") v2 (vbl "v2") kv (generic ["k" "v"]) kk (generic ["k"])]
         (foldl
             (tenv
-                (map/from-list
-                    [(, "+" (concrete (tfns [tint tint] tint)))
-                        (, "-" (concrete (tfns [tint tint] tint)))
-                        (, ">" (concrete (tfns [tint tint] tbool)))
-                        (, "<" (concrete (tfns [tint tint] tbool)))
-                        (, "=" (generic ["k"] (tfns [k k] tbool)))
-                        (, "!=" (generic ["k"] (tfns [k k] tbool)))
-                        (, ">=" (concrete (tfns [tint tint] tbool)))
-                        (, "<=" (concrete (tfns [tint tint] tbool)))
-                        (, "()" (concrete (tcon "()" -1)))
-                        (,
-                        "trace"
-                            (kk
-                            (tfns
-                                [(tapp (tcon "array" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
-                                    (tcon "()" -1))))
-                        (, "unescapeString" (concrete (tfns [tstring] tstring)))
-                        (, "int-to-string" (concrete (tfns [tint] tstring)))
-                        (, "string-to-int" (concrete (tfns [tstring] (toption tint))))
-                        (,
-                        "string-to-float"
-                            (concrete (tfns [tstring] (toption (tcon "float" -1)))))
-                        (, "++" (concrete (tfns [(tarray tstring)] tstring)))
-                        (, "map/nil" (kv (tmap k v)))
-                        (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v))))
-                        (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v))))
-                        (, "map/get" (kv (tfns [(tmap k v) k] (toption v))))
-                        (,
-                        "map/map"
-                            (generic ["k" "v" "v2"] (tfns [(tfns [v] v2) (tmap k v)] (tmap k v2))))
-                        (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
-                        (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
-                        (, "map/keys" (kv (tfns [(tmap k v)] (tarray k))))
-                        (, "set/nil" (kk (tset k)))
-                        (, "set/add" (kk (tfns [(tset k) k] (tset k))))
-                        (, "set/has" (kk (tfns [(tset k) k] tbool)))
-                        (, "set/rm" (kk (tfns [(tset k) k] (tset k))))
-                        (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k))))
-                        (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k))))
-                        (, "set/to-list" (kk (tfns [(tset k)] (tarray k))))
-                        (, "set/from-list" (kk (tfns [(tarray k)] (tset k))))
-                        (, "map/from-list" (kv (tfns [(tarray (t, k v))] (tmap k v))))
-                        (, "map/to-list" (kv (tfns [(tmap k v)] (tarray (t, k v)))))
-                        (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
-                        (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring)))
-                        (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v"))))
-                        (,
-                        "errorToString"
-                            (generic ["v"] (tfns [(tfns [(vbl "v")] tstring) (vbl "v")] tstring)))
-                        (, "sanitize" (concrete (tfns [tstring] tstring)))
-                        (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
-                        (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))])
+                (map/map
+                    (fn [b] (, b -1))
+                        (map/from-list
+                        [(, "+" (concrete (tfns [tint tint] tint)))
+                            (, "-" (concrete (tfns [tint tint] tint)))
+                            (, ">" (concrete (tfns [tint tint] tbool)))
+                            (, "<" (concrete (tfns [tint tint] tbool)))
+                            (, "=" (generic ["k"] (tfns [k k] tbool)))
+                            (, "!=" (generic ["k"] (tfns [k k] tbool)))
+                            (, ">=" (concrete (tfns [tint tint] tbool)))
+                            (, "<=" (concrete (tfns [tint tint] tbool)))
+                            (, "()" (concrete (tcon "()" -1)))
+                            (,
+                            "trace"
+                                (kk
+                                (tfns
+                                    [(tapp (tcon "array" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
+                                        (tcon "()" -1))))
+                            (, "unescapeString" (concrete (tfns [tstring] tstring)))
+                            (, "int-to-string" (concrete (tfns [tint] tstring)))
+                            (, "string-to-int" (concrete (tfns [tstring] (toption tint))))
+                            (,
+                            "string-to-float"
+                                (concrete (tfns [tstring] (toption (tcon "float" -1)))))
+                            (, "++" (concrete (tfns [(tarray tstring)] tstring)))
+                            (, "map/nil" (kv (tmap k v)))
+                            (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v))))
+                            (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v))))
+                            (, "map/get" (kv (tfns [(tmap k v) k] (toption v))))
+                            (,
+                            "map/map"
+                                (generic ["k" "v" "v2"] (tfns [(tfns [v] v2) (tmap k v)] (tmap k v2))))
+                            (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
+                            (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
+                            (, "map/keys" (kv (tfns [(tmap k v)] (tarray k))))
+                            (, "set/nil" (kk (tset k)))
+                            (, "set/add" (kk (tfns [(tset k) k] (tset k))))
+                            (, "set/has" (kk (tfns [(tset k) k] tbool)))
+                            (, "set/rm" (kk (tfns [(tset k) k] (tset k))))
+                            (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k))))
+                            (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k))))
+                            (, "set/to-list" (kk (tfns [(tset k)] (tarray k))))
+                            (, "set/from-list" (kk (tfns [(tarray k)] (tset k))))
+                            (, "map/from-list" (kv (tfns [(tarray (t, k v))] (tmap k v))))
+                            (, "map/to-list" (kv (tfns [(tmap k v)] (tarray (t, k v)))))
+                            (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
+                            (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring)))
+                            (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v"))))
+                            (,
+                            "errorToString"
+                                (generic ["v"] (tfns [(tfns [(vbl "v")] tstring) (vbl "v")] tstring)))
+                            (, "sanitize" (concrete (tfns [tstring] tstring)))
+                            (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
+                            (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))]))
                     (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1)))])
                     (map/from-list
                     [(, "int" (, 0 set/nil))
@@ -1943,10 +1969,14 @@ map->
         tenv
             (fn [tenv (array stmt)] tenv)
             (fn [tenv (array stmt)]
-            (, (result (, tenv (array type)) type-error-t) (array (, int type))))
+            (,,
+                (result (, tenv (array type)) type-error-t)
+                    (array (, int type))
+                    usage-record))
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)
-            (fn [tenv expr] (, (result type type-error-t) (array (, int type))))))
+            (fn [tenv expr]
+            (,, (result type type-error-t) (array (, int type)) usage-record))))
 
 (deftype name-kind (value) (type))
 
@@ -1969,10 +1999,10 @@ map->
 
 (defn infer-stmts2 [tenv stmts]
     (let [
-        (, (,, _ (, types (, defs usages)) subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
-        (, result (applied-types types subst))))
+        (, (,, _ (, types usage-record) subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
+        (,, result (applied-types types subst) usage-record)))
 
-(infer-stmts2 builtin-env [(@! (def x 10))])
+(infer-stmts2 builtin-env [(@! (def x 10)) (@! x) (@! (let [m 2] (+ m m)))])
 
 (defn applied-types [types subst]
     (map
@@ -1996,11 +2026,11 @@ foldl
                 (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr))))
                 (fn [tenv expr]
                 (let [
-                    (, (,, _ (, types (, defs usages)) subst) result) ((state-f (infer tenv expr)) state/nil)]
-                    (, result (applied-types types subst)))))
+                    (, (,, _ (, types usage-record) subst) result) ((state-f (infer tenv expr)) state/nil)]
+                    (,, result (applied-types types subst) usage-record))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)
-                (some v) (some (scheme/type v))
-                _        (none)))))
+                (some (, v _)) (some (scheme/type v))
+                _              (none)))))

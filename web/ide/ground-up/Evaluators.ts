@@ -194,6 +194,12 @@ export const bootstrap: FullEvalator<
             switch (stmt.type) {
                 case 'sdef':
                     return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
+                case 'sdeftype':
+                    return unwrapArray(stmt[1]).map((m) => ({
+                        name: m[0],
+                        kind: 'value',
+                        loc: stmt.loc,
+                    }));
             }
             return [];
         },
@@ -244,7 +250,8 @@ export const bootstrap: FullEvalator<
                     }
                 }
                 case 'sdeftype': {
-                    addTypeConstructors(stmt, env.values);
+                    addTypeConstructors(stmt, values);
+                    Object.assign(env.values, values);
                     display[+id] = `type with ${
                         unwrapArray(stmt[1]).length
                     } constructors`;

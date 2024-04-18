@@ -13,10 +13,11 @@ import {
     StoreCtx,
     useGetStore,
     useGlobalState,
+    useResults,
 } from '../../custom/store/StoreCtx';
 import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
-import { CommandPalette } from './CommandPalette';
+import { CommandPalette, pathForIdx } from './CommandPalette';
 import { RenderTraces } from './renderTraces';
 import { advancePath } from './findTops';
 import { ResultsCache } from '../../custom/store/ResultsCache';
@@ -196,30 +197,83 @@ export const GroundUp = ({
                         </label>
                     </div>
                 ))}
-                <div>
-                    <WithStore store={store}>
+                <WithStore store={store}>
+                    <div>
                         <ShowEvaluators
                             state={state}
                             store={store}
                             listing={listing}
                             id={id}
                         />
-                    </WithStore>
-                </div>
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                    {debug.selection ? (
-                        <ShowAt at={state.at} hover={state.hover} />
-                    ) : null}
-                    <WithStore store={store}>
+                    </div>
+                    <div style={{ flex: 1, overflow: 'auto' }}>
+                        {debug.selection ? (
+                            <ShowAt at={state.at} hover={state.hover} />
+                        ) : null}
+                        <ShowErrors />
                         <RenderTraces />
-                    </WithStore>
-                </div>
+                    </div>
+                </WithStore>
             </div>
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
                 <Hover />
                 <CommandPalette />
             </WithStore>
+        </div>
+    );
+};
+
+const ShowErrors = () => {
+    const store = useGetStore();
+    const results = useResults(store);
+    const state = store.getState();
+    const found: { loc: number; errs: string[] }[] = [];
+    Object.values(results.results.nodes).forEach((node) => {
+        if (node.parsed?.type === 'failure') {
+            Object.entries(node.parsed.errors).forEach(([loc, errs]) => {
+                found.push({ loc: +loc, errs });
+            });
+        }
+    });
+    Object.entries(results.workerResults.nodes).forEach(([key, send]) => {
+        Object.entries(send.errors).forEach(([loc, errs]) => {
+            found.push({ loc: +loc, errs });
+        });
+        send.produce.forEach((item) => {
+            if (typeof item === 'string') return;
+            if (
+                item.type === 'error' ||
+                item.type === 'withjs' ||
+                item.type === 'eval'
+            ) {
+                found.push({
+                    loc: state.nsMap[+key].top,
+                    errs: [item.message],
+                });
+            }
+        });
+    });
+
+    if (!found.length) return null;
+    return (
+        <div>
+            <strong style={{ color: 'red' }}>Errors</strong>
+            {found.map(({ loc, errs }, i) => (
+                <div
+                    key={i}
+                    onClick={() => {
+                        const path = pathForIdx(loc, state);
+                        if (!path) return alert('cant find path for ' + loc);
+                        store.dispatch({
+                            type: 'select',
+                            at: [{ start: path }],
+                        });
+                    }}
+                >
+                    {loc}: {errs.join(', ')}
+                </div>
+            ))}
         </div>
     );
 };

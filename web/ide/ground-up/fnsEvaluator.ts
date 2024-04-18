@@ -221,7 +221,7 @@ export const fnsEvaluator = (
                       dependencies(stmt) {
                           try {
                               const deps = unwrapArray<{
-                                  type: ',';
+                                  type: ',,';
                                   0: string;
                                   1: { type: 'value' | 'type' };
                                   2: number;
@@ -240,7 +240,7 @@ export const fnsEvaluator = (
                       exprDependencies(stmt) {
                           try {
                               const deps = unwrapArray<{
-                                  type: ',';
+                                  type: ',,';
                                   0: string;
                                   1: { type: 'value' | 'type' };
                                   2: number;

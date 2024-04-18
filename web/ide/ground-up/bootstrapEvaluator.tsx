@@ -32,6 +32,7 @@ export const bootstrapEvaluator = (
         init() {
             return { values: bootstrap.init(), source: [] };
         },
+        analysis: bootstrap.analysis,
         setTracing(idx, traceMap) {},
         addStatements(stmts: Record<number, stmt>, env) {
             const display: Record<number, Produce> = {};

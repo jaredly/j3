@@ -39,6 +39,15 @@ export const useExpanded = (idx: number): Node => {
     return v;
 };
 
+export const useResults = (store: Store) => {
+    const [state, setState] = useState(store.getResults());
+    useEffect(
+        () => store.on('results', () => setState(store.getResults())),
+        [],
+    );
+    return state;
+};
+
 export const useGlobalState = (store: Store) => {
     const [state, setState] = useState({
         state: store.getState(),

@@ -601,10 +601,11 @@
         (pcon name args l) (match (foldl
                                (, 0 [])
                                    args
-                                   (fn [(, i res) arg]
-                                   (match (just-pat arg)
-                                       (none)      (, (+ i 1) res)
-                                       (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res]))))
+                                   (fn [ires arg]
+                                   (let [(, i res) ires]
+                                       (match (just-pat arg)
+                                           (none)      (, (+ i 1) res)
+                                           (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res])))))
                                (, _ [])    none
                                (, _ items) (some "{${(join ", " (rev items []))}}"))
         (pstr _ _)         (fatal "Cant use string as a pattern in this location")
@@ -656,7 +657,9 @@
                                                     []    ""
                                                     names (join
                                                               "\n"
-                                                                  (map names (fn [(, name l)] (just-trace l trace (sanitize name))))))
+                                                                  (map
+                                                                  names
+                                                                      (fn [name] (let [(, name l) name] (just-trace l trace (sanitize name)))))))
                                                 } return ${
                                                 (compile body trace)
                                                 } }"

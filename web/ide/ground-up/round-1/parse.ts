@@ -52,7 +52,7 @@ export type prim =
 export type expr =
     | { type: 'estr'; 0: string; 1: arr<{ type: ','; 0: expr; 1: string }> }
     | { type: 'eprim'; 0: prim; 1: number }
-    | { type: 'equot'; 0: expr | jcst }
+    | { type: 'equot'; 0: expr | jcst | stmt }
     | { type: 'evar'; 0: string; 1: number }
     | { type: 'elambda'; 0: string; 1: expr }
     | { type: 'eapp'; 0: expr; 1: expr }
@@ -483,6 +483,15 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                 values[0].text === '@@'
             ) {
                 const inner = toJCST(values[1]);
+                return inner ? { type: 'equot', 0: inner } : undefined;
+            }
+
+            if (
+                values.length === 2 &&
+                values[0].type === 'identifier' &&
+                values[0].text === '@!'
+            ) {
+                const inner = parseStmt(values[1], ctx);
                 return inner ? { type: 'equot', 0: inner } : undefined;
             }
 
