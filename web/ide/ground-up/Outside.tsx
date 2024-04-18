@@ -36,6 +36,7 @@ export const Outside = () => {
         return (
             <div>
                 <div
+                    id="sticky-header"
                     style={{
                         position: 'sticky',
                         top: 0,

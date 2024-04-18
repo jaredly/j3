@@ -26,10 +26,15 @@ export const Cursors = ({
         const got = first[first.length - 1].idx;
         const found = regs[got]?.main ?? regs[got]?.outside;
         if (found) {
+            const headerHeight = document
+                .getElementById('sticky-header')!
+                .getBoundingClientRect().height;
+
             const box = found.node.getBoundingClientRect();
-            if (box.top < 0 || box.bottom > window.innerHeight) {
+            if (box.top < headerHeight || box.bottom > window.innerHeight) {
                 const dist =
                     box.top < 0 ? -box.top : box.bottom - window.innerHeight;
+                found.node.style.scrollMarginTop = headerHeight + 'px';
                 found.node.scrollIntoView({
                     behavior: dist > 300 ? 'smooth' : 'instant',
                     block: 'nearest',

@@ -1122,7 +1122,7 @@
     (match stmts
         []               (<-err (type-error "Final stmt should be an expr" []))
         [(sexpr expr _)] (let-> [_ (idx-> 0)] (infer tenv expr))
-        [one ..rest]     (let-> [tenv' (infer-stmtss tenv [one])]
+        [one ..rest]     (let-> [(, tenv' _) (infer-stmtss tenv [one])]
                              (several (tenv/merge tenv tenv') rest))))
 
 (,
@@ -1263,15 +1263,17 @@
                     _        true))
                 (map/to-list externals))))
 
-(defn infer-several-inner [bound types (, var (sdef name _ body l))]
+(defn infer-several-inner [bound types (, var (sdef name nl body l))]
     (let-> [
         subst     <-subst
         body-type (t-expr (tenv-apply subst bound) body)
         subst     <-subst
         selfed    (<- (type-apply subst var))
         _         (unify-inner selfed body-type l)
-        subst     <-subst]
-        (<- [(type-apply subst body-type) ..types])))
+        subst     <-subst
+        body-type (<- (type-apply subst body-type))
+        _         (record-> nl body-type)]
+        (<- [body-type ..types])))
 
 (defn infer-several [tenv stmts]
     (let-> [
@@ -1318,7 +1320,8 @@
         tenv
             stmts
             (fn [tenv stmt]
-            (let-> [tenv' ((infer-stmtss tenv [stmt]))] (<- (tenv/merge tenv tenv'))))))
+            (let-> [(, tenv' types) (infer-stmtss tenv [stmt])]
+                (<- (tenv/merge tenv tenv'))))))
 
 (fn [stmts]
     (match (run/nil-> (infer-stmts builtin-env stmts))
@@ -1941,5 +1944,3 @@
             (match (tenv/type tenv name)
                 (some v) (some (scheme/type v))
                 _        (none)))))
-
-19901

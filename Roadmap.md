@@ -15,7 +15,7 @@ TOP BUGS
 - [x] duplicate names - where am I tracking that?
 - [x] duplicate tracing isn't working on the very first time? Wieerrrd
 - [x] duplicate tracing needs to check cached tops!! (adding a (def y) *before* another (def y) doesn't indicate error)
-- [ ] OK SO I actually, let's just clear out the "parsed" duplicates thing.
+- [x] OK SO I actually, let's just clear out the "parsed" duplicates thing.
 
 
 
