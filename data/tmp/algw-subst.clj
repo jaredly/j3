@@ -446,7 +446,7 @@
                                                           }")
                                                       current))))))))
 
-(def debug-invariant false)
+(def debug-invariant true)
 
 (defn compose-subst [place new-subst old-subst]
     (match (if debug-invariant
@@ -680,19 +680,9 @@
 
 (defn t-expr [tenv expr]
     (let-> [
-        type (t-expr-inner tenv expr)
-        _    (record-> (expr-loc expr) type false)]
-        (<- type))
-        ;(let [
-        l                    (expr-loc expr)
-        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
-        (,, subst type nidx) (t-expr-inner tenv expr nidx)
-        _                    (trace
-                                 [(tloc l)
-                                     (tcolor "white")
-                                     (ttext "exir")
-                                     (tfmt type type-to-string-raw)])]
-        (,, subst type nidx)))
+        (, subst type) (t-expr-inner tenv expr)
+        _              (record-> (expr-loc expr) type false)]
+        (<- (, subst type))))
 
 (def tenv/apply-> (apply-> tenv-apply))
 
@@ -710,31 +700,32 @@
 (defn t-expr-inner [tenv expr]
     (match expr
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
-        (evar "()" l)            (<- (tcon "()" l))
+        (evar "()" l)            (<- (, map/nil (tcon "()" l)))
         (evar name l)            (match (tenv/type tenv name)
-                                     (none)              (<-err (type-error "Unbound variable" [(, name l)]))
-                                     (some (, found fl)) (let-> [
-                                                             (, t _) (instantiate found l)
-                                                             ()      (record-> l (scheme/t found) true)
-                                                             ()      (record-usage-> l fl)]
-                                                             (<- (type/set-loc l t))))
+                                     (none)             (<-err (, "Unbound variable ${name} (${(its l)})" []))
+                                     (some (, found _)) (let-> [(, t _) (instantiate found l)]
+                                                            (<- (, map/nil (type/set-loc l t)))))
         (equot quot l)           (<-
-                                     (tcon
-                                         (match quot
-                                             (quot/expr _) "expr"
-                                             (quot/stmt _) "stmt"
-                                             (quot/quot _) "cst"
-                                             (quot/type _) "type"
-                                             (quot/pat _)  "pat")
-                                             l))
-        (eprim prim _)           (<- (t-prim prim))
+                                     (,
+                                         map/nil
+                                             (tcon
+                                             (match quot
+                                                 (quot/expr _) "expr"
+                                                 (quot/stmt _) "stmt"
+                                                 (quot/quot _) "cst"
+                                                 (quot/type _) "type"
+                                                 (quot/pat _)  "pat")
+                                                 l)))
+        (eprim prim _)           (<- (, map/nil (t-prim prim)))
         (estr first templates l) (let-> [
                                      string-type (<- (tcon "string" l))
-                                     _           (map->
-                                                     (fn [(,, expr suffix sl)]
-                                                         (let-> [t (t-expr tenv expr) () (unify t string-type l)] (<- 0)))
-                                                         templates)]
-                                     (<- string-type))
+                                     subst       (foldr->
+                                                     map/nil
+                                                         templates
+                                                         (fn [subst (,, expr suffix sl)]
+                                                         (let-> [(, s2 t) (t-expr tenv expr) s3 (unify-inner t string-type l)]
+                                                             (<- (compose-subst "estr" s3 (compose-subst "estr2" s2 subst))))))]
+                                     (<- (, subst string-type)))
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
             - add the type variable to the typing environment
@@ -750,48 +741,42 @@
                     (tfn (type-apply body-subst arg-type) body-type l)
                     nidx))
         (** Lambdas, now with pats **)
-        (elambda pats body l)    (let-> [
-                                     arg-types              (map-> pat-name pats)
-                                     pts                    (map-> (t-pat tenv) pats)
-                                     (, pat-types bindings) (<-
-                                                                (foldr
-                                                                    (, [] map/nil)
-                                                                        pts
-                                                                        (fn [(, ptypes bindings) (, pt bs)]
-                                                                        (, [pt ..ptypes] (map/merge bindings bs)))))
-                                     _                      (map->
-                                                                (fn [(, argt patt)] (unify argt patt l))
-                                                                    (zip arg-types pat-types))
-                                     composed               <-subst
-                                     bindings               (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
-                                     schemes                (<- (map/map (fn [(, t l)] (, (scheme set/nil t) l)) bindings))
-                                     bound-env              (<-
-                                                                (foldr
-                                                                    (tenv-apply composed tenv)
-                                                                        (map/to-list schemes)
-                                                                        (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
-                                     body-type              (t-expr (tenv-apply composed bound-env) body)
-                                     body-type              (type/apply-> body-type)
-                                     arg-types              (map-> type/apply-> arg-types)]
-                                     (<- (foldr body-type arg-types (fn [body arg] (tfn arg body l)))))
+        (elambda pats body l)    (match pats
+                                     [pat] (let-> [
+                                               arg-type       (new-type-var
+                                                                  (match pat
+                                                                      (pvar name _) name
+                                                                      _             "$arg")
+                                                                      l)
+                                               (, subst body) (pat-and-body tenv pat body (, map/nil arg-type) true)
+                                               arg-type       (<- (type-apply subst arg-type))]
+                                               (<- (, subst (tfn arg-type body l))))
+                                     _     (t-expr tenv (foldr body pats (fn [body pat] (elambda [pat] body l)))))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
             - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
             - unify the target type with a function (arg type) => return value type variable
             - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
-        (eapp target args l)     (foldl
-                                     (t-expr tenv target)
-                                         args
-                                         (fn [target-> arg]
-                                         (let-> [
-                                             result-var  (new-type-var "res" l)
-                                             target-type target->
-                                             arg-tenv    (tenv/apply-> tenv)
-                                             arg-type    (t-expr arg-tenv arg)
-                                             target-type (type/apply-> target-type)
-                                             _           (unify target-type (tfn arg-type result-var l) l)]
-                                             (type/apply-> result-var))))
+        (eapp target args l)     (match args
+                                     [arg] (let-> [
+                                               result-var                   (new-type-var "res" l)
+                                               (, target-subst target-type) (t-expr tenv target)
+                                               (, arg-subst arg-type)       (t-expr (tenv-apply target-subst tenv) arg)
+                                               (, unified-subst)            (unify-inner
+                                                                                (type-apply arg-subst target-type)
+                                                                                    (tfn arg-type result-var l)
+                                                                                    l)]
+                                               (<-
+                                                   (,
+                                                       (compose-subst
+                                                           "eapp"
+                                                               unified-subst
+                                                               (compose-subst "eapp2" arg-subst target-subst))
+                                                           (type-apply unified-subst result-var))))
+                                     _     (t-expr
+                                               tenv
+                                                   (foldl target args (fn [target arg] (eapp target [arg] l)))))
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
@@ -820,19 +805,183 @@
                                                                 bindings
                                                                 (fn [body (, pat init)] (elet [(, pat init)] body l)))))
         (ematch target cases l)  (let-> [
-                                     result-var        (new-type-var "match-res" l)
-                                     target-type       (t-expr tenv target)
-                                     (, _ result-type) (foldl->
-                                                           (, target-type result-var)
-                                                               cases
-                                                               (fn [(, target-type result) (, pat body)]
-                                                               (let-> [
-                                                                   body  (pat-and-body tenv pat body target-type false)
-                                                                   subst <-subst
-                                                                   ()    (unify (type-apply subst result) body l)
-                                                                   subst <-subst]
-                                                                   (<- (, (type-apply subst target-type) (type-apply subst result))))))]
-                                     (<- result-type))
+                                     result-var                      (new-type-var "match-res" l)
+                                     (, target-subst target-type)    (t-expr tenv target)
+                                     (,, _ target-subst result-type) (foldr->
+                                                                         (,, target-type target-subst result-var)
+                                                                             cases
+                                                                             (fn [(,, target-type subst result) (, pat body)]
+                                                                             (let-> [
+                                                                                 (, subst body) (pat-and-body tenv pat body (, subst target-type) false)
+                                                                                 unified-subst  (unify-inner (type-apply subst result) body l)
+                                                                                 composed       (<- (compose-subst "ematch" unified-subst subst))]
+                                                                                 (<-
+                                                                                     (,,
+                                                                                         (type-apply composed target-type)
+                                                                                             composed
+                                                                                             (type-apply composed result))))))]
+                                     (<- (, target-subst result-type)))
+        _                        (<-err (, "cannot infer type for ${(valueToString expr)}" []))))
+
+(defn t-expr-inner-2 [tenv expr]
+    (match expr
+        (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
+        (evar "()" l)            (<- (, map/nil (tcon "()" l)))
+        (evar name l)            (match (tenv/type tenv name)
+                                     (none)              (<-err (type-error "Unbound variable" [(, name l)]))
+                                     (some (, found fl)) (let-> [
+                                                             (, t _) (instantiate found l)
+                                                             ()      (record-> l (scheme/t found) true)
+                                                             ()      (record-usage-> l fl)]
+                                                             (<- (, map/nil (type/set-loc l t)))))
+        (equot quot l)           (<-
+                                     (,
+                                         map/nil
+                                             (tcon
+                                             (match quot
+                                                 (quot/expr _) "expr"
+                                                 (quot/stmt _) "stmt"
+                                                 (quot/quot _) "cst"
+                                                 (quot/type _) "type"
+                                                 (quot/pat _)  "pat")
+                                                 l)))
+        (eprim prim _)           (<- (, map/nil (t-prim prim)))
+        (estr first templates l) (let-> [
+                                     string-type (<- (tcon "string" l))
+                                     subst       (foldr->
+                                                     map/nil
+                                                         templates
+                                                         (fn [subst (,, expr suffix sl)]
+                                                         (let-> [(, s2 t) (t-expr tenv expr) s3 (unify-inner t string-type l)]
+                                                             (<- (compose-subst "estr" s3 (compose-subst "estr2" s2 subst))))))]
+                                     (<- (, subst string-type)))
+        (** For lambdas (fn [name] body)
+            - create a type variable to represent the type of the argument
+            - add the type variable to the typing environment
+            - infer the body, using the augmented environment
+            - if the body's subst has some binding for our arg variable, use that **)
+        ;(elambda name nl body l)
+        ;(let [
+            (, arg-type nidx)              (new-type-var name nidx l)
+            env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
+            (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
+            (,,
+                body-subst
+                    (tfn (type-apply body-subst arg-type) body-type l)
+                    nidx))
+        (** Lambdas, now with pats **)
+        (elambda pats body l)    (match pats
+                                     [pat] (let-> [
+                                               arg-type       (new-type-var
+                                                                  (match pat
+                                                                      (pvar name _) name
+                                                                      _             "$arg")
+                                                                      l)
+                                               (, subst body) (pat-and-body tenv pat body (, map/nil arg-type) true)
+                                               arg-type       (<- (type-apply subst arg-type))]
+                                               (<- (, subst (tfn arg-type body l))))
+                                     _     (t-expr tenv (foldr body pats (fn [body pat] (elambda [pat] body l)))))
+        ;(let-> [
+            arg-types                (map-> pat-name pats)
+            pts                      (map-> (t-pat tenv) pats)
+            (, pat-types bindings)   (<-
+                                         (foldr
+                                             (, [] map/nil)
+                                                 pts
+                                                 (fn [(, ptypes bindings) (, pt bs)]
+                                                 (, [pt ..ptypes] (map/merge bindings bs)))))
+            unified-subst            (foldl->
+                                         map/nil
+                                             (zip arg-types pat-types)
+                                             (fn [subst (, argt patt)]
+                                             (let-> [s2 (unify-inner argt patt l)]
+                                                 (<- (compose-subst "elam" s2 subst)))))
+            bindings                 (<- (map/map (fn [(, t l)] (, (type-apply unified-subst t) l)) bindings))
+            schemes                  (<- (map/map (fn [(, t l)] (, (scheme set/nil t) l)) bindings))
+            bound-env                (<-
+                                         (foldr
+                                             (tenv-apply unified-subst tenv)
+                                                 (map/to-list schemes)
+                                                 (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
+            (, body-subst body-type) (t-expr (tenv-apply unified-subst bound-env) body)
+            arg-types                (<- (map arg-types (type-apply unified-subst)))]
+            (<-
+                (,
+                    (compose-subst "pat-and-body" body-subst unified-subst)
+                        (foldr
+                        (type-apply unified-subst body-type)
+                            arg-types
+                            (fn [body arg] (tfn arg body l))))))
+        (** Function application (target arg)
+            - create a type variable to represent the return value of the function application
+            - infer the target type
+            - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
+            - unify the target type with a function (arg type) => return value type variable
+            - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
+        (eapp target args l)     (foldl
+                                     (t-expr tenv target)
+                                         args
+                                         (fn [target-> arg]
+                                         (let-> [
+                                             result-var                   (new-type-var "res" l)
+                                             (, target-subst target-type) target->
+                                             (, arg-subst arg-type)       (t-expr (tenv-apply target-subst tenv) arg)
+                                             target-type                  (type/apply-> target-type)
+                                             unified-subst                (unify-inner
+                                                                              (type-apply arg-subst target-type)
+                                                                                  (tfn arg-type result-var l)
+                                                                                  l)]
+                                             (<-
+                                                 (,
+                                                     (compose-subst
+                                                         "eapp"
+                                                             unified-subst
+                                                             (compose-subst "eapp2" arg-subst target-subst))
+                                                         (type-apply unified-subst result-var))))))
+        (** Let: simple version, where the pattern is just a pvar
+            - infer the type of the value being bound
+            - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
+            - apply any subst that we learned from inferring the value to our type environment, producing a new tenv (?) Seems like this ought to be equivalent to doing tenv-apply to tenv and then adding the name. It's impossible for the value-subst to produce ... something that would apply to the value-type, right??? right??
+            - infer the type of the body, using the tenv that has both the name bound to the generalized inferred type, as well as any substitutions that resulted from inferring the type of the bound value.
+            - compose the substitutions from the body with those from the value **)
+        ;(elet (pvar name nl) value body l)
+        ;(let [
+            (,, value-subst value-type nidx) (t-expr tenv value nidx)
+            value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
+            env-with-name                    (tenv/set-type tenv name value-scheme)
+            e2                               (tenv-apply value-subst env-with-name)
+            (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
+            (,, (compose-subst "elet" body-subst value-subst) body-type nidx))
+        (** Let: complex version! Now with a whole lot of polymorphism!
+            - infer the type of the value
+            - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
+            - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
+        (elet bindings body l)   (match bindings
+                                     [(, pat init)] (let-> [inited (t-expr tenv init)]
+                                                        (pat-and-body tenv pat body inited false))
+                                     _              (t-expr
+                                                        tenv
+                                                            (foldr
+                                                            body
+                                                                bindings
+                                                                (fn [body (, pat init)] (elet [(, pat init)] body l)))))
+        (ematch target cases l)  (let-> [
+                                     result-var                      (new-type-var "match-res" l)
+                                     (, target-subst target-type)    (t-expr tenv target)
+                                     (,, _ target-subst result-type) (foldl->
+                                                                         (,, target-type target-subst result-var)
+                                                                             cases
+                                                                             (fn [(,, target-type subst result) (, pat body)]
+                                                                             (let-> [
+                                                                                 (, subst body) (pat-and-body tenv pat body (, subst target-type) false)
+                                                                                 unified-subst  (unify-inner (type-apply subst result) body l)
+                                                                                 composed       (<- (compose-subst "ematch" unified-subst subst))]
+                                                                                 (<-
+                                                                                     (,,
+                                                                                         (type-apply composed target-type)
+                                                                                             composed
+                                                                                             (type-apply composed result))))))]
+                                     (<- (, target-subst result-type)))
         _                        (<-err
                                      (type-error
                                          "Expression not supported (?)"
@@ -840,29 +989,61 @@
 
 (** ## Patterns **)
 
-(defn pat-and-body [tenv pat body value-type monomorphic]
+
+
+(defn pat-and-body [tenv pat body (, value-subst value-type) monomorphic]
     (** Yay!! Now we have verification. **)
         (let-> [
-        (, pat-type bindings) (t-pat tenv pat)
-        ()                    (unify value-type pat-type (pat-loc pat))
-        composed              <-subst
-        bindings              (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
-        schemes               (<-
-                                  (map/map
-                                      (fn [(, t l)]
-                                          (,
-                                              (if monomorphic
-                                                  (scheme set/nil t)
-                                                      (generalize (tenv-apply composed tenv) t))
-                                                  l))
-                                          bindings))
-        bound-env             (<-
-                                  (foldr
-                                      (tenv-apply composed tenv)
-                                          (map/to-list schemes)
-                                          (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
-        body-type             (t-expr (tenv-apply composed bound-env) body)]
-        (type/apply-> body-type)))
+        (, pat-type bindings)    (t-pat tenv pat)
+        unified-subst            (unify-inner value-type pat-type (pat-loc pat))
+        composed                 (<- (compose-subst "pat-and-body" unified-subst value-subst))
+        bindings                 (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
+        schemes                  (<-
+                                     (map/map
+                                         (fn [(, t l)]
+                                             (,
+                                                 (if monomorphic
+                                                     (scheme set/nil t)
+                                                         (generalize (tenv-apply composed tenv) t))
+                                                     l))
+                                             bindings))
+        bound-env                (<-
+                                     (foldr
+                                         (tenv-apply value-subst tenv)
+                                             (map/to-list schemes)
+                                             (fn [tenv (, name val)] (tenv/set-type tenv name val))))
+        (, body-subst body-type) (t-expr (tenv-apply composed bound-env) body)]
+        (<-
+            (,
+                (compose-subst "pat-and-body-2" body-subst composed)
+                    (type-apply composed body-type)))))
+
+(defn pat-and-body-2 [tenv pat body (, value-subst value-type) monomorphic]
+    (** Yay!! Now we have verification. **)
+        (let-> [
+        (, pat-type bindings)    (t-pat tenv pat)
+        unified-subst            (unify-inner value-type pat-type (pat-loc pat))
+        composed                 (<- (compose-subst "pat-and-body" unified-subst value-subst))
+        bindings                 (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
+        schemes                  (<-
+                                     (map/map
+                                         (fn [(, t l)]
+                                             (,
+                                                 (if monomorphic
+                                                     (scheme set/nil t)
+                                                         (generalize (tenv-apply composed tenv) t))
+                                                     l))
+                                             bindings))
+        bound-env                (<-
+                                     (foldr
+                                         (tenv-apply value-subst tenv)
+                                             (map/to-list schemes)
+                                             (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
+        (, body-subst body-type) (t-expr (tenv-apply composed bound-env) body)]
+        (<-
+            (,
+                (compose-subst "pab-2" body-subst composed)
+                    (type-apply composed body-type)))))
 
 (defn t-pat [tenv pat]
     (let-> [
@@ -907,19 +1088,20 @@
                                                                                  }"
                                                                                  [(, name l)]))
                                                                          (<- ()))
-                                  bindings                       (foldl->
-                                                                     map/nil
+                                  (, subst bindings)             (foldl->
+                                                                     (, map/nil map/nil)
                                                                          zipped
-                                                                         (fn [bindings (, arg carg)]
+                                                                         (fn [(, subst bindings) (, arg carg)]
                                                                          (let-> [
                                                                              (, pat-type pat-bind) (t-pat tenv arg)
-                                                                             subst                 <-subst
-                                                                             ()                    (unify
+                                                                             unified-subst         (unify-inner
                                                                                                        (type-apply subst pat-type)
                                                                                                            (type-apply subst (type/set-loc l carg))
                                                                                                            l)]
-                                                                             (<- (map/merge bindings pat-bind)))))
-                                  subst                          <-subst]
+                                                                             (<-
+                                                                                 (,
+                                                                                     (compose-subst "t-pat" unified-subst subst)
+                                                                                         (map/merge bindings pat-bind))))))]
                                   (<-
                                       (,
                                           (type-apply subst tres)
@@ -930,8 +1112,7 @@
 (defn infer [tenv expr]
     (let-> [
         (, tenv missing) (find-missing tenv (externals set/nil expr))
-        type             (t-expr tenv expr)
-        subst            <-subst
+        (, subst type)   (t-expr tenv expr)
         _                (report-missing subst missing)]
         (<- (type-apply subst type))))
 
@@ -1065,13 +1246,15 @@
                                                           e.g. "unbound variable xyz, expected type: (fn [int] string)". **)
                                                       (, self-bound missing) (find-missing self-bound (externals set/nil expr))
                                                       (** Here we actually do the inference. **)
-                                                      t                      (t-expr self-bound expr)
-                                                      subst                  <-subst
+                                                      (, subst t)            (t-expr self-bound expr)
+                                                      ;subst
+                                                      ;<-subst
                                                       _                      (report-missing subst missing)
                                                       (** Now we resolve the self type. **)
                                                       selfed                 (<- (type-apply subst self))
-                                                      ()                     (unify selfed t l)
-                                                      subst                  <-subst
+                                                      s2                     (unify-inner selfed t l)
+                                                      s3                     (<- (compose-subst "infer-stmt" s2 subst))
+                                                      ()                     (subst-> s3)
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
                                                       (<- (tenv/set-type tenv/nil name (, (generalize tenv' t) nl))))
@@ -1312,17 +1495,16 @@
                     _        true))
                 (map/to-list externals))))
 
-(defn infer-several-inner [bound types (, var (sdef name nl body l))]
+(defn infer-several-inner [bound (, subst types) (, var (sdef name nl body l))]
     (let-> [
-        subst     <-subst
-        body-type (t-expr (tenv-apply subst bound) body)
-        subst     <-subst
-        selfed    (<- (type-apply subst var))
-        ()        (unify selfed body-type l)
-        subst     <-subst
-        body-type (<- (type-apply subst body-type))
-        _         (record-> nl body-type false)]
-        (<- [body-type ..types])))
+        (, body-subst body-type) (t-expr (tenv-apply subst bound) body)
+        both                     (<- (compose-subst "infer-sev" body-subst subst))
+        selfed                   (<- (type-apply both var))
+        u-subst                  (unify-inner selfed body-type l)
+        subst                    (<- (compose-subst "infer-sev2" u-subst both))
+        body-type                (<- (type-apply subst body-type))
+        _                        (record-> nl body-type false)]
+        (<- (, subst [body-type ..types]))))
 
 (defn infer-several [tenv stmts]
     (let-> [
@@ -1336,8 +1518,8 @@
                                           _                  (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
         (, bound vars)    (vars-for-names (map stmts (fn [(sdef name _ _ l)] (, name l))) tenv)
         (, bound missing) (find-missing bound (externals-defs stmts))
-        types             (foldr-> [] (zip vars stmts) (infer-several-inner bound))
-        subst             <-subst
+        (, subst types)   (foldr-> (, map/nil []) (zip vars stmts) (infer-several-inner bound))
+        ()                (subst-> subst)
         _                 (report-missing subst missing)]
         (<- (zip names (map types (type-apply subst))))))
 
