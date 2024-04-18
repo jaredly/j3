@@ -81,93 +81,6 @@
         (sdef string expr)
         (sexpr expr))
 
-(** ## Analysis **)
-
-(deftype name-kind (type) (value))
-
-value
-
-(defn names [stmt]
-    (match stmt
-        (sdef name _)         [(,, name (value) -1)]
-        (sexpr _)             []
-        (sdeftype name cstrs) [(,, name (type) -1)
-                                  ..(map cstrs (fn [cstr] (let [(, name _) cstr]  (,, name (value) -1))))]))
-
-(,
-    names
-        [(, (@! x) [])
-        (, (@! (def x 1)) [(,, "x" (value) -1)])
-        (,
-        (@! (deftype arr (o) (a)))
-            [(,, "arr" (type) -1) (,, "o" (value) -1) (,, "a" (value) -1)])])
-
-(defn externals-stmt [stmt]
-    (match stmt
-        (sdef name expr)      (externals (set/add set/nil name) expr)
-        (sexpr expr)          (externals set/nil expr)
-        (sdeftype name cstrs) []))
-
-(defn pat-names [pat]
-    (match pat
-        (pany)        set/nil
-        (pvar name)   (set/add set/nil name)
-        (pprim _)     set/nil
-        (pstr _)      set/nil
-        (pcon _ pats) (foldl set/nil (map pats pat-names) set/merge)))
-
-(defn concat [ones]
-    (match ones
-        []                   []
-        [[]]                 []
-        [[] ..rest]          (concat rest)
-        [[one ..two] ..rest] [one ..(concat [two ..rest])]))
-
-(concat [[1] [2 3 4] [12 34]])
-
-(externals (set/add set/nil "hi") (@ hi))
-
-(externals set/nil (@ (let [x 1] (+ y x))))
-
-(def externals-expr (externals set/nil))
-
-(defn externals [names expr]
-    (match expr
-        (eprim prim)          []
-        (evar name)           (match (set/has names name)
-                                  true []
-                                  _    [(,, name (value) -1)])
-        (elambda string expr) (externals (set/add names string) expr)
-        (eapp target arg)     (concat [(externals names target) (externals names arg)])
-        (elet name init body) (concat
-                                  [(externals names init) (externals (set/add names name) body)])
-        (ematch expr cases)   (concat
-                                  [(externals names expr)
-                                      ..(map
-                                      cases
-                                          (fn [case]
-                                          (let [(, pat body) case]
-                                              (externals (set/merge names (pat-names pat)) body))))])))
-
-(,
-    (externals set/nil)
-        [(, (@ hi) [(,, "hi" (value) -1)])
-        (, (@ (let [x 1] x)) [])
-        (, (@ (let [x 1] (+ x y))) [(,, "+" (value) -1) (,, "y" (value) -1)])
-        (,
-        (@
-            (match 1
-                1 aa))
-            [(,, "aa" (value) -1)])
-        (,
-        (@
-            (match 1
-                a a))
-            [])
-        (, (@ (let [(, a _) 1] a)) [])])
-
-(map [1 2] (+ 3))
-
 (** ## Compilation **)
 
 (defn literal-constr [name args]
@@ -374,3 +287,4 @@ value
 
 (@@' 1)
 
+1
