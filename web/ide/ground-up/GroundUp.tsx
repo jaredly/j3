@@ -257,7 +257,11 @@ const ShowErrors = () => {
 
     if (!found.length) return null;
     return (
-        <div>
+        <div
+            style={{
+                maxWidth: 400,
+            }}
+        >
             <strong style={{ color: 'red' }}>Errors</strong>
             {found.map(({ loc, errs }, i) => (
                 <div
@@ -271,7 +275,7 @@ const ShowErrors = () => {
                         });
                     }}
                 >
-                    {loc}: {errs.join(', ')}
+                    {loc}: {errs.join(', ').slice(0, 100)}
                 </div>
             ))}
         </div>

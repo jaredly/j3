@@ -13,8 +13,6 @@
 
 ,
 
-"Hello ${11111}"
-
 (, 1 2 3 4)
 
 (match (, 1 2 3)
@@ -26,8 +24,6 @@
         (, 1 2 3) 1))
 
 nil
-
-((fn [a] (aa "")) ,)
 
 (def lol 10)
 
@@ -41,15 +37,19 @@ nil
 
 ( 23)
 
-(def hi 1000)
-
-(def hio (lolz 100 23 aa bb))
-
 cons
 
 (let [one 23] (xx one))
 
 (** Things that should error **)
+
+"Hello ${11111}"
+
+((fn [a] (aa "")) ,)
+
+(def hi 1000)
+
+(def hio (lolz 100 23 aa bb))
 
 [1 "hi"]
 

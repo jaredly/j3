@@ -1250,7 +1250,7 @@
     (let [names (set/from-list names)]
         (map
             (filter (fn [(, k v)] (set/has names k)) (map/to-list types))
-                (fn [(, name (scheme free type))]
+                (fn [(, name (, (scheme free type) l))]
                 (match (set/to-list free)
                     []   "${name} = ${(type-to-string type)}"
                     free "${name} = ${(join "," free)} : ${(type-to-string-raw type)}")))))
