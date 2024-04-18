@@ -538,7 +538,7 @@
 
 (typealias usage-record (, (array int) (array (, int int))))
 
-(typealias type-record (array (, int type)))
+(typealias type-record (array (,, int type bool)))
 
 (def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
 
@@ -547,10 +547,10 @@
 (defn idx-> [idx]
     (let-> [(,, _ b c) <-state _ (state-> (,, idx b c))] (<- ())))
 
-(defn record-> [loc type]
+(defn record-> [loc type keep]
     (let-> [
         (,, idx (, types usages) subst) <-state
-        _                               (state-> (,, idx (, [(, loc type) ..types] usages) subst))]
+        _                               (state-> (,, idx (, [(,, loc type keep) ..types] usages) subst))]
         (<- ())))
 
 (defn record-usage-> [loc provider]
@@ -680,7 +680,9 @@
         (pbool _ l) (tcon "bool" l)))
 
 (defn t-expr [tenv expr]
-    (let-> [type (t-expr-inner tenv expr) _ (record-> (expr-loc expr) type)]
+    (let-> [
+        type (t-expr-inner tenv expr)
+        _    (record-> (expr-loc expr) type false)]
         (<- type))
         ;(let [
         l                    (expr-loc expr)
@@ -712,7 +714,7 @@
         (evar "()" l)            (<- (tcon "()" l))
         (evar name l)            (match (tenv/type tenv name)
                                      (none)       (<-err (type-error "Unbound variable" [(, name l)]))
-                                     (some found) (let-> [(, t _) (instantiate found l) ;(record-> l (scheme/t found))]
+                                     (some found) (let-> [(, t _) (instantiate found l) () (record-> l (scheme/t found) true)]
                                                       (<- (type/set-loc l t))))
         (equot quot l)           (<-
                                      (tcon
@@ -858,7 +860,9 @@
         (type/apply-> body-type)))
 
 (defn t-pat [tenv pat]
-    (let-> [(, t bindings) (t-pat-inner tenv pat) _ (record-> (pat-loc pat) t)]
+    (let-> [
+        (, t bindings) (t-pat-inner tenv pat)
+        _              (record-> (pat-loc pat) t false)]
         (<- (, t bindings)))
         ;(let [
         l                    (pat-loc pat)
@@ -1302,7 +1306,7 @@
         _         (unify-inner selfed body-type l)
         subst     <-subst
         body-type (<- (type-apply subst body-type))
-        _         (record-> nl body-type)]
+        _         (record-> nl body-type false)]
         (<- [body-type ..types])))
 
 (defn infer-several [tenv stmts]
@@ -1600,18 +1604,24 @@
 
 (defn show-all-types [tenv expr]
     (let [
-        (, (,, _ types subst) result) ((state-f (infer tenv expr)) state/nil)
-        type-map                      (foldr
-                                          map/nil
-                                              types
-                                              (fn [map (, loc type)] (map/add map loc (type-apply subst type))))
-        final                         (match result
-                                          (ok v)  (type-to-string v)
-                                          (err e) (type-error->s e))
-        exprs                         (foldr
-                                          map/nil
-                                              (bag/to-list (things-by-loc expr))
-                                              (fn [map (, loc expr)] (map/add map loc expr)))]
+        (, (,, _ (, types usages) subst) result) ((state-f (infer tenv expr)) state/nil)
+        type-map                                 (foldr
+                                                     map/nil
+                                                         types
+                                                         (fn [map (,, loc type keep)]
+                                                         (map/add
+                                                             map
+                                                                 loc
+                                                                 (if keep
+                                                                 type
+                                                                     (type-apply subst type)))))
+        final                                    (match result
+                                                     (ok v)  (type-to-string v)
+                                                     (err e) (type-error->s e))
+        exprs                                    (foldr
+                                                     map/nil
+                                                         (bag/to-list (things-by-loc expr))
+                                                         (fn [map (, loc expr)] (map/add map loc expr)))]
         "Result: ${
             final
             }\nExprs:\n${
@@ -1960,14 +1970,12 @@
 (infer-stmts2 builtin-env [(@! (def x 10))])
 
 (defn applied-types [types subst]
-    (foldl
-        []
-            types
-            (fn [res (, loc type)]
-            (let [applied (type-apply subst type)]
-                (if (type= applied type)
-                    [(, loc type) ..res]
-                        [(, loc type) (, loc applied) ..res])))))
+    (map
+        types
+            (fn [(,, loc type keep)]
+            (if keep
+                (, loc type)
+                    (, loc (type-apply subst type))))))
 
 foldl
 
@@ -1984,7 +1992,7 @@ foldl
                 (fn [tenv expr]
                 (let [
                     (, (,, _ (, types (, defs usages)) subst) result) ((state-f (infer tenv expr)) state/nil)]
-                    (, result (map types (fn [(, loc type)] (, loc (type-apply subst type))))))))
+                    (, result (applied-types types subst)))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]

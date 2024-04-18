@@ -8,6 +8,7 @@ import { CursorRect, subRect } from './Cursors';
 import { NUIState, UIState } from './UIState';
 import { useGetStore } from './store/StoreCtx';
 import { WorkerResults } from './store/useSyncStore';
+import { unique } from './store/unique';
 
 export const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
@@ -222,7 +223,7 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
 
         const current = results.nodes[ns.idx]?.hover[idx];
         if (current?.length) {
-            hovers.push({ idx: idx, text: current.join('\n') });
+            hovers.push({ idx: idx, text: unique(current).join('\n') });
             break;
         }
     }
