@@ -225,6 +225,7 @@ export const GroundUp = ({
 };
 
 const ShowErrors = () => {
+    const [hide, setHide] = useState(false);
     const store = useGetStore();
     const results = useResults(store);
     const state = store.getState();
@@ -263,21 +264,26 @@ const ShowErrors = () => {
             }}
         >
             <strong style={{ color: 'red' }}>Errors</strong>
-            {found.map(({ loc, errs }, i) => (
-                <div
-                    key={i}
-                    onClick={() => {
-                        const path = pathForIdx(loc, state);
-                        if (!path) return alert('cant find path for ' + loc);
-                        store.dispatch({
-                            type: 'select',
-                            at: [{ start: path }],
-                        });
-                    }}
-                >
-                    {loc}: {errs.join(', ').slice(0, 100)}
-                </div>
-            ))}
+            <button onClick={() => setHide(!hide)}>
+                {hide ? 'Show' : 'Hide'}
+            </button>
+            {!hide &&
+                found.map(({ loc, errs }, i) => (
+                    <div
+                        key={i}
+                        onClick={() => {
+                            const path = pathForIdx(loc, state);
+                            if (!path)
+                                return alert('cant find path for ' + loc);
+                            store.dispatch({
+                                type: 'select',
+                                at: [{ start: path }],
+                            });
+                        }}
+                    >
+                        {loc}: {errs.join(', ').slice(0, 100)}
+                    </div>
+                ))}
         </div>
     );
 };

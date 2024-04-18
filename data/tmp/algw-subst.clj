@@ -622,22 +622,8 @@
     If two types are irreconcilable, it throws an exception.
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
-(defn unify [t1 t2 nidx l]
-    (unify-inner t1 t2 l)
-        ;(let [
-        l1             (type-loc t1)
-        l2             (type-loc t2)
-        _              (trace
-                           [(tloc l)
-                               (tloc l1)
-                               (tloc l2)
-                               (ttext "unify")
-                               (tfmt t1 type-to-string-raw)
-                               (tfmt t2 type-to-string-raw)])
-        (, subst nidx) (unify-inner t1 t2 nidx l)
-        _              (trace
-                           [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
-        (, subst nidx)))
+(defn unify [t1 t2 l]
+    (let-> [subst (unify-inner t1 t2 l) () (subst-> subst)] (<- ())))
 
 (typealias type-error-t (, string (array (, string int))))
 
@@ -646,14 +632,16 @@
 (defn unify-inner [t1 t2 l]
     (match (, t1 t2)
         (, (tapp target-1 arg-1 _) (tapp target-2 arg-2 _)) (let-> [
-                                                                _     (unify-inner target-1 target-2 l)
-                                                                subst <-subst
-                                                                _     (unify-inner (type-apply subst arg-1) (type-apply subst arg-2) l)]
-                                                                (<- ()))
+                                                                target-subst (unify-inner target-1 target-2 l)
+                                                                arg-subst    (unify-inner
+                                                                                 (type-apply target-subst arg-1)
+                                                                                     (type-apply target-subst arg-2)
+                                                                                     l)]
+                                                                (<- (compose-subst "unify-tapp" arg-subst target-subst)))
         (, (tvar var l) t)                                  (var-bind var t l)
         (, t (tvar var l))                                  (var-bind var t l)
         (, (tcon a la) (tcon b lb))                         (if (= a b)
-                                                                (<- ())
+                                                                (<- map/nil)
                                                                     (<-err
                                                                     (type-error "Incompatible type constructors" [(, a la) (, b lb)])))
         _                                                   (<-err
@@ -667,14 +655,14 @@
 (defn var-bind [var type l]
     (match type
         (tvar v _) (if (= var v)
-                       (<- ())
-                           (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))
+                       (<- map/nil)
+                           (<- (map/set map/nil var type)))
         _          (if (set/has (type-free type) var)
                        (<-err
                            (type-error
                                "Cycle found while unifying type with type variable"
                                    [(, (type-to-string-raw type) (type-loc type)) (, var l)]))
-                           (let-> [_ (subst-> (map/set map/nil var type))] (<- ())))))
+                           (<- (map/set map/nil var type)))))
 
 (** ## Type Inference!
     Extensions to the HM algorithm:
@@ -744,7 +732,7 @@
                                      string-type (<- (tcon "string" l))
                                      _           (map->
                                                      (fn [(,, expr suffix sl)]
-                                                         (let-> [t (t-expr tenv expr) _ (unify-inner t string-type l)] (<- 0)))
+                                                         (let-> [t (t-expr tenv expr) () (unify t string-type l)] (<- 0)))
                                                          templates)]
                                      (<- string-type))
         (** For lambdas (fn [name] body)
@@ -772,7 +760,7 @@
                                                                         (fn [(, ptypes bindings) (, pt bs)]
                                                                         (, [pt ..ptypes] (map/merge bindings bs)))))
                                      _                      (map->
-                                                                (fn [(, argt patt)] (unify-inner argt patt l))
+                                                                (fn [(, argt patt)] (unify argt patt l))
                                                                     (zip arg-types pat-types))
                                      composed               <-subst
                                      bindings               (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
@@ -802,7 +790,7 @@
                                              arg-tenv    (tenv/apply-> tenv)
                                              arg-type    (t-expr arg-tenv arg)
                                              target-type (type/apply-> target-type)
-                                             _           (unify-inner target-type (tfn arg-type result-var l) l)]
+                                             _           (unify target-type (tfn arg-type result-var l) l)]
                                              (type/apply-> result-var))))
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
@@ -841,7 +829,7 @@
                                                                (let-> [
                                                                    body  (pat-and-body tenv pat body target-type false)
                                                                    subst <-subst
-                                                                   _     (unify-inner (type-apply subst result) body l)
+                                                                   ()    (unify (type-apply subst result) body l)
                                                                    subst <-subst]
                                                                    (<- (, (type-apply subst target-type) (type-apply subst result))))))]
                                      (<- result-type))
@@ -856,7 +844,7 @@
     (** Yay!! Now we have verification. **)
         (let-> [
         (, pat-type bindings) (t-pat tenv pat)
-        _                     (unify-inner value-type pat-type (pat-loc pat))
+        ()                    (unify value-type pat-type (pat-loc pat))
         composed              <-subst
         bindings              (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
         schemes               (<-
@@ -926,7 +914,7 @@
                                                                          (let-> [
                                                                              (, pat-type pat-bind) (t-pat tenv arg)
                                                                              subst                 <-subst
-                                                                             _                     (unify-inner
+                                                                             ()                    (unify
                                                                                                        (type-apply subst pat-type)
                                                                                                            (type-apply subst (type/set-loc l carg))
                                                                                                            l)]
@@ -1082,7 +1070,7 @@
                                                       _                      (report-missing subst missing)
                                                       (** Now we resolve the self type. **)
                                                       selfed                 (<- (type-apply subst self))
-                                                      _                      (unify-inner selfed t l)
+                                                      ()                     (unify selfed t l)
                                                       subst                  <-subst
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
@@ -1330,7 +1318,7 @@
         body-type (t-expr (tenv-apply subst bound) body)
         subst     <-subst
         selfed    (<- (type-apply subst var))
-        _         (unify-inner selfed body-type l)
+        ()        (unify selfed body-type l)
         subst     <-subst
         body-type (<- (type-apply subst body-type))
         _         (record-> nl body-type false)]

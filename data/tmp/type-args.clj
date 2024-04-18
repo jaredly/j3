@@ -487,22 +487,7 @@
     If two types are irreconcilable, it throws an exception.
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
-(defn unify [t1 t2 nidx l]
-    (force (run-> (unify-inner t1 t2 l) nidx))
-        ;(let [
-        l1             (type-loc t1)
-        l2             (type-loc t2)
-        _              (trace
-                           [(tloc l)
-                               (tloc l1)
-                               (tloc l2)
-                               (ttext "unify")
-                               (tfmt t1 type-to-string-raw)
-                               (tfmt t2 type-to-string-raw)])
-        (, subst nidx) (unify-inner t1 t2 nidx l)
-        _              (trace
-                           [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
-        (, subst nidx)))
+(defn unify [t1 t2 nidx l] (force (run-> (unify-inner t1 t2 l) nidx)))
 
 (defn unify-inner [t1 t2 l]
     (match (, t1 t2)
@@ -543,29 +528,29 @@
 (deftype (result good bad) (ok good) (err bad))
 
 (deftype (StateT state err value)
-    (StateT (fn [state] (result (, state value) err))))
+    (StateT (fn [state] (, state (result value err)))))
 
-(defn run-> [(StateT f) state]
-    (match (f state)
-        (ok (, _ value)) (ok value)
-        (err e)          (err e)))
+(defn run-> [(StateT f) state] (snd (f state)))
+
+(defn snd [(, _ v)] v)
 
 (defn state-f [(StateT f)] f)
 
 (defn >>= [(StateT f) next]
     (StateT
         (fn [state]
-            (match (f state)
-                (err e)              (err e)
-                (ok (, state value)) ((state-f (next value)) state)))))
+            (let [(, state result) (f state)]
+                (match result
+                    (err e)    (, state (err e))
+                    (ok value) ((state-f (next value)) state))))))
 
-(defn <- [x] (StateT (fn [state] (ok (, state x)))))
+(defn <- [x] (StateT (fn [state] (, state (ok x)))))
 
-(defn <-err [e] (StateT (fn [_] (err e))))
+(defn <-err [e] (StateT (fn [state] (, state (err e)))))
 
-(def <-state (StateT (fn [state] (ok (, state state)))))
+(def <-state (StateT (fn [state] (, state (ok state)))))
 
-(defn state-> [v] (StateT (fn [old] (ok (, v old)))))
+(defn state-> [v] (StateT (fn [old] (, v (ok old)))))
 
 (defn map-> [f arr]
     (match arr
@@ -1707,7 +1692,16 @@
         tenv
             (fn [tenv (array stmt)] tenv)
             (fn [tenv tenv] tenv)
-            (fn [tenv expr] type)))
+            (fn [tenv expr] type)
+            (fn [tenv (array stmt)]
+            (,,
+                (result (, tenv (array type)) type-error-t)
+                    (array (, int type))
+                    usage-record))))
+
+(typealias type-error-t (, string (array (, string int))))
+
+(typealias usage-record (, (array int) (array (, int int))))
 
 (deftype name-kind (value) (type))
 
@@ -1729,13 +1723,21 @@
 (def externals-list (fn [x] (bag/to-list (externals set/nil x))))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts,  2: add_stmt,  3: infer},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts,  2: add_stmt,  3: infer, 4: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
     (typecheck
         (inference
             builtin-env
                 (fn [tenv stmts] (force (run/nil-> (infer-stmtss tenv stmts))))
                 tenv/merge
-                (fn [tenv expr] (force (run/nil-> (infer tenv expr)))))
+                (fn [tenv expr] (force (run/nil-> (infer tenv expr))))
+                (fn [tenv stmts]
+                (let [(, (, _ types) tenv) ((state-f (infer-stmtss tenv stmts)) state/nil)]
+                    (,,
+                        (match tenv
+                            (ok tenv) (ok (, tenv []))
+                            (err e)   (err (, e [])))
+                            types
+                            (, [] [])))))
             (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]

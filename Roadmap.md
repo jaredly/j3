@@ -1,4 +1,8 @@
 
+# AW_FAST
+
+ok so I'll try to ... do less composing.
+
 # SLowwwwwwww
 
 wow is it like, a lot slower now that I'm tracking usages?
@@ -10,6 +14,10 @@ b/c like 2s to 8s is huuuge
 - ok dropping the (compose-subst) invariant helpeddd took off .75s
   from algw-subst -> algw-subst
 - [ ] BUG the NSDragger doesn't update when errors are no longer there
+
+WOWWWWWWW that's crazy, just making the inner-loop of `unify-inner` opt out of the `subst`ing makes
+it soooo much faster, even faster than type-args??? what is happening.
+LOL ok, it got a lot faster because it was broken 😂
 
 # BUGGY - rm top node
 
