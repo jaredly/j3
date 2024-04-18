@@ -19,6 +19,10 @@ WOWWWWWWW that's crazy, just making the inner-loop of `unify-inner` opt out of t
 it soooo much faster, even faster than type-args??? what is happening.
 LOL ok, it got a lot faster because it was broken 😂
 
+ok, so the unify trick was one bit, now we need to maybe try some more?
+
+Verification = type-args `defn externals` -- does `(, bag bound)` have usable types, or no?
+
 # BUGGY - rm top node
 
 - need to report that a node isn't there anymore...

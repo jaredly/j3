@@ -142,15 +142,15 @@ export const setupSyncStore = (
             send({ type: 'debug', execOrder, id: msgid++ });
         },
         dispatch(action) {
-            if (inProcess) {
-                // debugger;
-                console.error(`trying to dispatch`, action);
-                console.log('but we are in progress');
-                return;
-                // return alert(`Dispatch not finished`);
-            }
+            // if (inProcess) {
+            //     // debugger;
+            //     console.error(`trying to dispatch`, action);
+            //     console.log('but we are in progress');
+            //     return;
+            //     // return alert(`Dispatch not finished`);
+            // }
             // console.time('dispatch');
-            inProcess = true;
+            // inProcess = true;
             const lastState = state;
             // console.time('reduce');
             state = reduce(state, action);
@@ -237,7 +237,7 @@ export const setupSyncStore = (
                 evtListeners.hover.forEach((f) => f(state));
             }
 
-            inProcess = false;
+            // inProcess = false;
             // console.timeEnd('dispatch');
         },
 

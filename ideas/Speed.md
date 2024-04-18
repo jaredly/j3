@@ -4,43 +4,41 @@
 I want a compilation pipeline that does optimizations.
 like
 ```
-; js expr
+; js j/expr
 (deftype (either l r) (left l) (right r))
-(deftype expr
-  (eapp expr (array expr) int)
-  (ebin string expr expr int)
-  (eun string expr int)
+(deftype j/expr
+  (j/app j/expr (array j/expr) int)
+  (j/bin string j/expr j/expr int)
+  (j/un string j/expr int)
+  (j/lambda (array j/pat) (either block j/expr) int)
+  (j/prim prim int)
+  (j/var string int)
+  (j/attr j/expr string int)
+  (j/index j/expr j/expr int)
+  (j/tern j/expr j/expr j/expr int)
+  (j/assign string string j/expr int)
+  (j/array (array (either j/expr (spread j/expr))) int)
+  (j/obj (array (either (, string j/expr) (spread j/expr))) int))
 
-  (elambda (array pat) (either block expr) int)
-  (eprim prim int)
-  (evar string int)
-
-  (eattr expr string int)
-  (eindex expr expr int)
-
-  (etern expr expr expr int)
-  ; "x" "+=" 2
-  (eassign string string expr int)
-  (earray (array (either expr (spread expr))) int)
-  (eobj (array (either (, string expr) (spread expr))) int))
-
-(typealias block (array stmt))
+(typealias block (array j/stmt))
 
 (deftype (spread a) (spread a))
 
-(deftype stmt
-  (sexpr expr int)
-  (sblock block int)
-  (sif expr block (option block) int)
-  (sfor string expr expr expr block)
-  (sreturn expr int)
-  (slet pat expr int)
-  (sthrow expr int))
+(deftype j/stmt
+  (j/expr j/expr int)
+  (j/block block int)
+  (j/if j/expr block (option block) int)
+  (j/for string j/expr j/expr j/expr block)
+  (j/break int)
+  (j/continue int)
+  (j/return j/expr int)
+  (j/let j/pat j/expr int)
+  (j/throw j/expr int))
 
-(deftype pat
-  (pvar string int)
-  (parray (array pat) (option pat) int)
-  (pobj (array (, string expr)) int))
+(deftype j/pat
+  (j/pvar string int)
+  (j/parray (array j/pat) (option j/pat) int)
+  (j/pobj (array (, string j/expr)) int))
 ```
 So that could be the javascript target.
 
