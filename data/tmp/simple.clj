@@ -32,9 +32,9 @@ nil
 
 (def hi 10)
 
-(def hi 1000)
+(xx 23)
 
-(defn aaaaaaaaaaaaaaa)
+(def hi 1000)
 
 (def hio (lolz 100 23 aa bb))
 

@@ -16,7 +16,11 @@ TOP BUGS
 - [x] duplicate tracing isn't working on the very first time? Wieerrrd
 - [x] duplicate tracing needs to check cached tops!! (adding a (def y) *before* another (def y) doesn't indicate error)
 - [x] OK SO I actually, let's just clear out the "parsed" duplicates thing.
+- [ ] Can I get `hover the defined name` to work???? please???
 
+
+- [ ] ohhhhhh traces aren't going to be working yet, right?
+  - yeah Sendable has to inclue `TraceMap`
 
 
 
