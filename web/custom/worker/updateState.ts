@@ -72,6 +72,7 @@ export function updateState(
         if (!state.results!.tops[id]) {
             state.results!.tops[id] = {
                 changes: { results: true },
+                usages: {},
                 errors: {},
                 hover: {},
                 produce: [],
@@ -164,6 +165,7 @@ export function updateState(
                     hover: {},
                     produce: [],
                     values: {},
+                    usages: {},
                 };
             });
         }
@@ -195,7 +197,7 @@ export function updateState(
             if (group.length === 1 && group[0].isPlugin) {
                 const node = nodes[group[0].id];
                 const plugin = workerPlugins[node.ns.plugin!.id];
-                const { result, typesAndLocs } = plugin.infer(
+                const { result, typesAndLocs, usages } = plugin.infer(
                     (node.parsed as PluginParsed).parsed,
                     state.evaluator!,
                     tenv,
@@ -206,6 +208,18 @@ export function updateState(
                         loc,
                         state.evaluator!.inference!.typeToString(type),
                     );
+                });
+                Object.entries(usages).forEach(([key, locs]) => {
+                    if (!locs.length) {
+                        state.results!.tops[topForLoc[+key]].usages[+key] = [];
+                    }
+                    locs.forEach((loc) => {
+                        add(
+                            state.results!.tops[topForLoc[loc]].usages,
+                            +key,
+                            loc,
+                        );
+                    });
                 });
                 if (result.type === 'err') {
                     state.results.groups[groupKey].typeFailed = true;
@@ -328,6 +342,14 @@ export function updateState(
                     loc,
                     state.evaluator!.inference!.typeToString(type),
                 );
+            });
+            Object.entries(res.usages).forEach(([key, locs]) => {
+                if (!locs.length) {
+                    state.results!.tops[topForLoc[+key]].usages[+key] = [];
+                }
+                locs.forEach((loc) => {
+                    add(state.results!.tops[topForLoc[loc]].usages, +key, loc);
+                });
             });
         }
     }

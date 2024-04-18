@@ -8,7 +8,11 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
         return parse(node, (node) => undefined) != null;
     },
     infer(parsed, evaluator) {
-        return { result: { type: 'ok', value: null }, typesAndLocs: [] };
+        return {
+            result: { type: 'ok', value: null },
+            typesAndLocs: [],
+            usages: {},
+        };
     },
     // infer(parsed, evaluator, tenv) {
     //     const { result, typesAndLocs } = evaluator.inference!.inferExpr(

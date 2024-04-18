@@ -21,7 +21,7 @@ export const evaluatorWorker: WorkerPlugin<
         }
     },
     infer(parsed, evaluator, tenv) {
-        const { result, typesAndLocs } = evaluator.inference!.inferExpr(
+        const { result, typesAndLocs, usages } = evaluator.inference!.inferExpr(
             parsed.expr,
             tenv,
         );
@@ -29,6 +29,7 @@ export const evaluatorWorker: WorkerPlugin<
         return {
             result: result.type === 'ok' ? { type: 'ok', value: null } : result,
             typesAndLocs,
+            usages,
         };
     },
 

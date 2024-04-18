@@ -48,6 +48,7 @@ export type FullEvalator<
                 | { type: 'ok'; value: { env: TypeEnv; types: Type[] } }
                 | { type: 'err'; err: InferenceError };
             typesAndLocs: { type: Type; loc: number }[];
+            usages: { [loc: number]: number[] };
         };
         inferExpr(
             expr: Expr,
@@ -57,6 +58,7 @@ export type FullEvalator<
                 | { type: 'ok'; value: Type }
                 | { type: 'err'; err: InferenceError };
             typesAndLocs: { type: Type; loc: number }[];
+            usages: { [loc: number]: number[] };
         };
         addTypes(env: TypeEnv, nenv: TypeEnv): TypeEnv;
         typeForName(env: TypeEnv, name: string): Type;

@@ -205,6 +205,7 @@ export type WorkerPlugin<Results, Parsed, Options> = {
                   };
               };
         typesAndLocs: { type: any; loc: number }[];
+        usages: Record<number, number[]>;
     };
 
     process(

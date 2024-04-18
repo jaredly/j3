@@ -15,7 +15,7 @@ import {
     useGlobalState,
     useResults,
 } from '../../custom/store/StoreCtx';
-import { useStore } from '../../custom/store/useStore';
+// import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
 import { CommandPalette, pathForIdx } from './CommandPalette';
 import { RenderTraces } from './renderTraces';

@@ -30,7 +30,7 @@ const makeTuple = (values: any[]) => {
 };
 
 type InferExpr2 = {
-    type: ',';
+    type: ',,';
     0:
         | { type: 'ok'; 0: any }
         | {
@@ -42,10 +42,27 @@ type InferExpr2 = {
               };
           };
     1: arr<{ type: ','; 0: number; 1: any }>;
+    2: {
+        type: ',';
+        0: arr<number>;
+        1: arr<{ type: ','; 0: number; 1: number }>;
+    };
+};
+
+const getUsages = (data: InferExpr2[2]) => {
+    const usages: Record<number, number[]> = {};
+    unwrapArray(data[0]).forEach((loc) => (usages[loc] = []));
+    unwrapArray(data[1]).forEach(({ 0: loc, 1: provider }) => {
+        if (!usages[provider]) {
+            usages[provider] = [];
+        }
+        usages[provider].push(loc);
+    });
+    return usages;
 };
 
 type InferStmts2 = {
-    type: ',';
+    type: ',,';
     0:
         | { type: 'ok'; 0: { type: ','; 0: any; 1: arr<any> } }
         | {
@@ -57,6 +74,11 @@ type InferStmts2 = {
               };
           };
     1: arr<{ type: ','; 0: number; 1: any }>;
+    2: {
+        type: ',';
+        0: arr<number>;
+        1: arr<{ type: ','; 0: number; 1: number }>;
+    };
 };
 
 export const fnsEvaluator = (
@@ -128,6 +150,7 @@ export const fnsEvaluator = (
                                       type: tal[1],
                                   }),
                               ),
+                              usages: getUsages(result[2]),
                           };
                       }
                       try {
@@ -141,6 +164,7 @@ export const fnsEvaluator = (
                                       types: [],
                                   },
                               },
+                              usages: {},
                               typesAndLocs: [],
                           };
                       } catch (err) {
@@ -153,6 +177,7 @@ export const fnsEvaluator = (
                                   },
                               },
                               typesAndLocs: [],
+                              usages: {},
                           };
                       }
                   },
@@ -178,6 +203,7 @@ export const fnsEvaluator = (
                                                 })),
                                             },
                                         },
+                              usages: getUsages(result[2]),
                           };
                       }
                       try {
@@ -185,6 +211,7 @@ export const fnsEvaluator = (
                           return {
                               result: { type: 'ok', value: result },
                               typesAndLocs: [],
+                              usages: {},
                           };
                       } catch (err) {
                           return {
@@ -196,6 +223,7 @@ export const fnsEvaluator = (
                                   },
                               },
                               typesAndLocs: [],
+                              usages: {},
                           };
                       }
                   },
