@@ -7,6 +7,8 @@
         []           []
         [one ..rest] [(f one) ..(map rest f)]))
 
+(def map 10)
+
 (map [1 2 3] (+ 2))
 
 "Hello"
