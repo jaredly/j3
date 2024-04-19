@@ -1,11 +1,22 @@
 
+# The Next Things (thih)
+
+Ok, now that 4 day sidetrack is done (web workers + algw-fast + unused)
+we can get back to thih!
+Namely, we need to be able to define instances and type classes.
+So that I can actually verify that things are working.
+
+
+
+
 # AW_FAST
 
 ok so I'll try to ... do less composing.
 even less.
 
 - [x] get the bun tests to check the embedded fixture tests tooo
-- [ ] type-args.json, get the errors to be type-error
+- [x] type-args.json, get the errors to be type-error
+- [x] What a ride!! Now algw is fast :)
 
 # SLowwwwwwww
 
@@ -48,7 +59,7 @@ TOP BUGS
 - [x] duplicate tracing isn't working on the very first time? Wieerrrd
 - [x] duplicate tracing needs to check cached tops!! (adding a (def y) *before* another (def y) doesn't indicate error)
 - [x] OK SO I actually, let's just clear out the "parsed" duplicates thing.
-- [ ] Can I get `hover the defined name` to work???? please???
+- [x] Can I get `hover the defined name` to work???? please???
   - yeah I think what I want is, in addition to the `(array (, loc type))` report, we also
     report `usage`s. which would be ... `(array (, client provider))`, but idx's.
 
@@ -60,8 +71,8 @@ TOP BUGS
 
 
 NEXT STEPS for reporting usages & uses
-- [ ] tenv/type needs to report the `idx` as well.
-- [ ] and then ... we can get down to business.
+- [x] tenv/type needs to report the `idx` as well.
+- [x] and then ... we can get down to business.
 
 
 - [x] ohhhhhh traces aren't going to be working yet, right?
@@ -82,7 +93,7 @@ NEXT STEPS for reporting usages & uses
 - [x] show types of defns n stuff pleassee
 - [ ] it would be ... quite nice ... to ... incrementally send back updates.
 - [x] ok why the heck is it taking 1.5 seconds to save? lol it was 30mb
-- [ ] UHM Let's do some indication of `unused` variables!
+- [x] UHM Let's do some indication of `unused` variables!
 - [ ] and "highlight usages of the currently selected ident" would be super nice
 
 - [ ] tbh now that inference & stuff is async, the caching issue is somehwat less. Would still be
@@ -111,7 +122,7 @@ whyyy is it taking 30ms to just change a single thing.
 
 - [x] `calculateInitialState` and `updateState` have a ton in common.
   We should be able to merge them quite easily.
-- [ ] THEENNNN we can get down to business, to hook up type inference.
+- [x] THEENNNN we can get down to business, to hook up type inference.
 - [x] anddd plugins! Gotta get our fixture tests back up
 - [ ] and then, please, yes lets do CACHING of the type infos.
 - [ ] oH and our immediateResults arent being cached either at the moment,

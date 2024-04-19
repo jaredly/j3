@@ -90,8 +90,8 @@ export const calcChangedNodes = (
         }
     });
 
-    console.log('cacled changed nodes', usages);
-    console.log(result);
+    // console.log('cacled changed nodes', usages);
+    // console.log(result);
 
     return result;
 };

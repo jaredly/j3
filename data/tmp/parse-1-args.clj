@@ -847,50 +847,108 @@
         (pcon name args l) (bag/and (one (,, name (value) l)) (many (map args pat-externals)))
         _                  empty))
 
+(defn expr-type [expr]
+    (match expr
+        (eprim prim int)     "prim"
+        (estr string _ int)  "str"
+        (evar string int)    "var"
+        (equot quot int)     "quot"
+        (elambda _ expr int) "lambda"
+        (eapp expr _ int)    "app"
+        (elet _ expr int)    "let"
+        (ematch expr _ int)  "match"))
+
+(defn type-type [type]
+    (match type
+        (tapp _ _ _) "app"
+        (tvar _ _)   "var"
+        (tcon _ _)   "con"))
+
+(defn fold-type [init type f]
+    (let [v (f init type)]
+        (match type
+            (tapp target arg _) (fold-type (fold-type v target f) arg f)
+            _                   v)))
+
+(defn fold-expr [init expr f]
+    (let [v (f init expr)]
+        (match expr
+            (estr _ tpl _)         (foldl v tpl (fn [init (,, expr _ _)] (fold-expr init expr f)))
+            (elambda _ body _)     (fold-expr v body f)
+            (elet bindings body _) (fold-expr
+                                       (foldl v bindings (fn [init (, _ expr)] (fold-expr init expr f)))
+                                           body
+                                           f)
+            (eapp target args _)   (foldl
+                                       (fold-expr v target f)
+                                           args
+                                           (fn [init expr] (fold-expr init expr f)))
+            (ematch expr cases _)  (foldl
+                                       (fold-expr v expr f)
+                                           cases
+                                           (fn [init (, _ expr)] (fold-expr init expr f)))
+            _                      v)))
+
+(defn expr-size [expr] (fold-expr 0 expr (fn [v _] (+ 1 v))))
+
+(defn type-size [type] (fold-type 0 type (fn [v _] (+ 1 v))))
+
+(defn stmt-size [stmt]
+    (+
+        1
+            (match stmt
+            (sdef string int expr int)                  (expr-size expr)
+            (sexpr expr int)                            (expr-size expr)
+            (stypealias string int args type int)       (type-size type)
+            (sdeftype string int args constructors int) (foldl
+                                                            0
+                                                                constructors
+                                                                (fn [v (,,, _ _ args _)] (foldl v (map args type-size) +))))))
+
 (defn externals [bound expr]
     (match expr
-        (evar name l)              (match (set/has bound name)
-                                       true empty
-                                       _    (one (,, name (value) l)))
-        (eprim prim l)             empty
-        (estr first templates int) (many
-                                       (map
-                                           templates
-                                               (fn [arg]
-                                               (match arg
-                                                   (,, expr _ _) (externals bound expr)))))
-        (equot expr int)           empty
-        (elambda pats body int)    (bag/and
-                                       (foldl empty (map pats pat-externals) bag/and)
-                                           (externals (foldl bound (map pats pat-names) set/merge) body))
-        (elet bindings body l)     (bag/and
-                                       (foldl
-                                           empty
-                                               (map
-                                               bindings
-                                                   (fn [arg]
-                                                   (let [(, pat init) arg]
-                                                       (bag/and (pat-externals pat) (externals bound init)))))
-                                               bag/and)
-                                           (externals
-                                           (foldl
-                                               bound
-                                                   (map bindings (fn [arg] (let [(, pat _) arg] (pat-names pat))))
-                                                   set/merge)
-                                               body))
-        (eapp target args int)     (bag/and
-                                       (externals bound target)
-                                           (foldl empty (map args (externals bound)) bag/and))
-        (ematch expr cases int)    (bag/and
-                                       (externals bound expr)
-                                           (foldl
-                                           empty
-                                               cases
-                                               (fn [bag arg]
-                                               (match arg
-                                                   (, pat body) (bag/and
-                                                                    (bag/and bag (pat-externals pat))
-                                                                        (externals (set/merge bound (pat-names pat)) body))))))))
+        (evar name l)            (match (set/has bound name)
+                                     true empty
+                                     _    (one (,, name (value) l)))
+        (eprim prim l)           empty
+        (estr first templates l) (many
+                                     (map
+                                         templates
+                                             (fn [arg]
+                                             (match arg
+                                                 (,, expr _ _) (externals bound expr)))))
+        (equot expr l)           empty
+        (elambda pats body l)    (bag/and
+                                     (foldl empty (map pats pat-externals) bag/and)
+                                         (externals (foldl bound (map pats pat-names) set/merge) body))
+        (elet bindings body l)   (bag/and
+                                     (foldl
+                                         empty
+                                             (map
+                                             bindings
+                                                 (fn [arg]
+                                                 (let [(, pat init) arg]
+                                                     (bag/and (pat-externals pat) (externals bound init)))))
+                                             bag/and)
+                                         (externals
+                                         (foldl
+                                             bound
+                                                 (map bindings (fn [arg] (let [(, pat _) arg] (pat-names pat))))
+                                                 set/merge)
+                                             body))
+        (eapp target args l)     (bag/and
+                                     (externals bound target)
+                                         (foldl empty (map args (externals bound)) bag/and))
+        (ematch expr cases l)    (bag/and
+                                     (externals bound expr)
+                                         (foldl
+                                         empty
+                                             cases
+                                             (fn [bag arg]
+                                             (match arg
+                                                 (, pat body) (bag/and
+                                                                  (bag/and bag (pat-externals pat))
+                                                                      (externals (set/merge bound (pat-names pat)) body))))))))
 
 (defn dot [a b c] (a (b c)))
 
@@ -949,10 +1007,13 @@
             (fn [expr (map int bool)] string)
             (fn [stmt] (array (,, string name-kind int)))
             (fn [stmt] (array (,, string name-kind int)))
-            (fn [expr] (array (,, string name-kind int)))))
+            (fn [expr] (array (,, string name-kind int)))
+            (fn [stmt] int)
+            (fn [expr] int)
+            (fn [type] int)))
 
 ((eval
-    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr})")
+    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")
     (parse-and-compile
         parse-stmt
             parse-expr
@@ -960,4 +1021,7 @@
             compile
             names
             externals-stmt
-            (fn [expr] (bag/to-list (externals set/nil expr)))))
+            (fn [expr] (bag/to-list (externals set/nil expr)))
+            stmt-size
+            expr-size
+            type-size))

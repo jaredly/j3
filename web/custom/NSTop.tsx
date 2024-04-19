@@ -6,13 +6,15 @@ import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { Drag, NsReg } from './NsReg';
 import { Render, RenderNNode } from './Render';
-import { RealizedNamespace } from './UIState';
+import { NUIState, RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
 import { Store } from './store/Store';
 import { useExpanded, useGetStore } from './store/StoreCtx';
 import { useNamespace } from './store/useNamespace';
 import { useNode } from './store/useNode';
 import { RenderProps } from './types';
+import { ImmediateResults } from './store/getImmediateResults';
+import { WorkerResults } from './store/useSyncStore';
 
 const PluginRender = ({
     ns,
@@ -55,9 +57,14 @@ const PluginRender = ({
     );
 };
 
-export const hasErrors = (id: number, store: Store): boolean => {
-    const state = store.getState();
-    const { results, workerResults } = store.getResults();
+export const hasErrors = (
+    id: number,
+    state: NUIState,
+    {
+        results,
+        workerResults,
+    }: { results: ImmediateResults<any>; workerResults: WorkerResults },
+): boolean => {
     const ns = state.nsMap[id] as RealizedNamespace;
     if (!ns) {
         debugger;
@@ -80,7 +87,9 @@ export const hasErrors = (id: number, store: Store): boolean => {
     ) {
         return true;
     }
-    return ns.children.some((id) => hasErrors(id, store));
+    return ns.children.some((id) =>
+        hasErrors(id, state, { results, workerResults }),
+    );
 };
 
 function NSTop({
@@ -319,7 +328,7 @@ export function highlightIdxs(msg: string) {
         }
         const loc = +match;
         parts.push(
-            <JumpTo key={idx} loc={loc}>
+            <JumpTo key={idx} loc={idx}>
                 {match}
             </JumpTo>,
         );

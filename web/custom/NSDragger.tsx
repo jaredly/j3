@@ -4,7 +4,7 @@ import { Action, RealizedNamespace } from './UIState';
 import { isAncestor } from './CardRoot';
 import { Drag } from './NsReg';
 import { NSMenu } from './NSMenu';
-import { useGetStore } from './store/StoreCtx';
+import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { hasErrors } from './NSTop';
 
 export const NSDragger = ({
@@ -34,7 +34,11 @@ export const NSDragger = ({
     const mref = useRef<HTMLDivElement>(null);
 
     const store = useGetStore();
-    const errs = hasErrors(ns.id, store);
+    const errs = useSubscribe(
+        () => hasErrors(ns.id, store.getState(), store.getResults()),
+        (fn) => store.on('results', fn),
+        [ns.id],
+    );
 
     useEffect(() => {
         if (!cm) return;

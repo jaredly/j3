@@ -37,9 +37,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
             const state = store.getState();
             return equal(state.hover, path);
         },
-        (notify) => {
-            store.on('hover', notify);
-        },
+        (notify) => store.on('hover', notify),
         [path],
     );
 
@@ -68,7 +66,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
         },
         (notify) => {
             let la = store.getState().at;
-            store.on('selection', (f) => {
+            return store.on('selection', (f) => {
                 if (f.at !== la) {
                     la = f.at;
                 }

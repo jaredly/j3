@@ -1,4 +1,7 @@
-(** ## type-args + tracking all the substs **)
+(** ## Algorithm W Step-By-Step
+    Notable additions:
+    - putting the subst map into the state monad, making it less likely that substs would be missed, and enabling hover-for-type. Note that, for performance reasons, infer-expr has its subst isolated from the main state monad. This is consistent with the original paper & algorithm.
+    - patterns, sum types, match, template strings **)
 
 (** ## Prelude
     some handy functions **)

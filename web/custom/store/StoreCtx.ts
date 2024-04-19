@@ -80,7 +80,7 @@ export const useGetStore = () => useContext(StoreCtx);
 
 export const useSubscribe = <T>(
     calc: () => T,
-    sub: (fn: () => void) => void,
+    sub: (fn: () => void) => () => void,
     deps: any[],
 ) => {
     const saved = useRef<T | null>(null);
@@ -93,7 +93,7 @@ export const useSubscribe = <T>(
     const [_, tick] = useState(0);
 
     useEffect(() => {
-        sub(() => {
+        return sub(() => {
             const nw = calc();
             if (!equal(nw, saved.current)) {
                 saved.current = nw;
