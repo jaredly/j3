@@ -38,52 +38,67 @@ const evaluators: { [key: number]: string } = {};
 // type-1-cache-3
 // ???
 
-const fixtures = {
-    0: { name: 'bootstrap -> self-1', file: 'self-1.json', evaluator: null },
-    1: {
+const fixtures = [
+    {
+        id: 0,
+        name: 'bootstrap -> self-1',
+        file: 'self-1.json',
+        evaluator: null,
+    },
+    {
+        id: 1,
         name: 'self-1 -> parse-1-args',
         file: 'parse-1-args.json',
         evaluator: [0],
     },
-    2: {
+    {
+        id: 2,
         name: 'parse-1-args -> type-args',
         file: 'type-args.json',
         evaluator: [1],
     },
-    3: {
+    {
+        id: 3,
         name: 'parse-1-args + type-args -> parse-1',
         file: 'parse-1-args.json',
         evaluator: [1, 2],
     },
-    4: {
+    {
+        id: 10,
+        name: 'parse-1-args + type-args -> aw-test',
+        file: 'aw-test.json',
+        evaluator: [1, 2],
+    },
+    {
+        id: 4,
         name: 'parse-1-args(2) + type-args -> type-args',
         file: 'type-args.json',
         evaluator: [3, 2],
     },
-    5: {
-        name: 'parse-1 + type-args -> algw-subst',
-        file: 'algw-subst.json',
-        evaluator: [3, 4],
+    // {
+    //     id: 5,
+    //     name: 'parse-1 + type-args -> algw-subst',
+    //     file: 'algw-subst.json',
+    //     evaluator: [3, 4],
+    // },
+    // {
+    //     id: 6,
+    //     name: 'parse-1 + algw-subst -> algw-subst',
+    //     file: 'algw-subst.json',
+    //     evaluator: [3, 5],
+    // },
+    { id: 7, name: 'p1+ta -> thih', file: 'thih.json', evaluator: [3, 4] },
+    // { id: 8, name: 'p1+as -> thih', file: 'thih.json', evaluator: [3, 5] },
+    {
+        id: 9,
+        name: 'parse-1-args(2) + type-args -> algw-subst-old',
+        file: 'algw-subst-old.json',
+        evaluator: [3, 2],
     },
-    6: {
-        name: 'parse-1 + algw-subst -> algw-subst',
-        file: 'algw-subst.json',
-        evaluator: [3, 5],
-    },
-    7: {
-        name: 'p1+ta -> thih',
-        file: 'thih.json',
-        evaluator: [3, 4],
-    },
-    8: {
-        name: 'p1+as -> thih',
-        file: 'thih.json',
-        evaluator: [3, 5],
-    },
-};
+];
 
 test(`run self-1.json`, async () => {
-    for (let [id, { name, file, evaluator }] of Object.entries(fixtures)) {
+    for (let { id, name, file, evaluator } of fixtures) {
         console.log(`\n[${id}] : ${name}\n`);
         const state: NUIState = await Bun.file(
             join(__dirname, '../data/tmp/', file),
@@ -119,10 +134,32 @@ test(`run self-1.json`, async () => {
             getImmediateResults(state, ev, results);
             console.timeEnd('immediate');
             console.time('worker');
-            calculateInitialState(results.nodes, ev, false);
+            const worker = calculateInitialState(results.nodes, ev, false);
+            Object.entries(worker.results!.groups).forEach(([key, group]) => {
+                if (group.typeFailed) {
+                    throw new Error(`group ${key} typeFailed!`);
+                }
+            });
+            Object.entries(worker.results!.tops).forEach(([key, top]) => {
+                if (Object.keys(top.errors).length) {
+                    throw new Error(`ast errors ${JSON.stringify(top.errors)}`);
+                }
+                for (let p of top.produce) {
+                    if (
+                        typeof p !== 'string' &&
+                        (p.type === 'withjs' ||
+                            p.type === 'error' ||
+                            p.type === 'eval')
+                    ) {
+                        throw new Error(`produce error ${JSON.stringify(p)}`);
+                    }
+                }
+            });
             console.timeEnd('worker');
         } catch (err) {
             console.warn(`worker failed`, (err as Error).message);
+            throw new Error(`worker failed`);
+            break;
         }
         // if (Object.keys(result.errors).length) {
         //     throw new Error(JSON.stringify(result.errors));

@@ -245,7 +245,10 @@ export const bootstrap: FullEvalator<
                     } catch (err) {
                         console.error(err);
                         // console.log(text)
-                        display[+id] = `Error! ${(err as Error).message}`;
+                        display[+id] = {
+                            type: 'error',
+                            message: (err as Error).message,
+                        };
                         return;
                     }
                 }
@@ -263,7 +266,10 @@ export const bootstrap: FullEvalator<
                         display[+id] = valueToString(res);
                     } catch (err) {
                         console.error(err);
-                        display[+id] = `Error! ${(err as Error).message}`;
+                        display[+id] = {
+                            type: 'error',
+                            message: (err as Error).message,
+                        };
                     }
                     return;
                 }

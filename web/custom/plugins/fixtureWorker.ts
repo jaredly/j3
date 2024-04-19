@@ -1,3 +1,4 @@
+import equal from 'fast-deep-equal';
 import { Node } from '../../../src/types/cst';
 import { WorkerPlugin } from '../UIState';
 import { LocedName } from '../store/sortTops';
@@ -29,21 +30,22 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
         const parsed = parse(node, parseExpr(evaluator, errors, deps));
         return parsed ? { parsed, deps } : null;
     },
+
+    hasErrors(results: {
+        [key: number]: { expected: any; found: any; error?: string };
+    }) {
+        for (let [k, res] of Object.entries(results)) {
+            if (res.error) return true;
+            if (!equal(res.expected, res.found)) return true;
+        }
+        return false;
+    },
+
     process(data, meta, evaluator, traces, env) {
         const setTracing = (idx: number | null) =>
             evaluator.setTracing(idx, traces, env);
-        const evaluate = (expr: Expr) => {
-            // const errors = {};
-            // const expr = evaluator.parseExpr(node, errors);
-            return evaluator.evaluate(expr, env, meta);
-        };
+        const evaluate = (expr: Expr) => evaluator.evaluate(expr, env, meta);
 
-        // const data = parse(node);
-        // if (!data) {
-        //     console.error(`Fixture plugin: failed to parse node`);
-        //     console.log(node);
-        //     return {};
-        // }
         let test: null | Function = null;
         const results: {
             [key: number]: { expected: any; found: any; error?: string };
@@ -75,12 +77,16 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
                         setTracing(item.input.node.loc);
                     }
                     results[item.input.node.loc] = {
-                        expected: item.output?.expr
-                            ? evaluate(item.output?.expr)
-                            : null,
-                        found: test
-                            ? test(evaluate(item.input.expr))
-                            : evaluate(item.input.expr),
+                        expected: ensureSendable(
+                            item.output?.expr
+                                ? evaluate(item.output?.expr)
+                                : null,
+                        ),
+                        found: ensureSendable(
+                            test
+                                ? test(evaluate(item.input.expr))
+                                : evaluate(item.input.expr),
+                        ),
                     };
                 } catch (err) {
                     // console.error(err);
@@ -98,4 +104,13 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
         });
         return results;
     },
+};
+
+const ensureSendable = (x: any) => {
+    try {
+        structuredClone(x);
+    } catch (_) {
+        throw new Error(`Cannot send ${typeof x}: ${JSON.stringify(x)}`);
+    }
+    return x;
 };

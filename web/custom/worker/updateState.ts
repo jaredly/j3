@@ -371,7 +371,7 @@ export function updateState(
         if (group.length === 1 && group[0].isPlugin) {
             const node = nodes[group[0].id];
             const plugin = workerPlugins[node.ns.plugin!.id];
-            state.results.tops[group[0].id].pluginResults = plugin.process(
+            const results = plugin.process(
                 (node.parsed as PluginParsed).parsed,
                 node.meta,
                 state.evaluator,
@@ -379,6 +379,13 @@ export function updateState(
                 env,
                 node.ns.plugin!.options,
             );
+            state.results.tops[group[0].id].pluginResults = results;
+            if (plugin.hasErrors(results)) {
+                state.results.tops[group[0].id].produce.push({
+                    type: 'error',
+                    message: `Plugin had errors`,
+                });
+            }
             continue;
         }
 

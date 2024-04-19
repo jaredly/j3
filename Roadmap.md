@@ -4,7 +4,7 @@
 ok so I'll try to ... do less composing.
 even less.
 
-- [ ] get the bun tests to check the embedded fixture tests tooo
+- [x] get the bun tests to check the embedded fixture tests tooo
 
 # SLowwwwwwww
 

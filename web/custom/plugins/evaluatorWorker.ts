@@ -32,6 +32,9 @@ export const evaluatorWorker: WorkerPlugin<
             usages,
         };
     },
+    hasErrors(results) {
+        return false;
+    },
 
     // So is this where ... we would kick things off?
     // ORRR what if the `store` is responsible for
