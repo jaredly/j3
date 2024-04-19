@@ -834,18 +834,25 @@
             - infer the arg type, using the subst from the target. (?) Could this be done the other way around?
             - unify the target type with a function (arg type) => return value type variable
             - the subst from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
-        (eapp target args l)     (foldl
-                                     (t-expr tenv target)
-                                         args
-                                         (fn [target-> arg]
-                                         (let-> [
-                                             result-var  (new-type-var "res" l)
-                                             target-type target->
-                                             arg-tenv    (tenv/apply-> tenv)
-                                             arg-type    (t-expr arg-tenv arg)
-                                             target-type (type/apply-> target-type)
-                                             ()          (unify target-type (tfn arg-type result-var l) l)]
-                                             (type/apply-> result-var))))
+        (eapp target args l)     (subst-wrap
+                                     (foldl
+                                         (t-expr-subst tenv target)
+                                             args
+                                             (fn [target-> arg]
+                                             (let-> [
+                                                 result-var                   (new-type-var "res" l)
+                                                 (, target-subst target-type) target->
+                                                 arg-tenv                     (<- (tenv-apply target-subst tenv))
+                                                 (, arg-subst arg-type)       (t-expr-subst arg-tenv arg)
+                                                 target-type                  (<- (type-apply arg-subst target-type))
+                                                 unified-subst                (unify-inner target-type (tfn arg-type result-var l) l)]
+                                                 (<-
+                                                     (,
+                                                         (compose-subst
+                                                             "eapp"
+                                                                 unified-subst
+                                                                 (compose-subst "eapp2" arg-subst target-subst))
+                                                             (type-apply unified-subst result-var)))))))
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
