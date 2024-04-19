@@ -1,4 +1,75 @@
 
+# Thinking about type classes
+
+the "what order to I process these in" question is ... not simple.
+
+a `definstance` might depend on other `definstance`s.
+We don't know what it might depend on until we do the type checking of the instance functions.
+
+BUT
+
+we need to be able to sort out dependency order without doing type checking.
+...
+SO
+
+we might need to do ... things ... in 2 passes.
+first pass, collect all the `definstance` declarations, *assume* the functions type check,
+and add them to the class-env.
+
+Then go through, type check everything.
+
+I can think of 2 ways to do this.
+
+(1) allow `top`s to export *multiple things* that have *different dependency details*.
+  conceptually, we could call it (top) => [stmt] instead of (top) => stmt.
+  this has several things going for it.
+
+  (definstance (pretty c) {a b c d})
+  would turn insto
+  (sdefinstance (pretty c) loc)
+  and
+  (sdefinstance-methods loc {a b c d})
+
+  ALL usages of `pretty` would ... rely on ... the .. hrm.
+  ok would have like a pseudo-dep ... that encompasses ...
+  all of the `sdefinstance`s of `pretty`?
+  that seems complicated.
+
+  and then...
+  how do we ensure that we're compiling `sdefinstance-methods` ... before any
+  `evaluations` that need to happen?
+
+(2) ok any way you slice it I think we'll need to support mult-stmt outputs.
+  but another thing to think about is having "multiple super-groups" that we can sort
+  things into, both for the purpose of type checking and possibly also compilation.
+
+  If we just say
+  "first super-group => all (defclass)es and (deftype)s and (defalias)es"
+  "second super-group => all (definstance)s"
+  "third super-group => all (definstance-methods) and (def)s" - because they can depend on each other
+  "fourth super-group => all (expr)s and (plugin)s"
+
+(3) ALTERNATIVELY
+  we could add *more passes* than just "parse -> typecheck -> compile"
+  like, there could be a "classcheck" pass, that ignores everything but the (defclass) and (definstance)s.
+  and then (typecheck)ing the (definstance)s just checks the instance methods.
+  would that ... allow the current dependency determinations to remain unchanged?
+  That would be quite nice.
+
+oooh recompilation ... also needs to ... be aware of things.
+that is to say: If the implementation of a typeclass instance changes,
+we need to ... re-run anything that used that implementation.
+
+Actually this touches on something that has been bothering me.
+IF I can modify `compilation` so I know whether a variable reference is a `global` or a `local`,
+then I can get away with recompiling much less, because references to globals will be dynamic.
+This would be nice.
+
+ANYWAYS, what I mean to say is this:
+- we can have a rough first-pass dependency analysis that works for type checking
+- but then we need the type-checking pass to produce extra dependency information, needed for
+  evaluation.
+
 # The Next Things (thih)
 
 Ok, now that 4 day sidetrack is done (web workers + algw-fast + unused)

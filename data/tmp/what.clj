@@ -73,17 +73,18 @@
 
 (deftype suit (hearts) (spades) (clubs) (diamonds))
 
-(definstance
-    (pretty suit)
-        {
-        show-pretty (fn [suit]
-                        (match suit
-                            (hearts)   "️❤️"
-                            (spades)   "️♠️"
-                            (clubs)    "️♣️"
-                            (diamonds) "️♦️"))})
+(defn suit->s [suit]
+    (match suit
+        (hearts)   "️❤️"
+        (spades)   "️♠️"
+        (clubs)    "️♣️"
+        (diamonds) "️♦️"))
+
+(definstance (pretty suit) {show-pretty suit->s})
 
 "${(hearts)}"
+
+(suit->s hearts)
 
 (many [1 2 3 4 5 7 8 9 0])
 
