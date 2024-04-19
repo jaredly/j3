@@ -87,14 +87,15 @@ const fixtures = [
         file: 'type-args.json',
         evaluator: [3, 5],
     },
-    // {
-    //     id: 6,
-    //     name: 'parse-1 + algw-subst -> algw-subst',
-    //     file: 'algw-subst.json',
-    //     evaluator: [3, 5],
-    // },
+
+    {
+        id: 6,
+        name: 'parse-1 + algw-subst -> algw-subst',
+        file: 'algw-subst.json',
+        evaluator: [3, 5],
+    },
     { id: 7, name: 'p1+ta -> thih', file: 'thih.json', evaluator: [3, 4] },
-    // { id: 8, name: 'p1+as -> thih', file: 'thih.json', evaluator: [3, 5] },
+    { id: 8, name: 'p1+as -> thih', file: 'thih.json', evaluator: [3, 5] },
     {
         id: 9,
         name: 'parse-1-args(2) + type-args -> algw-subst-old',

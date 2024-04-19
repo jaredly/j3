@@ -19,7 +19,7 @@ const sanMap = {
     '?': '$qe',
 };
 
-const kwds = 'case var if else return super break while for default';
+const kwds = 'case new var if else return super break while for default';
 const rx: [RegExp, string][] = [];
 kwds.split(' ').forEach((kwd) =>
     rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),
