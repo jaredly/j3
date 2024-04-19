@@ -18,6 +18,36 @@
 
 ;((subst-wrap
     (let-> [
+        arg-types              (map-> pat-name pats)
+        pts                    (map-> (t-pat tenv) pats)
+        (, pat-types bindings) (<-
+                                   (foldr
+                                       (, [] map/nil)
+                                           pts
+                                           (fn [(, ptypes bindings) (, pt bs)]
+                                           (, [pt ..ptypes] (map/merge bindings bs)))))
+        _                      (map->
+                                   (fn [(, argt patt)] (unify argt patt l))
+                                       (zip arg-types pat-types))
+        composed               <-subst
+        bindings               (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
+        schemes                (<- (map/map (fn [(, t l)] (, (scheme set/nil t) l)) bindings))
+        bound-env              (<-
+                                   (foldr
+                                       (tenv-apply composed tenv)
+                                           (map/to-list schemes)
+                                           (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
+        body-type              (t-expr (tenv-apply composed bound-env) body)
+        body-type              (type/apply-> body-type)
+        arg-types              (map-> type/apply-> arg-types)]
+        (<-
+            (,
+                map/nil
+                    (foldr body-type arg-types (fn [body arg] (tfn arg body l)))))))
+    )
+
+;((subst-wrap
+    (let-> [
         arg-types                (map-> pat-name pats)
         pts                      (map-> (t-pat tenv) pats)
         (, pat-types bindings)   (<-
