@@ -5,6 +5,7 @@ ok so I'll try to ... do less composing.
 even less.
 
 - [x] get the bun tests to check the embedded fixture tests tooo
+- [ ] type-args.json, get the errors to be type-error
 
 # SLowwwwwwww
 
