@@ -6,6 +6,20 @@ we can get back to thih!
 Namely, we need to be able to define instances and type classes.
 So that I can actually verify that things are working.
 
+OH AUTOCOMPLETE
+
+ALSO WHAT ABOUT SEARCH
+gotta be able to do document search
+not just relying on the browser.
+
+IT WOULD BE NICE
+to simplify types for display, by subbing out type aliases.
+What are the changes ... of that being at all fast?
+I guess ... I could do it on-demand?
+might not be the worst
+could prolly do it for a single type <20ms, but doing it for all
+hovers would be way too much.
+
 
 BUT ALSO
 wouldn't it be nice

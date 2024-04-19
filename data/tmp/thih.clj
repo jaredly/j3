@@ -1914,36 +1914,42 @@ map->
                         [] (<- ds)
                         _  (<-err (, "context too weak" []))))))))
 
-(defn infer/impls [ce as bs]
-    (let-> [ts ((map-> (fn [_] (new-tvar star)) bs))]
+(defn infer/impls [class-env assumps bindings]
+    (let-> [type-vars ((map-> (fn [_] (new-tvar star)) bindings))]
         (let [
-            is    (map fst bs)
-            scs   (map toScheme ts)
-            as'   (+++ (zipWith !>! is scs) as)
-            altss (map snd bs)]
-            (let-> [pss ((sequence (zipWith (infer/alts ce as') altss ts))) s (get-subst)]
+            identifiers (map fst bindings)
+            scs         (map toScheme type-vars)
+            as'         (+++ (zipWith !>! identifiers scs) assumps)
+            altss       (map snd bindings)]
+            (let-> [
+                pss ((sequence (zipWith (infer/alts class-env as') altss type-vars)))
+                s   (get-subst)]
                 (let [
                     ps' (preds/apply s (concat pss))
-                    ts' (map (type/apply s) ts)
+                    ts' (map (type/apply s) type-vars)
                     fs  (set/to-list
                             (foldl
                                 set/nil
-                                    (map (assump/apply s) as)
-                                    (fn [res as] (set/merge res (assump/tv as)))))
+                                    (map (assump/apply s) assumps)
+                                    (fn [res assumps] (set/merge res (assump/tv assumps)))))
                     vss (map type/tv ts')
                     gs  (without (set/to-list (foldr1 set/merge vss)) fs tyvar=)]
                     (let-> [
                         (, ds rs) ((** This intersect call is the part that makes it so that, if you have multiple bindings in a group,
                                       the only variables that can have typeclass constraints are ones that appear in every binding. **)
-                                      (split ce fs (foldr1 (intersect tyvar=) (map set/to-list vss)) ps'))]
+                                      (split
+                                          class-env
+                                              fs
+                                              (foldr1 (intersect tyvar=) (map set/to-list vss))
+                                              ps'))]
                         (<-
-                            (if (restricted bs)
+                            (if (restricted bindings)
                                 (let [
                                     gs'  (without gs (set/to-list (preds/tv rs)) tyvar=)
                                     scs' (map (fn [x] (quantify gs' (=> [] x))) ts')]
-                                    (, (+++ ds rs) (zipWith !>! is scs')))
+                                    (, (+++ ds rs) (zipWith !>! identifiers scs')))
                                     (let [scs' (map (fn [x] (quantify gs (=> rs x))) ts')]
-                                    (, ds (zipWith !>! is scs')))))))))))
+                                    (, ds (zipWith !>! identifiers scs')))))))))))
 
 (defn infer/binding-group [class-env as (, explicit implicits)]
     (let [
@@ -2098,16 +2104,17 @@ map->
 (def defaultSubst
     (withDefaults (fn [vps ts] (map/from-list (zip (map fst vps) ts)))))
 
-(defn restricted [bs]
-    (let [
-        simple (fn [(, i alts)]
+(defn restricted [bindings]
+    (** If any alternative isn't a function (no argument patterns), then this binding group can't be polymorphic. **)
+        (let [
+        simple (fn [(, i alternatives)]
                    (any
-                       (fn [(, v _)]
-                           (match v
+                       (fn [(, arguments _)]
+                           (match arguments
                                [] true
                                _  false))
-                           alts))]
-        (any simple bs)))
+                           alternatives))]
+        (any simple bindings)))
 
 (defn toScheme [t] (forall [] (=> [] t)))
 
@@ -2684,26 +2691,21 @@ filter
         assumps (infer/program
                     ce
                         assumps
-                        (map
-                        (fn [(sdef name _ body _)]
-                            (,
-                                []
-                                    [[(,
+                        [(,
+                        []
+                            [(map
+                            (fn [(sdef name _ body _)]
+                                (,
                                     name
                                         [(match body
                                         (elambda pats inner l) (, pats inner)
-                                        _                      (, [] body))])]]))
-                            stmts))]
+                                        _                      (, [] body))]))
+                                stmts)])])]
         (<-
             (full-env
                 type-env/nil
                     class-env/nil
                     (filter (fn [(!>! n _)] (set/has names n)) assumps)))))
-
-;(defn map-> [f items]
-    (match items
-        []           (<- [])
-        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
 
 (defn map-ok-> [f items]
     (let [>>= ok>>= <- ok]
@@ -2720,9 +2722,44 @@ filter
                 (<- (tenv/merge type-tenv tenv')))
         tts                             (map-> (fn [stmt] (infer-stmt ce assumps stmt)) stypes)
         type-tenv                       (<- (foldl full-env/nil tts full-env/merge))
-        (full-env a b c)                (infer-defns ce assumps sdefs)
+        (full-env a b c)                (match sdefs
+                                            [] (<- full-env/nil)
+                                            _  (infer-defns ce assumps sdefs))
         types                           (map-> (infer ce (concat2 c assumps)) sexps)]
         (<- (, (full-env/merge type-tenv (full-env a b c)) types))))
+
+(defn test-stmts [x]
+    (just-assumps->s
+        (fst
+            (force
+                type-error->s
+                    (snd
+                    (run/tenv->
+                        builtin-tenv
+                            (infer-stmtss builtin-ce builtin-assumptions (map parse-stmt x))))))))
+
+(,
+    test-stmts
+        [(, [(@@ (def x 1))] "x: int")
+        (,
+        [(@@
+            (defn even [x]
+                (if (< x 1)
+                    true
+                        false)))]
+            "even: a *; a ∈ num; a ∈ ord; (fn [a] bool)")
+        (,
+        [(@@
+            (defn even [x]
+                (if (< x 1)
+                    true
+                        (odd x))))
+            (@@
+            (defn odd [x]
+                (if (< x 1)
+                    true
+                        (even x))))]
+            "odd: a *; a ∈ num; a ∈ ord; (fn [a] bool)\neven: a *; a ∈ num; a ∈ ord; (fn [a] bool)")])
 
 foldl
 
@@ -2802,6 +2839,11 @@ foldl
         }\n# Assumps${
         (ljoin "\n" (map assump->s assumps))
         }")
+
+(defn full-env/assumps [(full-env _ _ assumps)] assumps)
+
+(defn just-assumps->s [(full-env _ _ assumps)]
+    (join "\n" (map assump->s assumps)))
 
 (snd
     (run/tenv->
