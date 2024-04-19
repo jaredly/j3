@@ -212,10 +212,10 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                             return;
                         }
                         if (
-                            values[2].type !== 'array' ||
-                            values[2].values.some(
-                                (t) => t.type !== 'identifier',
-                            )
+                            values[2].type !== 'array'
+                            // values[2].values.some(
+                            //     (t) => t.type !== 'identifier',
+                            // )
                         ) {
                             addError(
                                 ctx.errors,
@@ -224,16 +224,14 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                             );
                             return;
                         }
-                        const args: string[] = values[2].values.map(
-                            (t) =>
-                                (t as Extract<Node, { type: 'identifier' }>)
-                                    .text,
-                        );
+                        const args = values[2].values;
                         let body = parseExpr(values[3], ctx);
                         if (!body) return;
 
                         for (let i = args.length - 1; i >= 0; i--) {
-                            body = { type: 'elambda', 0: args[i], 1: body };
+                            const res = lambdaArg(args[i], body, ctx);
+                            if (!res) return;
+                            body = res;
                         }
 
                         return {
@@ -395,18 +393,21 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                     addError(ctx.errors, values[1].loc, 'expected array');
                     return;
                 }
-                const args: string[] = [];
-                for (let arg of values[1].values) {
-                    if (arg.type === 'identifier') {
-                        args.push(arg.text);
-                    } else {
-                        addError(ctx.errors, arg.loc, 'expected ident');
-                    }
-                }
+                const args: Node[] = values[1].values;
+                // for (let arg of values[1].values) {
+                //     if (arg.type === 'identifier') {
+                //         args.push(arg.text);
+                //     } else {
+                //         addError(ctx.errors, arg.loc, 'expected ident');
+                //     }
+                // }
                 let body = parseExpr(values[2], ctx);
                 if (!body) return;
                 for (let i = args.length - 1; i >= 0; i--) {
-                    body = { type: 'elambda', 0: args[i], 1: body };
+                    const arg = args[i];
+                    const res = lambdaArg(args[i], body, ctx);
+                    if (!res) return;
+                    body = res;
                 }
                 return body;
             }
@@ -520,6 +521,28 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
                     : undefined;
             }
 
+            if (
+                values.length === 4 &&
+                values[0].type === 'identifier' &&
+                values[0].text === 'if'
+            ) {
+                return parseExpr(
+                    {
+                        type: 'list',
+                        values: [
+                            { type: 'identifier', text: 'match', loc: -1 },
+                            values[1],
+                            { type: 'identifier', text: 'true', loc: -1 },
+                            values[2],
+                            { type: 'identifier', text: '_', loc: -1 },
+                            values[3],
+                        ],
+                        loc: node.loc,
+                    },
+                    ctx,
+                );
+            }
+
             // if (values.length > 1 && values[0].type === 'identifier' && values[0].text === ',') {
             //     const inner = values.slice(1).map(p => parseExpr(p, ctx))
             //     if (!inner.every(Boolean)) return
@@ -583,6 +606,32 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
             return res;
     }
     addError(ctx.errors, node.loc, 'unexpected expr ' + JSON.stringify(node));
+};
+
+const lambdaArg = (arg: Node, body: expr, ctx: Ctx): expr | void => {
+    if (arg.type === 'identifier') {
+        return { type: 'elambda', 0: arg.text, 1: body };
+    } else {
+        const pat = parsePat(arg, ctx);
+        if (!pat) return;
+        return {
+            type: 'elambda',
+            0: '$target',
+            1: {
+                type: 'ematch',
+                '0': {
+                    type: 'evar',
+                    '0': '$target',
+                    '1': arg.loc,
+                },
+                '1': {
+                    type: 'cons',
+                    '0': { type: ',', 0: pat, 1: body },
+                    1: { type: 'nil' },
+                },
+            },
+        };
+    }
 };
 
 export function filterBlanks(arg0: Node[]) {
