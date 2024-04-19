@@ -8,6 +8,33 @@ So that I can actually verify that things are working.
 
 
 
+# Another thing (serialize to CST pls)
+
+Let's have our parsers be able to serialize as well! Why not?!?
+Thennn I could actually do normal sourcemaps, which would be very interesting.
+BUT the more ~important reason is so that I can display types and such much nicer,
+which highlighting.
+
+# AND another thing (template strings with functions)
+
+Doooo I think it would be interesting to do real template strings... like html`abc`?
+In a typeclasses world it actually becomes very interesting.
+it would have the signature `a b . (first: string, rest: (array (, a string))) => b`
+and if it wanted to, it could have a type class constraint on `a` waiiiit no that's not real.
+that would be heterogenous. unless you had like gadts or something.
+hrmhrmhrm ok so maybe what I would want is for it to have the type
+`{ show: TCLS a => a -> b, tpl: (string (array (, b string))) -> c }`
+and then
+html`abc ${def} g`
+would turn into `html.tpl("abc", [(, html.show(def) " g")])`
+
+Ok, so I first need records, right?
+
+BECAUSE wouldn't it be cool to be able to:
+
+errmsg`the node ${somenode} at ${loc} has a problem`
+and it would first type-class-coerce `somenode` into the serialized(cst) version?
+So that I could display it all pretty in the UI? Seems like it would be fun.
 
 # AW_FAST
 
