@@ -1,3 +1,0 @@
-Hello
-
-(fn [x a ])
