@@ -34,6 +34,7 @@ export type Evt =
     | 'map'
     | 'nsMap'
     | 'all'
+    | 'parse'
     | 'results'
     | 'pending';
 

@@ -19,6 +19,7 @@ export type SuccessParsed<Stmt> = {
     stmt: Stmt;
     names: LocedName[];
     deps: LocedName[];
+    size: null | number;
     // duplicates?: LocedName[];
 };
 
@@ -28,6 +29,7 @@ export type PluginParsed = {
     // for now, plugins can't produce definitions...
     // but they do have deps.
     deps: LocedName[];
+    size: null | number;
 };
 
 export type Parsed<Stmt> =
@@ -276,6 +278,7 @@ const getParsed = (
                 type: 'plugin',
                 parsed: result.parsed,
                 deps: result.deps,
+                size: null,
             };
         }
     } else {
@@ -297,6 +300,7 @@ const getParsed = (
                 stmt,
                 deps,
                 names,
+                size: evaluator.analysis?.size(stmt) ?? null,
             };
         }
     }

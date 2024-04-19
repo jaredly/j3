@@ -69,6 +69,7 @@ export type FullEvalator<
         dependencies(stmt: Stmt): LocedName[];
         stmtNames(stmt: Stmt): LocedName[];
         exprDependencies(stmt: Expr): LocedName[];
+        size(stmt: Stmt): number | null;
     };
 
     addStatements(

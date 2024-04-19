@@ -58,6 +58,7 @@ export const setupSyncStore = (
         results: [],
         selection: [],
         pending: [],
+        parse: [],
     };
 
     let state = initialState;
@@ -190,6 +191,7 @@ export const setupSyncStore = (
                 });
                 if (changed) {
                     send({ type: 'update', nodes, id: msgid++ });
+                    evtListeners.parse.forEach((f) => f(state, results));
                 }
             }
 

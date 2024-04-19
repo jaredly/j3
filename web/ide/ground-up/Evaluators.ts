@@ -185,6 +185,9 @@ export const bootstrap: FullEvalator<
             }
             return [];
         },
+        size(stmt) {
+            return null;
+        },
         exprDependencies(expr) {
             const res: LocedName[] = [];
             dependencies(expr, [], res);

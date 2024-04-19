@@ -266,6 +266,12 @@ export const fnsEvaluator = (
                               return [];
                           }
                       },
+                      size(stmt) {
+                          if (data['stmt_size']) {
+                              return data['stmt_size'](stmt);
+                          }
+                          return null;
+                      },
                       exprDependencies(stmt) {
                           try {
                               const deps = unwrapArray<{

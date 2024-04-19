@@ -14,6 +14,7 @@ import {
     useGetStore,
     useGlobalState,
     useResults,
+    useSubscribe,
 } from '../../custom/store/StoreCtx';
 // import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
@@ -24,6 +25,7 @@ import { ResultsCache } from '../../custom/store/ResultsCache';
 import { AnyEnv } from '../../custom/store/getResults';
 import { useSyncStore } from '../../custom/store/useSyncStore';
 import { Spinner } from './Spinner';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 
 export const WithStore = ({
     store,
@@ -136,6 +138,8 @@ export const GroundUp = ({
         console.log('ev', store.getEvaluator());
     }, [store.getEvaluator()]);
 
+    const size = useSize(store);
+
     return (
         <div
             style={{
@@ -206,6 +210,7 @@ export const GroundUp = ({
                             id={id}
                         />
                     </div>
+                    <div>Size: {size}</div>
                     <div style={{ flex: 1, overflow: 'auto' }}>
                         {debug.selection ? (
                             <ShowAt at={state.at} hover={state.hover} />
@@ -331,14 +336,33 @@ const ShowAt = ({ at, hover }: { at: NUIState['at']; hover: Path[] }) => {
 
 type StyleProp = NonNullable<React.ComponentProps<'div'>['style']>;
 
+const useSize = (store: Store) => {
+    return useSubscribe(
+        () => {
+            const items = Object.values(store.getResults().results.nodes);
+            const sizes = items
+                .map((node) => {
+                    if (node.parsed?.type === 'success') {
+                        return node.parsed.size;
+                    }
+                })
+                .filter(filterNulls);
+            if (!sizes.length) return null;
+            return sizes.reduce((a, b) => a + b);
+        },
+        (fn) => store.on('parse', fn),
+        [],
+    );
+};
+
 const usePending = () => {
     const store = useGetStore();
     const [state, setState] = useState(0);
-    useEffect(() => {
+    useEffect(() =>
         store.on('pending', (_, count) => {
             setState(count);
-        });
-    });
+        }),
+    );
     return state;
 };
 
