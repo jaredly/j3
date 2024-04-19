@@ -19,6 +19,8 @@ it would be cool to be able to...
 
 - [x] BUT ALSO type hover on a tcon should show me the types of the arguments pleeeease
 
+I REEEALY want a "jump back"liness
+
 # Another thing (serialize to CST pls)
 
 Let's have our parsers be able to serialize as well! Why not?!?

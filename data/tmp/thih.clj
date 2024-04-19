@@ -1803,7 +1803,7 @@
 
 (defn infer/prim [prim]
     (match prim
-        (pbool _ _)  (ti-return (, [] tbool))
+        (pbool _ _)  (<- (, [] tbool))
         (pfloat _ _) (let-> [v (new-tvar star)] (<- (, [(isin "floating" v)] v)))
         (pint _ _)   (let-> [v (new-tvar star)] (<- (, [(isin "num" v)] v)))))
 
@@ -1857,6 +1857,11 @@ map->
                                      _              (map-> (fn [(, a b)] (unify a b)) (zip types types'))]
                                      (<- (, (concat [(concat ps) (concat ps')]) tstring)))
         (eprim prim l)           (infer/prim prim)
+        (equot _ l)              (<- (, [] (star-con "expr")))
+        (equot/stmt stmt int)    (<- (, [] (star-con "stmt")))
+        (equot/pat pat int)      (<- (, [] (star-con "pat")))
+        (equot/type type int)    (<- (, [] (star-con "type")))
+        (equotquot cst int)      (<- (, [] (star-con "cst")))
         (eapp target args l)     (match args
                                      [arg]        (let-> [
                                                       (, ps target-type) (infer/expr ce as target)

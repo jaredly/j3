@@ -268,7 +268,11 @@ export const fnsEvaluator = (
                       },
                       size(stmt) {
                           if (data['stmt_size']) {
-                              return data['stmt_size'](stmt);
+                              try {
+                                  return data['stmt_size'](stmt);
+                              } catch (err) {
+                                  console.error('failed to get size', err);
+                              }
                           }
                           return null;
                       },
