@@ -4,6 +4,8 @@
 ok so I'll try to ... do less composing.
 even less.
 
+- [ ] get the bun tests to check the embedded fixture tests tooo
+
 # SLowwwwwwww
 
 wow is it like, a lot slower now that I'm tracking usages?
