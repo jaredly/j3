@@ -909,6 +909,7 @@
                                   (tconstructor free cargs cres) (match (tenv/con tenv name)
                                                                      (none)   (<-err (type-error "Unknown type constructor" [(, name l)]))
                                                                      (some v) (<- v))
+                                  ()                             (record-> l (tfns cargs cres) true)
                                   (, tres tsubst)                (instantiate (scheme free cres) l)
                                   tres                           (<- (type/set-loc l tres))
                                   (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)

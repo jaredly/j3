@@ -7,6 +7,17 @@ Namely, we need to be able to define instances and type classes.
 So that I can actually verify that things are working.
 
 
+BUT ALSO
+wouldn't it be nice
+to be able to PIN a toplevel to the bottom of the screen
+as reference.
+probably in readonly mode?
+
+BUT ALSO
+it would be cool to be able to...
+"copy this `(typedef` as a `match` ..."
+
+- [x] BUT ALSO type hover on a tcon should show me the types of the arguments pleeeease
 
 # Another thing (serialize to CST pls)
 
