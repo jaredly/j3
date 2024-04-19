@@ -584,6 +584,10 @@
         _                    (state-> (,, idx types (compose-subst "" new-subst subst)))]
         (<- ())))
 
+(defn subst-reset-> [new-subst]
+    (let-> [(,, idx types old) <-state _ (state-> (,, idx types new-subst))]
+        (<- old)))
+
 (def state/nil (,, 0 (, [] (, [] [])) map/nil))
 
 (defn run/nil-> [st] (run-> st state/nil))
@@ -737,34 +741,50 @@
             _             "$arg")
             (pat-loc pat)))
 
+(defn subst-wrap [ti] (let-> [(, subst t) ti () (subst-> subst)] (<- t)))
+
+(defn t-expr-subst [tenv expr]
+    (let-> [
+        old   (subst-reset-> map/nil)
+        t     (t-expr tenv expr)
+        subst (subst-reset-> old)]
+        (<- (, subst t))))
+
 (defn t-expr-inner [tenv expr]
     (match expr
         (** For variables, we look it up in the environment, and raise an error if we couldn't find it. **)
-        (evar "()" l)            (<- (tcon "()" l))
+        (evar "()" l)            (subst-wrap (<- (, map/nil (tcon "()" l))))
         (evar name l)            (match (tenv/type tenv name)
                                      (none)              (<-err (type-error "Unbound variable" [(, name l)]))
-                                     (some (, found fl)) (let-> [
-                                                             (, t _) (instantiate found l)
-                                                             ()      (record-> l (scheme/t found) true)
-                                                             ()      (record-usage-> l fl)]
-                                                             (<- (type/set-loc l t))))
-        (equot quot l)           (<-
-                                     (tcon
-                                         (match quot
-                                             (quot/expr _) "expr"
-                                             (quot/stmt _) "stmt"
-                                             (quot/quot _) "cst"
-                                             (quot/type _) "type"
-                                             (quot/pat _)  "pat")
-                                             l))
-        (eprim prim _)           (<- (t-prim prim))
-        (estr first templates l) (let-> [
-                                     string-type (<- (tcon "string" l))
-                                     _           (map->
-                                                     (fn [(,, expr suffix sl)]
-                                                         (let-> [t (t-expr tenv expr) () (unify t string-type l)] (<- 0)))
-                                                         templates)]
-                                     (<- string-type))
+                                     (some (, found fl)) (subst-wrap
+                                                             (let-> [
+                                                                 (, t _) (instantiate found l)
+                                                                 ()      (record-> l (scheme/t found) true)
+                                                                 ()      (record-usage-> l fl)]
+                                                                 (<- (, map/nil (type/set-loc l t))))))
+        (equot quot l)           (subst-wrap
+                                     (<-
+                                         (,
+                                             map/nil
+                                                 (tcon
+                                                 (match quot
+                                                     (quot/expr _) "expr"
+                                                     (quot/stmt _) "stmt"
+                                                     (quot/quot _) "cst"
+                                                     (quot/type _) "type"
+                                                     (quot/pat _)  "pat")
+                                                     l))))
+        (eprim prim _)           (subst-wrap (<- (, map/nil (t-prim prim))))
+        (estr first templates l) (subst-wrap
+                                     (let-> [
+                                         string-type (<- (tcon "string" l))
+                                         subst       (foldl->
+                                                         map/nil
+                                                             templates
+                                                             (fn [subst (,, expr suffix sl)]
+                                                             (let-> [(, s2 t) (t-expr-subst tenv expr) s3 (unify-inner t string-type l)]
+                                                                 (<- (compose-subst "estr" s3 (compose-subst "estr2" s2 subst))))))]
+                                         (<- (, subst string-type))))
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
             - add the type variable to the typing environment
@@ -780,30 +800,34 @@
                     (tfn (type-apply body-subst arg-type) body-type l)
                     nidx))
         (** Lambdas, now with pats **)
-        (elambda pats body l)    (let-> [
-                                     arg-types              (map-> pat-name pats)
-                                     pts                    (map-> (t-pat tenv) pats)
-                                     (, pat-types bindings) (<-
-                                                                (foldr
-                                                                    (, [] map/nil)
-                                                                        pts
-                                                                        (fn [(, ptypes bindings) (, pt bs)]
-                                                                        (, [pt ..ptypes] (map/merge bindings bs)))))
-                                     _                      (map->
-                                                                (fn [(, argt patt)] (unify argt patt l))
-                                                                    (zip arg-types pat-types))
-                                     composed               <-subst
-                                     bindings               (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
-                                     schemes                (<- (map/map (fn [(, t l)] (, (scheme set/nil t) l)) bindings))
-                                     bound-env              (<-
-                                                                (foldr
-                                                                    (tenv-apply composed tenv)
-                                                                        (map/to-list schemes)
-                                                                        (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
-                                     body-type              (t-expr (tenv-apply composed bound-env) body)
-                                     body-type              (type/apply-> body-type)
-                                     arg-types              (map-> type/apply-> arg-types)]
-                                     (<- (foldr body-type arg-types (fn [body arg] (tfn arg body l)))))
+        (elambda pats body l)    (subst-wrap
+                                     (let-> [
+                                         arg-types              (map-> pat-name pats)
+                                         pts                    (map-> (t-pat tenv) pats)
+                                         (, pat-types bindings) (<-
+                                                                    (foldr
+                                                                        (, [] map/nil)
+                                                                            pts
+                                                                            (fn [(, ptypes bindings) (, pt bs)]
+                                                                            (, [pt ..ptypes] (map/merge bindings bs)))))
+                                         _                      (map->
+                                                                    (fn [(, argt patt)] (unify argt patt l))
+                                                                        (zip arg-types pat-types))
+                                         composed               <-subst
+                                         bindings               (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
+                                         schemes                (<- (map/map (fn [(, t l)] (, (scheme set/nil t) l)) bindings))
+                                         bound-env              (<-
+                                                                    (foldr
+                                                                        (tenv-apply composed tenv)
+                                                                            (map/to-list schemes)
+                                                                            (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
+                                         body-type              (t-expr (tenv-apply composed bound-env) body)
+                                         body-type              (type/apply-> body-type)
+                                         arg-types              (map-> type/apply-> arg-types)]
+                                         (<-
+                                             (,
+                                                 map/nil
+                                                     (foldr body-type arg-types (fn [body arg] (tfn arg body l)))))))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
