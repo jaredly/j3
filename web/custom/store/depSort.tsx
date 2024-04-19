@@ -1,11 +1,12 @@
 import { filterNulls } from '../old-stuff/filterNulls';
+import { LocedName } from './sortTops';
 import { unique } from './unique';
 
 export const depSort = <T,>(
     nodes: ({
         id: number;
-        names: { name: string; loc: number; kind: 'value' | 'type' }[];
-        deps: { name: string; kind: 'value' | 'type' }[];
+        names: LocedName[];
+        deps: LocedName[];
         hidden?: boolean;
     } & T)[],
 ) => {

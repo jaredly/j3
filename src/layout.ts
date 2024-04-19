@@ -210,6 +210,8 @@ const tightFirsts: { [key: string]: number } = {
     match: 2,
     let: 2,
     'let->': 2,
+    definstance: 2,
+    defclass: 2,
     if: 2,
     '<>': 2,
     '->': 2,

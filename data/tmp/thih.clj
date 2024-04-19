@@ -516,10 +516,7 @@
 
 (** ## Parsing **)
 
-(defn tapps [items l]
-    (match items
-        [one]        one
-        [one ..rest] (tapp (tapps rest l) one l)))
+(** ## Types **)
 
 (defn parse-type [type]
     (match type
@@ -531,6 +528,11 @@
                                                                                (fn [body arg] (tfn (parse-type arg) body)))
         (cst/list items l)                                             (tapps (rev (map parse-type items) []) l)
         _                                                              (fatal "(parse-type) Invalid type ${(valueToString type)}")))
+
+(defn tapps [items l]
+    (match items
+        [one]        one
+        [one ..rest] (tapp (tapps rest l) one l)))
 
 (defn tstar [name] (tycon name star))
 
@@ -584,6 +586,8 @@
         _                                             (fatal "parse-pat mo match ${(valueToString pat)}")))
 
 (parse-pat (@@ [1 2 ..a]))
+
+(** ## Expressions **)
 
 (defn parse-expr [cst]
     (match cst
@@ -647,7 +651,7 @@
                                                                                 _  (eapp (parse-expr target) (map parse-expr args) l))
         (cst/array args l)                                                  (parse-array args l)))
 
-(parse-expr (@@ (@! 12)))
+(parse-expr (@@ (fn [a] 1)))
 
 (defn parse-array [args l]
     (match args
@@ -764,7 +768,7 @@
         (, (@@ (@@ 1)) (equotquot (cst/identifier "1" 12386) 12384))
         (, (@@ (@ 1)) (equot (eprim (pint 1 12401) 12401) 12399))])
 
-(parse-expr (@@ (fn [a] 1)))
+(parse-expr (@@ (@! 12)))
 
 (defn mk-deftype [id li args items l]
     (sdeftype
@@ -801,6 +805,8 @@
         [one]        (, [] one)
         [one ..rest] (let [(, more last) (splitlast rest)] (, [one ..more] last))))
 
+(** ## Statements **)
+
 (defn parse-stmt [cst]
     (match cst
         (cst/list [(cst/identifier "def" _) (cst/identifier id li) value] l)      (sdef id li (parse-expr value) l)
@@ -825,14 +831,6 @@
                 ..items]
                 l) (mk-deftype id li args items l)
         (cst/list [(cst/identifier "deftype" _) .._] l)                           (fatal "Invalid 'deftype' ${(int-to-string l)}")
-        _                                                                         (sexpr
-                                                                                      (parse-expr cst)
-                                                                                          (match cst
-                                                                                          (cst/list _ l)       l
-                                                                                          (cst/identifier _ l) l
-                                                                                          (cst/array _ l)      l
-                                                                                          (cst/string _ _ l)   l
-                                                                                          (cst/spread _ l)     l))
         (cst/list
             [(cst/identifier "definstance" _)
                 (cst/list [(cst/identifier cls cl) typ] _)
@@ -872,7 +870,15 @@
                                                                                                       (cst/identifier name l) (,, name l (parse-expr value))
                                                                                                       _                       (fatal "Invalid record name")))
                                                                                                   (pairs items))
-                                                                                              l))))
+                                                                                              l))
+        _                                                                         (sexpr
+                                                                                      (parse-expr cst)
+                                                                                          (match cst
+                                                                                          (cst/list _ l)       l
+                                                                                          (cst/identifier _ l) l
+                                                                                          (cst/array _ l)      l
+                                                                                          (cst/string _ _ l)   l
+                                                                                          (cst/spread _ l)     l))))
 
 (,
     parse-stmt
@@ -916,7 +922,65 @@
             "a"
                 12866
                 (elambda [(pvar "m" 12868)] (evar "m" 12869) 12864)
-                12864))])
+                12864))
+        (,
+        (@@ (definstance (pretty int) {show-pretty string-to-int}))
+            (sdefinstance
+            "pretty"
+                29193
+                (tcon (tycon "int" (star)) 29194)
+                []
+                [(,, "show-pretty" 29250 (evar "string-to-int" 29251))]
+                29190))
+        (,
+        (@@
+            (definstance
+                (=> (types a) (types (array a)))
+                    {
+                    apply (fn [s] (map (apply s)))
+                    tv    (fn [s] (foldl set/nil (map s tv) set/merge))}))
+            (sdefinstance
+            "types"
+                29398
+                (tapp
+                (tcon (tycon "array" (star)) 29294)
+                    (tcon (tycon "a" (star)) 29295)
+                    29293)
+                [(isin "types" (tcon (tycon "a" (star)) 29290))]
+                [(,,
+                "apply"
+                    29297
+                    (elambda
+                    [(pvar "s" 29301)]
+                        (eapp
+                        (evar "map" 29303)
+                            [(eapp (evar "apply" 29305) [(evar "s" 29306)] 29304)]
+                            29302)
+                        29298))
+                (,,
+                "tv"
+                    29307
+                    (elambda
+                    [(pvar "s" 29311)]
+                        (eapp
+                        (evar "foldl" 29313)
+                            [(evar "set/nil" 29314)
+                            (eapp (evar "map" 29316) [(evar "s" 29317) (evar "tv" 29318)] 29315)
+                            (evar "set/merge" 29319)]
+                            29312)
+                        29308))]
+                29398))])
+
+(@@ (definstance (pretty int) {show-pretty string-to-int}))
+
+(@@
+    (definstance
+        (=> (types a) (types (array a)))
+            {
+            apply (fn [s] (map (apply s)))
+            tv    (fn [s] (foldl set/nil (map s tv) set/merge))}))
+
+11183
 
 (** ## Debugging Helpers **)
 
@@ -1171,28 +1235,40 @@
 
 (defn compile-stmt [stmt trace]
     (match stmt
-        (sexpr expr l)                      (compile expr trace)
-        (sdef name nl body l)               (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
-        (sdeftype name nl type-arg cases l) (join
-                                                "\n"
-                                                    (mapr
-                                                    cases
-                                                        (fn [case]
-                                                        (let [(,,, name2 nl args l) case]
-                                                            (++
-                                                                ["const "
-                                                                    (sanitize name2)
-                                                                    " = "
-                                                                    (++ (mapi (fn [_ i] (++ ["(v" (int-to-string i) ") => "])) 0 args))
-                                                                    "({type: \""
-                                                                    name2
-                                                                    "\""
+        (sexpr expr l)                              (compile expr trace)
+        (sdef name nl body l)                       (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+        (stypealias _ _ _ _ _)                      "/* type alias */"
+        (sdefinstance name l type preds inst-fns l) "$_.registerInstance(\"${
+                                                        name
+                                                        }\", ${
+                                                        (its l)
+                                                        }, {${
+                                                        (join
+                                                            ", "
+                                                                (map
+                                                                (fn [(,, name l fn)] "${(sanitize name)}: ${(compile fn trace)}")
+                                                                    inst-fns))
+                                                        }})"
+        (sdeftype name nl type-arg cases l)         (join
+                                                        "\n"
+                                                            (mapr
+                                                            cases
+                                                                (fn [case]
+                                                                (let [(,,, name2 nl args l) case]
                                                                     (++
-                                                                    (mapi
-                                                                        (fn [_ i] (++ [", " (int-to-string i) ": v" (int-to-string i)]))
-                                                                            0
-                                                                            args))
-                                                                    "});"])))))))
+                                                                        ["const "
+                                                                            (sanitize name2)
+                                                                            " = "
+                                                                            (++ (mapi (fn [_ i] (++ ["(v" (int-to-string i) ") => "])) 0 args))
+                                                                            "({type: \""
+                                                                            name2
+                                                                            "\""
+                                                                            (++
+                                                                            (mapi
+                                                                                (fn [_ i] (++ [", " (int-to-string i) ": v" (int-to-string i)]))
+                                                                                    0
+                                                                                    args))
+                                                                            "});"])))))))
 
 (,
     (fn [x] (compile-stmt (parse-stmt x) map/nil))
@@ -1745,13 +1821,7 @@
 (defn unify-err [t1 t2 (, msg items)]
     (err
         (,
-            "Unable ssto unify ${
-                (type-debug->s t1)
-                } and ${
-                (type-debug->s t2)
-                }\n-> ${
-                msg
-                }"
+            "Unable to unify -> ${msg}"
                 [(, (type-loc t1) (type-debug->s t1))
                 (, (type-loc t2) (type-debug->s t2))
                 ..items])))
@@ -2675,15 +2745,16 @@ filter
     (match stmts
         []           (,,, sdefs stypes salias sexps)
         [one ..rest] (match one
-                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps)
-                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps)
-                         (stypealias name _ args body _) (split-stmts
-                                                             rest
-                                                                 sdefs
-                                                                 stypes
-                                                                 [(,, name args body) ..salias]
-                                                                 sexps)
-                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
+                         (sdef _ _ _ _)                          (split-stmts rest [one ..sdefs] stypes salias sexps)
+                         (sdeftype _ _ _ _ _)                    (split-stmts rest sdefs [one ..stypes] salias sexps)
+                         (sdefinstance name nl type preds fns l) (split-stmts rest sdefs stypes salias sexps)
+                         (stypealias name _ args body _)         (split-stmts
+                                                                     rest
+                                                                         sdefs
+                                                                         stypes
+                                                                         [(,, name args body) ..salias]
+                                                                         sexps)
+                         (sexpr expr _)                          (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
 (defn infer-defns [ce assumps stmts]
     (let-> [
@@ -2769,7 +2840,7 @@ foldl
 (run/nil->
     (infer-stmtss builtin-env [] [(parse-stmt (@@ (deftype m (n int))))]))
 
-(deftype name-kind (value) (type))
+(deftype name-kind (value) (type) (tcls))
 
 (typealias locname (,, string name-kind int))
 
@@ -3020,24 +3091,28 @@ foldl
         (sdef name l _ _)                  [(,, name (value) l)]
         (sexpr _ _)                        []
         (stypealias name l _ _ _)          [(,, name (type) l)]
+        (sdefinstance name _ _ _ _ _)      []
         (sdeftype name l _ constructors _) [(,, name (type) l)
                                                ..(map (fn [(,,, name l _ _)] (,, name (value) l)) constructors)]))
 
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string int free constructors int) (let [frees (set/from-list (map fst free))]
-                                                            (many
-                                                                (map
-                                                                    (fn [(,,, name l args _)]
-                                                                        (match args
-                                                                            [] empty
-                                                                            _  (many (map (externals-type frees) args))))
-                                                                        constructors)))
-            (stypealias name _ args body _)             (let [frees (set/from-list (map fst args))]
-                                                            (externals-type frees body))
-            (sdef name int body int)                    (externals (set/add set/nil name) body)
-            (sexpr expr int)                            (externals set/nil expr))))
+            (sdeftype string int free constructors l) (let [frees (set/from-list (map fst free))]
+                                                          (many
+                                                              (map
+                                                                  (fn [(,,, name l args _)]
+                                                                      (match args
+                                                                          [] empty
+                                                                          _  (many (map (externals-type frees) args))))
+                                                                      constructors)))
+            (sdefinstance name nl type preds items l) (bag/and
+                                                          (one (,, name (tcls) nl))
+                                                              (many (map (fn [(,, name nl fn)] (externals set/nil fn)) items)))
+            (stypealias name nl args body l)          (let [frees (set/from-list (map fst args))]
+                                                          (externals-type frees body))
+            (sdef name nl body l)                     (externals (set/add set/nil name) body)
+            (sexpr expr l)                            (externals set/nil expr))))
 
 ;(bag/to-list
     (externals

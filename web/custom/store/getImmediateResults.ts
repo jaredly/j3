@@ -41,7 +41,7 @@ export type Parsed<Stmt> =
 export const blankInitialResults = (): ImmediateResults<any> => ({
     lastState: null,
     lastEvaluator: null,
-    jumpToName: { value: {}, type: {} },
+    jumpToName: { value: {}, type: {}, tcls: {} },
     nodes: {},
     changes: {},
     topForLoc: {},
@@ -65,6 +65,7 @@ export type ImmediateResults<Stmt> = {
     jumpToName: {
         value: Record<string, number>;
         type: Record<string, number>;
+        tcls: Record<string, number>;
     };
     nodes: {
         [top: number]: NodeResults<Stmt>;
@@ -227,7 +228,7 @@ export const getImmediateResults = <
     }
 
     // console.time('jump');
-    results.jumpToName = { value: {}, type: {} };
+    results.jumpToName = { value: {}, type: {}, tcls: {} };
     for (let top of tops) {
         const parsed = results.nodes[top.ns.id].parsed;
         if (parsed?.type === 'success') {

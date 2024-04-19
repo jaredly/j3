@@ -252,7 +252,7 @@ export const fnsEvaluator = (
                               const deps = unwrapArray<{
                                   type: ',,';
                                   0: string;
-                                  1: { type: 'value' | 'type' };
+                                  1: { type: LocedName['kind'] };
                                   2: number;
                               }>(data['externals_stmt'](stmt));
                               return deps.map((item) => ({
@@ -281,7 +281,7 @@ export const fnsEvaluator = (
                               const deps = unwrapArray<{
                                   type: ',,';
                                   0: string;
-                                  1: { type: 'value' | 'type' };
+                                  1: { type: LocedName['kind'] };
                                   2: number;
                               }>(data['externals_expr'](stmt));
                               return deps.map((item) => ({
@@ -297,18 +297,23 @@ export const fnsEvaluator = (
                       },
 
                       stmtNames(stmt) {
-                          return unwrapArray(
-                              data['names'](stmt) as arr<{
-                                  type: ',,';
-                                  0: string;
-                                  1: { type: 'value' | 'type' };
-                                  2: number;
-                              }>,
-                          ).map((res) => ({
-                              name: res[0],
-                              loc: res[2],
-                              kind: res[1].type,
-                          }));
+                          try {
+                              return unwrapArray(
+                                  data['names'](stmt) as arr<{
+                                      type: ',,';
+                                      0: string;
+                                      1: { type: LocedName['kind'] };
+                                      2: number;
+                                  }>,
+                              ).map((res) => ({
+                                  name: res[0],
+                                  loc: res[2],
+                                  kind: res[1].type,
+                              }));
+                          } catch (err) {
+                              console.error(`cant get stmt naems`, err);
+                              return [];
+                          }
                       },
                   }
                 : undefined,
@@ -427,14 +432,28 @@ export const fnsEvaluator = (
                 | {
                       type: ',,';
                       0: string;
-                      1: { type: 'value' | 'type' };
+                      1: { type: LocedName['kind'] };
                       2: number;
                   }[]
                 | null = null;
             if (data['names']) {
-                names = Object.values(stmts).flatMap((stmt) =>
-                    unwrapArray(data['names'](stmt)),
-                );
+                try {
+                    names = Object.values(stmts).flatMap((stmt) =>
+                        unwrapArray(data['names'](stmt)),
+                    );
+                } catch (err) {
+                    console.error(`cant get names`, err);
+                    Object.keys(stmts).forEach((k) => {
+                        display[+k] = [
+                            {
+                                type: 'error',
+                                message:
+                                    'Error while getting stmt names ' +
+                                    (err as Error).message,
+                            },
+                        ];
+                    });
+                }
             }
 
             // Object.entries(stmts).forEach(([id, stmt]) => {
@@ -490,7 +509,11 @@ export const fnsEvaluator = (
             );
 
             Object.keys(stmts).forEach((id) => {
-                display[+id] = res.display;
+                if (display[+id]) {
+                    display[+id].push(...res.display);
+                } else {
+                    display[+id] = res.display;
+                }
             });
 
             return { env, display, values: res.values, js: res.js };
@@ -545,7 +568,12 @@ const compileStmt = (
     renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
     names?:
         | null
-        | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
+        | {
+              type: ',,';
+              0: string;
+              1: { type: LocedName['kind'] };
+              2: number;
+          }[],
 ): {
     env: any;
     display: ProduceItem[];
@@ -731,7 +759,12 @@ function assembleExternals(
     san: any,
     names?:
         | null
-        | { type: ',,'; 0: string; 1: { type: 'value' | 'type' }; 2: number }[],
+        | {
+              type: ',,';
+              0: string;
+              1: { type: LocedName['kind'] };
+              2: number;
+          }[],
 ) {
     const provided = names?.map((obj) => obj[0]) ?? [];
     const needed = unique(

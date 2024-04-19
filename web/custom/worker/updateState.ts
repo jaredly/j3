@@ -30,7 +30,8 @@ export function updateState(
 
     const topsForName: Record<string, { top: number; group: string }> = {};
 
-    const namesTaken: Record<'value' | 'type', Record<string, number>> = {
+    const namesTaken: Record<LocedName['kind'], Record<string, number>> = {
+        tcls: {},
         value: {},
         type: {},
     };
