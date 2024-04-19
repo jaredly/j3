@@ -874,8 +874,8 @@
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
             - oof ok so our typing environment needs ... to know about type constructors. Would it be like ... **)
         (elet bindings body l)   (match bindings
-                                     [(, pat init)] (let-> [inited (t-expr tenv init)]
-                                                        (pat-and-body tenv pat body inited))
+                                     [(, pat init)] (let-> [(, subst inited) (t-expr-subst tenv init)]
+                                                        (pat-and-body-subst tenv pat body (, subst inited)))
                                      _              (t-expr
                                                         tenv
                                                             (foldr
@@ -902,6 +902,30 @@
                                              [(, (expr->s expr) (expr-loc expr))]))))
 
 (** ## Patterns **)
+
+(defn pat-and-body-subst [tenv pat body (, value-subst value-type)]
+    (** Yay!! Now we have verification. **)
+        (subst-wrap
+        (let-> [
+            (, pat-type bindings)    (t-pat tenv pat)
+            unified                  (unify-inner value-type pat-type (pat-loc pat))
+            composed                 (<- (compose-subst "" unified value-subst))
+            bindings                 (<- (map/map (fn [(, t l)] (, (type-apply composed t) l)) bindings))
+            schemes                  (<-
+                                         (map/map
+                                             (fn [(, t l)] (, (generalize (tenv-apply composed tenv) t) l))
+                                                 bindings))
+            bound-env                (<-
+                                         (foldr
+                                             (tenv-apply composed tenv)
+                                                 (map/to-list schemes)
+                                                 (fn [tenv (, name (, scheme l))] (tenv/set-type tenv name (, scheme l)))))
+            (, body-subst body-type) (t-expr-subst (tenv-apply composed bound-env) body)
+            ()                       (subst-> value-subst)
+            ()                       (subst-> unified)
+            ()                       (subst-> body-subst)
+            body-type                (<- (type-apply composed body-type))]
+            (<- (, map/nil body-type)))))
 
 (defn pat-and-body [tenv pat body value-type]
     (** Yay!! Now we have verification. **)
