@@ -103,6 +103,8 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
             const values = filterBlanks(node.values);
             if (values.length && values[0].type === 'identifier') {
                 switch (values[0].text) {
+                    case 'typealias':
+                        return;
                     case 'deftype': {
                         if (values.length < 2) return;
                         const vvalues: {

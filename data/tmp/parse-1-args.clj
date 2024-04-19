@@ -1,5 +1,72 @@
 (** ## parse-1-tuples + fn/lambda/app have arrays **)
 
+(** ## Prelude **)
+
+(defn join [sep items]
+    (match items
+        []           ""
+        [one ..rest] (match rest
+                         [] one
+                         _  "${one}${sep}${(join sep rest)}")))
+
+(join " " ["one" "two" "three"])
+
+(join " " [])
+
+(join " " ["one"])
+
+(defn mapi [i values f]
+    (match values
+        []           []
+        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+
+(defn rev [arr col]
+    (match arr
+        []           col
+        [one]        [one ..col]
+        [one ..rest] (rev rest [one ..col])))
+
+(defn foldl [init items f]
+    (match items
+        []           init
+        [one ..rest] (foldl (f init one) rest f)))
+
+(defn map [values f]
+    (match values
+        []           []
+        [one ..rest] [(f one) ..(map rest f)]))
+
+(defn foldr [init items f]
+    (match items
+        []           init
+        [one ..rest] (f (foldr init rest f) one)))
+
+(foldr nil [1 2 3 4] (fn [b a] (cons a b)))
+
+(defn pairs [list]
+    (match list
+        []               []
+        [one two ..rest] [(, one two) ..(pairs rest)]
+        _                (fatal "Pairs given odd number ${(valueToString list)}")))
+
+(defn concat [lists]
+    (match lists
+        []                     []
+        [[] ..rest]            (concat rest)
+        [[one ..rest] ..other] [one ..(concat [rest ..other])]))
+
+(deftype (option a) (some a) (none))
+
+(defn snd [tuple] (let [(, _ v) tuple] v))
+
+(defn fst [tuple] (let [(, v _) tuple] v))
+
+(defn replaces [target repl]
+    (match repl
+        []           target
+        [one ..rest] (match one
+                         (, find nw) (replaces (replace-all target find nw) rest))))
+
 (** ## Our AST & CST **)
 
 (deftype cst
@@ -50,66 +117,380 @@
         (sdef string int expr int)
         (sexpr expr int))
 
-(** ## Prelude **)
+(** ## Transform Javascript AST **)
 
-(defn join [sep items]
+(deftype tx
+    (tx
+        (fn [j/expr] (option j/expr))
+            (fn [j/expr] j/expr)
+            (fn [j/pat] (option j/pat))
+            (fn [j/pat] j/pat)
+            (fn [j/stmt] (option j/stmt))
+            (fn [j/stmt] j/stmt)
+            (fn [j/block] (option j/block))
+            (fn [j/block] j/block)))
+
+(defn map/stmt [tx stmt]
+    (let [
+        loop                          (map/stmt tx)
+        loope                         (map/expr tx)
+        (tx _ _ _ _ pre-s post-s _ _) tx]
+        (match (pre-s stmt)
+            (none)      stmt
+            (some stmt) (post-s
+                            (match stmt
+                                (j/sexpr expr l)                    (j/sexpr (loope expr) l)
+                                (j/sblock block l)                  (j/sblock (map/block tx block) l)
+                                (j/if cond yes no l)                (j/if
+                                                                        (loope cond)
+                                                                            (map/block tx yes)
+                                                                            (match no
+                                                                            (none)   (none)
+                                                                            (some v) (some (map/block tx v)))
+                                                                            l)
+                                (j/for string init cond inc body l) (j/for
+                                                                        string
+                                                                            (loope init)
+                                                                            (loope cond)
+                                                                            (loope inc)
+                                                                            (map/block tx body)
+                                                                            l)
+                                (j/break l)                         stmt
+                                (j/continue l)                      stmt
+                                (j/return value l)                  (j/return (loope value) l)
+                                (j/let pat value l)                 (j/let (map/pat tx pat) (loope value) l)
+                                (j/throw value l)                   (j/throw (loope value) l))))))
+
+(defn map/block [tx block]
+    (let [(tx _ _ _ _ _ _ pre-b post-b) tx]
+        (match (pre-b block)
+            (none)                 block
+            (some (j/block stmts)) (post-b (j/block (map stmts (map/stmt tx)))))))
+
+(defn map-opt [v f]
+    (match v
+        (none)   (none)
+        (some v) (some (f v))))
+
+(defn map/pat [tx pat]
+    (let [loop (map/pat tx) (tx _ _ pre-p post-p _ _ _ _) tx]
+        (match (pre-p pat)
+            (none)     pat
+            (some pat) (post-p
+                           (match pat
+                               (j/pvar _ _)              pat
+                               (j/parray items spread l) (j/parray (map items loop) (map-opt spread loop) l)
+                               (j/pobj items spread l)   (j/pobj
+                                                             (map items (fn [(, name pat)] (, name (loop pat))))
+                                                                 (map-opt spread loop)
+                                                                 l))))))
+
+(defn map/expr [tx expr]
+    (let [loop (map/expr tx) (tx pre-e post-e _ _ _ _ _ _) tx]
+        (match (pre-e expr)
+            (none)      expr
+            (some expr) (post-e
+                            (match expr
+                                (j/app target args l)      (j/app (loop target) (map args loop) l)
+                                (j/bin op left right l)    (j/bin op (loop left) (loop right) l)
+                                (j/un op arg l)            (j/un op (loop arg) l)
+                                (j/lambda pats body l)     (j/lambda
+                                                               (map pats (map/pat tx))
+                                                                   (match body
+                                                                   (left block) (left (map/block tx block))
+                                                                   (right expr) (right (loop expr)))
+                                                                   l)
+                                (j/prim item l)            (j/prim item l)
+                                (j/str string tpls l)      (j/str
+                                                               string
+                                                                   (map tpls (fn [(,, expr suffix l)] (,, (loop expr) suffix l)))
+                                                                   l)
+                                (j/raw string l)           (j/raw string l)
+                                (j/var string l)           (j/var string l)
+                                (j/attr target string l)   (j/attr (loop target) string l)
+                                (j/index target idx l)     (j/index (loop target) (loop idx) l)
+                                (j/tern cond yes no l)     (j/tern (loop cond) (loop yes) (loop no) l)
+                                (j/assign name op value l) (j/assign name op (loop value) l)
+                                (j/array items l)          (j/array
+                                                               (map
+                                                                   items
+                                                                       (fn [item]
+                                                                       (match item
+                                                                           (left a)             (left (loop a))
+                                                                           (right (j/spread a)) (right (j/spread (loop a))))))
+                                                                   l)
+                                (j/obj items l)            (j/obj
+                                                               (map
+                                                                   items
+                                                                       (fn [item]
+                                                                       (match item
+                                                                           (left (, name value))    (left (, name (loop value)))
+                                                                           (right (j/spread value)) (right (j/spread (loop value))))))
+                                                                   l))))))
+
+(** ## Simplify JS **)
+
+(defn simplify-one [expr]
+    (match expr
+        (j/app (j/lambda [] (right inner) l) [] l)                    (some inner)
+        (j/lambda args (left (j/block [(j/return value _)])) l)       (some (j/lambda args (right value) l))
+        (j/lambda args (right (j/app (j/lambda [] body ll) [] al)) l) (some (j/lambda args body l))
+        _                                                             none))
+
+(defn make-lets [params args l]
+    (match (, params args)
+        (, [] [])                       []
+        (, [one ..params] [two ..args]) [(j/let one two l) ..(make-lets params args l)]))
+
+(defn call-at-end [items]
     (match items
-        []           ""
-        [one ..rest] (match rest
-                         [] one
-                         _  "${one}${sep}${(join sep rest)}")))
+        []                                                       none
+        [(j/return (j/app (j/lambda params body ll) args al) l)] (if (= (len params) (len args))
+                                                                     (some
+                                                                         [(j/sblock
+                                                                             (j/block
+                                                                                 (concat
+                                                                                     [(make-lets params args ll)
+                                                                                         (match body
+                                                                                         (left (j/block items)) items
+                                                                                         (right expr)           [(j/return expr l)])]))
+                                                                                 l)])
+                                                                         none)
+        [one ..rest]                                             (match (call-at-end rest)
+                                                                     (some v) (some [one ..v])
+                                                                     none     none)))
 
-(join " " ["one" "two" "three"])
+(defn len [x]
+    (match x
+        []           0
+        [one ..rest] (+ 1 (len rest))))
 
-(join " " [])
+(defn simplify-block [(j/block items)]
+    (match (call-at-end items)
+        (none)       none
+        (some items) (some (j/block items))))
 
-(join " " ["one"])
+(defn apply-until [f v]
+    (match (f v)
+        (some v) (apply-until f v)
+        (none)   v))
 
-(defn mapi [i values f]
-    (match values
-        []           []
-        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+(defn simplify-stmt [stmt]
+    (match stmt
+        (j/sblock (j/block [one]) l) (match one
+                                         (j/let _ _ _) none
+                                         _             (some one))
+        _                            none))
 
-(defn rev [arr col]
-    (match arr
-        []           col
-        [one]        [one ..col]
-        [one ..rest] (rev rest [one ..col])))
+(def simplify-js
+    (tx
+        (fn [expr] (some expr))
+            (apply-until simplify-one)
+            (fn [pat] (none))
+            (fn [pat] pat)
+            (fn [stmt] (some stmt))
+            (apply-until simplify-stmt)
+            (fn [block] (some block))
+            (apply-until simplify-block)))
 
-(defn foldl [init items f]
-    (match items
-        []           init
-        [one ..rest] (foldl (f init one) rest f)))
+(** ## Js AST **)
 
-(defn map [values f]
-    (match values
-        []           []
-        [one ..rest] [(f one) ..(map rest f)]))
+(deftype (either a b) (left a) (right b))
 
-(defn foldr [init items f]
-    (match items
-        []           init
-        [one ..rest] (f (foldr init rest f) one)))
+(deftype j/prim
+    (j/int int int)
+        (j/float float int)
+        (j/bool bool int))
 
-(foldr nil [1 2 3 4] (fn [b a] (cons a b)))
+(deftype j/expr
+    (j/app j/expr (array j/expr) int)
+        (j/bin string j/expr j/expr int)
+        (j/un string j/expr int)
+        (j/lambda (array j/pat) (either j/block j/expr) int)
+        (j/prim j/prim int)
+        (j/str string (array (,, j/expr string int)) int)
+        (j/raw string int)
+        (j/var string int)
+        (j/attr j/expr string int)
+        (j/index j/expr j/expr int)
+        (j/tern j/expr j/expr j/expr int)
+        (j/assign string string j/expr int)
+        (j/array (array (either j/expr (j/spread j/expr))) int)
+        (j/obj (array (either (, string j/expr) (j/spread j/expr))) int))
 
-(defn pairs [list]
-    (match list
-        []               []
-        [one two ..rest] [(, one two) ..(pairs rest)]
-        _                (fatal "Pairs given odd number ${(valueToString list)}")))
+(deftype (j/spread a) (j/spread a))
 
-(deftype (option a) (some a) (none))
+(deftype j/block (j/block (array j/stmt)))
 
-(defn snd [tuple] (let [(, _ v) tuple] v))
+(deftype j/stmt
+    (j/sexpr j/expr int)
+        (j/sblock j/block int)
+        (j/if j/expr j/block (option j/block) int)
+        (j/for string j/expr j/expr j/expr j/block int)
+        (j/break int)
+        (j/continue int)
+        (j/return j/expr int)
+        (j/let j/pat j/expr int)
+        (j/throw j/expr int))
 
-(defn fst [tuple] (let [(, v _) tuple] v))
+(deftype j/pat
+    (j/pvar string int)
+        (j/parray (array j/pat) (option j/pat) int)
+        (j/pobj (array (, string j/pat)) (option j/pat) int))
 
-(defn replaces [target repl]
-    (match repl
-        []           target
-        [one ..rest] (match one
-                         (, find nw) (replaces (replace-all target find nw) rest))))
+(** ## Js Compiler **)
+
+(defn j/compile-stmt [ctx stmt]
+    (match stmt
+        (j/sexpr expr l)                  (j/compile ctx expr)
+        (j/sblock block l)                (j/compile-block ctx block)
+        (j/if cond yes else l)            "if (${
+                                              (j/compile ctx cond)
+                                              }) ${
+                                              (j/compile-block ctx yes)
+                                              } ${
+                                              (match else
+                                                  (none)       ""
+                                                  (some block) " else ${(j/compile-block ctx block)}")
+                                              }"
+        (j/for arg init cond inc block l) "for (let ${
+                                              arg
+                                              } = ${
+                                              (j/compile ctx init)
+                                              }; ${
+                                              (j/compile ctx cond)
+                                              }; ${
+                                              (j/compile ctx inc)
+                                              }) ${
+                                              (j/compile-block ctx block)
+                                              }"
+        (j/break l)                       "break"
+        (j/continue l)                    "continue"
+        (j/return result l)               "return ${(j/compile ctx result)}"
+        (j/let pat value l)               "let ${(pat-arg ctx pat)} = ${(j/compile ctx value)}"
+        (j/throw value l)                 "throw ${(j/compile ctx value)}"))
+
+(defn j/compile-prim [ctx prim]
+    (match prim
+        (j/int int l)     (int-to-string int)
+        (j/float float l) (jsonify float)
+        (j/bool bool l)   (if bool
+                              "true"
+                                  "false")))
+
+(defn j/needs-parens [expr]
+    (match expr
+        (j/bin _ _ _ _)    true
+        (j/un _ _ _)       true
+        (j/lambda _ _ _)   true
+        (j/prim _ _)       true
+        (j/tern _ _ _ _)   true
+        (j/assign _ _ _ _) true
+        _                  false))
+
+(defn maybe-paren [text wrap]
+    (if wrap
+        "(${text})"
+            text))
+
+(defn j/compile-block [ctx (j/block block)]
+    "{\n${(join ";\n" (map block (j/compile-stmt ctx)))}\n}")
+
+(defn j/compile-body [ctx body]
+    (match body
+        (left block) (j/compile-block ctx block)
+        (right expr) (j/compile ctx expr)))
+
+(defn j/paren-expr [ctx target]
+    (maybe-paren (j/compile ctx target) (j/needs-parens target)))
+
+(defn pat-arg [ctx pat]
+    (match pat
+        (j/pvar name l)           (sanitize name)
+        (j/parray items spread l) "[${
+                                      (join ", " (map items (pat-arg ctx)))
+                                      }${
+                                      (match spread
+                                          (some s) "...${(pat-arg ctx s)}"
+                                          (none)   "")
+                                      }]"
+        (j/pobj items spread l)   "{${
+                                      (join
+                                          ", "
+                                              (map
+                                              items
+                                                  (fn [pair]
+                                                  "\"${(escape-string (fst pair))}\": ${(pat-arg ctx (snd pair))}")))
+                                      }}${
+                                      (match spread
+                                          (some s) "...${(pat-arg ctx s)}"
+                                          (none)   "")
+                                      }"))
+
+(defn j/compile [ctx expr]
+    (match expr
+        (j/app target args l)      "${
+                                       (j/paren-expr ctx target)
+                                       }(${
+                                       (join ", " (map args (j/compile ctx)))
+                                       })"
+        (j/bin op left right l)    "${(j/compile ctx left)} ${op} ${(j/compile ctx right)}"
+        (j/un op arg l)            "${op}${(j/compile ctx arg)}"
+        (j/raw raw l)              raw
+        (j/lambda args body l)     "(${
+                                       (join ", " (map args (pat-arg ctx)))
+                                       }) => ${
+                                       (j/compile-body ctx body)
+                                       }"
+        (j/prim prim l)            (j/compile-prim ctx prim)
+        (j/str first tpls l)       (match tpls
+                                       [] "\"${(escape-string (unescapeString first))}\""
+                                       _  "`${
+                                              (escape-string (unescapeString first))
+                                              }${
+                                              (join
+                                                  ""
+                                                      (map
+                                                      tpls
+                                                          (fn [item]
+                                                          (let [(,, expr suffix l) item]
+                                                              "${${
+                                                                  (j/compile ctx expr)
+                                                                  }}${
+                                                                  (escape-string (unescapeString suffix))
+                                                                  }"))))
+                                              }`")
+        (j/var name l)             (sanitize name)
+        (j/attr target attr l)     "${(j/paren-expr ctx target)}.${(sanitize attr)}"
+        (j/index target idx l)     "${(j/paren-expr ctx target)}[${(j/compile ctx idx)}]"
+        (j/tern cond yes no l)     "${
+                                       (j/paren-expr ctx cond)
+                                       } ? ${
+                                       (j/paren-expr ctx yes)
+                                       } : ${
+                                       (j/paren-expr ctx no)
+                                       }"
+        (j/assign name op value l) "${name} ${op} ${(j/compile ctx value)}"
+        (j/array items l)          "[${
+                                       (join
+                                           ", "
+                                               (map
+                                               items
+                                                   (fn [item]
+                                                   (match item
+                                                       (left expr)             (j/compile ctx expr)
+                                                       (right (j/spread expr)) "...${(j/compile ctx expr)}"))))
+                                       }]"
+        (j/obj items l)            "{${
+                                       (join
+                                           ", "
+                                               (map
+                                               items
+                                                   (fn [item]
+                                                   (match item
+                                                       (left (, name value))   "${name}: ${(j/compile ctx value)}"
+                                                       (right (j/spread expr)) "...${(j/compile ctx expr)}"))))
+                                       }}"))
 
 (** ## Parsing **)
 
@@ -536,6 +917,245 @@
 
 (defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
 
+(** ## Compile to JS **)
+
+(defn pat->j/pat [pat]
+    (match pat
+        (pany l)           none
+        (pvar name l)      (some (j/pvar name l))
+        (pcon name args l) (match (foldl
+                               (, 0 [])
+                                   args
+                                   (fn [result arg]
+                                   (let [(, i res) result]
+                                       (match (pat->j/pat arg)
+                                           (none)      (, (+ i 1) res)
+                                           (some what) (, (+ i 1) [(, (its i) what) ..res])))))
+                               (, _ [])    none
+                               (, _ items) (some (j/pobj items none l)))
+        (pstr string l)    (fatal "Cant use string as pattern")
+        (pprim prim l)     (fatal "Cant use prim as pattern")))
+
+(defn pat-loop/j [target args i inner l trace]
+    (match args
+        []           inner
+        [arg ..rest] (compile-pat/j
+                         arg
+                             (j/index target (j/prim (j/int i l) l) l)
+                             (pat-loop/j target rest (+ i 1) inner l trace)
+                             trace)))
+
+11286
+
+(defn compile-pat/j [pat target inner trace]
+    (match pat
+        (pany l)           inner
+        (pprim prim l)     (match prim
+                               (pint int pl)   [(j/if
+                                                   (j/bin "===" target (j/prim (j/int int pl) l) l)
+                                                       (j/block inner)
+                                                       none
+                                                       l)]
+                               (pbool bool pl) [(j/if
+                                                   (j/bin "===" target (j/prim (j/bool bool pl) l) l)
+                                                       (j/block inner)
+                                                       none
+                                                       l)])
+        (pstr str l)       [(j/if (j/bin "===" target (j/str str [] l) l) (j/block inner) none l)]
+        (pvar name l)      [(j/let (j/pvar name l) target l) ..inner]
+        (pcon name args l) [(j/if
+                               (j/bin "===" (j/attr target "type" l) (j/str name [] l) l)
+                                   (j/block (pat-loop/j target args 0 inner l trace))
+                                   none
+                                   l)]))
+
+(defn compile-let-binding/j [(, pat init) trace l]
+    (match (pat->j/pat pat)
+        (none)     (j/sexpr (compile/j init trace) l)
+        (some pat) (j/let pat (compile/j init trace) l)))
+
+(def bops ["-" "+" ">" "<" "==" "===" "<=" ">=" "*"])
+
+(defn is-bop [op] (contains bops op))
+
+(defn contains [lst item]
+    (match lst
+        []           false
+        [one ..rest] (if (= one item)
+                         true
+                             (contains rest item))))
+
+(defn app/j [target args trace l]
+    (foldl
+        (compile/j target trace)
+            args
+            (fn [target arg] (j/app target [(compile/j arg trace)] l))))
+
+(defn compile/j [expr trace]
+    (match expr
+        (estr first tpls l)             (j/str
+                                            first
+                                                (map
+                                                tpls
+                                                    (fn [(,, expr suffix l)] (,, (compile/j expr trace) suffix l)))
+                                                l)
+        (eprim prim l)                  (match prim
+                                            (pint int pl)   (j/prim (j/int int pl) l)
+                                            (pbool bool pl) (j/prim (j/bool bool pl) l))
+        (evar name l)                   (j/var name l)
+        (equot inner l)                 (j/raw (quot/jsonify inner) l)
+        (elambda pats body l)           (foldr
+                                            ; gotta trace the args
+                                                (compile/j body trace)
+                                                pats
+                                                (fn [body pat]
+                                                (j/lambda
+                                                    [(match (pat->j/pat pat)
+                                                        (none)     (j/pvar "_${(its l)}" l)
+                                                        (some pat) pat)]
+                                                        (right body)
+                                                        l)))
+        (elet bindings body l)          (foldr
+                                            (compile/j body trace)
+                                                bindings
+                                                (fn [body binding]
+                                                (j/app
+                                                    (j/lambda
+                                                        []
+                                                            (left
+                                                            (j/block
+                                                                [(compile-let-binding/j binding trace l) (j/return body l)]))
+                                                            l)
+                                                        []
+                                                        l)))
+        (eapp (evar op ol) [one two] l) (if (is-bop op)
+                                            (j/bin op (compile/j one trace) (compile/j two trace) l)
+                                                (app/j (evar op ol) [one two] trace l))
+        (eapp target args l)            (app/j target args trace l)
+        (ematch target cases l)         (j/app
+                                            (j/lambda
+                                                [(j/pvar "$target" l)]
+                                                    (left
+                                                    (j/block
+                                                        (map
+                                                            cases
+                                                                (fn [(, pat body)]
+                                                                (j/sblock
+                                                                    (j/block
+                                                                        (compile-pat/j
+                                                                            pat
+                                                                                (j/var "$target" l)
+                                                                                [(j/return (compile/j body trace) l)]
+                                                                                trace))
+                                                                        l)))))
+                                                    l)
+                                                [(compile/j target trace)]
+                                                l)))
+
+(j/compile
+    0
+        (map/expr
+        simplify-js
+            (compile/j
+            (parse-expr
+                (@@
+                    (fn [what]
+                        (let [m what]
+                            (match m
+                                2 3
+                                4 5)))))
+                1)))
+
+(def example-expr
+    (parse-expr
+        (@@
+            (match stmt
+                (sexpr expr l)                      (compile expr trace)
+                (sdef name nl body l)               (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+                (stypealias name _ _ _ _)           "/* type alias ${name} */"
+                (sdeftype name nl type-arg cases l) (join
+                                                        "\n"
+                                                            (map
+                                                            cases
+                                                                (fn [case]
+                                                                (let [(,,, name2 nl args l) case]
+                                                                    (++
+                                                                        ["const "
+                                                                            (sanitize name2)
+                                                                            " = "
+                                                                            (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
+                                                                            "({type: \""
+                                                                            name2
+                                                                            "\""
+                                                                            (++
+                                                                            (mapi
+                                                                                0
+                                                                                    args
+                                                                                    (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
+                                                                            "});"])))))))))
+
+(j/compile 0 (map/expr simplify-js (compile/j example-expr 10)))
+
+(j/compile 0 (compile/j example-expr map/nil))
+
+(j/compile
+    0
+        (compile/j
+        (parse-expr
+            (@@
+                (match 2
+                    1 2
+                    3 4
+                    a 5))
+                )
+            map/nil))
+
+(j/compile
+    0
+        (compile/j (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil))
+
+(defn run/j [v] (eval (j/compile 0 (compile/j (parse-expr v) map/nil))))
+
+(,
+    run/j
+        [(, (@@ "${1}") "1")
+        (, (@@ "hello") "hello")
+        (, (@@ "\"") "\"")
+        (, (@@ "\n") "\n")
+        (, (@@ "\\n") "\\n")
+        (, (@@ "\\\n") "\\\n")
+        (, (@@ "${(+ 2 3)}") "5")
+        (, (@@ "a${2}b") "a2b")
+        (, (@@ "${((fn [a] (+ a 2)) 21)}") "23")
+        (, (@@ "${(let [one 1 two 2] (+ 1 2))}") "3")
+        (,
+        (@@
+            "${
+                (match 2
+                    a 1
+                    a 2)
+                }")
+            "1")
+        (, (@@ "${(let [a/b 2] a/b)}") "2")
+        (,
+        (@@
+            "${
+                (match true
+                    true 1
+                    2    3)
+                }")
+            "1")
+        (, (@@  "`${1}") "`1")
+        (, (@@ "${${1}") "${1")
+        (,
+        (@@
+            "${
+                (match [1]
+                    []      []
+                    [a ..b] a)
+                }")
+            "1")])
+
 (** ## Compilation **)
 
 (defn escape-string [string]
@@ -545,6 +1165,8 @@
 
 (escape-string (unescapeString "\n"))
 
+(** ## Patterns **)
+
 (defn pat-loop [target args i inner trace]
     (match args
         []           inner
@@ -553,6 +1175,23 @@
                              "${target}[${(its i)}]"
                              (pat-loop target rest (+ i 1) inner trace)
                              trace)))
+
+(defn just-pat [pat]
+    (match pat
+        (pany _)           (none)
+        (pvar name l)      (some (sanitize name))
+        (pcon name args l) (match (foldl
+                               (, 0 [])
+                                   args
+                                   (fn [result arg]
+                                   (let [(, i res) result]
+                                       (match (just-pat arg)
+                                           (none)      (, (+ i 1) res)
+                                           (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res])))))
+                               (, _ [])    none
+                               (, _ items) (some "{${(join ", " (rev items []))}}"))
+        (pstr _ _)         (fatal "Cant use string as a pattern in this location")
+        (pprim _ _)        (fatal "Cant use primitive as a pattern in this location")))
 
 (defn compile-pat [pat target inner trace]
     (trace-and-block
@@ -586,23 +1225,6 @@
     (match v
         (some v) v
         _        default))
-
-(defn just-pat [pat]
-    (match pat
-        (pany _)           (none)
-        (pvar name l)      (some (sanitize name))
-        (pcon name args l) (match (foldl
-                               (, 0 [])
-                                   args
-                                   (fn [result arg]
-                                   (let [(, i res) result]
-                                       (match (just-pat arg)
-                                           (none)      (, (+ i 1) res)
-                                           (some what) (, (+ i 1) ["${(its i)}: ${what}" ..res])))))
-                               (, _ [])    none
-                               (, _ items) (some "{${(join ", " (rev items []))}}"))
-        (pstr _ _)         (fatal "Cant use string as a pattern in this location")
-        (pprim _ _)        (fatal "Cant use primitive as a pattern in this location")))
 
 (defn quot/jsonify [quot]
     (match quot
@@ -870,13 +1492,22 @@
             (tapp target arg _) (fold-type (fold-type v target f) arg f)
             _                   v)))
 
+(defn ,,0 [x] (let [(,, a _ _) x] a))
+
+(defn ,,1 [x] (let [(,, _ a _) x] a))
+
+(defn ,,2 [x] (let [(,, _ _ a) x] a))
+
 (defn fold-expr [init expr f]
     (let [v (f init expr)]
         (match expr
-            (estr _ tpl _)         (foldl v tpl (fn [init (,, expr _ _)] (fold-expr init expr f)))
+            (estr _ tpl _)         (foldl v tpl (fn [init tpl] (fold-expr init (,,0 tpl) f)))
             (elambda _ body _)     (fold-expr v body f)
             (elet bindings body _) (fold-expr
-                                       (foldl v bindings (fn [init (, _ expr)] (fold-expr init expr f)))
+                                       (foldl
+                                           v
+                                               bindings
+                                               (fn [init binding] (fold-expr init (snd binding) f)))
                                            body
                                            f)
             (eapp target args _)   (foldl
@@ -886,12 +1517,14 @@
             (ematch expr cases _)  (foldl
                                        (fold-expr v expr f)
                                            cases
-                                           (fn [init (, _ expr)] (fold-expr init expr f)))
+                                           (fn [init case] (fold-expr init (snd case) f)))
             _                      v)))
 
 (defn expr-size [expr] (fold-expr 0 expr (fn [v _] (+ 1 v))))
 
 (defn type-size [type] (fold-type 0 type (fn [v _] (+ 1 v))))
+
+(defn ,,,2 [x] (let [(,,, _ _ x _) x] x))
 
 (defn stmt-size [stmt]
     (+
@@ -903,7 +1536,7 @@
             (sdeftype string int args constructors int) (foldl
                                                             0
                                                                 constructors
-                                                                (fn [v (,,, _ _ args _)] (foldl v (map args type-size) +))))))
+                                                                (fn [v const] (foldl v (map (,,,2 const) type-size) +))))))
 
 (defn externals [bound expr]
     (match expr

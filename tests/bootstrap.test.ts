@@ -1,15 +1,7 @@
 import { expect, test, describe } from 'bun:test';
-import { NUIState, RealizedNamespace } from '../web/custom/UIState';
 import { stateToBootstrapJs } from '../web/ide/ground-up/to-file';
-import { bootstrap } from '../web/ide/ground-up/Evaluators';
-import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
-import { join } from 'path';
 import { writeFileSync } from 'fs';
-import {
-    blankInitialResults,
-    getImmediateResults,
-} from '../web/custom/store/getImmediateResults';
-import { calculateInitialState } from '../web/custom/worker/calculateInitialState';
+import { runFixtures } from './runFixtures';
 
 /*
 
@@ -30,15 +22,20 @@ or thih?
 
 */
 
-const evaluators: { [key: number]: string } = {};
-
 // parse-1 is being run by ...
 
 // parse-0-selfed
 // type-1-cache-3
 // ???
 
-const fixtures = [
+export type Fixture = {
+    id: number;
+    name: string;
+    file: string;
+    evaluator: null | number[];
+};
+
+const fixtures: Fixture[] = [
     {
         id: 0,
         name: 'bootstrap -> self-1',
@@ -105,74 +102,5 @@ const fixtures = [
 ];
 
 test(`run self-1.json`, async () => {
-    for (let { id, name, file, evaluator } of fixtures) {
-        console.log(`\n[${id}] : ${name}\n`);
-        const state: NUIState = await Bun.file(
-            join(__dirname, '../data/tmp/', file),
-        ).json();
-        const ev =
-            evaluator === null
-                ? bootstrap
-                : evaluatorFromText(
-                      `some ev for ${evaluator.join(' ')}`,
-                      evaluator.map((id) => evaluators[id]),
-                  );
-
-        if (!ev) {
-            throw new Error(`couldnt make an evaluator ${id}`);
-        }
-        let tid;
-        Object.keys(state.nsMap).forEach((id) => {
-            const ns = state.nsMap[+id] as RealizedNamespace;
-            if (typeof ns.plugin === 'string') {
-                return;
-            } else if (ns.plugin?.id === 'evaluator') {
-                tid = ns.top;
-            }
-        });
-
-        console.time('toFile');
-        const result = ev.toFile(state, tid);
-        console.timeEnd('toFile');
-
-        try {
-            const results = blankInitialResults();
-            console.time('immediate');
-            getImmediateResults(state, ev, results);
-            console.timeEnd('immediate');
-            console.time('worker');
-            const worker = calculateInitialState(results.nodes, ev, false);
-            Object.entries(worker.results!.groups).forEach(([key, group]) => {
-                if (group.typeFailed) {
-                    throw new Error(`group ${key} typeFailed!`);
-                }
-            });
-            Object.entries(worker.results!.tops).forEach(([key, top]) => {
-                if (Object.keys(top.errors).length) {
-                    throw new Error(`ast errors ${JSON.stringify(top.errors)}`);
-                }
-                for (let p of top.produce) {
-                    if (
-                        typeof p !== 'string' &&
-                        (p.type === 'withjs' ||
-                            p.type === 'error' ||
-                            p.type === 'eval')
-                    ) {
-                        throw new Error(`produce error ${JSON.stringify(p)}`);
-                    }
-                }
-            });
-            console.timeEnd('worker');
-        } catch (err) {
-            console.warn(`worker failed`, (err as Error).message);
-            throw new Error(`worker failed`);
-            break;
-        }
-        // if (Object.keys(result.errors).length) {
-        //     throw new Error(JSON.stringify(result.errors));
-        // }
-
-        evaluators[+id] = result.js;
-        // writeFileSync('./ugh' + id + '.js', result.js);
-    }
+    await runFixtures(fixtures);
 }, 60000);

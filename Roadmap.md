@@ -1,4 +1,35 @@
 
+# Hm
+
+OK ALSO so the current thing ... let's bring the `parsing` into the web worker, that's gonna be important.
+
+....
+
+also...
+
+maybe I should get `record`s going in the algw language ... it would definitely make interacting with
+javascript easier. And, also arrays? like that shouldn't be super hard, right?
+then I can do `list->array` and stuff.
+anddddd it would be really cool to autogen `to-json` and `from-json` for all deftypes.
+
+Anyway, the more I self-host, the more importand performance will be...
+and so we get to (jst), which can be much better optimized!
+
+- [ ] ok so the way I layout strings is really quite silly.
+
+
+
+- [ ] Random idea: if there's a type error,
+  what about highlighting (or displaying somehow) all usages
+  of the function that has a problem?
+
+
+
+
+I can't rememebr when it was, but I was also thinking about unquoting.
+like `(@@ (one @(two)))`, where "two" would be unquoted. has some symmetry with `${}`.
+
+
 # Thinking about type classes
 
 the "what order to I process these in" question is ... not simple.
@@ -69,6 +100,29 @@ ANYWAYS, what I mean to say is this:
 - we can have a rough first-pass dependency analysis that works for type checking
 - but then we need the type-checking pass to produce extra dependency information, needed for
   evaluation.
+
+(4) And most mostestly:
+
+So, what if ... I self-host even harder?
+That is to say, what if I bring more of the ... `updateState`
+into the lang.
+
+This would allow me to ... do macros! In a way that wouldn't require the js side to know about macros.
+
+because macros require ... interleaving of parsing and execution.
+
+like
+(parse everything), and macros become `(emacro string cst)` and `(tmacro string cst)`
+and then
+(dependency analysis) partitioning into "macros and things needed by macros"
+and then
+(type check & compile the macros)
+and then
+(run the macros on the things that needed expansion)
+and then
+(type check & compile everything else)
+
+
 
 # The Next Things (thih)
 

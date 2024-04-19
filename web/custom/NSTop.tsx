@@ -328,7 +328,7 @@ export function highlightIdxs(msg: string) {
         }
         const loc = +match;
         parts.push(
-            <JumpTo key={idx} loc={idx}>
+            <JumpTo key={idx} loc={loc}>
                 {match}
             </JumpTo>,
         );

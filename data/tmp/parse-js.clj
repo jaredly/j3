@@ -87,7 +87,7 @@
 
 (** ## Js AST **)
 
-(deftype prim
+(deftype j/prim
     (j/int int int)
         (j/float float int)
         (j/str string int)
@@ -97,25 +97,25 @@
     (j/app j/expr (array j/expr) int)
         (j/bin string j/expr j/expr int)
         (j/un string j/expr int)
-        (j/lambda (array j/pat) (either block j/expr) int)
-        (j/prim prim int)
+        (j/lambda (array j/pat) (either j/block j/expr) int)
+        (j/prim j/prim int)
         (j/var string int)
         (j/attr j/expr string int)
         (j/index j/expr j/expr int)
         (j/tern j/expr j/expr j/expr int)
         (j/assign string string j/expr int)
-        (j/array (array (either j/expr (spread j/expr))) int)
-        (j/obj (array (either (, string j/expr) (spread j/expr))) int))
+        (j/array (array (either j/expr (j/spread j/expr))) int)
+        (j/obj (array (either (, string j/expr) (j/spread j/expr))) int))
 
-(deftype (spread a) (spread a))
+(deftype (j/spread a) (j/spread a))
 
-(typealias block (array j/stmt))
+(typealias j/block (array j/stmt))
 
 (deftype j/stmt
     (j/expr j/expr int)
-        (j/block block int)
-        (j/if j/expr block (option block) int)
-        (j/for string j/expr j/expr j/expr block)
+        (j/block j/block int)
+        (j/if j/expr j/block (option j/block) int)
+        (j/for string j/expr j/expr j/expr j/block int)
         (j/break int)
         (j/continue int)
         (j/return j/expr int)
@@ -142,42 +142,42 @@
 
 (defn compile-stmt [ctx stmt]
     (match stmt
-        (j/expr expr int)               (compile ctx expr)
-        (j/block block int)             (compile-block ctx block)
-        (j/if cond yes else int)        "if (${
-                                            (compile ctx cond)
-                                            }) ${
-                                            (compile-block ctx yes)
-                                            } ${
-                                            (match else
-                                                (none)       ""
-                                                (some block) " else ${(compile-block ctx block)}")
-                                            }"
-        (j/for arg init cond inc block) "for (let ${
-                                            arg
-                                            } = ${
-                                            (compile ctx init)
-                                            }; ${
-                                            (compile ctx cond)
-                                            }; ${
-                                            (compile ctx inc)
-                                            }) ${
-                                            (compile-block ctx block)
-                                            }"
-        (j/break int)                   "break"
-        (j/continue int)                "continue"
-        (j/return result int)           "return ${(compile ctx result)}"
-        (j/let pat value int)           "let ${(pat-arg ctx pat)} = ${(compile ctx value)}"
-        (j/throw value int)             "throw ${(compile ctx value)}"))
+        (j/expr expr l)                   (compile ctx expr)
+        (j/block block l)                 (compile-block ctx block)
+        (j/if cond yes else l)            "if (${
+                                              (compile ctx cond)
+                                              }) ${
+                                              (compile-block ctx yes)
+                                              } ${
+                                              (match else
+                                                  (none)       ""
+                                                  (some block) " else ${(compile-block ctx block)}")
+                                              }"
+        (j/for arg init cond inc block l) "for (let ${
+                                              arg
+                                              } = ${
+                                              (compile ctx init)
+                                              }; ${
+                                              (compile ctx cond)
+                                              }; ${
+                                              (compile ctx inc)
+                                              }) ${
+                                              (compile-block ctx block)
+                                              }"
+        (j/break l)                       "break"
+        (j/continue l)                    "continue"
+        (j/return result l)               "return ${(compile ctx result)}"
+        (j/let pat value l)               "let ${(pat-arg ctx pat)} = ${(compile ctx value)}"
+        (j/throw value l)                 "throw ${(compile ctx value)}"))
 
 (defn compile-prim [ctx prim]
     (match prim
-        (j/int int int)     (int-to-string int)
-        (j/float float int) (jsonify float)
-        (j/str string int)  string
-        (j/bool bool int)   (if bool
-                                "true"
-                                    "false")))
+        (j/int int l)     (int-to-string int)
+        (j/float float l) (jsonify float)
+        (j/str string l)  string
+        (j/bool bool l)   (if bool
+                              "true"
+                                  "false")))
 
 (defn needs-parens [expr]
     (match expr
@@ -207,21 +207,21 @@
 
 (defn pat-arg [ctx pat]
     (match pat
-        (j/pvar name int)           (sanitize name)
-        (j/parray items spread int) "[${
-                                        (join ", " (map items (pat-arg ctx)))
-                                        }${
-                                        (match spread
-                                            (some s) "...${(pat-arg ctx s)}"
-                                            (none)   "")
-                                        }]"
-        (j/pobj items spread int)   "{${
-                                        (join ", " (map items (fn [(, name pat)] "${name}${(pat-arg ctx pat)}")))
-                                        }}${
-                                        (match spread
-                                            (some s) "...${(pat-arg ctx s)}"
-                                            (none)   "")
-                                        }"))
+        (j/pvar name l)           (sanitize name)
+        (j/parray items spread l) "[${
+                                      (join ", " (map items (pat-arg ctx)))
+                                      }${
+                                      (match spread
+                                          (some s) "...${(pat-arg ctx s)}"
+                                          (none)   "")
+                                      }]"
+        (j/pobj items spread l)   "{${
+                                      (join ", " (map items (fn [(, name pat)] "${name}${(pat-arg ctx pat)}")))
+                                      }}${
+                                      (match spread
+                                          (some s) "...${(pat-arg ctx s)}"
+                                          (none)   "")
+                                      }"))
 
 (defn compile [ctx expr]
     (match expr
@@ -252,8 +252,8 @@
                                                items
                                                    (fn [item]
                                                    (match item
-                                                       (left expr)           (compile ctx expr)
-                                                       (right (spread expr)) "...${(compile ctx expr)}"))))
+                                                       (left expr)             (compile ctx expr)
+                                                       (right (j/spread expr)) "...${(compile ctx expr)}"))))
                                        }]"
         (j/obj items l)            "{${
                                        (join
@@ -262,6 +262,6 @@
                                                items
                                                    (fn [item]
                                                    (match item
-                                                       (left (, name value)) "${name}: ${(compile ctx value)}"
-                                                       (right (spread expr)) "...${(compile ctx expr)}"))))
+                                                       (left (, name value))   "${name}: ${(compile ctx value)}"
+                                                       (right (j/spread expr)) "...${(compile ctx expr)}"))))
                                        }}"))
