@@ -78,6 +78,7 @@ export type FullEvalator<
         // tenv: TypeEnv,
         meta: MetaDataMap,
         trace: TraceMap,
+        top: number,
         renderResult?: (v: any) => ProduceItem[],
         debugShowJs?: boolean,
     ): {

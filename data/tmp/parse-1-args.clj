@@ -1208,6 +1208,35 @@
                          [(j/prim (j/int loc -1) -1) (j/raw (jsonify v) -1) expr]
                          -1)))
 
+(defn compile-stmt/j [stmt trace]
+    (match stmt
+        (sexpr expr l)                      [(j/sexpr (compile/j expr trace) l)]
+        (sdef name nl body l)               [(j/let (j/pvar name nl) (compile/j body trace) l)]
+        (stypealias name _ _ _ _)           []
+        (sdeftype name nl type-arg cases l) (map
+                                                cases
+                                                    (fn [case]
+                                                    (let [(,,, name2 nl args l) case]
+                                                        (j/let
+                                                            (j/pvar name2 nl)
+                                                                (foldr
+                                                                (j/obj
+                                                                    [(left (, "type" (j/str name2 [] nl)))
+                                                                        ..(mapi
+                                                                        0
+                                                                            args
+                                                                            (fn [i _] (left (, (int-to-string i) (j/var "v${(int-to-string i)}" nl)))))]
+                                                                        l)
+                                                                    (mapi 0 args (fn [i _] (j/pvar "v${(int-to-string i)}" nl)))
+                                                                    (fn [body arg] (j/lambda [arg] (right body) l)))
+                                                                l))
+                                                        ))
+        ;(join "\n" (map cases (fn [case])))))
+
+(j/compile-stmts
+    0
+        (compile-stmt/j (parse-stmt (@@ (deftype one (one a b)))) map/nil))
+
 (defn compile/j [expr trace]
     (maybe-trace
         (expr-loc expr)
@@ -1383,35 +1412,6 @@
                     [a ..b] a)
                 }")
             "1")])
-
-(defn compile-stmt/j [stmt trace]
-    (match stmt
-        (sexpr expr l)                      [(j/sexpr (compile/j expr trace) l)]
-        (sdef name nl body l)               [(j/let (j/pvar name nl) (compile/j body trace) l)]
-        (stypealias name _ _ _ _)           []
-        (sdeftype name nl type-arg cases l) (map
-                                                cases
-                                                    (fn [case]
-                                                    (let [(,,, name2 nl args l) case]
-                                                        (j/let
-                                                            (j/pvar name2 nl)
-                                                                (foldr
-                                                                (j/obj
-                                                                    [(left (, "type" (j/str name2 [] nl)))
-                                                                        ..(mapi
-                                                                        0
-                                                                            args
-                                                                            (fn [i _] (left (, (int-to-string i) (j/var "v${(int-to-string i)}" nl)))))]
-                                                                        l)
-                                                                    (mapi 0 args (fn [i _] (j/pvar "v${(int-to-string i)}" nl)))
-                                                                    (fn [body arg] (j/lambda [arg] (right body) l)))
-                                                                l))
-                                                        ))
-        ;(join "\n" (map cases (fn [case])))))
-
-(j/compile-stmts
-    0
-        (compile-stmt/j (parse-stmt (@@ (deftype one (one a b)))) map/nil))
 
 (** ## Compilation **)
 

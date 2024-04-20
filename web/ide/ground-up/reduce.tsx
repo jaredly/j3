@@ -264,56 +264,56 @@ export const actionToUpdate = (
     }
 };
 
-export function bootstrapParse(
-    stmts: Node[],
-    results: CompilationResults & {
-        tops: {
-            [key: number]: {
-                summary: string;
-                data: Trace[];
-                failed: boolean;
-                expr?: any;
-            };
-        };
-        typs: { [loc: number]: any };
-    },
-) {
-    return stmts
-        .filter((node) => node.type !== 'blank' && node.type !== 'comment')
-        .map((node) => {
-            const ctx = { errors: {}, display: results.display };
-            const stmt = parseStmt(node, ctx);
-            if (Object.keys(ctx.errors).length || !stmt) {
-                console.log('unable to parse a stmt', ctx.errors, node);
-                return;
-            }
-            (stmt as any).loc = node.loc;
-            return stmt;
-        })
-        .filter(filterNulls);
-}
+// export function bootstrapParse(
+//     stmts: Node[],
+//     results: CompilationResults & {
+//         tops: {
+//             [key: number]: {
+//                 summary: string;
+//                 data: Trace[];
+//                 failed: boolean;
+//                 expr?: any;
+//             };
+//         };
+//         typs: { [loc: number]: any };
+//     },
+// ) {
+//     return stmts
+//         .filter((node) => node.type !== 'blank' && node.type !== 'comment')
+//         .map((node) => {
+//             const ctx = { errors: {}, display: results.display };
+//             const stmt = parseStmt(node, ctx);
+//             if (Object.keys(ctx.errors).length || !stmt) {
+//                 console.log('unable to parse a stmt', ctx.errors, node);
+//                 return;
+//             }
+//             (stmt as any).loc = node.loc;
+//             return stmt;
+//         })
+//         .filter(filterNulls);
+// }
 
-export function bootstrapEval(
-    parsed: stmt[],
-    env: { [key: string]: any },
-    produce: { [key: number]: string },
-) {
-    parsed.forEach((stmt, i) => {
-        try {
-            if (stmt.type === 'sexpr') {
-                try {
-                    const res = evalExpr(stmt[0], env);
-                    produce[(stmt as any).loc] += '\n' + valueToString(res);
-                } catch (err) {
-                    console.error(err, stmt, i);
-                    produce[(stmt as any).loc] += (err as Error).message;
-                }
-            }
-        } catch (err) {
-            produce[(stmt as any).loc] = (err as Error).message;
-        }
-    });
-}
+// export function bootstrapEval(
+//     parsed: stmt[],
+//     env: { [key: string]: any },
+//     produce: { [key: number]: string },
+// ) {
+//     parsed.forEach((stmt, i) => {
+//         try {
+//             if (stmt.type === 'sexpr') {
+//                 try {
+//                     const res = evalExpr(stmt[0], env);
+//                     produce[(stmt as any).loc] += '\n' + valueToString(res);
+//                 } catch (err) {
+//                     console.error(err, stmt, i);
+//                     produce[(stmt as any).loc] += (err as Error).message;
+//                 }
+//             }
+//         } catch (err) {
+//             produce[(stmt as any).loc] = (err as Error).message;
+//         }
+//     });
+// }
 
 export function calcResults(
     state: NUIState,

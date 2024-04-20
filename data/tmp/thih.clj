@@ -1235,40 +1235,40 @@
 
 (defn compile-stmt [stmt trace]
     (match stmt
-        (sexpr expr l)                              (compile expr trace)
-        (sdef name nl body l)                       (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
-        (stypealias _ _ _ _ _)                      "/* type alias */"
-        (sdefinstance name l type preds inst-fns l) "$_.registerInstance(\"${
-                                                        name
-                                                        }\", ${
-                                                        (its l)
-                                                        }, {${
-                                                        (join
-                                                            ", "
-                                                                (map
-                                                                (fn [(,, name l fn)] "${(sanitize name)}: ${(compile fn trace)}")
-                                                                    inst-fns))
-                                                        }})"
-        (sdeftype name nl type-arg cases l)         (join
-                                                        "\n"
-                                                            (mapr
-                                                            cases
-                                                                (fn [case]
-                                                                (let [(,,, name2 nl args l) case]
-                                                                    (++
-                                                                        ["const "
-                                                                            (sanitize name2)
-                                                                            " = "
-                                                                            (++ (mapi (fn [_ i] (++ ["(v" (int-to-string i) ") => "])) 0 args))
-                                                                            "({type: \""
-                                                                            name2
-                                                                            "\""
-                                                                            (++
-                                                                            (mapi
-                                                                                (fn [_ i] (++ [", " (int-to-string i) ": v" (int-to-string i)]))
-                                                                                    0
-                                                                                    args))
-                                                                            "});"])))))))
+        (sexpr expr l)                               (compile expr trace)
+        (sdef name nl body l)                        (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+        (stypealias _ _ _ _ _)                       "/* type alias */"
+        (sdefinstance name nl type preds inst-fns l) "$_.registerInstance(\"${
+                                                         name
+                                                         }\", ${
+                                                         (its l)
+                                                         }, {${
+                                                         (join
+                                                             ", "
+                                                                 (map
+                                                                 (fn [(,, name l fn)] "${(sanitize name)}: ${(compile fn trace)}")
+                                                                     inst-fns))
+                                                         }})"
+        (sdeftype name nl type-arg cases l)          (join
+                                                         "\n"
+                                                             (mapr
+                                                             cases
+                                                                 (fn [case]
+                                                                 (let [(,,, name2 nl args l) case]
+                                                                     (++
+                                                                         ["const "
+                                                                             (sanitize name2)
+                                                                             " = "
+                                                                             (++ (mapi (fn [_ i] (++ ["(v" (int-to-string i) ") => "])) 0 args))
+                                                                             "({type: \""
+                                                                             name2
+                                                                             "\""
+                                                                             (++
+                                                                             (mapi
+                                                                                 (fn [_ i] (++ [", " (int-to-string i) ": v" (int-to-string i)]))
+                                                                                     0
+                                                                                     args))
+                                                                             "});"])))))))
 
 (,
     (fn [x] (compile-stmt (parse-stmt x) map/nil))

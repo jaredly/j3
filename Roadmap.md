@@ -1,4 +1,29 @@
 
+# Noww that
+
+now that parse-1-args can do better javascript output...
+... and ... well the thing is, I was hoping it would speed things up. it hasn't really.
+So what's my new plan of action?
+
+
+## THIH Type Classes Type Checking
+
+in order for thih type classes to type check, I need
+
+- parse can return multiple statements. This shouldn't be hard,,, because I'm mostly abstracted
+  over the return value of parse. instead of `stmt` it returns `[stmt]` and js is none the wiser.
+  is that real?
+
+> we're doing `compile` instead of `compile_stmt` for sexpr's currently.
+> we're checking the meta of the expr, when really `traceTop` should probably be a property of the
+  NS
+- compile_stmt ... should it ... like ok, if there are no 'names', do we just assume 'this is an expr'?
+  seems like we probably could. lets try it.
+
+
+
+
+
 # Hm
 
 OK ALSO so the current thing ... let's bring the `parsing` into the web worker, that's gonna be important.

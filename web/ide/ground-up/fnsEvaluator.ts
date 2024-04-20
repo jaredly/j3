@@ -381,7 +381,7 @@ export const fnsEvaluator = (
 
             sorted.forEach((group) => {
                 if (
-                    group.every((item) => item.stmt.type === 'sexpr') &&
+                    group.every((item) => item.names.length === 0) &&
                     group[0].top.top !== target
                 ) {
                     return;
@@ -391,6 +391,7 @@ export const fnsEvaluator = (
                     env,
                     {},
                     {},
+                    group[0].top.top,
                 );
                 if (
                     group[0].top.top === target &&
@@ -425,7 +426,15 @@ export const fnsEvaluator = (
             return { js: env.js.join('\n'), errors };
         },
 
-        addStatements(stmts, env, meta, trace, displayResult, debugShowJs) {
+        addStatements(
+            stmts,
+            env,
+            meta,
+            trace,
+            top,
+            displayResult,
+            debugShowJs,
+        ) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
             let names:
@@ -464,6 +473,7 @@ export const fnsEvaluator = (
                 meta,
                 trace,
                 displayResult,
+                top,
                 names,
                 debugShowJs,
             );
@@ -526,6 +536,7 @@ const compileStmt = (
     meta: MetaDataMap,
     traceMap: TraceMap,
     renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
+    top: number,
     names?:
         | null
         | {
@@ -557,95 +568,6 @@ const compileStmt = (
     }
     const { needed, values } = assembleExternals(externals, env, san, names);
 
-    if (stmts.length === 1 && stmts[0].type === 'sexpr') {
-        let type = null;
-
-        let js;
-        try {
-            js = data['compile'](stmts[0][0])(mm);
-        } catch (err) {
-            // console.log('error');
-            // console.error(err);
-            return {
-                env,
-                display: [
-                    {
-                        type: 'eval',
-                        message: `Compilation Error`,
-                        inner: (err as Error).message,
-                        stack: (err as Error).stack,
-                    },
-                ],
-                values: {},
-            };
-        }
-        let fn;
-        try {
-            fn = new Function(
-                needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
-                'return ' + js,
-            );
-        } catch (err) {
-            return {
-                env,
-                display: [
-                    {
-                        type: 'error',
-                        message: `JS Syntax Error: ${
-                            (err as Error).message
-                        }\n${js}\nDeps: ${needed.join(',')}`,
-                    },
-                    { type: 'pre', text: js },
-                ],
-                values: {},
-            };
-        }
-        try {
-            if (meta[stmts[0][1]]?.traceTop) {
-                withTracing(traceMap, stmts[0][1], env.values, env);
-            }
-            const value = fn(values);
-
-            env.values.$setTracer(null);
-            return {
-                env,
-                display: [
-                    ...renderValue(value),
-                    ...(type ? ['Type: ' + type] : []),
-                    ...(debugShowJs
-                        ? [{ type: 'pre' as const, text: js }]
-                        : []),
-                ],
-                values: { _: value },
-                js,
-            };
-        } catch (err) {
-            const locs: { row: number; col: number }[] = [];
-            (err as Error).stack!.replace(
-                /<anonymous>:(\d+):(\d+)/g,
-                (a, row, col) => {
-                    locs.push({ row: +row, col: +col });
-                    return '';
-                },
-            );
-            return {
-                env,
-                display: [
-                    {
-                        type: 'withjs' as const,
-                        message: (err as Error).message,
-                        js,
-                    },
-                    { type: 'pre' as const, text: js },
-                    ...(debugShowJs
-                        ? [{ type: 'pre' as const, text: js }]
-                        : []),
-                ],
-                values: {},
-            };
-        }
-    }
-
     let jss;
     try {
         jss = stmts.map((stmt) => data['compile_stmt'](stmt)(mm)); //.join('\n\n');
@@ -670,7 +592,7 @@ const compileStmt = (
         let display: ProduceItem[] = [];
         const fn = new Function(
             needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
-            `{${js};\n${
+            `{${stmts.length === 1 && !names?.length ? `return ${js}` : js};\n${
                 names
                     ? 'return {' +
                       names
@@ -711,6 +633,26 @@ const compileStmt = (
                         : null,
                 )
                 .filter(filterNulls);
+        } else {
+            try {
+                if (meta[top]?.traceTop) {
+                    withTracing(traceMap, top, env.values, env);
+                }
+                const result = fn(values);
+                if (result != null) {
+                    display.push(...renderValue(result));
+                }
+            } catch (err) {
+                return {
+                    env,
+                    display: [
+                        `JS Evaluation Error: ${
+                            (err as Error).message
+                        }\n${js}\nDeps: ${needed.join(',')}`,
+                    ],
+                    values: {},
+                };
+            }
         }
         // display += '\n' + fn;
         if (debugShowJs) {
