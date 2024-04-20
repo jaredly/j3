@@ -20,6 +20,11 @@
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
 
+(defn zip [one two]
+    (match (, one two)
+        (, [] [])               []
+        (, [o ..one] [t ..two]) [(, o t) ..(zip one two)]))
+
 (defn rev [arr col]
     (match arr
         []           col
@@ -118,6 +123,87 @@
         (sexpr expr int))
 
 (** ## Transform Javascript AST **)
+
+(deftype (fx c)
+    (fx (fn [c j/expr] c) (fn [c j/pat] c) (fn [c j/block] c) (fn [c j/stmt] c)))
+
+(defn fold/option [inner init value]
+    (match value
+        (none)   init
+        (some v) (inner init v)))
+
+(defn fold/either [fleft fright init value]
+    (match value
+        (left l)  (fleft init l)
+        (right r) (fright init r)))
+
+(defn fold/pat [fx init pat]
+    (let [(fx _ p _ _) fx]
+        (p
+            (match pat
+                (j/pvar _ _)              init
+                (j/pobj items spread _)   (foldl
+                                              (fold/option (fold/pat fx) init spread)
+                                                  items
+                                                  (fn [init (, _ pat)] (fold/pat fx init pat)))
+                (j/parray items spread _) (foldl (fold/option (fold/pat fx) init spread) items (fold/pat fx)))
+                pat)))
+
+(defn fold/stmt [fx init stmt]
+    (let [(fx e p b s) fx]
+        (s
+            (match stmt
+                (j/sexpr expr _)              (fold/expr fx init expr)
+                (j/sblock block _)            (fold/block fx init block)
+                (j/if cond yes no _)          (fold/option
+                                                  (fold/block fx)
+                                                      (fold/block fx (fold/expr fx init cond) yes)
+                                                      no)
+                (j/for _ iit cond inc body _) (fold/block
+                                                  fx
+                                                      (fold/expr fx (fold/expr fx (fold/expr fx init iit) cond) inc)
+                                                      body)
+                (j/return value _)            (fold/expr fx init value)
+                (j/throw value _)             (fold/expr fx init value)
+                (j/let pat value _)           (fold/expr fx (fold/pat fx init pat) value)
+                _                             init)
+                stmt)))
+
+(defn fold/block [fx init block]
+    (let [(fx _ _ b _) fx (j/block items) block]
+        (b (foldl init items (fold/stmt fx)) block)))
+
+(defn fold/expr [fx init expr]
+    (let [(fx e _ _ _) fx]
+        (e
+            (match expr
+                (j/app target args _)  (foldl (fold/expr fx init target) args (fold/expr fx))
+                (j/bin _ left right _) (fold/expr fx (fold/expr fx init left) right)
+                (j/un _ arg _)         (fold/expr fx init arg)
+                (j/lambda pats body _) (foldl
+                                           (fold/either (fold/block fx) (fold/expr fx) init body)
+                                               pats
+                                               (fold/pat fx))
+                (j/str _ tpls _)       (foldl init tpls (fold/get ,,0 (fold/expr fx)))
+                (j/attr target _ _)    (fold/expr fx init target)
+                (j/index target idx _) (fold/expr fx (fold/expr fx init target ) idx)
+                (j/tern cond yes no _) (fold/expr fx (fold/expr fx (fold/expr fx init cond) yes) no)
+                (j/assign _ _ value _) (fold/expr fx init value)
+                (j/array items _)      (foldl
+                                           init
+                                               items
+                                               (fold/either (fold/expr fx) (fold/get spread/inner (fold/expr fx))))
+                (j/obj items _)        (foldl
+                                           init
+                                               items
+                                               (fold/either
+                                               (fold/get snd (fold/expr fx))
+                                                   (fold/get spread/inner (fold/expr fx)))))
+                expr)))
+
+(defn fold/get [get f init value] (f init (get value)))
+
+(defn spread/inner [(j/spread inner)] inner)
 
 (deftype tx
     (tx
@@ -266,9 +352,12 @@
         [one ..rest] (+ 1 (len rest))))
 
 (defn simplify-block [(j/block items)]
-    (match (call-at-end items)
-        (none)       none
-        (some items) (some (j/block items))))
+    (match items
+        ;[(j/sblock (j/block items) l) ..rest]
+        ;(some (j/block (concat [items rest])))
+        _ (match (call-at-end items)
+              (none)       none
+              (some items) (some (j/block items)))))
 
 (defn apply-until [f v]
     (match (f v)
@@ -340,6 +429,9 @@
 
 (** ## Js Compiler **)
 
+(defn j/compile-stmts [ctx stmts]
+    (join "\n" (map stmts (j/compile-stmt ctx))))
+
 (defn j/compile-stmt [ctx stmt]
     (match stmt
         (j/sexpr expr l)                  (j/compile ctx expr)
@@ -399,7 +491,11 @@
 (defn j/compile-body [ctx body]
     (match body
         (left block) (j/compile-block ctx block)
-        (right expr) (j/compile ctx expr)))
+        (right expr) (maybe-paren
+                         (j/compile ctx expr)
+                             (match expr
+                             (j/obj _ _) true
+                             _           false))))
 
 (defn j/paren-expr [ctx target]
     (maybe-paren (j/compile ctx target) (j/needs-parens target)))
@@ -945,8 +1041,6 @@
                              (pat-loop/j target rest (+ i 1) inner l trace)
                              trace)))
 
-11286
-
 (defn compile-pat/j [pat target inner trace]
     (match pat
         (pany l)           inner
@@ -974,6 +1068,82 @@
         (none)     (j/sexpr (compile/j init trace) l)
         (some pat) (j/let pat (compile/j init trace) l)))
 
+(defn let-fix-shadow [(, pat init) l]
+    (let [
+        names     (pat-names pat)
+        used      (externals set/nil init)
+        overlap   (bag/fold
+                      (fn [shadow (,, name kind l)]
+                          (match kind
+                              (value) (if (set/has names name)
+                                          [(, name l) ..shadow]
+                                              shadow)
+                              _       shadow))
+                          []
+                          used)
+        shadow    (set/to-list
+                      (foldl set/nil overlap (fn [ov (, name _)] (set/add ov name))))
+        new-names (mapi 0 shadow (fn [i name] "${name}_${(its i)}"))
+        mapping   (map/from-list (zip shadow new-names))
+        by-loc    (map/from-list
+                      (map overlap (fn [(, name loc)] (, loc (force (map/get mapping name))))))]
+        (match overlap
+            [] [(, pat init)]
+            _  (concat
+                   [(map (map/to-list mapping) (fn [(, old new)] (, (pvar new l) (evar old l))))
+                       [(,
+                       pat
+                           (map-expr
+                           (fn [expr]
+                               (match expr
+                                   (evar _ l) (match (map/get by-loc l)
+                                                  (some new-name) (evar new-name l)
+                                                  _               expr)
+                                   _          expr))
+                               init))]]))))
+
+(let-fix-shadow (, (parse-pat (@@ a)) (parse-expr (@@ (+ 1 a)))) 1)
+
+(defn nop [a b] a)
+
+(def pat-names/j2
+    (fx
+        nop
+            (fn [names pat]
+            (match pat
+                (j/pvar name _) (set/add names name)
+                _               names))
+            nop
+            nop))
+
+(def externals/j
+    (fx
+        (fn [names expr]
+            (match expr
+                (j/var name _) (set/add names name)
+                _              names))
+            nop
+            nop
+            nop))
+
+(defn pat-names/j [pat]
+    (match pat
+        (j/pvar name _)         (one name)
+        (j/pobj items spread _) (foldl
+                                    (match spread
+                                        (none)     (empty)
+                                        (some pat) (pat-names/j pat))
+                                        items
+                                        (fn [bag (, name item)] (bag/and bag (pat-names/j item))))))
+
+(let [p (force (pat->j/pat (@p (what hi ho here))))]
+    (, (bag/to-list (pat-names/j p)) (fold/pat pat-names/j2 set/nil p)))
+
+(defn force [x]
+    (match x
+        (none)   (fatal "empty")
+        (some x) x))
+
 (def bops ["-" "+" ">" "<" "==" "===" "<=" ">=" "*"])
 
 (defn is-bop [op] (contains bops op))
@@ -991,66 +1161,122 @@
             args
             (fn [target arg] (j/app target [(compile/j arg trace)] l))))
 
+(defn expand-bindings [bindings l]
+    (foldr
+        []
+            bindings
+            (fn [res binding] (concat [(let-fix-shadow binding l) res]))))
+
+(defn compile-let/j [body trace bindings l]
+    (foldr
+        (compile/j body trace)
+            (expand-bindings bindings l)
+            (fn [body binding]
+            (j/app
+                (j/lambda
+                    []
+                        (left
+                        (j/block
+                            (concat
+                                [[(compile-let-binding/j binding trace l)]
+                                    (trace-pat (fst binding) trace)
+                                    [(j/return body l)]])))
+                        l)
+                    []
+                    l))))
+
+(defn trace-pat [pat trace]
+    (let [names (bag/to-list (pat-names-loc pat))]
+        (foldl
+            []
+                names
+                (fn [stmts (, name loc)]
+                (match (map/get trace loc)
+                    (none)      stmts
+                    (some info) [(j/sexpr
+                                    (j/app
+                                        (j/var "$trace" -1)
+                                            [(j/prim (j/int loc -1) -1) (j/raw (jsonify info) -1) (j/var name -1)]
+                                            -1)
+                                        -1)])))))
+
+(defn maybe-trace [loc trace expr]
+    (match (map/get trace loc)
+        (none)   expr
+        (some v) (j/app
+                     (j/var "$trace" -1)
+                         [(j/prim (j/int loc -1) -1) (j/raw (jsonify v) -1) expr]
+                         -1)))
+
 (defn compile/j [expr trace]
-    (match expr
-        (estr first tpls l)             (j/str
-                                            first
-                                                (map
-                                                tpls
-                                                    (fn [(,, expr suffix l)] (,, (compile/j expr trace) suffix l)))
-                                                l)
-        (eprim prim l)                  (match prim
-                                            (pint int pl)   (j/prim (j/int int pl) l)
-                                            (pbool bool pl) (j/prim (j/bool bool pl) l))
-        (evar name l)                   (j/var name l)
-        (equot inner l)                 (j/raw (quot/jsonify inner) l)
-        (elambda pats body l)           (foldr
-                                            ; gotta trace the args
-                                                (compile/j body trace)
-                                                pats
-                                                (fn [body pat]
-                                                (j/lambda
-                                                    [(match (pat->j/pat pat)
-                                                        (none)     (j/pvar "_${(its l)}" l)
-                                                        (some pat) pat)]
-                                                        (right body)
-                                                        l)))
-        (elet bindings body l)          (foldr
-                                            (compile/j body trace)
-                                                bindings
-                                                (fn [body binding]
-                                                (j/app
-                                                    (j/lambda
-                                                        []
-                                                            (left
-                                                            (j/block
-                                                                [(compile-let-binding/j binding trace l) (j/return body l)]))
-                                                            l)
-                                                        []
-                                                        l)))
-        (eapp (evar op ol) [one two] l) (if (is-bop op)
-                                            (j/bin op (compile/j one trace) (compile/j two trace) l)
-                                                (app/j (evar op ol) [one two] trace l))
-        (eapp target args l)            (app/j target args trace l)
-        (ematch target cases l)         (j/app
-                                            (j/lambda
-                                                [(j/pvar "$target" l)]
-                                                    (left
-                                                    (j/block
-                                                        (map
-                                                            cases
-                                                                (fn [(, pat body)]
-                                                                (j/sblock
-                                                                    (j/block
-                                                                        (compile-pat/j
-                                                                            pat
-                                                                                (j/var "$target" l)
-                                                                                [(j/return (compile/j body trace) l)]
-                                                                                trace))
-                                                                        l)))))
+    (maybe-trace
+        (expr-loc expr)
+            trace
+            (match expr
+            (estr first tpls l)             (j/str
+                                                first
+                                                    (map
+                                                    tpls
+                                                        (fn [(,, expr suffix l)] (,, (compile/j expr trace) suffix l)))
                                                     l)
-                                                [(compile/j target trace)]
-                                                l)))
+            (eprim prim l)                  (match prim
+                                                (pint int pl)   (j/prim (j/int int pl) l)
+                                                (pbool bool pl) (j/prim (j/bool bool pl) l))
+            (evar name l)                   (j/var name l)
+            (equot inner l)                 (j/raw (quot/jsonify inner) l)
+            (elambda pats body l)           (foldr
+                                                ; gotta trace the args
+                                                    (compile/j body trace)
+                                                    pats
+                                                    (fn [body pat]
+                                                    (j/lambda
+                                                        [(match (pat->j/pat pat)
+                                                            (none)     (j/pvar "_${(its l)}" l)
+                                                            (some pat) pat)]
+                                                            (match (trace-pat pat trace)
+                                                            []    (right body)
+                                                            stmts (left (j/block (concat [stmts [(j/return body l)]]))))
+                                                            l)))
+            (elet bindings body l)          (compile-let/j body trace bindings l)
+            (eapp (evar op ol) [one two] l) (if (is-bop op)
+                                                (j/bin op (compile/j one trace) (compile/j two trace) l)
+                                                    (app/j (evar op ol) [one two] trace l))
+            (eapp target args l)            (app/j target args trace l)
+            (ematch target cases l)         (j/app
+                                                (j/lambda
+                                                    [(j/pvar "$target" l)]
+                                                        (left
+                                                        (j/block
+                                                            (concat
+                                                                [(map
+                                                                    cases
+                                                                        (fn [(, pat body)]
+                                                                        (j/sblock
+                                                                            (j/block
+                                                                                (compile-pat/j
+                                                                                    pat
+                                                                                        (j/var "$target" l)
+                                                                                        (concat [(trace-pat pat trace) [(j/return (compile/j body trace) l)]])
+                                                                                        trace))
+                                                                                l)))
+                                                                    [(j/throw
+                                                                    (j/raw
+                                                                        "new Error('match fail ${(its l)}:' + JSON.stringify($target))"
+                                                                            0)
+                                                                        0)]])))
+                                                        l)
+                                                    [(compile/j target trace)]
+                                                    l))))
+
+(j/compile
+    0
+        (map/expr
+        simplify-js
+            (compile/j (parse-expr (@@ (let [a 1 a (+ a 1)] a))) map/nil)))
+
+(def ex (parse-expr (@@ (let [x 10] x))))
+
+(j/compile 0 (compile/j ex (map/set map/nil 16243 "lol")))
 
 (j/compile
     0
@@ -1064,7 +1290,7 @@
                             (match m
                                 2 3
                                 4 5)))))
-                1)))
+                map/nil)))
 
 (def example-expr
     (parse-expr
@@ -1094,7 +1320,9 @@
                                                                                     (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
                                                                             "});"])))))))))
 
-(j/compile 0 (map/expr simplify-js (compile/j example-expr 10)))
+(j/compile
+    0
+        (map/expr simplify-js (compile/j example-expr map/nil)))
 
 (j/compile 0 (compile/j example-expr map/nil))
 
@@ -1155,6 +1383,35 @@
                     [a ..b] a)
                 }")
             "1")])
+
+(defn compile-stmt/j [stmt trace]
+    (match stmt
+        (sexpr expr l)                      [(j/sexpr (compile/j expr trace) l)]
+        (sdef name nl body l)               [(j/let (j/pvar name nl) (compile/j body trace) l)]
+        (stypealias name _ _ _ _)           []
+        (sdeftype name nl type-arg cases l) (map
+                                                cases
+                                                    (fn [case]
+                                                    (let [(,,, name2 nl args l) case]
+                                                        (j/let
+                                                            (j/pvar name2 nl)
+                                                                (foldr
+                                                                (j/obj
+                                                                    [(left (, "type" (j/str name2 [] nl)))
+                                                                        ..(mapi
+                                                                        0
+                                                                            args
+                                                                            (fn [i _] (left (, (int-to-string i) (j/var "v${(int-to-string i)}" nl)))))]
+                                                                        l)
+                                                                    (mapi 0 args (fn [i _] (j/pvar "v${(int-to-string i)}" nl)))
+                                                                    (fn [body arg] (j/lambda [arg] (right body) l)))
+                                                                l))
+                                                        ))
+        ;(join "\n" (map cases (fn [case])))))
+
+(j/compile-stmts
+    0
+        (compile-stmt/j (parse-stmt (@@ (deftype one (one a b)))) map/nil))
 
 (** ## Compilation **)
 
@@ -1498,6 +1755,21 @@
 
 (defn ,,2 [x] (let [(,, _ _ a) x] a))
 
+(defn map,,0 [f (,, a b c)] (,, (f a) b c))
+
+(defn map,1 [f (, a b)] (, a (f b)))
+
+dot
+
+(defn map-expr [f expr]
+    (match (f expr)
+        (estr first tpl l)     (estr first (map tpl (map,,0 (map-expr f))) l)
+        (elambda pats body l)  (elambda pats (map-expr f body) l)
+        (elet bindings body l) (elet (map bindings (map,1 (map-expr f))) (map-expr f body) l)
+        (eapp target args l)   (eapp (map-expr f target) (map args (map-expr f)) l)
+        (ematch expr cases l)  (ematch (map-expr f expr) (map cases (map,1 (map-expr f))) l)
+        otherwise              otherwise))
+
 (defn fold-expr [init expr f]
     (let [v (f init expr)]
         (match expr
@@ -1530,13 +1802,13 @@
     (+
         1
             (match stmt
-            (sdef string int expr int)                  (expr-size expr)
-            (sexpr expr int)                            (expr-size expr)
-            (stypealias string int args type int)       (type-size type)
-            (sdeftype string int args constructors int) (foldl
-                                                            0
-                                                                constructors
-                                                                (fn [v const] (foldl v (map (,,,2 const) type-size) +))))))
+            (sdef string _ expr _)                  (expr-size expr)
+            (sexpr expr _)                          (expr-size expr)
+            (stypealias string _ args type _)       (type-size type)
+            (sdeftype string _ args constructors _) (foldl
+                                                        0
+                                                            constructors
+                                                            (fn [v const] (foldl v (map (,,,2 const) type-size) +))))))
 
 (defn externals [bound expr]
     (match expr
@@ -1616,19 +1888,19 @@
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string int free constructors int) (let [frees (set/from-list (map free fst))]
-                                                            (many
-                                                                (map
-                                                                    constructors
-                                                                        (fn [constructor]
-                                                                        (match constructor
-                                                                            (,,, name l args _) (match args
-                                                                                                    [] empty
-                                                                                                    _  (many (map args (externals-type frees)))))))))
-            (stypealias name _ args body _)             (let [frees (set/from-list (map args fst))]
-                                                            (externals-type frees body))
-            (sdef name int body int)                    (externals (set/add set/nil name) body)
-            (sexpr expr int)                            (externals set/nil expr))))
+            (sdeftype string _ free constructors _) (let [frees (set/from-list (map free fst))]
+                                                        (many
+                                                            (map
+                                                                constructors
+                                                                    (fn [constructor]
+                                                                    (match constructor
+                                                                        (,,, name l args _) (match args
+                                                                                                [] empty
+                                                                                                _  (many (map args (externals-type frees)))))))))
+            (stypealias name _ args body _)         (let [frees (set/from-list (map args fst))]
+                                                        (externals-type frees body))
+            (sdef name _ body _)                    (externals (set/add set/nil name) body)
+            (sexpr expr _)                          (externals set/nil expr))))
 
 (** ## Export **)
 
@@ -1650,8 +1922,12 @@
     (parse-and-compile
         parse-stmt
             parse-expr
-            compile-stmt
-            compile
+            (fn [stmt ctx]
+            (j/compile-stmts
+                ctx
+                    (map (compile-stmt/j stmt ctx) (map/stmt simplify-js))))
+            (fn [expr ctx]
+            (j/compile ctx (map/expr simplify-js (compile/j expr ctx))))
             names
             externals-stmt
             (fn [expr] (bag/to-list (externals set/nil expr)))

@@ -15,6 +15,14 @@
 
 (join " " ["one" "two" "three"])
 
+cons
+
+(deftype lol (lol a b c))
+
+(jsonify (cons 2 3))
+
+(eval "JSON.stringify(cons(1)(2)) + ''")
+
 (join " " [])
 
 (join " " ["one"])
@@ -28,6 +36,8 @@
     (match values
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
+
+(jsonify ["0"])
 
 (defn foldl [init items f]
     (match items
@@ -92,6 +102,10 @@
             "})"]))
 
 (literal-constr "cons" ["0"])
+
+(def x 123)
+
+(mapi 0 ["0"] (fn [i arg] arg))
 
 (defn compile-st [stmt]
     (match stmt
@@ -223,9 +237,9 @@
         (equot inner)         (jsonify inner)
         (elambda name body)   (++ ["(" (sanitize name) ") => " (compile body)])
         (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
-        (eapp fn arg)         (match fn
-                                  (elambda name) (++ ["(" (compile fn) ")(" (compile arg) ")"])
-                                  _              (++ [(compile fn) "(" (compile arg) ")"]))
+        (eapp f arg)          (match f
+                                  (elambda name) (++ ["(" (compile f) ")(" (compile arg) ")"])
+                                  _              (++ [(compile f) "(" (compile arg) ")"]))
         (ematch target cases) "(($target) => {${
                                   (join
                                       "\n"
@@ -284,6 +298,8 @@
         (, (@ "${${1}") "${1")])
 
 (eval (compile (@ (+ 2 3))))
+
+(@ (+ 2 3))
 
 (@@' 1)
 

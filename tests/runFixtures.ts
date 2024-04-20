@@ -43,6 +43,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
         console.time('toFile');
         const result = ev.toFile(state, tid);
         console.timeEnd('toFile');
+        console.log(`js size ${result.js.length}`);
 
         try {
             const results = blankInitialResults();
@@ -50,7 +51,12 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             getImmediateResults(state, ev, results);
             console.timeEnd('immediate');
             console.time('worker');
-            const worker = calculateInitialState(results.nodes, ev, false);
+            const worker = calculateInitialState(
+                results.nodes,
+                ev,
+                false,
+                false,
+            );
             Object.entries(worker.results!.groups).forEach(([key, group]) => {
                 if (group.typeFailed) {
                     throw new Error(`group ${key} typeFailed!`);

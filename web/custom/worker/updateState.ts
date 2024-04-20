@@ -422,7 +422,14 @@ export function updateState(
             meta,
             state.results.groups[groupKey].traces,
             renderValue,
+            state.debugShowJs,
         );
+
+        // if (added.js && state.debugShowJs) {
+        //     group.forEach((one) => {
+        //         state.results!.tops[one.id].
+        //     })
+        // }
 
         group.forEach((one) => {
             one.names.forEach((name) => {

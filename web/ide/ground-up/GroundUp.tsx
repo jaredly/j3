@@ -45,6 +45,7 @@ export type Results = {
 
 export type Debug = {
     ids: boolean;
+    showJs: boolean;
     execOrder: boolean;
     selection: boolean;
     disableEvaluation: boolean;
@@ -69,6 +70,7 @@ export const GroundUp = ({
 
     const [debug, setDebug] = useState<Debug>({
         ids: false,
+        showJs: false,
         execOrder: false,
         selection: false,
         disableEvaluation: false,
@@ -79,8 +81,8 @@ export const GroundUp = ({
     const { state } = useGlobalState(store);
 
     useEffect(() => {
-        store.setDebug(debug.execOrder, debug.disableEvaluation);
-    }, [debug.execOrder, debug.disableEvaluation]);
+        store.setDebug(debug.execOrder, debug.disableEvaluation, debug.showJs);
+    }, [debug.execOrder, debug.disableEvaluation, debug.showJs]);
 
     let first = useRef(true);
     useEffect(() => {
@@ -185,6 +187,7 @@ export const GroundUp = ({
                         'ids',
                         'selection',
                         'execOrder',
+                        'showJs',
                         'disableEvaluation',
                     ] as const
                 ).map((k) => (

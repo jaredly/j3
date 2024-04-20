@@ -154,9 +154,9 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
             }
             // console.log('targ', target);
             throw new Error(
-                `failed to match ${JSON.stringify(target)} ${printExpr(
-                    expr[0],
-                )}`,
+                `failed to match: target = ${JSON.stringify(
+                    target,
+                )} : expr = ${printExpr(expr[0])}`,
             );
         }
     }

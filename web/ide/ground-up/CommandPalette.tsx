@@ -19,6 +19,7 @@ import {
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { FullEvalator } from './FullEvalator';
 import { Sendable } from '../../custom/worker/worker';
+import { unique } from '../../custom/store/unique';
 
 export const CommandPalette = () => {
     const store = useGetStore();
@@ -530,15 +531,18 @@ function extractToToplevel(
         throw new Error(`doesn't parse`);
     }
 
-    const externals = ev.analysis
-        .dependencies(parsed)
-        .filter((ex) => !extMap[ex.name]);
+    const externals = unique(
+        ev.analysis
+            .dependencies(parsed)
+            .filter((ex) => !extMap[ex.name] && ex.kind === 'value')
+            .map((n) => n.name),
+    );
 
     const nid = newId([input], state.nidx());
     const repl = externals.length
         ? newListLike('list', state.nidx(), [
               nid,
-              ...externals.map((ex) => newId([ex.name], state.nidx())),
+              ...externals.map((ex) => newId([ex], state.nidx())),
           ])
         : nid;
 
@@ -550,7 +554,7 @@ function extractToToplevel(
                   newListLike(
                       'array',
                       state.nidx(),
-                      externals.map((ex) => newId([ex.name], state.nidx())),
+                      externals.map((ex) => newId([ex], state.nidx())),
                   ),
               ]
             : []),

@@ -22,7 +22,7 @@ export type Message =
           nodes: ImmediateResults<any>['nodes'];
           id: number;
       }
-    | { type: 'debug'; execOrder: boolean; id: number };
+    | { type: 'debug'; execOrder: boolean; id: number; showJs: boolean };
 // | { type: 'plugin'; id: number; top: number };
 
 const mergeMessages = (last: Message, next: Message) => {
@@ -78,13 +78,15 @@ const handleMessage = async (
             if (
                 !state ||
                 !state.evaluator ||
-                msg.execOrder === state.debugExecOrder
+                (msg.execOrder === state.debugExecOrder &&
+                    msg.showJs === state.debugShowJs)
             )
                 return state;
             return calculateInitialState(
                 state.nodes,
                 state.evaluator,
                 msg.execOrder,
+                msg.showJs,
             );
         case 'initial': {
             const evaluator: AnyEnv | null = await new Promise((res) =>
@@ -100,7 +102,7 @@ const handleMessage = async (
                 };
             }
 
-            return calculateInitialState(msg.nodes, evaluator, false);
+            return calculateInitialState(msg.nodes, evaluator, false, false);
         }
         case 'update': {
             if (!state) throw new Error(`cant update`);
@@ -142,6 +144,22 @@ const next = async () => {
                 }
             },
         );
+        // Sanitize the traces
+        Object.values(traces).forEach((v) => {
+            v.forEach((trace, i) => {
+                v[i] = trace.map((t) => {
+                    try {
+                        structuredClone(t);
+                        return t;
+                    } catch (err) {
+                        return {
+                            type: 'ttext',
+                            '0': 'Unable to clone to send from webworker',
+                        };
+                    }
+                });
+            });
+        });
         sendBack({ type: 'results', results: updated, id: msg.id, traces });
     }
     running = false;

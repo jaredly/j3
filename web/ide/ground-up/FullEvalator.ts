@@ -79,6 +79,7 @@ export type FullEvalator<
         meta: MetaDataMap,
         trace: TraceMap,
         renderResult?: (v: any) => ProduceItem[],
+        debugShowJs?: boolean,
     ): {
         env: Env;
         display: { [key: number]: Produce };

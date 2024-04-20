@@ -88,6 +88,8 @@ export function builtins() {
             a.filter((i) => !b.some((j) => equal(i, j))),
         'set/merge': (a: any[]) => (b: any[]) =>
             [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+        'set/overlap': (a: any[]) => (b: any[]) =>
+            a.filter((x) => b.some((y) => equal(y, x))),
         'set/to-list': wrapArray,
         'set/from-list': unwrapArray,
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>

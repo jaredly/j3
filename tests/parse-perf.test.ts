@@ -47,7 +47,7 @@ test(
                 id: 6,
                 name: 'post-js[aw-fast] -> thih',
                 file: 'thih.json',
-                evaluator: [2, 4],
+                evaluator: [1, 4],
             },
         ]);
     },

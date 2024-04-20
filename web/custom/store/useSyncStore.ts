@@ -137,10 +137,10 @@ export const setupSyncStore = (
     });
 
     return {
-        setDebug(execOrder, disableEvaluation) {
+        setDebug(execOrder, disableEvaluation, showJs) {
             // throw new Error(`todo`);
             // console.error('ignoring sotry');
-            send({ type: 'debug', execOrder, id: msgid++ });
+            send({ type: 'debug', execOrder, id: msgid++, showJs });
         },
         dispatch(action) {
             // if (inProcess) {

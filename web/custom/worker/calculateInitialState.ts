@@ -36,6 +36,7 @@ export function calculateInitialState(
     nodes: ImmediateResults<any>['nodes'],
     evaluator: AnyEnv,
     debugExecOrder: boolean,
+    debugShowJs: boolean,
 ) {
     return updateState(
         {
@@ -47,6 +48,7 @@ export function calculateInitialState(
                 tops: {},
             },
             debugExecOrder,
+            debugShowJs,
         },
         nodes,
     );

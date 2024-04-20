@@ -65,4 +65,5 @@ export type State = {
     nodes: ImmediateResults<any>['nodes'];
     results?: AsyncResults;
     debugExecOrder?: boolean;
+    debugShowJs?: boolean;
 };

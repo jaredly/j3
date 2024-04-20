@@ -246,7 +246,7 @@
         (, [] free)
             args
             (fn [(, args free) a]
-            (let [(, a free) (tts-inner a free locs)] (, [a ..args] free)))))
+            (let [(, arg free) (tts-inner a free locs)] (, [arg ..args] free)))))
 
 (defn and-loc [locs l s]
     (if locs
@@ -270,8 +270,8 @@
                                                      _           (, (and-loc locs l s) free)))
         (tcon s l)                           (, (and-loc locs l s) free)
         (tapp (tapp (tcon "->" _) a la) b l) (let [
-                                                 (, args r)    (unwrap-fn b)
-                                                 args          [a ..args]
+                                                 (, iargs r)   (unwrap-fn b)
+                                                 args          [a ..iargs]
                                                  (, args free) (tts-list args free locs)
                                                  (, two free)  (tts-inner r free locs)]
                                                  (, (and-loc locs l "(fn [${(join " " (rev args []))}] ${two})") free))
@@ -1344,19 +1344,19 @@
 
 (defn infer-several [tenv stmts]
     (let-> [
-        _                 (idx-> 0)
-        names             (<-
-                              (map
-                                  stmts
-                                      (fn [stmt]
-                                      (match stmt
-                                          (sdef name nl _ _) (, name nl)
-                                          _                  (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
-        (, bound vars)    (vars-for-names (map stmts (fn [(sdef name _ _ l)] (, name l))) tenv)
-        (, bound missing) (find-missing bound (externals-defs stmts))
-        types             (foldr-> [] (zip vars stmts) (infer-several-inner bound))
-        subst             <-subst
-        _                 (report-missing subst missing)]
+        _                  (idx-> 0)
+        names              (<-
+                               (map
+                                   stmts
+                                       (fn [stmt]
+                                       (match stmt
+                                           (sdef name nl _ _) (, name nl)
+                                           _                  (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
+        (, bound vars)     (vars-for-names (map stmts (fn [(sdef name _ _ l)] (, name l))) tenv)
+        (, bound2 missing) (find-missing bound (externals-defs stmts))
+        types              (foldr-> [] (zip vars stmts) (infer-several-inner bound2))
+        subst              <-subst
+        _                  (report-missing subst missing)]
         (<- (zip names (map types (type-apply subst))))))
 
 (,
@@ -1811,18 +1811,18 @@ map->
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string int free constructors int) (let [frees (set/from-list (map free fst))]
-                                                            (many
-                                                                (map
-                                                                    constructors
-                                                                        (fn [(,,, name l args _)]
-                                                                        (match args
-                                                                            [] empty
-                                                                            _  (many (map args (externals-type frees))))))))
-            (stypealias name _ args body _)             (let [frees (set/from-list (map args fst))]
-                                                            (externals-type frees body))
-            (sdef name int body int)                    (externals (set/add set/nil name) body)
-            (sexpr expr int)                            (externals set/nil expr))))
+            (sdeftype string _ free constructors _) (let [frees (set/from-list (map free fst))]
+                                                        (many
+                                                            (map
+                                                                constructors
+                                                                    (fn [(,,, name l args _)]
+                                                                    (match args
+                                                                        [] empty
+                                                                        _  (many (map args (externals-type frees))))))))
+            (stypealias name _ args body _)         (let [frees (set/from-list (map args fst))]
+                                                        (externals-type frees body))
+            (sdef name _ body _)                    (externals (set/add set/nil name) body)
+            (sexpr expr _)                          (externals set/nil expr))))
 
 (bag/to-list
     (externals
@@ -1915,6 +1915,7 @@ map->
                             (, "set/rm" (kk (tfns [(tset k) k] (tset k))))
                             (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k))))
                             (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k))))
+                            (, "set/overlap" (kk (tfns [(tset k) (tset k)] (tset k))))
                             (, "set/to-list" (kk (tfns [(tset k)] (tarray k))))
                             (, "set/from-list" (kk (tfns [(tarray k)] (tset k))))
                             (, "map/from-list" (kv (tfns [(tarray (t, k v))] (tmap k v))))

@@ -425,7 +425,7 @@ export const fnsEvaluator = (
             return { js: env.js.join('\n'), errors };
         },
 
-        addStatements(stmts, env, meta, trace, displayResult) {
+        addStatements(stmts, env, meta, trace, displayResult, debugShowJs) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
             let names:
@@ -456,47 +456,6 @@ export const fnsEvaluator = (
                 }
             }
 
-            // Object.entries(stmts).forEach(([id, stmt]) => {
-            //     display[+id] = [];
-
-            //     if (stmt.type === 'sexpr' && tenv && data['infer']) {
-            //         try {
-            //             display[+id] = [
-            //                 data['type_to_string'](
-            //                     data['infer'](tenv)(stmt[0]),
-            //                 ),
-            //             ];
-            //         } catch (err) {
-            //             display[+id] = [
-            //                 new MyEvalError('Type Checker', err as Error),
-            //             ];
-            //         }
-            //     }
-
-            //     if (
-            //         tenv &&
-            //         data['names'] &&
-            //         data['get_type'] &&
-            //         stmt.type === 'sdef'
-            //     ) {
-            //         const names: { type: ','; 0: string; 1: number }[] =
-            //             unwrapArray(data['names'](stmt));
-            //         const types: any[] = names.map((name) =>
-            //             data['get_type'](tenv)(name[0]),
-            //         );
-            //         (display[+id] as any[]).push(
-            //             ...types.map((type, i) => {
-            //                 if (type.type === 'some') {
-            //                     return `${names[i][0]}⁚ ${data[
-            //                         'type_to_string'
-            //                     ](type[0])}`;
-            //                 }
-            //                 return new Error(`No type for ${names[i][0]}`);
-            //             }),
-            //         );
-            //     }
-            // });
-
             const res = compileStmt(
                 data,
                 san,
@@ -506,6 +465,7 @@ export const fnsEvaluator = (
                 trace,
                 displayResult,
                 names,
+                debugShowJs,
             );
 
             Object.keys(stmts).forEach((id) => {
@@ -574,12 +534,14 @@ const compileStmt = (
               1: { type: LocedName['kind'] };
               2: number;
           }[],
+    debugShowJs?: boolean,
 ): {
     env: any;
     display: ProduceItem[];
     values: Record<string, any>;
     js?: string;
 } => {
+    // console.log('show js', debugShowJs);
     const mm = prepareMeta(meta, data['parse_version'] === 2);
 
     let externals: { type: ','; 0: string; 1: number }[] = [];
@@ -633,6 +595,7 @@ const compileStmt = (
                             (err as Error).message
                         }\n${js}\nDeps: ${needed.join(',')}`,
                     },
+                    { type: 'pre', text: js },
                 ],
                 values: {},
             };
@@ -649,6 +612,9 @@ const compileStmt = (
                 display: [
                     ...renderValue(value),
                     ...(type ? ['Type: ' + type] : []),
+                    ...(debugShowJs
+                        ? [{ type: 'pre' as const, text: js }]
+                        : []),
                 ],
                 values: { _: value },
                 js,
@@ -666,19 +632,23 @@ const compileStmt = (
                 env,
                 display: [
                     {
-                        type: 'withjs',
+                        type: 'withjs' as const,
                         message: (err as Error).message,
-                        js: fn + '',
+                        js,
                     },
+                    { type: 'pre' as const, text: js },
+                    ...(debugShowJs
+                        ? [{ type: 'pre' as const, text: js }]
+                        : []),
                 ],
                 values: {},
             };
         }
     }
 
-    let js;
+    let jss;
     try {
-        js = stmts.map((stmt) => data['compile_stmt'](stmt)(mm)).join('\n\n');
+        jss = stmts.map((stmt) => data['compile_stmt'](stmt)(mm)); //.join('\n\n');
     } catch (err) {
         console.error(err);
         return {
@@ -694,6 +664,7 @@ const compileStmt = (
             values: {},
         };
     }
+    const js = jss.join('\n\n');
 
     try {
         let display: ProduceItem[] = [];
@@ -742,12 +713,20 @@ const compileStmt = (
                 .filter(filterNulls);
         }
         // display += '\n' + fn;
+        if (debugShowJs) {
+            display.push(
+                ...jss.map((text) => ({ type: 'pre' as const, text })),
+            );
+        }
 
         return { env, display, values: names?.length ? result_values : {}, js };
     } catch (err) {
         return {
             env,
-            display: [`JS Syntax Error: ${(err as Error).message}\n${js}`],
+            display: [
+                `JS Syntax Error: ${(err as Error).message}\n${js}`,
+                { type: 'pre', text: js },
+            ],
             values: {},
         };
     }
