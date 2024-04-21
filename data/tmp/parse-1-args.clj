@@ -1083,7 +1083,7 @@
                           used)
         shadow    (set/to-list
                       (foldl set/nil overlap (fn [ov (, name _)] (set/add ov name))))
-        new-names (mapi 0 shadow (fn [i name] "${name}_${(its i)}"))
+        new-names (mapi 0 shadow (fn [i name] "${name}$${(its i)}"))
         mapping   (map/from-list (zip shadow new-names))
         by-loc    (map/from-list
                       (map overlap (fn [(, name loc)] (, loc (force (map/get mapping name))))))]

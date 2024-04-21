@@ -1,4 +1,24 @@
 
+# NightTime Thoughts
+
+- find-in-page - should have a right sidebar overlay thihng that shows the results in-context
+  (2 lines above & below?)
+- ALSO multi-select, if there are selections that are off-screen, show them in a little toast? that would be rad
+- to enable this, have a *cache* of `pathsForIdx`, which ought to be pretty simple to update?
+- search results will have the top path be `type:search-result` instead of `type:card`, and hovery deals will
+  have `type:hover` ... although hm the hovery deal is a little weird because we *do* want the selection to
+  show up ... hm ok, maybe the hovers are readonly? and pretend to have the same ~path as where the selection is?
+  yeah let's do that.
+- ALSO multiselect, theselection highlight should be orange instead of blue
+- ALSO let's really do "highlight all usages of the current identifier" pleeease and thank you.
+- ALSO have a command palette thing that's "rename", and what it does is multiselect all usages, which is great
+-
+- type checker exports a "phases" thing, (array (, int (array string))) - indicating the phase numbers ... and the "kinds" that get processed during that phase.
+- LocedName `kind` shouldn't be hardcoded in js anywhere. Just cue off of what the evaluator gives you.
+  - cmd-p = jump to, pleease. Also indicate the `kind` of the thing you're jumping to.
+- maintain a "jump history", that you can pull up just like search results (it'll show a +/- 2 lines context)
+- maybe prune all but the last hour of changes? That oughta be enough, for nowwwww
+
 # Noww that
 
 now that parse-1-args can do better javascript output...
@@ -14,15 +34,53 @@ in order for thih type classes to type check, I need
   over the return value of parse. instead of `stmt` it returns `[stmt]` and js is none the wiser.
   is that real?
 
-> we're doing `compile` instead of `compile_stmt` for sexpr's currently.
-> we're checking the meta of the expr, when really `traceTop` should probably be a property of the
-  NS
-- compile_stmt ... should it ... like ok, if there are no 'names', do we just assume 'this is an expr'?
+> [x] we're doing `compile` instead of `compile_stmt` for sexpr's currently.
+> [x] we're checking the meta of the expr's loc, don't introspect that
+  - [ ] when really `traceTop` should probably be a property of the NS
+- [x] compile_stmt ... should it ... like ok, if there are no 'names', do we just assume 'this is an expr'?
   seems like we probably could. lets try it.
 
+Ok, so with `parse` returning multiple statements,
+do we...
+
+do a multi-pass thing?
+How do we determine which pass ... we're on?
+
+just because parse can return mutliple things
+doesn't mean the deps are different for each .. at least at tthe moment.
 
 
+So thinking of the super-group story,
+when you call `externals`
+orrr rather `parse`?
+it returns a list of stmts, along with ... their ... hmm.
+wait.
 
+ok no, it returns `(, stmt (array number))`.
+and the `array number` indicates *which passes* this stmt should be
+... involved in ...
+
+so for a given pass, you ... need a separate dependency sort. ...
+which is fine.
+
+and then you go through and call `infer_stmts3` with .. the
+stmt, and the pass #, and ... then ...
+
+it'll be like
+```
+(match pass
+  0 (infer-classes-and-types stmts)
+  1 (infer-definstances stmts)
+  2 (infer-defns stmts)
+  3 (infer-exprs stmts))
+```
+
+And that should be enough, right?
+then we'll get around to needing to do cache invalidation
+based on type-informed dependencies. which we'll need to resolve
+in order to know how to compile type classes in the first place.
+
+SIDE NOTE should I just get rid of `infer_stmt` altogether? We don't really need it, right?
 
 # Hm
 
