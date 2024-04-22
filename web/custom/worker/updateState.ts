@@ -12,7 +12,7 @@ import { showError } from '../store/processTypeInference';
 import { LocedName } from '../store/sortTops';
 import { unique } from '../store/unique';
 import { nodeToSortable } from './calculateInitialState';
-import { AsyncResults, Sortable, State } from './types';
+import { AsyncResults, HoverContents, Sortable, State } from './types';
 
 export function updateState(
     state: State,
@@ -179,6 +179,21 @@ export function updateState(
             });
         }
     }
+
+    const hoverType = (type: any): HoverContents => {
+        if (state.evaluator!.inference!.typeToCst) {
+            return {
+                type: 'type',
+                node: state.evaluator!.inference!.typeToCst(type),
+            };
+        } else {
+            return {
+                type: 'text',
+                text: state.evaluator!.inference!.typeToString(type),
+            };
+        }
+    };
+
     /**
      * BIG QUESTION:
      * - If I'm going to be ... caching ...
@@ -215,7 +230,7 @@ export function updateState(
                     add(
                         state.results!.tops[group[0].id].hover,
                         loc,
-                        state.evaluator!.inference!.typeToString(type),
+                        hoverType(type),
                     );
                 });
                 state.results.tops[group[0].id].usages = usages;
@@ -338,7 +353,7 @@ export function updateState(
                 add(
                     state.results!.tops[topForLoc[loc]].hover,
                     loc,
-                    state.evaluator!.inference!.typeToString(type),
+                    hoverType(type),
                 );
             });
             Object.entries(res.usages).forEach(([key, locs]) => {

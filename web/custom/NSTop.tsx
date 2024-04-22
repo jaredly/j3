@@ -53,6 +53,7 @@ const PluginRender = ({
             values={values}
             nnode={rn}
             hoverPath={props.path}
+            Recurse={Render}
         />
     );
 };

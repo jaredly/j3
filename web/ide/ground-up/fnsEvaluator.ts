@@ -5,7 +5,7 @@ import { findTops } from './findTops';
 import { arr, expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
-import { toJCST } from './round-1/j-cst';
+import { fromJCST, toJCST } from './round-1/j-cst';
 import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
 import { depSort } from '../../custom/store/depSort';
@@ -13,6 +13,7 @@ import { LocedName } from '../../custom/store/sortTops';
 import { unique } from '../../custom/store/unique';
 import { builtins } from './builtins';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
+import { fixDuplicateLocs } from '../../../src/state/fixDuplicateLocs';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
@@ -244,6 +245,12 @@ export const fnsEvaluator = (
                   typeToString(type) {
                       return data['type_to_string'](type);
                   },
+                  typeToCst: data['type_to_cst']
+                      ? (type) =>
+                            fixDuplicateLocs(
+                                fromJCST(data['type_to_cst'](type)),
+                            )
+                      : undefined,
               }
             : undefined,
 

@@ -1,4 +1,29 @@
 
+# Effects
+
+(arg1, arg2) => {
+  !doSomething()
+  somethingElse
+}
+
+/// does that work???
+(arg1, arg2) => handlers => {
+  handlers.doSomething(() => {
+    somethingElse
+  })
+}
+
+
+- [ ] valueToString / typeToString...
+  - typeToCst let's goooo
+
+
+
+
+
+## a tweet?
+
+
 Jerd is a result of asking the question: What if instead of first writing a language and then
 a structured editor, I first write the editor, and then the language?
 

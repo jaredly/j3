@@ -283,6 +283,46 @@
                                                  (, one free)    (tts-inner target free locs)]
                                                  (, (and-loc locs l "(${one} ${(join " " (rev args []))})") free))))
 
+(defn ttc-list [args free]
+    (foldl
+        (, [] free)
+            args
+            (fn [(, args free) a]
+            (let [(, arg free) (ttc-inner a free)] (, [arg ..args] free)))))
+
+(defn ttc-inner [t free]
+    (match t
+        (tvar name loc)                      (let [(, fmap idx) free]
+                                                 (match fmap
+                                                     (some fmap) (match (map/get fmap name)
+                                                                     (some name) (, (cst/identifier name loc) free)
+                                                                     none        (let [name (at letters idx "_too_many_vbls_")]
+                                                                                     (,
+                                                                                         (cst/identifier name loc)
+                                                                                             (, (some (map/set fmap name name)) (+ 1 idx)))))
+                                                     _           (, (cst/identifier name loc) free)))
+        (tcon name l)                        (, (cst/identifier name l) free)
+        (tapp (tapp (tcon "->" _) a la) b l) (let [
+                                                 (, iargs r)   (unwrap-fn b)
+                                                 args          [a ..iargs]
+                                                 (, args free) (ttc-list args free)
+                                                 (, two free)  (ttc-inner r free)]
+                                                 (,
+                                                     (cst/list [(cst/identifier "fn" la) (cst/array (rev args []) la) two] l)
+                                                         free))
+        (tapp a b l)                         (let [
+                                                 (, target args) (unwrap-app a)
+                                                 args            [b ..args]
+                                                 args            (rev args [])
+                                                 (, args free)   (ttc-list args free)
+                                                 (, one free)    (ttc-inner target free)]
+                                                 (, (cst/list [one ..(rev args [])] l) free))))
+
+(ttc-inner (@t (fn [x] y)) (, (some map/nil) 0))
+
+(defn type-to-cst [t]
+    (let [(, cst _) (ttc-inner t (, (some map/nil) 0))] cst))
+
 (defn type-to-string [t]
     (let [(, text _) (tts-inner t (, (some map/nil) 0) false)] text))
 
@@ -1093,7 +1133,7 @@
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
                                                       (<- (tenv/set-type tenv/nil name (, (generalize tenv' t) nl))))
-        (stypealias name nl args body l)          (let-> [() (record-def-> nl)]
+        (stypealias name nl args body l)          (let-> [() (record-def-> nl) () (record-usages-in-type tenv' body)]
                                                       (<-
                                                           (tenv
                                                               map/nil
@@ -1162,7 +1202,6 @@
                                                                          }."
                                                                          [(, name l)]))
                                                                  (let-> [
-                                                                 ()    (record-usage-> l al)
                                                                  subst (<-
                                                                            (if (= (len names) 0)
                                                                                subst
@@ -1263,6 +1302,32 @@
         (,
         [(@! (deftype kind (star) (kfun kind kind))) (@! (let [(kfun m n) (star)] 1))]
             "int")])
+
+(** ## Recording Usages **)
+
+(defn record-usages-in-type [tenv type]
+    (let [(tenv _ _ _ alias) tenv]
+        (match type
+            (tcon name l)    (match (map/get alias name)
+                                 (some (,, _ _ al)) (record-usage-> l al)
+                                 _                  (match (tenv/type tenv name)
+                                                        (some (, _ _)) (record-usage-> l -1)
+                                                        _              (<- ())))
+            (tapp one two l) (let-> [
+                                 () (record-usages-in-type tenv one)
+                                 () (record-usages-in-type tenv two)]
+                                 (<- ()))
+            _                (<- ()))))
+
+(, )
+
+(defn run/usages [tenv stmts]
+    (force type-error->s (run/nil-> (infer-stmtss builtin-env stmts))))
+
+(** todo write some tests for this, and then get
+    - type alises referencing each other
+    - type names getting referenced
+    - constructors getting referenced (as values, and as patterns) **)
 
 (** ## Some debugging fns **)
 
@@ -1434,6 +1499,7 @@
                                 (fn [(, values cons) (,,, name nl args l)]
                                 (let-> [
                                     args (<- (map args (fn [arg] (type-with-free arg free-set))))
+                                    ()   (do-> (record-usages-in-type tenv') args)
                                     args (map-> (subst-aliases (tenv/alias tenv')) args)
                                     _    (map->
                                              (fn [arg]
@@ -1482,7 +1548,8 @@
                                                      body))
                                              []    (let-> [
                                                        () (record-def-> nl)
-                                                       () (record-type-usages (map/from-list args) tenv body)]
+                                                       () (record-type-usages (map/from-list args) tenv body)
+                                                       () (record-usages-in-type tenv body)]
                                                        (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
                                              names (<-err
                                                        (type-error "Unbound types" (map names (fn [(,, name _ l)] (, name l))))))))
@@ -2041,7 +2108,8 @@ map->
         inference
             analysis
             (fn [type] string)
-            (fn [tenv string] (option type))))
+            (fn [tenv string] (option type))
+            (fn [type] cst)))
 
 (def externals-list (fn [x] (bag/to-list (externals set/nil x))))
 
@@ -2063,7 +2131,7 @@ map->
 foldl
 
 ((eval
-    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type \n }) ")
+    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type, 4: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type, type_to_cst \n }) ")
     (typecheck
         (inference
             builtin-env
@@ -2081,4 +2149,5 @@ foldl
             (fn [tenv name]
             (match (tenv/type tenv name)
                 (some (, v _)) (some (scheme/type v))
-                _              (none)))))
+                _              (none)))
+            type-to-cst))

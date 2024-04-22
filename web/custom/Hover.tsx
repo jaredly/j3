@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Ctx } from '../../src/to-ast/library';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
@@ -9,6 +9,12 @@ import { NUIState, UIState } from './UIState';
 import { useGetStore } from './store/StoreCtx';
 import { WorkerResults } from './store/useSyncStore';
 import { unique } from './store/unique';
+import { HoverContents } from './worker/types';
+import { renderNNode } from '../ide/ground-up/renderNodeToString';
+import { getNestedNodes } from '../../src/state/getNestedNodes';
+import { Map, toMCST } from '../../src/types/mcst';
+import { Node, nodesEqual } from '../../src/types/cst';
+import { RenderStatic } from './RenderStatic';
 
 export const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
@@ -120,7 +126,11 @@ export const Hover = ({}: {}) => {
                             ...f.style,
                         }}
                     >
-                        {f.text}
+                        {f.contents.type === 'text' ? (
+                            f.contents.text
+                        ) : (
+                            <RenderStatic node={f.contents.node} />
+                        )}
                     </div>
                 ))}
             </div>
@@ -128,9 +138,18 @@ export const Hover = ({}: {}) => {
     );
 };
 
+// const RenderNode = ({node}: {node: Node}) => {
+//     const nested = useMemo(() => {
+//         const map: Map = {}
+//         const num = toMCST(node, map)
+//         return getNestedNodes(map[num], map)
+//     }, [])
+//     return <RenderStatic node={} />
+// }
+
 type HoverItem = {
     idx: number;
-    text: string;
+    contents: HoverContents;
     style?: StyleProp;
 };
 
@@ -197,7 +216,10 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
         if (errs?.length) {
             hovers.push({
                 idx: idx,
-                text: errs.join('\n'),
+                contents: {
+                    type: 'text',
+                    text: errs.join('\n'),
+                },
                 style: {
                     color: '#f66',
                 },
@@ -223,7 +245,30 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
 
         const current = results.nodes[ns.idx]?.hover[idx];
         if (current?.length) {
-            hovers.push({ idx: idx, text: unique(current).join('\n') });
+            for (let item of current) {
+                if (item.type === 'text') {
+                    if (
+                        hovers.some(
+                            (h) =>
+                                h.contents.type === 'text' &&
+                                h.contents.text === item.text,
+                        )
+                    ) {
+                        continue;
+                    }
+                } else {
+                    if (
+                        hovers.some(
+                            (h) =>
+                                h.contents.type === 'type' &&
+                                nodesEqual(h.contents.node, item.node),
+                        )
+                    ) {
+                        continue;
+                    }
+                }
+                hovers.push({ idx, contents: item });
+            }
             break;
         }
     }

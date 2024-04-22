@@ -10,6 +10,23 @@ import { Store } from '../../web/custom/store/Store';
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
 
+export const transformNode = (node: NNode, f: (n: NNode) => NNode): NNode => {
+    node = f(node);
+    switch (node.type) {
+        case 'horiz':
+        case 'vert':
+        case 'inline':
+            node.children = node.children.map((child) =>
+                transformNode(child, f),
+            );
+            break;
+        case 'indent':
+            node.child = transformNode(node.child, f);
+            break;
+    }
+    return node;
+};
+
 export type NNode =
     | { type: 'horiz' | 'vert' | 'inline'; children: NNode[]; style?: any }
     | {
@@ -86,6 +103,16 @@ export const unnestNodes = (node: NNode): ONode[] => {
         case 'blinker':
             return [node];
     }
+};
+
+export const getDeepNestedNodes = (node: MNode, map: Map): NNode => {
+    const base = getNestedNodes(node, map);
+    return transformNode(base, (node) => {
+        if (node.type === 'ref') {
+            return getNestedNodes(map[node.id], map);
+        }
+        return node;
+    });
 };
 
 export const getNestedNodes = (
@@ -302,30 +329,10 @@ export const getNestedNodes = (
                     { type: 'blinker', loc: 'end' },
                 ],
             };
-        // return {
-        //     type: 'dom',
-        //     node: (path, idx) =>
-        //         React.createElement(LexicalFolks, {
-        //             initial: node.contents,
-        //             path,
-        //             idx,
-        //             // store,
-        //             // onChange(value) {
-        //             //     // store.dispatch({ type: '' })
-        //             // },
-        //             // onSelect(v) {
-        //             //     store.dispatch({
-        //             //         type: 'select',
-        //             //         at: [{ start: path }],
-        //             //     });
-        //             // },
-        //         }), //<LexicalFolks value={node.lexicalJSON} />
-        // };
         default:
             let _: never = node;
             throw new Error(`not handled ${(node as any).type}`);
     }
-    // return null;
 };
 
 function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {

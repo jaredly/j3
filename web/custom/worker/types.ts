@@ -1,5 +1,7 @@
+import { Node } from '../../../src/types/cst';
 import { ProduceItem } from '../../ide/ground-up/FullEvalator';
 import { TraceMap } from '../../ide/ground-up/loadEv';
+import { jcst } from '../../ide/ground-up/round-1/j-cst';
 import { ImmediateResults } from '../store/getImmediateResults';
 import { AnyEnv } from '../store/getResults';
 import { LocedName } from '../store/sortTops';
@@ -23,6 +25,10 @@ export type Sortable = {
  * - pluginResults? ... I mean yes ... will cross that bridge in a bit.
  */
 
+export type HoverContents =
+    | { type: 'type'; node: Node }
+    | { type: 'text'; text: string }; // | {type: 'error'};
+
 export type AsyncResults = {
     tops: Record<
         number,
@@ -35,7 +41,7 @@ export type AsyncResults = {
                 source?: boolean;
             };
             errors: Record<number, string[]>;
-            hover: Record<number, string[]>;
+            hover: Record<number, HoverContents[]>;
             pluginResults?: any;
             values: Record<string, any>;
             usages: Record<number, number[]>;

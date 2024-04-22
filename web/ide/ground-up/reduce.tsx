@@ -258,6 +258,7 @@ export const actionToUpdate = (
         case 'copy':
         case 'menu-select':
         case 'namespace-rename':
+        case 'jump-to-definition':
             return;
         default:
             const _: never = action;

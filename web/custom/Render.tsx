@@ -157,6 +157,7 @@ export const Render = React.memo(
                     nnode={nnode}
                     values={values}
                     hoverPath={path}
+                    Recurse={Render}
                 />
             </div>
         );
@@ -259,11 +260,15 @@ export const Render = React.memo(
 );
 
 export const RenderNNode = (
-    props: RenderProps & { nnode: NNode; values: Values; hoverPath: Path[] },
+    props: RenderProps & {
+        nnode: NNode;
+        values: Values;
+        hoverPath: Path[];
+        Recurse: React.ComponentType<RenderProps>;
+    },
 ): JSX.Element | null => {
-    const { nnode, idx, path } = props;
+    const { nnode, idx, path, Recurse } = props;
     const { reg, dispatch, node, selection, errors } = props.values;
-    const store = useGetStore();
 
     const coverageLevel = selection?.coverage;
 
@@ -304,7 +309,7 @@ export const RenderNNode = (
                     }}
                     ref={(node) => reg(node, idx, path, 'outside')}
                     onMouseEnter={() =>
-                        dispatch({ type: 'hover', path: props.hoverPath })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
                 >
                     {/* {props.debug ? nnode.type : null} */}
@@ -364,14 +369,18 @@ export const RenderNNode = (
                             rainbow[path.length % rainbow.length],
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
-                        fontVariationSettings: props.values.hover
-                            ? '"wght" 900'
-                            : '',
+                        // fontVariationSettings: props.values.hover
+                        //     ? '"wght" 900'
+                        //     : '',
+                        outline: props.values.hover
+                            ? '1px solid rgba(255,255,255,0.2)'
+                            : '1px solid transparent',
+                        transition: 'ease .2s outline',
                         ...selectStyle,
                         ...errorStyle,
                     }}
                     onMouseEnter={() =>
-                        dispatch({
+                        dispatch?.({
                             type: 'hover',
                             path: props.hoverPath,
                             // path.concat({ idx, type: 'start' }),
@@ -450,7 +459,7 @@ export const RenderNNode = (
                             : {}),
                     }}
                     onMouseEnter={() =>
-                        dispatch({
+                        dispatch?.({
                             type: 'hover',
                             path: props.hoverPath,
                             //path.concat({ idx, at: 0, type: 'subtext' }),
@@ -460,26 +469,11 @@ export const RenderNNode = (
                         if (evt.metaKey) {
                             evt.stopPropagation();
                             evt.preventDefault();
-                            const found =
-                                store.getResults().results.jumpToName.value[
-                                    nnode.text
-                                ];
-                            if (found != null) {
-                                const path = pathForIdx(
-                                    found,
-                                    store.getState(),
-                                );
-                                if (path != null) {
-                                    dispatch({
-                                        type: 'select',
-                                        at: [{ start: path }],
-                                    });
-                                }
-                            }
+                            dispatch?.({ type: 'jump-to-definition', idx });
                         }
                     }}
                     onDoubleClick={() => {
-                        dispatch({
+                        dispatch?.({
                             type: 'select',
                             at: [
                                 {
@@ -507,7 +501,7 @@ export const RenderNNode = (
         }
         case 'ref': {
             const child = (
-                <Render
+                <Recurse
                     key={nnode.id}
                     idx={nnode.id}
                     debug={props.debug}
@@ -538,7 +532,7 @@ export const RenderNNode = (
                             // gap: '0 8px',
                         }}
                         onMouseEnter={() =>
-                            dispatch({ type: 'hover', path: props.hoverPath })
+                            dispatch?.({ type: 'hover', path: props.hoverPath })
                         }
                     >
                         {nnode.firstLine.map((node, i) => (
@@ -594,7 +588,7 @@ export const RenderNNode = (
                         // gap: '0 8px'
                     }}
                     onMouseEnter={() =>
-                        dispatch({ type: 'hover', path: props.hoverPath })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
                 >
                     {nnode.firstLine.length ? (
@@ -670,7 +664,7 @@ export const RenderNNode = (
             return (
                 <span
                     onMouseEnter={() =>
-                        dispatch({ type: 'hover', path: props.hoverPath })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
                     style={{ display: 'inline-block', paddingLeft: 10 }}
                 >

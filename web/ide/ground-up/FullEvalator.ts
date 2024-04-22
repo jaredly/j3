@@ -63,6 +63,7 @@ export type FullEvalator<
         addTypes(env: TypeEnv, nenv: TypeEnv): TypeEnv;
         typeForName(env: TypeEnv, name: string): Type;
         typeToString(type: Type): string;
+        typeToCst?(type: Type): Node;
     };
 
     analysis?: {

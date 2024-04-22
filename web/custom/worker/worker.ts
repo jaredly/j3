@@ -7,7 +7,7 @@ import { ImmediateResults, NodeResults } from '../store/getImmediateResults';
 import { LocedName } from '../store/sortTops';
 
 import { calculateInitialState } from './calculateInitialState';
-import { State } from './types';
+import { HoverContents, State } from './types';
 import { updateState } from './updateState';
 
 export type Message =
@@ -37,7 +37,7 @@ const mergeMessages = (last: Message, next: Message) => {
 export type Sendable = {
     produce: ProduceItem[];
     errors: Record<number, string[]>;
-    hover: Record<number, string[]>;
+    hover: Record<number, HoverContents[]>;
     usages: Record<number, number[]>;
     pluginResults: any;
 };

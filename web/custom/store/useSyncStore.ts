@@ -12,6 +12,7 @@ import {
 import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
 import { calcChangedNodes } from './calcChangedNodes';
+import { pathForIdx } from '../../ide/ground-up/CommandPalette';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -143,6 +144,27 @@ export const setupSyncStore = (
             send({ type: 'debug', execOrder, id: msgid++, showJs });
         },
         dispatch(action) {
+            if (action.type === 'jump-to-definition') {
+                const node = state.map[action.idx];
+                if (node.type === 'identifier') {
+                    const name = node.text;
+                    const found = results.jumpToName.value[name];
+                    if (!found) {
+                        console.warn(`Cant find a definition for ${name}`);
+                        return;
+                    }
+                    const path = pathForIdx(found, state);
+                    if (path) {
+                        action = { type: 'select', at: [{ start: path }] };
+                    } else {
+                        console.warn(`Cant find a path`);
+                        return;
+                    }
+                } else {
+                    console.warn(`Not an identifier`);
+                    return;
+                }
+            }
             // if (inProcess) {
             //     // debugger;
             //     console.error(`trying to dispatch`, action);

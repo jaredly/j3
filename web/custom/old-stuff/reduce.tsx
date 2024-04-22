@@ -124,6 +124,7 @@ const actionToUpdate = (
             return;
         }
         case 'move':
+        case 'jump-to-definition':
             return;
         // case 'collapse':
         //     return action;

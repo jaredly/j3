@@ -167,7 +167,7 @@ export type Values = {
         coverage: CoverageLevel;
     };
     hover?: boolean;
-    dispatch: React.Dispatch<Action>;
+    dispatch?: React.Dispatch<Action>;
 };
 
 export const getValues = (
