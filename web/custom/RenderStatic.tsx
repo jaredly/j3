@@ -16,7 +16,7 @@ export const RenderStatic = ({ node }: { node: Node }) => {
         const root = toMCST(node, map);
         const display: Display = {};
         layout(root, 0, map, display, {});
-        const top = getDeepNestedNodes(map[root], map);
+        const top = getDeepNestedNodes(map[root], map, display);
         return { map, root, top, display };
     }, [node]);
 
@@ -24,7 +24,7 @@ export const RenderStatic = ({ node }: { node: Node }) => {
         <RenderNNode
             nnode={top}
             values={{
-                display,
+                display: {},
                 meta: {},
                 nnode: top,
                 node: map[root],

@@ -332,6 +332,14 @@ export const RenderNNode = (
                     ))}
                 </span>
             );
+        case 'nest':
+            return (
+                <RenderNNode
+                    {...props}
+                    nnode={nnode.inner}
+                    values={{ ...props.values, node: nnode.node }}
+                />
+            );
         case 'blinker':
             return (
                 <span

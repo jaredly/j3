@@ -66,6 +66,8 @@ export const renderNNode = (
     display: Display,
 ): string => {
     switch (nnode.type) {
+        case 'nest':
+            return renderNNode(nnode.inner, map, left, display);
         case 'dom':
             return '<dom node>';
         case 'rich-text':

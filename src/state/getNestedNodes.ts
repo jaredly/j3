@@ -6,6 +6,7 @@ import { ONode } from './types';
 import React from 'react';
 import { RichText } from '../../web/custom/RichText';
 import { Store } from '../../web/custom/store/Store';
+import { Display } from '../to-ast/library';
 
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
@@ -20,6 +21,9 @@ export const transformNode = (node: NNode, f: (n: NNode) => NNode): NNode => {
                 transformNode(child, f),
             );
             break;
+        case 'nest':
+            node.inner = transformNode(node.inner, f);
+            break;
         case 'indent':
             node.child = transformNode(node.child, f);
             break;
@@ -28,6 +32,7 @@ export const transformNode = (node: NNode, f: (n: NNode) => NNode): NNode => {
 };
 
 export type NNode =
+    | { type: 'nest'; node: MNode; inner: NNode }
     | { type: 'horiz' | 'vert' | 'inline'; children: NNode[]; style?: any }
     | {
           type: 'pairs';
@@ -61,6 +66,8 @@ export const getNodes = (node: MNode, map: Map, text?: string) =>
 
 export const unnestNodes = (node: NNode): ONode[] => {
     switch (node.type) {
+        case 'nest':
+            return unnestNodes(node.inner);
         case 'horiz':
         case 'vert':
         case 'inline':
@@ -105,11 +112,29 @@ export const unnestNodes = (node: NNode): ONode[] => {
     }
 };
 
-export const getDeepNestedNodes = (node: MNode, map: Map): NNode => {
-    const base = getNestedNodes(node, map);
+export const getDeepNestedNodes = (
+    node: MNode,
+    map: Map,
+    display: Display,
+): NNode => {
+    const base = getNestedNodes(
+        node,
+        map,
+        undefined,
+        display[node.loc]?.layout,
+    );
     return transformNode(base, (node) => {
         if (node.type === 'ref') {
-            return getNestedNodes(map[node.id], map);
+            return {
+                type: 'nest',
+                inner: getNestedNodes(
+                    map[node.id],
+                    map,
+                    undefined,
+                    display[node.id]?.layout,
+                ),
+                node: map[node.id],
+            };
         }
         return node;
     });
