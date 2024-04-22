@@ -1322,7 +1322,20 @@
 (, )
 
 (defn run/usages [tenv stmts]
-    (force type-error->s (run/nil-> (infer-stmtss builtin-env stmts))))
+    (let [
+        (, (,, _ (, _ (, defns uses)) _) _) ((state-f (infer-stmtss tenv stmts)) state/nil)]
+        (, defns uses)))
+
+(,
+    (run/usages builtin-env)
+        [(, [(@! (let [x 1 y 2] x))] (, [22225 22222] [(, 22224 22222)]))
+        (, [(@! (deftype a (b))) (@! (deftype c (b a)))] (, [22256 22264] []))
+        (, [(@! (typealias a int)) (@! (typealias b a))] (, [22279 22289] []))
+        (,
+        [(@! (typealias a int)) (@! (deftype c (b a)))]
+            (, [22305 22299] [(, 22308 22299)]))])
+
+
 
 (** todo write some tests for this, and then get
     - type alises referencing each other
@@ -1487,6 +1500,7 @@
 (defn infer-deftype [tenv' bound tname tnl targs constructors l]
     (let-> [
         names           (<- (map constructors (fn [(,,, name _ _ _)] name)))
+        ()              (record-def-> tnl)
         final           (<-
                             (foldl
                                 (tcon tname tnl)

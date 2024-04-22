@@ -431,7 +431,7 @@ export const debounce = <T,>(
     };
 };
 
-const initialState = (): NUIState => {
+export const initialState = (): NUIState => {
     const map = emptyMap();
     return {
         map,

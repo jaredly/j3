@@ -14,8 +14,9 @@
 }
 
 
-- [ ] valueToString / typeToString...
-  - typeToCst let's goooo
+- [x] valueToString / typeToString...
+  - [x] typeToCst let's goooo
+  very nice.
 
 
 

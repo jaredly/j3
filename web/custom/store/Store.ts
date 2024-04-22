@@ -11,9 +11,16 @@ import { FullEvalator, ProduceItem } from '../../ide/ground-up/FullEvalator';
 import { goRight } from '../../../src/state/goRightUntil';
 import { cmpFullPath } from '../../../src/state/path';
 import { ResultsCache } from './ResultsCache';
-import { ImmediateResults, NodeResults } from './getImmediateResults';
+import {
+    ImmediateResults,
+    NodeResults,
+    blankInitialResults,
+    getImmediateResults,
+} from './getImmediateResults';
 import { Sendable } from '../worker/worker';
 import { WorkerResults } from './useSyncStore';
+import { initialState } from '../../ide/ground-up/reduce';
+import { emptyResults } from './getResults';
 
 export type NUIResults = {
     jumpToName: { [name: string]: number };
@@ -145,8 +152,15 @@ export const noopStore: Store = {
     setDebug() {},
     dispatch: nope,
     getEvaluator: nope,
-    getResults: nope,
-    getState: nope,
+    getResults: () => ({
+        results: blankInitialResults(),
+        workerResults: {
+            nodes: {},
+            traces: {},
+            usages: {},
+        },
+    }),
+    getState: () => initialState(),
     onChange: nope,
     on: nope,
     reg: nope,
