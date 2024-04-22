@@ -62,6 +62,16 @@ throw new Error('match fail 18656:' + JSON.stringify($target))
 })(prim)
 let type_error = (message) => (loced_items) => $co(message)(loced_items)
 let debug_invariant = false
+let $co$co0 = ({"0": a}) => a
+let rev_pair = ({"1": b, "0": a}) => $co(b)(a)
+let with_name = (map) => (id) => (($target) => {
+if ($target.type === "some") {
+let v = $target[0];
+return `${v}:${its(id)}`
+} ;
+return `?:${its(id)}`;
+throw new Error('match fail 22801:' + JSON.stringify($target))
+})(map$slget(map)(id))
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -182,7 +192,7 @@ let tfn = (a) => (b) => (l) => tapp(tapp(tcon("->")(l))(a)(l))(b)(l)
 let tint = tcon("int")(-1)
 let map_without = (map) => (set) => foldr(map)(set$slto_list(set))(map$slrm)
 let demo_new_subst = map$slfrom_list(cons($co("a")(tcon("a-mapped")(-1)))(cons($co("b")(tvar("c")(-1)))(nil)))
-let tconstructor = (v0) => (v1) => (v2) => ({type: "tconstructor", 0: v0, 1: v1, 2: v2})
+let tconstructor = (v0) => (v1) => (v2) => (v3) => ({type: "tconstructor", 0: v0, 1: v1, 2: v2, 3: v3})
 let zip = (one) => (two) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "nil") {
@@ -706,7 +716,7 @@ let many = (v0) => ({type: "many", 0: v0})
 let empty = {type: "empty"}
 let ttc_inner = (t) => (free) => (($target) => {
 if ($target.type === "tvar") {
-let name = $target[0];
+let vname = $target[0];
 let loc = $target[1];
 {
 let {"1": idx, "0": fmap} = free;
@@ -715,7 +725,7 @@ let $target = fmap;
 if ($target.type === "some") {
 let fmap = $target[0];
 {
-let $target = map$slget(fmap)(name);
+let $target = map$slget(fmap)(vname);
 if ($target.type === "some") {
 let name = $target[0];
 return $co(cst$slidentifier(name)(loc))(free)
@@ -724,13 +734,13 @@ return $co(cst$slidentifier(name)(loc))(free)
 let none = $target;
 {
 let name = at(letters)(idx)("_too_many_vbls_");
-return $co(cst$slidentifier(name)(loc))($co(some(map$slset(fmap)(name)(name)))(1 + idx))
+return $co(cst$slidentifier(name)(loc))($co(some(map$slset(fmap)(vname)(name)))(1 + idx))
 }
 };
 throw new Error('match fail 21856:' + JSON.stringify($target))
 }
 } ;
-return $co(cst$slidentifier(name)(loc))(free);
+return $co(cst$slidentifier(vname)(loc))(free);
 throw new Error('match fail 21850:' + JSON.stringify($target))
 }
 }
@@ -1481,6 +1491,39 @@ let type_to_cst = (t) => {
 let {"0": cst} = ttc_inner(t)($co(some(map$slnil))(0));
 return cst
 }
+let pat$slidents = (pat) => (($target) => {
+if ($target.type === "pvar") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+if ($target.type === "pcon") {
+let name = $target[0];
+let pats = $target[1];
+let l = $target[2];
+return many(cons(one($co(name)(l)))(map(pats)(pat$slidents)))
+} ;
+return empty;
+throw new Error('match fail 22510:' + JSON.stringify($target))
+})(pat)
+let type$slidents = (type) => (($target) => {
+if ($target.type === "tvar") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+if ($target.type === "tapp") {
+let target = $target[0];
+let arg = $target[1];
+return bag$sland(type$slidents(target))(type$slidents(arg))
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+throw new Error('match fail 22620:' + JSON.stringify($target))
+})(type)
 let tenv$slrm = ({"3": alias, "2": names, "1": cons, "0": types}) => ($var) => tenv(map$slrm(types)($var))(cons)(names)(alias)
 let compose_subst = (place) => (new_subst) => (old_subst) => (($target) => {
 if ($target.type === "some") {
@@ -1500,7 +1543,7 @@ let tenv_free = ({"0": types}) => foldr(set$slnil)(map(map$slvalues(types))(({"0
 let tenv_apply = (subst) => ({"3": alias, "2": names, "1": cons, "0": types}) => tenv(map$slmap(({"1": l, "0": s}) => $co(scheme_apply(subst)(s))(l))(types))(cons)(names)(alias)
 let generalize = (tenv) => (t) => scheme(set$sldiff(type_free(t))(tenv_free(tenv)))(t)
 let new_type_var = (prefix) => (l) => $gt$gt$eq($lt_idx)((nidx) => $gt$gt$eq(idx_$gt(nidx + 1))((_16872) => $lt_(tvar(`${prefix}:${its(nidx)}`)(l))))
-let basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(set$slfrom_list(cons("a")(cons("b")(nil))))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))))(nil)))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(nil)))))(map$slnil)
+let basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(set$slfrom_list(cons("a")(cons("b")(nil))))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(nil)))))(map$slnil)
 let typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
 let subst_to_string = (subst) => join("\n")(map(map$slto_list(subst))(({"1": v, "0": k}) => `${k} : ${type_to_string_raw(v)}`))
 let externals = (bound) => (expr) => (($target) => {
@@ -1647,7 +1690,7 @@ throw new Error('match fail 13659:' + JSON.stringify($target))
 return $lt_(foldl(base)(args)((target) => ({"1": l, "0": arg}) => tapp(target)(arg)(l)));
 throw new Error('match fail 13652:' + JSON.stringify($target))
 })(base)))
-let infer_deftype = (tenv$qu) => (bound) => (tname) => (tnl) => (targs) => (constructors) => (l) => $gt$gt$eq($lt_(map(constructors)(({"0": name}) => name)))((names) => $gt$gt$eq($lt_(foldl(tcon(tname)(tnl))(targs)((body) => ({"1": al, "0": arg}) => tapp(body)(tvar(arg)(al))(l))))((final) => $gt$gt$eq($lt_(foldl(set$slnil)(targs)((free) => ({"0": arg}) => set$sladd(free)(arg))))((free_set) => $gt$gt$eq(foldl_$gt($co(map$slnil)(map$slnil))(constructors)(({"1": cons, "0": values}) => ({"3": l, "2": args, "1": nl, "0": name}) => $gt$gt$eq($lt_(map(args)((arg) => type_with_free(arg)(free_set))))((args) => $gt$gt$eq(do_$gt(record_usages_in_type(tenv$qu))(args))((_14791) => $gt$gt$eq(map_$gt(subst_aliases(tenv$slalias(tenv$qu)))(args))((args) => $gt$gt$eq(map_$gt((arg) => (($target) => {
+let infer_deftype = (tenv$qu) => (bound) => (tname) => (tnl) => (targs) => (constructors) => (l) => $gt$gt$eq($lt_(map(constructors)(({"0": name}) => name)))((names) => $gt$gt$eq(record_def_$gt(tnl))((_14709) => $gt$gt$eq($lt_(foldl(tcon(tname)(tnl))(targs)((body) => ({"1": al, "0": arg}) => tapp(body)(tvar(arg)(al))(l))))((final) => $gt$gt$eq($lt_(foldl(set$slnil)(targs)((free) => ({"0": arg}) => set$sladd(free)(arg))))((free_set) => $gt$gt$eq(foldl_$gt($co(map$slnil)(map$slnil))(constructors)(({"1": cons, "0": values}) => ({"3": l, "2": args, "1": nl, "0": name}) => $gt$gt$eq($lt_(map(args)((arg) => type_with_free(arg)(free_set))))((args) => $gt$gt$eq(do_$gt(record_usages_in_type(tenv$qu))(args))((_14791) => $gt$gt$eq(record_def_$gt(nl))((_14791) => $gt$gt$eq(map_$gt(subst_aliases(tenv$slalias(tenv$qu)))(args))((args) => $gt$gt$eq(map_$gt((arg) => (($target) => {
 if ($target.type === "nil") {
 return $lt_(true)
 } ;
@@ -1656,7 +1699,7 @@ let names = $target;
 return $lt_err(type_error(`Unbound types in deftype ${tname}`)(map(names)(({"2": l, "0": name}) => $co(name)(l))))
 };
 throw new Error('match fail 14883:' + JSON.stringify($target))
-})(bag$slto_list(externals_type(set$sladd(bound)(tname))(arg))))(args))((_14791) => $lt_($co(map$slset(values)(name)($co(scheme(free_set)(foldr(final)(args)((body) => (arg) => tfn(arg)(body)(l))))(nl)))(map$slset(cons)(name)(tconstructor(free_set)(args)(final))))))))))(({"1": cons, "0": values}) => $lt_(tenv(values)(cons)(map$slset(map$slnil)(tname)($co(len(targs))(set$slfrom_list(names))))(map$slnil))))))
+})(bag$slto_list(externals_type(set$sladd(bound)(tname))(arg))))(args))((_14791) => $lt_($co(map$slset(values)(name)($co(scheme(free_set)(foldr(final)(args)((body) => (arg) => tfn(arg)(body)(l))))(nl)))(map$slset(cons)(name)(tconstructor(free_set)(args)(final)(nl)))))))))))(({"1": cons, "0": values}) => $lt_(tenv(values)(cons)(map$slset(map$slnil)(tname)($co(len(targs))(set$slfrom_list(names))))(map$slnil)))))))
 let externals_list = (x) => bag$slto_list(externals(set$slnil)(x))
 let vars_for_names = (names) => (tenv) => foldr_$gt($co(tenv)(nil))(names)(({"1": vars, "0": tenv}) => ({"1": loc, "0": name}) => $gt$gt$eq(new_type_var(name)(loc))((self) => $lt_($co(tenv$slset_type(tenv)(name)($co(scheme(set$slnil)(self))(loc)))(cons(self)(vars)))))
 let externals_defs = (stmts) => foldr(empty)(map(stmts)(({"2": body}) => externals(set$slnil)(body)))(bag$sland)
@@ -1749,6 +1792,62 @@ return name
 return "\$arg";
 throw new Error('match fail 16257:' + JSON.stringify($target))
 })(pat))(pat_loc(pat))
+let expr$slidents = (expr) => (($target) => {
+if ($target.type === "estr") {
+let exprs = $target[1];
+return many(map(exprs)(dot(expr$slidents)($co$co0)))
+} ;
+if ($target.type === "evar") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+if ($target.type === "elambda") {
+let pats = $target[0];
+let expr = $target[1];
+let l = $target[2];
+return many(cons(expr$slidents(expr))(map(pats)(pat$slidents)))
+} ;
+if ($target.type === "eapp") {
+let target = $target[0];
+let args = $target[1];
+return many(cons(expr$slidents(target))(map(args)(expr$slidents)))
+} ;
+if ($target.type === "elet") {
+let bindings = $target[0];
+let body = $target[1];
+return many(cons(expr$slidents(body))(map(bindings)(({"1": exp, "0": pat}) => bag$sland(pat$slidents(pat))(expr$slidents(exp)))))
+} ;
+return empty;
+throw new Error('match fail 22436:' + JSON.stringify($target))
+})(expr)
+let stmt$slidents = (stmt) => (($target) => {
+if ($target.type === "sdef") {
+let name = $target[0];
+let l = $target[1];
+let body = $target[2];
+return bag$sland(one($co(name)(l)))(expr$slidents(body))
+} ;
+if ($target.type === "sexpr") {
+let exp = $target[0];
+return expr$slidents(exp)
+} ;
+if ($target.type === "stypealias") {
+let name = $target[0];
+let l = $target[1];
+let args = $target[2];
+let body = $target[3];
+return bag$sland(type$slidents(body))(many(cons(one($co(name)(l)))(map(args)(one))))
+} ;
+if ($target.type === "sdeftype") {
+let name = $target[0];
+let l = $target[1];
+let args = $target[2];
+let constrs = $target[3];
+return bag$sland(many(map(constrs)(({"2": args, "1": l, "0": name}) => bag$sland(one($co(name)(l)))(many(map(args)(type$slidents))))))(bag$sland(one($co(name)(l)))(many(map(args)(one))))
+} ;
+throw new Error('match fail 22611:' + JSON.stringify($target))
+})(stmt)
 let instantiate = ({"1": t, "0": vars}) => (l) => $gt$gt$eq($lt_(set$slto_list(vars)))((names) => $gt$gt$eq(map_$gt((name) => new_type_var(name)(l))(names))((with_types) => $gt$gt$eq($lt_(map$slfrom_list(zip(names)(with_types))))((subst) => $lt_($co(type_apply(subst)(t))(subst)))))
 let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {
@@ -1871,13 +1970,13 @@ let v = $target[0];
 return $lt_(v)
 } ;
 throw new Error('match fail 3661:' + JSON.stringify($target))
-})(tenv$slcon(tenv)(name)))(({"2": cres, "1": cargs, "0": free}) => $gt$gt$eq(record_$gt(l)(tfns(cargs)(cres))(true))((_3479) => $gt$gt$eq(instantiate(scheme(free)(cres))(l))(({"1": tsubst, "0": tres}) => $gt$gt$eq($lt_(type$slset_loc(l)(tres)))((tres) => $gt$gt$eq($lt_(map(cargs)(type_apply(tsubst))))((cargs) => $gt$gt$eq($lt_(zip(args)(cargs)))((zipped) => $gt$gt$eq((($target) => {
+})(tenv$slcon(tenv)(name)))(({"3": cloc, "2": cres, "1": cargs, "0": free}) => $gt$gt$eq(record_usage_$gt(l)(cloc))((_3479) => $gt$gt$eq(record_$gt(l)(tfns(cargs)(cres))(true))((_3479) => $gt$gt$eq(instantiate(scheme(free)(cres))(l))(({"1": tsubst, "0": tres}) => $gt$gt$eq($lt_(type$slset_loc(l)(tres)))((tres) => $gt$gt$eq($lt_(map(cargs)(type_apply(tsubst))))((cargs) => $gt$gt$eq($lt_(zip(args)(cargs)))((zipped) => $gt$gt$eq((($target) => {
 if ($target === true) {
 return $lt_err(type_error(`Wrong number of arguments to type constructor: given ${its(len(args))}, but the type constructor expects ${its(len(cargs))}`)(cons($co(name)(l))(nil)))
 } ;
 return $lt_($unit);
 throw new Error('match fail 10323:' + JSON.stringify($target))
-})($ex$eq(len(args))(len(cargs))))((_3479) => $gt$gt$eq(foldl_$gt(map$slnil)(zipped)((bindings) => ({"1": carg, "0": arg}) => $gt$gt$eq(t_pat(tenv)(arg))(({"1": pat_bind, "0": pat_type}) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(unify_inner(type_apply(subst)(pat_type))(type_apply(subst)(type$slset_loc(l)(carg)))(l))((_3611) => $lt_(map$slmerge(bindings)(pat_bind)))))))((bindings) => $gt$gt$eq($lt_subst)((subst) => $lt_($co(type_apply(subst)(tres))(map$slmap(({"1": l, "0": t}) => $co(type_apply(subst)(t))(l))(bindings))))))))))))
+})($ex$eq(len(args))(len(cargs))))((_3479) => $gt$gt$eq(foldl_$gt(map$slnil)(zipped)((bindings) => ({"1": carg, "0": arg}) => $gt$gt$eq(t_pat(tenv)(arg))(({"1": pat_bind, "0": pat_type}) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(unify_inner(type_apply(subst)(pat_type))(type_apply(subst)(type$slset_loc(l)(carg)))(l))((_3611) => $lt_(map$slmerge(bindings)(pat_bind)))))))((bindings) => $gt$gt$eq($lt_subst)((subst) => $lt_($co(type_apply(subst)(tres))(map$slmap(({"1": l, "0": t}) => $co(type_apply(subst)(t))(l))(bindings)))))))))))))
 } ;
 throw new Error('match fail 2475:' + JSON.stringify($target))
 })(pat)
@@ -2096,6 +2195,13 @@ let infer_stmts2 = (tenv) => (stmts) => {
 let {"1": result, "0": {"2": subst, "1": {"1": usage_record, "0": types}}} = state_f(infer_stmtss(tenv)(stmts))(state$slnil);
 return $co$co(result)(applied_types(types)(subst))(usage_record)
 }
+let run$slusages = (tenv) => (stmts) => {
+let {"0": {"1": {"1": {"1": uses, "0": defns}}}} = state_f(infer_stmtss(tenv)(stmts))(state$slnil);
+{
+let idents = map$slfrom_list(map(bag$slto_list(many(map(stmts)(stmt$slidents))))(rev_pair));
+return $co(map(defns)(with_name(idents)))(map(uses)(({"1": prov, "0": user}) => $co(with_name(idents)(user))(prov)))
+}
+}
 let builtin_env = (() => {
 let k = vbl("k");
 {
@@ -2106,7 +2212,7 @@ let v2 = vbl("v2");
 let kv = generic(cons("k")(cons("v")(nil)));
 {
 let kk = generic(cons("k")(nil));
-return foldl(tenv(map$slmap((b) => $co(b)(-1))(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co("trace")(kk(tfns(cons(tapp(tcon("array")(-1))(tapp(tcon("trace-fmt")(-1))(k)(-1))(-1))(nil))(tcon("()")(-1)))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint)))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1))))))(cons($co("++")(concrete(tfns(cons(tarray(tstring))(nil))(tstring))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v)))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v)))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v)))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2))(cons(tmap(k)(v))(nil)))(tmap(k)(v2)))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v)))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tarray(v)))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tarray(k)))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tarray(k)))))(cons($co("set/from-list")(kk(tfns(cons(tarray(k))(nil))(tset(k)))))(cons($co("map/from-list")(kv(tfns(cons(tarray(t$co(k)(v)))(nil))(tmap(k)(v)))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tarray(t$co(k)(v))))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v")))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring))(cons(vbl("v"))(nil)))(tstring))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v")))))(nil))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")(tconstructor(set$slnil)(nil)(tcon("()")(-1))))(nil)))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil))(cons({"0":",","1":5319,"2":{"0":{"0":"a","1":5320,"type":","},"1":{"0":{"0":"b","1":5321,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":5323,"2":{"0":{"0":"a","1":5324,"type":"tcon"},"1":{"0":{"0":"b","1":5325,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5322,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5316,"type":"sdeftype"})(cons({"0":",,","1":5335,"2":{"0":{"0":"a","1":5336,"type":","},"1":{"0":{"0":"b","1":5337,"type":","},"1":{"0":{"0":"c","1":5338,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",,","1":5340,"2":{"0":{"0":"a","1":5343,"type":"tcon"},"1":{"0":{"0":"b","1":5344,"type":"tcon"},"1":{"0":{"0":"c","1":5345,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":5339,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5332,"type":"sdeftype"})(cons({"0":",,,","1":5351,"2":{"0":{"0":"a","1":5352,"type":","},"1":{"0":{"0":"b","1":5353,"type":","},"1":{"0":{"0":"c","1":5354,"type":","},"1":{"0":{"0":"d","1":5355,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",,,","1":5357,"2":{"0":{"0":"a","1":5358,"type":"tcon"},"1":{"0":{"0":"b","1":5359,"type":"tcon"},"1":{"0":{"0":"c","1":5360,"type":"tcon"},"1":{"0":{"0":"d","1":5361,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":5356,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5348,"type":"sdeftype"})(cons({"0":",,,,","1":5367,"2":{"0":{"0":"a","1":5368,"type":","},"1":{"0":{"0":"b","1":5369,"type":","},"1":{"0":{"0":"c","1":5370,"type":","},"1":{"0":{"0":"d","1":5371,"type":","},"1":{"0":{"0":"e","1":5372,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",,,,","1":5374,"2":{"0":{"0":"a","1":5375,"type":"tcon"},"1":{"0":{"0":"b","1":5376,"type":"tcon"},"1":{"0":{"0":"c","1":5377,"type":"tcon"},"1":{"0":{"0":"d","1":5378,"type":"tcon"},"1":{"0":{"0":"e","1":5379,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":5373,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5364,"type":"sdeftype"})(cons({"0":"trace-fmt","1":11392,"2":{"0":{"0":"a","1":11393,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"tcolor","1":11395,"2":{"0":{"0":"string","1":11396,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11394,"type":",,,"},"1":{"0":{"0":"tbold","1":11398,"2":{"0":{"0":"bool","1":11399,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11397,"type":",,,"},"1":{"0":{"0":"titalic","1":11401,"2":{"0":{"0":"bool","1":11402,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11400,"type":",,,"},"1":{"0":{"0":"tflash","1":11404,"2":{"0":{"0":"bool","1":11405,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11403,"type":",,,"},"1":{"0":{"0":"ttext","1":11407,"2":{"0":{"0":"string","1":11408,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11406,"type":",,,"},"1":{"0":{"0":"tval","1":11410,"2":{"0":{"0":"a","1":11411,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11409,"type":",,,"},"1":{"0":{"0":"tloc","1":11566,"2":{"0":{"0":"int","1":11567,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11565,"type":",,,"},"1":{"0":{"0":"tnamed","1":11569,"2":{"0":{"0":{"0":"trace-fmt","1":11571,"type":"tcon"},"1":{"0":"a","1":11572,"type":"tcon"},"2":11570,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"3":11568,"type":",,,"},"1":{"0":{"0":"tfmted","1":11413,"2":{"0":{"0":"a","1":11414,"type":"tcon"},"1":{"0":{"0":"string","1":11415,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11412,"type":",,,"},"1":{"0":{"0":"tfmt","1":11417,"2":{"0":{"0":"a","1":11418,"type":"tcon"},"1":{"0":{"0":{"0":{"0":"->","1":-1,"type":"tcon"},"1":{"0":"a","1":11422,"type":"tcon"},"2":-1,"type":"tapp"},"1":{"0":"string","1":11423,"type":"tcon"},"2":-1,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11416,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":11389,"type":"sdeftype"})(nil))))))((tenv) => (stmt) => tenv$slmerge(tenv)(fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(cons(stmt)(nil)))))))
+return foldl(tenv(map$slmap((b) => $co(b)(-1))(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co("trace")(kk(tfns(cons(tapp(tcon("array")(-1))(tapp(tcon("trace-fmt")(-1))(k)(-1))(-1))(nil))(tcon("()")(-1)))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint)))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1))))))(cons($co("++")(concrete(tfns(cons(tarray(tstring))(nil))(tstring))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v)))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v)))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v)))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2))(cons(tmap(k)(v))(nil)))(tmap(k)(v2)))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v)))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tarray(v)))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tarray(k)))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tarray(k)))))(cons($co("set/from-list")(kk(tfns(cons(tarray(k))(nil))(tset(k)))))(cons($co("map/from-list")(kv(tfns(cons(tarray(t$co(k)(v)))(nil))(tmap(k)(v)))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tarray(t$co(k)(v))))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v")))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring))(cons(vbl("v"))(nil)))(tstring))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v")))))(nil))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")(tconstructor(set$slnil)(nil)(tcon("()")(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil))(cons({"0":",","1":5319,"2":{"0":{"0":"a","1":5320,"type":","},"1":{"0":{"0":"b","1":5321,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":5323,"2":{"0":{"0":"a","1":5324,"type":"tcon"},"1":{"0":{"0":"b","1":5325,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5322,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5316,"type":"sdeftype"})(cons({"0":",,","1":5335,"2":{"0":{"0":"a","1":5336,"type":","},"1":{"0":{"0":"b","1":5337,"type":","},"1":{"0":{"0":"c","1":5338,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",,","1":5340,"2":{"0":{"0":"a","1":5343,"type":"tcon"},"1":{"0":{"0":"b","1":5344,"type":"tcon"},"1":{"0":{"0":"c","1":5345,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":5339,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5332,"type":"sdeftype"})(cons({"0":",,,","1":5351,"2":{"0":{"0":"a","1":5352,"type":","},"1":{"0":{"0":"b","1":5353,"type":","},"1":{"0":{"0":"c","1":5354,"type":","},"1":{"0":{"0":"d","1":5355,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",,,","1":5357,"2":{"0":{"0":"a","1":5358,"type":"tcon"},"1":{"0":{"0":"b","1":5359,"type":"tcon"},"1":{"0":{"0":"c","1":5360,"type":"tcon"},"1":{"0":{"0":"d","1":5361,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":5356,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5348,"type":"sdeftype"})(cons({"0":",,,,","1":5367,"2":{"0":{"0":"a","1":5368,"type":","},"1":{"0":{"0":"b","1":5369,"type":","},"1":{"0":{"0":"c","1":5370,"type":","},"1":{"0":{"0":"d","1":5371,"type":","},"1":{"0":{"0":"e","1":5372,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",,,,","1":5374,"2":{"0":{"0":"a","1":5375,"type":"tcon"},"1":{"0":{"0":"b","1":5376,"type":"tcon"},"1":{"0":{"0":"c","1":5377,"type":"tcon"},"1":{"0":{"0":"d","1":5378,"type":"tcon"},"1":{"0":{"0":"e","1":5379,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":5373,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"4":5364,"type":"sdeftype"})(cons({"0":"trace-fmt","1":11392,"2":{"0":{"0":"a","1":11393,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"tcolor","1":11395,"2":{"0":{"0":"string","1":11396,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11394,"type":",,,"},"1":{"0":{"0":"tbold","1":11398,"2":{"0":{"0":"bool","1":11399,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11397,"type":",,,"},"1":{"0":{"0":"titalic","1":11401,"2":{"0":{"0":"bool","1":11402,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11400,"type":",,,"},"1":{"0":{"0":"tflash","1":11404,"2":{"0":{"0":"bool","1":11405,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11403,"type":",,,"},"1":{"0":{"0":"ttext","1":11407,"2":{"0":{"0":"string","1":11408,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11406,"type":",,,"},"1":{"0":{"0":"tval","1":11410,"2":{"0":{"0":"a","1":11411,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11409,"type":",,,"},"1":{"0":{"0":"tloc","1":11566,"2":{"0":{"0":"int","1":11567,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"3":11565,"type":",,,"},"1":{"0":{"0":"tnamed","1":11569,"2":{"0":{"0":{"0":"trace-fmt","1":11571,"type":"tcon"},"1":{"0":"a","1":11572,"type":"tcon"},"2":11570,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"3":11568,"type":",,,"},"1":{"0":{"0":"tfmted","1":11413,"2":{"0":{"0":"a","1":11414,"type":"tcon"},"1":{"0":{"0":"string","1":11415,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11412,"type":",,,"},"1":{"0":{"0":"tfmt","1":11417,"2":{"0":{"0":"a","1":11418,"type":"tcon"},"1":{"0":{"0":{"0":{"0":"->","1":-1,"type":"tcon"},"1":{"0":"a","1":11422,"type":"tcon"},"2":-1,"type":"tapp"},"1":{"0":"string","1":11423,"type":"tcon"},"2":-1,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11416,"type":",,,"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":11389,"type":"sdeftype"})(nil))))))((tenv) => (stmt) => tenv$slmerge(tenv)(fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(cons(stmt)(nil)))))))
 }
 }
 }
@@ -2132,7 +2238,6 @@ return $gt$gt$eq(infer_stmtss(tenv)(cons(one)(nil)))(({"0": tenv$qu}) => several
 throw new Error('match fail 6659:' + JSON.stringify($target))
 })(stmts)
 let infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt) => $gt$gt$eq(infer_stmtss(tenv)(cons(stmt)(nil)))(({"1": types, "0": tenv$qu}) => $lt_(tenv$slmerge(tenv)(tenv$qu))))
-let run$slusages = (tenv) => (stmts) => force(type_error_$gts)(run$slnil_$gt(infer_stmtss(builtin_env)(stmts)))
 return eval("({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type, 4: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type, type_to_cst \n }) ")(typecheck(inference(builtin_env)((tenv) => (stmts) => fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(stmts)))))(infer_stmts2)(tenv$slmerge)((tenv) => (expr) => force(type_error_$gts)(run$slnil_$gt(infer(tenv)(expr))))((tenv) => (expr) => {
 let {"1": result, "0": {"2": subst, "1": {"1": usage_record, "0": types}}} = state_f(infer(tenv)(expr))(state$slnil);
 return $co$co(result)(applied_types(types)(subst))(usage_record)

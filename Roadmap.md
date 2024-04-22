@@ -19,6 +19,9 @@
   very nice.
 
 
+I WOUUULD really like ... to have the notion of "commits".
+And then ... the ability to show "these things have changed".
+
 
 
 

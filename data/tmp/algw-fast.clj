@@ -122,6 +122,63 @@
         (pstr string int)
         (pprim prim int))
 
+(defn expr/idents [expr]
+    (match expr
+        (estr _ exprs _)       (many (map exprs (dot expr/idents ,,0)))
+        (evar name l)          (one (, name l))
+        (elambda pats expr l)  (many [(expr/idents expr) ..(map pats pat/idents)])
+        (eapp target args _)   (many [(expr/idents target) ..(map args expr/idents)])
+        (elet bindings body _) (many
+                                   [(expr/idents body)
+                                       ..(map
+                                       bindings
+                                           (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
+        _                      empty))
+
+(defn pat/idents [pat]
+    (match pat
+        (pvar name l)      (one (, name l))
+        ; TODO add loc for pcon ...
+        (pcon name pats l) (many [(one (, name l)) ..(map pats pat/idents)])
+        _                  empty))
+
+(defn stmt/idents [stmt]
+    (match stmt
+        (sdef name l body _)             (bag/and (one (, name l)) (expr/idents body))
+        (sexpr exp _)                    (expr/idents exp)
+        (stypealias name l args body _)  (bag/and (type/idents body) (many [(one (, name l)) ..(map args one)]))
+        (sdeftype name l args constrs _) (bag/and
+                                             (many
+                                                 (map
+                                                     constrs
+                                                         (fn [(,,, name l args _)]
+                                                         (bag/and (one (, name l)) (many (map args type/idents))))))
+                                                 (bag/and (one (, name l)) (many (map args one))))))
+
+(defn type/idents [type]
+    (match type
+        (tvar name l)       (one (, name l))
+        (tapp target arg _) (bag/and (type/idents target) (type/idents arg))
+        (tcon name l)       (one (, name l))))
+
+(deftype type
+    (tvar string int)
+        (tapp type type int)
+        (tcon string int))
+
+(deftype stmt
+    (sdeftype
+        string
+            int
+            (array (, string int))
+            (array (,,, string int (array type) int))
+            int)
+        (stypealias string int (array (, string int)) type int)
+        (sdef string int expr int)
+        (sexpr expr int))
+
+(defn ,,0 [(,, a _ _)] a)
+
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
@@ -148,11 +205,6 @@
         (pcon c pats _) "(${c} ${(join " " (map pats pat-to-string))})"
         (pstr s _)      "\"${s}\""
         (pprim _ _)     "prim"))
-
-(deftype type
-    (tvar string int)
-        (tapp type type int)
-        (tcon string int))
 
 (defn type= [one two]
     (match (, one two)
@@ -187,17 +239,6 @@
         (tvar name _) (tvar name loc)
         (tapp a b _)  (tapp (type/set-loc loc a) (type/set-loc loc b) loc)
         (tcon name _) (tcon name loc)))
-
-(deftype stmt
-    (sdeftype
-        string
-            int
-            (array (, string int))
-            (array (,,, string int (array type) int))
-            int)
-        (stypealias string int (array (, string int)) type int)
-        (sdef string int expr int)
-        (sexpr expr int))
 
 (defn type-with-free [type free]
     (match type
@@ -292,15 +333,15 @@
 
 (defn ttc-inner [t free]
     (match t
-        (tvar name loc)                      (let [(, fmap idx) free]
+        (tvar vname loc)                     (let [(, fmap idx) free]
                                                  (match fmap
-                                                     (some fmap) (match (map/get fmap name)
+                                                     (some fmap) (match (map/get fmap vname)
                                                                      (some name) (, (cst/identifier name loc) free)
                                                                      none        (let [name (at letters idx "_too_many_vbls_")]
                                                                                      (,
                                                                                          (cst/identifier name loc)
-                                                                                             (, (some (map/set fmap name name)) (+ 1 idx)))))
-                                                     _           (, (cst/identifier name loc) free)))
+                                                                                             (, (some (map/set fmap vname name)) (+ 1 idx)))))
+                                                     _           (, (cst/identifier vname loc) free)))
         (tcon name l)                        (, (cst/identifier name l) free)
         (tapp (tapp (tcon "->" _) a la) b l) (let [
                                                  (, iargs r)   (unwrap-fn b)
@@ -319,6 +360,13 @@
                                                  (, (cst/list [one ..(rev args [])] l) free))))
 
 (ttc-inner (@t (fn [x] y)) (, (some map/nil) 0))
+
+
+
+(type-to-cst
+    (type-with-free (@t (fn [a1 b a1 d] y)) (set/from-list ["a1" "b"])))
+
+(type-with-free (@t (fn [a1 b1 a1 d] y)) (set/from-list ["a1" "b1"]))
 
 (defn type-to-cst [t]
     (let [(, cst _) (ttc-inner t (, (some map/nil) 0))] cst))
@@ -361,13 +409,19 @@
             ; arguments
             (array type)
             ; the resulting type
-            type))
+            type
+            ; the loc
+            int))
 
 (deftype tenv
     (tenv
-        (map string (, scheme int))
+        ; types (scheme loc)
+            (map string (, scheme int))
+            ; type constructors
             (map string tconstructor)
+            ; type names (number of arguments) (set of constructor names)
             (map string (, int (set string)))
+            ; type aliases (argument names) (body) (loc)
             (map string (,, (array string) type int))))
 
 (defn tenv/type [(tenv types _ _ _) key] (map/get types key))
@@ -946,38 +1000,39 @@
         (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
         (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
         (pcon name args l)    (let-> [
-                                  (tconstructor free cargs cres) (match (tenv/con tenv name)
-                                                                     (none)   (<-err (type-error "Unknown type constructor" [(, name l)]))
-                                                                     (some v) (<- v))
-                                  ()                             (record-> l (tfns cargs cres) true)
-                                  (, tres tsubst)                (instantiate (scheme free cres) l)
-                                  tres                           (<- (type/set-loc l tres))
+                                  (tconstructor free cargs cres cloc) (match (tenv/con tenv name)
+                                                                          (none)   (<-err (type-error "Unknown type constructor" [(, name l)]))
+                                                                          (some v) (<- v))
+                                  ()                                  (record-usage-> l cloc)
+                                  ()                                  (record-> l (tfns cargs cres) true)
+                                  (, tres tsubst)                     (instantiate (scheme free cres) l)
+                                  tres                                (<- (type/set-loc l tres))
                                   (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
-                                  cargs                          (<- (map cargs (type-apply tsubst)))
-                                  zipped                         (<- (zip args cargs))
-                                  _                              (if (!= (len args) (len cargs))
-                                                                     (<-err
-                                                                         (type-error
-                                                                             "Wrong number of arguments to type constructor: given ${
-                                                                                 (its (len args))
-                                                                                 }, but the type constructor expects ${
-                                                                                 (its (len cargs))
-                                                                                 }"
-                                                                                 [(, name l)]))
-                                                                         (<- ()))
-                                  bindings                       (foldl->
-                                                                     map/nil
-                                                                         zipped
-                                                                         (fn [bindings (, arg carg)]
-                                                                         (let-> [
-                                                                             (, pat-type pat-bind) (t-pat tenv arg)
-                                                                             subst                 <-subst
-                                                                             _                     (unify-inner
-                                                                                                       (type-apply subst pat-type)
-                                                                                                           (type-apply subst (type/set-loc l carg))
-                                                                                                           l)]
-                                                                             (<- (map/merge bindings pat-bind)))))
-                                  subst                          <-subst]
+                                  cargs                               (<- (map cargs (type-apply tsubst)))
+                                  zipped                              (<- (zip args cargs))
+                                  _                                   (if (!= (len args) (len cargs))
+                                                                          (<-err
+                                                                              (type-error
+                                                                                  "Wrong number of arguments to type constructor: given ${
+                                                                                      (its (len args))
+                                                                                      }, but the type constructor expects ${
+                                                                                      (its (len cargs))
+                                                                                      }"
+                                                                                      [(, name l)]))
+                                                                              (<- ()))
+                                  bindings                            (foldl->
+                                                                          map/nil
+                                                                              zipped
+                                                                              (fn [bindings (, arg carg)]
+                                                                              (let-> [
+                                                                                  (, pat-type pat-bind) (t-pat tenv arg)
+                                                                                  subst                 <-subst
+                                                                                  _                     (unify-inner
+                                                                                                            (type-apply subst pat-type)
+                                                                                                                (type-apply subst (type/set-loc l carg))
+                                                                                                                l)]
+                                                                                  (<- (map/merge bindings pat-bind)))))
+                                  subst                               <-subst]
                                   (<-
                                       (,
                                           (type-apply subst tres)
@@ -1022,7 +1077,8 @@
                     (tconstructor
                     (set/from-list ["a" "b"])
                         [(tvar "a" -1) (tvar "b" -1)]
-                        (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))])
+                        (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
+                        -1))])
             (map/from-list
             [(, "int" (, 0 set/nil)) (, "string" (, 0 set/nil)) (, "bool" (, 0 set/nil))])
             map/nil))
@@ -1321,19 +1377,35 @@
 
 (, )
 
+(defn rev-pair [(, a b)] (, b a))
+
+(defn with-name [map id]
+    (match (map/get map id)
+        (some v) "${v}:${(its id)}"
+        _        "?:${(its id)}"))
+
 (defn run/usages [tenv stmts]
     (let [
-        (, (,, _ (, _ (, defns uses)) _) _) ((state-f (infer-stmtss tenv stmts)) state/nil)]
-        (, defns uses)))
+        (, (,, _ (, _ (, defns uses)) _) _) ((state-f (infer-stmtss tenv stmts)) state/nil)
+        idents                              (map/from-list
+                                                (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
+        (,
+            (map defns (with-name idents))
+                (map uses (fn [(, user prov)] (, (with-name idents user) prov))))))
 
 (,
     (run/usages builtin-env)
-        [(, [(@! (let [x 1 y 2] x))] (, [22225 22222] [(, 22224 22222)]))
-        (, [(@! (deftype a (b))) (@! (deftype c (b a)))] (, [22256 22264] []))
-        (, [(@! (typealias a int)) (@! (typealias b a))] (, [22279 22289] []))
+        [(, [(@! (let [x 1 y 2] x))] (, ["y:22225" "x:22222"] [(, "x:22224" 22222)]))
+        (,
+        [(@! (deftype a (b))) (@! (deftype c (d a)))]
+            (, ["b:22258" "a:22256" "d:22267" "c:22264"] []))
+        (,
+        [(@! (deftype a (b))) (@! (let [(b) (b)] 1))]
+            (, ["b:22371" "a:22369"] [(, "b:22377" 22371) (, "b:22380" 22371)]))
+        (, [(@! (typealias a int)) (@! (typealias b a))] (, ["a:22279" "b:22289"] []))
         (,
         [(@! (typealias a int)) (@! (deftype c (b a)))]
-            (, [22305 22299] [(, 22308 22299)]))])
+            (, ["b:22307" "c:22305" "a:22299"] [(, "a:22308" 22299)]))])
 
 
 
@@ -1514,6 +1586,7 @@
                                 (let-> [
                                     args (<- (map args (fn [arg] (type-with-free arg free-set))))
                                     ()   (do-> (record-usages-in-type tenv') args)
+                                    ()   (record-def-> nl)
                                     args (map-> (subst-aliases (tenv/alias tenv')) args)
                                     _    (map->
                                              (fn [arg]
@@ -1532,7 +1605,7 @@
                                                     (,
                                                     (scheme free-set (foldr final args (fn [body arg] (tfn arg body l))))
                                                         nl))
-                                                (map/set cons name (tconstructor free-set args final)))))))]
+                                                (map/set cons name (tconstructor free-set args final nl)))))))]
         (<-
             (tenv
                 values
@@ -1581,6 +1654,8 @@
 (** ## Statements (w/ circular dependencies) **)
 
 (infer-show basic (@ (fn [a b c] (+ (a b) (a c)))))
+
+(@! (deftype (a b) (c b)))
 
 (defn split-stmts [stmts sdefs stypes salias sexps]
     (match stmts
@@ -2047,7 +2122,7 @@ map->
                             (, "sanitize" (concrete (tfns [tstring] tstring)))
                             (, "replace-all" (concrete (tfns [tstring tstring tstring] tstring)))
                             (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))]))
-                    (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1)))])
+                    (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1) -1))])
                     (map/from-list
                     [(, "int" (, 0 set/nil))
                         (, "float" (, 0 set/nil))
