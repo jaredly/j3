@@ -1375,8 +1375,6 @@
                                  (<- ()))
             _                (<- ()))))
 
-(, )
-
 (defn rev-pair [(, a b)] (, b a))
 
 (defn with-name [map id]
@@ -1396,18 +1394,14 @@
 (,
     (run/usages builtin-env)
         [(, [(@! (let [x 1 y 2] x))] (, ["y:22225" "x:22222"] [(, "x:22224" 22222)]))
-        (,
-        [(@! (deftype a (b))) (@! (deftype c (d a)))]
-            (, ["b:22258" "a:22256" "d:22267" "c:22264"] []))
+        (, [(@! (deftype a (b))) (@! (deftype c (d a)))] )
         (,
         [(@! (deftype a (b))) (@! (let [(b) (b)] 1))]
             (, ["b:22371" "a:22369"] [(, "b:22377" 22371) (, "b:22380" 22371)]))
-        (, [(@! (typealias a int)) (@! (typealias b a))] (, ["a:22279" "b:22289"] []))
+        (, [(@! (typealias a int)) (@! (typealias b a))] )
         (,
         [(@! (typealias a int)) (@! (deftype c (b a)))]
             (, ["b:22307" "c:22305" "a:22299"] [(, "a:22308" 22299)]))])
-
-
 
 (** todo write some tests for this, and then get
     - type alises referencing each other
