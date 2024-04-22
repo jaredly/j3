@@ -1,4 +1,19 @@
 
+Jerd is a result of asking the question: What if instead of first writing a language and then
+a structured editor, I first write the editor, and then the language?
+
+# Unused, let's make it really great!
+
+- [ ] types! also get in on the unused action.
+
+
+# Tests I need to write
+
+- [ ] something about making sure `unused` highlighting actually propagates correctly. What is up with that.
+- [ ] something around "introducing errors" into a term, and then ... propagating things ... idk
+  - [ ] deleting a term (or making it so a term no longer exports a name) should be reflected in downstream
+    tops
+
 # NightTime Thoughts
 
 - find-in-page - should have a right sidebar overlay thihng that shows the results in-context
@@ -12,7 +27,6 @@
 - ALSO multiselect, theselection highlight should be orange instead of blue
 - ALSO let's really do "highlight all usages of the current identifier" pleeease and thank you.
 - ALSO have a command palette thing that's "rename", and what it does is multiselect all usages, which is great
--
 - type checker exports a "phases" thing, (array (, int (array string))) - indicating the phase numbers ... and the "kinds" that get processed during that phase.
 - LocedName `kind` shouldn't be hardcoded in js anywhere. Just cue off of what the evaluator gives you.
   - cmd-p = jump to, pleease. Also indicate the `kind` of the thing you're jumping to.

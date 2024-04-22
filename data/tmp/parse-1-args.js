@@ -2907,7 +2907,7 @@ throw new Error('match fail 15632:' + JSON.stringify($target))
 {
 let shadow = set$slto_list(foldl(set$slnil)(overlap)((ov) => ({"0": name}) => set$sladd(ov)(name)));
 {
-let new_names = mapi(0)(shadow)((i) => (name) => `${name}_${its(i)}`);
+let new_names = mapi(0)(shadow)((i) => (name) => `${name}\$${its(i)}`);
 {
 let mapping = map$slfrom_list(zip(shadow)(new_names));
 {

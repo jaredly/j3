@@ -288,6 +288,12 @@ const ShowErrors = () => {
                                 at: [{ start: path }],
                             });
                         }}
+                        style={{
+                            fontSize: '80%',
+                            borderBottom: '1px solid white',
+                            marginBottom: 8,
+                            paddingBottom: 8,
+                        }}
                     >
                         {loc}: {errs.join(', ').slice(0, 100)}
                     </div>

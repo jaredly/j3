@@ -328,7 +328,7 @@
         (map string (, scheme int))
             (map string tconstructor)
             (map string (, int (set string)))
-            (map string (, (array string) type))))
+            (map string (,, (array string) type int))))
 
 (defn tenv/type [(tenv types _ _ _) key] (map/get types key))
 
@@ -349,8 +349,8 @@
             (map/set names name (, vbls (set/from-list (map/keys ncons))))
             alias))
 
-(defn tenv/add-alias [(tenv a b c aliases) name (, args body)]
-    (tenv a b c (map/set aliases name (, args body))))
+(defn tenv/add-alias [(tenv a b c aliases) name (,, args body l)]
+    (tenv a b c (map/set aliases name (,, args body l))))
 
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
@@ -1093,12 +1093,13 @@
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
                                                       (<- (tenv/set-type tenv/nil name (, (generalize tenv' t) nl))))
-        (stypealias name nl args body l)          (<-
-                                                      (tenv
-                                                          map/nil
+        (stypealias name nl args body l)          (let-> [() (record-def-> nl)]
+                                                      (<-
+                                                          (tenv
                                                               map/nil
-                                                              map/nil
-                                                              (map/set map/nil name (, (map args (fn [(, name _)] name)) body))))
+                                                                  map/nil
+                                                                  map/nil
+                                                                  (map/set map/nil name (,, (map args (fn [(, name _)] name)) body nl)))))
         (sexpr expr l)                            (let-> [
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
@@ -1142,32 +1143,41 @@
             (@t (,, string a b))))
 
 (defn subst-aliases [alias type]
-    (let [
-        (, base args) (extract-type-call type [])
-        args          (map args (fn [(, arg l)] (, (subst-aliases alias arg) l)))]
+    (let-> [
+        (, base args) (<- (extract-type-call type []))
+        args          (map->
+                          (fn [(, arg l)] (let-> [arg (subst-aliases alias arg)] (<- (, arg l))))
+                              args)]
         (match base
-            (tcon name _) (match (map/get alias name)
-                              (some (, names subst)) (if (!= (len names) (len args))
-                                                         (fatal
-                                                             "Wrong number of args given to alias ${
-                                                                 name
-                                                                 }: expected ${
-                                                                 (its (len names))
-                                                                 }, given ${
-                                                                 (its (len args))
-                                                                 }.")
-                                                             (let [
-                                                             subst (if (= (len names) 0)
-                                                                       subst
-                                                                           (replace-in-type (map/from-list (zip names (map args fst))) subst))]
-                                                             (subst-aliases alias subst)))
-                              _                      (foldl base args (fn [target (, arg l)] (tapp target arg l))))
-            _             (foldl base args (fn [target (, arg l)] (tapp target arg l))))))
+            (tcon name l) (match (map/get alias name)
+                              (some (,, names subst al)) (if (!= (len names) (len args))
+                                                             (<-err
+                                                                 (type-error
+                                                                     "Wrong number of args given to alias ${
+                                                                         name
+                                                                         }: expected ${
+                                                                         (its (len names))
+                                                                         }, given ${
+                                                                         (its (len args))
+                                                                         }."
+                                                                         [(, name l)]))
+                                                                 (let-> [
+                                                                 ()    (record-usage-> l al)
+                                                                 subst (<-
+                                                                           (if (= (len names) 0)
+                                                                               subst
+                                                                                   (replace-in-type (map/from-list (zip names (map args fst))) subst)))]
+                                                                 (subst-aliases alias subst)))
+                              _                          (<- (foldl base args (fn [target (, arg l)] (tapp target arg l)))))
+            _             (<- (foldl base args (fn [target (, arg l)] (tapp target arg l)))))))
 
 (type-to-string
-    (subst-aliases
-        (map/from-list [(, "hello" (, ["a"] (@t (, int a))))])
-            (@t (hello string))))
+    (force
+        type-error->s
+            (run/nil->
+            (subst-aliases
+                (map/from-list [(, "hello" (,, ["a"] (@t (, int a)) 1))])
+                    (@t (hello string))))))
 
 (defn check-type-names [tenv' type]
     (match type
@@ -1352,7 +1362,7 @@
                                        (match stmt
                                            (sdef name nl _ _) (, name nl)
                                            _                  (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
-        (, bound vars)     (vars-for-names (map stmts (fn [(sdef name _ _ l)] (, name l))) tenv)
+        (, bound vars)     (vars-for-names (map stmts (fn [(sdef name nl _ _)] (, name nl))) tenv)
         (, bound2 missing) (find-missing bound (externals-defs stmts))
         types              (foldr-> [] (zip vars stmts) (infer-several-inner bound2))
         subst              <-subst
@@ -1424,7 +1434,7 @@
                                 (fn [(, values cons) (,,, name nl args l)]
                                 (let-> [
                                     args (<- (map args (fn [arg] (type-with-free arg free-set))))
-                                    args (<- (map args (subst-aliases (tenv/alias tenv'))))
+                                    args (map-> (subst-aliases (tenv/alias tenv')) args)
                                     _    (map->
                                              (fn [arg]
                                                  (match (bag/to-list (externals-type (set/add bound tname) arg))
@@ -1454,7 +1464,7 @@
     (let-> [
         names                    (<-
                                      (foldl
-                                         (map salias (fn [(,, name _ _)] name))
+                                         (map salias (fn [(,,, name _ _ _)] name))
                                              stypes
                                              (fn [names (sdeftype name _ _ _ _)] [name ..names])))
         (tenv _ _ types aliases) (<- tenv')
@@ -1465,12 +1475,15 @@
         tenv                     (foldl->
                                      tenv/nil
                                          salias
-                                         (fn [tenv (,, name args body)]
+                                         (fn [tenv (,,, name args body nl)]
                                          (match (bag/to-list
                                              (externals-type
                                                  (set/merge bound (set/from-list (map args fst)))
                                                      body))
-                                             []    (<- (tenv/add-alias tenv name (, (map args fst) body)))
+                                             []    (let-> [
+                                                       () (record-def-> nl)
+                                                       () (record-type-usages (map/from-list args) tenv body)]
+                                                       (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
                                              names (<-err
                                                        (type-error "Unbound types" (map names (fn [(,, name _ l)] (, name l))))))))
         merged                   (<- (tenv/merge tenv tenv'))
@@ -1492,15 +1505,15 @@
     (match stmts
         []           (,,, sdefs stypes salias sexps)
         [one ..rest] (match one
-                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps)
-                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps)
-                         (stypealias name _ args body _) (split-stmts
-                                                             rest
-                                                                 sdefs
-                                                                 stypes
-                                                                 [(,, name args body) ..salias]
-                                                                 sexps)
-                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps]))))
+                         (sdef _ _ _ _)                   (split-stmts rest [one ..sdefs] stypes salias sexps)
+                         (sdeftype _ _ _ _ _)             (split-stmts rest sdefs [one ..stypes] salias sexps)
+                         (stypealias name nl args body _) (split-stmts
+                                                              rest
+                                                                  sdefs
+                                                                  stypes
+                                                                  [(,,, name args body nl) ..salias]
+                                                                  sexps)
+                         (sexpr expr _)                   (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
 (defn infer-defns [tenv stmts]
     (match stmts
@@ -1791,6 +1804,30 @@ map->
         (, (@ ()) [])])
 
 (defn dot [a b c] (a (b c)))
+
+
+
+(defn externals-type-record [bound t]
+    (match t
+        (tvar _ _)       (<- empty)
+        (tcon name l)    (match (map/get bound name)
+                             (some pl) (let-> [() (record-usage-> l pl)] (<- empty))
+                             _         (<- (one (,, name (type) l))))
+        (tapp one two _) (let-> [
+                             one (externals-type-record bound one)
+                             two (externals-type-record bound two)]
+                             (<- (bag/and one two)))))
+
+(defn record-type-usages [locals tenv t]
+    (match t
+        (tvar _ _)       (<- ())
+        (tcon name l)    (match (map/get locals name)
+                             (some pl) (record-usage-> l pl)
+                             _         (<- ()))
+        (tapp one two _) (let-> [
+                             () (record-type-usages locals tenv one)
+                             () (record-type-usages locals tenv two)]
+                             (<- ()))))
 
 (defn externals-type [bound t]
     (match t

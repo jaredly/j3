@@ -7,6 +7,10 @@
             2
             (, "hi" 23)))
 
+(def hi (+10))
+
+(def ho hi)
+
 (** ## Prelude
     some handy functions **)
 

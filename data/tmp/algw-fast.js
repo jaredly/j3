@@ -634,15 +634,15 @@ let {"1": r, "0": iargs} = unwrap_fn(b);
 {
 let args = cons(a)(iargs);
 {
-let free_0 = free;
+let free$0 = free;
 {
-let args_1 = args;
+let args$1 = args;
 {
-let {"1": free, "0": args} = tts_list(args_1)(free_0)(locs);
+let {"1": free, "0": args} = tts_list(args$1)(free$0)(locs);
 {
-let free_0 = free;
+let free$0 = free;
 {
-let {"1": free, "0": two} = tts_inner(r)(free_0)(locs);
+let {"1": free, "0": two} = tts_inner(r)(free$0)(locs);
 return $co(and_loc(locs)(l)(`(fn [${join(" ")(rev(args)(nil))}] ${two})`))(free)
 }
 }
@@ -662,23 +662,23 @@ let l = $target[2];
 {
 let {"1": args, "0": target} = unwrap_app(a);
 {
-let args_0 = args;
+let args$0 = args;
 {
-let args = cons(b)(args_0);
+let args = cons(b)(args$0);
 {
-let args_0 = args;
+let args$0 = args;
 {
-let args = rev(args_0)(nil);
+let args = rev(args$0)(nil);
 {
-let free_0 = free;
+let free$0 = free;
 {
-let args_1 = args;
+let args$1 = args;
 {
-let {"1": free, "0": args} = tts_list(args_1)(free_0)(locs);
+let {"1": free, "0": args} = tts_list(args$1)(free$0)(locs);
 {
-let free_0 = free;
+let free$0 = free;
 {
-let {"1": free, "0": one} = tts_inner(target)(free_0)(locs);
+let {"1": free, "0": one} = tts_inner(target)(free$0)(locs);
 return $co(and_loc(locs)(l)(`(${one} ${join(" ")(rev(args)(nil))})`))(free)
 }
 }
@@ -695,9 +695,9 @@ throw new Error('match fail 2105:' + JSON.stringify($target))
 })(t)
 
 let tts_list = (args) => (free) => (locs) => foldl($co(nil)(free))(args)(({"1": free, "0": args}) => (a) => {
-let free_0 = free;
+let free$0 = free;
 {
-let {"1": free, "0": arg} = tts_inner(a)(free_0)(locs);
+let {"1": free, "0": arg} = tts_inner(a)(free$0)(locs);
 return $co(cons(arg)(args))(free)
 }
 })
@@ -852,9 +852,9 @@ return cons($co$co(name)(type)(l))(map(constructors)(({"1": l, "0": name}) => $c
 throw new Error('match fail 7517:' + JSON.stringify($target))
 })(stmt)
 let show_types = (names) => ({"0": types}) => {
-let names_0 = names;
+let names$0 = names;
 {
-let names = set$slfrom_list(names_0);
+let names = set$slfrom_list(names$0);
 return map(filter(({"1": v, "0": k}) => set$slhas(names)(k))(map$slto_list(types)))(({"1": {"1": l, "0": {"1": type, "0": free}}, "0": name}) => (($target) => {
 if ($target.type === "nil") {
 return `${name} = ${type_to_string(type)}`
@@ -1019,57 +1019,6 @@ throw new Error('match fail 13414:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 13365:' + JSON.stringify($target))
 })(type)
-let subst_aliases = (alias) => (type) => {
-let {"1": args, "0": base} = extract_type_call(type)(nil);
-{
-let args_0 = args;
-{
-let args = map(args_0)(({"1": l, "0": arg}) => $co(subst_aliases(alias)(arg))(l));
-{
-let $target = base;
-if ($target.type === "tcon") {
-let name = $target[0];
-{
-let $target = map$slget(alias)(name);
-if ($target.type === "some") {
-if ($target[0].type === ",") {
-let names = $target[0][0];
-let subst = $target[0][1];
-{
-let $target = $ex$eq(len(names))(len(args));
-if ($target === true) {
-return fatal(`Wrong number of args given to alias ${name}: expected ${its(len(names))}, given ${its(len(args))}.`)
-} ;
-{
-let subst_0 = subst;
-{
-let subst_1 = subst;
-{
-let subst = (($target) => {
-if ($target === true) {
-return subst_0
-} ;
-return replace_in_type(map$slfrom_list(zip(names)(map(args)(fst))))(subst_0);
-throw new Error('match fail 14042:' + JSON.stringify($target))
-})($eq(len(names))(0));
-return subst_aliases(alias)(subst)
-}
-}
-};
-throw new Error('match fail 13672:' + JSON.stringify($target))
-}
-} 
-} ;
-return foldl(base)(args)((target) => ({"1": l, "0": arg}) => tapp(target)(arg)(l));
-throw new Error('match fail 13659:' + JSON.stringify($target))
-}
-} ;
-return foldl(base)(args)((target) => ({"1": l, "0": arg}) => tapp(target)(arg)(l));
-throw new Error('match fail 13652:' + JSON.stringify($target))
-}
-}
-}
-}
 let tenv$slalias = ({"3": alias}) => alias
 let split_stmts = (stmts) => (sdefs) => (stypes) => (salias) => (sexps) => (($target) => {
 if ($target.type === "nil") {
@@ -1088,9 +1037,10 @@ return split_stmts(rest)(sdefs)(cons(one)(stypes))(salias)(sexps)
 } ;
 if ($target.type === "stypealias") {
 let name = $target[0];
+let nl = $target[1];
 let args = $target[2];
 let body = $target[3];
-return split_stmts(rest)(sdefs)(stypes)(cons($co$co(name)(args)(body))(salias))(sexps)
+return split_stmts(rest)(sdefs)(stypes)(cons($co$co$co(name)(args)(body)(nl))(salias))(sexps)
 } ;
 if ($target.type === "sexpr") {
 let expr = $target[0];
@@ -1101,7 +1051,7 @@ throw new Error('match fail 14218:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 14203:' + JSON.stringify($target))
 })(stmts)
-let tenv$sladd_alias = ({"3": aliases, "2": c, "1": b, "0": a}) => (name) => ({"1": body, "0": args}) => tenv(a)(b)(c)(map$slset(aliases)(name)($co(args)(body)))
+let tenv$sladd_alias = ({"3": aliases, "2": c, "1": b, "0": a}) => (name) => ({"2": l, "1": body, "0": args}) => tenv(a)(b)(c)(map$slset(aliases)(name)($co$co(args)(body)(l)))
 let tenv$sladd_builtin_type = ({"3": d, "2": names, "1": b, "0": a}) => ({"1": args, "0": name}) => tenv(a)(b)(map$slset(names)(name)($co(args)(set$slnil)))(d)
 let pat_externals = (pat) => (($target) => {
 if ($target.type === "pcon") {
@@ -1135,9 +1085,9 @@ return $lt_(0)
 let vars = $target;
 {
 let {"0": text} = foldl($co(nil)($co(some(map$slnil))(0)))(map(missing_vars)(type_apply(subst)))(({"1": maps, "0": result}) => (t) => {
-let maps_0 = maps;
+let maps$0 = maps;
 {
-let {"1": maps, "0": text} = tts_inner(t)(maps_0)(false);
+let {"1": maps, "0": text} = tts_inner(t)(maps$0)(false);
 return $co(cons(text)(result))(maps)
 }
 });
@@ -1393,9 +1343,9 @@ let bindings = $target[0];
 let body = $target[1];
 let l = $target[2];
 {
-let bound_0 = bound;
+let bound$0 = bound;
 {
-let {"1": bound, "0": bag} = foldl($co(empty)(bound_0))(bindings)(({"1": bound, "0": bag}) => ({"1": init, "0": pat}) => $co(bag$sland(bag)(bag$sland(pat_externals(pat))(externals(bound)(init))))(set$slmerge(bound)(pat_names(pat))));
+let {"1": bound, "0": bag} = foldl($co(empty)(bound$0))(bindings)(({"1": bound, "0": bag}) => ({"1": init, "0": pat}) => $co(bag$sland(bag)(bag$sland(pat_externals(pat))(externals(bound)(init))))(set$slmerge(bound)(pat_names(pat))));
 return bag$sland(bag)(externals(bound)(body))
 }
 }
@@ -1457,7 +1407,41 @@ return externals(set$slnil)(expr)
 } ;
 throw new Error('match fail 7296:' + JSON.stringify($target))
 })(stmt))
-let infer_deftype = (tenv$qu) => (bound) => (tname) => (tnl) => (targs) => (constructors) => (l) => $gt$gt$eq($lt_(map(constructors)(({"0": name}) => name)))((names) => $gt$gt$eq($lt_(foldl(tcon(tname)(tnl))(targs)((body) => ({"1": al, "0": arg}) => tapp(body)(tvar(arg)(al))(l))))((final) => $gt$gt$eq($lt_(foldl(set$slnil)(targs)((free) => ({"0": arg}) => set$sladd(free)(arg))))((free_set) => $gt$gt$eq(foldl_$gt($co(map$slnil)(map$slnil))(constructors)(({"1": cons, "0": values}) => ({"3": l, "2": args, "1": nl, "0": name}) => $gt$gt$eq($lt_(map(args)((arg) => type_with_free(arg)(free_set))))((args) => $gt$gt$eq($lt_(map(args)(subst_aliases(tenv$slalias(tenv$qu)))))((args) => $gt$gt$eq(map_$gt((arg) => (($target) => {
+let subst_aliases = (alias) => (type) => $gt$gt$eq($lt_(extract_type_call(type)(nil)))(({"1": args, "0": base}) => $gt$gt$eq(map_$gt(({"1": l, "0": arg}) => $gt$gt$eq(subst_aliases(alias)(arg))((arg) => $lt_($co(arg)(l))))(args))((args) => (($target) => {
+if ($target.type === "tcon") {
+let name = $target[0];
+let l = $target[1];
+{
+let $target = map$slget(alias)(name);
+if ($target.type === "some") {
+if ($target[0].type === ",,") {
+let names = $target[0][0];
+let subst = $target[0][1];
+let al = $target[0][2];
+{
+let $target = $ex$eq(len(names))(len(args));
+if ($target === true) {
+return $lt_err(type_error(`Wrong number of args given to alias ${name}: expected ${its(len(names))}, given ${its(len(args))}.`)(cons($co(name)(l))(nil)))
+} ;
+return $gt$gt$eq(record_usage_$gt(l)(al))((_14025) => $gt$gt$eq($lt_((($target) => {
+if ($target === true) {
+return subst
+} ;
+return replace_in_type(map$slfrom_list(zip(names)(map(args)(fst))))(subst);
+throw new Error('match fail 14042:' + JSON.stringify($target))
+})($eq(len(names))(0))))((subst) => subst_aliases(alias)(subst)));
+throw new Error('match fail 13672:' + JSON.stringify($target))
+}
+} 
+} ;
+return $lt_(foldl(base)(args)((target) => ({"1": l, "0": arg}) => tapp(target)(arg)(l)));
+throw new Error('match fail 13659:' + JSON.stringify($target))
+}
+} ;
+return $lt_(foldl(base)(args)((target) => ({"1": l, "0": arg}) => tapp(target)(arg)(l)));
+throw new Error('match fail 13652:' + JSON.stringify($target))
+})(base)))
+let infer_deftype = (tenv$qu) => (bound) => (tname) => (tnl) => (targs) => (constructors) => (l) => $gt$gt$eq($lt_(map(constructors)(({"0": name}) => name)))((names) => $gt$gt$eq($lt_(foldl(tcon(tname)(tnl))(targs)((body) => ({"1": al, "0": arg}) => tapp(body)(tvar(arg)(al))(l))))((final) => $gt$gt$eq($lt_(foldl(set$slnil)(targs)((free) => ({"0": arg}) => set$sladd(free)(arg))))((free_set) => $gt$gt$eq(foldl_$gt($co(map$slnil)(map$slnil))(constructors)(({"1": cons, "0": values}) => ({"3": l, "2": args, "1": nl, "0": name}) => $gt$gt$eq($lt_(map(args)((arg) => type_with_free(arg)(free_set))))((args) => $gt$gt$eq(map_$gt(subst_aliases(tenv$slalias(tenv$qu)))(args))((args) => $gt$gt$eq(map_$gt((arg) => (($target) => {
 if ($target.type === "nil") {
 return $lt_(true)
 } ;
@@ -1582,9 +1566,9 @@ throw new Error('match fail 1597:' + JSON.stringify($target))
 };
 throw new Error('match fail 1575:' + JSON.stringify($target))
 })(type)
-let infer_stypes = (tenv$qu) => (stypes) => (salias) => $gt$gt$eq($lt_(foldl(map(salias)(({"0": name}) => name))(stypes)((names) => ({"0": name}) => cons(name)(names))))((names) => $gt$gt$eq($lt_(tenv$qu))(({"3": aliases, "2": types}) => $gt$gt$eq($lt_(set$slmerge(set$slfrom_list(map$slkeys(types)))(set$slmerge(set$slfrom_list(names))(set$slfrom_list(map$slkeys(aliases))))))((bound) => $gt$gt$eq(foldl_$gt(tenv$slnil)(salias)((tenv) => ({"2": body, "1": args, "0": name}) => (($target) => {
+let infer_stypes = (tenv$qu) => (stypes) => (salias) => $gt$gt$eq($lt_(foldl(map(salias)(({"0": name}) => name))(stypes)((names) => ({"0": name}) => cons(name)(names))))((names) => $gt$gt$eq($lt_(tenv$qu))(({"3": aliases, "2": types}) => $gt$gt$eq($lt_(set$slmerge(set$slfrom_list(map$slkeys(types)))(set$slmerge(set$slfrom_list(names))(set$slfrom_list(map$slkeys(aliases))))))((bound) => $gt$gt$eq(foldl_$gt(tenv$slnil)(salias)((tenv) => ({"3": nl, "2": body, "1": args, "0": name}) => (($target) => {
 if ($target.type === "nil") {
-return $lt_(tenv$sladd_alias(tenv)(name)($co(map(args)(fst))(body)))
+return $gt$gt$eq(record_def_$gt(nl))((_21417) => $lt_(tenv$sladd_alias(tenv)(name)($co$co(map(args)(fst))(body)(nl))))
 } ;
 {
 let names = $target;
@@ -1815,7 +1799,7 @@ let nl = $target[1];
 let args = $target[2];
 let body = $target[3];
 let l = $target[4];
-return $lt_(tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co(map(args)(({"0": name}) => name))(body))))
+return $gt$gt$eq(record_def_$gt(nl))((_21358) => $lt_(tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co$co(map(args)(({"0": name}) => name))(body)(nl)))))
 } ;
 if ($target.type === "sexpr") {
 let expr = $target[0];
@@ -1890,7 +1874,7 @@ return $co(name)(nl)
 } ;
 return fatal("Cant infer-several with sdefs? idk maybe you can ...");
 throw new Error('match fail 14179:' + JSON.stringify($target))
-})(stmt))))((names) => $gt$gt$eq(vars_for_names(map(stmts)(({"3": l, "0": name}) => $co(name)(l)))(tenv))(({"1": vars, "0": bound}) => $gt$gt$eq(find_missing(bound)(externals_defs(stmts)))(({"1": missing, "0": bound2}) => $gt$gt$eq(foldr_$gt(nil)(zip(vars)(stmts))(infer_several_inner(bound2)))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(report_missing(subst)(missing))((_8300) => $lt_(zip(names)(map(types)(type_apply(subst)))))))))))
+})(stmt))))((names) => $gt$gt$eq(vars_for_names(map(stmts)(({"1": nl, "0": name}) => $co(name)(nl)))(tenv))(({"1": vars, "0": bound}) => $gt$gt$eq(find_missing(bound)(externals_defs(stmts)))(({"1": missing, "0": bound2}) => $gt$gt$eq(foldr_$gt(nil)(zip(vars)(stmts))(infer_several_inner(bound2)))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(report_missing(subst)(missing))((_8300) => $lt_(zip(names)(map(types)(type_apply(subst)))))))))))
 let infer_defns = (tenv) => (stmts) => (($target) => {
 if ($target.type === "cons") {
 let one = $target[0];

@@ -14,4 +14,7 @@
 
 (foldl nil [1 2 3] snoc)
 
-1
+(defn fib [x]
+    (if (< x 1)
+        true
+            (fib (- x 1))))
