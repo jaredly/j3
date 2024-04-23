@@ -1,7 +1,9 @@
 
 # Things I'm doin
 
-- [ ] search restultsss
+- [x] search restultsss
+  - [x] simplify results
+  - [ ] Show the name of the definition that a result comes from
 - [ ] cmd+p should show types
 - [ ] autocompleeeete
   - my errors should get more specific

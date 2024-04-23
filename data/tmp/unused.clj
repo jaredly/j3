@@ -18,6 +18,10 @@ one
 
 [1]
 
+nil
+
+(cons 1 (nil))
+
 [one one]
 
 (deftype hwhat (x (lol int)))

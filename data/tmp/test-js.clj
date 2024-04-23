@@ -133,20 +133,12 @@
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
-        (elambda pats b _)   "(fn [${
-                                 (join " " (map pats pat-to-string ))
-                                 }] ${
-                                 (expr-to-string b)
-                                 })"
+        (elambda pats b _)   "(fn [${(join " " (map pats pat-to-string ))}] ${(expr-to-string b)})"
         (eapp a args _)      "(${(expr-to-string a)} ${(join " " (map args expr-to-string))})"
         (eprim (pint n _) _) (int-to-string n)
-        (ematch t cases _)   "(match ${
-                                 (expr-to-string t)
-                                 } ${
-                                 (join
-                                     "\n"
-                                         (map cases (fn [(, a b)] "${(pat-to-string a)} ${(expr-to-string b)}")))
-                                 }"
+        (ematch t cases _)   "(match ${(expr-to-string t)} ${(join
+                                 "\n"
+                                     (map cases (fn [(, a b)] "${(pat-to-string a)} ${(expr-to-string b)}")))}"
         _                    "??"))
 
 (defn pat-to-string [pat]
@@ -244,13 +236,9 @@
 
 (defn and-loc [locs l s]
     (if locs
-        "${
-            s
-            }:${
-            (if (= l -1)
-                "🚨"
-                    (its l))
-            }"
+        "${s}:${(if (= l -1)
+            "🚨"
+                (its l))}"
             s))
 
 (defn tts-inner [t free locs]

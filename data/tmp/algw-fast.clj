@@ -118,7 +118,7 @@
 (deftype pat
     (pany int)
         (pvar string int)
-        (pcon string (array pat) int)
+        (pcon string int (array pat) int)
         (pstr string int)
         (pprim prim int))
 
@@ -137,10 +137,10 @@
 
 (defn pat/idents [pat]
     (match pat
-        (pvar name l)      (one (, name l))
+        (pvar name l)         (one (, name l))
         ; TODO add loc for pcon ...
-        (pcon name pats l) (many [(one (, name l)) ..(map pats pat/idents)])
-        _                  empty))
+        (pcon name il pats l) (many [(one (, name l)) ..(map pats pat/idents)])
+        _                     empty))
 
 (defn stmt/idents [stmt]
     (match stmt
@@ -182,29 +182,21 @@
 (defn expr-to-string [expr]
     (match expr
         (evar n _)           n
-        (elambda pats b _)   "(fn [${
-                                 (join " " (map pats pat-to-string ))
-                                 }] ${
-                                 (expr-to-string b)
-                                 })"
+        (elambda pats b _)   "(fn [${(join " " (map pats pat-to-string ))}] ${(expr-to-string b)})"
         (eapp a args _)      "(${(expr-to-string a)} ${(join " " (map args expr-to-string))})"
         (eprim (pint n _) _) (int-to-string n)
-        (ematch t cases _)   "(match ${
-                                 (expr-to-string t)
-                                 } ${
-                                 (join
-                                     "\n"
-                                         (map cases (fn [(, a b)] "${(pat-to-string a)} ${(expr-to-string b)}")))
-                                 }"
+        (ematch t cases _)   "(match ${(expr-to-string t)} ${(join
+                                 "\n"
+                                     (map cases (fn [(, a b)] "${(pat-to-string a)} ${(expr-to-string b)}")))}"
         _                    "??"))
 
 (defn pat-to-string [pat]
     (match pat
-        (pany _)        "_"
-        (pvar n _)      n
-        (pcon c pats _) "(${c} ${(join " " (map pats pat-to-string))})"
-        (pstr s _)      "\"${s}\""
-        (pprim _ _)     "prim"))
+        (pany _)           "_"
+        (pvar n _)         n
+        (pcon c il pats _) "(${c} ${(join " " (map pats pat-to-string))})"
+        (pstr s _)         "\"${s}\""
+        (pprim _ _)        "prim"))
 
 (defn type= [one two]
     (match (, one two)
@@ -217,11 +209,11 @@
 
 (defn pat-loc [pat]
     (match pat
-        (pany l)     l
-        (pprim _ l)  l
-        (pstr _ l)   l
-        (pvar _ l)   l
-        (pcon _ _ l) l))
+        (pany l)       l
+        (pprim _ l)    l
+        (pstr _ l)     l
+        (pvar _ l)     l
+        (pcon _ _ _ l) l))
 
 (defn expr-loc [expr]
     (match expr
@@ -300,13 +292,9 @@
 
 (defn and-loc [locs l s]
     (if locs
-        "${
-            s
-            }:${
-            (if (= l -1)
-                "🚨"
-                    (its l))
-            }"
+        "${s}:${(if (= l -1)
+            "🚨"
+                (its l))}"
             s))
 
 (defn tts-inner [t free locs]
@@ -541,15 +529,7 @@
                                      (some v) current
                                      (none)   (if (has-free type key)
                                                   (some
-                                                      "compose-subst[${
-                                                          place
-                                                          }]: old-subst has key ${
-                                                          key
-                                                          }, which is used in new-subst for ${
-                                                          nkey
-                                                          } => ${
-                                                          (type-to-string-raw type)
-                                                          }")
+                                                      "compose-subst[${place}]: old-subst has key ${key}, which is used in new-subst for ${nkey} => ${(type-to-string-raw type)}")
                                                       current))))))))
 
 (def debug-invariant false)
@@ -1008,12 +988,12 @@
         (pstr _ nl)           (<- (, (tcon "string" nl) map/nil))
         (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
         (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
-        (pcon name args l)    (let-> [
+        (pcon name il args l) (let-> [
                                   (tconstructor free cargs cres cloc) (match (tenv/con tenv name)
                                                                           (none)   (<-err (type-error "Unknown type constructor" [(, name l)]))
                                                                           (some v) (<- v))
-                                  ()                                  (record-usage-> l cloc)
-                                  ()                                  (record-> l (tfns cargs cres) true)
+                                  ()                                  (record-usage-> il cloc)
+                                  ()                                  (record-> il (tfns cargs cres) true)
                                   (, tres tsubst)                     (instantiate (scheme free cres) l)
                                   tres                                (<- (type/set-loc l tres))
                                   (** We've instantiated the free variables into the result, now we need to apply those substitutions to the arguments. **)
@@ -1022,12 +1002,8 @@
                                   _                                   (if (!= (len args) (len cargs))
                                                                           (<-err
                                                                               (type-error
-                                                                                  "Wrong number of arguments to type constructor: given ${
-                                                                                      (its (len args))
-                                                                                      }, but the type constructor expects ${
-                                                                                      (its (len cargs))
-                                                                                      }"
-                                                                                      [(, name l)]))
+                                                                                  "Wrong number of arguments to type constructor: given ${(its (len args))}, but the type constructor expects ${(its (len cargs))}"
+                                                                                      [(, name il)]))
                                                                               (<- ()))
                                   bindings                            (foldl->
                                                                           map/nil
@@ -1106,11 +1082,7 @@
                 1 1))))
 
 (defn type-error->s [(, message names)]
-    "${
-        message
-        }${
-        (join "" (map names (fn [(, name loc)] "\n - ${name} (${(its loc)})")))
-        }")
+    "${message}${(join "" (map names (fn [(, name loc)] "\n - ${name} (${(its loc)})")))}")
 
 (defn infer-show [tenv x]
     (match (run/nil-> (infer tenv x))
@@ -1260,13 +1232,7 @@
                               (some (,, names subst al)) (if (!= (len names) (len args))
                                                              (<-err
                                                                  (type-error
-                                                                     "Wrong number of args given to alias ${
-                                                                         name
-                                                                         }: expected ${
-                                                                         (its (len names))
-                                                                         }, given ${
-                                                                         (its (len args))
-                                                                         }."
+                                                                     "Wrong number of args given to alias ${name}: expected ${(its (len names))}, given ${(its (len args))}."
                                                                          [(, name l)]))
                                                                  (let-> [
                                                                  subst (<-
@@ -1741,7 +1707,13 @@ map->
         [(@! (deftype (array a) (cons a (array a)) (nil)))]
             (,
             ["nil:23447" "cons:23441" "a:23438" "array:23437"]
-                [(, "array:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))])
+                [(, "array:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))
+        (,
+        [(@! (deftype t (c int)))
+            (@!
+            (match 1
+                (c _) 1))]
+            )])
 
 (** todo write some tests for this, and then get
     - type alises referencing each other
@@ -1754,30 +1726,18 @@ map->
 (defn expr->s [expr]
     (match expr
         (eprim prim int)            (prim->s prim)
-        (estr string templates int) "\"${
-                                        string
-                                        }${
-                                        (join
-                                            ""
-                                                (map templates (fn [(,, expr suffix _)] "${(expr->s expr)}${suffix}")))
-                                        }\""
+        (estr string templates int) "\"${string}${(join
+                                        ""
+                                            (map templates (fn [(,, expr suffix _)] "${(expr->s expr)}${suffix}")))}\""
         (evar string int)           string
         (elambda pats expr int)     "(fn [${(join " " (map pats pat->s))}] ${(expr->s expr)})"
         (eapp target args int)      "(${(expr->s target)} ${(join " " (map args expr->s))})"
-        (elet bindings body int)    "(let [${
-                                        (join
-                                            " "
-                                                (map bindings (fn [(, pat init)] "${(pat->s pat)} ${(expr->s init)}")))
-                                        }]\n  ${
-                                        (expr->s body)
-                                        })"
-        (ematch expr cases int)     "(match ${
-                                        (expr->s expr)
-                                        }\n  ${
-                                        (join
-                                            "\n  "
-                                                (map cases (fn [(, pat body)] "${(pat->s pat)}t${(expr->s body)}")))
-                                        }"))
+        (elet bindings body int)    "(let [${(join
+                                        " "
+                                            (map bindings (fn [(, pat init)] "${(pat->s pat)} ${(expr->s init)}")))}]\n  ${(expr->s body)})"
+        (ematch expr cases int)     "(match ${(expr->s expr)}\n  ${(join
+                                        "\n  "
+                                            (map cases (fn [(, pat body)] "${(pat->s pat)}t${(expr->s body)}")))}"))
 
 (defn prim->s [prim]
     (match prim
@@ -1788,19 +1748,19 @@ map->
 
 (defn pat->s [pat]
     (match pat
-        (pany int)             "_"
-        (pvar string int)      string
-        (pcon string args int) "(${string}${(join "" (map args (fn [pat] " ${(pat->s pat)}")))})"
-        (pstr string int)      string
-        (pprim prim int)       (prim->s prim)))
+        (pany int)               "_"
+        (pvar string int)        string
+        (pcon string _ args int) "(${string}${(join "" (map args (fn [pat] " ${(pat->s pat)}")))})"
+        (pstr string int)        string
+        (pprim prim int)         (prim->s prim)))
 
 (defn pats-by-loc [pat]
     (match pat
-        (pany int)             empty
-        (pvar string int)      (one (, int (evar string int)))
-        (pcon string pats int) (foldl empty (map pats pats-by-loc) bag/and)
-        (pstr string int)      empty
-        (pprim prim int)       empty))
+        (pany int)               empty
+        (pvar string int)        (one (, int (evar string int)))
+        (pcon string _ pats int) (foldl empty (map pats pats-by-loc) bag/and)
+        (pstr string int)        empty
+        (pprim prim int)         empty))
 
 (defn things-by-loc [expr]
     (bag/and
@@ -1860,22 +1820,14 @@ map->
                                                      map/nil
                                                          (bag/to-list (things-by-loc expr))
                                                          (fn [map (, loc expr)] (map/add map loc expr)))]
-        "Result: ${
-            final
-            }\nExprs:\n${
-            (join
-                "\n\n"
-                    (map
-                    (map/to-list exprs)
-                        (fn [(, loc exprs)]
-                        "${
-                            (join ";t" (map exprs expr->s))
-                            }\n -> ${
-                            (match (map/get type-map loc)
-                                (none)   "No type at ${(its loc)}"
-                                (some t) "${(join ";t" (map t type-to-string))}")
-                            }")))
-            }"))
+        "Result: ${final}\nExprs:\n${(join
+            "\n\n"
+                (map
+                (map/to-list exprs)
+                    (fn [(, loc exprs)]
+                    "${(join ";t" (map exprs expr->s))}\n -> ${(match (map/get type-map loc)
+                        (none)   "No type at ${(its loc)}"
+                        (some t) "${(join ";t" (map t type-to-string))}")}")))}"))
 
 (show-all-types builtin-env (@ ((fn [x b] (+ x 1)) 12 "hi")))
 
@@ -1923,20 +1875,20 @@ map->
 
 (defn pat-names [pat]
     (match pat
-        (pany _)           set/nil
-        (pvar name l)      (set/add set/nil name)
-        (pcon name args l) (foldl
-                               set/nil
-                                   args
-                                   (fn [bound arg] (set/merge bound (pat-names arg))))
-        (pstr string int)  set/nil
-        (pprim prim int)   set/nil))
+        (pany _)              set/nil
+        (pvar name l)         (set/add set/nil name)
+        (pcon name il args l) (foldl
+                                  set/nil
+                                      args
+                                      (fn [bound arg] (set/merge bound (pat-names arg))))
+        (pstr string int)     set/nil
+        (pprim prim int)      set/nil))
 
 (defn pat-externals [pat]
     (match pat
         (** Soo this should be probably a (type)? **)
-        (pcon name args l) (bag/and (one (,, name (value) l)) (many (map args pat-externals)))
-        _                  empty))
+        (pcon name il args l) (bag/and (one (,, name (value) il)) (many (map args pat-externals)))
+        _                     empty))
 
 (defn externals 
     [bound expr]

@@ -45,7 +45,8 @@ export const transformNode = (
                 path.concat({ idx, type: 'text', at: 0 }),
             );
             if (first.type !== 'stringText') {
-                throw new Error(`first not stringText`);
+                console.warn(`first not stringText`);
+                return node;
             }
             let changed = first !== node.first;
             const templates = node.templates.map((item, i) => {

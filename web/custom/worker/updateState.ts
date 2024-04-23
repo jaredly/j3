@@ -350,6 +350,11 @@ export function updateState(
                 });
             }
             res.typesAndLocs.forEach(({ loc, type }) => {
+                if (!state.results!.tops[topForLoc[loc]]) {
+                    console.warn('no top', topForLoc[loc], loc);
+                    return;
+                }
+
                 add(
                     state.results!.tops[topForLoc[loc]].hover,
                     loc,
@@ -361,6 +366,10 @@ export function updateState(
                     state.results!.tops[topForLoc[+key]].usages[+key] = [];
                 }
                 locs.forEach((loc) => {
+                    if (!state.results!.tops[topForLoc[loc]]) {
+                        console.warn('no top', topForLoc[loc], loc);
+                        return;
+                    }
                     add(state.results!.tops[topForLoc[loc]].usages, +key, loc);
                 });
             });
