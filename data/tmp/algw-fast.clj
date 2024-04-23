@@ -248,6 +248,15 @@
                              type)
         (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
 
+(defn type-with-free-rec [type free]
+    (match type
+        (tvar _ _)   (<- type)
+        (tcon s l)   (match (map/get free s)
+                         (some fl) (let-> [() (record-usage-> l fl)] (<- (tvar s l)))
+                         _         (<- type))
+        (tapp a b l) (let-> [a (type-with-free-rec a free) b (type-with-free-rec b free)]
+                         (<- (tapp a b l)))))
+
 (defn type-loc [type]
     (match type
         (tvar _ l)   l
@@ -388,7 +397,7 @@
     type scheme **)
 
 (defn tenv/add-builtin-type [(tenv a b names d) (, name args)]
-    (tenv a b (map/set names name (, args set/nil)) d))
+    (tenv a b (map/set names name (,, args set/nil -1)) d))
 
 (defn tenv/merge [(tenv values constructors types alias)
     (tenv nvalues ncons ntypes nalias)]
@@ -419,8 +428,8 @@
             (map string (, scheme int))
             ; type constructors
             (map string tconstructor)
-            ; type names (number of arguments) (set of constructor names)
-            (map string (, int (set string)))
+            ; type names (number of arguments) (set of constructor names) loc
+            (map string (,, int (set string) int))
             ; type aliases (argument names) (body) (loc)
             (map string (,, (array string) type int))))
 
@@ -436,11 +445,11 @@
 (defn tenv/set-type [(tenv types cons names alias) k v]
     (tenv (map/set types k v) cons names alias))
 
-(defn tenv/set-constructors [(tenv types cons names alias) name vbls ncons]
+(defn tenv/set-constructors [(tenv types cons names alias) name vbls ncons loc]
     (tenv
         types
             (map/merge cons ncons)
-            (map/set names name (, vbls (set/from-list (map/keys ncons))))
+            (map/set names name (,, vbls (set/from-list (map/keys ncons)) loc))
             alias))
 
 (defn tenv/add-alias [(tenv a b c aliases) name (,, args body l)]
@@ -1080,7 +1089,9 @@
                         (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
                         -1))])
             (map/from-list
-            [(, "int" (, 0 set/nil)) (, "string" (, 0 set/nil)) (, "bool" (, 0 set/nil))])
+            [(, "int" (,, 0 set/nil -1))
+                (, "string" (,, 0 set/nil -1))
+                (, "bool" (,, 0 set/nil -1))])
             map/nil))
 
 (run/record (infer basic (@ (+ 2 3))))
@@ -1362,13 +1373,13 @@
 (** ## Recording Usages **)
 
 (defn record-usages-in-type [tenv type]
-    (let [(tenv _ _ _ alias) tenv]
+    (let [(tenv types _ tdefs alias) tenv]
         (match type
             (tcon name l)    (match (map/get alias name)
                                  (some (,, _ _ al)) (record-usage-> l al)
-                                 _                  (match (tenv/type tenv name)
-                                                        (some (, _ _)) (record-usage-> l -1)
-                                                        _              (<- ())))
+                                 _                  (match (map/get tdefs name)
+                                                        (some (,, _ _ loc)) (record-usage-> l loc)
+                                                        _                   (let [nope name] (<- ()))))
             (tapp one two l) (let-> [
                                  () (record-usages-in-type tenv one)
                                  () (record-usages-in-type tenv two)]
@@ -1384,7 +1395,14 @@
 
 (defn run/usages [tenv stmts]
     (let [
-        (, (,, _ (, _ (, defns uses)) _) _) ((state-f (infer-stmtss tenv stmts)) state/nil)
+        (, (,, _ (, _ (, defns uses)) _) _) ((state-f
+                                                (foldl->
+                                                    tenv
+                                                        stmts
+                                                        (fn [tenv stmt]
+                                                        (let-> [(, nenv _) (infer-stmtss tenv [stmt])]
+                                                            (<- (tenv/merge tenv nenv))))))
+                                                state/nil)
         idents                              (map/from-list
                                                 (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
         (,
@@ -1394,14 +1412,28 @@
 (,
     (run/usages builtin-env)
         [(, [(@! (let [x 1 y 2] x))] (, ["y:22225" "x:22222"] [(, "x:22224" 22222)]))
-        (, [(@! (deftype a (b))) (@! (deftype c (d a)))] )
+        (,
+        [(@! (deftype a (b))) (@! (deftype c (d a)))]
+            (, ["d:22267" "c:22264" "b:22258" "a:22256"] [(, "a:22268" 22256)]))
         (,
         [(@! (deftype a (b))) (@! (let [(b) (b)] 1))]
             (, ["b:22371" "a:22369"] [(, "b:22377" 22371) (, "b:22380" 22371)]))
-        (, [(@! (typealias a int)) (@! (typealias b a))] )
+        (,
+        [(@! (typealias a int)) (@! (typealias b a))]
+            (, ["b:22289" "a:22279"] [(, "a:22290" 22279) (, "int:22280" -1)]))
         (,
         [(@! (typealias a int)) (@! (deftype c (b a)))]
-            (, ["b:22307" "c:22305" "a:22299"] [(, "a:22308" 22299)]))])
+            (,
+            ["b:22307" "c:22305" "a:22299"]
+                [(, "a:22308" 22299) (, "int:22300" -1)]))
+        (,
+        [(@! (deftype a (b))) (@! (typealias c a))]
+            (, ["c:23288" "b:23283" "a:23281"] [(, "a:23289" 23281)]))
+        (,
+        [(@! (deftype (array a) (cons a (array a)) (nil)))]
+            (,
+            ["nil:23447" "cons:23441" "a:23438" "array:23437"]
+                [(, "a:23445" 23438) (, "a:23442" 23438)]))])
 
 (** todo write some tests for this, and then get
     - type alises referencing each other
@@ -1567,18 +1599,19 @@
     (let-> [
         names           (<- (map constructors (fn [(,,, name _ _ _)] name)))
         ()              (record-def-> tnl)
-        final           (<-
-                            (foldl
-                                (tcon tname tnl)
-                                    targs
-                                    (fn [body (, arg al)] (tapp body (tvar arg al) l))))
-        free-set        (<- (foldl set/nil targs (fn [free (, arg _)] (set/add free arg))))
+        final           (foldl->
+                            (tcon tname tnl)
+                                targs
+                                (fn [body (, arg al)]
+                                (let-> [() (record-def-> al)] (<- (tapp body (tvar arg al) l)))))
+        free-map        (<- (map/from-list targs))
+        free-set        (<- (set/from-list (map/keys free-map)))
         (, values cons) (foldl->
                             (, map/nil map/nil)
                                 constructors
                                 (fn [(, values cons) (,,, name nl args l)]
                                 (let-> [
-                                    args (<- (map args (fn [arg] (type-with-free arg free-set))))
+                                    args (map-> (fn [arg] (type-with-free-rec arg free-map)) args)
                                     ()   (do-> (record-usages-in-type tenv') args)
                                     ()   (record-def-> nl)
                                     args (map-> (subst-aliases (tenv/alias tenv')) args)
@@ -1597,14 +1630,16 @@
                                                 values
                                                     name
                                                     (,
-                                                    (scheme free-set (foldr final args (fn [body arg] (tfn arg body l))))
+                                                    (scheme
+                                                        (set/from-list  (map/keys free-map))
+                                                            (foldr final args (fn [body arg] (tfn arg body l))))
                                                         nl))
                                                 (map/set cons name (tconstructor free-set args final nl)))))))]
         (<-
             (tenv
                 values
                     cons
-                    (map/set map/nil tname (, (len targs) (set/from-list names)))
+                    (map/set map/nil tname (,, (len targs) (set/from-list names) tnl))
                     map/nil))))
 
 (defn infer-stypes [tenv' stypes salias]
@@ -1630,7 +1665,7 @@
                                              []    (let-> [
                                                        () (record-def-> nl)
                                                        () (record-type-usages (map/from-list args) tenv body)
-                                                       () (record-usages-in-type tenv body)]
+                                                       () (record-usages-in-type tenv' body)]
                                                        (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
                                              names (<-err
                                                        (type-error "Unbound types" (map names (fn [(,, name _ l)] (, name l))))))))
@@ -2118,13 +2153,13 @@ map->
                             (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))]))
                     (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1) -1))])
                     (map/from-list
-                    [(, "int" (, 0 set/nil))
-                        (, "float" (, 0 set/nil))
-                        (, "string" (, 0 set/nil))
-                        (, "bool" (, 0 set/nil))
-                        (, "map" (, 2 set/nil))
-                        (, "set" (, 1 set/nil))
-                        (, "->" (, 2 set/nil))])
+                    [(, "int" (,, 0 set/nil -1))
+                        (, "float" (,, 0 set/nil -1))
+                        (, "string" (,, 0 set/nil -1))
+                        (, "bool" (,, 0 set/nil -1))
+                        (, "map" (,, 2 set/nil -1))
+                        (, "set" (,, 1 set/nil -1))
+                        (, "->" (,, 2 set/nil -1))])
                     map/nil)
                 [(@! (deftype (, a b) (, a b)))
                 (@! (deftype (,, a b c) (,, a b c)))

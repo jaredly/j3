@@ -14,7 +14,17 @@ one
 
 (typealias (lol a) string)
 
-(deftype hwhat (x (lo int)))
+(deftype (array a) (cons a (array a)) (nil))
 
-(typealias mnm (lol lol))
+[1]
+
+[one one]
+
+(deftype hwhat (x (lol int)))
+
+(typealias mnm (array lol))
+
+(fn [xn]
+    (match xn
+        (x _) 1))
 

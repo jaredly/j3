@@ -364,11 +364,12 @@ export function updateState(
                     add(state.results!.tops[topForLoc[loc]].usages, +key, loc);
                 });
             });
-            group.forEach((item) => {
-                state.results?.tops[item.id].produce.push(
-                    JSON.stringify(res.usages),
-                );
-            });
+
+            // group.forEach((item) => {
+            //     state.results?.tops[item.id].produce.push(
+            //         JSON.stringify(res.usages),
+            //     );
+            // });
         }
     }
 

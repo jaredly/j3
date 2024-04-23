@@ -33,12 +33,12 @@ a structured editor, I first write the editor, and then the language?
 
 # Unused, let's make it really great!
 
-- [ ] types! also get in on the unused action.
+- [x] types! also get in on the unused action.
 
 
 # Tests I need to write
 
-- [ ] something about making sure `unused` highlighting actually propagates correctly. What is up with that.
+- [x] something about making sure `unused` highlighting actually propagates correctly. What is up with that.
 - [ ] something around "introducing errors" into a term, and then ... propagating things ... idk
   - [ ] deleting a term (or making it so a term no longer exports a name) should be reflected in downstream
     tops

@@ -467,11 +467,7 @@ export const RenderNNode = (
                             : {}),
                     }}
                     onMouseEnter={() =>
-                        dispatch?.({
-                            type: 'hover',
-                            path: props.hoverPath,
-                            //path.concat({ idx, at: 0, type: 'subtext' }),
-                        })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
                     onClick={(evt) => {
                         if (evt.metaKey) {

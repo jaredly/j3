@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { reduce } from '../../ide/ground-up/reduce';
-import { NUIState } from '../UIState';
+import { Action, NUIState } from '../UIState';
 import { Evt, Store } from './Store';
 import { TraceMap, loadEvaluator } from '../../ide/ground-up/loadEv';
 import {
@@ -145,24 +145,14 @@ export const setupSyncStore = (
         },
         dispatch(action) {
             if (action.type === 'jump-to-definition') {
-                const node = state.map[action.idx];
-                if (node.type === 'identifier') {
-                    const name = node.text;
-                    const found = results.jumpToName.value[name];
-                    if (!found) {
-                        console.warn(`Cant find a definition for ${name}`);
-                        return;
-                    }
-                    const path = pathForIdx(found, state);
-                    if (path) {
-                        action = { type: 'select', at: [{ start: path }] };
-                    } else {
-                        console.warn(`Cant find a path`);
-                        return;
-                    }
-                } else {
-                    console.warn(`Not an identifier`);
-                    return;
+                const changed = getJumpToAction(
+                    action.idx,
+                    state,
+                    results,
+                    workerResults,
+                );
+                if (changed) {
+                    action = changed;
                 }
             }
             // if (inProcess) {
@@ -298,6 +288,48 @@ export const setupSyncStore = (
             };
         },
     };
+};
+
+const getJumpToAction = (
+    idx: number,
+    state: NUIState,
+    results: ImmediateResults<any>,
+    workerResults: WorkerResults,
+): Action | void => {
+    for (let [prov, usages] of Object.entries(workerResults.usages)) {
+        if (!usages.includes(idx)) {
+            continue;
+        }
+        if (+prov === idx) return;
+        const path = pathForIdx(+prov, state);
+        if (path) {
+            console.log('jumping to', prov);
+            return { type: 'select', at: [{ start: path }] };
+        } else {
+            console.warn(`Cant find a path for ${prov}`);
+            return;
+        }
+    }
+
+    const node = state.map[idx];
+    if (node.type === 'identifier') {
+        const name = node.text;
+        const found = results.jumpToName.value[name];
+        if (!found) {
+            console.warn(`Cant find a definition for ${name}`);
+            return;
+        }
+        const path = pathForIdx(found, state);
+        if (path) {
+            return { type: 'select', at: [{ start: path }] };
+        } else {
+            console.warn(`Cant find a path for ${found}`);
+            return;
+        }
+    } else {
+        console.warn(`Not an identifier`);
+        return;
+    }
 };
 
 function calcNSChanged(
