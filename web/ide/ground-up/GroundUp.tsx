@@ -236,8 +236,11 @@ export const GroundUp = ({
             <WithStore store={store}>
                 <Hover />
                 <CommandPalette setSearchResults={setSearchResults} />
-                {searchResults ? (
-                    <ShowSearchResults results={searchResults} />
+                {searchResults?.length ? (
+                    <ShowSearchResults
+                        results={searchResults}
+                        setResults={setSearchResults}
+                    />
                 ) : null}
             </WithStore>
         </div>
