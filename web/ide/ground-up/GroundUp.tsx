@@ -26,6 +26,7 @@ import { AnyEnv } from '../../custom/store/getResults';
 import { useSyncStore } from '../../custom/store/useSyncStore';
 import { Spinner } from './Spinner';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
+import { ShowSearchResults } from './ShowSearchResults';
 
 export const WithStore = ({
     store,
@@ -50,6 +51,10 @@ export type Debug = {
     selection: boolean;
     disableEvaluation: boolean;
 };
+export type SearchResults = {
+    idx: number;
+    path: Path[];
+}[];
 
 export const GroundUp = ({
     id,
@@ -67,6 +72,10 @@ export const GroundUp = ({
     save: (state: NUIState) => void;
 }) => {
     // const [state, dispatch] = useReducer(reduce, null, (): NUIState => initial);
+
+    const [searchResults, setSearchResults] = useState(
+        null as null | SearchResults,
+    );
 
     const [debug, setDebug] = useState<Debug>({
         ids: false,
@@ -226,7 +235,10 @@ export const GroundUp = ({
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
                 <Hover />
-                <CommandPalette />
+                <CommandPalette setSearchResults={setSearchResults} />
+                {searchResults ? (
+                    <ShowSearchResults results={searchResults} />
+                ) : null}
             </WithStore>
         </div>
     );

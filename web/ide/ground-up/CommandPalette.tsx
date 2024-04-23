@@ -21,8 +21,13 @@ import { FullEvalator } from './FullEvalator';
 import { Sendable } from '../../custom/worker/worker';
 import { unique } from '../../custom/store/unique';
 import { Cursor } from '../../../src/state/getKeyUpdate';
+import { SearchResults } from './GroundUp';
 
-export const CommandPalette = () => {
+export const CommandPalette = ({
+    setSearchResults,
+}: {
+    setSearchResults: (s: SearchResults) => void;
+}) => {
     const store = useGetStore();
     const { state } = useGlobalState(store);
 
@@ -59,7 +64,7 @@ export const CommandPalette = () => {
             focus?.type === 'super'
                 ? focus.children
                 : open
-                ? getCommands(store, state, store.dispatch)
+                ? getCommands(store, state, store.dispatch, setSearchResults)
                 : [],
         [open, state, focus],
     );
@@ -214,6 +219,7 @@ const getCommands = (
     store: Store,
     state: NUIState,
     dispatch: React.Dispatch<Action>,
+    setSearchResults: (r: SearchResults) => void,
 ) => {
     const commands: Command[] = [];
 
@@ -236,6 +242,23 @@ const getCommands = (
                         };
                     }),
                 });
+            },
+        });
+
+        commands.push({
+            type: 'plain',
+            title: `Show ${state.highlight.length} instances`,
+            action() {
+                setSearchResults(
+                    state.highlight!.map((idx) => {
+                        const path = pathForIdx(idx, state);
+                        if (!path)
+                            throw new Error(
+                                `cant get path for highlight ${idx}`,
+                            );
+                        return { path, idx };
+                    }),
+                );
             },
         });
     }
