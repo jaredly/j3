@@ -43,7 +43,13 @@ export type NNode =
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
     | { type: 'rich-text'; contents: any }
-    | { type: 'brace'; text: string; at: 'start' | 'end'; color?: string }
+    | {
+          type: 'brace';
+          text: string;
+          at: 'start' | 'end';
+          color?: string;
+          bgColor?: string;
+      }
     | {
           type: 'ref';
           id: number;
@@ -139,6 +145,8 @@ export const getDeepNestedNodes = (
         return node;
     });
 };
+
+export const stringBgColor = 'rgba(255,200,0,0.1)';
 
 export const getNestedNodes = (
     node: MNode,
@@ -294,6 +302,7 @@ export const getNestedNodes = (
                         at: 'start',
                         text: '“',
                         color: stringColor,
+                        bgColor: stringBgColor,
                     },
                     stringContents(node, layout),
                     {
@@ -301,6 +310,7 @@ export const getNestedNodes = (
                         at: 'end',
                         color: stringColor,
                         text: '”',
+                        bgColor: stringBgColor,
                     },
                     { type: 'blinker', loc: 'end' },
                 ],

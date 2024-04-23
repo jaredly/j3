@@ -2,7 +2,7 @@ import equal from 'fast-deep-equal';
 import React from 'react';
 import { splitNamespaces } from '../../src/db/hash-tree';
 import { splitGraphemes } from '../../src/parse/parse';
-import { NNode } from '../../src/state/getNestedNodes';
+import { NNode, stringBgColor } from '../../src/state/getNestedNodes';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { pathForIdx } from '../ide/ground-up/CommandPalette';
@@ -119,7 +119,11 @@ export const textStyle = (
         case 'identifier':
             return { color: color };
         case 'stringText':
-            return { color: color, whiteSpace: 'pre' };
+            return {
+                color: color,
+                whiteSpace: 'pre',
+                backgroundColor: stringBgColor,
+            };
         case 'comment':
             return { color: '#4eb94e' };
     }
@@ -375,6 +379,7 @@ export const RenderNNode = (
                         color:
                             nnode.color ??
                             rainbow[path.length % rainbow.length],
+                        backgroundColor: nnode.bgColor ?? undefined,
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
                         // fontVariationSettings: props.values.hover
