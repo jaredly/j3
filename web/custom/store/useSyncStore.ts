@@ -133,11 +133,13 @@ export const setupSyncStore = (
                     ),
                 );
                 evtListeners.results.forEach((f) => f(state));
+
+                store.dispatch({ type: 'highlight' });
             }
         }
     });
 
-    return {
+    const store: Store = {
         setDebug(execOrder, disableEvaluation, showJs) {
             // throw new Error(`todo`);
             // console.error('ignoring sotry');
@@ -303,6 +305,7 @@ export const setupSyncStore = (
             };
         },
     };
+    return store;
 };
 
 const getJumpToAction = (
