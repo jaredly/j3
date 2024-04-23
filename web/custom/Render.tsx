@@ -465,6 +465,9 @@ export const RenderNNode = (
                         ...(props.values.unused
                             ? { opacity: 0.5, fontStyle: 'italic' }
                             : {}),
+                        ...(props.values.highlight
+                            ? { outline: '1px solid rgba(255,255,255,0.3)' }
+                            : {}),
                     }}
                     onMouseEnter={() =>
                         dispatch?.({ type: 'hover', path: props.hoverPath })

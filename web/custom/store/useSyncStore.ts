@@ -166,7 +166,7 @@ export const setupSyncStore = (
             // inProcess = true;
             const lastState = state;
             // console.time('reduce');
-            state = reduce(state, action);
+            state = reduce(state, action, workerResults.usages);
             // console.timeEnd('reduce');
 
             if (state.evaluator !== lastState.evaluator) {
@@ -225,6 +225,21 @@ export const setupSyncStore = (
             //     'node list',
             //     Object.keys(nodeListeners).filter((n) => n.startsWith('ns:')),
             // );
+
+            // --- updating ... usage ... hovers ---
+            if (state.highlight != lastState.highlight) {
+                const topForLoc: Record<number, number> = {};
+                Object.values(results.nodes).forEach((node) => {
+                    node.ids.forEach((id) => (topForLoc[id] = node.ns.id));
+                });
+
+                lastState.highlight?.forEach(
+                    (k) => (nodeChanges[k] = topForLoc[k]),
+                );
+                state.highlight?.forEach(
+                    (k) => (nodeChanges[k] = topForLoc[k]),
+                );
+            }
 
             Object.keys(nodeChanges).forEach((id) => {
                 nodeListeners[id]?.forEach((f) =>

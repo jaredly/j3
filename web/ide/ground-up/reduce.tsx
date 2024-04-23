@@ -258,7 +258,6 @@ export const actionToUpdate = (
         case 'copy':
         case 'menu-select':
         case 'namespace-rename':
-        case 'jump-to-definition':
             return;
         default:
             const _: never = action;
@@ -566,12 +565,23 @@ export const stringify = (v: any, level: number, max: number): string => {
     return JSON.stringify(v);
 };
 
-export const reduce = (state: NUIState, action: Action): NUIState => {
+export const reduce = (
+    state: NUIState,
+    action: Action,
+    usages: Record<number, number[]>,
+): NUIState => {
     if (action.type === 'undo' || action.type === 'redo') {
         return undoRedo(state, action.type);
     }
     if (action.type === 'yank') {
         return state;
+    }
+    if (action.type === 'jump-to-definition') {
+        console.warn(`jump-to-definition should have been weeded out`);
+        return state;
+    }
+    if (action.type === 'highlight') {
+        return { ...state, highlight: calcHighlight(state, usages) };
     }
     // console.time('actionToUpdate');
     const update = actionToUpdate(state, action);
@@ -583,6 +593,11 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     // console.time('reduce update');
     // console.log(update);
     const next = reduceUpdate(state, update);
+
+    if (next.at != state.at) {
+        next.highlight = calcHighlight(next, usages);
+    }
+
     // console.timeEnd('reduce update');
     // console.time('calc history');
     const item = calcHistoryItem(state, next, '', action);
@@ -659,3 +674,25 @@ function verifySelection(state: NUIState) {
         }
     });
 }
+
+const calcHighlight = (state: NUIState, usages: Record<number, number[]>) => {
+    const highlight: number[] = [];
+    state.at.forEach((cursor) => {
+        if (cursor.end) return;
+        const last = cursor.start[cursor.start.length - 1];
+        const node = state.map[last.idx];
+        if (node.type !== 'identifier') return;
+        if (usages[node.loc]) {
+            highlight.push(node.loc, ...usages[node.loc]);
+            return;
+        }
+        for (let [prov, users] of Object.entries(usages)) {
+            if (+prov === -1) continue;
+            if (users.includes(node.loc)) {
+                highlight.push(+prov, ...users);
+                return;
+            }
+        }
+    });
+    return highlight;
+};

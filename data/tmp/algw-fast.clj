@@ -1618,11 +1618,11 @@
                                     _    (map->
                                              (fn [arg]
                                                  (match (bag/to-list (externals-type (set/add bound tname) arg))
-                                                     []    (<- true)
-                                                     names (<-err
-                                                               (type-error
-                                                                   "Unbound types in deftype ${tname}"
-                                                                       (map names (fn [(,, name _ l)] (, name l)))))))
+                                                     []      (<- true)
+                                                     unbound (<-err
+                                                                 (type-error
+                                                                     "Unbound types in deftype ${tname}"
+                                                                         (map unbound (fn [(,, name _ l)] (, name l)))))))
                                                  args)]
                                     (<-
                                         (,
@@ -1662,13 +1662,15 @@
                                              (externals-type
                                                  (set/merge bound (set/from-list (map args fst)))
                                                      body))
-                                             []    (let-> [
-                                                       () (record-def-> nl)
-                                                       () (record-type-usages (map/from-list args) tenv body)
-                                                       () (record-usages-in-type tenv' body)]
-                                                       (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
-                                             names (<-err
-                                                       (type-error "Unbound types" (map names (fn [(,, name _ l)] (, name l))))))))
+                                             []      (let-> [
+                                                         () (record-def-> nl)
+                                                         () (record-type-usages (map/from-list args) tenv body)
+                                                         () (record-usages-in-type tenv' body)]
+                                                         (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
+                                             unbound (<-err
+                                                         (type-error
+                                                             "Unbound types"
+                                                                 (map unbound (fn [(,, name _ l)] (, name l))))))))
         merged                   (<- (tenv/merge tenv tenv'))
         tenv                     (foldl->
                                      tenv

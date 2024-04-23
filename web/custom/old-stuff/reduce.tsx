@@ -124,7 +124,6 @@ const actionToUpdate = (
             return;
         }
         case 'move':
-        case 'jump-to-definition':
             return;
         // case 'collapse':
         //     return action;
@@ -305,6 +304,9 @@ export const reduce = (
             );
             return { ...next, ctx };
         }
+        case 'jump-to-definition':
+        case 'highlight':
+            return state;
         default:
             const update = actionToUpdate(state, action);
             const next = reduceUpdate(state, update);

@@ -190,6 +190,9 @@ export const reduce = (state: NUIState, action: Action): NUIState => {
     if (action.type === 'yank') {
         return state;
     }
+    if (action.type === 'jump-to-definition' || action.type === 'highlight') {
+        return state;
+    }
     // if (action.type === 'reset') {
     //     return action.state;
     // }

@@ -25,6 +25,7 @@ export const RenderStatic = ({ node }: { node: Node }) => {
             nnode={top}
             values={{
                 display: {},
+                highlight: false,
                 meta: {},
                 nnode: top,
                 node: map[root],

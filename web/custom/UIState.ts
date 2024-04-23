@@ -36,6 +36,8 @@ export type NUIState = {
     regs: RegMap;
     clipboard: ClipboardItem[][];
     hover: Path[];
+    highlight?: number[];
+    // highlight: boolean;
     traceScrub?: {
         top: number;
         idx: number;
@@ -282,6 +284,8 @@ export type Action =
     | { type: 'undo' }
     | { type: 'redo' }
     | { type: 'yank'; expr: DefType | Def; loc: number }
+    | { type: 'jump-to-definition'; idx: number }
+    | { type: 'highlight' }
     // | { type: 'reset'; state: NUIState }
     | UpdatableAction;
 
@@ -291,7 +295,6 @@ export type UpdatableAction =
     | StateUpdate
     | { type: 'hover'; path: Path[] }
     | { type: 'select'; add?: boolean; at: { start: Path[]; end?: Path[] }[] }
-    | { type: 'jump-to-definition'; idx: number }
     | { type: 'move'; source: { path: Path[]; idx: number }; dest: Path[] }
     | { type: 'copy'; items: ClipboardItem[] }
     | { type: 'menu'; selection: number }

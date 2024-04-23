@@ -174,6 +174,7 @@ export type Values = {
     display: Display[0];
     errors?: string[];
     unused: boolean;
+    highlight: boolean;
 
     reg: Reg;
     selection?: {
@@ -198,6 +199,7 @@ export const getValues = (
             dispatch() {},
             display: {},
             meta: null,
+            highlight: false,
             reg() {},
             node: { type: 'blank', loc: -1 },
             nnode: { type: 'text', text: '' },
@@ -219,6 +221,7 @@ export const getValues = (
 
     return {
         errors,
+        highlight: state.highlight?.includes(idx) ?? false,
         dispatch: store.dispatch,
         meta: state.meta?.[idx] ?? null,
         display: results.layout[idx] ?? {},
