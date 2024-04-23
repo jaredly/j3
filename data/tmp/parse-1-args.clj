@@ -1091,7 +1091,7 @@
                                         items
                                         (fn [bag (, name item)] (bag/and bag (pat-names/j item))))))
 
-(let [p (force (pat->j/pat (@p (what hi ho here))))]
+(let [p (force (pat->j/pat (parse-pat (@@ (what hi ho here)))))]
     (, (bag/to-list (pat-names/j p)) (fold/pat pat-names/j2 set/nil p)))
 
 (defn force [x]

@@ -351,7 +351,9 @@ export function updateState(
             }
             res.typesAndLocs.forEach(({ loc, type }) => {
                 if (!state.results!.tops[topForLoc[loc]]) {
-                    console.warn('no top', topForLoc[loc], loc);
+                    if (loc !== -1) {
+                        console.warn('no top', topForLoc[loc], loc);
+                    }
                     return;
                 }
 
@@ -367,7 +369,9 @@ export function updateState(
                 }
                 locs.forEach((loc) => {
                     if (!state.results!.tops[topForLoc[loc]]) {
-                        console.warn('no top', topForLoc[loc], loc);
+                        if (loc !== -1) {
+                            console.warn('no top', topForLoc[loc], loc);
+                        }
                         return;
                     }
                     add(state.results!.tops[topForLoc[loc]].usages, +key, loc);

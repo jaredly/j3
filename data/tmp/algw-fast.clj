@@ -124,22 +124,28 @@
 
 (defn expr/idents [expr]
     (match expr
-        (estr _ exprs _)       (many (map exprs (dot expr/idents ,,0)))
-        (evar name l)          (one (, name l))
-        (elambda pats expr l)  (many [(expr/idents expr) ..(map pats pat/idents)])
-        (eapp target args _)   (many [(expr/idents target) ..(map args expr/idents)])
-        (elet bindings body _) (many
-                                   [(expr/idents body)
-                                       ..(map
-                                       bindings
-                                           (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
-        _                      empty))
+        (estr _ exprs _)        (many (map exprs (dot expr/idents ,,0)))
+        (evar name l)           (one (, name l))
+        (elambda pats expr l)   (many [(expr/idents expr) ..(map pats pat/idents)])
+        (eapp target args _)    (many [(expr/idents target) ..(map args expr/idents)])
+        (elet bindings body _)  (many
+                                    [(expr/idents body)
+                                        ..(map
+                                        bindings
+                                            (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
+        (ematch target cases _) (bag/and
+                                    (expr/idents target)
+                                        (many
+                                        (map
+                                            cases
+                                                (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))))
+        _                       empty))
 
 (defn pat/idents [pat]
     (match pat
         (pvar name l)         (one (, name l))
         ; TODO add loc for pcon ...
-        (pcon name il pats l) (many [(one (, name l)) ..(map pats pat/idents)])
+        (pcon name il pats l) (many [(one (, name il)) ..(map pats pat/idents)])
         _                     empty))
 
 (defn stmt/idents [stmt]
@@ -1683,6 +1689,12 @@ map->
             (map defns (with-name idents))
                 (map uses (fn [(, user prov)] (, (with-name idents user) prov))))))
 
+(let [
+    st (@!
+           (match 1
+               (c _) 1))]
+    (, (stmt/idents st) st))
+
 (,
     (run/usages builtin-env)
         [(, [(@! (let [x 1 y 2] x))] (, ["y:22225" "x:22222"] [(, "x:22224" 22222)]))
@@ -1691,7 +1703,7 @@ map->
             (, ["d:22267" "c:22264" "b:22258" "a:22256"] [(, "a:22268" 22256)]))
         (,
         [(@! (deftype a (b))) (@! (let [(b) (b)] 1))]
-            (, ["b:22371" "a:22369"] [(, "b:22377" 22371) (, "b:22380" 22371)]))
+            (, ["b:22371" "a:22369"] [(, "b:22378" 22371) (, "b:22380" 22371)]))
         (,
         [(@! (typealias a int)) (@! (typealias b a))]
             (, ["b:22289" "a:22279"] [(, "a:22290" 22279) (, "int:22280" -1)]))
@@ -1713,7 +1725,7 @@ map->
             (@!
             (match 1
                 (c _) 1))]
-            )])
+            (, ["c:23673" "t:23670"] [(, "c:23681" 23673) (, "int:23674" -1)]))])
 
 (** todo write some tests for this, and then get
     - type alises referencing each other
