@@ -466,7 +466,7 @@ export const RenderNNode = (
                             ? { opacity: 0.5, fontStyle: 'italic' }
                             : {}),
                         ...(props.values.highlight
-                            ? { outline: '1px solid rgba(255,255,255,0.3)' }
+                            ? { outline: '1px dashed rgba(255,255,255,0.2)' }
                             : {}),
                     }}
                     onMouseEnter={() =>

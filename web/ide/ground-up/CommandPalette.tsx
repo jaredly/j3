@@ -20,6 +20,7 @@ import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { FullEvalator } from './FullEvalator';
 import { Sendable } from '../../custom/worker/worker';
 import { unique } from '../../custom/store/unique';
+import { Cursor } from '../../../src/state/getKeyUpdate';
 
 export const CommandPalette = () => {
     const store = useGetStore();
@@ -215,6 +216,29 @@ const getCommands = (
     dispatch: React.Dispatch<Action>,
 ) => {
     const commands: Command[] = [];
+
+    if (state.highlight?.length) {
+        commands.push({
+            type: 'plain',
+            title: `Rename ${state.highlight.length} instances`,
+            action() {
+                dispatch({
+                    type: 'select',
+                    at: state.highlight!.map((idx): Cursor => {
+                        const path = pathForIdx(idx, state);
+                        if (!path) throw new Error(`no path for ${idx}`);
+                        return {
+                            start: [
+                                ...path.slice(0, -1),
+                                { type: 'start', idx },
+                            ],
+                            end: [...path.slice(0, -1), { type: 'end', idx }],
+                        };
+                    }),
+                });
+            },
+        });
+    }
 
     const sel = state.at[0]?.start;
     if (sel) {

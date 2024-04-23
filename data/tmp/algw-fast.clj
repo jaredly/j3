@@ -248,13 +248,13 @@
                              type)
         (tapp a b l) (tapp (type-with-free a free) (type-with-free b free) l)))
 
-(defn type-with-free-rec [type free]
+(defn type-with-free-rec [free type]
     (match type
         (tvar _ _)   (<- type)
         (tcon s l)   (match (map/get free s)
                          (some fl) (let-> [() (record-usage-> l fl)] (<- (tvar s l)))
                          _         (<- type))
-        (tapp a b l) (let-> [a (type-with-free-rec a free) b (type-with-free-rec b free)]
+        (tapp a b l) (let-> [a (type-with-free-rec free a) b (type-with-free-rec free b)]
                          (<- (tapp a b l)))))
 
 (defn type-loc [type]
@@ -1200,7 +1200,7 @@
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
                                                       (<- (tenv/set-type tenv/nil name (, (generalize tenv' t) nl))))
-        (stypealias name nl args body l)          (let-> [() (record-def-> nl) () (record-usages-in-type tenv' body)]
+        (stypealias name nl args body l)          (let-> [() (record-def-> nl) () (record-usages-in-type tenv' map/nil body)]
                                                       (<-
                                                           (tenv
                                                               map/nil
@@ -1211,7 +1211,7 @@
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
                                                       (<- tenv/nil))
-        (sdeftype tname tnl targs constructors l) (infer-deftype tenv' set/nil tname tnl targs constructors l)))
+        (sdeftype tname tnl targs constructors l) (infer-deftype tenv' map/nil tname tnl targs constructors l)))
 
 (force
     type-error->s
@@ -1372,17 +1372,20 @@
 
 (** ## Recording Usages **)
 
-(defn record-usages-in-type [tenv type]
+(defn record-usages-in-type [tenv rec type]
     (let [(tenv types _ tdefs alias) tenv]
         (match type
             (tcon name l)    (match (map/get alias name)
                                  (some (,, _ _ al)) (record-usage-> l al)
                                  _                  (match (map/get tdefs name)
                                                         (some (,, _ _ loc)) (record-usage-> l loc)
+                                                        _                   (match (map/get rec name)
+                                                                                (some loc) (record-usage-> l loc)
+                                                                                _          (<-err (type-error "Udnbound type" [(, name l)])))
                                                         _                   (let [nope name] (<- ()))))
             (tapp one two l) (let-> [
-                                 () (record-usages-in-type tenv one)
-                                 () (record-usages-in-type tenv two)]
+                                 () (record-usages-in-type tenv rec one)
+                                 () (record-usages-in-type tenv rec two)]
                                  (<- ()))
             _                (<- ()))))
 
@@ -1433,7 +1436,7 @@
         [(@! (deftype (array a) (cons a (array a)) (nil)))]
             (,
             ["nil:23447" "cons:23441" "a:23438" "array:23437"]
-                [(, "a:23445" 23438) (, "a:23442" 23438)]))])
+                [(, "array:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))])
 
 (** todo write some tests for this, and then get
     - type alises referencing each other
@@ -1595,7 +1598,7 @@
 
 (** ## deftype and typealias **)
 
-(defn infer-deftype [tenv' bound tname tnl targs constructors l]
+(defn infer-deftype [tenv' mutual-rec tname tnl targs constructors l]
     (let-> [
         names           (<- (map constructors (fn [(,,, name _ _ _)] name)))
         ()              (record-def-> tnl)
@@ -1611,19 +1614,10 @@
                                 constructors
                                 (fn [(, values cons) (,,, name nl args l)]
                                 (let-> [
-                                    args (map-> (fn [arg] (type-with-free-rec arg free-map)) args)
-                                    ()   (do-> (record-usages-in-type tenv') args)
+                                    args (map-> (type-with-free-rec free-map) args)
+                                    ()   (do-> (record-usages-in-type tenv' mutual-rec) args)
                                     ()   (record-def-> nl)
-                                    args (map-> (subst-aliases (tenv/alias tenv')) args)
-                                    _    (map->
-                                             (fn [arg]
-                                                 (match (bag/to-list (externals-type (set/add bound tname) arg))
-                                                     []      (<- true)
-                                                     unbound (<-err
-                                                                 (type-error
-                                                                     "Unbound types in deftype ${tname}"
-                                                                         (map unbound (fn [(,, name _ l)] (, name l)))))))
-                                                 args)]
+                                    args (map-> (subst-aliases (tenv/alias tenv')) args)]
                                     (<-
                                         (,
                                             (map/set
@@ -1631,7 +1625,7 @@
                                                     name
                                                     (,
                                                     (scheme
-                                                        (set/from-list  (map/keys free-map))
+                                                        (set/from-list (map/keys free-map))
                                                             (foldr final args (fn [body arg] (tfn arg body l))))
                                                         nl))
                                                 (map/set cons name (tconstructor free-set args final nl)))))))]
@@ -1654,6 +1648,8 @@
                                      (set/merge
                                          (set/from-list (map/keys types))
                                              (set/merge (set/from-list names) (set/from-list (map/keys aliases)))))
+        mutual-rec               (<-
+                                     (map/from-list (map stypes (fn [(sdeftype name l _ _ _)] (, name l)))))
         tenv                     (foldl->
                                      tenv/nil
                                          salias
@@ -1665,7 +1661,10 @@
                                              []      (let-> [
                                                          () (record-def-> nl)
                                                          () (record-type-usages (map/from-list args) tenv body)
-                                                         () (record-usages-in-type tenv' body)]
+                                                         () (record-usages-in-type
+                                                                tenv'
+                                                                    (map/merge (map/from-list args) mutual-rec)
+                                                                    body)]
                                                          (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
                                              unbound (<-err
                                                          (type-error
@@ -1677,7 +1676,7 @@
                                          stypes
                                          (fn [tenv (sdeftype name tnl args constructors l)]
                                          (let-> [
-                                             tenv' (infer-deftype merged bound name tnl args constructors l)]
+                                             tenv' (infer-deftype merged mutual-rec name tnl args constructors l)]
                                              (<- (tenv/merge tenv' tenv)))))
         tenv'                    (<- (tenv/merge tenv tenv'))]
         (<- tenv)))

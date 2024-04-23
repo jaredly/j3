@@ -5,12 +5,12 @@ one
 (defn even [x]
     (if (< x 1)
         true
-            (odd (- x 1))))
+            (lolyes (- x 1))))
 
-(defn odd [x]
-    (if (< x 1)
+(defn lolyes [its-a-thing]
+    (if (< its-a-thing 1)
         true
-            (even x)))
+            (even its-a-thing)))
 
 (typealias (lol a) string)
 
