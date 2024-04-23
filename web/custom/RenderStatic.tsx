@@ -9,14 +9,26 @@ import {
 import React from 'react';
 import { layout } from '../../src/layout';
 import { Display } from '../../src/to-ast/library';
+import { Path } from '../store';
 
-export const RenderStatic = ({ node }: { node: Node }) => {
-    const { map, root, top, display } = useMemo(() => {
+export const RenderStatic = ({
+    node,
+    path,
+    display,
+}: {
+    node: Node;
+    path?: Path[];
+    display?: Display;
+}) => {
+    const { map, root, top } = useMemo(() => {
         const map: Map = {};
         const root = toMCST(node, map);
-        const display: Display = {};
-        layout(root, 0, map, display, {});
-        const top = getDeepNestedNodes(map[root], map, display);
+        const myDisplay: Display = display ?? {};
+        if (!display) {
+            layout(root, 0, map, myDisplay, {});
+        }
+        const top = getDeepNestedNodes(map[root], map, myDisplay);
+        console.log('deep', top);
         return { map, root, top, display };
     }, [node]);
 
@@ -32,13 +44,8 @@ export const RenderStatic = ({ node }: { node: Node }) => {
                 reg: () => {},
                 unused: false,
             }}
-            Recurse={() => {
-                return (
-                    <span>
-                        ERROR: shouldnt have any 'ref's after rendering Deep
-                        nested nodes
-                    </span>
-                );
+            Recurse={({ idx }) => {
+                return <span>ref {idx}??</span>;
             }}
             hoverPath={[]}
             idx={root}

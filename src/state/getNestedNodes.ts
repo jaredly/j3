@@ -27,6 +27,17 @@ export const transformNode = (node: NNode, f: (n: NNode) => NNode): NNode => {
         case 'indent':
             node.child = transformNode(node.child, f);
             break;
+        case 'pairs':
+            node.children = node.children.map((line) => {
+                if (line.length === 1) {
+                    return [transformNode(line[0], f)];
+                }
+                return [transformNode(line[0], f), transformNode(line[1], f)];
+            });
+            node.firstLine = node.firstLine.map((child) =>
+                transformNode(child, f),
+            );
+            break;
     }
     return node;
 };
@@ -129,16 +140,12 @@ export const getDeepNestedNodes = (
         undefined,
         display[node.loc]?.layout,
     );
+
     return transformNode(base, (node) => {
         if (node.type === 'ref') {
             return {
                 type: 'nest',
-                inner: getNestedNodes(
-                    map[node.id],
-                    map,
-                    undefined,
-                    display[node.id]?.layout,
-                ),
+                inner: getDeepNestedNodes(map[node.id], map, display),
                 node: map[node.id],
             };
         }
