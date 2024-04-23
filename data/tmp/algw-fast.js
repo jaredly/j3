@@ -573,7 +573,7 @@ throw new Error('match fail 20949:' + JSON.stringify($target))
 })(keep))
 let pany = (v0) => ({type: "pany", 0: v0})
 let pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
-let pcon = (v0) => (v1) => (v2) => ({type: "pcon", 0: v0, 1: v1, 2: v2})
+let pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
 let pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
 let pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
 let sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
@@ -892,8 +892,9 @@ return set$sladd(set$slnil)(name)
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let il = $target[1];
+let args = $target[2];
+let l = $target[3];
 return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_names(arg)))
 } ;
 if ($target.type === "pstr") {
@@ -1049,7 +1050,7 @@ let l = $target[1];
 return l
 } ;
 if ($target.type === "pcon") {
-let l = $target[2];
+let l = $target[3];
 return l
 } ;
 throw new Error('match fail 10903:' + JSON.stringify($target))
@@ -1064,7 +1065,8 @@ return n
 } ;
 if ($target.type === "pcon") {
 let c = $target[0];
-let pats = $target[1];
+let il = $target[1];
+let pats = $target[2];
 return `(${c} ${join(" ")(map(pats)(pat_to_string))})`
 } ;
 if ($target.type === "pstr") {
@@ -1182,9 +1184,10 @@ let tenv$sladd_builtin_type = ({"3": d, "2": names, "1": b, "0": a}) => ({"1": a
 let pat_externals = (pat) => (($target) => {
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
-return bag$sland(one($co$co(name)(value)(l)))(many(map(args)(pat_externals)))
+let il = $target[1];
+let args = $target[2];
+let l = $target[3];
+return bag$sland(one($co$co(name)(value)(il)))(many(map(args)(pat_externals)))
 } ;
 return empty;
 throw new Error('match fail 15127:' + JSON.stringify($target))
@@ -1314,8 +1317,8 @@ return one($co(int)(evar(string)(int)))
 } ;
 if ($target.type === "pcon") {
 let string = $target[0];
-let pats = $target[1];
-let int = $target[2];
+let pats = $target[2];
+let int = $target[3];
 return foldl(empty)(map(pats)(pats_by_loc))(bag$sland)
 } ;
 if ($target.type === "pstr") {
@@ -1342,8 +1345,8 @@ return string
 } ;
 if ($target.type === "pcon") {
 let string = $target[0];
-let args = $target[1];
-let int = $target[2];
+let args = $target[2];
+let int = $target[3];
 return `(${string}${join("")(map(args)((pat) => ` ${pat_$gts(pat)}`))})`
 } ;
 if ($target.type === "pstr") {
@@ -1512,8 +1515,9 @@ return one($co(name)(l))
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let pats = $target[1];
-let l = $target[2];
+let il = $target[1];
+let pats = $target[2];
+let l = $target[3];
 return many(cons(one($co(name)(l)))(map(pats)(pat$slidents)))
 } ;
 return empty;
@@ -1988,8 +1992,9 @@ return $lt_($co(tcon("int")(l))(map$slnil))
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let il = $target[1];
+let args = $target[2];
+let l = $target[3];
 return $gt$gt$eq((($target) => {
 if ($target.type === "none") {
 return $lt_err(type_error("Unknown type constructor")(cons($co(name)(l))(nil)))
@@ -1999,9 +2004,9 @@ let v = $target[0];
 return $lt_(v)
 } ;
 throw new Error('match fail 3661:' + JSON.stringify($target))
-})(tenv$slcon(tenv)(name)))(({"3": cloc, "2": cres, "1": cargs, "0": free}) => $gt$gt$eq(record_usage_$gt(l)(cloc))((_3479) => $gt$gt$eq(record_$gt(l)(tfns(cargs)(cres))(true))((_3479) => $gt$gt$eq(instantiate(scheme(free)(cres))(l))(({"1": tsubst, "0": tres}) => $gt$gt$eq($lt_(type$slset_loc(l)(tres)))((tres) => $gt$gt$eq($lt_(map(cargs)(type_apply(tsubst))))((cargs) => $gt$gt$eq($lt_(zip(args)(cargs)))((zipped) => $gt$gt$eq((($target) => {
+})(tenv$slcon(tenv)(name)))(({"3": cloc, "2": cres, "1": cargs, "0": free}) => $gt$gt$eq(record_usage_$gt(il)(cloc))((_3479) => $gt$gt$eq(record_$gt(il)(tfns(cargs)(cres))(true))((_3479) => $gt$gt$eq(instantiate(scheme(free)(cres))(l))(({"1": tsubst, "0": tres}) => $gt$gt$eq($lt_(type$slset_loc(l)(tres)))((tres) => $gt$gt$eq($lt_(map(cargs)(type_apply(tsubst))))((cargs) => $gt$gt$eq($lt_(zip(args)(cargs)))((zipped) => $gt$gt$eq((($target) => {
 if ($target === true) {
-return $lt_err(type_error(`Wrong number of arguments to type constructor: given ${its(len(args))}, but the type constructor expects ${its(len(cargs))}`)(cons($co(name)(l))(nil)))
+return $lt_err(type_error(`Wrong number of arguments to type constructor: given ${its(len(args))}, but the type constructor expects ${its(len(cargs))}`)(cons($co(name)(il))(nil)))
 } ;
 return $lt_($unit);
 throw new Error('match fail 10323:' + JSON.stringify($target))

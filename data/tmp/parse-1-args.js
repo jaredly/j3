@@ -83,9 +83,9 @@ let {"2": a} = x;
 return a
 }
 let $co$co$co2 = (x) => {
-let x_0 = x;
+let x$0 = x;
 {
-let {"2": x} = x_0;
+let {"2": x} = x$0;
 return x
 }
 }
@@ -149,7 +149,7 @@ let nil = {type: "nil"}
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let pany = (v0) => ({type: "pany", 0: v0})
 let pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
-let pcon = (v0) => (v1) => (v2) => ({type: "pcon", 0: v0, 1: v1, 2: v2})
+let pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
 let pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
 let pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
@@ -262,7 +262,7 @@ let l = $target[1];
 return l
 } ;
 if ($target.type === "pcon") {
-let l = $target[2];
+let l = $target[3];
 return l
 } ;
 throw new Error('match fail 4542:' + JSON.stringify($target))
@@ -410,8 +410,9 @@ return set$sladd(set$slnil)(name)
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
 return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_names(arg)))
 } ;
 if ($target.type === "pstr") {
@@ -429,9 +430,10 @@ throw new Error('match fail 6762:' + JSON.stringify($target))
 let pat_externals = (pat) => (($target) => {
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
-return bag$sland(one($co$co(name)(value)(l)))(many(map(args)(pat_externals)))
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
+return bag$sland(one($co$co(name)(value)(nl)))(many(map(args)(pat_externals)))
 } ;
 return empty;
 throw new Error('match fail 6812:' + JSON.stringify($target))
@@ -470,8 +472,9 @@ return some(sanitize(name))
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let il = $target[1];
+let args = $target[2];
+let l = $target[3];
 {
 let $target = foldl($co(0)(nil))(args)((result) => (arg) => {
 let {"1": res, "0": i} = result;
@@ -518,9 +521,10 @@ return one($co(name)(l))
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
-return foldl(empty)(args)((bound) => (arg) => bag$sland(bound)(pat_names_loc(arg)))
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
+return foldl(one($co(name)(nl)))(args)((bound) => (arg) => bag$sland(bound)(pat_names_loc(arg)))
 } ;
 if ($target.type === "pstr") {
 let string = $target[0];
@@ -610,8 +614,9 @@ return some(j$slpvar(name)(l))
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let il = $target[1];
+let args = $target[2];
+let l = $target[3];
 {
 let $target = foldl($co(0)(nil))(args)((result) => (arg) => {
 let {"1": res, "0": i} = result;
@@ -804,7 +809,7 @@ throw new Error('match fail 3019:' + JSON.stringify($target))
 if ($target.type === "cst/array") {
 if ($target[0].type === "nil") {
 let l = $target[1];
-return pcon("nil")(nil)(l)
+return pcon("nil")(-1)(nil)(l)
 } 
 } ;
 if ($target.type === "cst/array") {
@@ -822,13 +827,13 @@ if ($target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
 let l = $target[1];
-return pcon("cons")(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
+return pcon("cons")(-1)(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
 } 
 } ;
 if ($target.type === "cst/list") {
 if ($target[0].type === "nil") {
 let l = $target[1];
-return pcon("()")(nil)(l)
+return pcon("()")(-1)(nil)(l)
 } 
 } ;
 if ($target.type === "cst/list") {
@@ -847,9 +852,10 @@ if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
 let name = $target[0][0][0];
+let il = $target[0][0][1];
 let rest = $target[0][1];
 let l = $target[1];
-return pcon(name)(map(rest)(parse_pat))(l)
+return pcon(name)(il)(map(rest)(parse_pat))(l)
 } 
 } 
 } ;
@@ -859,7 +865,7 @@ throw new Error('match fail 1727:' + JSON.stringify($target))
 
 let parse_pat_tuple = (items) => (il) => (l) => (($target) => {
 if ($target.type === "nil") {
-return pcon(",")(nil)(il)
+return pcon(",")(-1)(nil)(il)
 } ;
 if ($target.type === "cons") {
 let one = $target[0];
@@ -870,7 +876,7 @@ return parse_pat(one)
 if ($target.type === "cons") {
 let one = $target[0];
 let rest = $target[1];
-return pcon(",")(cons(parse_pat(one))(cons(parse_pat_tuple(rest)(il)(l))(nil)))(l)
+return pcon(",")(-1)(cons(parse_pat(one))(cons(parse_pat_tuple(rest)(il)(l))(nil)))(l)
 } ;
 throw new Error('match fail 7715:' + JSON.stringify($target))
 })(items)
@@ -925,8 +931,9 @@ return `{\nlet ${sanitize(name)} = ${target};\n${inner}\n}`
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
 return `if (${target}.type === \"${name}\") {\n${pat_loop(target)(args)(0)(inner)(trace)}\n}`
 } ;
 throw new Error('match fail 11054:' + JSON.stringify($target))
@@ -1716,9 +1723,9 @@ let body = $target[0][1][1][0];
 if ($target[0][1][1][1].type === "nil") {
 let l = $target[1];
 {
-let args_0 = args;
+let args$0 = args;
 {
-let args = map(args_0)((x) => (($target) => {
+let args = map(args$0)((x) => (($target) => {
 if ($target.type === "cst/identifier") {
 let name = $target[0];
 let l = $target[1];
@@ -2119,8 +2126,9 @@ return cons(j$sllet(j$slpvar(name)(l))(target)(l))(inner)
 } ;
 if ($target.type === "pcon") {
 let name = $target[0];
-let args = $target[1];
-let l = $target[2];
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
 return cons(j$slif(j$slbin("===")(j$slattr(target)("type")(l))(j$slstr(name)(nil)(l))(l))(j$slblock(pat_loop$slj(target)(args)(0)(inner)(l)(trace)))(none)(l))(nil)
 } ;
 throw new Error('match fail 2330:' + JSON.stringify($target))
