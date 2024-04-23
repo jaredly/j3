@@ -277,7 +277,7 @@
         (tfmted a string)
         (tfmt a (fn [a] string)))
 
-(** ## to-string functions for debugging **)
+(** ## Type to string, Type to CST **)
 
 (def letters ["a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o"])
 
@@ -1370,79 +1370,6 @@
         [(@! (deftype kind (star) (kfun kind kind))) (@! (let [(kfun m n) (star)] 1))]
             "int")])
 
-(** ## Recording Usages **)
-
-(defn record-usages-in-type [tenv rec type]
-    (let [(tenv types _ tdefs alias) tenv]
-        (match type
-            (tcon name l)    (match (map/get alias name)
-                                 (some (,, _ _ al)) (record-usage-> l al)
-                                 _                  (match (map/get tdefs name)
-                                                        (some (,, _ _ loc)) (record-usage-> l loc)
-                                                        _                   (match (map/get rec name)
-                                                                                (some loc) (record-usage-> l loc)
-                                                                                _          (<-err (type-error "Udnbound type" [(, name l)])))
-                                                        _                   (let [nope name] (<- ()))))
-            (tapp one two l) (let-> [
-                                 () (record-usages-in-type tenv rec one)
-                                 () (record-usages-in-type tenv rec two)]
-                                 (<- ()))
-            _                (<- ()))))
-
-(defn rev-pair [(, a b)] (, b a))
-
-(defn with-name [map id]
-    (match (map/get map id)
-        (some v) "${v}:${(its id)}"
-        _        "?:${(its id)}"))
-
-(defn run/usages [tenv stmts]
-    (let [
-        (, (,, _ (, _ (, defns uses)) _) _) ((state-f
-                                                (foldl->
-                                                    tenv
-                                                        stmts
-                                                        (fn [tenv stmt]
-                                                        (let-> [(, nenv _) (infer-stmtss tenv [stmt])]
-                                                            (<- (tenv/merge tenv nenv))))))
-                                                state/nil)
-        idents                              (map/from-list
-                                                (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
-        (,
-            (map defns (with-name idents))
-                (map uses (fn [(, user prov)] (, (with-name idents user) prov))))))
-
-(,
-    (run/usages builtin-env)
-        [(, [(@! (let [x 1 y 2] x))] (, ["y:22225" "x:22222"] [(, "x:22224" 22222)]))
-        (,
-        [(@! (deftype a (b))) (@! (deftype c (d a)))]
-            (, ["d:22267" "c:22264" "b:22258" "a:22256"] [(, "a:22268" 22256)]))
-        (,
-        [(@! (deftype a (b))) (@! (let [(b) (b)] 1))]
-            (, ["b:22371" "a:22369"] [(, "b:22377" 22371) (, "b:22380" 22371)]))
-        (,
-        [(@! (typealias a int)) (@! (typealias b a))]
-            (, ["b:22289" "a:22279"] [(, "a:22290" 22279) (, "int:22280" -1)]))
-        (,
-        [(@! (typealias a int)) (@! (deftype c (b a)))]
-            (,
-            ["b:22307" "c:22305" "a:22299"]
-                [(, "a:22308" 22299) (, "int:22300" -1)]))
-        (,
-        [(@! (deftype a (b))) (@! (typealias c a))]
-            (, ["c:23288" "b:23283" "a:23281"] [(, "a:23289" 23281)]))
-        (,
-        [(@! (deftype (array a) (cons a (array a)) (nil)))]
-            (,
-            ["nil:23447" "cons:23441" "a:23438" "array:23437"]
-                [(, "array:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))])
-
-(** todo write some tests for this, and then get
-    - type alises referencing each other
-    - type names getting referenced
-    - constructors getting referenced (as values, and as patterns) **)
-
 (** ## Some debugging fns **)
 
 (defn show-types [names (tenv types _ _ _)]
@@ -1747,6 +1674,79 @@ map->
                     (match values
                         []           []
                         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)])))])))
+
+(** ## Recording Usages **)
+
+(defn record-usages-in-type [tenv rec type]
+    (let [(tenv types _ tdefs alias) tenv]
+        (match type
+            (tcon name l)    (match (map/get alias name)
+                                 (some (,, _ _ al)) (record-usage-> l al)
+                                 _                  (match (map/get tdefs name)
+                                                        (some (,, _ _ loc)) (record-usage-> l loc)
+                                                        _                   (match (map/get rec name)
+                                                                                (some loc) (record-usage-> l loc)
+                                                                                _          (<-err (type-error "Udnbound type" [(, name l)])))
+                                                        _                   (let [nope name] (<- ()))))
+            (tapp one two l) (let-> [
+                                 () (record-usages-in-type tenv rec one)
+                                 () (record-usages-in-type tenv rec two)]
+                                 (<- ()))
+            _                (<- ()))))
+
+(defn rev-pair [(, a b)] (, b a))
+
+(defn with-name [map id]
+    (match (map/get map id)
+        (some v) "${v}:${(its id)}"
+        _        "?:${(its id)}"))
+
+(defn run/usages [tenv stmts]
+    (let [
+        (, (,, _ (, _ (, defns uses)) _) _) ((state-f
+                                                (foldl->
+                                                    tenv
+                                                        stmts
+                                                        (fn [tenv stmt]
+                                                        (let-> [(, nenv _) (infer-stmtss tenv [stmt])]
+                                                            (<- (tenv/merge tenv nenv))))))
+                                                state/nil)
+        idents                              (map/from-list
+                                                (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
+        (,
+            (map defns (with-name idents))
+                (map uses (fn [(, user prov)] (, (with-name idents user) prov))))))
+
+(,
+    (run/usages builtin-env)
+        [(, [(@! (let [x 1 y 2] x))] (, ["y:22225" "x:22222"] [(, "x:22224" 22222)]))
+        (,
+        [(@! (deftype a (b))) (@! (deftype c (d a)))]
+            (, ["d:22267" "c:22264" "b:22258" "a:22256"] [(, "a:22268" 22256)]))
+        (,
+        [(@! (deftype a (b))) (@! (let [(b) (b)] 1))]
+            (, ["b:22371" "a:22369"] [(, "b:22377" 22371) (, "b:22380" 22371)]))
+        (,
+        [(@! (typealias a int)) (@! (typealias b a))]
+            (, ["b:22289" "a:22279"] [(, "a:22290" 22279) (, "int:22280" -1)]))
+        (,
+        [(@! (typealias a int)) (@! (deftype c (b a)))]
+            (,
+            ["b:22307" "c:22305" "a:22299"]
+                [(, "a:22308" 22299) (, "int:22300" -1)]))
+        (,
+        [(@! (deftype a (b))) (@! (typealias c a))]
+            (, ["c:23288" "b:23283" "a:23281"] [(, "a:23289" 23281)]))
+        (,
+        [(@! (deftype (array a) (cons a (array a)) (nil)))]
+            (,
+            ["nil:23447" "cons:23441" "a:23438" "array:23437"]
+                [(, "array:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))])
+
+(** todo write some tests for this, and then get
+    - type alises referencing each other
+    - type names getting referenced
+    - constructors getting referenced (as values, and as patterns) **)
 
 (** ## Collecting types of everything
     useful for debugging our "hover for type" infrastructure. **)

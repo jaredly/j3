@@ -1,4 +1,34 @@
 
+# Things I'm doin
+
+- [ ] search restultsss
+- [ ] cmd+p should show types
+- [ ] autocompleeeete
+  - my errors should get more specific
+    - (type error)
+    - (missing error; (, loc expected-type autocomplete-options))
+    - (depends on something that has an error)
+  - ... I also want a way to indicate to the type checker...
+    "this term exists, but has a type error so you can't rely on it...
+    ... this is what it's type used to be, so use that"
+- [ ] alsoooo parse errors shouldn't tank the whole thing.
+  - which meeeeeans I want the parser to have a monad, which meeeeans
+    that either I need the bootstrap parser to understand let-> (I don't)
+    or I really should set up an intermediate parser that's much simpler in
+    needs.
+
+
+# Highlight Usages n stuff
+
+So what's the big idea.
+Probably ... something on state?
+on a timeout...
+
+ayyyyyy
+maybe a timeout at some point, idk? it's pretty cool.
+
+- [ ] CommandPalette -> showww the usages, in a little bit of context!
+
 # Effects
 
 (arg1, arg2) => {
@@ -141,7 +171,7 @@ anddddd it would be really cool to autogen `to-json` and `from-json` for all def
 Anyway, the more I self-host, the more importand performance will be...
 and so we get to (jst), which can be much better optimized!
 
-- [ ] ok so the way I layout strings is really quite silly.
+- [x] ok so the way I layout strings is really quite silly.
 
 
 
@@ -399,7 +429,7 @@ NEXT STEPS for reporting usages & uses
 - [ ] it would be ... quite nice ... to ... incrementally send back updates.
 - [x] ok why the heck is it taking 1.5 seconds to save? lol it was 30mb
 - [x] UHM Let's do some indication of `unused` variables!
-- [ ] and "highlight usages of the currently selected ident" would be super nice
+- [x] and "highlight usages of the currently selected ident" would be super nice
 
 - [ ] tbh now that inference & stuff is async, the caching issue is somehwat less. Would still be
   great to nail down ofc.

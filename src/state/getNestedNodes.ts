@@ -368,7 +368,7 @@ function stringContents(node: MCString & MNodeExtra, layout?: Layout): NNode {
             path: { type: 'text', at: 0 },
         };
     }
-    if (layout?.type !== 'multiline') {
+    if (layout?.type !== 'multiline' || true) {
         return {
             type: 'horiz',
             children: [
