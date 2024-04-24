@@ -19,10 +19,7 @@ export type AnyEnv = FullEvalator<any, any, any>;
 
 export type InferenceError = {
     message: string;
-    items: {
-        name: string;
-        loc: number;
-    }[];
+    items: { name: string; loc: number }[];
 };
 
 export type FullEvalator<

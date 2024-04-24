@@ -3,6 +3,15 @@ import { Node } from '../../../../src/types/cst';
 import { jcst, toJCST } from './j-cst';
 
 export type arr<a> = { type: 'cons'; 0: a; 1: arr<a> } | { type: 'nil' };
+export type tuple<a, b> = { type: ','; 0: a; 1: b };
+export type tuple3<a, b, c> = { type: ',,'; 0: a; 1: b; 2: c };
+
+export const unwrapTuple = <a, b>(v: tuple<a, b>): [a, b] => [v[0], v[1]];
+export const unwrapTuple3 = <a, b, c>(v: tuple3<a, b, c>): [a, b, c] => [
+    v[0],
+    v[1],
+    v[2],
+];
 
 export const unwrapArray = <a>(v: arr<a>): a[] =>
     v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])];
