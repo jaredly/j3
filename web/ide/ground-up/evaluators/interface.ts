@@ -2,8 +2,6 @@ import { Node } from '../../../../src/types/cst';
 import { MetaDataMap } from '../../../custom/UIState';
 import { LocedName } from '../../../custom/store/sortTops';
 import { InferenceError } from '../FullEvalator';
-import { jcst } from '../round-1/j-cst';
-import { arr } from '../round-1/parse';
 
 export type Parser<Stmt, Expr> = {
     parse(node: Node): { stmt: null | Stmt; errors: [number, string][] };
@@ -54,5 +52,3 @@ export type Compiler<Stmt, Expr> = {
     compileStmt(stmt: Stmt, meta: MetaDataMap): string;
     compileExpr(expr: Expr, meta: MetaDataMap): string;
 };
-
-// hrmm

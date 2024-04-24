@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import * as React from 'react';
 import { Action, NUIState, RegMap } from '../../custom/UIState';
-import { MNode, Map } from '../../../src/types/mcst';
+import { Map } from '../../../src/types/mcst';
 import { Path } from '../../store';
 import { findTops } from './findTops';
-import { Store } from '../../custom/store/Store';
+import { CombinedResults, Store } from '../../custom/store/Store';
 import { useGetStore, useGlobalState } from '../../custom/store/StoreCtx';
 import { replacePath } from '../../../src/state/replacePathWith';
 import { newBlank } from '../../../src/state/newNodes';
@@ -14,6 +14,8 @@ import { SearchResults } from './GroundUp';
 import { ImmediateResults } from '../../custom/store/getImmediateResults';
 import { collectPaths, pathForIdx } from './pathForIdx';
 import { extractToToplevel } from './extractToToplevel';
+import { ProduceItem } from './FullEvalator';
+import { RenderStatic } from '../../custom/RenderStatic';
 
 export const CommandPalette = ({
     setSearchResults,
@@ -41,9 +43,7 @@ export const CommandPalette = ({
                     setOpen(true);
                 } else {
                     setOpen(true);
-                    setFocus(
-                        getJumpToResult(store.getResults().results, store),
-                    );
+                    setFocus(getJumpToResult(store));
                     // and setFocus
                 }
             }
@@ -102,6 +102,7 @@ export const CommandPalette = ({
                     backgroundColor: '#222',
                     display: 'flex',
                     flexDirection: 'column',
+                    maxHeight: 'calc(100vh - 256px)',
                     flex: 1,
                 }}
                 onClick={(evt) => evt.stopPropagation()}
@@ -113,7 +114,7 @@ export const CommandPalette = ({
                         setText(evt.target.value);
                         setSel(0);
                     }}
-                    placeholder="Search for commands"
+                    placeholder={focus?.title ?? 'Search for commands'}
                     onBlur={() => setOpen(false)}
                     onKeyDown={(evt) => {
                         if (evt.key === 'Escape') {
@@ -157,36 +158,71 @@ export const CommandPalette = ({
                         background: 'none',
                     }}
                 />
-                {focus?.type === 'input'
-                    ? focus.detail(text)
-                    : filtered.map((cmd, i) => (
-                          <button
-                              key={i}
-                              style={{
-                                  padding: '24px 48px',
-                                  background: sel === i ? '#333' : 'none',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: 'inherit',
-                              }}
-                              onMouseEnter={() => setSel(i)}
-                              onMouseDown={(evt) => {
-                                  evt.preventDefault();
-                                  if (cmd.type === 'plain') {
-                                      cmd.action();
-                                      setOpen(false);
-                                  } else if (
-                                      cmd.type === 'input' ||
-                                      cmd.type === 'super'
-                                  ) {
-                                      setFocus(cmd);
-                                      setText('');
-                                  }
-                              }}
-                          >
-                              {cmd.title}
-                          </button>
-                      ))}
+                <div
+                    style={{
+                        overflow: 'auto',
+                        flex: 1,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
+                >
+                    {focus?.type === 'input'
+                        ? focus.detail(text)
+                        : filtered.map((cmd, i) => (
+                              <button
+                                  key={i}
+                                  style={{
+                                      padding: '12px 24px',
+                                      background: sel === i ? '#333' : 'none',
+                                      border: 'none',
+                                      cursor: 'pointer',
+                                      color: 'inherit',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      fontFamily: 'Jet Brains',
+                                  }}
+                                  onMouseEnter={() => setSel(i)}
+                                  onMouseDown={(evt) => {
+                                      evt.preventDefault();
+                                      if (cmd.type === 'plain') {
+                                          cmd.action();
+                                          setOpen(false);
+                                      } else if (
+                                          cmd.type === 'input' ||
+                                          cmd.type === 'super'
+                                      ) {
+                                          setFocus(cmd);
+                                          setText('');
+                                      }
+                                  }}
+                              >
+                                  <div
+                                      style={{
+                                          fontSize: '150%',
+                                          marginBottom: 8,
+                                          ...(cmd.type === 'plain'
+                                              ? cmd.style
+                                              : {}),
+                                      }}
+                                  >
+                                      {cmd.title}
+                                  </div>
+                                  {cmd.type === 'plain' && cmd.subtitle && (
+                                      <div
+                                          style={{
+                                              backgroundColor: 'black',
+                                              padding: 8,
+                                              borderRadius: 4,
+                                          }}
+                                      >
+                                          {cmd.subtitle}
+                                      </div>
+                                  )}
+                              </button>
+                          ))}
+                </div>
             </div>
         </div>
     );
@@ -210,6 +246,8 @@ type Command =
     | {
           type: 'plain';
           title: string;
+          style?: React.CSSProperties;
+          subtitle?: string | React.ReactNode;
           action(): void;
       }
     | InputCommand
@@ -368,8 +406,7 @@ const getCommands = (
                 },
             });
 
-            const { results } = store.getResults();
-            commands.push(getJumpToResult(results, store));
+            commands.push(getJumpToResult(store));
         }
 
         const next = findNextError(store, state, sel);
@@ -429,45 +466,62 @@ const findNextError = (store: Store, state: NUIState, sel: Path[]) => {
     return null;
 };
 
-export const nodeChildren = (node: MNode): number[] => {
-    switch (node.type) {
-        case 'list':
-        case 'array':
-        case 'record':
-            return node.values;
-        case 'spread':
-        case 'comment-node':
-            return [node.contents];
-        case 'string':
-            return [
-                node.first,
-                ...node.templates.flatMap((t) => [t.expr, t.suffix]),
-            ];
-    }
-    return [];
+const findType = (
+    results: ImmediateResults<any>,
+    name: string,
+    loc: number,
+) => {
+    results.jumpToName;
 };
 
-function getJumpToResult(
-    results: ImmediateResults<any>,
-    store: Store,
-): SuperCommand {
+function getJumpToResult(store: Store): SuperCommand {
+    const items: Command[] = [];
+
+    const state = store.getState();
+    const tops = findTops(state);
+    const results = store.getResults();
+
+    tops.forEach((top) => {
+        const node = results.results.nodes[top.ns.id];
+        if (node?.parsed?.type === 'success') {
+            const res = results.workerResults.nodes[top.ns.id]?.produce?.filter(
+                (p) => typeof p !== 'string' && p.type === 'type',
+            ) as Extract<ProduceItem, { type: 'type' }>[];
+            node.parsed.names.forEach((name) => {
+                const t =
+                    name.kind === 'value'
+                        ? res?.find((prod) => prod.name === name.name)
+                        : undefined;
+                items.push({
+                    type: 'plain',
+                    title: name.name,
+                    style:
+                        name.kind === 'type'
+                            ? {
+                                  color: 'rgb(45, 149, 100)',
+                                  fontStyle: 'italic',
+                              }
+                            : undefined,
+                    subtitle: t?.cst ? (
+                        <RenderStatic node={t.cst} />
+                    ) : undefined,
+                    action() {
+                        const path = pathForIdx(name.loc, state);
+                        if (path != null) {
+                            store.dispatch({
+                                type: 'select',
+                                at: [{ start: path }],
+                            });
+                        }
+                    },
+                });
+            });
+        }
+    });
+
     return {
         type: 'super',
         title: 'Jump to...',
-        children: Object.entries(results.jumpToName.value).map(
-            ([name, loc]) => ({
-                type: 'plain',
-                title: name,
-                action() {
-                    const path = pathForIdx(loc, store.getState());
-                    if (path != null) {
-                        store.dispatch({
-                            type: 'select',
-                            at: [{ start: path }],
-                        });
-                    }
-                },
-            }),
-        ),
+        children: items,
     };
 }

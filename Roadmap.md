@@ -11,8 +11,9 @@ comin atcha
   - [x] simplify results
   - [x] Show the name of the definition that a result comes from
 - [ ] search for a string (within STRINGs y'all. yes please.)
+  - hmm
 - [x] cmd+p should bring up the jump to
-- [ ] cmd+p should show types
+- [x] cmd+p should show types
 - [ ] autocompleeeete
   - my errors should get more specific
     - (type error)
@@ -21,7 +22,7 @@ comin atcha
   - ... I also want a way to indicate to the type checker...
     "this term exists, but has a type error so you can't rely on it...
     ... this is what it's type used to be, so use that"
-- [ ] alsoooo parse errors shouldn't tank the whole thing.
+- [x] alsoooo parse errors shouldn't tank the whole thing.
   - which meeeeeans I want the parser to have a monad, which meeeeans
     that either I need the bootstrap parser to understand let-> (I don't)
     or I really should set up an intermediate parser that's much simpler in

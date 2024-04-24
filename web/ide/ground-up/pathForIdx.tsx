@@ -2,7 +2,7 @@ import { NUIState } from '../../custom/UIState';
 import { selectStart } from '../../../src/state/navigate';
 import { Path } from '../../store';
 import { childPath, childPaths } from './findTops';
-import { nodeChildren } from './CommandPalette';
+import { nodeChildren } from './nodeChildren';
 import { add } from '../../custom/worker/add';
 
 export const collectPaths = (state: NUIState) => {

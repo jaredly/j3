@@ -320,7 +320,11 @@ export function updateState(
                                 state.evaluator!.inference!.typeToString(type);
                             state.results!.tops[one.id].produce.push({
                                 type: 'type',
-                                text: `${name}: ${text}`,
+                                text: text,
+                                cst: state.evaluator!.inference!.typeToCst?.(
+                                    type,
+                                ),
+                                name,
                             });
                         } catch (err) {
                             state.results!.tops[one.id].produce.push({
