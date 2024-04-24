@@ -1024,17 +1024,26 @@
 
 (defn parse-type [type]
     (match type
-        (cst/identifier id l)                                          (tcon id l)
-        (cst/list [] l)                                                (fatal "(parse-type) with empty list")
-        (cst/list [(cst/identifier "fn" _) (cst/array args _) body] _) (foldl
-                                                                           (parse-type body)
-                                                                               (rev args [])
-                                                                               (fn [body arg] (tapp (tapp (tcon "->" -1) (parse-type arg) -1) body -1)))
-        (cst/list items l)                                             (tapps (rev (map items parse-type) []) l)
-        _                                                              (fatal "(parse-type) Invalid type ${(valueToString type)}")))
+        (cst/identifier id l)                                                 (<- (tcon id l))
+        (cst/list [] l)                                                       (<-err (, l "(parse-type) with empty list") (tcon "()" l))
+        (cst/list [(cst/identifier "fn" _) (cst/array args _) body ..rest] _) (let-> [
+                                                                                  body (parse-type body)
+                                                                                  args (map-> parse-type args)
+                                                                                  ()   (do-> (unexpected "extra item in type") rest)]
+                                                                                  (<-
+                                                                                      (foldl
+                                                                                          body
+                                                                                              (rev args [])
+                                                                                              (fn [body arg] (tapp (tapp (tcon "->" -1) arg -1) body -1)))))
+        (cst/list items l)                                                    (let-> [items (map-> parse-type items)] (<- (tapps (rev items []) l)))
+        _                                                                     (<-err
+                                                                                  (,
+                                                                                      (cst-loc type)
+                                                                                          "(parse-type) Invalid type ${(valueToString type)}")
+                                                                                      (tcon "()" (cst-loc type)))))
 
 (,
-    parse-type
+    (fn [x] (run/nil-> (parse-type x)))
         [(, (@@ (hi ho)) (tapp (tcon "hi" 5527) (tcon "ho" 5528) 5526))
         (,
         (@@ (fn [x] y))
@@ -1044,7 +1053,10 @@
             (tapp
             (tapp (tcon "->" -1) (tcon "a" 5688) -1)
                 (tapp (tapp (tcon "->" -1) (tcon "b" 5689) -1) (tcon "c" 5690) -1)
-                -1))])
+                -1))
+        (,
+        (@@ (fn [x] oops and))
+            (tapp (tapp (tcon "->" -1) (tcon "x" 17592) -1) (tcon "oops" 17567) -1))])
 
 (defn parse-pat [pat]
     (match pat
@@ -1092,7 +1104,7 @@
         (cst/list [(cst/identifier "@" _) body] l)                          (equot (quot/expr (parse-expr body)) l)
         (cst/list [(cst/identifier "@@" _) body] l)                         (equot (quot/quot body) l)
         (cst/list [(cst/identifier "@!" _) body] l)                         (equot (quot/stmt (run/nil-> (parse-stmt body))) l)
-        (cst/list [(cst/identifier "@t" _) body] l)                         (equot (quot/type (parse-type body)) l)
+        (cst/list [(cst/identifier "@t" _) body] l)                         (equot (quot/type (run/nil-> (parse-type body))) l)
         (cst/list [(cst/identifier "@p" _) body] l)                         (equot (quot/pat (parse-pat body)) l)
         (cst/list [(cst/identifier "if" _) cond yes no] l)                  (ematch
                                                                                 (parse-expr cond)
@@ -1290,7 +1302,7 @@
                       items
                       (fn [res constr]
                       (match constr
-                          (cst/list [(cst/identifier name ni) ..args] l) (<- [(,,, name ni (map args parse-type) l) ..res])
+                          (cst/list [(cst/identifier name ni) ..args] l) (let-> [args (map-> parse-type args)] (<- [(,,, name ni args l) ..res]))
                           (cst/list [] l)                                (<-err (, l "Empty type constructor") res)
                           _                                              (<-err (, l "Invalid type constructor") res))))]
         (<- (sdeftype id li args items l))))
@@ -1316,7 +1328,7 @@
                                       _                       (<-err
                                                                   (, (cst-loc x) "typealias type argument must be identifier")
                                                                       args))))
-        body              (<- (parse-type body))]
+        body              (parse-type body)]
         (<- (stypealias name nl args body l))))
 
 (defn parse-stmt [cst]
