@@ -18,7 +18,8 @@ import {
 } from '../../custom/store/StoreCtx';
 // import { useStore } from '../../custom/store/useStore';
 import { Path } from '../../store';
-import { CommandPalette, pathForIdx } from './CommandPalette';
+import { CommandPalette } from './CommandPalette';
+import { pathForIdx } from './pathForIdx';
 import { RenderTraces } from './renderTraces';
 import { advancePath } from './findTops';
 import { ResultsCache } from '../../custom/store/ResultsCache';

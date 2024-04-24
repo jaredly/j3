@@ -12,7 +12,7 @@ import {
 import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
 import { calcChangedNodes } from './calcChangedNodes';
-import { pathForIdx } from '../../ide/ground-up/CommandPalette';
+import { pathForIdx } from '../../ide/ground-up/pathForIdx';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (

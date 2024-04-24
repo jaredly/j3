@@ -5,7 +5,7 @@ import { splitGraphemes } from '../../src/parse/parse';
 import { NNode, stringBgColor } from '../../src/state/getNestedNodes';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { pathForIdx } from '../ide/ground-up/CommandPalette';
+import { pathForIdx } from '../ide/ground-up/pathForIdx';
 import { Path } from '../store';
 import { RichText } from './RichText';
 import { Values } from './store/Store';

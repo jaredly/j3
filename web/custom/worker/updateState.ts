@@ -11,6 +11,7 @@ import {
 import { showError } from '../store/processTypeInference';
 import { LocedName } from '../store/sortTops';
 import { unique } from '../store/unique';
+import { add } from './add';
 import { nodeToSortable } from './calculateInitialState';
 import { AsyncResults, HoverContents, Sortable, State } from './types';
 
@@ -491,12 +492,3 @@ function showExecOrder(tops: AsyncResults['tops'], one: Sortable, i: number) {
         )}\nProduce: ${unique(one.names.map((n) => n.name)).join(', ')}`,
     );
 }
-
-export const add = <K extends string | number, T>(
-    obj: Record<K, T[]>,
-    k: K,
-    item: T,
-) => {
-    if (!obj[k]) obj[k] = [item];
-    else obj[k].push(item);
-};

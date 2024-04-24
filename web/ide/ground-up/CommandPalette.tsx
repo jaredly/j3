@@ -6,10 +6,9 @@ import {
     RealizedNamespace,
     RegMap,
 } from '../../custom/UIState';
-import { selectStart } from '../../../src/state/navigate';
 import { MNode, Map, fromMCST } from '../../../src/types/mcst';
 import { Path } from '../../store';
-import { childPath, findTops } from './findTops';
+import { findTops } from './findTops';
 import { Store } from '../../custom/store/Store';
 import { useGetStore, useGlobalState } from '../../custom/store/StoreCtx';
 import {
@@ -23,6 +22,7 @@ import { unique } from '../../custom/store/unique';
 import { Cursor } from '../../../src/state/getKeyUpdate';
 import { SearchResults } from './GroundUp';
 import { ImmediateResults } from '../../custom/store/getImmediateResults';
+import { collectPaths, pathForIdx } from './pathForIdx';
 
 export const CommandPalette = ({
     setSearchResults,
@@ -265,15 +265,16 @@ const getCommands = (
             type: 'plain',
             title: `Show ${state.highlight.length} instances of ${name}`,
             action() {
+                const pathFor = collectPaths(state);
                 setSearchResults({
                     term: name,
                     results: state.highlight!.map((idx) => {
-                        const path = pathForIdx(idx, state);
-                        if (!path)
+                        const path = pathFor(idx);
+                        if (!path.length)
                             throw new Error(
                                 `cant get path for highlight ${idx}`,
                             );
-                        return { path, idx };
+                        return { path: path[0], idx };
                     }),
                 });
             },
@@ -453,89 +454,6 @@ export const nodeChildren = (node: MNode): number[] => {
             ];
     }
     return [];
-};
-
-export const pathForIdx = (
-    num: number,
-    {
-        regs,
-        map,
-        cards,
-        nsMap,
-    }: Pick<NUIState, 'regs' | 'map' | 'cards' | 'nsMap'>,
-) => {
-    const got = regs[num]?.main ?? regs[num]?.outside;
-    if (got) {
-        return selectStart(num, got.path, map);
-    }
-    const parents: Record<number, number> = {};
-    Object.keys(map).forEach((k) => {
-        const node = map[+k];
-        nodeChildren(node).forEach((child) => {
-            parents[child] = node.loc;
-        });
-    });
-    const nodeToNs: Record<number, number> = {};
-    const nsParents: Record<number, number> = {};
-    Object.keys(nsMap).forEach((k) => {
-        const ns = nsMap[+k];
-        if (ns.type === 'normal') {
-            nodeToNs[ns.top] = ns.id;
-            ns.children.forEach((child) => (nsParents[child] = ns.id));
-        }
-    });
-    const nsToCard: Record<number, number> = {};
-    cards.forEach((card, i) => {
-        nsToCard[card.top] = i;
-    });
-
-    let iter = 0;
-
-    const path: Path[] = [];
-    let idx = num;
-    let ns: number;
-    while (true) {
-        if (iter++ > 500) throw new Error('loop?');
-        if (parents[idx] == null) {
-            ns = nodeToNs[idx];
-            if (ns == null) {
-                console.error(`cant find ns for idx`, idx, nodeToNs);
-                return;
-            }
-            path.unshift({ type: 'ns-top', idx: ns });
-            break;
-        }
-        const parent = parents[idx];
-        const cp = childPath(map[parent], idx);
-        if (!cp) {
-            console.error(`cant find child path`, map[parent], idx);
-            return;
-        }
-        path.unshift({ ...cp, idx: parent });
-        idx = parent;
-    }
-
-    while (true) {
-        if (iter++ > 500) throw new Error('loop?');
-        const parent = nsParents[ns];
-        if (parent == null) {
-            const card = nsToCard[ns];
-            if (card == null) {
-                console.error(`no card for ns`, ns, nsToCard);
-                return;
-            }
-            path.unshift({ type: 'card', card, idx: -1 });
-            return path;
-        }
-
-        path.unshift({
-            type: 'ns',
-            child: ns,
-            idx: parent,
-        });
-        ns = parent;
-    }
-    // Ok now trace it all back
 };
 
 function getJumpToResult(

@@ -3,7 +3,7 @@ import { NUIState } from '../../custom/UIState';
 import { Display } from '../../../src/to-ast/library';
 import { Store } from '../../custom/store/Store';
 import { useGetStore } from '../../custom/store/StoreCtx';
-import { pathForIdx } from './CommandPalette';
+import { pathForIdx } from './pathForIdx';
 import { LocError, MyEvalError } from './Evaluators';
 import { Produce as Produce } from './FullEvalator';
 import { Trace, TraceMap } from './loadEv';

@@ -59,6 +59,35 @@ export const verifyPath = (path: Path[], state: NUIState) => {
     }
 };
 
+export const childPaths = (
+    parent: MNode,
+): { path: PathChild; idx: number }[] => {
+    switch (parent.type) {
+        case 'list':
+        case 'array':
+        case 'record': {
+            return parent.values.map((idx, i) => ({
+                idx,
+                path: { type: 'child', at: i },
+            }));
+        }
+        case 'string':
+            return [
+                { idx: parent.first, path: { type: 'text', at: 0 } },
+                ...parent.templates.flatMap(({ expr, suffix }, i) => [
+                    { idx: expr, path: { type: 'expr' as const, at: i + 1 } },
+                    { idx: expr, path: { type: 'text' as const, at: i + 1 } },
+                ]),
+            ];
+        case 'comment-node':
+        case 'spread':
+            return [
+                { idx: parent.contents, path: { type: 'spread-contents' } },
+            ];
+    }
+    return [];
+};
+
 export const childPath = (parent: MNode, child: number): PathChild | null => {
     switch (parent.type) {
         case 'list':

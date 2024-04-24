@@ -1,6 +1,6 @@
 import React, { ReactNode, useMemo } from 'react';
 import { Path } from '../../src/state/path';
-import { pathForIdx } from '../ide/ground-up/CommandPalette';
+import { pathForIdx } from '../ide/ground-up/pathForIdx';
 import { ProduceItem } from '../ide/ground-up/FullEvalator';
 import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';

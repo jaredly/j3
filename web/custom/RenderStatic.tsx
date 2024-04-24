@@ -28,7 +28,6 @@ export const RenderStatic = ({
             layout(root, 0, map, myDisplay, {});
         }
         const top = getDeepNestedNodes(map[root], map, myDisplay);
-        console.log('deep', top);
         return { map, root, top, display };
     }, [node]);
 
