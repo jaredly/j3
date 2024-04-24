@@ -203,7 +203,7 @@ export function updateState(
      */
     if (state.evaluator.inference) {
         // TODO
-        let tenv = state.evaluator.inference.initType();
+        let tenv = state.evaluator.inference.init();
         for (let group of sorted) {
             const groupKey = group.map((g) => g.id).join(';');
             // This does "deep" change propagation

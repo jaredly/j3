@@ -30,26 +30,26 @@ export function extractToToplevel(
     }
     const atTop = (state.nsMap[nsId] as RealizedNamespace).top;
 
-    const errors = {};
+    // const errors = {};
     const topNode = fromMCST(atTop, state.map);
-    const stmt = ev.parse(topNode, errors);
+    const { stmt } = ev.parse(topNode);
     if (!stmt) {
         throw new Error(`no stmt`);
     }
-    const topExternals = ev.analysis.dependencies(stmt);
+    const topExternals = ev.analysis.externalsStmt(stmt);
     const extMap: Record<string, true> = {};
     topExternals.forEach((ex) => (extMap[ex.name] = true));
 
     const at = path[path.length - 1].idx;
     const node = fromMCST(at, state.map);
-    const parsed = ev.parse(node, errors);
+    const { stmt: parsed } = ev.parse(node);
     if (!parsed) {
         throw new Error(`doesn't parse`);
     }
 
     const externals = unique(
         ev.analysis
-            .dependencies(parsed)
+            .externalsStmt(parsed)
             .filter((ex) => !extMap[ex.name] && ex.kind === 'value')
             .map((n) => n.name),
     );

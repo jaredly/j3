@@ -2,11 +2,12 @@ import { bootstrap } from './Evaluators';
 import { Errors, FullEvalator, Produce } from './FullEvalator';
 import { valueToString } from './valueToString';
 import { findTops } from './findTops';
-import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
+import { Ctx, expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
 import { sanitizedEnv } from './loadEv';
 import { unique } from '../../custom/store/unique';
+import { add } from '../../custom/worker/add';
 
 /**
  * This turns a sandbox that ':bootstrap:' as its evaluator
@@ -145,9 +146,8 @@ export const bootstrapEvaluator = (
             findTops(state).forEach((top) => {
                 const node = fromMCST(top.top, state.map);
                 if (node.type === 'blank') return;
-                const nodeErrors: Errors = {};
-                const parsed = this.parse(node, nodeErrors);
-                Object.assign(errors, nodeErrors);
+                const { stmt: parsed, errors: nodeErrors } = this.parse(node);
+                nodeErrors.forEach(([k, v]) => add(errors, k, v));
                 if (!parsed) return;
                 if (parsed.type === 'sdef') {
                     names.push(parsed[0]);
@@ -184,27 +184,29 @@ export const bootstrapEvaluator = (
             }
             return { js: env.source.join('\n'), errors };
         },
-        parse(node, errors) {
-            if (
-                node.type === 'blank' ||
-                node.type === 'comment' ||
-                node.type === 'comment-node' ||
-                node.type === 'rich-text'
-            ) {
-                return;
-            }
-            const ctx = { errors, display: {} };
+        parse(node) {
+            const ctx: Ctx = { errors: {}, display: {} };
             const stmt = parseStmt(node, ctx) as stmt & { loc: number };
-            if (Object.keys(ctx.errors).length || !stmt) {
-                return;
+            if (stmt) {
+                stmt.loc = node.loc;
             }
-            stmt.loc = node.loc;
-            return stmt;
+            return {
+                stmt,
+                errors: Object.keys(ctx.errors).flatMap((k) =>
+                    ctx.errors[+k].map((s): [number, string] => [+k, s]),
+                ),
+            };
         },
-        parseExpr(node, errors) {
-            const ctx = { errors, display: {} };
-            return parseExpr(node, ctx);
+        parseExpr(node) {
+            const ctx: Ctx = { errors: {}, display: {} };
+            return {
+                expr: parseExpr(node, ctx) ?? null,
+                errors: Object.keys(ctx.errors).flatMap((k) =>
+                    ctx.errors[+k].map((s): [number, string] => [+k, s]),
+                ),
+            };
         },
+
         evaluate(expr, env) {
             const valArgs = Object.keys(env.values).map(
                 (name) => [name, sanitize(name)] as const,

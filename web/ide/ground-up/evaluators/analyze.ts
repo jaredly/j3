@@ -10,10 +10,10 @@ import {
 } from '../round-1/parse';
 import { Analyze, Parser } from './interface';
 
-type Stmt = { _stmt: 1 };
-type Expr = { _expr: 1 };
-type Type = { _type: 1 };
-type Env = { _env: 1 };
+export type Stmt = { _stmt: 1 };
+export type Expr = { _expr: 1 };
+export type Type = { _type: 1 };
+export type Env = { _env: 1 };
 
 type namesRes = arr<tuple3<string, { type: LocedName['kind'] }, number>>;
 

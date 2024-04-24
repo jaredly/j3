@@ -3,6 +3,7 @@ import { MetaDataMap, NUIState } from '../../custom/UIState';
 import { TraceMap } from './loadEv';
 import { LocedName } from '../../custom/store/sortTops';
 import { LocError, MyEvalError } from './Evaluators';
+import { Analyze, TypeChecker } from './evaluators/interface';
 
 export type Errors = { [key: number]: string[] };
 
@@ -31,44 +32,12 @@ export type FullEvalator<
 > = {
     id: string;
     init(): Env;
-    parse(node: Node, errors: Errors): Stmt | void;
-    parseExpr(node: Node, errors: Errors): Expr | void;
+    parse(node: Node): { stmt: Stmt | null; errors: [number, string][] };
+    parseExpr(node: Node): { expr: Expr | null; errors: [number, string][] };
 
     // Type checker stuff
-    inference?: {
-        initType(): TypeEnv;
-        infer(
-            stmts: Stmt[],
-            env: TypeEnv,
-        ): {
-            result:
-                | { type: 'ok'; value: { env: TypeEnv; types: Type[] } }
-                | { type: 'err'; err: InferenceError };
-            typesAndLocs: { type: Type; loc: number }[];
-            usages: { [loc: number]: number[] };
-        };
-        inferExpr(
-            expr: Expr,
-            env: TypeEnv,
-        ): {
-            result:
-                | { type: 'ok'; value: Type }
-                | { type: 'err'; err: InferenceError };
-            typesAndLocs: { type: Type; loc: number }[];
-            usages: { [loc: number]: number[] };
-        };
-        addTypes(env: TypeEnv, nenv: TypeEnv): TypeEnv;
-        typeForName(env: TypeEnv, name: string): Type;
-        typeToString(type: Type): string;
-        typeToCst?(type: Type): Node;
-    };
-
-    analysis?: {
-        dependencies(stmt: Stmt): LocedName[];
-        stmtNames(stmt: Stmt): LocedName[];
-        exprDependencies(stmt: Expr): LocedName[];
-        size(stmt: Stmt): number | null;
-    };
+    inference?: TypeChecker<TypeEnv, Stmt, Expr, Type>;
+    analysis?: Analyze<Stmt, Expr, Type>;
 
     addStatements(
         stmts: { [key: number]: Stmt },
@@ -87,5 +56,11 @@ export type FullEvalator<
     };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
-    toFile(state: NUIState, target?: number): { js: string; errors: Errors };
+    toFile(
+        state: NUIState,
+        target?: number,
+    ): {
+        js: string;
+        // errors: Errors
+    };
 };

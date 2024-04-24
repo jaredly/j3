@@ -50,23 +50,12 @@ const parseTuple = (node: Node) => {
 };
 
 export const parseExpr =
-    (evaluator: AnyEnv, errors: Errors, deps: LocedName[]) => (node: Node) => {
-        try {
-            const expr = evaluator.parseExpr(node, errors);
-            if (expr) {
-                deps.push(
-                    ...(evaluator.analysis?.exprDependencies(expr) ?? []),
-                );
-            }
-            return expr;
-        } catch (err) {
-            if (!errors[node.loc]) {
-                errors[node.loc] = [];
-            }
-            errors[node.loc].push(
-                `Failed to parse node ${(err as Error).message}`,
-            );
+    (evaluator: AnyEnv, errors_: Errors, deps: LocedName[]) => (node: Node) => {
+        const { expr, errors } = evaluator.parseExpr(node);
+        if (expr) {
+            deps.push(...(evaluator.analysis?.externalsExpr(expr) ?? []));
         }
+        return expr;
     };
 const parseFixture = <Expr,>(
     item: Node,

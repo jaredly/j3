@@ -14,98 +14,23 @@ import { unique } from '../../custom/store/unique';
 import { builtins } from './builtins';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { fixDuplicateLocs } from '../../../src/state/fixDuplicateLocs';
+import { Analyze, Compiler, Parser, TypeChecker } from './evaluators/interface';
+import { add } from '../../custom/worker/add';
+import { Env, Expr, Stmt, Type } from './evaluators/analyze';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
  * to javascript by something other than the `:bootstrap:` evaluator.
  */
 
-type CallingConvention = 'curried' | 'tuple' | 'tuple-nil';
-
-const makeTuple = (values: any[]) => {
-    let res = values[values.length - 1];
-    for (let i = values.length - 2; i >= 0; i--) {
-        res = { type: ',', 0: values[i], 1: res };
-    }
-    return res;
-};
-
-type InferExpr2 = {
-    type: ',,';
-    0:
-        | { type: 'ok'; 0: any }
-        | {
-              type: 'err';
-              0: {
-                  type: ',';
-                  0: string;
-                  1: arr<{ type: ','; 0: string; 1: number }>;
-              };
-          };
-    1: arr<{ type: ','; 0: number; 1: any }>;
-    2: {
-        type: ',';
-        0: arr<number>;
-        1: arr<{ type: ','; 0: number; 1: number }>;
-    };
-};
-
-export const getUsages = (data: InferExpr2[2]) => {
-    const usages: Record<number, number[]> = {};
-    unwrapArray(data[0]).forEach((loc) => (usages[loc] = []));
-    unwrapArray(data[1]).forEach(({ 0: loc, 1: provider }) => {
-        if (loc === provider) {
-            // delete usages[loc]
-            return;
-        }
-        if (!usages[provider]) {
-            usages[provider] = [];
-        }
-        usages[provider].push(loc);
-    });
-    return usages;
-};
-
-type InferStmts2 = {
-    type: ',,';
-    0:
-        | { type: 'ok'; 0: { type: ','; 0: any; 1: arr<any> } }
-        | {
-              type: 'err';
-              0: {
-                  type: ',';
-                  0: string;
-                  1: arr<{ type: ','; 0: string; 1: number }>;
-              };
-          };
-    1: arr<{ type: ','; 0: number; 1: any }>;
-    2: {
-        type: ',';
-        0: arr<number>;
-        1: arr<{ type: ','; 0: number; 1: number }>;
-    };
-};
-
 export const fnsEvaluator = (
     id: string,
-    data: any,
-    envArgs: string,
+    parser: Parser<Stmt, Expr>,
+    compiler: Compiler<Stmt, Expr>,
+    analyze: undefined | Analyze<Stmt, Expr, Type>,
+    typeCheck: undefined | TypeChecker<Env, Stmt, Expr, Type>,
     san: any,
-): FullEvalator<FnsEnv, stmt & { loc: number }, expr> | null => {
-    if (
-        !data['parse_stmt'] ||
-        !data['parse_expr'] ||
-        !data['compile'] ||
-        !data['compile_stmt']
-    ) {
-        const keys = ['parse_stmt', 'parse_expr', 'compile', 'compile_stmt'];
-        throw new Error(
-            `Can't produce a fnsEvaluator: ${keys.map(
-                (k) => `${k}: ${!!data[k]}`,
-            )} : ${Object.keys(data)}`,
-        );
-    }
-
+): FullEvalator<FnsEnv, Stmt, Expr, Env, Type> | null => {
     return {
         id,
         init() {
@@ -113,244 +38,18 @@ export const fnsEvaluator = (
         },
 
         // @ts-ignore
-        _data: data,
+        // _data: data,
 
-        inference: data['infer_stmts']
-            ? {
-                  initType() {
-                      return data['env_nil'];
-                  },
-                  infer(stmts, env) {
-                      if (data['infer_stmts2']) {
-                          const result: InferStmts2 = data['infer_stmts2'](env)(
-                              wrapArray(stmts),
-                          );
-                          return {
-                              result:
-                                  result[0].type === 'ok'
-                                      ? {
-                                            type: 'ok',
-                                            value: {
-                                                env: result[0][0][0],
-                                                types: unwrapArray(
-                                                    result[0][0][1],
-                                                ),
-                                            },
-                                        }
-                                      : {
-                                            type: 'err',
-                                            err: {
-                                                message: result[0][0][0],
-                                                items: unwrapArray(
-                                                    result[0][0][1],
-                                                ).map((item) => ({
-                                                    loc: item[1],
-                                                    name: item[0],
-                                                })),
-                                            },
-                                        },
-                              typesAndLocs: unwrapArray(result[1]).map(
-                                  (tal) => ({
-                                      loc: tal[0],
-                                      type: tal[1],
-                                  }),
-                              ),
-                              usages: getUsages(result[2]),
-                          };
-                      }
-                      try {
-                          return {
-                              result: {
-                                  type: 'ok',
-                                  value: {
-                                      env: data['infer_stmts'](env)(
-                                          wrapArray(stmts),
-                                      ),
-                                      types: [],
-                                  },
-                              },
-                              usages: {},
-                              typesAndLocs: [],
-                          };
-                      } catch (err) {
-                          return {
-                              result: {
-                                  type: 'err',
-                                  err: {
-                                      message: (err as Error).message,
-                                      items: [],
-                                  },
-                              },
-                              typesAndLocs: [],
-                              usages: {},
-                          };
-                      }
-                  },
-                  inferExpr(expr, env) {
-                      if (data['infer2']) {
-                          const result: InferExpr2 = data['infer2'](env)(expr);
-                          return {
-                              typesAndLocs: unwrapArray(result[1]).map(
-                                  (res) => ({ loc: res[0], type: res[1] }),
-                              ),
-                              result:
-                                  result[0].type === 'ok'
-                                      ? { type: 'ok', value: result[0][0] }
-                                      : {
-                                            type: 'err',
-                                            err: {
-                                                message: result[0][0][0],
-                                                items: unwrapArray(
-                                                    result[0][0][1],
-                                                ).map((item) => ({
-                                                    loc: item[1],
-                                                    name: item[0],
-                                                })),
-                                            },
-                                        },
-                              usages: getUsages(result[2]),
-                          };
-                      }
-                      try {
-                          const result = data['infer'](env)(expr);
-                          return {
-                              result: { type: 'ok', value: result },
-                              typesAndLocs: [],
-                              usages: {},
-                          };
-                      } catch (err) {
-                          return {
-                              result: {
-                                  type: 'err',
-                                  err: {
-                                      message: (err as Error).message,
-                                      items: [],
-                                  },
-                              },
-                              typesAndLocs: [],
-                              usages: {},
-                          };
-                      }
-                  },
-                  addTypes(env, nenv) {
-                      return data['add_stmt'](env)(nenv);
-                  },
-                  typeForName(env, name) {
-                      const res = data['get_type'](env)(name);
-                      if (res.type === 'some') {
-                          return res[0];
-                      }
-                      return null;
-                  },
-                  typeToString(type) {
-                      return data['type_to_string'](type);
-                  },
-                  typeToCst: data['type_to_cst']
-                      ? (type) =>
-                            fixDuplicateLocs(
-                                fromJCST(data['type_to_cst'](type)),
-                            )
-                      : undefined,
-              }
-            : undefined,
+        inference: typeCheck,
 
-        analysis:
-            data['externals_stmt'] && data['externals_expr'] && data['names']
-                ? {
-                      dependencies(stmt) {
-                          try {
-                              const deps = unwrapArray<{
-                                  type: ',,';
-                                  0: string;
-                                  1: { type: LocedName['kind'] };
-                                  2: number;
-                              }>(data['externals_stmt'](stmt));
-                              return deps.map((item) => ({
-                                  name: item[0],
-                                  loc: item[2],
-                                  kind: item[1].type,
-                              }));
-                          } catch (err) {
-                              console.warn(`Cant get dependencies`, stmt);
-                              console.error(err);
-                              return [];
-                          }
-                      },
-                      size(stmt) {
-                          if (data['stmt_size']) {
-                              try {
-                                  return data['stmt_size'](stmt);
-                              } catch (err) {
-                                  console.error('failed to get size', err);
-                              }
-                          }
-                          return null;
-                      },
-                      exprDependencies(stmt) {
-                          try {
-                              const deps = unwrapArray<{
-                                  type: ',,';
-                                  0: string;
-                                  1: { type: LocedName['kind'] };
-                                  2: number;
-                              }>(data['externals_expr'](stmt));
-                              return deps.map((item) => ({
-                                  name: item[0],
-                                  loc: item[2],
-                                  kind: item[1].type,
-                              }));
-                          } catch (err) {
-                              console.warn(`Cant get dependencies`, stmt);
-                              console.error(err);
-                              return [];
-                          }
-                      },
+        analysis: analyze,
 
-                      stmtNames(stmt) {
-                          try {
-                              return unwrapArray(
-                                  data['names'](stmt) as arr<{
-                                      type: ',,';
-                                      0: string;
-                                      1: { type: LocedName['kind'] };
-                                      2: number;
-                                  }>,
-                              ).map((res) => ({
-                                  name: res[0],
-                                  loc: res[2],
-                                  kind: res[1].type,
-                              }));
-                          } catch (err) {
-                              console.error(`cant get stmt naems`, err);
-                              return [];
-                          }
-                      },
-                  }
-                : undefined,
-
-        parse(node, errors) {
-            const j = toJCST(node);
-            if (!j) return;
-            try {
-                return data['parse_stmt'](j);
-            } catch (err) {
-                // This is just looking annoying.
-                errors[node.loc] = [
-                    'ParseStmt failed: ' + (err as Error).message,
-                ];
-            }
+        parse(node) {
+            return parser.parse(node);
         },
 
-        parseExpr(node, errors) {
-            const j = toJCST(node);
-            if (!j) return;
-            try {
-                return data['parse_expr'](j);
-            } catch (err) {
-                errors[node.loc] = [
-                    'parse-expr failed: ' + (err as Error).message,
-                ];
-            }
+        parseExpr(node) {
+            return parser.parseExpr(node);
         },
 
         toFile(state, target) {
@@ -358,7 +57,7 @@ export const fnsEvaluator = (
                 throw new Error(`toFile requires analysis`);
             }
             let env = this.init();
-            let tenv = this.inference?.initType();
+            let tenv = this.inference?.init();
             const errors: Errors = {};
             const allNames: LocedName[] = [];
             let ret: null | string = null;
@@ -374,16 +73,15 @@ export const fnsEvaluator = (
                         ) {
                             return;
                         }
-                        const errs = {};
-                        const stmt = this.parse(node, errs);
+                        const { stmt } = this.parse(node);
                         if (!stmt) return;
                         return {
                             id: top.top,
                             top,
                             node,
                             stmt,
-                            names: this.analysis!.stmtNames(stmt),
-                            deps: this.analysis!.dependencies(stmt),
+                            names: this.analysis!.names(stmt),
+                            deps: this.analysis!.externalsStmt(stmt),
                         };
                     })
                     .filter(filterNulls),
@@ -447,18 +145,11 @@ export const fnsEvaluator = (
         ) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
-            let names:
-                | {
-                      type: ',,';
-                      0: string;
-                      1: { type: LocedName['kind'] };
-                      2: number;
-                  }[]
-                | null = null;
-            if (data['names']) {
+            let names: LocedName[] | null = null;
+            if (analyze) {
                 try {
                     names = Object.values(stmts).flatMap((stmt) =>
-                        unwrapArray(data['names'](stmt)),
+                        analyze.names(stmt),
                     );
                 } catch (err) {
                     console.error(`cant get names`, err);
@@ -476,7 +167,8 @@ export const fnsEvaluator = (
             }
 
             const res = compileStmt(
-                data,
+                compiler,
+                analyze,
                 san,
                 Object.values(stmts),
                 env,
@@ -508,14 +200,17 @@ export const fnsEvaluator = (
         },
 
         evaluate(expr, env, meta) {
-            const mm = prepareMeta(meta, data['parse_version'] === 2);
+            const mm = prepareMeta(meta);
 
-            const externals: { type: ','; 0: string; 1: number }[] =
-                unwrapArray(data['externals_expr'](expr));
+            const externals =
+                analyze
+                    ?.externalsExpr(expr)
+                    .filter((n) => n.kind === 'value')
+                    .map((n) => n.name) ?? [];
             const { needed, values } = assembleExternals(externals, env, san);
 
             try {
-                const js = data['compile'](expr)(mm);
+                const js = compiler.compileExpr(expr, meta);
                 const fn = new Function(
                     needed.length
                         ? `{${needed.map(sanitize).join(', ')}}`
@@ -539,22 +234,16 @@ export const fnsEvaluator = (
 };
 
 const compileStmt = (
-    data: any,
+    compiler: Compiler<Stmt, Expr>,
+    analyzer: undefined | Analyze<Stmt, Expr, Type>,
     san: any,
-    stmts: stmt[],
+    stmts: Stmt[],
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
     renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
     top: number,
-    names?:
-        | null
-        | {
-              type: ',,';
-              0: string;
-              1: { type: LocedName['kind'] };
-              2: number;
-          }[],
+    names?: null | LocedName[],
     debugShowJs?: boolean,
 ): {
     env: any;
@@ -562,15 +251,13 @@ const compileStmt = (
     values: Record<string, any>;
     js?: string;
 } => {
-    // console.log('show js', debugShowJs);
-    const mm = prepareMeta(meta, data['parse_version'] === 2);
-
-    let externals: { type: ','; 0: string; 1: number }[] = [];
-    if (data['externals_stmt']) {
+    let externals: string[] = [];
+    if (analyzer) {
         try {
-            externals = stmts.flatMap((stmt) =>
-                unwrapArray(data['externals_stmt'](stmt)),
-            );
+            externals = stmts
+                .flatMap((stmt) => analyzer.externalsStmt(stmt))
+                .filter((n) => n.kind === 'value')
+                .map((n) => n.name);
         } catch (err) {
             console.error('Unable to calculate externals');
             console.error(err);
@@ -580,7 +267,7 @@ const compileStmt = (
 
     let jss;
     try {
-        jss = stmts.map((stmt) => data['compile_stmt'](stmt)(mm)); //.join('\n\n');
+        jss = stmts.map((stmt) => compiler.compileStmt(stmt, meta));
     } catch (err) {
         console.error(err);
         return {
@@ -606,8 +293,8 @@ const compileStmt = (
                 names
                     ? 'return {' +
                       names
-                          .filter((n) => n[1].type === 'value')
-                          .map(({ 0: name }) => sanitize(name))
+                          .filter((n) => n.kind === 'value')
+                          .map(({ name }) => sanitize(name))
                           .join(',') +
                       '}'
                     : ''
@@ -630,12 +317,12 @@ const compileStmt = (
                     values: {},
                 };
             }
-            names.forEach(({ 0: name }) => {
+            names.forEach(({ name }) => {
                 result_values[name] = result[sanitize(name)];
             });
             Object.assign(env.values, result_values);
             display = names
-                .flatMap(({ 0: name }) =>
+                .flatMap(({ name }) =>
                     result_values[name] === undefined
                         ? null
                         : typeof result_values[name] !== 'function'
@@ -685,23 +372,14 @@ const compileStmt = (
 };
 
 function assembleExternals(
-    externals: { type: ','; 0: string; 1: number }[],
+    externals: string[],
     env: FnsEnv,
     san: any,
-    names?:
-        | null
-        | {
-              type: ',,';
-              0: string;
-              1: { type: LocedName['kind'] };
-              2: number;
-          }[],
+    names?: null | LocedName[],
 ) {
-    const provided = names?.map((obj) => obj[0]) ?? [];
+    const provided = names?.map((obj) => obj.name) ?? [];
     const needed = unique(
-        externals
-            .map((ex) => ex[0])
-            .concat(['$trace', 'jsonify', 'valueToString']),
+        externals.concat(['$trace', 'jsonify', 'valueToString']),
     ).filter(
         // Skip recursive self-calls
         (name) => !provided.includes(name),
@@ -719,9 +397,9 @@ function assembleExternals(
     return { needed, values };
 }
 
-function prepareMeta(meta: MetaDataMap, and_how: boolean) {
+export function prepareMeta(meta: MetaDataMap) {
     const mm = Object.entries(meta)
         .map(([k, v]) => [+k, v.trace])
         .filter((k) => k[1]);
-    return and_how ? { type: ',', 0: mm, 1: false } : mm;
+    return mm;
 }

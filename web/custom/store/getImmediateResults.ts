@@ -13,6 +13,7 @@ import { plugins } from '../plugins';
 import { AnyEnv } from './getResults';
 import { Sendable } from '../worker/worker';
 import { workerPlugins } from '../plugins/worker';
+import { errorsListToMap } from './parseNodesAndDeps';
 
 export type SuccessParsed<Stmt> = {
     type: 'success';
@@ -20,6 +21,7 @@ export type SuccessParsed<Stmt> = {
     names: LocedName[];
     deps: LocedName[];
     size: null | number;
+    errors: [number, string][];
     // duplicates?: LocedName[];
 };
 
@@ -98,14 +100,10 @@ const allChanged = {
 // yeah.
 // well.
 // I guess `cache.changes` ... would let us know, right?
-export const getImmediateResults = <
-    Env extends { values: { [key: string]: any } },
-    Stmt,
-    Expr,
->(
+export const getImmediateResults = (
     state: NUIState,
-    evaluator: FullEvalator<Env, Stmt, Expr> | null,
-    results: ImmediateResults<Stmt>,
+    evaluator: FullEvalator<any, unknown, unknown> | null,
+    results: ImmediateResults<unknown>,
 ) => {
     if (
         state.map === results.lastState?.map &&
@@ -283,25 +281,25 @@ const getParsed = (
             };
         }
     } else {
-        const errors: Errors = {};
-        const stmt = evaluator?.parse(node, errors);
+        const { stmt, errors } = evaluator?.parse(node);
         if (!stmt) {
-            if (Object.keys(errors).length) {
-                return { type: 'failure', errors };
+            if (errors.length) {
+                return { type: 'failure', errors: errorsListToMap(errors) };
             } else {
                 return undefined;
             }
         } else {
             // OK we're maybe duplicating this work, sometimes.
             // but I'm fine with it.
-            const deps = evaluator?.analysis?.dependencies(stmt) ?? [];
-            const names = evaluator?.analysis?.stmtNames(stmt) ?? [];
+            const deps = evaluator?.analysis?.externalsStmt(stmt) ?? [];
+            const names = evaluator?.analysis?.names(stmt) ?? [];
             return {
                 type: 'success',
                 stmt,
                 deps,
                 names,
-                size: evaluator.analysis?.size(stmt) ?? null,
+                size: evaluator.analysis?.stmtSize(stmt) ?? null,
+                errors,
             };
         }
     }
@@ -345,6 +343,11 @@ const recordNodeChanges = (
         // got to clear error marks
         Object.keys(parsed.errors).forEach((id) => {
             nodeChanges[+id] = top;
+        });
+    }
+    if (parsed?.type === 'success') {
+        parsed.errors.forEach(([id, _]) => {
+            nodeChanges[id] = top;
         });
     }
     // if (parsed?.type === 'success' && parsed.duplicates) {

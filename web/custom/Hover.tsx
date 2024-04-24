@@ -15,6 +15,7 @@ import { getNestedNodes } from '../../src/state/getNestedNodes';
 import { Map, toMCST } from '../../src/types/mcst';
 import { Node, nodesEqual } from '../../src/types/cst';
 import { RenderStatic } from './RenderStatic';
+import { CombinedResults } from './store/Store';
 
 export const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
@@ -163,11 +164,11 @@ const useHover = (show: boolean) => {
         if (!show) return;
 
         const state = store.getState();
-        const results = store.getResults().workerResults;
+        const results = store.getResults();
         setState(getHoverState(state, results));
 
         const f = (state: NUIState) => {
-            setState(getHoverState(state, store.getResults().workerResults));
+            setState(getHoverState(state, store.getResults()));
         };
 
         const one = store.on('hover', f);
@@ -181,7 +182,7 @@ const useHover = (show: boolean) => {
     return state;
 };
 
-function getHoverState(state: NUIState, results: WorkerResults) {
+function getHoverState(state: NUIState, results: CombinedResults) {
     const found = calculateHovers(state, results);
     if (!found.length) return null;
     const node = getRegNode(found[0].idx, state.regs);
@@ -193,7 +194,10 @@ function getHoverState(state: NUIState, results: WorkerResults) {
     return { box, found };
 }
 
-function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
+function calculateHovers(
+    state: NUIState,
+    results: CombinedResults,
+): HoverItem[] {
     const hovers: HoverItem[] = [];
 
     const ns = state.hover.find((p) => p.type === 'ns-top');
@@ -212,7 +216,42 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
         if (!next) break;
 
         const idx = next.loc;
-        const errs = results.nodes[ns.idx]?.errors[idx];
+        const parsed = results.results.nodes[ns.idx]?.parsed;
+        if (parsed?.type === 'failure') {
+            const errs = parsed.errors[idx];
+            if (errs?.length) {
+                hovers.push({
+                    idx: idx,
+                    contents: {
+                        type: 'text',
+                        text: errs.join('\n'),
+                    },
+                    style: {
+                        color: '#f66',
+                    },
+                });
+                break;
+            }
+        }
+
+        if (parsed?.type === 'success') {
+            const errs = parsed.errors.filter((k) => k[0] === idx);
+            if (errs?.length) {
+                hovers.push({
+                    idx: idx,
+                    contents: {
+                        type: 'text',
+                        text: errs.map((k) => k[1]).join('\n'),
+                    },
+                    style: {
+                        color: '#f66',
+                    },
+                });
+                break;
+            }
+        }
+
+        const errs = results.workerResults.nodes[ns.idx]?.errors[idx];
         if (errs?.length) {
             hovers.push({
                 idx: idx,
@@ -243,7 +282,7 @@ function calculateHovers(state: NUIState, results: WorkerResults): HoverItem[] {
 
         const idx = next.loc;
 
-        const current = results.nodes[ns.idx]?.hover[idx];
+        const current = results.workerResults.nodes[ns.idx]?.hover[idx];
         if (current?.length) {
             for (let item of current) {
                 if (item.type === 'text') {

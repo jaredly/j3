@@ -1,4 +1,5 @@
 import { WorkerPlugin } from '../UIState';
+import { add } from '../worker/add';
 
 export const evaluatorWorker: WorkerPlugin<
     any,
@@ -8,17 +9,13 @@ export const evaluatorWorker: WorkerPlugin<
     test(node) {
         return true;
     },
-    parse(node, errors, evaluator) {
-        try {
-            const expr = evaluator.parseExpr(node, errors);
-            return {
-                parsed: { expr, id: node.loc },
-                deps: evaluator.analysis?.exprDependencies(expr) ?? [],
-            };
-        } catch (err) {
-            errors[node.loc] = [`Failed to parse ${(err as Error).message}`];
-            return null;
-        }
+    parse(node, errors_, evaluator) {
+        const { expr, errors } = evaluator.parseExpr(node);
+        errors.forEach(([k, v]) => add(errors_, k, v));
+        return {
+            parsed: { expr, id: node.loc },
+            deps: evaluator.analysis?.externalsExpr(expr) ?? [],
+        };
     },
     infer(parsed, evaluator, tenv) {
         const { result, typesAndLocs, usages } = evaluator.inference!.inferExpr(

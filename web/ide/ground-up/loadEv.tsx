@@ -8,6 +8,14 @@ import { bootstrapEvaluator } from './bootstrapEvaluator';
 import { fnsEvaluator } from './fnsEvaluator';
 import { builtins } from './builtins';
 import { valueToString } from './valueToString';
+import { basicParser, recoveringParser } from './evaluators/parsers';
+import { compiler } from './evaluators/compiler';
+import { Expr, Stmt, analyzer } from './evaluators/analyze';
+import {
+    advancedInfer,
+    basicInfer,
+    typeChecker,
+} from './evaluators/type-checker';
 
 const jsUrl = (id: string) => urlForId(id) + (id.endsWith('.js') ? '' : '.js');
 
@@ -24,11 +32,7 @@ export const loadEv = async (
 export const evaluatorFromText = (
     id: string,
     texts: string[],
-): FullEvalator<
-    { values: { [key: string]: any } },
-    stmt & { loc: number },
-    expr
-> | null => {
+): FullEvalator<{ values: { [key: string]: any } }, Stmt, Expr> | null => {
     const benv = builtins();
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
@@ -98,11 +102,57 @@ export const evaluatorFromText = (
         return data;
     }
     if (data.type === 'fns') {
-        return fnsEvaluator(id, data, envArgs, san);
+        const parser =
+            data['parse_stmt2'] && data['parse_expr2']
+                ? recoveringParser(data)
+                : data['parse_stmt'] && data['parse_expr']
+                ? basicParser(data)
+                : undefined;
+        const comp =
+            data['compile'] && data['compile_stmt']
+                ? compiler(data)
+                : undefined;
+        const ann =
+            data['names'] &&
+            data['externals_stmt'] &&
+            data['externals_expr'] &&
+            data['stmt_size'] &&
+            data['expr_size'] &&
+            data['type_size']
+                ? analyzer(data)
+                : undefined;
+        const infer =
+            data['infer_stmts2'] && data['infer2']
+                ? advancedInfer(data)
+                : data['infer_stmts'] && data['infer']
+                ? basicInfer(data)
+                : undefined;
+        const typeCheck =
+            infer &&
+            data['env_nil'] &&
+            data['add_stmt'] &&
+            data['get_type'] &&
+            data['type_to_string'] &&
+            data['type_to_cst']
+                ? { ...typeChecker(data), ...infer }
+                : undefined;
+
+        if (!parser) {
+            throw new Error(
+                `fns missing for parser ${Object.keys(data).join(',')}`,
+            );
+        }
+        if (!comp) {
+            throw new Error(
+                `fns missing for compiler ${Object.keys(data).join(',')}`,
+            );
+        }
+
+        return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
     }
 
     if (data.type === 'bootstrap') {
-        return bootstrapEvaluator(id, data);
+        return bootstrapEvaluator(id, data) as FullEvalator<any, any, any>;
     }
 
     console.log(id, 'no data sorry??', data.type);

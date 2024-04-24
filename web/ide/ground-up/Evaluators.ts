@@ -10,6 +10,7 @@ import { addTypeConstructors } from './addTypeConstructors';
 import { findTops } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
 import {
+    Ctx,
     expr,
     parseExpr,
     parseStmt,
@@ -88,10 +89,10 @@ export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     id: 'repr',
     init: () => ({ values: {} }),
     parse(node: Node) {
-        return node;
+        return { stmt: node, errors: [] };
     },
     parseExpr(node: Node) {
-        return node;
+        return { expr: node, errors: [] };
     },
     setTracing(idx) {},
     addStatements(stmts, env) {
@@ -167,7 +168,7 @@ export const bootstrap: FullEvalator<
         return { values: builtins() };
     },
     analysis: {
-        dependencies(stmt) {
+        externalsStmt(stmt) {
             switch (stmt.type) {
                 case 'sdef': {
                     const res: LocedName[] = [];
@@ -185,15 +186,21 @@ export const bootstrap: FullEvalator<
             }
             return [];
         },
-        size(stmt) {
+        stmtSize() {
             return null;
         },
-        exprDependencies(expr) {
+        exprSize() {
+            return null;
+        },
+        typeSize() {
+            return null;
+        },
+        externalsExpr(expr) {
             const res: LocedName[] = [];
             dependencies(expr, [], res);
             return res;
         },
-        stmtNames(stmt) {
+        names(stmt) {
             switch (stmt.type) {
                 case 'sdef':
                     return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
@@ -207,18 +214,27 @@ export const bootstrap: FullEvalator<
             return [];
         },
     },
-    parse(node, errors) {
-        const ctx = { errors, display: {} };
+    parse(node) {
+        const ctx: Ctx = { errors: {}, display: {} };
         const stmt = parseStmt(node, ctx) as stmt & { loc: number };
-        if (Object.keys(ctx.errors).length || !stmt) {
-            return;
+        if (stmt) {
+            stmt.loc = node.loc;
         }
-        stmt.loc = node.loc;
-        return stmt;
+        return {
+            stmt,
+            errors: Object.keys(ctx.errors).flatMap((k) =>
+                ctx.errors[+k].map((s): [number, string] => [+k, s]),
+            ),
+        };
     },
-    parseExpr(node, errors) {
-        const ctx = { errors, display: {} };
-        return parseExpr(node, ctx);
+    parseExpr(node) {
+        const ctx: Ctx = { errors: {}, display: {} };
+        return {
+            expr: parseExpr(node, ctx) ?? null,
+            errors: Object.keys(ctx.errors).flatMap((k) =>
+                ctx.errors[+k].map((s): [number, string] => [+k, s]),
+            ),
+        };
     },
     evaluate(expr, env) {
         return evalExpr(expr, env.values);
@@ -283,18 +299,17 @@ export const bootstrap: FullEvalator<
 
     // We ignore the `target` here ... because we're just dumping everything
     toFile(state: NUIState, target: number) {
-        const errors: Errors = {};
         return {
             js: `return {type: 'bootstrap', stmts: ${JSON.stringify(
                 findTops(state)
-                    .map((stmt) =>
-                        bootstrap.parse(fromMCST(stmt.top, state.map), errors),
+                    .map(
+                        (stmt) =>
+                            bootstrap.parse(fromMCST(stmt.top, state.map)).stmt,
                     )
                     .filter(Boolean),
                 null,
                 2,
             )}}`,
-            errors,
         };
     },
 };

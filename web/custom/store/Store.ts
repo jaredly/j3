@@ -45,13 +45,15 @@ export type Evt =
     | 'results'
     | 'pending';
 
+export type CombinedResults = {
+    results: ImmediateResults<any>;
+    workerResults: WorkerResults;
+};
+
 export type Store = {
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
-    getResults(): {
-        results: ImmediateResults<any>;
-        workerResults: WorkerResults;
-    };
+    getResults(): CombinedResults;
     // getCache(): ResultsCache<any>;
     getEvaluator(): FullEvalator<any, any, any> | null;
     reg: Reg;
@@ -213,7 +215,12 @@ export const getValues = (
         results.layout[idx]?.layout,
     );
     const parsed = results.parsed;
-    let errors = parsed?.type === 'failure' ? parsed.errors[idx] : undefined;
+    let errors =
+        parsed?.type === 'failure'
+            ? parsed.errors[idx]
+            : parsed?.type === 'success'
+            ? parsed.errors.filter((k) => k[0] === idx).map((k) => k[1])
+            : undefined;
     const asyncErrors = workerResults?.errors[idx];
     if (asyncErrors) {
         errors = [...(errors ?? []), ...asyncErrors];

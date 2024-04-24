@@ -10,6 +10,7 @@ import { Display } from '../../../src/to-ast/library';
 import { Path } from '../../store';
 import { registerNames, emptyResults } from './getResults';
 import { ResultsCache, DepsOrNoDeps, ChangesMap } from './ResultsCache';
+import { add } from '../worker/add';
 
 export function sortTopsWithDeps<Stmt>(
     cache: ResultsCache<Stmt>,
@@ -126,8 +127,7 @@ export function parseNodesAndDeps<
         Object.assign(results.display, display);
 
         changes[top.top].source = true;
-        const errors: Errors = {};
-        const stmt = evaluator.parse(node, errors);
+        const { stmt, errors } = evaluator.parse(node);
         changes[top.top].stmt = cache.nodes[top.top]?.parsed
             ? !equal(cache.nodes[top.top].parsed!.stmt, stmt) ||
               cache.nodes[top.top].ids.some(
@@ -148,13 +148,13 @@ export function parseNodesAndDeps<
             node,
             display,
             parsed: stmt ? { stmt } : undefined,
-            parseErrors: Object.keys(errors).length ? errors : null,
+            parseErrors: errors.length ? errorsListToMap(errors) : null,
         };
 
         if (stmt && evaluator.analysis) {
             if (changes[top.top].stmt) {
-                const names = evaluator.analysis.stmtNames(stmt);
-                const deps = evaluator.analysis.dependencies(stmt);
+                const names = evaluator.analysis.names(stmt);
+                const deps = evaluator.analysis.externalsStmt(stmt);
                 cache.deps![top.top] = { names, deps };
                 registerNames(cache, top.top, results, idForName);
             }
@@ -162,4 +162,8 @@ export function parseNodesAndDeps<
     });
 
     return { changes, idForName, results };
+}
+
+export function errorsListToMap(errors: [number, string][]): Errors {
+    return errors.reduce((err, [k, v]) => (add(err, k, v), err), {} as Errors);
 }

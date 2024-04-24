@@ -104,6 +104,7 @@ const addError = (errors: Errors, loc: number, error: string) => {
 
 export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
     switch (node.type) {
+        case 'blank':
         case 'comment':
         case 'comment-node':
         case 'rich-text':
@@ -355,7 +356,7 @@ export const parsePat = (node: Node, errors: Errors): pat | void => {
     // console.error('bad bad', node);
 };
 
-export const parseExpr = (node: Node, ctx: Ctx): expr | void => {
+export const parseExpr = (node: Node, ctx: Ctx): expr | undefined => {
     switch (node.type) {
         case 'identifier': {
             const num = +node.text;

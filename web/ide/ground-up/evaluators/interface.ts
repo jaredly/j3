@@ -14,9 +14,9 @@ export type Analyze<Stmt, Expr, Type> = {
     names(stmt: Stmt): LocedName[];
     externalsStmt(stmt: Stmt): LocedName[];
     externalsExpr(expr: Expr): LocedName[];
-    stmtSize(stmt: Stmt): number;
-    exprSize(expr: Expr): number;
-    typeSize(type: Type): number;
+    stmtSize(stmt: Stmt): number | null;
+    exprSize(expr: Expr): number | null;
+    typeSize(type: Type): number | null;
 };
 
 export type Infer<Env, Stmt, Expr, Type> = {
@@ -47,7 +47,7 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
     addTypes(env: Env, nenv: Env): Env;
     typeForName(env: Env, name: string): Type | null;
     typeToString(type: Type): string;
-    typeToCst?(type: Type): jcst;
+    typeToCst?(type: Type): Node;
 } & Infer<Env, Stmt, Expr, Type>;
 
 export type Compiler<Stmt, Expr> = {
