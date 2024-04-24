@@ -1,12 +1,11 @@
 import React, { useMemo } from 'react';
-import { SearchResults } from './GroundUp';
-import { useGetStore } from '../../custom/store/StoreCtx';
-import { RenderStatic } from '../../custom/RenderStatic';
-import { RenderNNode } from '../../custom/Render';
-import { getNestedNodes } from '../../../src/state/getNestedNodes';
-import { fromMCST } from '../../../src/types/mcst';
 import { Node } from '../../../src/types/cst';
+import { fromMCST } from '../../../src/types/mcst';
 import { transformNode } from '../../../src/types/transform-cst';
+import { RenderStatic } from '../../custom/RenderStatic';
+import { useGetStore } from '../../custom/store/StoreCtx';
+import { SearchResults } from './GroundUp';
+import { findTops } from './findTops';
 
 const simplify = (outer: Node) => {
     let max = findMaxLoc(outer) + 1;
@@ -47,62 +46,91 @@ export const ShowSearchResults = ({
     const data = useMemo(() => {
         const state = store.getState();
         const r2 = store.getResults().results;
-        return results.map((r, i) => {
-            const ns = r.path.find((p) => p.type === 'ns-top')!.idx;
-            const node = simplify(
-                fromMCST(r.path[r.path.length - 2].idx, state.map),
-            );
-            return (
-                <div
-                    key={i}
-                    className="hover"
-                    style={{
-                        // margin: 24,
-                        display: 'flex',
-                        cursor: 'pointer!important',
-                    }}
-                    onClick={() => {
-                        store.dispatch({
-                            type: 'select',
-                            at: [{ start: r.path }],
-                        });
-                    }}
-                >
-                    <button
-                        onClick={() => {
-                            setResults(results.filter((r, j) => j !== i));
-                        }}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: 'white',
-                            cursor: 'pointer',
-                        }}
-                    >
-                        &times;
-                    </button>
+        const allTops = findTops(store.getState()).map((t) => t.ns.id);
+        return results.results
+            .map((r, i) => {
+                const ns = r.path.find((p) => p.type === 'ns-top')!.idx;
+                const node = simplify(
+                    fromMCST(r.path[r.path.length - 2].idx, state.map),
+                );
+
+                return { ns, node, r };
+            })
+            .sort((a, b) => allTops.indexOf(a.ns) - allTops.indexOf(b.ns))
+            .map(({ ns, node, r }, i) => {
+                // I want to ... sort results ... by ns location
+
+                const parsed = r2.nodes[ns].parsed;
+                let container;
+                if (parsed?.type === 'success') {
+                    const names = parsed.names;
+                    container = names.length ? names[0].name : '<eval>';
+                } else if (parsed?.type === 'plugin') {
+                    container = '<plugin>';
+                } else {
+                    container = '<parse error>';
+                }
+
+                return (
                     <div
-                        style={{
-                            // marginTop: 12,
-                            // marginBottom: 12,
-                            margin: 18,
+                        key={i}
+                        className="hover"
+                        onClick={() => {
+                            store.dispatch({
+                                type: 'select',
+                                at: [{ start: r.path }],
+                            });
                         }}
                     >
-                        <RenderStatic
-                            node={node}
-                            display={r2.nodes[ns].layout}
-                        />
+                        <div
+                            style={{
+                                opacity: 0.8,
+                                marginTop: 18,
+                                marginBottom: 8,
+                                fontStyle: 'italic',
+                            }}
+                        >
+                            {container}
+                        </div>
+                        <div
+                            style={{
+                                display: 'flex',
+                                cursor: 'pointer!important',
+                            }}
+                        >
+                            <button
+                                onClick={() => {
+                                    setResults({
+                                        ...results,
+                                        results: results.results.filter(
+                                            (r, j) => j !== i,
+                                        ),
+                                    });
+                                }}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                &times;
+                            </button>
+                            <div
+                                style={{
+                                    margin: 18,
+                                    marginTop: 0,
+                                }}
+                            >
+                                <RenderStatic
+                                    node={node}
+                                    display={r2.nodes[ns].layout}
+                                />
+                            </div>
+                        </div>
                     </div>
-                </div>
-            );
-            // const p = r.path[r.path.length - 1]
-            // const idx = r.path.find(p => p.type === 'ns-top')!.idx
-            // const nnode = getNestedNodes(state.map[p.idx], state.map, undefined, r2.nodes[idx].layout[p.idx].layout)
-            // return <RenderNNode
-            // nnode={nnode}
-            // Recurse={Render}
-            // />
-        });
+                );
+            });
     }, [results]);
     return (
         <div
@@ -137,7 +165,7 @@ export const ShowSearchResults = ({
                 >
                     &times;
                 </button>
-                {results.length} results
+                {results.results.length} results for "{results.term}"
             </div>
             {data}
         </div>

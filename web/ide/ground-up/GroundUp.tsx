@@ -52,9 +52,12 @@ export type Debug = {
     disableEvaluation: boolean;
 };
 export type SearchResults = {
-    idx: number;
-    path: Path[];
-}[];
+    term: string;
+    results: {
+        idx: number;
+        path: Path[];
+    }[];
+};
 
 export const GroundUp = ({
     id,
@@ -236,7 +239,7 @@ export const GroundUp = ({
             <WithStore store={store}>
                 <Hover />
                 <CommandPalette setSearchResults={setSearchResults} />
-                {searchResults?.length ? (
+                {searchResults?.results.length ? (
                     <ShowSearchResults
                         results={searchResults}
                         setResults={setSearchResults}

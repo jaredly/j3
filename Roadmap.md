@@ -3,7 +3,9 @@
 
 - [x] search restultsss
   - [x] simplify results
-  - [ ] Show the name of the definition that a result comes from
+  - [x] Show the name of the definition that a result comes from
+- [ ] search for a string (within STRINGs y'all. yes please.)
+- [x] cmd+p should bring up the jump to
 - [ ] cmd+p should show types
 - [ ] autocompleeeete
   - my errors should get more specific

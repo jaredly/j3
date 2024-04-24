@@ -22,6 +22,7 @@ import { Sendable } from '../../custom/worker/worker';
 import { unique } from '../../custom/store/unique';
 import { Cursor } from '../../../src/state/getKeyUpdate';
 import { SearchResults } from './GroundUp';
+import { ImmediateResults } from '../../custom/store/getImmediateResults';
 
 export const CommandPalette = ({
     setSearchResults,
@@ -42,8 +43,18 @@ export const CommandPalette = ({
 
     useEffect(() => {
         const fn = (evt: KeyboardEvent) => {
-            if (evt.metaKey && evt.shiftKey && evt.key === 'p') {
-                setOpen(true);
+            if (evt.metaKey && evt.key === 'p') {
+                evt.preventDefault();
+                evt.stopPropagation();
+                if (evt.shiftKey) {
+                    setOpen(true);
+                } else {
+                    setOpen(true);
+                    setFocus(
+                        getJumpToResult(store.getResults().results, store),
+                    );
+                    // and setFocus
+                }
             }
         };
         document.addEventListener('keydown', fn);
@@ -51,11 +62,13 @@ export const CommandPalette = ({
     }, []);
 
     useEffect(() => {
-        if (open) {
-            ref.current?.focus();
+        if (!open) {
             setSel(0);
             setText('');
             setFocus(null);
+        }
+        if (open) {
+            ref.current?.focus();
         }
     }, [open]);
 
@@ -224,9 +237,12 @@ const getCommands = (
     const commands: Command[] = [];
 
     if (state.highlight?.length) {
+        const node = state.map[state.highlight[0]];
+        const name = node.type === 'identifier' ? node.text : '??';
+
         commands.push({
             type: 'plain',
-            title: `Rename ${state.highlight.length} instances`,
+            title: `Rename ${state.highlight.length} instances of ${name}`,
             action() {
                 dispatch({
                     type: 'select',
@@ -247,10 +263,11 @@ const getCommands = (
 
         commands.push({
             type: 'plain',
-            title: `Show ${state.highlight.length} instances`,
+            title: `Show ${state.highlight.length} instances of ${name}`,
             action() {
-                setSearchResults(
-                    state.highlight!.map((idx) => {
+                setSearchResults({
+                    term: name,
+                    results: state.highlight!.map((idx) => {
                         const path = pathForIdx(idx, state);
                         if (!path)
                             throw new Error(
@@ -258,7 +275,7 @@ const getCommands = (
                             );
                         return { path, idx };
                     }),
-                );
+                });
             },
         });
     }
@@ -360,25 +377,7 @@ const getCommands = (
             });
 
             const { results } = store.getResults();
-            commands.push({
-                type: 'super',
-                title: 'Jump to...',
-                children: Object.entries(results.jumpToName.value).map(
-                    ([name, loc]) => ({
-                        type: 'plain',
-                        title: name,
-                        action() {
-                            const path = pathForIdx(loc, store.getState());
-                            if (path != null) {
-                                dispatch({
-                                    type: 'select',
-                                    at: [{ start: path }],
-                                });
-                            }
-                        },
-                    }),
-                ),
-            });
+            commands.push(getJumpToResult(results, store));
         }
 
         const next = findNextError(store, state, sel);
@@ -538,6 +537,31 @@ export const pathForIdx = (
     }
     // Ok now trace it all back
 };
+
+function getJumpToResult(
+    results: ImmediateResults<any>,
+    store: Store,
+): SuperCommand {
+    return {
+        type: 'super',
+        title: 'Jump to...',
+        children: Object.entries(results.jumpToName.value).map(
+            ([name, loc]) => ({
+                type: 'plain',
+                title: name,
+                action() {
+                    const path = pathForIdx(loc, store.getState());
+                    if (path != null) {
+                        store.dispatch({
+                            type: 'select',
+                            at: [{ start: path }],
+                        });
+                    }
+                },
+            }),
+        ),
+    };
+}
 
 function extractToToplevel(
     store: Store,

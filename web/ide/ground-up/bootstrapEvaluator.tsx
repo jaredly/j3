@@ -6,6 +6,7 @@ import { expr, parseExpr, parseStmt, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
 import { sanitizedEnv } from './loadEv';
+import { unique } from '../../custom/store/unique';
 
 /**
  * This turns a sandbox that ':bootstrap:' as its evaluator
@@ -30,7 +31,7 @@ export const bootstrapEvaluator = (
     return {
         id,
         init() {
-            return { values: bootstrap.init(), source: [] };
+            return { values: bootstrap.init().values, source: [] };
         },
         analysis: bootstrap.analysis,
         setTracing(idx, traceMap) {},
@@ -38,6 +39,15 @@ export const bootstrapEvaluator = (
             const display: Record<number, Produce> = {};
             const values: Record<string, any> = {};
             let js: string[] = [];
+
+            const valArgs = Object.keys(env.values).map(
+                (name) => [name, sanitize(name)] as const,
+            );
+            const valMap: Record<string, any> = {};
+            valArgs.forEach(([n, sn]) => (valMap[sn] = env.values[n]));
+            const valArgText = `{${unique(valArgs.map((n) => n[1]))
+                .filter((n) => san[n] === undefined)
+                .join(',')}}`;
 
             Object.keys(stmts).forEach((loc) => {
                 const stmt = stmts[+loc];
@@ -52,13 +62,14 @@ export const bootstrapEvaluator = (
                             const name = stmt.type === 'sdef' ? stmt[0] : null;
                             const res = new Function(
                                 envArgs,
+                                valArgText,
                                 '{' +
                                     env.source.join('\n') +
                                     (stmt.type === 'sdef'
                                         ? `\nreturn ${sanitize(stmt[0])}`
                                         : '') +
                                     '}',
-                            )(san);
+                            )(san, valMap);
                             if (name) {
                                 values[name] = res;
                             }
@@ -95,7 +106,10 @@ export const bootstrapEvaluator = (
                     const full =
                         '{' + env.source.join('\n') + '\nreturn ' + raw + '}';
                     try {
-                        const res = new Function(envArgs, full)(san);
+                        const res = new Function(envArgs, valArgText, full)(
+                            san,
+                            valMap,
+                        );
                         display[+loc] = valueToString(res);
                         values._ = res;
                     } catch (err) {
@@ -192,6 +206,14 @@ export const bootstrapEvaluator = (
             return parseExpr(node, ctx);
         },
         evaluate(expr, env) {
+            const valArgs = Object.keys(env.values).map(
+                (name) => [name, sanitize(name)] as const,
+            );
+            const valMap: Record<string, any> = {};
+            valArgs.forEach(([n, sn]) => (valMap[sn] = env.values[n]));
+            const valArgText = `{${unique(valArgs.map((n) => n[1]))
+                .filter((n) => san[n] === undefined)
+                .join(',')}}`;
             let raw;
             try {
                 raw = benv.values['compile'](expr);
@@ -202,8 +224,9 @@ export const bootstrapEvaluator = (
             try {
                 const res = new Function(
                     envArgs,
+                    valArgText,
                     '{' + env.source.join('\n') + '\nreturn ' + raw + '}',
-                )(san);
+                )(san, valMap);
                 return res;
             } catch (err) {
                 console.log(raw);

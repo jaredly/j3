@@ -1,12 +1,8 @@
-import { LexicalEditor } from 'lexical';
 import { idText } from '../parse/parse';
+import { Display } from '../to-ast/library';
 import { Layout, MCString, MNode, MNodeExtra, Map } from '../types/mcst';
 import { Path, PathChild } from './path';
 import { ONode } from './types';
-import React from 'react';
-import { RichText } from '../../web/custom/RichText';
-import { Store } from '../../web/custom/store/Store';
-import { Display } from '../to-ast/library';
 
 export const stringColor = '#ff9b00';
 export const stringPunct = 'yellow';
