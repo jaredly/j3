@@ -43,10 +43,16 @@ const fixtures: Fixture[] = [
         evaluator: null,
     },
     {
-        id: 1,
-        name: 'self-1 -> parse-1-args',
-        file: 'parse-1-args.json',
+        id: 0.5,
+        name: 'self-1 -> parse-self',
+        file: 'parse-self.json',
         evaluator: [0],
+    },
+    {
+        id: 1,
+        name: 'parse-self -> parse-1-args',
+        file: 'parse-1-args.json',
+        evaluator: [0.5],
     },
     {
         id: 2,

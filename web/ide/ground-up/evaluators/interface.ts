@@ -19,8 +19,7 @@ export type Analyze<Stmt, Expr, Type> = {
     typeSize(type: Type): number;
 };
 
-export type TypeChecker<Env, Stmt, Expr, Type> = {
-    init(): Env;
+export type Infer<Env, Stmt, Expr, Type> = {
     infer(
         stmts: Stmt[],
         env: Env,
@@ -41,11 +40,15 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
             | { type: 'err'; err: InferenceError }
             | { type: 'ok'; value: Type };
     };
+};
+
+export type TypeChecker<Env, Stmt, Expr, Type> = {
+    init(): Env;
     addTypes(env: Env, nenv: Env): Env;
     typeForName(env: Env, name: string): Type | null;
     typeToString(type: Type): string;
     typeToCst?(type: Type): jcst;
-};
+} & Infer<Env, Stmt, Expr, Type>;
 
 export type Compiler<Stmt, Expr> = {
     compileStmt(stmt: Stmt, meta: MetaDataMap): string;

@@ -1727,8 +1727,8 @@ dot
 
 (deftype parse-and-compile
     (parse-and-compile
-        (fn [cst] (, (array parse-error) stmt))
-            (fn [cst] (, (array parse-error) expr))
+        (fn [cst] stmt ;(, (array parse-error) stmt))
+            (fn [cst] expr ;(, (array parse-error) expr))
             (fn [stmt (map int bool)] string)
             (fn [expr (map int bool)] string)
             (fn [stmt] (array (,, string name-kind int)))
@@ -1739,10 +1739,10 @@ dot
             (fn [type] int)))
 
 ((eval
-    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")
+    "({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")
     (parse-and-compile
-        (fn [stmt] (state-f (parse-stmt stmt) state/nil))
-            (fn [expr] (state-f (parse-expr expr) state/nil))
+        (fn [stmt] (snd (state-f (parse-stmt stmt) state/nil)))
+            (fn [expr] (snd (state-f (parse-expr expr) state/nil)))
             (fn [stmt ctx]
             (j/compile-stmts
                 ctx

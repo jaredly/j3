@@ -50,7 +50,7 @@ type InferExpr2 = {
     };
 };
 
-const getUsages = (data: InferExpr2[2]) => {
+export const getUsages = (data: InferExpr2[2]) => {
     const usages: Record<number, number[]> = {};
     unwrapArray(data[0]).forEach((loc) => (usages[loc] = []));
     unwrapArray(data[1]).forEach(({ 0: loc, 1: provider }) => {
