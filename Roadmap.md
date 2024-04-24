@@ -1,4 +1,10 @@
 
+# Parse but better
+
+parse_stmt2
+parse_expr2
+comin atcha
+
 # Things I'm doin
 
 - [x] search restultsss
