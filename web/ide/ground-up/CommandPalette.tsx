@@ -265,6 +265,14 @@ const getCommands = (
 ) => {
     const commands: Command[] = [];
 
+    commands.push({
+        type: 'plain',
+        title: `Search...`,
+        action() {
+            setSearchResults({ term: { type: 'free', text: '' }, results: [] });
+        },
+    });
+
     if (state.highlight?.length) {
         const node = state.map[state.highlight[0]];
         const name = node.type === 'identifier' ? node.text : '??';
@@ -296,7 +304,7 @@ const getCommands = (
             action() {
                 const pathFor = collectPaths(state);
                 setSearchResults({
-                    term: name,
+                    term: { type: 'references', name },
                     results: state.highlight!.map((idx) => {
                         const path = pathFor(idx);
                         if (!path.length)

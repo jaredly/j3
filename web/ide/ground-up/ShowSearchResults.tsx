@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import { transformNode } from '../../../src/types/transform-cst';
@@ -6,6 +6,8 @@ import { RenderStatic } from '../../custom/RenderStatic';
 import { useGetStore } from '../../custom/store/StoreCtx';
 import { SearchResults } from './GroundUp';
 import { findTops } from './findTops';
+import { NUIState } from '../../custom/UIState';
+import { pathForIdx } from './pathForIdx';
 
 const simplify = (outer: Node) => {
     let max = findMaxLoc(outer) + 1;
@@ -42,7 +44,26 @@ export const ShowSearchResults = ({
     results: SearchResults;
     setResults: (r: SearchResults | null) => void;
 }) => {
+    const [searchText, setSearchText] = useState('');
     const store = useGetStore();
+
+    useEffect(() => {
+        if (!searchText) return;
+        const tid = setTimeout(() => {
+            setResults({
+                term: {
+                    type: 'free',
+                    text: searchText,
+                },
+                results: freeTextSearch(store.getState(), searchText).slice(
+                    0,
+                    100,
+                ),
+            });
+        }, 200);
+        return () => clearTimeout(tid);
+    }, [searchText]);
+
     const data = useMemo(() => {
         const state = store.getState();
         const r2 = store.getResults().results;
@@ -143,7 +164,8 @@ export const ShowSearchResults = ({
                 zIndex: 1000,
                 backgroundColor: 'black',
                 maxHeight: 'calc(100vh - 56px)',
-                overflow: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
             }}
         >
             <div
@@ -165,11 +187,60 @@ export const ShowSearchResults = ({
                 >
                     &times;
                 </button>
-                {results.results.length} results for "{results.term}"
+                {results.term.type === 'references' ? (
+                    <div>
+                        {results.results.length} results for "
+                        {results.term.name}"
+                    </div>
+                ) : (
+                    <div>
+                        <input
+                            autoFocus
+                            value={searchText}
+                            placeholder="Search for..."
+                            onChange={(evt) => {
+                                setSearchText(evt.target.value);
+                            }}
+                            onKeyDown={(evt) => {
+                                if (evt.key === 'Escape') {
+                                    setResults(null);
+                                }
+                            }}
+                        />
+                    </div>
+                )}
             </div>
-            {data}
+            <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                {data}
+            </div>
         </div>
     );
+};
+
+const freeTextSearch = (
+    state: NUIState,
+    text: string,
+): SearchResults['results'] => {
+    text = text.toLowerCase();
+    const matches = Object.entries(state.map)
+        .filter(([key, node]) => {
+            if (
+                (node.type === 'stringText' ||
+                    node.type === 'comment' ||
+                    node.type === 'identifier') &&
+                node.text.toLowerCase().includes(text)
+            ) {
+                return true;
+            }
+            return false;
+        })
+        .slice(0, 100);
+    return matches
+        .map(([key]) => ({
+            idx: +key,
+            path: pathForIdx(+key, state)!,
+        }))
+        .filter((m) => m.path);
 };
 
 function findMaxLoc(outer: Node) {
